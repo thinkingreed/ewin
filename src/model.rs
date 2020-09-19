@@ -146,12 +146,7 @@ impl Default for Editor {
     fn default() -> Self {
         Editor {
             buf: vec![Vec::new()],
-            cur: Cursor {
-                y: 0,
-                x: 0,
-                disp_x: 0,
-                updown_x: 0,
-            },
+            cur: Cursor { y: 0, x: 0, disp_x: 0, updown_x: 0 },
             y_offset: 0,
             x_offset: 0,
             x_offset_disp: 0,

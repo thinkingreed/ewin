@@ -1,4 +1,3 @@
-// 描画処理
 use crate::model::Editor;
 use crate::terminal::Log;
 
@@ -34,7 +33,6 @@ impl Editor {
         if y as usize > self.buf.len() {
             return;
         }
-        //  let (_, width) = self.get_row_width(y, x);
         self.sel.e_disp_x = x;
         self.sel.ey = y;
     }

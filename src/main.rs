@@ -87,10 +87,7 @@ fn main() {
                             // Log::ep_s("Un Supported");
                         }
                     },
-                    Key(KeyEvent {
-                        code,
-                        modifiers: KeyModifiers::SHIFT,
-                    }) => match code {
+                    Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {
                         Right => {
                             editor.shift_right();
                         }
@@ -203,10 +200,7 @@ fn init(editor: &mut Editor, statusbar: &mut StatusBar) {
                 editor.is_all_redraw = true;
             }
         },
-        Key(KeyEvent {
-            modifiers: KeyModifiers::SHIFT,
-            code,
-        }) => match code {
+        Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
             Down | Up | Left | Right => {
                 editor.is_all_redraw = true;
             }
@@ -231,10 +225,7 @@ fn init(editor: &mut Editor, statusbar: &mut StatusBar) {
     }
     // 選択範囲クリア判定
     match editor.curt_evt {
-        Key(KeyEvent {
-            code,
-            modifiers: KeyModifiers::SHIFT,
-        }) => match code {
+        Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {
             Down | Up | Left | Right => {}
             _ => {
                 editor.sel.clear();
@@ -255,9 +246,7 @@ fn init(editor: &mut Editor, statusbar: &mut StatusBar) {
                 editor.sel.clear();
             }
         },
-        Mouse(MouseEvent::Down(_, _, _, _))
-        | Mouse(MouseEvent::Up(_, _, _, _))
-        | Mouse(MouseEvent::Drag(_, _, _, _)) => {}
+        Mouse(MouseEvent::Down(_, _, _, _)) | Mouse(MouseEvent::Up(_, _, _, _)) | Mouse(MouseEvent::Drag(_, _, _, _)) => {}
         _ => {
             editor.sel.clear();
         }

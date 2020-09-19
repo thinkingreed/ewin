@@ -13,10 +13,7 @@ impl Editor {
         self.buf = fs::read_to_string(path)
             .ok()
             .map(|s| {
-                let buffer: Vec<Vec<char>> = s
-                    .lines()
-                    .map(|line| line.trim_end().chars().collect())
-                    .collect();
+                let buffer: Vec<Vec<char>> = s.lines().map(|line| line.trim_end().chars().collect()).collect();
                 if buffer.is_empty() {
                     vec![Vec::new()]
                 } else {
@@ -104,13 +101,7 @@ impl Editor {
         return Ok(());
     }
     /// 選択箇所のハイライト
-    pub fn ctl_select_color(
-        &mut self,
-        str_vec: &mut Vec<String>,
-        ranges: SelectRange,
-        y: usize,
-        _x: usize,
-    ) {
+    pub fn ctl_select_color(&mut self, str_vec: &mut Vec<String>, ranges: SelectRange, y: usize, _x: usize) {
         if ranges.sy == 0 && ranges.s_disp_x == 0 {
             return;
         }
@@ -143,24 +134,14 @@ impl Editor {
             self.set_textarea_color(str_vec)
         }
     }
-    pub fn draw_cursor<T: Write>(
-        &mut self,
-        out: &mut T,
-        sber: &mut StatusBar,
-    ) -> Result<(), io::Error> {
+    pub fn draw_cursor<T: Write>(&mut self, out: &mut T, sber: &mut StatusBar) -> Result<(), io::Error> {
         Log::ep_s("★  draw_cursor");
         Log::ep("disp_x", self.cur.disp_x);
 
         let str_vec: &mut Vec<String> = &mut vec![];
 
         sber.draw_statusber(str_vec, self);
-        let cur_str = format!(
-            "{}",
-            cursor::Goto(
-                (self.cur.disp_x - self.x_offset_disp) as u16,
-                (self.cur.y + 1 - self.y_offset) as u16
-            )
-        );
+        let cur_str = format!("{}", cursor::Goto((self.cur.disp_x - self.x_offset_disp) as u16, (self.cur.y + 1 - self.y_offset) as u16));
         str_vec.push(cur_str);
         write!(out, "{}", str_vec.concat())?;
         out.flush()?;
@@ -175,12 +156,6 @@ impl Editor {
         Log::ep("sel.e_disp_x", self.sel.e_disp_x);
 
         Log::ep("disp_x", self.cur.disp_x);
-        str_vec.push(
-            cursor::Goto(
-                (self.cur.disp_x - self.x_offset_disp) as u16,
-                (self.cur.y + 1 - self.y_offset) as u16,
-            )
-            .to_string(),
-        );
+        str_vec.push(cursor::Goto((self.cur.disp_x - self.x_offset_disp) as u16, (self.cur.y + 1 - self.y_offset) as u16).to_string());
     }
 }

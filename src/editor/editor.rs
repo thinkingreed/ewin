@@ -58,10 +58,7 @@ impl Editor {
             }
         } else if self.x_offset_disp > 0 {
             match self.curt_evt {
-                Key(KeyEvent { code: Up, .. })
-                | Key(KeyEvent { code: Down, .. })
-                | Mouse(MouseEvent::ScrollUp(_, _, _))
-                | Mouse(MouseEvent::ScrollDown(_, _, _)) => {
+                Key(KeyEvent { code: Up, .. }) | Key(KeyEvent { code: Down, .. }) | Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) => {
                     //   Log::ep_s("disp_xの変化が少ない場合");
                     self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.lnw);
                     let (_, width) = self.get_row_width(self.cur.y, 0, self.x_offset);
@@ -87,8 +84,7 @@ impl Editor {
         }
 
         if self.is_all_redraw != true {
-            self.is_all_redraw =
-                y_offset_org != self.y_offset || x_offset_disp_org != self.x_offset_disp;
+            self.is_all_redraw = y_offset_org != self.y_offset || x_offset_disp_org != self.x_offset_disp;
         }
     }
 
@@ -199,18 +195,10 @@ impl Editor {
             // 終了行
             } else if i == copy_posi.ey as usize {
                 // カーソルが行頭の対応
-                copy_ranges.push(CopyRange {
-                    y: i,
-                    sx: 0,
-                    ex: copy_posi.ex,
-                });
+                copy_ranges.push(CopyRange { y: i, sx: 0, ex: copy_posi.ex });
             // 中間行 全て対象
             } else {
-                copy_ranges.push(CopyRange {
-                    y: i,
-                    sx: 0,
-                    ex: self.buf[i].len(),
-                });
+                copy_ranges.push(CopyRange { y: i, sx: 0, ex: self.buf[i].len() });
             }
         }
 

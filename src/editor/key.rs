@@ -93,9 +93,7 @@ impl Editor {
     }
     pub fn enter(&mut self) {
         Log::ep_s("★  enter");
-        let rest: Vec<char> = self.buf[self.cur.y]
-            .drain(self.cur.x - self.lnw..)
-            .collect();
+        let rest: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.lnw..).collect();
         self.buf.insert(self.cur.y + 1, rest);
         self.cur.y += 1;
         self.lnw = self.buf.len().to_string().len();
@@ -115,8 +113,7 @@ impl Editor {
         Log::ep_s("★★★★★  del_sel_range");
         // s < e の状態に変換した値を使用
         let sel = self.sel.get_range();
-        let (sy, ey, sx, ex, s_disp_x, e_disp_x) =
-            (sel.sy, sel.ey, sel.sx, sel.ex, sel.s_disp_x, sel.e_disp_x);
+        let (sy, ey, sx, ex, s_disp_x, e_disp_x) = (sel.sy, sel.ey, sel.sx, sel.ex, sel.s_disp_x, sel.e_disp_x);
 
         Log::ep("sel.sy", sy);
         Log::ep("sel.ey", ey);
@@ -142,8 +139,6 @@ impl Editor {
                     self.buf[i].drain(0..ex);
 
                     let mut rest: Vec<char> = self.buf[i].clone();
-                    // let rest_string: String = rest.clone().into_iter().collect();
-                    // Log::ep("rest", rest_string);
                     self.buf[sy].append(&mut rest);
                     self.buf.remove(i);
                 }
@@ -277,15 +272,10 @@ impl Editor {
         }
 
         let mut copy_strings: Vec<&str> = contexts.split('\n').collect();
-        let mut last_line_str = copy_strings
-            .get(copy_strings.len() - 1)
-            .unwrap()
-            .to_string();
+        let mut last_line_str = copy_strings.get(copy_strings.len() - 1).unwrap().to_string();
 
         // 複数行のペーストでカーソル以降の行末までの残りの文字
-        let line_rest: Vec<char> = self.buf[self.cur.y]
-            .drain(self.cur.x - self.lnw..)
-            .collect();
+        let line_rest: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.lnw..).collect();
 
         let line_rest_string: String = line_rest.iter().collect();
 
@@ -445,10 +435,7 @@ impl Editor {
         Log::ep("sel.e_disp_x ", self.sel.e_disp_x);
 
         // 選択開始位置とカーソルが重なった場合
-        if !is_unselected_org
-            && self.sel.s_disp_x == self.sel.e_disp_x
-            && self.sel.sy == self.sel.ey
-        {
+        if !is_unselected_org && self.sel.s_disp_x == self.sel.e_disp_x && self.sel.sy == self.sel.ey {
             self.sel.clear();
         }
     }
@@ -477,10 +464,7 @@ impl Editor {
             self.sel.e_disp_x = self.cur.disp_x;
         }
         // 選択開始位置とカーソルが重なった場合
-        if !is_unselected_org
-            && self.sel.s_disp_x == self.sel.e_disp_x
-            && self.sel.sy == self.sel.ey
-        {
+        if !is_unselected_org && self.sel.s_disp_x == self.sel.e_disp_x && self.sel.sy == self.sel.ey {
             self.sel.clear();
         }
     }

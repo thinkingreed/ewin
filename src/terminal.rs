@@ -3,12 +3,7 @@ use std::fmt::Display;
 use std::io::{self, Write};
 
 impl Terminal {
-    pub fn draw<T: Write>(
-        &self,
-        out: &mut T,
-        editor: &mut Editor,
-        statusbar: &mut StatusBar,
-    ) -> Result<(), io::Error> {
+    pub fn draw<T: Write>(&self, out: &mut T, editor: &mut Editor, statusbar: &mut StatusBar) -> Result<(), io::Error> {
         let str_vec: &mut Vec<String> = &mut vec![];
 
         editor.draw(str_vec).unwrap();

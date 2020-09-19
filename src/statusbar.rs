@@ -18,11 +18,7 @@ impl StatusBar {
             ..StatusBar::default()
         }
     }
-    pub fn draw(
-        &mut self,
-        str_vec: &mut Vec<String>,
-        editor: &mut Editor,
-    ) -> Result<(), io::Error> {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) -> Result<(), io::Error> {
         str_vec.push(self.get_file_cur_str(editor));
         editor.set_cur_str(str_vec);
         return Ok(());
@@ -34,17 +30,8 @@ impl StatusBar {
         if rows == 0 {
             return;
         }
-        let cur_str = format!(
-            "{cur:>w$}",
-            cur = self.get_cur_str(editor),
-            w = self.cur_str.chars().count()
-        );
-        let mut all_str = format!(
-            "{}{}{}",
-            color::Fg(color::Rgb(221, 72, 20)).to_string(),
-            self.filenm_str,
-            cur_str
-        );
+        let cur_str = format!("{cur:>w$}", cur = self.get_cur_str(editor), w = self.cur_str.chars().count());
+        let mut all_str = format!("{}{}{}", color::Fg(color::Rgb(221, 72, 20)).to_string(), self.filenm_str, cur_str);
         if self.msg_str.len() > 0 {
             all_str = format!("{}", self.get_msg_str());
         }
@@ -77,19 +64,11 @@ impl StatusBar {
         let (filenm_w, cur_w) = self.get_areas_width(cols);
         let filenm = self.cut_str(self.filenm.clone(), filenm_w);
 
-        let filenm_str = format!(
-            "{fnm:^width$}",
-            fnm = filenm,
-            width = filenm_w - (get_str_width(&filenm) - filenm.chars().count())
-        );
+        let filenm_str = format!("{fnm:^width$}", fnm = filenm, width = filenm_w - (get_str_width(&filenm) - filenm.chars().count()));
 
         // 文字横幅と文字数の差分で調整
         let cur_s = self.get_cur_str(editor);
-        let cur_str = format!(
-            "{cur:>w$}",
-            cur = cur_s,
-            w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count())
-        );
+        let cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
         str_vec.push("\r\n".to_string());
         self.set_color(&mut str_vec);
         str_vec.push(filenm_str.clone());
@@ -120,20 +99,13 @@ impl StatusBar {
         Log::ep("editor.cur.x", editor.cur.x);
         Log::ep("editor.lnw", editor.lnw);
 
-        let (cols, col) = (
-            editor.buf[editor.cur.y].len().to_string(),
-            (editor.cur.x - editor.lnw + 1).to_string(),
-        );
+        let (cols, col) = (editor.buf[editor.cur.y].len().to_string(), (editor.cur.x - editor.lnw + 1).to_string());
         col_vec.push(&col);
         col_vec.push("/");
         col_vec.push(&cols);
         col_vec.push(")");
 
-        let cur_posi = format!(
-            "{rows} {cols}",
-            rows = row_vec.concat(),
-            cols = col_vec.concat(),
-        );
+        let cur_posi = format!("{rows} {cols}", rows = row_vec.concat(), cols = col_vec.concat(),);
         return cur_posi;
     }
 
