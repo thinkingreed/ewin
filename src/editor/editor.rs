@@ -217,4 +217,48 @@ impl Editor {
             Err(_) => return self.clipboard = copy_string.clone(),
         }
     }
+    pub fn del_sel_range(&mut self) {
+        Log::ep_s("★★★★★  del_sel_range");
+        // s < e の状態に変換した値を使用
+        let sel = self.sel.get_range();
+        let (sy, ey, sx, ex, s_disp_x, e_disp_x) = (sel.sy, sel.ey, sel.sx, sel.ex, sel.s_disp_x, sel.e_disp_x);
+
+        Log::ep("sel.sy", sy);
+        Log::ep("sel.ey", ey);
+        Log::ep("sel.sx", sx);
+        Log::ep("sel.ex", ex);
+
+        for i in 0..self.buf.len() {
+            if sy <= i && i <= ey {
+                // 1行
+                if sy == ey {
+                    self.buf[i].drain(sx..ex);
+                    self.cur.disp_x = min(s_disp_x, e_disp_x);
+                    self.cur.x = min(sx, ex) + self.lnw;
+                // 開始行
+                } else if sy == i {
+                    let (cursorx, _) = self.get_row_width(sy, sx, self.buf[sy].len());
+                    self.buf[i].drain(sx..sx + cursorx);
+                    self.cur.disp_x = s_disp_x;
+                    self.cur.x = sx + self.lnw;
+
+                // 終了行
+                } else if ey == i {
+                    self.buf[i].drain(0..ex);
+
+                    let mut rest: Vec<char> = self.buf[i].clone();
+                    self.buf[sy].append(&mut rest);
+                    self.buf.remove(i);
+                }
+            }
+        }
+
+        // 中間行を纏めて削除
+        for i in 0..self.buf.len() {
+            if sy < i && i < ey {
+                self.buf.remove(i);
+            }
+        }
+        self.cur.y = sy;
+    }
 }

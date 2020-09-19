@@ -3,8 +3,12 @@ name = "ewin"
 version = "0.1.0"
 authors = ["hi"]
 edition = "2018"
+readme = "README.md"
+license = "MIT"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "ew"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1"

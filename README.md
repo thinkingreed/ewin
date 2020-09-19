@@ -3,10 +3,8 @@ ewin
 [![crates.io][crates-io-badge]][crates-io]
 [![Build Status][build-badge]][ci]
 
-[ewin][] is a tiny UTF-8 text editor on terminal written in Rust. ewin was started as a Rust port of
-awesome minimal text editor [kilo][] and has grown with various extensions & improvements.
-
-<img width=539 height=396 src="https://github.com/rhysd/ss/blob/master/ewin-editor/main.gif?raw=true" alt="main screenshot"/>
+[ewin][] Simple editor for Winodws users.
+  There is no need to learn new operation commands.
 
 It provides basic features as a minimal text editor:
 
@@ -16,31 +14,9 @@ It provides basic features as a minimal text editor:
 - Simple syntax highlighting
 - Simple incremental text search
 
-And ewin extends [kilo][] to improve editing (please see 'Extended Features' section and 'Implementation'
-section below for more details):
 
-- Support editing UTF-8 characters like '🐶' (kilo only supports ASCII characters)
-- Undo/Redo
-- More useful shortcuts (Alt modifier is supported)
-- 24bit colors (true colors) and 256 colors support using [gruvbox][] retro color palette with 16
-  colors fallback
-- More efficient screen rendering and highlighting (kilo renders entire screen each time)
-- Open multiple files (switch buffers by Ctrl-X/Alt-X)
+- Support editing UTF-8 characters
 - Resizing terminal window supported. Screen size is responsible
-- Highlight more languages (Rust, Go, JavaScript, C++) and items (statements, types, number literals, ...)
-- Automatically closes the message bar at bottom of line
-- Modular implementation for each logics such as parsing key inputs, rendering screen, calculating
-  highlight, modifying text buffer (kilo implements everything in one `kilo.c` with several global
-  variables)
-- Incremental text search is fixed and improved (ewin only highlights current match and only hits
-  once per line).
-
-[ewin][] aims to support kinds of xterm terminals on Unix-like systems. For example Terminal.app,
-iTerm2.app, Gnome-Terminal, (hopefully) Windows Terminal on WSL.
-
-I learned various things by making this project following ['Build Your Own Text Editor' guide][byote].
-Please read 'Implementation' section below to find some interesting topics.
-
 
 
 ## Installation
@@ -63,7 +39,7 @@ Installing [`ewin-editor`][crates-io] package introduces `ewin` command in your 
 
 ```sh
 $ ewin                 # Start with an empty text buffer
-$ ewin file1 file2...  # Open files to edit
+$ ewin file            # Open files to edit
 ```
 
 Please see `ewin --help` for command usage.
