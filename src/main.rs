@@ -41,7 +41,6 @@ fn main() {
         editor.curt_evt = event.unwrap().clone();
         init(&mut editor, &mut sbar);
         let evt_next_process = check_next_process(&mut editor, &mut sbar);
-        // eprintln!("curt_evt {:?}", editor.curt_evt);
 
         match evt_next_process {
             EvtProcess::Exit => return,
@@ -104,10 +103,7 @@ fn main() {
                         Up => {
                             editor.shift_up();
                         }
-                        _ => {
-                            //  return;
-                            // Log::ep_s("Un Supported SHIFT");
-                        }
+                        _ => {}
                     },
                     Key(KeyEvent { code: Char(c), .. }) => {
                         editor.insert_char(c);
