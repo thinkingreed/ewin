@@ -1,9 +1,9 @@
 use clap::{App, Arg};
 use crossterm::event::{read, KeyCode::*, KeyModifiers};
 use crossterm::event::{Event::*, KeyEvent, MouseEvent};
-use ew::_cfg::lang::cfg::LangCfg;
-use ew::model::{Editor, StatusBar, Terminal};
-use ew::terminal::Log;
+use ewin::_cfg::lang::cfg::LangCfg;
+use ewin::model::{Editor, StatusBar, Terminal};
+use ewin::terminal::Log;
 use path::Path;
 use std::io::Write;
 use termion::clear;

@@ -1,5 +1,5 @@
 [package]
-name = "ew"
+name = "ewin"
 version = "0.1.0"
 authors = ["hi"]
 edition = "2018"
@@ -11,7 +11,7 @@ anyhow = "1"
 termion = "1.5.5"
 clap = "2"
 unicode-width = "0"
- clipboard = "0.5.0"
+clipboard = "0.5.0"
 crossterm  = "0.17.8" 
 serde = { version = "1.0.115", features = ["derive"] }
 toml = "0.5.6"
