@@ -1,0 +1,44 @@
+{
+    // IntelliSense を使用して利用可能な属性を学べます。
+    // 既存の属性の説明をホバーして表示します。
+    // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "debug",
+            "type": "lldb",
+            "request": "launch",
+            //           "program": "${workspaceFolder/todo.exe)",
+            "program": "${workspaceFolder}/target/debug/ew",
+            //    "cwd": "${workspaceFolder}",
+            "args": [
+                "test.txt",
+            ],
+        }
+    ],
+    "sourceMap": {
+        "/rustc/*/src/": "${cppvsdbg:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/",
+        "*/build_helper/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/build_helper/",
+        "*/dlmalloc/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/dlmalloc/",
+        "*/jemalloc/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/jemalloc/",
+        "*/liballoc/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/liballoc/",
+        "*/liballoc_jemalloc/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/liballoc_jemalloc/",
+        "*/liballoc_system/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/liballoc_system/",
+        "*/libbacktrace/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/libbacktrace/",
+        "*/libcompiler_builtins/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/libcompiler_builtins/",
+        "*/libcore/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/libcore/",
+        "*/liblibc/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/liblibc/",
+        "*/libpanic_abort/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/libpanic_abort/",
+        "*/libpanic_unwind/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/libpanic_unwind/",
+        "*/libprofiler_builtins/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/libprofiler_builtins/",
+        "*/librustc_asan/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/librustc_asan/",
+        "*/librustc_lsan/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/librustc_lsan/",
+        "*/librustc_msan/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/librustc_msan/",
+        "*/librustc_tsan/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/librustc_tsan/",
+        "*/libstd/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/libstd/",
+        "*/libterm/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/libterm/",
+        "*/libtest/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/libtest/",
+        "*/libunwind/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/libunwind/",
+        "*/stdsimd/": "${env:HOME}/.rustup/toolchains/stable-x86_64-apple-darwin/lib/rustlib/src/rust/src/stdsimd/"
+    }
+}

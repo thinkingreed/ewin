@@ -1,0 +1,4 @@
+sudo apt-get install xorg-dev
+sudo apt-get install libxcb-render0-dev
+sudo apt-get install libxcb-shape0-dev
+sudo apt-get install libxcb-xfixes0-dev
