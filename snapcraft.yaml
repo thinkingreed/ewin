@@ -20,7 +20,7 @@ architectures:
 
 parts:
   ewin:
-    source: https://github.com/dalance/procs.git
+    source: https://github.com/thinkingreed/ewin.git
     source-tag: *version
     plugin: rust
     stage-packages:
