@@ -4,8 +4,6 @@ use crate::terminal::*;
 use clipboard::{ClipboardContext, ClipboardProvider};
 use crossterm::event::{Event::Key, Event::Mouse, KeyCode, KeyCode::*, KeyEvent, MouseEvent};
 use std::cmp::{max, min};
-use std::panic::catch_unwind;
-
 use unicode_width::UnicodeWidthChar;
 impl Editor {
     // カーソルが画面に映るようにする
@@ -205,30 +203,18 @@ impl Editor {
         return copy_ranges;
     }
     pub fn get_clipboard(&mut self) -> String {
-        // WSL環境でpanic発生の回避
-        let clipboard_process = catch_unwind(move || {
-            let _ctx: ClipboardContext = ClipboardProvider::new().unwrap();
-        });
-        if clipboard_process.is_ok() {
-            let mut ctx: ClipboardContext = ClipboardProvider::new().unwrap();
-            return ctx.get_contents().unwrap_or("".to_string());
-        } else {
-            return self.clipboard.clone();
+        let result: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
+        match result {
+            Ok(mut ctx) => return ctx.get_contents().unwrap_or("".to_string()),
+            Err(_) => return self.clipboard.clone(),
         }
     }
 
     pub fn set_clipboard(&mut self, copy_string: String) {
-        // WSL環境でpanic発生の回避
-        let copy_string___ = copy_string.clone();
-        let clipboard_process = catch_unwind(move || {
-            let mut ctx: ClipboardContext = ClipboardProvider::new().unwrap();
-            ctx.set_contents(copy_string.clone()).unwrap();
-            //            Log::ep_s("ClipboardContext");
-        });
-
-        if clipboard_process.is_err() {
-            self.clipboard = copy_string___.clone();
-            //             Log::ep("clipboard", copy_string___);
+        let result: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
+        match result {
+            Ok(mut ctx) => return ctx.set_contents(copy_string.clone()).unwrap(),
+            Err(_) => return self.clipboard = copy_string.clone(),
         }
     }
 }
