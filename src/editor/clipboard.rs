@@ -59,7 +59,7 @@ impl Editor {
         Ok(())
     }
 
-    pub fn clipboard_paste(&mut self) -> anyhow::Result<String> {
+    pub fn get_clipboard_paste(&mut self) -> anyhow::Result<String> {
         let p = Command::new("pbpaste")
             .stdout(process::Stdio::piped())
             .spawn()

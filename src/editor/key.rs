@@ -222,6 +222,10 @@ impl Editor {
     pub fn paste(&mut self) {
         Log::ep_s("★★  paste");
 
+        let cont = self.get_clipboard_paste().unwrap();
+
+        Log::ep("contcontcontcontcont", cont);
+
         let contexts = self.get_clipboard();
         if contexts.len() == 0 {
             return;

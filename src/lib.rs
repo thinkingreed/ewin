@@ -1,5 +1,6 @@
 pub mod color;
 pub mod editor {
+    pub mod clipboard;
     pub mod draw;
     pub mod editor;
     pub mod key;
