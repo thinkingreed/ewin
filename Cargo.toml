@@ -6,6 +6,10 @@ edition = "2018"
 readme = "README.md"
 license = "MIT"
 
+[[bin]]
+name = "ew"
+path = "src/main.rs"
+
 [dependencies]
 anyhow = "1"
 termion = "1.5.5"
