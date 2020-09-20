@@ -11,8 +11,8 @@ grade: stable # must be 'stable' to release into candidate/stable channels
 confinement: classic # use 'strict' once you have the right plugs and slots
 
 apps:
-  ew:
-    command: /snap/ewin/current/bin/ew
+  ewin:
+    command: ewin
 architectures:
   - build-on: amd64
   #- build-on: arm64
