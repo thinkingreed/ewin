@@ -13,6 +13,7 @@ confinement: classic # use 'strict' once you have the right plugs and slots
 apps:
   ewin:
     command: ewin
+
 architectures:
   - build-on: amd64
   #- build-on: arm64
