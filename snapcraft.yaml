@@ -12,7 +12,7 @@ confinement: strict # use 'strict' once you have the right plugs and slots
 
 apps:
   ew:
-    command: ewin
+    command: ew
 architectures:
   - build-on: amd64
   #- build-on: arm64
