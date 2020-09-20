@@ -150,14 +150,16 @@ fn main() {
 
                     Mouse(MouseEvent::ScrollUp(_, _, _)) => {
                         editor.move_cursor(Up);
+                        editor.draw_cursor(&mut out, &mut sbar).unwrap();
                     }
                     Mouse(MouseEvent::ScrollDown(_, _, _)) => {
                         editor.move_cursor(Down);
+                        editor.draw_cursor(&mut out, &mut sbar).unwrap();
                     }
                     Mouse(MouseEvent::Down(MouseButton::Left, x, y, _)) => {
                         editor.mouse_left_press((x + 1) as usize, y as usize);
                     }
-                    Mouse(MouseEvent::Down(_, x, y, _)) => {}
+                    Mouse(MouseEvent::Down(_, _, _, _)) => {}
                     Mouse(MouseEvent::Up(_, x, y, _)) => {
                         editor.mouse_release((x + 1) as usize, y as usize);
                     }

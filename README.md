@@ -1,7 +1,5 @@
 ewin
 ====
-[![crates.io][crates-io-badge]][crates-io]
-[![Build Status][build-badge]][ci]
 
 [ewin][] Simple editor for Winodws users.
   There is no need to learn new operation commands.
@@ -11,35 +9,26 @@ It provides basic features as a minimal text editor:
 - Open/Save text files
 - Create new text files and empty text buffer on memory
 - Edit a text (put/delete characters, insert/delete lines, ...)
-- Simple syntax highlighting
-- Simple incremental text search
-
-
 - Support editing UTF-8 characters
 - Resizing terminal window supported. Screen size is responsible
 
 
 ## Installation
 
-Please install [`ewin-editor`][crates-io] package by building from sources using [cargo][].
+Please install Snap Store or Command
 
 ```
-$ cargo install ewin-editor
+$ sudo  snap install --edge ewin
 ```
-
-Note: Please use a Rust stable toolchain as new as possible.
-
-
 
 ## Usage
 
 ### CLI
 
-Installing [`ewin-editor`][crates-io] package introduces `ewin` command in your system.
+Installing package introduces `ewin` command in your system.
 
 ```sh
-$ ewin                 # Start with an empty text buffer
-$ ewin file            # Open files to edit
+$ ewin file         # Open files to edit
 ```
 
 Please see `ewin --help` for command usage.
@@ -47,66 +36,53 @@ Please see `ewin --help` for command usage.
 
 ### Edit Text
 
-ewin is a mode-less text editor. Like other famous mode-less text editors such as Nano, Emacs,
-Gedit or NotePad.exe, you can edit text in terminal window using a keyboard.
-
-And several keys with Ctrl or Alt modifiers are mapped to various features. You don't need to
-remember all mappings. Please type `Ctrl-?` to know all mappings in editor.
+ewin is a mode-less text editor. Like other famous mode-less text editors such as Nano, Emacs, you can edit text in terminal window using a keyboard.
+And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 - **Operations**
 
-| Mapping  | Description                                                                         |
-|----------|-------------------------------------------------------------------------------------|
-| `Ctrl-?` | Show all key mappings in editor screen.                                             |
-| `Ctrl-Q` | Quit ewin. If current text is not saved yet, you need to input `Ctrl-Q` twice.      |
-| `Ctrl-S` | Save current buffer to file. Prompt shows up to enter file name for unnamed buffer. |
-| `Ctrl-G` | Incremental text search.                                                            |
-| `Ctrl-O` | Open file or empty buffer.                                                          |
-| `Ctrl-X` | Switch to next buffer.                                                              |
-| `Alt-X`  | Switch to previous buffer.                                                          |
-| `Ctrl-L` | Refresh screen.                                                                     |
+| Mapping                             | Description                        |
+|-------------------------------------|------------------------------------|
+| `Ctrl` + `w`                        | Quit ewin.                         |
+| `Ctrl` + `S`                        | Save current buffer to file.       |
+
 
 - **Moving cursor**
 
 | Mapping                             | Description                        |
 |-------------------------------------|------------------------------------|
-| `Ctrl-P` or `↑`                    | Move cursor up.                    |
-| `Ctrl-N` or `↓`                    | Move cursor down.                  |
-| `Ctrl-F` or `→`                    | Move cursor right.                 |
-| `Ctrl-B` or `←`                    | Move cursor left.                  |
-| `Ctrl-A` or `Alt-←` or `HOME`      | Move cursor to head of line.       |
-| `Ctrl-E` or `Alt-→` or `END`       | Move cursor to end of line.        |
-| `Ctrl-[` or `Ctrl-V` or `PAGE DOWN` | Next page.                         |
-| `Ctrl-]` or `Alt-V` or `PAGE UP`    | Previous page.                     |
-| `Alt-F` or `Ctrl-→`                | Move cursor to next word.          |
-| `Alt-B` or `Ctrl-←`                | Move cursor to previous word.      |
-| `Alt-N` or `Ctrl-↓`                | Move cursor to next paragraph.     |
-| `Alt-P` or `Ctrl-↑`                | Move cursor to previous paragraph. |
-| `Alt-<`                             | Move cursor to top of file.        |
-| `Alt->`                             | Move cursor to bottom of file.     |
+| `↑` or `Mouse ScrollUp`             | Move cursor up.                    |
+| `↓` or `Mouse ScrollDown`           | Move cursor down.                  |
+| `→`                                 | Move cursor right.                 |
+| `←`                                 | Move cursor left.                  |
+| `HOME`                              | Move cursor to head of line.       |
+| `END`                               | Move cursor to end of line.        |
+| `PAGE DOWN`                         | Next page.                         |
+| `PAGE UP`                           | Previous page.                     |
+| `Ctrl` + `HOME`                     | Move cursor to first of line.      |
+| `Ctrl` + `END`                      | Move cursor to last of line.       |
 
 - **Edit text**
 
 | Mapping                 | Description               |
 |-------------------------|---------------------------|
-| `Ctrl-H` or `BACKSPACE` | Delete character          |
-| `Ctrl-D` or `DELETE`    | Delete next character     |
-| `Ctrl-W`                | Delete a word             |
-| `Ctrl-J`                | Delete until head of line |
-| `Ctrl-K`                | Delete until end of line  |
-| `Ctrl-M`                | Insert new line           |
-| `Ctrl-U`                | Undo last change          |
-| `Ctrl-R`                | Redo last undo change     |
+| `Enter`                 | Insert new line           |
+| `BACKSPACE`             | Delete character          |
+| `DELETE`                | Delete next character     |
+| `Ctrl` + `x`            | Select range cut.         |
+| `Ctrl` + `c`            | Select range cop.         |
+| `Ctrl` + `v`            | Paste the copied characters.|
 
-Here is some screenshots for basic features.
+- **Select text**
 
-- **Create a new file**
-
-<img width=365 height=220 src="https://github.com/rhysd/ss/blob/master/ewin-editor/new_file.gif?raw=true" alt="screenshot for creating a new file" />
-
-- **Incremental text search**
-
-<img width=380 height=220 src="https://github.com/rhysd/ss/blob/master/ewin-editor/search.gif?raw=true" alt="screenshot for incremental text search" />
+| Mapping                 | Description               |
+|-------------------------|---------------------------|
+| `Shift` + `↑`            | Select from the beginning of the current line and the end of the line above           |
+| `Shift` + `↓`            | Select from the end of the current line and the beginning of the line below.
+| `Shift` + `→`            | Select the next character.           |
+| `Shift` + `←`            | Select the previous character.       |
+| `Ctrl` + `a`             | Select all.                          |
+| `Mouse` + `Left.Down, Drag, Up`    | Select a range.|
 
 
 ### Extended Features
