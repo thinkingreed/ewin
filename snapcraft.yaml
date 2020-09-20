@@ -8,11 +8,11 @@ description: |
   There is no need to learn new operation commands.
 
 grade: stable # must be 'stable' to release into candidate/stable channels
-confinement: strict # use 'strict' once you have the right plugs and slots
+confinement: classic # use 'strict' once you have the right plugs and slots
 
 apps:
-  ew:
-    command: ew
+  ewin:
+    command: export PATH=$PATH:/snap/ewin/current/bin/ew
 architectures:
   - build-on: amd64
   #- build-on: arm64
