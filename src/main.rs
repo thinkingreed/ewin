@@ -1,6 +1,6 @@
 use clap::{App, Arg};
 use crossterm::event::{read, KeyCode::*, KeyModifiers};
-use crossterm::event::{Event::*, KeyEvent, MouseEvent};
+use crossterm::event::{Event::*, KeyEvent, MouseButton, MouseEvent};
 use ewin::_cfg::lang::cfg::LangCfg;
 use ewin::model::{Editor, StatusBar, Terminal};
 use ewin::terminal::Log;
@@ -154,9 +154,10 @@ fn main() {
                     Mouse(MouseEvent::ScrollDown(_, _, _)) => {
                         editor.move_cursor(Down);
                     }
-                    Mouse(MouseEvent::Down(_, x, y, _)) => {
+                    Mouse(MouseEvent::Down(MouseButton::Left, x, y, _)) => {
                         editor.mouse_left_press((x + 1) as usize, y as usize);
                     }
+                    Mouse(MouseEvent::Down(_, x, y, _)) => {}
                     Mouse(MouseEvent::Up(_, x, y, _)) => {
                         editor.mouse_release((x + 1) as usize, y as usize);
                     }

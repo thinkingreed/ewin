@@ -1,4 +1,3 @@
-// 描画処理
 use crate::model::{CopyRange, Editor};
 use crate::terminal::*;
 use clipboard::{ClipboardContext, ClipboardProvider};

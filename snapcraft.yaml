@@ -12,8 +12,7 @@ confinement: strict # use 'strict' once you have the right plugs and slots
 
 apps:
   ewin:
-    command: /snap/ewin/current/bin/ew
-
+    command: bin/ew
 architectures:
   - build-on: amd64
   #- build-on: arm64
@@ -29,3 +28,5 @@ parts:
       - libxcb-render0-dev
       - libxcb-shape0-dev
       - libxcb-xfixes0-dev
+    organize:
+      ew: bin/
