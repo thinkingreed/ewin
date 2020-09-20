@@ -8,7 +8,7 @@ description: |
   There is no need to learn new operation commands.
 
 grade: stable # must be 'stable' to release into candidate/stable channels
-confinement: classic # use 'strict' once you have the right plugs and slots
+confinement: strict # use 'strict' once you have the right plugs and slots
 
 apps:
   ewin:
