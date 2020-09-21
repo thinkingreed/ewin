@@ -20,7 +20,8 @@ impl Editor {
                     buffer
                 }
             })
-            .unwrap_or_else(|| vec![Vec::new()]);
+            .expect("Error");
+        // .unwrap_or_else(|| vec![Vec::new()]);
 
         self.path = Some(path.into());
         self.lnw = self.buf.len().to_string().len();
