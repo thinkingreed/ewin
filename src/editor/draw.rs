@@ -11,21 +11,21 @@ impl Editor {
     // ファイルを読み込む
     pub fn open(&mut self, path: &path::Path) {
         match fs::read_to_string(path) {
-            Ok(s) => println!("{}", s),
-            Err(why) => println!("{}", why.to_string()),
-        };
-
-        self.buf = fs::read_to_string(path)
-            .ok()
-            .map(|s| {
+            Ok(s) => {
                 let buffer: Vec<Vec<char>> = s.lines().map(|line| line.trim_end().chars().collect()).collect();
                 if buffer.is_empty() {
-                    vec![Vec::new()]
+                    self.buf = vec![Vec::new()]
                 } else {
-                    buffer
+                    self.buf = buffer
                 }
-            })
-            .unwrap();
+            }
+            Err(err) => {
+                println!("{}", err.to_string());
+                std::process::exit(1);
+            }
+        };
+
+        // self.buf = fs::read_to_string(path).ok().unwrap();
         // .unwrap_or_else(|| vec![Vec::new()]);
 
         self.path = Some(path.into());
