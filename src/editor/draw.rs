@@ -10,6 +10,11 @@ use unicode_width::UnicodeWidthChar;
 impl Editor {
     // ファイルを読み込む
     pub fn open(&mut self, path: &path::Path) {
+        match fs::read_to_string(path) {
+            Ok(s) => println!("{}", s),
+            Err(why) => println!("{}", why.to_string()),
+        };
+
         self.buf = fs::read_to_string(path)
             .ok()
             .map(|s| {
@@ -20,7 +25,7 @@ impl Editor {
                     buffer
                 }
             })
-            .expect("Error");
+            .unwrap();
         // .unwrap_or_else(|| vec![Vec::new()]);
 
         self.path = Some(path.into());
