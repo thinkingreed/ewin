@@ -16,7 +16,7 @@ impl Editor {
                 if buffer.is_empty() {
                     self.buf = vec![Vec::new()]
                 } else {
-                    self.buf = buffer
+                    self.buf = buffer;
                 }
             }
             Err(err) => {
