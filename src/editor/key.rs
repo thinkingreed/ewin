@@ -130,6 +130,7 @@ impl Editor {
                 let row_len_curt = self.buf.len().to_string().len();
                 // 行番号の桁数が減った場合
                 if row_len_org != row_len_curt {
+                    self.lnw -= 1;
                     self.cur.x -= 1;
                     self.cur.disp_x -= 1;
                 }
@@ -197,7 +198,7 @@ impl Editor {
         Log::ep_s("★★  copy");
         let copy_ranges: Vec<CopyRange> = self.get_copy_range();
 
-        eprintln!("copy_ranges{:?}", copy_ranges);
+        // eprintln!("copy_ranges{:?}", copy_ranges);
 
         let mut vec: Vec<char> = vec![];
         for (_, copy_range) in copy_ranges.iter().enumerate() {
@@ -263,9 +264,6 @@ impl Editor {
         let mut last_line_str = copy_strings.get(copy_strings.len() - 1).unwrap().to_string();
         let last_line_str_org = last_line_str.clone();
 
-        eprintln!("copy_strings{:?}", copy_strings);
-        Log::ep_s("22222222222222222");
-
         // 複数行のペーストでカーソル以降の行末までの残りの文字
         let line_rest: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.lnw..).collect();
 
@@ -293,7 +291,6 @@ impl Editor {
             if copy_str.len() == 0 {
                 continue;
             }
-            Log::ep("copy_str 222", copy_str);
 
             let chars: Vec<char> = copy_str.chars().collect();
             for (j, c) in chars.iter().enumerate() {
@@ -303,19 +300,17 @@ impl Editor {
                 if self.cur.y == self.buf.len() {
                     self.buf.push(vec![]);
                 }
-                if (i != 0 && j == 0) || (i == 0 && line_rest_string.len() == 0) {
+                if (i != 0 && j == 0) || (self.cur.x == self.lnw && line_rest_string.len() == 0) {
                     self.buf.insert(self.cur.y, vec![]);
                 }
+                Log::ep("cur.y", self.cur.y);
+                Log::ep("cur.x", self.cur.x);
+                Log::ep("self.lnw", self.lnw);
                 self.buf[self.cur.y].insert(self.cur.x - self.lnw, c.clone());
                 // 元々のコピペ文字分は移動
                 self.cursor_right();
             }
         }
-
-        Log::ep("copy_strings.len", copy_strings.len());
-
-        // 複数行とAll　pasteの試験必要
-
         // 複数行の場合はカーソル位置調整
         if copy_strings.len() > 1 {
             Log::ep("last_line_str_org.chars().count()", last_line_str_org.chars().count());
@@ -480,6 +475,31 @@ impl Editor {
         if !is_unselected_org && self.sel.s_disp_x == self.sel.e_disp_x && self.sel.sy == self.sel.ey {
             self.sel.clear();
         }
+    }
+    pub fn shift_home(&mut self) {
+        Log::ep_s("★　shift_home");
+        self.sel.sy = self.cur.y;
+        self.sel.sx = self.cur.x - self.lnw;
+        self.sel.s_disp_x = self.cur.disp_x;
+        self.sel.ey = self.cur.y;
+        self.sel.ex = self.lnw;
+        self.sel.e_disp_x = self.lnw;
+        self.cur.x = self.lnw;
+        self.cur.disp_x = self.lnw + 1;
+    }
+    pub fn shift_end(&mut self) {
+        Log::ep_s("★  shift_end");
+
+        self.sel.sy = self.cur.y;
+        self.sel.sx = self.cur.x - self.lnw;
+        self.sel.s_disp_x = self.cur.disp_x;
+        self.sel.ey = self.cur.y;
+        self.sel.ex = self.buf[self.cur.y].len();
+        let (_, width) = self.get_row_width(self.cur.y, self.cur.x - self.lnw, self.buf[self.cur.y].len());
+        self.sel.e_disp_x = self.cur.disp_x + width;
+
+        self.cur.disp_x = self.sel.e_disp_x;
+        self.cur.x = self.buf[self.cur.y].len() + self.lnw;
     }
 
     pub fn ctl_home(&mut self) {

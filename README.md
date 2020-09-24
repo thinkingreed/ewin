@@ -81,6 +81,8 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `Shift` + `↓`            | Select from the end of the current line and the beginning of the line below.
 | `Shift` + `→`            | Select the next character.           |
 | `Shift` + `←`            | Select the previous character.       |
+| `Shift` + `HOME`         | Select the head of line.            |
+| `Shift` + `END`          | Select the end of line.            |
 | `Ctrl` + `a`             | Select all.                          |
 | `Mouse` + `Left.Down, Drag, Up`    | Select a range.|
 

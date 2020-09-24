@@ -100,6 +100,12 @@ fn main() {
                         Up => {
                             editor.shift_up();
                         }
+                        Home => {
+                            editor.shift_home();
+                        }
+                        End => {
+                            editor.shift_end();
+                        }
                         Char(c) => {
                             editor.insert_char(c.to_ascii_uppercase());
                         }
