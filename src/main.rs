@@ -100,6 +100,9 @@ fn main() {
                         Up => {
                             editor.shift_up();
                         }
+                        Char(c) => {
+                            editor.insert_char(c.to_ascii_uppercase());
+                        }
                         _ => {}
                     },
                     Key(KeyEvent { code: Char(c), .. }) => {

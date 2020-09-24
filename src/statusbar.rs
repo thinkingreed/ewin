@@ -99,7 +99,7 @@ impl StatusBar {
         Log::ep("editor.cur.x", editor.cur.x);
         Log::ep("editor.lnw", editor.lnw);
 
-        let (cols, col) = (editor.buf[editor.cur.y].len().to_string(), (editor.cur.x - editor.lnw + 1).to_string());
+        let (cols, col) = (editor.buf[editor.cur.y].len().to_string(), (editor.cur.x + 1 - editor.lnw).to_string());
         col_vec.push(&col);
         col_vec.push("/");
         col_vec.push(&cols);

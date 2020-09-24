@@ -1,13 +1,12 @@
 use crate::model::Editor;
 use anyhow::Context;
-use std::env;
 use std::io::Read;
 use std::process;
 use std::process::Command;
 
 impl Editor {
     pub fn clipboard_copy(&mut self, s: &str) -> anyhow::Result<()> {
-        let PATH = env::var("PATH").unwrap();
+        // let PATH = env::var("PATH").unwrap();
 
         // Log::ep("PATH", PATH.clone());
 
