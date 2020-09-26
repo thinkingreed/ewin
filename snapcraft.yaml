@@ -6,7 +6,7 @@ summary: Simple editor for Windows user # 79 char long summary
 description: |
   Simple editor for Winodws users.
   There is no need to learn new operation commands.
-  Editor for those who will use the Linux terminal environment from now on.
+  Editor for those who will use the Linux terminal environment from now on
 
 
 grade: stable # must be 'stable' to release into candidate/stable channels
