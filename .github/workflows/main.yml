@@ -1,0 +1,34 @@
+name: Main workflow
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+      - name: Run the packaging script
+        run: sudo bash build.sh
+      - name: Create a release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: This release is created by GitHub Actions.
+          draft: false
+          prerelease: false
+      - name: Upload the package
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_name: ewin_amd64.deb
+          asset_path: ./ewin_amd64.deb
+          asset_content_type: application/vnd.debian.binary-package

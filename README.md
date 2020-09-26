@@ -89,7 +89,9 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 ### Future Works
 
 - WASI support
-
+- Search function
+- Redo/Undo function
+- Character replacement function
 
 ## License
 
