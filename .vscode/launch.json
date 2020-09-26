@@ -9,7 +9,7 @@
             "type": "lldb",
             "request": "launch",
             //           "program": "${workspaceFolder/todo.exe)",
-            "program": "${workspaceFolder}/target/debug/ew",
+            "program": "${workspaceFolder}/target/debug/ewin",
             //    "cwd": "${workspaceFolder}",
             "args": [
                 "test.txt",

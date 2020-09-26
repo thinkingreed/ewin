@@ -10,7 +10,7 @@
 				"kind": "build",
 				"isDefault": true
 			},
-			"label": "Rust: cargo run - ew"
+			"label": "Rust: cargo run - ewin"
 		}
 	]
 }
