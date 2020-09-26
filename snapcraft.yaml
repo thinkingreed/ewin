@@ -8,6 +8,7 @@ description: |
   There is no need to learn new operation commands.
   Editor for those who will use the Linux terminal environment from now on.
 
+
 grade: stable # must be 'stable' to release into candidate/stable channels
 confinement: strict # use 'strict' once you have the right plugs and slots
 
