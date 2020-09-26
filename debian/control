@@ -1,0 +1,8 @@
+Source: ewin
+Maintainer: thinkingreed <thinkingreed.work@gmail.com>
+Build-Depends: cdbs, debhelper
+Standards-Version: 0.1
+ 
+Package: ewin
+Architecture: all
+Description: sample
