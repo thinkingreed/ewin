@@ -1,4 +1,3 @@
-// 描画処理
 use crate::model::{CopyRange, Editor, StatusBar};
 use crate::terminal::{get_term_disp_size, Log, TermDispType};
 use crate::util::*;
