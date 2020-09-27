@@ -230,6 +230,9 @@ impl Editor {
         */
 
         let contexts = self.get_clipboard();
+
+        Log::ep("clipboard", &contexts);
+
         if contexts.len() == 0 {
             return;
         }

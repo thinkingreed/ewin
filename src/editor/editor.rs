@@ -202,6 +202,13 @@ impl Editor {
         return copy_ranges;
     }
     pub fn get_clipboard(&mut self) -> String {
+        let result_1 = self.get_clipboard_paste();
+
+        match result_1 {
+            Ok(str) => Log::ep("result_1", &str),
+            Err(_) => return self.clipboard.clone(),
+        }
+
         let result: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
         match result {
             Ok(mut ctx) => return ctx.get_contents().unwrap_or("".to_string()),

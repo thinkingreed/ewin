@@ -1,60 +1,25 @@
 use crate::model::Editor;
 use anyhow::Context;
 use std::io::Read;
+use std::io::Write;
 use std::process;
 use std::process::Command;
 
 impl Editor {
-    pub fn clipboard_copy(&mut self, s: &str) -> anyhow::Result<()> {
-        // let PATH = env::var("PATH").unwrap();
-
-        // Log::ep("PATH", PATH.clone());
-
-        let mut p = Command::new("/usr/bin/echo")
-            .arg(s)
-            .arg("|")
-            .arg("clip.exe")
-            //       .env("PATH", PATH)
-            // 環境変数を設定する
-            .spawn()?;
-
-        /*
+    pub fn clipboard_copy(s: &str) -> anyhow::Result<()> {
         let mut p = Command::new("pbcopy")
             .stdin(process::Stdio::piped())
             .spawn()
-            /*    .or_else(|_| {
-                   Command::new(format!("{} {} {}", "echo", s, "| clip.exe"))
-                       .stdin(process::Stdio::piped())
-                       .spawn()
-               })
-            */
-            .or_else(|_| {
-                Command::new("win32yank")
-                    .arg("-i")
-                    .stdin(process::Stdio::piped())
-                    .spawn()
-            })
-            .or_else(|_| {
-                Command::new("win32yank.exe")
-                    .arg("-i")
-                    .stdin(process::Stdio::piped())
-                    .spawn()
-            })
-            .or_else(|_| {
-                Command::new("xsel")
-                    .arg("-bi")
-                    .stdin(process::Stdio::piped())
-                    .spawn()
-            })
-            .or_else(|_| {
-                Command::new("xclip")
-                    .arg("-i")
-                    .stdin(process::Stdio::piped())
-                    .spawn()
-            })?;*/
+            .or_else(|_| Command::new("win32yank").arg("-i").stdin(process::Stdio::piped()).spawn())
+            .or_else(|_| Command::new("win32yank.exe").arg("-i").stdin(process::Stdio::piped()).spawn())
+            .or_else(|_| Command::new("xsel").arg("-bi").stdin(process::Stdio::piped()).spawn())
+            .or_else(|_| Command::new("xclip").arg("-i").stdin(process::Stdio::piped()).spawn())?;
+        {
+            let mut stdin = p.stdin.take().context("take stdin")?;
 
+            write!(stdin, "{}", s)?;
+        }
         p.wait()?;
-
         Ok(())
     }
 
@@ -62,6 +27,7 @@ impl Editor {
         let p = Command::new("pbpaste")
             .stdout(process::Stdio::piped())
             .spawn()
+            .or_else(|_| Command::new("powershell get-clipboard").stdout(process::Stdio::piped()).spawn())
             .or_else(|_| Command::new("win32yank").arg("-o").stdout(process::Stdio::piped()).spawn())
             .or_else(|_| Command::new("win32yank.exe").arg("-o").stdout(process::Stdio::piped()).spawn())
             .or_else(|_| Command::new("xsel").arg("-bo").stdout(process::Stdio::piped()).spawn())
