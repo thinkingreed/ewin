@@ -9,10 +9,13 @@ use std::process::Command;
 
 impl Editor {
     pub fn set_clipboard(&mut self, copy_string: &str) -> anyhow::Result<()> {
-        let mut p = Command::new("pbcopy")
+        let mut p = Command::new("powershell.exe")
+            .arg("set-clipboard")
+            .arg("-Value")
+            .arg(copy_string)
             .stdin(process::Stdio::piped())
             .spawn()
-            .or_else(|_| Command::new("powershell.exe").arg("set-clipboard").arg("-Value").arg(copy_string).stdin(process::Stdio::piped()).spawn())
+            .or_else(|_| Command::new("pbcopy").stdin(process::Stdio::piped()).spawn())
             .or_else(|_| Command::new("win32yank").arg("-i").stdin(process::Stdio::piped()).spawn())
             .or_else(|_| Command::new("win32yank.exe").arg("-i").stdin(process::Stdio::piped()).spawn())
             .or_else(|_| Command::new("xsel").arg("-bi").stdin(process::Stdio::piped()).spawn())
@@ -35,10 +38,11 @@ impl Editor {
     }*/
 
     pub fn get_clipboard(&mut self) -> anyhow::Result<String> {
-        let p = Command::new("pbpaste")
+        let p = Command::new("powershell.exe")
+            .arg("get-clipboard")
             .stdout(process::Stdio::piped())
             .spawn()
-            .or_else(|_| Command::new("powershell.exe").arg("get-clipboard").stdout(process::Stdio::piped()).spawn())
+            .or_else(|_| Command::new("pbpaste").stdout(process::Stdio::piped()).spawn())
             .or_else(|_| Command::new("win32yank").arg("-o").stdout(process::Stdio::piped()).spawn())
             .or_else(|_| Command::new("win32yank.exe").arg("-o").stdout(process::Stdio::piped()).spawn())
             .or_else(|_| Command::new("xsel").arg("-bo").stdout(process::Stdio::piped()).spawn())
