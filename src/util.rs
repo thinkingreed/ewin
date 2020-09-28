@@ -1,3 +1,5 @@
+use crate::model::Log;
+use std::fmt::Display;
 use unicode_width::UnicodeWidthChar;
 
 pub fn get_str_width(msg: &str) -> usize {
@@ -7,4 +9,17 @@ pub fn get_str_width(msg: &str) -> usize {
         width += &msg_chars[i].width().unwrap_or(0);
     }
     return width;
+}
+
+impl Log {
+    pub fn ep<T: Display>(m: &str, v: T) {
+        if cfg!(debug_assertions) {
+            eprintln!("{} {}", format!("{m:?}", m = m), v);
+        }
+    }
+    pub fn ep_s(m: &str) {
+        if cfg!(debug_assertions) {
+            eprintln!("{}", m);
+        }
+    }
 }

@@ -1,6 +1,6 @@
-use crate::model::{CopyRange, Editor};
+use crate::model::{CopyRange, Editor, Log};
 use crate::terminal::*;
-use clipboard::{ClipboardContext, ClipboardProvider};
+
 use crossterm::event::{Event::Key, Event::Mouse, KeyCode, KeyCode::*, KeyEvent, MouseEvent};
 use std::cmp::{max, min};
 use unicode_width::UnicodeWidthChar;
@@ -201,28 +201,7 @@ impl Editor {
 
         return copy_ranges;
     }
-    pub fn get_clipboard(&mut self) -> String {
-        let result_1 = self.get_clipboard_paste();
 
-        match result_1 {
-            Ok(str) => Log::ep("result_1", &str),
-            Err(_) => return self.clipboard.clone(),
-        }
-
-        let result: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
-        match result {
-            Ok(mut ctx) => return ctx.get_contents().unwrap_or("".to_string()),
-            Err(_) => return self.clipboard.clone(),
-        }
-    }
-
-    pub fn set_clipboard(&mut self, copy_string: String) {
-        let result: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
-        match result {
-            Ok(mut ctx) => return ctx.set_contents(copy_string.clone()).unwrap(),
-            Err(_) => return self.clipboard = copy_string.clone(),
-        }
-    }
     pub fn del_sel_range(&mut self) {
         Log::ep_s("★★★★★  del_sel_range");
         // s < e の状態に変換した値を使用

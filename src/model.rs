@@ -142,6 +142,8 @@ pub struct Editor {
     pub is_all_redraw: bool,
     pub clipboard: String,
 }
+
+impl Editor {}
 impl Default for Editor {
     fn default() -> Self {
         Editor {
@@ -167,3 +169,5 @@ impl Default for Editor {
         }
     }
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Log {}

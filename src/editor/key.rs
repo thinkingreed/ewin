@@ -1,6 +1,7 @@
-use crate::model::{CopyRange, Editor, StatusBar};
-use crate::terminal::{get_term_disp_size, Log, TermDispType};
+use crate::model::{CopyRange, Editor, Log, StatusBar};
 use crate::util::*;
+
+use crate::terminal::{get_term_disp_size, TermDispType};
 use crossterm::event::Event::Key;
 use crossterm::event::KeyCode::{Left, Right};
 use std::cmp::{max, min};
@@ -197,15 +198,18 @@ impl Editor {
         Log::ep_s("★★  copy");
         let copy_ranges: Vec<CopyRange> = self.get_copy_range();
 
-        // eprintln!("copy_ranges{:?}", copy_ranges);
-
         let mut vec: Vec<char> = vec![];
-        for (_, copy_range) in copy_ranges.iter().enumerate() {
-            // コピー2行目以降にpaste時の目印として改行コードを挿入
-            if vec.len() > 0 {
-                vec.push('\n');
-            }
+        for (i, copy_range) in copy_ranges.iter().enumerate() {
+            // 行の終端までコピーの場合の改行対応
 
+            if vec.len() > 0 {
+                // コピー最終行がex == 0以外の場合
+                if i == copy_ranges.len() - 1 && copy_range.ex == 0 {
+                } else {
+                    // WSL PowerShell用の','
+                    vec.push(',');
+                }
+            }
             for j in copy_range.sx..copy_range.ex {
                 if let Some(c) = self.buf[copy_range.y].get(j) {
                     Log::ep("ccc", c);
@@ -215,29 +219,32 @@ impl Editor {
         }
 
         let copy_string = vec.iter().collect::<String>().clone();
+        Log::ep("&copy_string", &copy_string);
 
-        Log::ep_s(&copy_string);
-
-        self.set_clipboard(copy_string);
+        //
+        //
+        // 以下のエラー時の試験から
+        //
+        //
+        match self.set_clipboard(&copy_string) {
+            Ok(_) => {}
+            Err(err) => {
+                Log::ep("set_clipboard err", err.to_string());
+                Log::ep_s("set memory");
+                self.clipboard = copy_string.clone()
+            }
+        }
     }
 
     pub fn paste(&mut self) {
         Log::ep_s("★★  paste");
 
-        /*
-                let cont = self.get_clipboard_paste().unwrap();
-                Log::ep("contcontcontcontcont", cont);
-        */
-
-        let contexts = self.get_clipboard();
-
-        Log::ep("clipboard", &contexts);
+        let contexts = self.get_clipboard().unwrap_or("".to_string());
+        Log::ep("clipboard str", &contexts);
 
         if contexts.len() == 0 {
             return;
         }
-        Log::ep_s("111111111111111111");
-
         let mut copy_strings: Vec<&str> = contexts.split('\n').collect();
 
         let mut add_line_count = 0;
@@ -249,15 +256,7 @@ impl Editor {
 
         // self.lnwの増加対応
         if copy_strings.len() > 1 {
-            // 正しい行増加数の計測から
-            Log::ep("add_line_count", add_line_count);
-            Log::ep("self.lnw", self.lnw);
-            Log::ep(" self.buf.len()", self.buf.len());
-            Log::ep(" copy_strings.len()", copy_strings.len());
-            Log::ep(" (self.buf.len() + copy_strings.len()).to_string().len()", (self.buf.len() + copy_strings.len()).to_string().len());
             let diff = (self.buf.len() + add_line_count).to_string().len() - self.lnw;
-            Log::ep("diffdiffdiffdiffdiff", diff);
-
             self.lnw += diff;
             self.cur.x += diff;
             self.cur.disp_x += diff;
@@ -287,8 +286,8 @@ impl Editor {
                 self.cur.x = self.lnw;
                 self.cur.disp_x = self.lnw;
             }
-            Log::ep("copy_str", copy_str);
-            Log::ep("copy_str.len", copy_str.len());
+            // Log::ep("copy_str", copy_str);
+            // Log::ep("copy_str.len", copy_str.len());
 
             if copy_str.len() == 0 {
                 continue;
@@ -302,12 +301,9 @@ impl Editor {
                 if self.cur.y == self.buf.len() {
                     self.buf.push(vec![]);
                 }
-                if (i != 0 && j == 0) || (self.cur.x == self.lnw && line_rest_string.len() == 0) {
+                if i != 0 && j == 0 {
                     self.buf.insert(self.cur.y, vec![]);
                 }
-                Log::ep("cur.y", self.cur.y);
-                Log::ep("cur.x", self.cur.x);
-                Log::ep("self.lnw", self.lnw);
                 self.buf[self.cur.y].insert(self.cur.x - self.lnw, c.clone());
                 // 元々のコピペ文字分は移動
                 self.cursor_right();
@@ -315,11 +311,6 @@ impl Editor {
         }
         // 複数行の場合はカーソル位置調整
         if copy_strings.len() > 1 {
-            Log::ep("last_line_str_org.chars().count()", last_line_str_org.chars().count());
-            Log::ep(" get_str_width(&last_line_str_org)", get_str_width(&last_line_str_org));
-            Log::ep("last_line_str_org", last_line_str_org.clone());
-            Log::ep("self.lnw", self.lnw);
-
             self.cur.x = last_line_str_org.chars().count() + self.lnw;
             self.cur.disp_x = get_str_width(&last_line_str_org) + 1 + self.lnw;
         } else {

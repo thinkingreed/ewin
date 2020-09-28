@@ -1,6 +1,6 @@
-use crate::model::{Cursor, Editor, SelectRange, StatusBar};
-use crate::terminal::Log;
+use crate::model::{Cursor, Editor, Log, SelectRange, StatusBar};
 use crate::terminal::*;
+
 use std::fs;
 use std::io::{self, Write};
 use std::path;
@@ -30,12 +30,7 @@ impl Editor {
 
         self.path = Some(path.into());
         self.lnw = self.buf.len().to_string().len();
-        self.cur = Cursor {
-            y: 0,
-            x: self.lnw,
-            disp_x: 0,
-            updown_x: 0,
-        };
+        self.cur = Cursor { y: 0, x: self.lnw, disp_x: 0, updown_x: 0 };
         self.cur.disp_x = self.lnw + self.get_cur_x_width(self.cur.y);
     }
     pub fn draw(&mut self, str_vec: &mut Vec<String>) -> Result<(), io::Error> {

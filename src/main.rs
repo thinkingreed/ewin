@@ -2,8 +2,8 @@ use clap::{App, Arg};
 use crossterm::event::{read, KeyCode::*, KeyModifiers};
 use crossterm::event::{Event::*, KeyEvent, MouseButton, MouseEvent};
 use ewin::_cfg::lang::cfg::LangCfg;
-use ewin::model::{Editor, StatusBar, Terminal};
-use ewin::terminal::Log;
+use ewin::model::{Editor, Log, StatusBar, Terminal};
+
 use path::Path;
 use std::io::Write;
 use termion::clear;
@@ -50,10 +50,7 @@ fn main() {
                     Resize(_, _) => {
                         write!(out, "{}", clear::All.to_string()).unwrap();
                     }
-                    Key(KeyEvent {
-                        code,
-                        modifiers: KeyModifiers::CONTROL,
-                    }) => match code {
+                    Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
                         Char('w') => {
                             let is_exit = editor.close(&mut out, &mut sbar);
                             if is_exit == true {
@@ -203,10 +200,7 @@ fn init(editor: &mut Editor, statusbar: &mut StatusBar) {
     // all_redraw判定
     editor.is_all_redraw = false;
     match editor.curt_evt {
-        Key(KeyEvent {
-            code,
-            modifiers: KeyModifiers::CONTROL,
-        }) => match code {
+        Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
             Char('w') | Char('c') => {}
             _ => {
                 editor.is_all_redraw = true;
@@ -243,10 +237,7 @@ fn init(editor: &mut Editor, statusbar: &mut StatusBar) {
                 editor.sel.clear();
             }
         },
-        Key(KeyEvent {
-            code,
-            modifiers: KeyModifiers::CONTROL,
-        }) => match code {
+        Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
             Char('a') | Char('c') | Char('x') => {}
             _ => {
                 editor.sel.clear();
@@ -265,10 +256,7 @@ fn init(editor: &mut Editor, statusbar: &mut StatusBar) {
     }
     // is_change判定
     match editor.curt_evt {
-        Key(KeyEvent {
-            code,
-            modifiers: KeyModifiers::CONTROL,
-        }) => {
+        Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => {
             if code == Char('x') || code == Char('v') {
                 statusbar.is_change = true;
             }
@@ -284,10 +272,7 @@ fn init(editor: &mut Editor, statusbar: &mut StatusBar) {
 
 fn finalize(editor: &mut Editor) {
     match editor.curt_evt {
-        Key(KeyEvent {
-            code,
-            modifiers: KeyModifiers::CONTROL,
-        }) => match code {
+        Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
             Char('x') => {
                 editor.sel.clear();
             }

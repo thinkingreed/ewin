@@ -1,5 +1,4 @@
-use crate::model::Editor;
-use crate::terminal::Log;
+use crate::model::{Editor, Log};
 
 impl Editor {
     pub fn wheel_down(&mut self) {

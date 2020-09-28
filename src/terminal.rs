@@ -1,5 +1,4 @@
 use crate::model::{Editor, StatusBar, Terminal};
-use std::fmt::Display;
 use std::io::{self, Write};
 
 impl Terminal {
@@ -46,18 +45,4 @@ pub fn get_term_disp_size(disp_type: TermDispType) -> (usize, usize) {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Log {}
 
-impl Log {
-    pub fn ep<T: Display>(m: &str, v: T) {
-        if cfg!(debug_assertions) {
-            eprintln!("{} {}", format!("{m:?}", m = m), v);
-        }
-    }
-    pub fn ep_s(m: &str) {
-        if cfg!(debug_assertions) {
-            eprintln!("{}", m);
-        }
-    }
-}

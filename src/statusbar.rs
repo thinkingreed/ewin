@@ -1,5 +1,5 @@
 use crate::_cfg::lang::cfg::LangCfg;
-use crate::model::{Editor, StatusBar};
+use crate::model::{Editor, Log, StatusBar};
 use crate::terminal::*;
 use crate::util::*;
 use std::io::{self};
@@ -36,13 +36,7 @@ impl StatusBar {
             all_str = format!("{}", self.get_msg_str());
         }
 
-        let sber_str = format!(
-            "{}{}{}{}",
-            termion::cursor::Goto(1, rows as u16),
-            termion::clear::CurrentLine,
-            all_str,
-            color::Fg(color::White).to_string()
-        );
+        let sber_str = format!("{}{}{}{}", termion::cursor::Goto(1, rows as u16), termion::clear::CurrentLine, all_str, color::Fg(color::White).to_string());
 
         str_vec.push(sber_str);
     }
