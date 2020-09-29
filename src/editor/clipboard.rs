@@ -55,9 +55,8 @@ impl Editor {
 
         if buf.len() == 0 {
             let result: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
-            match result {
-                Ok(mut ctx) => buf = ctx.get_contents().unwrap_or("".to_string()),
-                Err(_) => buf = self.clipboard.clone(),
+            if let Ok(mut ctx) = result {
+                buf = ctx.get_contents().unwrap_or("".to_string())
             }
             Log::ep("ClipboardContext", buf.clone());
         }

@@ -231,7 +231,7 @@ impl Editor {
             Err(err) => {
                 Log::ep("set_clipboard err", err.to_string());
                 Log::ep_s("set memory");
-                self.clipboard = copy_string.clone()
+                self.clipboard = copy_string;
             }
         }
     }
