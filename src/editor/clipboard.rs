@@ -8,18 +8,37 @@ use std::process;
 use std::process::Command;
 
 impl Editor {
-    pub fn set_clipboard(&mut self, copy_string: &str) -> anyhow::Result<()> {
-        let mut p = Command::new("powershell.exe")
-            .arg("set-clipboard")
-            .arg("-Value")
-            .arg(copy_string)
-            .stdin(process::Stdio::piped())
-            .spawn()
-            .or_else(|_| Command::new("pbcopy").stdin(process::Stdio::piped()).spawn())
-            .or_else(|_| Command::new("win32yank").arg("-i").stdin(process::Stdio::piped()).spawn())
-            .or_else(|_| Command::new("win32yank.exe").arg("-i").stdin(process::Stdio::piped()).spawn())
-            .or_else(|_| Command::new("xsel").arg("-bi").stdin(process::Stdio::piped()).spawn())
-            .or_else(|_| Command::new("xclip").arg("-i").stdin(process::Stdio::piped()).spawn())?;
+    pub fn set_clipboard(&mut self, copy_string: &str) {
+        if let Err(err) = self.try_clipboard(&copy_string) {
+            Log::ep("try_clipboard err", err.to_string());
+            let result: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
+            match result {
+                Ok(mut ctx) => ctx.set_contents(copy_string.to_string()).unwrap(),
+                Err(_) => {
+                    Log::ep_s("set memory");
+                    self.clipboard = copy_string.to_string();
+                }
+            }
+        }
+
+        /*
+        match self.try_clipboard(&copy_string) {
+            Ok(_) => {}
+            Err(err) => {
+                Log::ep("try_clipboard err", err.to_string());
+                let result: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
+                match result {
+                    Ok(mut ctx) => ctx.set_contents(copy_string.to_string()).unwrap(),
+                    Err(_) => {
+                        Log::ep_s("set memory");
+                        self.clipboard = copy_string.to_string();
+                    }
+                }
+            }
+        }*/
+    }
+    pub fn try_clipboard(&mut self, copy_string: &str) -> anyhow::Result<()> {
+        let mut p = Command::new("powershell.exe").arg("set-clipboard").arg("-Value").arg(copy_string).stdin(process::Stdio::piped()).spawn()?;
         {
             let mut stdin = p.stdin.take().context("take stdin")?;
             write!(stdin, "{}", copy_string)?;
@@ -27,15 +46,6 @@ impl Editor {
         p.wait()?;
         Ok(())
     }
-
-    /*
-    pub fn set_clipboard(&mut self, copy_string: String) {
-        let result: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
-        match result {
-            Ok(mut ctx) => return ctx.set_contents(copy_string.clone()).unwrap(),
-            Err(_) => return self.clipboard = copy_string.clone(),
-        }
-    }*/
 
     pub fn get_clipboard(&mut self) -> anyhow::Result<String> {
         let p = Command::new("powershell.exe")

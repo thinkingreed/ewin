@@ -221,19 +221,7 @@ impl Editor {
         let copy_string = vec.iter().collect::<String>().clone();
         Log::ep("&copy_string", &copy_string);
 
-        //
-        //
-        // 以下のエラー時の試験から
-        //
-        //
-        match self.set_clipboard(&copy_string) {
-            Ok(_) => {}
-            Err(err) => {
-                Log::ep("set_clipboard err", err.to_string());
-                Log::ep_s("set memory");
-                self.clipboard = copy_string;
-            }
-        }
+        self.set_clipboard(&copy_string);
     }
 
     pub fn paste(&mut self) {
