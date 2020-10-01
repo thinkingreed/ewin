@@ -11,10 +11,14 @@ impl Editor {
     pub fn set_clipboard(&mut self, copy_string: &str) {
         if let Err(err) = self.try_set_clipboard(&copy_string) {
             Log::ep("try_set_clipboard err", err.to_string());
+            Log::ep_s("111111111111");
+
             let result: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
+            Log::ep_s("222222222222");
             match result {
                 Ok(mut ctx) => ctx.set_contents(copy_string.to_string()).unwrap(),
-                Err(_) => {
+                Err(err) => {
+                    Log::ep("ClipboardProvider err", err.to_string());
                     Log::ep_s("set memory");
                     self.clipboard = copy_string.to_string();
                 }
