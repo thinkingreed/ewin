@@ -1,3 +1,4 @@
+use crate::_cfg::args::ARGS;
 use crate::model::Log;
 use std::fmt::Display;
 use unicode_width::UnicodeWidthChar;
@@ -15,6 +16,11 @@ impl Log {
     pub fn ep<T: Display>(m: &str, v: T) {
         if cfg!(debug_assertions) {
             eprintln!("{} {}", format!("{m:?}", m = m), v);
+        } else {
+            let debug_mode: &str = ARGS.get("debug_mode").unwrap();
+            if debug_mode == "true" {
+                eprintln!("{} {}", format!("{m:?}", m = m), v);
+            }
         }
     }
     pub fn ep_s(m: &str) {

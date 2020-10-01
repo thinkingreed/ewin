@@ -70,8 +70,6 @@ impl StatusBar {
         editor.set_textarea_color(&mut str_vec);
         self.filenm_str = filenm_str;
         self.cur_str = cur_str;
-        self.filenm_str_base_w = filenm_w;
-        self.cur_str_base_w = cur_w;
 
         return str_vec.concat();
     }
@@ -104,6 +102,11 @@ impl StatusBar {
     }
 
     pub fn get_save_confirm_str(&mut self) -> String {
+        //
+        //
+        // Msg領域への作成
+        //
+        //
         let msg = format!(
             "{}{} {}{}:{}Y{} {}:{}N",
             &color::Fg(color::LightGreen).to_string(),

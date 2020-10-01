@@ -1,59 +1,50 @@
-use clap::{App, Arg};
 use crossterm::event::{read, KeyCode::*, KeyModifiers};
 use crossterm::event::{Event::*, KeyEvent, MouseButton, MouseEvent};
+
+use ewin::_cfg::args::ARGS;
 use ewin::_cfg::lang::cfg::LangCfg;
 use ewin::model::{Editor, Log, StatusBar, Terminal};
-
 use path::Path;
 use std::io::Write;
-use termion::clear;
-
-use std::ffi::OsStr;
 use std::io::{stdout, BufWriter};
 use std::path;
+use termion::clear;
 use termion::input::MouseTerminal;
 use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
 
 fn main() {
-    let matches = App::new("ew")
-        .about("A text editor")
-        .bin_name("ew")
-        .arg(Arg::with_name("file").required(true))
-        .arg(Arg::with_name("log").required(false))
-        .get_matches();
-
-    let file_path: &OsStr = matches.value_of_os("file").unwrap();
-    let term = Terminal::default();
+    let file_path: &str = ARGS.get("file_path").unwrap();
+    let terminal = Terminal::default();
     let mut editor = Editor::default();
 
     let lang_cfg = LangCfg::read_lang_cfg();
     editor.open(Path::new(file_path));
-    let mut sbar = StatusBar::new(file_path.to_str().unwrap(), lang_cfg);
+    let mut sbar = StatusBar::new(file_path, lang_cfg);
 
     let stdout = MouseTerminal::from(AlternateScreen::from(stdout()).into_raw_mode().unwrap());
     let mut out = BufWriter::new(stdout.lock());
-    term.draw(&mut out, &mut editor, &mut sbar).unwrap();
+    terminal.draw(&mut out, &mut editor, &mut sbar).unwrap();
 
     loop {
         let event = read();
 
         editor.curt_evt = event.unwrap().clone();
-        init(&mut editor, &mut sbar);
         let evt_next_process = check_next_process(&mut editor, &mut sbar);
 
         match evt_next_process {
             EvtProcess::Exit => return,
             EvtProcess::Hold => {}
             EvtProcess::Next => {
+                init(&mut editor, &mut sbar);
+
                 match editor.curt_evt {
                     Resize(_, _) => {
                         write!(out, "{}", clear::All.to_string()).unwrap();
                     }
                     Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
                         Char('w') => {
-                            let is_exit = editor.close(&mut out, &mut sbar);
-                            if is_exit == true {
+                            if editor.close(&mut out, &mut sbar) == true {
                                 return;
                             }
                         }
@@ -175,7 +166,7 @@ fn main() {
                 }
                 finalize(&mut editor);
                 if editor.is_all_redraw == true {
-                    term.draw(&mut out, &mut editor, &mut sbar).unwrap();
+                    terminal.draw(&mut out, &mut editor, &mut sbar).unwrap();
                 }
             }
         }
@@ -261,11 +252,15 @@ fn init(editor: &mut Editor, statusbar: &mut StatusBar) {
                 statusbar.is_change = true;
             }
         }
+        Key(KeyEvent { code: Char(_), .. }) => {
+            statusbar.is_change = true;
+        }
         Key(KeyEvent { code, .. }) => {
             if code == Enter || code == Backspace || code == Delete {
                 statusbar.is_change = true;
             }
         }
+
         _ => {}
     }
 }

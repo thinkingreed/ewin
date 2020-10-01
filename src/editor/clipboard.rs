@@ -20,24 +20,9 @@ impl Editor {
                 }
             }
         }
-
-        /*
-        match self.try_clipboard(&copy_string) {
-            Ok(_) => {}
-            Err(err) => {
-                Log::ep("try_clipboard err", err.to_string());
-                let result: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
-                match result {
-                    Ok(mut ctx) => ctx.set_contents(copy_string.to_string()).unwrap(),
-                    Err(_) => {
-                        Log::ep_s("set memory");
-                        self.clipboard = copy_string.to_string();
-                    }
-                }
-            }
-        }*/
     }
     fn try_set_clipboard(&mut self, copy_string: &str) -> anyhow::Result<()> {
+        // WSL環境を判定出来ない為にpowershell試行
         let mut p = Command::new("powershell.exe").arg("set-clipboard").arg("-Value").arg(copy_string).stdin(process::Stdio::piped()).spawn()?;
         {
             let mut stdin = p.stdin.take().context("take stdin")?;
@@ -67,11 +52,11 @@ impl Editor {
     }
 
     fn try_get_clipboard(&mut self) -> anyhow::Result<String> {
+        // WSL環境を判定出来ない為にpowershell試行
         let p = Command::new("powershell.exe").arg("get-clipboard").stdout(process::Stdio::piped()).spawn()?;
         let mut stdout = p.stdout.context("take stdout")?;
         let mut buf = String::new();
         stdout.read_to_string(&mut buf)?;
-
         buf = buf.clone().trim().to_string();
 
         Ok(buf)

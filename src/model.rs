@@ -13,11 +13,8 @@ pub struct StatusBar {
     pub lang: LangCfg,
     pub filenm: String,
     pub filenm_str: String,
-    pub filenm_str_base_w: usize,
     pub msg_str: String,
-    pub msg_str_base_w: usize,
     pub cur_str: String,
-    pub cur_str_base_w: usize,
     pub is_change: bool,
     pub is_save_confirm: bool,
 }
@@ -30,14 +27,13 @@ impl Default for StatusBar {
             msg_str: String::new(),
             filenm_str: String::new(),
             cur_str: String::new(),
-            msg_str_base_w: 0,
-            filenm_str_base_w: 0,
-            cur_str_base_w: 0,
             is_change: false,
             is_save_confirm: false,
         }
     }
 }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MsgBar {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// マウスの選択のコピー範囲
@@ -169,5 +165,9 @@ impl Default for Editor {
         }
     }
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Log {}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Log {
+    pub log_path: String,
+}
+
+impl Log {}

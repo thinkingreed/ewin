@@ -164,15 +164,7 @@ impl Editor {
 
         let mut copy_ranges: Vec<CopyRange> = vec![];
 
-        Log::ep("copy_posi.sy", copy_posi.sy);
-        Log::ep("copy_posi.ey", copy_posi.ey);
-        Log::ep("copy_posi.sx", copy_posi.sx);
-        Log::ep("copy_posi.ex", copy_posi.ex);
-        Log::ep("copy_posi.s_disp_x", copy_posi.s_disp_x);
-        Log::ep("copy_posi.e_disp_x", copy_posi.e_disp_x);
-
         if copy_posi.sy != copy_posi.ey && copy_posi.ex == 0 {}
-
         for ii in copy_posi.sy..=copy_posi.ey {
             let i = ii as usize;
             // 開始行==終了行
@@ -207,11 +199,6 @@ impl Editor {
         // s < e の状態に変換した値を使用
         let sel = self.sel.get_range();
         let (sy, ey, sx, ex, s_disp_x, e_disp_x) = (sel.sy, sel.ey, sel.sx, sel.ex, sel.s_disp_x, sel.e_disp_x);
-
-        Log::ep("sel.sy", sy);
-        Log::ep("sel.ey", ey);
-        Log::ep("sel.sx", sx);
-        Log::ep("sel.ex", ex);
 
         for i in 0..self.buf.len() {
             if sy <= i && i <= ey {
