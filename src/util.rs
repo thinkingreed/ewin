@@ -25,7 +25,7 @@ impl Log {
     }
     pub fn ep_s(m: &str) {
         if cfg!(debug_assertions) {
-            eprintln!("{}", m);
+            eprintln!("{:?}", m);
         }
     }
 }
