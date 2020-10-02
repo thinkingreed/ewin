@@ -15,17 +15,22 @@ pub fn get_str_width(msg: &str) -> usize {
 impl Log {
     pub fn ep<T: Display>(m: &str, v: T) {
         if cfg!(debug_assertions) {
-            eprintln!("{} {}", format!("{m:?}", m = m), v);
+            eprintln!("{} {}", format!("{:?}", m), v);
         } else {
             let debug_mode: &str = ARGS.get("debug_mode").unwrap();
             if debug_mode == "true" {
-                eprintln!("{} {}", format!("{m:?}", m = m), v);
+                eprintln!("{} {}", format!("{:?}", m), v);
             }
         }
     }
     pub fn ep_s(m: &str) {
         if cfg!(debug_assertions) {
-            eprintln!("{:?}", m);
+            eprintln!("{}", m);
+        } else {
+            let debug_mode: &str = ARGS.get("debug_mode").unwrap();
+            if debug_mode == "true" {
+                eprintln!("{}", m);
+            }
         }
     }
 }
