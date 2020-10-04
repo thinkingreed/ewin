@@ -1,10 +1,11 @@
 use crate::model::{CopyRange, Editor, Log, Prompt};
 use crate::util::*;
 
+use crate::_cfg::args::ARGS;
 use crossterm::event::Event::Key;
 use crossterm::event::KeyCode::{Left, Right};
 use std::cmp::{max, min};
-use std::fs;
+use std::fs::File;
 use std::io::Write;
 
 impl Editor {
@@ -181,21 +182,30 @@ impl Editor {
         };
         return true;
     }
-    pub fn save(&self) {
+    pub fn save(&self) -> bool {
         if let Some(path) = self.path.as_ref() {
-            if let Ok(mut file) = fs::File::create(path) {
-                for line in &self.buf {
-                    for &c in line {
-                        Log::ep("save c", c);
-                        write!(file, "{}", c).unwrap();
+            let result = File::create(path);
+
+            match result {
+                Ok(mut file) => {
+                    for line in &self.buf {
+                        for &c in line {
+                            Log::ep("save c", c);
+                            write!(file, "{}", c).unwrap();
+                        }
+                        writeln!(file).unwrap();
                     }
-                    writeln!(file).unwrap();
+                    return false;
                 }
-            } else {
-                Log::ep_s("ファイルありません");
-                eprintln!("path {:?}", self.path.clone())
+                Err(err) => {
+                    Log::ep("err", err.to_string());
+                    // TODO 新規ファイル時はフォルダの権限をmainで先に確認が必要
+                    eprintln!("err.kind() {:?}", err.kind()); // 権限が無い場合のout PermissionDenied
+                    return false;
+                }
             }
         }
+        return false;
     }
 
     pub fn copy(&mut self) {

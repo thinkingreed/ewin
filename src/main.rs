@@ -64,8 +64,12 @@ fn main() {
                             }
                         }
                         Char('s') => {
-                            editor.save();
-                            prompt.is_change = false;
+                            if file_path.len() == 0 {
+                                prompt.is_set_new_filenm = true;
+                            } else {
+                                editor.save();
+                                prompt.is_change = false;
+                            }
                         }
                         Char('c') => {
                             editor.copy();
