@@ -1,6 +1,5 @@
 use crate::_cfg::lang::cfg::LangCfg;
 use crate::model::{Editor, Log, StatusBar};
-use crate::terminal::*;
 use crate::util::*;
 use std::io::{self};
 use termion::color;
@@ -18,44 +17,32 @@ impl StatusBar {
             ..StatusBar::default()
         }
     }
+
     pub fn draw(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) -> Result<(), io::Error> {
         str_vec.push(self.get_file_cur_str(editor));
-        editor.set_cur_str(str_vec);
         return Ok(());
     }
     pub fn draw_statusber(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
-        let (rows, _) = get_term_disp_size(TermDispType::StatusBar);
+        let rows = self.disp_row_posi;
 
         // statusber表示領域がない場合
         if rows == 0 {
             return;
         }
         let cur_str = format!("{cur:>w$}", cur = self.get_cur_str(editor), w = self.cur_str.chars().count());
-        let mut all_str = format!("{}{}{}", color::Fg(color::Rgb(221, 72, 20)).to_string(), self.filenm_str, cur_str);
-        if self.msg_str.len() > 0 {
-            all_str = format!("{}", self.get_msg_str());
-        }
-
+        let all_str = format!("{}{}{}", color::Fg(color::Rgb(221, 72, 20)).to_string(), self.filenm_str, cur_str);
         let sber_str = format!("{}{}{}{}", termion::cursor::Goto(1, rows as u16), termion::clear::CurrentLine, all_str, color::Fg(color::White).to_string());
 
         str_vec.push(sber_str);
     }
 
-    pub fn get_msg_str(&mut self) -> String {
-        let (rows, cols) = get_term_disp_size(TermDispType::StatusBar);
-        if rows == 0 {
-            return "".to_string();
-        }
-        return format!("{msg:width$}", msg = self.msg_str, width = cols);
-    }
     pub fn get_file_cur_str(&mut self, editor: &mut Editor) -> String {
         let mut str_vec: Vec<String> = vec![];
-        let (rows, cols) = get_term_disp_size(TermDispType::StatusBar);
-        if rows == 0 {
+        if self.disp_row_num == 0 {
             return "".to_string();
         }
 
-        let (filenm_w, cur_w) = self.get_areas_width(cols);
+        let (filenm_w, cur_w) = self.get_areas_width(self.disp_col_num);
         let filenm = self.cut_str(self.filenm.clone(), filenm_w);
 
         let filenm_str = format!("{fnm:^width$}", fnm = filenm, width = filenm_w - (get_str_width(&filenm) - filenm.chars().count()));
@@ -99,27 +86,6 @@ impl StatusBar {
 
         let cur_posi = format!("{rows} {cols}", rows = row_vec.concat(), cols = col_vec.concat(),);
         return cur_posi;
-    }
-
-    pub fn get_save_confirm_str(&mut self) -> String {
-        //
-        //
-        // Msg領域への作成
-        //
-        //
-        let msg = format!(
-            "{}{} {}{}:{}Y{} {}:{}N",
-            &color::Fg(color::LightGreen).to_string(),
-            self.lang.save_confirmation_to_close.clone(),
-            &color::Fg(color::White).to_string(),
-            self.lang.yes.clone(),
-            &color::Fg(color::LightGreen).to_string(),
-            &color::Fg(color::White).to_string(),
-            self.lang.no.clone(),
-            &color::Fg(color::LightGreen).to_string(),
-        );
-
-        return msg;
     }
 
     fn get_areas_width(&self, cols: usize) -> (usize, usize) {

@@ -10,9 +10,8 @@ pub mod editor {
     pub mod mouse;
 }
 pub mod model;
+pub mod prompt;
 pub mod statusbar;
-
-pub mod msgbar;
 pub mod terminal;
 pub mod util;
 pub mod _cfg {

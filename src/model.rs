@@ -2,21 +2,84 @@ use crate::_cfg::lang::cfg::LangCfg;
 use crossterm::event::{Event, Event::Key, KeyCode::End};
 use std::path;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
+pub struct Prompt {
+    pub lang: LangCfg,
+    /// ターミナル上の表示関連
+    pub disp_row_num: usize,
+    pub disp_row_posi: usize,
+    pub disp_col_num: usize,
+    pub prompt_conts: Vec<PromptCont>,
+    pub is_change: bool,
+    pub is_save_confirm: bool,
+    pub is_set_new_filenm: bool,
+}
+
+impl Default for Prompt {
+    fn default() -> Self {
+        Prompt {
+            lang: LangCfg::default(),
+            disp_row_num: 0,
+            disp_row_posi: 0,
+            disp_col_num: 0,
+            prompt_conts: vec![],
+            is_change: false,
+            is_save_confirm: false,
+            is_set_new_filenm: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct PromptCont {
+    pub lang: LangCfg,
+    pub desc: String,
+    pub prompt_input: PromptInput,
+}
+
+impl Default for PromptCont {
+    fn default() -> Self {
+        PromptCont {
+            lang: LangCfg::default(),
+            desc: String::new(),
+            prompt_input: PromptInput::default(),
+        }
+    }
+}
+#[derive(Debug, Clone)]
+pub struct PromptInput {
+    pub lang: LangCfg,
+    pub desc: String,
+    pub input: String,
+}
+
+impl Default for PromptInput {
+    fn default() -> Self {
+        PromptInput {
+            lang: LangCfg::default(),
+            desc: String::new(),
+            input: String::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Terminal {}
 impl Default for Terminal {
     fn default() -> Self {
         Terminal {}
     }
 }
+#[derive(Debug, Clone)]
 pub struct StatusBar {
     pub lang: LangCfg,
     pub filenm: String,
     pub filenm_str: String,
-    pub msg_str: String,
     pub cur_str: String,
-    pub is_change: bool,
-    pub is_save_confirm: bool,
+    /// ターミナル上の表示数
+    pub disp_row_num: usize,
+    pub disp_row_posi: usize,
+    pub disp_col_num: usize,
 }
 
 impl Default for StatusBar {
@@ -24,16 +87,14 @@ impl Default for StatusBar {
         StatusBar {
             lang: LangCfg::default(),
             filenm: String::new(),
-            msg_str: String::new(),
             filenm_str: String::new(),
             cur_str: String::new(),
-            is_change: false,
-            is_save_confirm: false,
+            disp_row_num: 1,
+            disp_row_posi: 0,
+            disp_col_num: 0,
         }
     }
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MsgBar {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// マウスの選択のコピー範囲
@@ -113,6 +174,7 @@ pub struct Cursor {
     pub updown_x: usize,
 }
 // エディタの内部状態
+#[derive(Debug, Clone)]
 pub struct Editor {
     /// テキスト本体
     /// buffer[i][j]はi行目のj列目の文字 0-indexed
@@ -137,6 +199,9 @@ pub struct Editor {
     pub curt_evt: Event,
     pub is_all_redraw: bool,
     pub clipboard: String,
+    /// ターミナル上の表示数
+    pub disp_row_num: usize,
+    pub disp_col_num: usize,
 }
 
 impl Editor {}
@@ -162,6 +227,8 @@ impl Default for Editor {
             curt_evt: Key(End.into()),
             is_all_redraw: false,
             clipboard: String::new(),
+            disp_row_num: 0,
+            disp_col_num: 0,
         }
     }
 }

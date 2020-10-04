@@ -1,5 +1,4 @@
 use crate::model::{Cursor, Editor, Log, SelectRange, StatusBar};
-use crate::terminal::*;
 
 use std::fs;
 use std::io::{self, Write};
@@ -8,25 +7,18 @@ use termion::{clear, cursor};
 use unicode_width::UnicodeWidthChar;
 
 impl Editor {
-    // ファイルを読み込む
     pub fn open(&mut self, path: &path::Path) {
-        match fs::read_to_string(path) {
-            Ok(s) => {
+        self.buf = fs::read_to_string(path)
+            .ok()
+            .map(|s| {
                 let buffer: Vec<Vec<char>> = s.lines().map(|line| line.trim_end().chars().collect()).collect();
                 if buffer.is_empty() {
-                    self.buf = vec![Vec::new()]
+                    vec![Vec::new()]
                 } else {
-                    self.buf = buffer;
+                    buffer
                 }
-            }
-            Err(err) => {
-                println!("{}", err.to_string());
-                std::process::exit(1);
-            }
-        };
-
-        // self.buf = fs::read_to_string(path).ok().unwrap();
-        // .unwrap_or_else(|| vec![Vec::new()]);
+            })
+            .unwrap_or_else(|| vec![Vec::new()]);
 
         self.path = Some(path.into());
         self.lnw = self.buf.len().to_string().len();
@@ -34,7 +26,7 @@ impl Editor {
         self.cur.disp_x = self.lnw + self.get_cur_x_width(self.cur.y);
     }
     pub fn draw(&mut self, str_vec: &mut Vec<String>) -> Result<(), io::Error> {
-        let (rows, cols) = get_term_disp_size(TermDispType::Editor);
+        let (rows, cols) = (self.disp_row_num, self.disp_col_num);
 
         str_vec.push(clear::All.to_string());
         str_vec.push(cursor::Goto(1, 1).to_string());

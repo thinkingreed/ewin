@@ -5,12 +5,12 @@
 	"tasks": [
 		{
 			"type": "cargo",
-			"subcommand": "run",
+			"subcommand": "build",
 			"group": {
 				"kind": "build",
 				"isDefault": true
 			},
-			"label": "Rust: cargo run - ewin"
+			"label": "Rust: cargo build - ewin"
 		}
 	]
 }

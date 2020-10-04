@@ -1,5 +1,4 @@
 use crate::model::{CopyRange, Editor, Log};
-use crate::terminal::*;
 
 use crossterm::event::{Event::Key, Event::Mouse, KeyCode, KeyCode::*, KeyEvent, MouseEvent};
 use std::cmp::{max, min};
@@ -7,22 +6,19 @@ use unicode_width::UnicodeWidthChar;
 impl Editor {
     // カーソルが画面に映るようにする
     pub fn scroll(&mut self) {
-        let (rows, _) = get_term_disp_size(TermDispType::Editor);
-
         self.y_offset = min(self.y_offset, self.cur.y);
-        if self.cur.y + 1 >= rows {
-            self.y_offset = max(self.y_offset, self.cur.y + 1 - rows);
+        if self.cur.y + 1 >= self.disp_row_num {
+            self.y_offset = max(self.y_offset, self.cur.y + 1 - self.disp_row_num);
         }
     }
     pub fn scroll_horizontal(&mut self) {
         // Log::ep_s("★ scroll_horizontal");
         self.x_offset_y = self.cur.y;
-        let (_, cols) = get_term_disp_size(TermDispType::Editor);
-        if self.x_offset_disp + cols < self.cur.disp_x {
+        if self.x_offset_disp + self.disp_col_num < self.cur.disp_x {
             if self.curt_evt == Key(Right.into()) {
                 // 次のバイト文字数より大きくx_offset設定
                 let (mut sun_w, mut x_offset) = (0, 0);
-                let diff = self.cur.disp_x - (self.x_offset_disp + cols);
+                let diff = self.cur.disp_x - (self.x_offset_disp + self.disp_col_num);
                 for i in self.x_offset..=self.buf[self.x_offset_y].len() {
                     let c = self.buf[self.x_offset_y].get(i).unwrap();
                     let w = c.width().unwrap_or(0);
@@ -147,11 +143,10 @@ impl Editor {
     /// 指定のy・xからx_offsetを取得
     pub fn get_x_offset(&mut self, y: usize, x: usize) -> usize {
         let (mut count, mut width) = (0, 0);
-        let (_, cols) = get_term_disp_size(TermDispType::Editor);
         for i in (0..x).rev() {
             let c = self.buf[y].get(i).unwrap();
             width += c.width().unwrap_or(0);
-            if width + self.lnw + 1 > cols {
+            if width + self.lnw + 1 > self.disp_col_num {
                 break;
             }
             count += 1;

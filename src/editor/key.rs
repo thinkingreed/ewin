@@ -1,7 +1,6 @@
-use crate::model::{CopyRange, Editor, Log, StatusBar};
+use crate::model::{CopyRange, Editor, Log, Prompt};
 use crate::util::*;
 
-use crate::terminal::{get_term_disp_size, TermDispType};
 use crossterm::event::Event::Key;
 use crossterm::event::KeyCode::{Left, Right};
 use std::cmp::{max, min};
@@ -171,13 +170,13 @@ impl Editor {
         self.del_sel_range();
     }
 
-    pub fn close<T: Write>(&mut self, out: &mut T, sbar: &mut StatusBar) -> bool {
-        Log::ep("is_change", sbar.is_change);
+    pub fn close(&mut self, prompt: &mut Prompt) -> bool {
+        Log::ep("is_change", prompt.is_change);
 
-        if sbar.is_change == true {
-            sbar.msg_str = sbar.get_save_confirm_str();
-            self.draw_cursor(out, sbar).unwrap();
-            sbar.is_save_confirm = true;
+        if prompt.is_change == true {
+            prompt.set_save_confirm_str();
+            // self.draw_cursor(out, sbar).unwrap();
+            prompt.is_save_confirm = true;
             return false;
         };
         return true;
@@ -187,13 +186,18 @@ impl Editor {
             if let Ok(mut file) = fs::File::create(path) {
                 for line in &self.buf {
                     for &c in line {
+                        Log::ep("save c", c);
                         write!(file, "{}", c).unwrap();
                     }
                     writeln!(file).unwrap();
                 }
+            } else {
+                Log::ep_s("ファイルありません");
+                eprintln!("path {:?}", self.path.clone())
             }
         }
     }
+
     pub fn copy(&mut self) {
         Log::ep_s("★★  copy");
         let copy_ranges: Vec<CopyRange> = self.get_copy_range();
@@ -332,15 +336,13 @@ impl Editor {
         self.scroll_horizontal();
     }
     pub fn page_down(&mut self) {
-        let (rows, _) = get_term_disp_size(TermDispType::Editor);
-        self.cur.y = min(self.cur.y + rows, self.buf.len() - 1);
+        self.cur.y = min(self.cur.y + self.disp_row_num, self.buf.len() - 1);
         self.cur.x = self.lnw;
         self.scroll();
     }
     pub fn page_up(&mut self) {
-        let (rows, _) = get_term_disp_size(TermDispType::Editor);
-        if self.cur.y > rows {
-            self.cur.y = self.cur.y - rows;
+        if self.cur.y > self.disp_row_num {
+            self.cur.y = self.cur.y - self.disp_row_num;
         } else {
             self.cur.y = 0
         }

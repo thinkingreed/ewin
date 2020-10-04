@@ -1,9 +1,8 @@
 use crossterm::event::{read, KeyCode::*, KeyModifiers};
 use crossterm::event::{Event::*, KeyEvent, MouseButton, MouseEvent};
-
 use ewin::_cfg::args::ARGS;
 use ewin::_cfg::lang::cfg::LangCfg;
-use ewin::model::{Editor, Log, StatusBar, Terminal};
+use ewin::model::{Editor, Log, Prompt, StatusBar, Terminal};
 use path::Path;
 use std::io::Write;
 use std::io::{stdout, BufWriter};
@@ -15,42 +14,58 @@ use termion::screen::AlternateScreen;
 
 fn main() {
     let file_path: &str = ARGS.get("file_path").unwrap();
-    let terminal = Terminal::default();
     let mut editor = Editor::default();
 
     let lang_cfg = LangCfg::read_lang_cfg();
+
+    // ターミナルサイズが小さい場合に処理終了
+    if !Terminal::check_displayable(&lang_cfg) {
+        return;
+    }
+
     editor.open(Path::new(file_path));
-    let mut sbar = StatusBar::new(file_path, lang_cfg);
+
+    let mut disp_filenm = file_path;
+    if file_path.len() == 0 {
+        disp_filenm = &lang_cfg.new_file;
+    }
+
+    let mut sbar = StatusBar::new(disp_filenm, lang_cfg.clone());
+    let mut prompt = Prompt::new(lang_cfg.clone());
+    Terminal::set_disp_size(&mut editor, &mut prompt, &mut sbar);
+
+    let mut terminal = Terminal::default();
 
     let stdout = MouseTerminal::from(AlternateScreen::from(stdout()).into_raw_mode().unwrap());
     let mut out = BufWriter::new(stdout.lock());
-    terminal.draw(&mut out, &mut editor, &mut sbar).unwrap();
+    terminal.draw(&mut out, &mut editor, &mut prompt, &mut sbar).unwrap();
 
     loop {
         let event = read();
 
         editor.curt_evt = event.unwrap().clone();
-        let evt_next_process = check_next_process(&mut editor, &mut sbar);
+        let evt_next_process = check_next_process(&mut out, &mut terminal, &mut editor, &mut prompt, &mut sbar);
 
         match evt_next_process {
             EvtProcess::Exit => return,
             EvtProcess::Hold => {}
             EvtProcess::Next => {
-                init(&mut editor, &mut sbar);
+                init(&mut editor, &mut prompt);
 
                 match editor.curt_evt {
                     Resize(_, _) => {
                         write!(out, "{}", clear::All.to_string()).unwrap();
+                        Terminal::set_disp_size(&mut editor, &mut prompt, &mut sbar);
                     }
                     Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
                         Char('w') => {
-                            if editor.close(&mut out, &mut sbar) == true {
+                            if editor.close(&mut prompt) == true {
                                 return;
                             }
                         }
                         Char('s') => {
                             editor.save();
-                            sbar.is_change = false;
+                            prompt.is_change = false;
                         }
                         Char('c') => {
                             editor.copy();
@@ -166,14 +181,14 @@ fn main() {
                 }
                 finalize(&mut editor);
                 if editor.is_all_redraw == true {
-                    terminal.draw(&mut out, &mut editor, &mut sbar).unwrap();
+                    terminal.draw(&mut out, &mut editor, &mut prompt, &mut sbar).unwrap();
                 }
             }
         }
     }
 }
 
-fn init(editor: &mut Editor, statusbar: &mut StatusBar) {
+fn init(editor: &mut Editor, prompt: &mut Prompt) {
     // updown_xの初期化
     match editor.curt_evt {
         //  Down | Up | ShiftDown | ShiftUp
@@ -192,7 +207,7 @@ fn init(editor: &mut Editor, statusbar: &mut StatusBar) {
     editor.is_all_redraw = false;
     match editor.curt_evt {
         Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
-            Char('w') | Char('c') => {}
+            Char('c') | Char('s') => {}
             _ => {
                 editor.is_all_redraw = true;
             }
@@ -249,15 +264,15 @@ fn init(editor: &mut Editor, statusbar: &mut StatusBar) {
     match editor.curt_evt {
         Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => {
             if code == Char('x') || code == Char('v') {
-                statusbar.is_change = true;
+                prompt.is_change = true;
             }
         }
         Key(KeyEvent { code: Char(_), .. }) => {
-            statusbar.is_change = true;
+            prompt.is_change = true;
         }
         Key(KeyEvent { code, .. }) => {
             if code == Enter || code == Backspace || code == Delete {
-                statusbar.is_change = true;
+                prompt.is_change = true;
             }
         }
 
@@ -283,22 +298,28 @@ fn finalize(editor: &mut Editor) {
     }
 }
 
-fn check_next_process(editor: &mut Editor, sbar: &mut StatusBar) -> EvtProcess {
-    if sbar.is_save_confirm == true {
+fn check_next_process<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, prompt: &mut Prompt, sbar: &mut StatusBar) -> EvtProcess {
+    if prompt.is_save_confirm == true {
         match editor.curt_evt {
-            Key(KeyEvent { code, .. }) => match code {
-                Char(c) => {
-                    if c == 'y' {
-                        editor.save();
-                        return EvtProcess::Exit;
-                    } else if c == 'n' {
-                        return EvtProcess::Exit;
-                    } else {
-                        return EvtProcess::Hold;
-                    }
+            Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
+                Char('c') => {
+                    prompt.clear();
+                    terminal.draw(out, editor, prompt, sbar).unwrap();
+
+                    return EvtProcess::Next;
                 }
                 _ => return EvtProcess::Hold,
             },
+            Key(KeyEvent { code: Char(c), .. }) => {
+                if c == 'y' {
+                    editor.save();
+                    return EvtProcess::Exit;
+                } else if c == 'n' {
+                    return EvtProcess::Exit;
+                } else {
+                    return EvtProcess::Hold;
+                }
+            }
             _ => return EvtProcess::Hold,
         }
     } else {
