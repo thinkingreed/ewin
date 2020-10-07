@@ -9,7 +9,13 @@ pub mod editor {
     pub mod key;
     pub mod mouse;
 }
+
 pub mod model;
+pub mod process {
+    pub mod close;
+    pub mod process;
+    pub mod save_new_file;
+}
 pub mod prompt;
 pub mod statusbar;
 pub mod terminal;

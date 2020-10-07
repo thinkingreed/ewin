@@ -1,12 +1,12 @@
+use crate::_cfg::args::ARGS;
 use crate::model::{CopyRange, Editor, Log, Prompt};
 use crate::util::*;
-
-use crate::_cfg::args::ARGS;
 use crossterm::event::Event::Key;
 use crossterm::event::KeyCode::{Left, Right};
 use std::cmp::{max, min};
 use std::fs::File;
 use std::io::Write;
+use std::path::Path;
 
 impl Editor {
     pub fn cursor_up(&mut self) {
@@ -72,11 +72,12 @@ impl Editor {
     }
     pub fn cursor_right(&mut self) {
         Log::ep_s("★  c_r start");
+        // 行末
         if self.cur.x == self.buf[self.cur.y].len() + self.lnw {
-            // 最終行の行末の場合
+            // 最終行の行末
             if self.cur.y == self.buf.len() - 1 {
                 return;
-            // その他の行末の場合
+            // その他の行末
             } else {
                 self.cur.updown_x = self.lnw;
                 self.cur.disp_x = self.lnw + 1;
@@ -85,7 +86,6 @@ impl Editor {
             }
         } else {
             self.cur.disp_x += self.get_cur_x_width(self.cur.y);
-
             self.cur.x = min(self.cur.x + 1, self.buf[self.cur.y].len() + self.lnw);
         }
         self.scroll();
@@ -182,30 +182,36 @@ impl Editor {
         };
         return true;
     }
-    pub fn save(&self) -> bool {
-        if let Some(path) = self.path.as_ref() {
-            let result = File::create(path);
+    pub fn save(&self, prompt: &mut Prompt) {
+        let file_path: &str = ARGS.get("file_path").unwrap();
+        if !Path::new(file_path).exists() {
+            prompt.is_save_new_file = true;
+        }
+        if prompt.is_save_new_file {
+            prompt.save_new_file();
+        } else {
+            if let Some(path) = self.path.as_ref() {
+                let result = File::create(path);
 
-            match result {
-                Ok(mut file) => {
-                    for line in &self.buf {
-                        for &c in line {
-                            Log::ep("save c", c);
-                            write!(file, "{}", c).unwrap();
+                match result {
+                    Ok(mut file) => {
+                        for line in &self.buf {
+                            for &c in line {
+                                Log::ep("save c", c);
+                                write!(file, "{}", c).unwrap();
+                            }
+                            writeln!(file).unwrap();
                         }
-                        writeln!(file).unwrap();
+                        prompt.is_change = false;
                     }
-                    return false;
-                }
-                Err(err) => {
-                    Log::ep("err", err.to_string());
-                    // TODO 新規ファイル時はフォルダの権限をmainで先に確認が必要
-                    eprintln!("err.kind() {:?}", err.kind()); // 権限が無い場合のout PermissionDenied
-                    return false;
+                    Err(err) => {
+                        Log::ep("err", err.to_string());
+                        // TODO 新規ファイル時はフォルダの権限をmainで先に確認が必要
+                        // eprintln!("err.kind() {:?}", err.kind()); // 権限が無い場合のout PermissionDenied
+                    }
                 }
             }
         }
-        return false;
     }
 
     pub fn copy(&mut self) {

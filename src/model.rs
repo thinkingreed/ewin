@@ -3,16 +3,21 @@ use crossterm::event::{Event, Event::Key, KeyCode::End};
 use std::path;
 
 #[derive(Debug, Clone)]
+pub struct Process {}
+
+#[derive(Debug, Clone)]
 pub struct Prompt {
     pub lang: LangCfg,
     /// ターミナル上の表示関連
     pub disp_row_num: usize,
     pub disp_row_posi: usize,
     pub disp_col_num: usize,
-    pub prompt_conts: Vec<PromptCont>,
+    // Prompt Content
+    pub cont: PromptCont,
+    pub cur: Cursor,
     pub is_change: bool,
     pub is_save_confirm: bool,
-    pub is_set_new_filenm: bool,
+    pub is_save_new_file: bool,
 }
 
 impl Default for Prompt {
@@ -22,10 +27,16 @@ impl Default for Prompt {
             disp_row_num: 0,
             disp_row_posi: 0,
             disp_col_num: 0,
-            prompt_conts: vec![],
+            cont: PromptCont {
+                lang: LangCfg::default(),
+                desc: String::new(),
+                input_desc: String::new(),
+                buf: vec![],
+            },
+            cur: Cursor { y: 0, x: 0, disp_x: 1, updown_x: 0 },
             is_change: false,
             is_save_confirm: false,
-            is_set_new_filenm: false,
+            is_save_new_file: false,
         }
     }
 }
@@ -34,7 +45,8 @@ impl Default for Prompt {
 pub struct PromptCont {
     pub lang: LangCfg,
     pub desc: String,
-    pub prompt_input: PromptInput,
+    pub input_desc: String,
+    pub buf: Vec<char>,
 }
 
 impl Default for PromptCont {
@@ -42,27 +54,11 @@ impl Default for PromptCont {
         PromptCont {
             lang: LangCfg::default(),
             desc: String::new(),
-            prompt_input: PromptInput::default(),
+            input_desc: String::new(),
+            buf: vec![],
         }
     }
 }
-#[derive(Debug, Clone)]
-pub struct PromptInput {
-    pub lang: LangCfg,
-    pub desc: String,
-    pub input: String,
-}
-
-impl Default for PromptInput {
-    fn default() -> Self {
-        PromptInput {
-            lang: LangCfg::default(),
-            desc: String::new(),
-            input: String::new(),
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct Terminal {}
 impl Default for Terminal {
@@ -160,8 +156,8 @@ impl SelectRange {
     }
 }
 
-/// カーソルの位置　0-indexed
-///
+/// カーソル位置 　0-indexed
+/// Editor,Prompt
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Cursor {
     // Editor.bufferの[y]

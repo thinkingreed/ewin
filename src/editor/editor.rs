@@ -3,6 +3,7 @@ use crate::model::{CopyRange, Editor, Log};
 use crossterm::event::{Event::Key, Event::Mouse, KeyCode, KeyCode::*, KeyEvent, MouseEvent};
 use std::cmp::{max, min};
 use unicode_width::UnicodeWidthChar;
+
 impl Editor {
     // カーソルが画面に映るようにする
     pub fn scroll(&mut self) {
