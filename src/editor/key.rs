@@ -1,4 +1,4 @@
-use crate::model::{CopyRange, Editor, Log, Prompt, StatusBar};
+use crate::model::{CopyRange, Editor, Log, MsgBar, Prompt, StatusBar};
 use crate::util::*;
 use crossterm::event::Event::Key;
 use crossterm::event::KeyCode::{Left, Right};
@@ -174,18 +174,16 @@ impl Editor {
         Log::ep("is_change", prompt.is_change);
 
         if prompt.is_change == true {
-            prompt.set_save_confirm_str();
+            prompt.save_confirm_str();
             // self.draw_cursor(out, sbar).unwrap();
             prompt.is_save_confirm = true;
             return false;
         };
         return true;
     }
-    pub fn save(&mut self, prom: &mut Prompt, sbar: &mut StatusBar) {
+    pub fn save(&mut self, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> bool {
         Log::ep_s("★  save");
         Log::ep("prom.cont.buf.len()", prom.cont.buf.len());
-
-        // let file_path = ARGS.get("file_path").unwrap();
 
         if prom.cont.buf.len() > 0 {
             let s = prom.cont.buf.iter().collect::<String>();
@@ -193,11 +191,15 @@ impl Editor {
         }
 
         eprintln!("self.path {:?}", self.path);
+
+        Log::ep("sbar.filenm", &sbar.filenm);
+        Log::ep("prom.cont.buf", prom.cont.buf.iter().collect::<String>());
         // Log::ep("path", self.path.to_owned());
 
         if !Path::new(&sbar.filenm).exists() && prom.cont.buf.len() == 0 {
             prom.is_save_new_file = true;
             prom.save_new_file();
+            return false;
         } else {
             if let Some(path) = self.path.as_ref() {
                 let result = File::create(path);
@@ -211,7 +213,10 @@ impl Editor {
                             }
                             writeln!(file).unwrap();
                         }
+                        prom.is_change = false;
                         prom.clear();
+                        mbar.clear();
+                        return true;
                     }
                     Err(err) => {
                         Log::ep("err", err.to_string());
@@ -221,6 +226,7 @@ impl Editor {
                 }
             }
         }
+        return false;
     }
 
     pub fn copy(&mut self) {
@@ -374,6 +380,7 @@ impl Editor {
         self.cur.x = self.lnw;
         self.scroll();
     }
+
     pub fn shift_right(&mut self) {
         Log::ep_s("★  shift_right");
 
@@ -534,5 +541,11 @@ impl Editor {
         self.cur.x = cur_x;
         self.scroll();
         self.scroll_horizontal();
+    }
+
+    pub fn search(&mut self, prom: &mut Prompt) {
+        Log::ep_s("★　search");
+        prom.is_search = true;
+        prom.search();
     }
 }

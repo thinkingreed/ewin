@@ -1,7 +1,6 @@
 use crate::_cfg::lang::cfg::LangCfg;
-use crate::model::{Editor, Log, StatusBar};
+use crate::model::{Editor, StatusBar};
 use crate::util::*;
-use std::io::{self};
 use termion::color;
 use unicode_width::UnicodeWidthChar;
 
@@ -10,28 +9,10 @@ impl StatusBar {
         StatusBar { lang: lang_cfg, ..StatusBar::default() }
     }
 
-    pub fn draw(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) -> Result<(), io::Error> {
-        str_vec.push(self.get_file_cur_str(editor));
-        return Ok(());
-    }
-    pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
-        let rows = self.disp_row_posi;
-
-        // statusber表示領域がない場合
-        if rows == 0 {
-            return;
-        }
-        let cur_str = format!("{cur:>w$}", cur = self.get_cur_str(editor), w = self.cur_str.chars().count());
-        let all_str = format!("{}{}{}", color::Fg(color::Rgb(221, 72, 20)).to_string(), self.filenm_disp, cur_str);
-        let sber_str = format!("{}{}{}{}", termion::cursor::Goto(1, rows as u16), termion::clear::CurrentLine, all_str, color::Fg(color::White).to_string());
-
-        str_vec.push(sber_str);
-    }
-
-    pub fn get_file_cur_str(&mut self, editor: &mut Editor) -> String {
-        let mut str_vec: Vec<String> = vec![];
+    pub fn draw(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
+        //let mut str_vec: Vec<String> = vec![];
         if self.disp_row_num == 0 {
-            return "".to_string();
+            return;
         }
 
         let (filenm_w, cur_w) = self.get_areas_width(self.disp_col_num);
@@ -49,14 +30,25 @@ impl StatusBar {
         let cur_s = self.get_cur_str(editor);
         let cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
         str_vec.push("\r\n".to_string());
-        self.set_color(&mut str_vec);
+        self.set_color(str_vec);
         str_vec.push(filenm_disp.clone());
         str_vec.push(cur_str.clone());
-        editor.set_textarea_color(&mut str_vec);
+        editor.set_textarea_color(str_vec);
         self.filenm_disp = filenm_disp;
         self.cur_str = cur_str;
+    }
+    pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
+        let rows = self.disp_row_posi;
 
-        return str_vec.concat();
+        // statusber表示領域がない場合
+        if rows == 0 {
+            return;
+        }
+        let cur_str = format!("{cur:>w$}", cur = self.get_cur_str(editor), w = self.cur_str.chars().count());
+        let all_str = format!("{}{}{}", color::Fg(color::Rgb(221, 72, 20)).to_string(), self.filenm_disp, cur_str);
+        let sber_str = format!("{}{}{}{}", termion::cursor::Goto(1, rows as u16), termion::clear::CurrentLine, all_str, color::Fg(color::White).to_string());
+
+        str_vec.push(sber_str);
     }
     pub fn get_cur_str(&mut self, editor: &mut Editor) -> String {
         let mut row_vec: Vec<&str> = vec![];
@@ -72,9 +64,6 @@ impl StatusBar {
         let mut col_vec: Vec<&str> = vec![];
         col_vec.push(&self.lang.col);
         col_vec.push("(");
-
-        Log::ep("editor.cur.x", editor.cur.x);
-        Log::ep("editor.lnw", editor.lnw);
 
         let (cols, col) = (editor.buf[editor.cur.y].len().to_string(), (editor.cur.x + 1 - editor.lnw).to_string());
         col_vec.push(&col);

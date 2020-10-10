@@ -25,7 +25,7 @@ impl Editor {
         self.cur = Cursor { y: 0, x: self.lnw, disp_x: 0, updown_x: 0 };
         self.cur.disp_x = self.lnw + self.get_cur_x_width(self.cur.y);
     }
-    pub fn draw(&mut self, str_vec: &mut Vec<String>) -> Result<(), io::Error> {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         let (rows, cols) = (self.disp_row_num, self.disp_col_num);
 
         str_vec.push(clear::All.to_string());
@@ -91,7 +91,6 @@ impl Editor {
         for _ in self.buf.len() + 1..rows {
             str_vec.push("\r\n".to_string());
         }
-        return Ok(());
     }
     /// 選択箇所のハイライト
     pub fn ctl_select_color(&mut self, str_vec: &mut Vec<String>, ranges: SelectRange, y: usize, _x: usize) {

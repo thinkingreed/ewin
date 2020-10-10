@@ -2,8 +2,7 @@ use crossterm::event::{read, KeyCode::*, KeyModifiers};
 use crossterm::event::{Event::*, KeyEvent, MouseButton, MouseEvent};
 use ewin::_cfg::args::ARGS;
 use ewin::_cfg::lang::cfg::LangCfg;
-use ewin::model::{Editor, Log, Process, Prompt, StatusBar, Terminal};
-use ewin::process::process::*;
+use ewin::model::{Editor, EvtProcess, Log, MsgBar, Process, Prompt, StatusBar, Terminal};
 
 use std::io::Write;
 use std::io::{stdout, BufWriter};
@@ -30,24 +29,23 @@ fn main() {
     } else {
         sbar.filenm = file_path.to_string();
     }
+    let mut mbar = MsgBar::new(lang_cfg.clone());
     let mut prom = Prompt::new(lang_cfg.clone());
-    terminal.set_disp_size(&mut editor, &mut prom, &mut sbar);
+
+    terminal.set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
 
     editor.open(Path::new(file_path));
 
     let stdout = MouseTerminal::from(AlternateScreen::from(stdout()).into_raw_mode().unwrap());
     let mut out = BufWriter::new(stdout.lock());
-    terminal.draw(&mut out, &mut editor, &mut prom, &mut sbar).unwrap();
+    terminal.draw(&mut out, &mut editor, &mut mbar, &mut prom, &mut sbar).unwrap();
 
     loop {
         let event = read();
 
         editor.curt_evt = event.unwrap().clone();
 
-        Log::ep("is_save_confirm", prom.is_save_confirm);
-        Log::ep("is_save_new_file", prom.is_save_new_file);
-
-        let evt_next_process = Process::check_next_process(&mut out, &mut terminal, &mut editor, &mut prom, &mut sbar);
+        let evt_next_process = Process::check_next_process(&mut out, &mut terminal, &mut editor, &mut mbar, &mut prom, &mut sbar);
 
         match evt_next_process {
             EvtProcess::Exit => return,
@@ -58,7 +56,7 @@ fn main() {
                 match editor.curt_evt {
                     Resize(_, _) => {
                         write!(out, "{}", clear::All.to_string()).unwrap();
-                        terminal.set_disp_size(&mut editor, &mut prom, &mut sbar);
+                        terminal.set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
                     }
                     Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
                         Char('w') => {
@@ -66,11 +64,14 @@ fn main() {
                                 return;
                             }
                         }
-                        Char('s') => editor.save(&mut prom, &mut sbar),
+                        Char('s') => {
+                            editor.save(&mut mbar, &mut prom, &mut sbar);
+                        }
                         Char('c') => editor.copy(),
                         Char('x') => editor.cut(),
                         Char('v') => editor.paste(),
                         Char('a') => editor.all_select(),
+                        Char('f') => editor.search(&mut prom),
                         Home => editor.ctl_home(),
                         End => editor.ctl_end(),
                         _ => {}
@@ -94,10 +95,10 @@ fn main() {
                         End => editor.end(),
                         PageDown => editor.page_down(),
                         PageUp => editor.page_up(),
-                        Down => editor.move_cursor(Up, &mut out, &mut sbar),
+                        Down => editor.move_cursor(Down, &mut out, &mut sbar),
                         Up => editor.move_cursor(Up, &mut out, &mut sbar),
-                        Left => editor.move_cursor(Up, &mut out, &mut sbar),
-                        Right => editor.move_cursor(Up, &mut out, &mut sbar),
+                        Left => editor.move_cursor(Left, &mut out, &mut sbar),
+                        Right => editor.move_cursor(Right, &mut out, &mut sbar),
                         _ => {
                             Log::ep_s("Un Supported no modifiers");
                         }
@@ -111,7 +112,7 @@ fn main() {
                 }
                 Process::finalize(&mut editor);
                 if editor.is_all_redraw == true {
-                    terminal.draw(&mut out, &mut editor, &mut prom, &mut sbar).unwrap();
+                    terminal.draw(&mut out, &mut editor, &mut mbar, &mut prom, &mut sbar).unwrap();
                 }
             }
         }

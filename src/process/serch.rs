@@ -4,7 +4,7 @@ use std::io::Write;
 use termion::color;
 
 impl Process {
-    pub fn save_new_filenm<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtProcess {
+    pub fn search<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtProcess {
         match editor.curt_evt {
             Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
                 Char('c') => {
@@ -42,6 +42,7 @@ impl Process {
                     return EvtProcess::Hold;
                 }
                 Enter => {
+                    /*
                     if prom.cont.buf.len() == 0 {
                         mbar.set_msg_set_file_name();
                     } else {
@@ -49,8 +50,10 @@ impl Process {
                         sbar.filenm = prom.cont.buf.iter().collect::<String>();
                         editor.save(mbar, prom, sbar);
                     }
+                    */
                     terminal.draw(out, editor, mbar, prom, sbar).unwrap();
-                    return EvtProcess::Hold;
+
+                    return EvtProcess::Next;
                 }
                 _ => return EvtProcess::Hold,
             },
@@ -60,24 +63,24 @@ impl Process {
 }
 
 impl Prompt {
-    pub fn save_new_file(&mut self) {
+    pub fn search(&mut self) {
         self.disp_row_num = 3;
         let mut cont = PromptCont::new(self.lang.clone());
-        cont.set_new_file_name();
+        cont.set_search();
         self.cont = cont;
     }
 }
 
 impl PromptCont {
-    pub fn set_new_file_name(&mut self) {
-        self.desc = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.set_new_filenm.clone(), "\n");
+    pub fn set_search(&mut self) {
+        self.desc = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.set_search_str.clone(), "\n");
         self.input_desc = format!(
             "{}{}:{}Enter  {}{}:{}Ctrl + c{}",
             &color::Fg(color::White).to_string(),
             self.lang.fixed.clone(),
             &color::Fg(color::LightGreen).to_string(),
             &color::Fg(color::White).to_string(),
-            self.lang.cancel.clone(),
+            self.lang.close.clone(),
             &color::Fg(color::LightGreen).to_string(),
             &color::Fg(color::White).to_string(),
         );

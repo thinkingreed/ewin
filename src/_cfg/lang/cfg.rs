@@ -9,11 +9,14 @@ pub struct LangCfg {
     pub yes: String,
     pub no: String,
     pub cancel: String,
+    pub close: String,
     pub fixed: String,
     pub new_file: String,
     pub save_confirmation_to_close: String,
     pub terminal_size_small: String,
     pub set_new_filenm: String,
+    pub msg_set_file_name: String,
+    pub set_search_str: String,
 }
 #[derive(Debug, Deserialize)]
 pub struct LangMulti {
@@ -29,11 +32,14 @@ impl LangCfg {
             yes: String::new(),
             no: String::new(),
             cancel: String::new(),
+            close: String::new(),
             fixed: String::new(),
             new_file: String::new(),
             save_confirmation_to_close: String::new(),
             terminal_size_small: String::new(),
             set_new_filenm: String::new(),
+            set_search_str: String::new(),
+            msg_set_file_name: String::new(),
         }
     }
     pub fn read_lang_cfg() -> LangCfg {

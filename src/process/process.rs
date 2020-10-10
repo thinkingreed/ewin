@@ -1,40 +1,38 @@
-use crate::model::{Editor, Process, Prompt, StatusBar, Terminal};
+use crate::model::{Editor, EvtProcess, MsgBar, Process, Prompt, StatusBar, Terminal};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
 use std::io::Write;
 
 impl Process {
-    pub fn check_next_process<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, prompt: &mut Prompt, sbar: &mut StatusBar) -> EvtProcess {
+    pub fn check_next_process<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtProcess {
         match editor.curt_evt {
             Resize(_, _) => {
                 return EvtProcess::Next;
             }
             _ => {}
         }
+        terminal.set_disp_size(editor, mbar, prom, sbar);
 
-        if prompt.is_save_confirm == true {
-            return Process::close(out, terminal, editor, prompt, sbar);
-        // new filenm save
-        } else if prompt.is_save_new_file == true {
-            return Process::save_new_filenm(out, terminal, editor, prompt, sbar);
+        if prom.is_save_new_file == true {
+            return Process::save_new_filenm(out, terminal, editor, mbar, prom, sbar);
+        } else if prom.is_save_confirm == true {
+            return Process::close(out, terminal, editor, mbar, prom, sbar);
+        } else if prom.is_search == true {
+            return Process::search(out, terminal, editor, mbar, prom, sbar);
         } else {
             return EvtProcess::Next;
         }
     }
 
-    pub fn init(editor: &mut Editor, prompt: &mut Prompt) {
+    pub fn init(editor: &mut Editor, prom: &mut Prompt) {
         // updown_xの初期化
         match editor.curt_evt {
             //  Down | Up | ShiftDown | ShiftUp
             Key(KeyEvent { code, .. }) => match code {
                 Down | Up => {}
-                _ => {
-                    editor.cur.updown_x = 0;
-                }
+                _ => editor.cur.updown_x = 0,
             },
             Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) => {}
-            _ => {
-                editor.cur.updown_x = 0;
-            }
+            _ => editor.cur.updown_x = 0,
         }
         // all_redraw判定
         editor.is_all_redraw = false;
@@ -79,15 +77,15 @@ impl Process {
         match editor.curt_evt {
             Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => {
                 if code == Char('x') || code == Char('v') {
-                    prompt.is_change = true;
+                    prom.is_change = true;
                 }
             }
             Key(KeyEvent { code: Char(_), .. }) => {
-                prompt.is_change = true;
+                prom.is_change = true;
             }
             Key(KeyEvent { code, .. }) => {
                 if code == Enter || code == Backspace || code == Delete {
-                    prompt.is_change = true;
+                    prom.is_change = true;
                 }
             }
             _ => {}
@@ -107,9 +105,4 @@ impl Process {
             _ => {}
         }
     }
-}
-pub enum EvtProcess {
-    Hold,
-    Next,
-    Exit,
 }

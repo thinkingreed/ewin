@@ -3,8 +3,31 @@ use crossterm::event::{Event, Event::Key, KeyCode::End};
 use std::path;
 
 #[derive(Debug, Clone)]
-pub struct Process {}
+pub struct MsgBar {
+    pub lang: LangCfg,
+    pub msg_disp: String,
+    /// ターミナル上の表示数
+    pub disp_row_posi: usize,
+    pub disp_col_num: usize,
+}
 
+impl Default for MsgBar {
+    fn default() -> Self {
+        MsgBar {
+            lang: LangCfg::default(),
+            msg_disp: String::new(),
+            disp_row_posi: 0,
+            disp_col_num: 0,
+        }
+    }
+}
+#[derive(Debug, Clone)]
+pub struct Process {}
+pub enum EvtProcess {
+    Hold,
+    Next,
+    Exit,
+}
 #[derive(Debug, Clone)]
 pub struct Prompt {
     pub lang: LangCfg,
@@ -12,11 +35,13 @@ pub struct Prompt {
     pub disp_row_num: usize,
     pub disp_row_posi: usize,
     pub disp_col_num: usize,
+    pub search_str: String,
     // Prompt Content
     pub cont: PromptCont,
     pub is_change: bool,
     pub is_save_confirm: bool,
     pub is_save_new_file: bool,
+    pub is_search: bool,
 }
 
 impl Default for Prompt {
@@ -33,9 +58,11 @@ impl Default for Prompt {
                 buf: vec![],
                 cur: Cursor { y: 0, x: 0, disp_x: 1, updown_x: 0 },
             },
+            search_str: String::new(),
             is_change: false,
             is_save_confirm: false,
             is_save_new_file: false,
+            is_search: false,
         }
     }
 }
