@@ -14,7 +14,7 @@ pub mod process {
     pub mod close;
     pub mod process;
     pub mod save_new_file;
-    pub mod serch;
+    pub mod search;
 }
 pub mod msgbar;
 

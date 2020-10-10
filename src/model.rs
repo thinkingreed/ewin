@@ -229,6 +229,7 @@ pub struct Editor {
     /// ターミナル上の表示数
     pub disp_row_num: usize,
     pub disp_col_num: usize,
+    pub search_str: String,
 }
 
 impl Editor {}
@@ -256,6 +257,7 @@ impl Default for Editor {
             clipboard: String::new(),
             disp_row_num: 0,
             disp_col_num: 0,
+            search_str: String::new(),
         }
     }
 }

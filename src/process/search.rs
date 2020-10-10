@@ -41,16 +41,15 @@ impl Process {
                     prom.draw_only(out);
                     return EvtProcess::Hold;
                 }
-                Enter => {
-                    /*
+                F(3) => {
+                    Log::ep_s("search.F3");
+
                     if prom.cont.buf.len() == 0 {
-                        mbar.set_msg_set_file_name();
+                        mbar.set_not_entered_serach_str();
                     } else {
-                        // TODO 存在するファイル名の対応
-                        sbar.filenm = prom.cont.buf.iter().collect::<String>();
-                        editor.save(mbar, prom, sbar);
+                        editor.search_str = prom.cont.buf.iter().collect::<String>();
+                        Log::ep("search_str", editor.search_str.clone());
                     }
-                    */
                     terminal.draw(out, editor, mbar, prom, sbar).unwrap();
 
                     return EvtProcess::Next;
@@ -75,14 +74,22 @@ impl PromptCont {
     pub fn set_search(&mut self) {
         self.desc = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.set_search_str.clone(), "\n");
         self.input_desc = format!(
-            "{}{}:{}Enter  {}{}:{}Ctrl + c{}",
+            "{}{}:{}F3  {}{}:{}Ctrl + c{}",
             &color::Fg(color::White).to_string(),
-            self.lang.fixed.clone(),
+            self.lang.search_start.clone(),
             &color::Fg(color::LightGreen).to_string(),
             &color::Fg(color::White).to_string(),
             self.lang.close.clone(),
             &color::Fg(color::LightGreen).to_string(),
             &color::Fg(color::White).to_string(),
         );
+    }
+}
+
+impl MsgBar {
+    pub fn set_not_entered_serach_str(&mut self) {
+        let msg = format!("{}{}", &color::Fg(color::White).to_string(), self.lang.not_entered_search_str.clone(),);
+        let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num);
+        self.msg_disp = format!("{}{}{}", &color::Bg(color::Red).to_string(), msg_str, &color::Bg(color::Black).to_string(),);
     }
 }

@@ -17,6 +17,7 @@ impl Prompt {
         self.disp_col_num = 0;
         self.is_save_confirm = false;
         self.is_save_new_file = false;
+        self.is_search = false;
         //self.is_change = false;
         self.cont = PromptCont::default();
     }
