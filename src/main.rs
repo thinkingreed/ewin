@@ -24,11 +24,12 @@ fn main() {
     if !terminal.check_displayable(&lang_cfg) {
         return;
     }
-    let mut disp_filenm = file_path;
+    let mut sbar = StatusBar::new(lang_cfg.clone());
     if file_path.len() == 0 {
-        disp_filenm = &lang_cfg.new_file;
+        sbar.filenm_tmp = lang_cfg.new_file.clone();
+    } else {
+        sbar.filenm = file_path.to_string();
     }
-    let mut sbar = StatusBar::new(disp_filenm, lang_cfg.clone());
     let mut prom = Prompt::new(lang_cfg.clone());
     terminal.set_disp_size(&mut editor, &mut prom, &mut sbar);
 
@@ -42,6 +43,10 @@ fn main() {
         let event = read();
 
         editor.curt_evt = event.unwrap().clone();
+
+        Log::ep("is_save_confirm", prom.is_save_confirm);
+        Log::ep("is_save_new_file", prom.is_save_new_file);
+
         let evt_next_process = Process::check_next_process(&mut out, &mut terminal, &mut editor, &mut prom, &mut sbar);
 
         match evt_next_process {
@@ -61,7 +66,7 @@ fn main() {
                                 return;
                             }
                         }
-                        Char('s') => editor.save(&mut prom),
+                        Char('s') => editor.save(&mut prom, &mut sbar),
                         Char('c') => editor.copy(),
                         Char('x') => editor.cut(),
                         Char('v') => editor.paste(),
@@ -89,35 +94,16 @@ fn main() {
                         End => editor.end(),
                         PageDown => editor.page_down(),
                         PageUp => editor.page_up(),
-                        Down => {
-                            editor.move_cursor(Down);
-                            editor.draw_cursor(&mut out, &mut sbar).unwrap();
-                        }
-                        Up => {
-                            editor.move_cursor(Up);
-                            editor.draw_cursor(&mut out, &mut sbar).unwrap();
-                        }
-                        Left => {
-                            editor.move_cursor(Left);
-                            editor.draw_cursor(&mut out, &mut sbar).unwrap();
-                        }
-                        Right => {
-                            editor.move_cursor(Right);
-                            editor.draw_cursor(&mut out, &mut sbar).unwrap();
-                        }
+                        Down => editor.move_cursor(Up, &mut out, &mut sbar),
+                        Up => editor.move_cursor(Up, &mut out, &mut sbar),
+                        Left => editor.move_cursor(Up, &mut out, &mut sbar),
+                        Right => editor.move_cursor(Up, &mut out, &mut sbar),
                         _ => {
                             Log::ep_s("Un Supported no modifiers");
                         }
                     },
-
-                    Mouse(MouseEvent::ScrollUp(_, _, _)) => {
-                        editor.move_cursor(Up);
-                        editor.draw_cursor(&mut out, &mut sbar).unwrap();
-                    }
-                    Mouse(MouseEvent::ScrollDown(_, _, _)) => {
-                        editor.move_cursor(Down);
-                        editor.draw_cursor(&mut out, &mut sbar).unwrap();
-                    }
+                    Mouse(MouseEvent::ScrollUp(_, _, _)) => editor.move_cursor(Up, &mut out, &mut sbar),
+                    Mouse(MouseEvent::ScrollDown(_, _, _)) => editor.move_cursor(Down, &mut out, &mut sbar),
                     Mouse(MouseEvent::Down(MouseButton::Left, x, y, _)) => editor.mouse_left_press((x + 1) as usize, y as usize),
                     Mouse(MouseEvent::Down(_, _, _, _)) => {}
                     Mouse(MouseEvent::Up(_, x, y, _)) => editor.mouse_release((x + 1) as usize, y as usize),

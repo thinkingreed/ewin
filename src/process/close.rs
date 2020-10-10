@@ -17,7 +17,7 @@ impl Process {
             },
             Key(KeyEvent { code: Char(c), .. }) => {
                 if c == 'y' {
-                    editor.save(prompt);
+                    editor.save(prompt, sbar);
                     return EvtProcess::Exit;
                 } else if c == 'n' {
                     return EvtProcess::Exit;

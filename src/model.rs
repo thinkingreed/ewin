@@ -14,7 +14,6 @@ pub struct Prompt {
     pub disp_col_num: usize,
     // Prompt Content
     pub cont: PromptCont,
-    pub cur: Cursor,
     pub is_change: bool,
     pub is_save_confirm: bool,
     pub is_save_new_file: bool,
@@ -32,8 +31,8 @@ impl Default for Prompt {
                 desc: String::new(),
                 input_desc: String::new(),
                 buf: vec![],
+                cur: Cursor { y: 0, x: 0, disp_x: 1, updown_x: 0 },
             },
-            cur: Cursor { y: 0, x: 0, disp_x: 1, updown_x: 0 },
             is_change: false,
             is_save_confirm: false,
             is_save_new_file: false,
@@ -47,6 +46,7 @@ pub struct PromptCont {
     pub desc: String,
     pub input_desc: String,
     pub buf: Vec<char>,
+    pub cur: Cursor,
 }
 
 impl Default for PromptCont {
@@ -56,6 +56,7 @@ impl Default for PromptCont {
             desc: String::new(),
             input_desc: String::new(),
             buf: vec![],
+            cur: Cursor { y: 0, x: 0, disp_x: 1, updown_x: 0 },
         }
     }
 }
@@ -70,7 +71,9 @@ impl Default for Terminal {
 pub struct StatusBar {
     pub lang: LangCfg,
     pub filenm: String,
-    pub filenm_str: String,
+    // 起動時ファイル未指定の場合の仮ファイル名
+    pub filenm_tmp: String,
+    pub filenm_disp: String,
     pub cur_str: String,
     /// ターミナル上の表示数
     pub disp_row_num: usize,
@@ -83,7 +86,8 @@ impl Default for StatusBar {
         StatusBar {
             lang: LangCfg::default(),
             filenm: String::new(),
-            filenm_str: String::new(),
+            filenm_tmp: String::new(),
+            filenm_disp: String::new(),
             cur_str: String::new(),
             disp_row_num: 1,
             disp_row_posi: 0,

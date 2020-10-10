@@ -6,23 +6,15 @@ use termion::color;
 use unicode_width::UnicodeWidthChar;
 
 impl StatusBar {
-    // StatusBarを表示する行数
-    pub const NUM_LINES_TO_DISP: usize = 1;
-    // StatusBarを表示するterminal sizeの最低行数
-    pub const MIN_NUM_LINES_TO_DISP: usize = 5;
-    pub fn new(filenm: &str, lang_cfg: LangCfg) -> Self {
-        StatusBar {
-            lang: lang_cfg,
-            filenm: String::from(filenm),
-            ..StatusBar::default()
-        }
+    pub fn new(lang_cfg: LangCfg) -> Self {
+        StatusBar { lang: lang_cfg, ..StatusBar::default() }
     }
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) -> Result<(), io::Error> {
         str_vec.push(self.get_file_cur_str(editor));
         return Ok(());
     }
-    pub fn draw_statusber(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
+    pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
         let rows = self.disp_row_posi;
 
         // statusber表示領域がない場合
@@ -30,7 +22,7 @@ impl StatusBar {
             return;
         }
         let cur_str = format!("{cur:>w$}", cur = self.get_cur_str(editor), w = self.cur_str.chars().count());
-        let all_str = format!("{}{}{}", color::Fg(color::Rgb(221, 72, 20)).to_string(), self.filenm_str, cur_str);
+        let all_str = format!("{}{}{}", color::Fg(color::Rgb(221, 72, 20)).to_string(), self.filenm_disp, cur_str);
         let sber_str = format!("{}{}{}{}", termion::cursor::Goto(1, rows as u16), termion::clear::CurrentLine, all_str, color::Fg(color::White).to_string());
 
         str_vec.push(sber_str);
@@ -43,19 +35,25 @@ impl StatusBar {
         }
 
         let (filenm_w, cur_w) = self.get_areas_width(self.disp_col_num);
-        let filenm = self.cut_str(self.filenm.clone(), filenm_w);
 
-        let filenm_str = format!("{fnm:^width$}", fnm = filenm, width = filenm_w - (get_str_width(&filenm) - filenm.chars().count()));
+        let mut file_str = self.filenm.clone();
+        if file_str.len() == 0 {
+            file_str = self.filenm_tmp.clone();
+        }
+
+        let filenm = self.cut_str(file_str.clone(), filenm_w);
+
+        let filenm_disp = format!("{fnm:^width$}", fnm = filenm, width = filenm_w - (get_str_width(&filenm) - filenm.chars().count()));
 
         // 文字横幅と文字数の差分で調整
         let cur_s = self.get_cur_str(editor);
         let cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
         str_vec.push("\r\n".to_string());
         self.set_color(&mut str_vec);
-        str_vec.push(filenm_str.clone());
+        str_vec.push(filenm_disp.clone());
         str_vec.push(cur_str.clone());
         editor.set_textarea_color(&mut str_vec);
-        self.filenm_str = filenm_str;
+        self.filenm_disp = filenm_disp;
         self.cur_str = cur_str;
 
         return str_vec.concat();

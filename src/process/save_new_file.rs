@@ -12,73 +12,76 @@ impl Process {
                 Char('c') => {
                     prom.clear();
                     terminal.draw(out, editor, prom, sbar).unwrap();
-
                     return EvtProcess::Next;
                 }
                 _ => return EvtProcess::Hold,
             },
             Key(KeyEvent { code: Char(c), .. }) => {
-                // 初期
-
-                prom.cont.buf.insert(prom.cur.x, c);
-                prom.cur.disp_x += c.width().unwrap_or(0);
-                prom.cur.x += 1;
-                write!(out, "{}", cursor::Goto(prom.cur.disp_x as u16, (prom.disp_row_posi + prom.disp_row_num - 1) as u16)).unwrap();
+                prom.cont.buf.insert(prom.cont.cur.x, c);
+                prom.cont.cur.disp_x += c.width().unwrap_or(0);
+                prom.cont.cur.x += 1;
+                let mut v: Vec<String> = vec![];
+                prom.draw(&mut v).unwrap();
+                write!(out, "{}{}", v.concat(), cursor::Goto(prom.cont.cur.disp_x as u16, (prom.disp_row_posi + prom.disp_row_num - 1) as u16)).unwrap();
                 out.flush().unwrap();
-                //
-                //
-                // 部分再描画
-                //
-                //
-                terminal.draw(out, editor, prom, sbar).unwrap();
-
                 return EvtProcess::Hold;
             }
             Key(KeyEvent { code, .. }) => match code {
                 Left => {
-                    Log::ep("prom.cont.buf", prom.cont.buf.iter().collect::<String>());
-                    Log::ep("prom.cur.x", prom.cur.x);
-                    Log::ep("prom.cur.disp_x", prom.cur.disp_x);
-
-                    if prom.cur.x != 0 {
-                        prom.cur.x -= 1;
-                        Log::ep("prom.cont.buf[prom.cur.x]", prom.cont.buf[prom.cur.x].to_string());
-                        Log::ep("prom.cont.buf[prom.cur.x].width()", prom.cont.buf[prom.cur.x].width().unwrap_or(0));
-                        prom.cur.disp_x -= prom.cont.buf[prom.cur.x].width().unwrap_or(0);
-                        Log::ep("prom.cur.disp_x", prom.cur.disp_x);
-                        write!(out, "{}", cursor::Goto(prom.cur.disp_x as u16, (prom.disp_row_posi + prom.disp_row_num - 1) as u16)).unwrap();
+                    if prom.cont.cur.x != 0 {
+                        prom.cont.cur.x -= 1;
+                        prom.cont.cur.disp_x -= prom.cont.buf[prom.cont.cur.x].width().unwrap_or(0);
+                        write!(out, "{}", cursor::Goto(prom.cont.cur.disp_x as u16, (prom.disp_row_posi + prom.disp_row_num - 1) as u16)).unwrap();
                         out.flush().unwrap();
                     }
                     return EvtProcess::Hold;
                 }
                 Right => {
-                    if prom.cur.x < prom.cont.buf.len() {
-                        prom.cur.x += 1;
-
-                        if prom.cur.x == prom.cont.buf.len() {
-                            prom.cur.disp_x += 1;
+                    if prom.cont.cur.x < prom.cont.buf.len() {
+                        prom.cont.cur.x += 1;
+                        if prom.cont.cur.x == prom.cont.buf.len() {
+                            prom.cont.cur.disp_x += 1;
                         } else {
-                            prom.cur.disp_x += prom.cont.buf[prom.cur.x].width().unwrap_or(0);
+                            prom.cont.cur.disp_x += prom.cont.buf[prom.cont.cur.x].width().unwrap_or(0);
                         }
 
-                        write!(out, "{}", cursor::Goto(prom.cur.disp_x as u16, (prom.disp_row_posi + prom.disp_row_num - 1) as u16)).unwrap();
+                        write!(out, "{}", cursor::Goto(prom.cont.cur.disp_x as u16, (prom.disp_row_posi + prom.disp_row_num - 1) as u16)).unwrap();
+                        out.flush().unwrap();
+                    }
+                    return EvtProcess::Hold;
+                }
+                Delete => {
+                    Log::ep_s("★　Delete");
+                    if prom.cont.cur.x < prom.cont.buf.len() {
+                        prom.cont.buf.remove(prom.cont.cur.x);
+                        let mut v: Vec<String> = vec![];
+                        prom.draw(&mut v).unwrap();
+                        write!(out, "{}{}", v.concat(), cursor::Goto(prom.cont.cur.disp_x as u16, (prom.disp_row_posi + prom.disp_row_num - 1) as u16)).unwrap();
                         out.flush().unwrap();
                     }
                     return EvtProcess::Hold;
                 }
                 Backspace => {
-                    if prom.cont.buf.len() > 0 {
-                        //    prompt.cont.input = c.to_string();
-                        write!(out, "{}", cursor::Goto(1, (prom.disp_row_posi + prom.disp_row_num - 1) as u16)).unwrap();
+                    Log::ep_s("★　Backspace");
+                    if prom.cont.cur.x > 0 {
+                        prom.cont.cur.x -= 1;
+                        prom.cont.cur.disp_x -= prom.cont.buf[prom.cont.cur.x].width().unwrap_or(0);
+                        prom.cont.buf.remove(prom.cont.cur.x);
+                        let mut v: Vec<String> = vec![];
+                        prom.draw(&mut v).unwrap();
+                        write!(out, "{}{}", v.concat(), cursor::Goto(prom.cont.cur.disp_x as u16, (prom.disp_row_posi + prom.disp_row_num - 1) as u16)).unwrap();
+                        out.flush().unwrap();
                     }
                     return EvtProcess::Hold;
                 }
                 Enter => {
-                    /*
-                    // 文字列チェック
-                    prompt.clear();
-                    terminal.draw(out, editor, prompt, sbar).unwrap();
-                    */
+                    if prom.cont.buf.len() == 0 {
+                    } else {
+                        // TODO 存在するファイル名の対応
+                        sbar.filenm = prom.cont.buf.iter().collect::<String>();
+                        editor.save(prom, sbar);
+                        terminal.draw(out, editor, prom, sbar).unwrap();
+                    }
                     return EvtProcess::Hold;
                 }
                 _ => return EvtProcess::Hold,

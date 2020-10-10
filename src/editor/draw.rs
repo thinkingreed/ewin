@@ -1,4 +1,4 @@
-use crate::model::{Cursor, Editor, Log, Prompt, SelectRange, StatusBar};
+use crate::model::{Cursor, Editor, Log, SelectRange, StatusBar};
 
 use std::fs;
 use std::io::{self, Write};
@@ -127,38 +127,17 @@ impl Editor {
             self.set_textarea_color(str_vec)
         }
     }
-    pub fn draw_cursor<T: Write>(&mut self, out: &mut T, sber: &mut StatusBar) -> Result<(), io::Error> {
+    pub fn draw_cur_only<T: Write>(&mut self, out: &mut T, sbar: &mut StatusBar) -> Result<(), io::Error> {
         Log::ep_s("★  draw_cursor");
         Log::ep("disp_x", self.cur.disp_x);
 
         let str_vec: &mut Vec<String> = &mut vec![];
 
-        sber.draw_statusber(str_vec, self);
+        sbar.draw_cur(str_vec, self);
         let cur_str = format!("{}", cursor::Goto((self.cur.disp_x - self.x_offset_disp) as u16, (self.cur.y + 1 - self.y_offset) as u16));
         str_vec.push(cur_str);
         write!(out, "{}", str_vec.concat())?;
         out.flush()?;
         return Ok(());
-    }
-    pub fn set_cur_str(&mut self, str_vec: &mut Vec<String>, prompt: &mut Prompt) {
-        Log::ep_s("★  set_cur_str");
-        Log::ep("cur.x", self.cur.x);
-        Log::ep("disp_x", self.cur.disp_x);
-        Log::ep("sel.sx", self.sel.sx);
-        Log::ep("sel.ex", self.sel.ex);
-        Log::ep("sel.s_disp_x", self.sel.s_disp_x);
-        Log::ep("sel.e_disp_x", self.sel.e_disp_x);
-
-        if prompt.is_save_new_file {
-            Log::ep("prompt.cont.input.chars().count()", prompt.cont.buf.len());
-            if prompt.cont.buf.len() == 0 {
-                Log::ep_s("cursor::Goto");
-                str_vec.push(cursor::Goto(1, (prompt.disp_row_posi + prompt.disp_row_num - 1) as u16).to_string());
-            } else {
-                str_vec.push(cursor::Goto((prompt.cont.buf.len() + 1) as u16, (prompt.disp_row_posi + prompt.disp_row_num - 1) as u16).to_string());
-            }
-        } else {
-            str_vec.push(cursor::Goto((self.cur.disp_x - self.x_offset_disp) as u16, (self.cur.y + 1 - self.y_offset) as u16).to_string());
-        }
     }
 }

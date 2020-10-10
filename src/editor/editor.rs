@@ -1,7 +1,7 @@
-use crate::model::{CopyRange, Editor, Log};
-
+use crate::model::{CopyRange, Editor, Log, StatusBar};
 use crossterm::event::{Event::Key, Event::Mouse, KeyCode, KeyCode::*, KeyEvent, MouseEvent};
 use std::cmp::{max, min};
+use std::io::Write;
 use unicode_width::UnicodeWidthChar;
 
 impl Editor {
@@ -66,7 +66,7 @@ impl Editor {
     }
 
     /// カーソル移動のEventでoffsetの変更有無でエディタ全体、又はカーソルのみの再描画の判定
-    pub fn move_cursor(&mut self, key: KeyCode) {
+    pub fn move_cursor<T: Write>(&mut self, key: KeyCode, out: &mut T, sbar: &mut StatusBar) {
         let y_offset_org: usize = self.y_offset;
         let x_offset_disp_org: usize = self.x_offset_disp;
         match key {
@@ -76,10 +76,10 @@ impl Editor {
             KeyCode::Right => self.cursor_right(),
             _ => {}
         }
-
         if self.is_all_redraw != true {
             self.is_all_redraw = y_offset_org != self.y_offset || x_offset_disp_org != self.x_offset_disp;
         }
+        self.draw_cur_only(out, sbar).unwrap();
     }
 
     /// updown_xまでのwidthを加算してdisp_xとcursorx算出

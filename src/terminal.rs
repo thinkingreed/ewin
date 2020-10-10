@@ -1,6 +1,7 @@
 use crate::_cfg::lang::cfg::LangCfg;
 use crate::model::{Editor, Log, Prompt, StatusBar, Terminal};
 use std::io::{self, Write};
+use termion::cursor;
 
 impl Terminal {
     pub fn draw<T: Write>(&mut self, out: &mut T, editor: &mut Editor, prompt: &mut Prompt, sbar: &mut StatusBar) -> Result<(), io::Error> {
@@ -13,12 +14,34 @@ impl Terminal {
 
         prompt.draw(str_vec).unwrap();
         sbar.draw(str_vec, editor).unwrap();
-        editor.set_cur_str(str_vec, prompt);
+        self.draw_cur(str_vec, editor, prompt);
 
         write!(out, "{}", &str_vec.concat())?;
         //out.write(&str_vec.concat().as_bytes()).unwrap();
         out.flush()?;
         return Ok(());
+    }
+
+    pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor, prompt: &mut Prompt) {
+        Log::ep_s("★  set_cur_str");
+        Log::ep("cur.x", editor.cur.x);
+        Log::ep("disp_x", editor.cur.disp_x);
+        Log::ep("sel.sx", editor.sel.sx);
+        Log::ep("sel.ex", editor.sel.ex);
+        Log::ep("sel.s_disp_x", editor.sel.s_disp_x);
+        Log::ep("sel.e_disp_x", editor.sel.e_disp_x);
+
+        if prompt.is_save_new_file {
+            Log::ep("prompt.cont.input.chars().count()", prompt.cont.buf.len());
+            if prompt.cont.buf.len() == 0 {
+                Log::ep_s("cursor::Goto");
+                str_vec.push(cursor::Goto(1, (prompt.disp_row_posi + prompt.disp_row_num - 1) as u16).to_string());
+            } else {
+                str_vec.push(cursor::Goto(prompt.cont.cur.disp_x as u16, (prompt.disp_row_posi + prompt.disp_row_num - 1) as u16).to_string());
+            }
+        } else {
+            str_vec.push(cursor::Goto((editor.cur.disp_x - editor.x_offset_disp) as u16, (editor.cur.y + 1 - editor.y_offset) as u16).to_string());
+        }
     }
 
     pub fn check_displayable(&mut self, lang_cfg: &LangCfg) -> bool {

@@ -21,10 +21,6 @@ impl Prompt {
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) -> Result<(), Error> {
         Log::ep_s("★　Prompt draw");
-
-        Log::ep("Prompt.disp_row_num", self.disp_row_num);
-        Log::ep("Prompt.disp_row_posi", self.disp_row_posi);
-
         if self.cont.desc.len() > 0 {
             let cont_desc = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi) as u16), clear::CurrentLine, self.cont.desc.clone());
             str_vec.push(cont_desc);
@@ -33,8 +29,6 @@ impl Prompt {
             str_vec.push(input_desc);
 
             let input = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 2) as u16), clear::CurrentLine, self.cont.buf.iter().collect::<String>());
-            Log::ep("draw prompt.cont.input", self.cont.buf.iter().collect::<String>());
-
             if self.is_save_new_file || self.cont.buf.len() > 0 {
                 str_vec.push(input);
             }

@@ -1,5 +1,4 @@
-use crate::_cfg::args::ARGS;
-use crate::model::{CopyRange, Editor, Log, Prompt};
+use crate::model::{CopyRange, Editor, Log, Prompt, StatusBar};
 use crate::util::*;
 use crossterm::event::Event::Key;
 use crossterm::event::KeyCode::{Left, Right};
@@ -182,13 +181,23 @@ impl Editor {
         };
         return true;
     }
-    pub fn save(&self, prompt: &mut Prompt) {
-        let file_path: &str = ARGS.get("file_path").unwrap();
-        if !Path::new(file_path).exists() {
-            prompt.is_save_new_file = true;
+    pub fn save(&mut self, prom: &mut Prompt, sbar: &mut StatusBar) {
+        Log::ep_s("★  save");
+        Log::ep("prom.cont.buf.len()", prom.cont.buf.len());
+
+        // let file_path = ARGS.get("file_path").unwrap();
+
+        if prom.cont.buf.len() > 0 {
+            let s = prom.cont.buf.iter().collect::<String>();
+            self.path = Some(Path::new(&s).into());
         }
-        if prompt.is_save_new_file {
-            prompt.save_new_file();
+
+        eprintln!("self.path {:?}", self.path);
+        // Log::ep("path", self.path.to_owned());
+
+        if !Path::new(&sbar.filenm).exists() && prom.cont.buf.len() == 0 {
+            prom.is_save_new_file = true;
+            prom.save_new_file();
         } else {
             if let Some(path) = self.path.as_ref() {
                 let result = File::create(path);
@@ -202,7 +211,7 @@ impl Editor {
                             }
                             writeln!(file).unwrap();
                         }
-                        prompt.is_change = false;
+                        prom.clear();
                     }
                     Err(err) => {
                         Log::ep("err", err.to_string());
@@ -215,7 +224,7 @@ impl Editor {
     }
 
     pub fn copy(&mut self) {
-        Log::ep_s("★★  copy");
+        Log::ep_s("★  copy");
         let copy_ranges: Vec<CopyRange> = self.get_copy_range();
 
         let mut vec: Vec<char> = vec![];
