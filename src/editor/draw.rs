@@ -1,4 +1,4 @@
-use crate::model::{Cursor, Editor, Log, SelectRange, StatusBar};
+use crate::model::{Cursor, Editor, Log, SearchRange, SelectRange, StatusBar};
 
 use std::fs;
 use std::io::{self, Write};
@@ -36,6 +36,7 @@ impl Editor {
         // let rowlen =
         self.lnw = self.buf.len().to_string().len();
         let sel_range = self.sel.get_range();
+        let search_ranges = self.search.search_ranges.clone();
 
         for i in self.y_offset..self.buf.len() {
             self.set_rownum_color(str_vec);
@@ -56,8 +57,10 @@ impl Editor {
                     break;
                 }
 
-                // 選択箇所のハイライト
+                // 選択箇所のhighlight
                 self.ctl_select_color(str_vec, sel_range, i, j);
+                // 検索対象のhighlight
+                self.ctl_search_color(str_vec, &search_ranges, i, j);
                 if let Some(c) = self.buf[i].get(j) {
                     let width = c.width().unwrap_or(0);
                     if i == self.x_offset_y && x + width <= self.x_offset_disp {
@@ -92,7 +95,7 @@ impl Editor {
             str_vec.push("\r\n".to_string());
         }
     }
-    /// 選択箇所のハイライト
+    /// 選択箇所のhighlight
     pub fn ctl_select_color(&mut self, str_vec: &mut Vec<String>, ranges: SelectRange, y: usize, _x: usize) {
         if ranges.sy == 0 && ranges.s_disp_x == 0 {
             return;
@@ -124,6 +127,27 @@ impl Editor {
             }
         } else {
             self.set_textarea_color(str_vec)
+        }
+    }
+
+    /// 検索箇所のhighlight
+    pub fn ctl_search_color(&mut self, str_vec: &mut Vec<String>, ranges: &Vec<SearchRange>, y: usize, x: usize) {
+        for range in ranges {
+            if range.y != y {
+                continue;
+            } else {
+                Log::ep("ctl_search_color x", x);
+                Log::ep("ctl_search_color y", y);
+                eprintln!("range {:?}", range.clone());
+                if range.sx <= x && x <= range.ex {
+                    //        Log::ep_s("set_search_color");
+                    self.set_search_color(str_vec);
+                    break;
+                } else {
+                    //         Log::ep_s("set_textarea_color");
+                    self.set_textarea_color(str_vec)
+                }
+            }
         }
     }
     pub fn draw_cur_only<T: Write>(&mut self, out: &mut T, sbar: &mut StatusBar) -> Result<(), io::Error> {

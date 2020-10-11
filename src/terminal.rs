@@ -31,7 +31,7 @@ impl Terminal {
         Log::ep("sel.s_disp_x", editor.sel.s_disp_x);
         Log::ep("sel.e_disp_x", editor.sel.e_disp_x);
 
-        if prom.is_save_new_file || prom.is_search {
+        if prom.is_save_new_file || prom.is_search_prom {
             Log::ep("prompt.cont.input.chars().count()", prom.cont.buf.len());
             if prom.cont.buf.len() == 0 {
                 Log::ep_s("cursor::Goto");

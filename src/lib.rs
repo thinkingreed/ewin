@@ -7,6 +7,8 @@ pub mod editor {
     pub mod draw;
     pub mod editor;
     pub mod key;
+    pub mod key_ctrl;
+    pub mod key_shift;
     pub mod mouse;
 }
 pub mod model;

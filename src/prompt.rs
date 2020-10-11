@@ -17,7 +17,7 @@ impl Prompt {
         self.disp_col_num = 0;
         self.is_save_confirm = false;
         self.is_save_new_file = false;
-        self.is_search = false;
+        self.is_search_prom = false;
         //self.is_change = false;
         self.cont = PromptCont::default();
     }
@@ -32,7 +32,7 @@ impl Prompt {
             str_vec.push(input_desc);
 
             let input = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 2) as u16), clear::CurrentLine, self.cont.buf.iter().collect::<String>());
-            if self.is_save_new_file || self.is_search || self.cont.buf.len() > 0 {
+            if self.is_save_new_file || self.is_search_prom || self.cont.buf.len() > 0 {
                 str_vec.push(input);
             }
         }

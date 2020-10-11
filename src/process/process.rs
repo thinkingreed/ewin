@@ -16,7 +16,7 @@ impl Process {
             return Process::save_new_filenm(out, terminal, editor, mbar, prom, sbar);
         } else if prom.is_save_confirm == true {
             return Process::close(out, terminal, editor, mbar, prom, sbar);
-        } else if prom.is_search == true {
+        } else if prom.is_search_prom == true {
             return Process::search(out, terminal, editor, mbar, prom, sbar);
         } else {
             return EvtProcess::Next;

@@ -1,4 +1,4 @@
-use crate::model::{Editor, EvtProcess, Log, MsgBar, Process, Prompt, PromptCont, StatusBar, Terminal};
+use crate::model::{Editor, EvtProcess, Log, MsgBar, Process, Prompt, PromptCont, Search, StatusBar, Terminal};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 use termion::color;
@@ -48,11 +48,12 @@ impl Process {
                     if prom.cont.buf.len() == 0 {
                         mbar.set_not_entered_serach_str();
                     } else {
-                        editor.search_str = prom.cont.buf.iter().collect::<String>();
+                        editor.search.str = prom.cont.buf.iter().collect::<String>();
 
-                        Log::ep("search_str", editor.search_str.clone());
+                        Log::ep("search_str", editor.search.str.clone());
                         mbar.clear();
                         prom.clear();
+                        editor.search.index = Search::INDEX_UNDEFINED;
                     }
                     return EvtProcess::Next;
                 }

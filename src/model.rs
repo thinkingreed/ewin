@@ -41,7 +41,7 @@ pub struct Prompt {
     pub is_change: bool,
     pub is_save_confirm: bool,
     pub is_save_new_file: bool,
-    pub is_search: bool,
+    pub is_search_prom: bool,
 }
 
 impl Default for Prompt {
@@ -62,7 +62,7 @@ impl Default for Prompt {
             is_change: false,
             is_save_confirm: false,
             is_save_new_file: false,
-            is_search: false,
+            is_search_prom: false,
         }
     }
 }
@@ -130,20 +130,43 @@ pub struct CopyRange {
     pub sx: usize,
     pub ex: usize,
 }
+#[derive(Debug, Clone, PartialEq, Eq)]
+/// 検索範囲
+pub struct Search {
+    pub str: String,
+    pub index: usize,
+    pub search_ranges: Vec<SearchRange>,
+}
+
+impl Search {
+    pub const INDEX_UNDEFINED: usize = usize::MAX;
+}
+
+impl Default for Search {
+    fn default() -> Self {
+        Search {
+            str: String::new(),
+            // 未設定
+            index: Search::INDEX_UNDEFINED,
+            search_ranges: vec![],
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct XRange {
+/// 検索範囲
+pub struct SearchRange {
+    pub y: usize,
     pub sx: usize,
     pub ex: usize,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-/// コピー範囲
-pub struct SearchRange {
-    pub y: usize,
-    pub x_ranges: Vec<XRange>,
-    pub y_curt: usize,
-    pub x_range_curt: XRange,
+impl Default for SearchRange {
+    fn default() -> Self {
+        SearchRange { y: 0, sx: 0, ex: 0 }
+    }
 }
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// マウスの選択操作関連 0-indexed
 pub struct SelectRange {
@@ -243,7 +266,7 @@ pub struct Editor {
     /// ターミナル上の表示数
     pub disp_row_num: usize,
     pub disp_col_num: usize,
-    pub search_str: String,
+    pub search: Search,
     // pub search_range
 }
 
@@ -272,7 +295,7 @@ impl Default for Editor {
             clipboard: String::new(),
             disp_row_num: 0,
             disp_col_num: 0,
-            search_str: String::new(),
+            search: Search::default(),
             //     search_range: vec![Range::new()],
         }
     }
