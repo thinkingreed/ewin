@@ -2,6 +2,7 @@ use crate::model::{Editor, EvtProcess, Log, MsgBar, Process, Prompt, PromptCont,
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 use termion::color;
+extern crate regex;
 
 impl Process {
     pub fn search<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtProcess {
@@ -48,10 +49,11 @@ impl Process {
                         mbar.set_not_entered_serach_str();
                     } else {
                         editor.search_str = prom.cont.buf.iter().collect::<String>();
-                        Log::ep("search_str", editor.search_str.clone());
-                    }
-                    terminal.draw(out, editor, mbar, prom, sbar).unwrap();
 
+                        Log::ep("search_str", editor.search_str.clone());
+                        mbar.clear();
+                        prom.clear();
+                    }
                     return EvtProcess::Next;
                 }
                 _ => return EvtProcess::Hold,

@@ -44,7 +44,8 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | Mapping                             | Description                        |
 |-------------------------------------|------------------------------------|
 | `Ctrl` + `w`                        | Quit ewin.                         |
-| `Ctrl` + `S`                        | Save current buffer to file.       |
+| `Ctrl` + `s`                        | Save current buffer to file.       |
+| `Ctrl` + `f`                        | Enter the character・string to search.     |
 
 
 - **Moving cursor**
@@ -76,22 +77,22 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 - **Select text**
 
 | Mapping                 | Description               |
-|-------------------------|---------------------------|
-| `Shift` + `↑`            | Select from the beginning of the current line and the end of the line above           |
-| `Shift` + `↓`            | Select from the end of the current line and the beginning of the line below.
-| `Shift` + `→`            | Select the next character.           |
-| `Shift` + `←`            | Select the previous character.       |
-| `Shift` + `HOME`         | Select the head of line.            |
-| `Shift` + `END`          | Select the end of line.            |
-| `Ctrl` + `a`             | Select all.                          |
+|-------------------------|----------------------------------------------------------------------------------|
+| `Shift` + `↑`           | Select from the beginning of the current line and the end of the line above.     |
+| `Shift` + `↓`           | Select from the end of the current line and the beginning of the line below.     |
+| `Shift` + `→`           | Select the next character.　　　　　　　　　　　　　　　　　　　　　　　　　　 　　 　| 
+| `Shift` + `←`           | Select the previous character.                                                   | 
+| `Shift` + `HOME`        | Select the head of line.                                                         | 
+| `Shift` + `END`         | Select the end of line.                                                          |
+| `Ctrl` + `a`            | Select all.                                                                      | 
+| `F3`                    | Search for characters・strings.                                                  |
 | `Mouse` + `Left.Down, Drag, Up`    | Select a range.|
 
 ### Future Works
 
-- WASI support
-- Search function
-- Redo/Undo function
 - Character replacement function
+- Redo/Undo function
+- WASI support
 
 ## License
 

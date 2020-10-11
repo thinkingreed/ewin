@@ -71,7 +71,7 @@ fn main() {
                         Char('x') => editor.cut(),
                         Char('v') => editor.paste(),
                         Char('a') => editor.all_select(),
-                        Char('f') => editor.search(&mut prom),
+                        Char('f') => editor.search_prom(&mut prom),
                         Home => editor.ctl_home(),
                         End => editor.ctl_end(),
                         _ => {}
@@ -99,6 +99,8 @@ fn main() {
                         Up => editor.move_cursor(Up, &mut out, &mut sbar),
                         Left => editor.move_cursor(Left, &mut out, &mut sbar),
                         Right => editor.move_cursor(Right, &mut out, &mut sbar),
+                        F(3) => editor.search(),
+
                         _ => {
                             Log::ep_s("Un Supported no modifiers");
                         }

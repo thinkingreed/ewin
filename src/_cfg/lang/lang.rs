@@ -16,6 +16,7 @@ set_new_filenm="新規に作成するファイル名を入力してください�
 set_search_str="検索する文字を入力してください。"
 ## Msg ##
 not_entered_filenm="ファイル名が入力されていません。"
+not_entered_search_str="検索する文字が入力されていません。"
 [en]
 row="row"
 col="col"
@@ -32,4 +33,5 @@ set_new_filenm="Enter the name of the newly created file."
 set_search_str="Enter the characters you want to search for."
 ## Msg ##
 not_entered_filenm="File name is not entered."
+not_entered_search_str="Search charctor is not entered."
 "#;

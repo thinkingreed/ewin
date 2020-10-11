@@ -124,11 +124,25 @@ impl Default for StatusBar {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// マウスの選択のコピー範囲
+/// コピー範囲
 pub struct CopyRange {
     pub y: usize,
     pub sx: usize,
     pub ex: usize,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct XRange {
+    pub sx: usize,
+    pub ex: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+/// コピー範囲
+pub struct SearchRange {
+    pub y: usize,
+    pub x_ranges: Vec<XRange>,
+    pub y_curt: usize,
+    pub x_range_curt: XRange,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// マウスの選択操作関連 0-indexed
@@ -230,6 +244,7 @@ pub struct Editor {
     pub disp_row_num: usize,
     pub disp_col_num: usize,
     pub search_str: String,
+    // pub search_range
 }
 
 impl Editor {}
@@ -258,6 +273,7 @@ impl Default for Editor {
             disp_row_num: 0,
             disp_col_num: 0,
             search_str: String::new(),
+            //     search_range: vec![Range::new()],
         }
     }
 }

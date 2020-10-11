@@ -309,9 +309,6 @@ impl Editor {
                 self.cur.x = self.lnw;
                 self.cur.disp_x = self.lnw;
             }
-            // Log::ep("copy_str", copy_str);
-            // Log::ep("copy_str.len", copy_str.len());
-
             if copy_str.len() == 0 {
                 continue;
             }
@@ -543,9 +540,23 @@ impl Editor {
         self.scroll_horizontal();
     }
 
-    pub fn search(&mut self, prom: &mut Prompt) {
+    pub fn search_prom(&mut self, prom: &mut Prompt) {
         Log::ep_s("★　search");
         prom.is_search = true;
         prom.search();
+    }
+
+    pub fn search(&mut self) {
+        Log::ep_s("★　search_str");
+
+        if self.search_str.len() > 0 {
+            Log::ep("search_str", self.search_str.clone());
+            for chars in &self.buf {
+                let row_str = chars.iter().collect::<String>();
+                let v: Vec<_> = row_str.match_indices(&self.search_str).collect();
+
+                eprintln!("search_Vec {:?}", v);
+            }
+        }
     }
 }
