@@ -57,6 +57,8 @@ impl Terminal {
         let (cols, rows) = termion::terminal_size().unwrap();
         let (cols, rows) = (cols as usize, rows as usize);
 
+        Log::ep("rows", rows);
+
         if rows <= 10 {
             sbar.disp_row_num = 0;
         } else {
@@ -64,10 +66,26 @@ impl Terminal {
             sbar.disp_row_posi = rows;
             sbar.disp_col_num = cols;
         }
+        Log::ep("sbar.disp_row_num", sbar.disp_row_num);
+        Log::ep("prom.disp_row_num", prom.disp_row_num);
         prom.disp_row_posi = rows - prom.disp_row_num + 1 - sbar.disp_row_num;
         mbar.disp_col_num = cols;
+
         mbar.disp_row_posi = rows - prom.disp_row_num - sbar.disp_row_num;
-        editor.disp_row_num = rows - prom.disp_row_num - sbar.disp_row_num;
+        Log::ep("prom.disp_row_posi", prom.disp_row_posi);
+        Log::ep("mbar.disp_col_num", mbar.disp_col_num);
+        Log::ep(" mbar.disp_row_posi", mbar.disp_row_posi);
+
+        if mbar.msg_disp.len() > 0 {
+            mbar.disp_row_num = 1;
+        } else {
+            mbar.disp_row_num = 0;
+        }
+
+        editor.disp_row_num = rows - prom.disp_row_num - mbar.disp_row_num - sbar.disp_row_num;
+
+        Log::ep("editor.disp_row_num", editor.disp_row_num);
+
         editor.disp_col_num = cols;
     }
 }

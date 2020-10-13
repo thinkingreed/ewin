@@ -6,6 +6,8 @@ extern crate regex;
 
 impl Process {
     pub fn search<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtProcess {
+        Log::ep_s("Process.search");
+
         match editor.curt_evt {
             Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
                 Char('c') => {
@@ -95,4 +97,12 @@ impl MsgBar {
         let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num);
         self.msg_disp = format!("{}{}{}", &color::Bg(color::Red).to_string(), msg_str, &color::Bg(color::Black).to_string(),);
     }
+
+    /*
+    pub fn set_no_search_str_bottom(&mut self) {
+        let msg = format!("{}{}", &color::Fg(color::White).to_string(), self.lang.no_search_str_bottom.clone(),);
+        let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num);
+        self.msg_disp = format!("{}{}{}", &color::Bg(color::Red).to_string(), msg_str, &color::Bg(color::Black).to_string(),);
+    }
+    */
 }

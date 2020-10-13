@@ -8,6 +8,7 @@ pub struct MsgBar {
     pub msg_disp: String,
     /// ターミナル上の表示数
     pub disp_row_posi: usize,
+    pub disp_row_num: usize,
     pub disp_col_num: usize,
 }
 
@@ -17,6 +18,7 @@ impl Default for MsgBar {
             lang: LangCfg::default(),
             msg_disp: String::new(),
             disp_row_posi: 0,
+            disp_row_num: 0,
             disp_col_num: 0,
         }
     }

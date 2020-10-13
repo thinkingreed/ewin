@@ -136,9 +136,9 @@ impl Editor {
             if range.y != y {
                 continue;
             } else {
-                Log::ep("ctl_search_color x", x);
-                Log::ep("ctl_search_color y", y);
-                eprintln!("range {:?}", range.clone());
+                // Log::ep("ctl_search_color x", x);
+                // Log::ep("ctl_search_color y", y);
+                // eprintln!("range {:?}", range.clone());
                 if range.sx <= x && x <= range.ex {
                     //        Log::ep_s("set_search_color");
                     self.set_search_color(str_vec);

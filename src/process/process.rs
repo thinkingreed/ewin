@@ -1,4 +1,4 @@
-use crate::model::{Editor, EvtProcess, MsgBar, Process, Prompt, StatusBar, Terminal};
+use crate::model::{Editor, EvtProcess, Log, MsgBar, Process, Prompt, StatusBar, Terminal};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
 use std::io::Write;
 
@@ -19,6 +19,8 @@ impl Process {
         } else if prom.is_search_prom == true {
             return Process::search(out, terminal, editor, mbar, prom, sbar);
         } else {
+            Log::ep_s("EvtProcess::NextEvtProcess::NextEvtProcess::Next");
+
             return EvtProcess::Next;
         }
     }

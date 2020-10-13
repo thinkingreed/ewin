@@ -183,8 +183,8 @@ impl Editor {
         self.scroll();
     }
 
-    pub fn search(&mut self) {
-        Log::ep_s("★　search_str");
+    pub fn search_str(&mut self, is_asc: bool) {
+        Log::ep_s("★★★★★★★★★★★★★★★★★★★　search_str");
 
         if self.search.str.len() > 0 {
             // 初回検索
@@ -205,13 +205,24 @@ impl Editor {
                 if self.search.search_ranges.len() > 0 {
                     self.search.index = 0;
                 }
-
                 eprintln!("self.search.search_ranges {:?}", self.search.search_ranges);
             } else {
-                self.search.index += 1;
+                if is_asc {
+                    if self.search.search_ranges.len() > self.search.index + 1 {
+                        self.search.index += 1;
+                    }
+                } else {
+                    if self.search.index > usize::MIN {
+                        self.search.index -= 1;
+                    }
+                }
             }
 
+            if self.search.search_ranges.len() == 0 {
+                return;
+            }
             if self.search.index != Search::INDEX_UNDEFINED {
+                //   if self.search.search_ranges.len() >= self.search.index + 1 && self.search.index >= usize::MIN {
                 let range = self.search.search_ranges[self.search.index];
                 eprintln!("search.search_ranges[index] {:?}", range);
                 self.cur.y = range.y;
@@ -220,6 +231,7 @@ impl Editor {
                 self.cur.disp_x = width + self.lnw;
                 self.scroll();
                 self.scroll_horizontal();
+                //    }
             }
         }
     }

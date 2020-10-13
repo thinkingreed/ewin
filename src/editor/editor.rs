@@ -1,4 +1,5 @@
 use crate::model::{CopyRange, Editor, Log, StatusBar};
+use crossterm::event::KeyModifiers;
 use crossterm::event::{Event::Key, Event::Mouse, KeyCode, KeyCode::*, KeyEvent, MouseEvent};
 use std::cmp::{max, min};
 use std::io::Write;
@@ -8,6 +9,21 @@ impl Editor {
     // カーソルが画面に映るようにする
     pub fn scroll(&mut self) {
         self.y_offset = min(self.y_offset, self.cur.y);
+
+        if self.curt_evt == Key(F(3).into()) {
+            if self.y_offset > usize::MIN {
+                self.y_offset += 3;
+            }
+        } else if self.curt_evt
+            == Key(KeyEvent {
+                code: F(3).into(),
+                modifiers: KeyModifiers::SHIFT.into(),
+            })
+        {
+            if self.y_offset > usize::MIN {
+                self.y_offset -= 1;
+            }
+        }
         if self.cur.y + 1 >= self.disp_row_num {
             self.y_offset = max(self.y_offset, self.cur.y + 1 - self.disp_row_num);
         }
@@ -17,20 +33,20 @@ impl Editor {
         self.x_offset_y = self.cur.y;
         if self.x_offset_disp + self.disp_col_num < self.cur.disp_x {
             if self.curt_evt == Key(Right.into()) {
-                // 次のバイト文字数より大きくx_offset設定
-                let (mut sun_w, mut x_offset) = (0, 0);
+                // 次のunicode文字幅より大きくx_offset設定
+                let (mut sum_w, mut x_offset) = (0, 0);
                 let diff = self.cur.disp_x - (self.x_offset_disp + self.disp_col_num);
                 for i in self.x_offset..=self.buf[self.x_offset_y].len() {
                     let c = self.buf[self.x_offset_y].get(i).unwrap();
                     let w = c.width().unwrap_or(0);
-                    sun_w += w;
+                    sum_w += w;
                     x_offset += 1;
-                    if sun_w >= diff {
+                    if sum_w >= diff {
                         break;
                     }
                 }
                 self.x_offset += x_offset;
-                self.x_offset_disp += sun_w;
+                self.x_offset_disp += sum_w;
             } else {
                 //  Log::ep_s("下の行の1列目からLeftの場合");
                 self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.lnw);
@@ -40,12 +56,12 @@ impl Editor {
         // x_offset_dispが減少する場合
         } else if self.cur.disp_x <= self.x_offset_disp + self.lnw {
             if self.curt_evt == Key(Left.into()) {
-                //  Log::ep_s("Leftで減少する場合");
+                // Left で減少
                 let w = self.get_cur_x_width(self.cur.y);
                 self.x_offset_disp -= w;
                 self.x_offset -= 1;
             } else {
-                //   Log::ep_s("Upで減少する場合");
+                //   Up で減少
                 self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.lnw);
                 let (_, width) = self.get_row_width(self.cur.y, 0, self.x_offset);
                 self.x_offset_disp = width;
@@ -57,7 +73,6 @@ impl Editor {
                     self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.lnw);
                     let (_, width) = self.get_row_width(self.cur.y, 0, self.x_offset);
                     self.x_offset_disp = width;
-                    // x_offset_disp時の表示の切替の為
                     self.is_all_redraw = true;
                 }
                 _ => {}

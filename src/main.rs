@@ -45,6 +45,8 @@ fn main() {
 
         editor.curt_evt = event.unwrap().clone();
 
+        eprintln!("    editor.curt_evt {:?}", editor.curt_evt.clone());
+
         let evt_next_process = Process::check_next_process(&mut out, &mut terminal, &mut editor, &mut mbar, &mut prom, &mut sbar);
 
         match evt_next_process {
@@ -74,9 +76,13 @@ fn main() {
                         Char('f') => editor.search_prom(&mut prom),
                         Home => editor.ctl_home(),
                         End => editor.ctl_end(),
+                        F(3) => editor.search_str(false),
+
                         _ => {}
                     },
                     Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {
+                        F(2) => editor.search_str(false),
+                        F(3) => editor.search_str(false),
                         Right => editor.shift_right(),
                         Left => editor.shift_left(),
                         Down => editor.shift_down(),
@@ -99,7 +105,7 @@ fn main() {
                         Up => editor.move_cursor(Up, &mut out, &mut sbar),
                         Left => editor.move_cursor(Left, &mut out, &mut sbar),
                         Right => editor.move_cursor(Right, &mut out, &mut sbar),
-                        F(3) => editor.search(),
+                        F(3) => editor.search_str(true),
 
                         _ => {
                             Log::ep_s("Un Supported no modifiers");
