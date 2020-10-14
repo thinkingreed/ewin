@@ -1,11 +1,11 @@
+use clap::{App, Arg};
 use crossterm::event::{read, KeyCode::*, KeyModifiers};
 use crossterm::event::{Event::*, KeyEvent, MouseButton, MouseEvent};
-use ewin::_cfg::args::ARGS;
 use ewin::_cfg::lang::cfg::LangCfg;
 use ewin::model::{Editor, EvtProcess, Log, MsgBar, Process, Prompt, StatusBar, Terminal};
+use std::ffi::OsStr;
 
-use std::io::Write;
-use std::io::{stdout, BufWriter};
+use std::io::{stdout, BufWriter, Write};
 use std::path::Path;
 use termion::clear;
 use termion::input::MouseTerminal;
@@ -13,7 +13,16 @@ use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
 
 fn main() {
-    let file_path: &str = ARGS.get("file_path").unwrap();
+    let matches = App::new("ew")
+        .about("A text editor")
+        .bin_name("ew")
+        .arg(Arg::with_name("file").required(false))
+        .arg(Arg::with_name("-debug").help("debug mode").short("-d").long("-debug"))
+        .get_matches();
+
+    // let file_path: &str = ARGS.get("file_path").unwrap();
+
+    let file_path: String = matches.value_of_os("file").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
 
     let mut editor = Editor::default();
     let lang_cfg = LangCfg::read_lang_cfg();
@@ -33,8 +42,7 @@ fn main() {
     let mut prom = Prompt::new(lang_cfg.clone());
 
     terminal.set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
-
-    editor.open(Path::new(file_path));
+    editor.open(Path::new(&file_path));
 
     let stdout = MouseTerminal::from(AlternateScreen::from(stdout()).into_raw_mode().unwrap());
     let mut out = BufWriter::new(stdout.lock());
@@ -44,8 +52,6 @@ fn main() {
         let event = read();
 
         editor.curt_evt = event.unwrap().clone();
-
-        eprintln!("    editor.curt_evt {:?}", editor.curt_evt.clone());
 
         let evt_next_process = Process::check_next_process(&mut out, &mut terminal, &mut editor, &mut mbar, &mut prom, &mut sbar);
 
@@ -76,8 +82,6 @@ fn main() {
                         Char('f') => editor.search_prom(&mut prom),
                         Home => editor.ctl_home(),
                         End => editor.ctl_end(),
-                        F(3) => editor.search_str(false),
-
                         _ => {}
                     },
                     Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {

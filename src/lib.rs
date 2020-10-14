@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate lazy_static;
-
 pub mod color;
 pub mod editor {
     pub mod clipboard;
@@ -29,5 +26,5 @@ pub mod _cfg {
         pub mod cfg;
         pub mod lang;
     }
-    pub mod args;
+    //   pub mod args;
 }

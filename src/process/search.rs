@@ -78,9 +78,12 @@ impl PromptCont {
     pub fn set_search(&mut self) {
         self.desc = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.set_search_str.clone(), "\n");
         self.input_desc = format!(
-            "{}{}:{}F3  {}{}:{}Ctrl + c{}",
+            "{}{}:{}F3  {}{}:{}Shift + F2  {}{}:{}Ctrl + c{}",
             &color::Fg(color::White).to_string(),
-            self.lang.search_start.clone(),
+            self.lang.search_bottom_start.clone(),
+            &color::Fg(color::LightGreen).to_string(),
+            &color::Fg(color::White).to_string(),
+            self.lang.search_top.clone(),
             &color::Fg(color::LightGreen).to_string(),
             &color::Fg(color::White).to_string(),
             self.lang.close.clone(),

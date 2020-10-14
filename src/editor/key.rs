@@ -1,4 +1,5 @@
 use crate::model::{Editor, Log, Search, SearchRange};
+use crate::util::*;
 use crossterm::event::Event::Key;
 use crossterm::event::KeyCode::{Left, Right};
 use std::cmp::{max, min};
@@ -184,55 +185,81 @@ impl Editor {
     }
 
     pub fn search_str(&mut self, is_asc: bool) {
-        Log::ep_s("★★★★★★★★★★★★★★★★★★★　search_str");
+        Log::ep_s("★★★★★★★★★　search_str");
 
         if self.search.str.len() > 0 {
             // 初回検索
             if self.search.index == Search::INDEX_UNDEFINED {
                 self.search.search_ranges.clear();
                 Log::ep("search_str", self.search.str.clone());
-                let len = self.search.str.chars().count();
+                let len = self.search.str.chars().count() - 1;
+
                 for (i, chars) in self.buf.iter().enumerate() {
                     let row_str = chars.iter().collect::<String>();
                     let v: Vec<(usize, &str)> = row_str.match_indices(&self.search.str).collect();
+
                     if v.len() == 0 {
                         continue;
                     }
-                    for (_, indexs) in v.iter().enumerate() {
-                        self.search.search_ranges.push(SearchRange { y: i, sx: indexs.0, ex: indexs.0 + len - 1 });
+                    for (index, _) in v {
+                        Log::ep("index", index);
+                        let x = get_char_count(&chars, index);
+                        eprintln!("x {:?}", x);
+                        self.search.search_ranges.push(SearchRange { y: i, sx: x, ex: x + len });
                     }
                 }
+                eprintln!("self.search.search_ranges {:?}", self.search.search_ranges);
+
                 if self.search.search_ranges.len() > 0 {
                     self.search.index = 0;
                 }
-                eprintln!("self.search.search_ranges {:?}", self.search.search_ranges);
             } else {
-                if is_asc {
-                    if self.search.search_ranges.len() > self.search.index + 1 {
-                        self.search.index += 1;
-                    }
-                } else {
-                    if self.search.index > usize::MIN {
-                        self.search.index -= 1;
-                    }
-                }
+                self.search.index = self.get_search_str_index(is_asc);
             }
 
             if self.search.search_ranges.len() == 0 {
                 return;
             }
             if self.search.index != Search::INDEX_UNDEFINED {
-                //   if self.search.search_ranges.len() >= self.search.index + 1 && self.search.index >= usize::MIN {
                 let range = self.search.search_ranges[self.search.index];
-                eprintln!("search.search_ranges[index] {:?}", range);
                 self.cur.y = range.y;
                 self.cur.x = range.sx + self.lnw;
-                let (_, width) = self.get_row_width(self.cur.y, 0, range.sx + 1);
-                self.cur.disp_x = width + self.lnw;
+                let (_, width) = self.get_row_width(self.cur.y, 0, range.sx);
+                self.cur.disp_x = width + self.lnw + 1;
                 self.scroll();
                 self.scroll_horizontal();
-                //    }
             }
+        }
+    }
+
+    fn get_search_str_index(&mut self, is_asc: bool) -> usize {
+        let cur_x = self.cur.x - self.lnw;
+        if is_asc {
+            for (i, range) in self.search.search_ranges.iter().enumerate() {
+                if self.cur.y < range.y || (self.cur.y == range.y && cur_x < range.sx) {
+                    return i;
+                }
+            }
+            // 循環検索の為に0返却
+            return 0;
+        } else {
+            //
+            //
+            // descの場合にdisp_xがずれる場合の対応
+            //
+            //
+            //
+
+            let index = self.search.search_ranges.len() - 1;
+            let mut ranges = self.search.search_ranges.clone();
+            ranges.reverse();
+            for (i, range) in ranges.iter().enumerate() {
+                if self.cur.y > range.y || (self.cur.y == range.y && cur_x > range.sx) {
+                    return index - i;
+                }
+            }
+            // 循環検索の為にindex返却
+            return index;
         }
     }
 }

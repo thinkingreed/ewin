@@ -24,13 +24,14 @@ impl Terminal {
 
     pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor, prom: &mut Prompt) {
         Log::ep_s("★  set_cur_str");
-        Log::ep("cur.x", editor.cur.x);
-        Log::ep("disp_x", editor.cur.disp_x);
-        Log::ep("sel.sx", editor.sel.sx);
-        Log::ep("sel.ex", editor.sel.ex);
-        Log::ep("sel.s_disp_x", editor.sel.s_disp_x);
-        Log::ep("sel.e_disp_x", editor.sel.e_disp_x);
-
+        /*
+                Log::ep("cur.x", editor.cur.x);
+                Log::ep("disp_x", editor.cur.disp_x);
+                Log::ep("sel.sx", editor.sel.sx);
+                Log::ep("sel.ex", editor.sel.ex);
+                Log::ep("sel.s_disp_x", editor.sel.s_disp_x);
+                Log::ep("sel.e_disp_x", editor.sel.e_disp_x);
+        */
         if prom.is_save_new_file || prom.is_search_prom {
             Log::ep("prompt.cont.input.chars().count()", prom.cont.buf.len());
             if prom.cont.buf.len() == 0 {
@@ -66,15 +67,15 @@ impl Terminal {
             sbar.disp_row_posi = rows;
             sbar.disp_col_num = cols;
         }
-        Log::ep("sbar.disp_row_num", sbar.disp_row_num);
-        Log::ep("prom.disp_row_num", prom.disp_row_num);
+        // Log::ep("sbar.disp_row_num", sbar.disp_row_num);
+        // Log::ep("prom.disp_row_num", prom.disp_row_num);
         prom.disp_row_posi = rows - prom.disp_row_num + 1 - sbar.disp_row_num;
         mbar.disp_col_num = cols;
 
         mbar.disp_row_posi = rows - prom.disp_row_num - sbar.disp_row_num;
-        Log::ep("prom.disp_row_posi", prom.disp_row_posi);
-        Log::ep("mbar.disp_col_num", mbar.disp_col_num);
-        Log::ep(" mbar.disp_row_posi", mbar.disp_row_posi);
+        // Log::ep("prom.disp_row_posi", prom.disp_row_posi);
+        // Log::ep("mbar.disp_col_num", mbar.disp_col_num);
+        // Log::ep(" mbar.disp_row_posi", mbar.disp_row_posi);
 
         if mbar.msg_disp.len() > 0 {
             mbar.disp_row_num = 1;

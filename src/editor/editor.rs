@@ -1,5 +1,4 @@
 use crate::model::{CopyRange, Editor, Log, StatusBar};
-use crossterm::event::KeyModifiers;
 use crossterm::event::{Event::Key, Event::Mouse, KeyCode, KeyCode::*, KeyEvent, MouseEvent};
 use std::cmp::{max, min};
 use std::io::Write;
@@ -10,20 +9,6 @@ impl Editor {
     pub fn scroll(&mut self) {
         self.y_offset = min(self.y_offset, self.cur.y);
 
-        if self.curt_evt == Key(F(3).into()) {
-            if self.y_offset > usize::MIN {
-                self.y_offset += 3;
-            }
-        } else if self.curt_evt
-            == Key(KeyEvent {
-                code: F(3).into(),
-                modifiers: KeyModifiers::SHIFT.into(),
-            })
-        {
-            if self.y_offset > usize::MIN {
-                self.y_offset -= 1;
-            }
-        }
         if self.cur.y + 1 >= self.disp_row_num {
             self.y_offset = max(self.y_offset, self.cur.y + 1 - self.disp_row_num);
         }

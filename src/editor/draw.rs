@@ -59,9 +59,9 @@ impl Editor {
 
                 // 選択箇所のhighlight
                 self.ctl_select_color(str_vec, sel_range, i, j);
-                // 検索対象のhighlight
-                self.ctl_search_color(str_vec, &search_ranges, i, j);
-                if let Some(c) = self.buf[i].get(j) {
+                &self.ctl_search_color(str_vec, &search_ranges, i, j);
+
+                if let Some(c) = &self.buf[i].get(j) {
                     let width = c.width().unwrap_or(0);
                     if i == self.x_offset_y && x + width <= self.x_offset_disp {
                         x += width;
@@ -77,7 +77,9 @@ impl Editor {
                             break;
                         }
                     }
+
                     x += width;
+                    // 検索対象のhighlight
                     str_vec.push(c.to_string());
                 }
             }
