@@ -24,22 +24,9 @@ impl Terminal {
 
     pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor, prom: &mut Prompt) {
         Log::ep_s("★  set_cur_str");
-        /*
-                Log::ep("cur.x", editor.cur.x);
-                Log::ep("disp_x", editor.cur.disp_x);
-                Log::ep("sel.sx", editor.sel.sx);
-                Log::ep("sel.ex", editor.sel.ex);
-                Log::ep("sel.s_disp_x", editor.sel.s_disp_x);
-                Log::ep("sel.e_disp_x", editor.sel.e_disp_x);
-        */
-        if prom.is_save_new_file || prom.is_search_prom {
-            Log::ep("prompt.cont.input.chars().count()", prom.cont.buf.len());
-            if prom.cont.buf.len() == 0 {
-                Log::ep_s("cursor::Goto");
-                str_vec.push(cursor::Goto(1, (prom.disp_row_posi + prom.disp_row_num - 1) as u16).to_string());
-            } else {
-                str_vec.push(cursor::Goto(prom.cont.cur.disp_x as u16, (prom.disp_row_posi + prom.disp_row_num - 1) as u16).to_string());
-            }
+
+        if prom.is_save_new_file || prom.is_search || prom.is_replace {
+            prom.draw_cur(str_vec);
         } else {
             str_vec.push(cursor::Goto((editor.cur.disp_x - editor.x_offset_disp) as u16, (editor.cur.y + 1 - editor.y_offset) as u16).to_string());
         }

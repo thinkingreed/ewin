@@ -1,19 +1,11 @@
 use crate::model::{Editor, EvtProcess, MsgBar, Process, Prompt, PromptCont, StatusBar, Terminal};
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 use termion::color;
 
 impl Process {
     pub fn close<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prompt: &mut Prompt, sbar: &mut StatusBar) -> EvtProcess {
         match editor.curt_evt {
-            Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
-                Char('c') => {
-                    prompt.clear();
-                    terminal.draw(out, editor, mbar, prompt, sbar).unwrap();
-                    return EvtProcess::Next;
-                }
-                _ => return EvtProcess::Hold,
-            },
             Key(KeyEvent { code: Char(c), .. }) => {
                 if c == 'y' {
                     // save成否判定
@@ -45,8 +37,8 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_save_confirm(&mut self) {
-        self.desc = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.save_confirmation_to_close.clone(), "\n");
-        self.input_desc = format!(
+        self.guide = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.save_confirmation_to_close.clone(), "\n");
+        self.key_desc = format!(
             "{}{}:{}Y  {}{}:{}N  {}{}:{}Ctrl + c{}",
             &color::Fg(color::White).to_string(),
             self.lang.yes.clone(),

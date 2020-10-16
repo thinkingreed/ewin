@@ -1,48 +1,13 @@
-use crate::model::{Editor, EvtProcess, Log, MsgBar, Process, Prompt, PromptCont, Search, StatusBar, Terminal};
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
-use std::io::Write;
+use crate::model::{Editor, EvtProcess, Log, MsgBar, Process, Prompt, PromptCont, Search};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use termion::color;
 
 impl Process {
-    pub fn search<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtProcess {
+    pub fn search(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) -> EvtProcess {
         Log::ep_s("Process.search");
 
         match editor.curt_evt {
-            Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
-                Char('c') => {
-                    prom.clear();
-                    mbar.clear();
-                    terminal.draw(out, editor, mbar, prom, sbar).unwrap();
-                    return EvtProcess::Next;
-                }
-                _ => return EvtProcess::Hold,
-            },
-            Key(KeyEvent { code: Char(c), .. }) => {
-                prom.cont.insert_char(c);
-                prom.draw_only(out);
-                return EvtProcess::Hold;
-            }
             Key(KeyEvent { code, .. }) => match code {
-                Left => {
-                    prom.cont.cursor_left();
-                    prom.draw_only(out);
-                    return EvtProcess::Hold;
-                }
-                Right => {
-                    prom.cont.cursor_right();
-                    prom.draw_only(out);
-                    return EvtProcess::Hold;
-                }
-                Delete => {
-                    prom.cont.delete();
-                    prom.draw_only(out);
-                    return EvtProcess::Hold;
-                }
-                Backspace => {
-                    prom.cont.backspace();
-                    prom.draw_only(out);
-                    return EvtProcess::Hold;
-                }
                 F(3) => {
                     Log::ep_s("search.F3");
 
@@ -50,8 +15,6 @@ impl Process {
                         mbar.set_not_entered_serach_str();
                     } else {
                         editor.search.str = prom.cont.buf.iter().collect::<String>();
-
-                        Log::ep("search_str", editor.search.str.clone());
                         mbar.clear();
                         prom.clear();
                         editor.search.index = Search::INDEX_UNDEFINED;
@@ -76,8 +39,8 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_search(&mut self) {
-        self.desc = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.set_search_str.clone(), "\n");
-        self.input_desc = format!(
+        self.guide = format!("{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.set_search_str.clone());
+        self.key_desc = format!(
             "{}{}:{}F3  {}{}:{}Shift + F2  {}{}:{}Ctrl + c{}",
             &color::Fg(color::White).to_string(),
             self.lang.search_bottom_start.clone(),

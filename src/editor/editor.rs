@@ -1,5 +1,5 @@
 use crate::model::{CopyRange, Editor, Log, StatusBar};
-use crossterm::event::{Event::Key, Event::Mouse, KeyCode, KeyCode::*, KeyEvent, MouseEvent};
+use crossterm::event::KeyCode;
 use std::cmp::{max, min};
 use std::io::Write;
 use unicode_width::UnicodeWidthChar;
@@ -14,55 +14,12 @@ impl Editor {
         }
     }
     pub fn scroll_horizontal(&mut self) {
-        // Log::ep_s("★ scroll_horizontal");
+        Log::ep_s("★ scroll_horizontal");
         self.x_offset_y = self.cur.y;
-        if self.x_offset_disp + self.disp_col_num < self.cur.disp_x {
-            if self.curt_evt == Key(Right.into()) {
-                // 次のunicode文字幅より大きくx_offset設定
-                let (mut sum_w, mut x_offset) = (0, 0);
-                let diff = self.cur.disp_x - (self.x_offset_disp + self.disp_col_num);
-                for i in self.x_offset..=self.buf[self.x_offset_y].len() {
-                    let c = self.buf[self.x_offset_y].get(i).unwrap();
-                    let w = c.width().unwrap_or(0);
-                    sum_w += w;
-                    x_offset += 1;
-                    if sum_w >= diff {
-                        break;
-                    }
-                }
-                self.x_offset += x_offset;
-                self.x_offset_disp += sum_w;
-            } else {
-                //  Log::ep_s("下の行の1列目からLeftの場合");
-                self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.lnw);
-                let (_, width) = self.get_row_width(self.cur.y, 0, self.x_offset);
-                self.x_offset_disp = width;
-            }
-        // x_offset_dispが減少する場合
-        } else if self.cur.disp_x <= self.x_offset_disp + self.lnw {
-            if self.curt_evt == Key(Left.into()) {
-                // Left で減少
-                let w = self.get_cur_x_width(self.cur.y);
-                self.x_offset_disp -= w;
-                self.x_offset -= 1;
-            } else {
-                //   Up で減少
-                self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.lnw);
-                let (_, width) = self.get_row_width(self.cur.y, 0, self.x_offset);
-                self.x_offset_disp = width;
-            }
-        } else if self.x_offset_disp > 0 {
-            match self.curt_evt {
-                Key(KeyEvent { code: Up, .. }) | Key(KeyEvent { code: Down, .. }) | Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) => {
-                    //   Log::ep_s("disp_xの変化が少ない場合");
-                    self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.lnw);
-                    let (_, width) = self.get_row_width(self.cur.y, 0, self.x_offset);
-                    self.x_offset_disp = width;
-                    self.is_all_redraw = true;
-                }
-                _ => {}
-            }
-        }
+
+        self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.lnw);
+        let (_, width) = self.get_row_width(self.cur.y, 0, self.x_offset);
+        self.x_offset_disp = width;
     }
 
     /// カーソル移動のEventでoffsetの変更有無でエディタ全体、又はカーソルのみの再描画の判定
@@ -77,9 +34,9 @@ impl Editor {
             _ => {}
         }
         if self.is_all_redraw != true {
-            self.is_all_redraw = y_offset_org != self.y_offset || x_offset_disp_org != self.x_offset_disp;
+            self.is_all_redraw = y_offset_org != self.y_offset || (x_offset_disp_org != self.x_offset_disp || (x_offset_disp_org == self.x_offset_disp && self.x_offset_disp != 0));
         }
-        self.draw_cur_only(out, sbar).unwrap();
+        self.draw_cur(out, sbar);
     }
 
     /// updown_xまでのwidthを加算してdisp_xとcursorx算出

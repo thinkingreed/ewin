@@ -30,7 +30,6 @@ pub enum EvtProcess {
     Next,
     Exit,
 }
-#[derive(Debug, Clone)]
 pub struct Prompt {
     pub lang: LangCfg,
     /// ターミナル上の表示関連
@@ -40,10 +39,13 @@ pub struct Prompt {
     pub search_str: String,
     // Prompt Content
     pub cont: PromptCont,
+    pub cont_sub: PromptCont,
+    pub cur_posi: PromptContType,
     pub is_change: bool,
-    pub is_save_confirm: bool,
+    pub is_close_confirm: bool,
     pub is_save_new_file: bool,
-    pub is_search_prom: bool,
+    pub is_search: bool,
+    pub is_replace: bool,
 }
 
 impl Default for Prompt {
@@ -55,25 +57,55 @@ impl Default for Prompt {
             disp_col_num: 0,
             cont: PromptCont {
                 lang: LangCfg::default(),
-                desc: String::new(),
-                input_desc: String::new(),
+                guide: String::new(),
+                key_desc: String::new(),
+                buf_desc: String::new(),
                 buf: vec![],
                 cur: Cursor { y: 0, x: 0, disp_x: 1, updown_x: 0 },
             },
+            cont_sub: PromptCont {
+                lang: LangCfg::default(),
+                guide: String::new(),
+                key_desc: String::new(),
+                buf_desc: String::new(),
+                buf: vec![],
+                cur: Cursor { y: 0, x: 0, disp_x: 1, updown_x: 0 },
+            },
+            cur_posi: PromptContType::Main,
             search_str: String::new(),
             is_change: false,
-            is_save_confirm: false,
+            is_close_confirm: false,
             is_save_new_file: false,
-            is_search_prom: false,
+            is_search: false,
+            is_replace: false,
         }
+    }
+}
+
+impl Prompt {
+    pub fn new(lang_cfg: LangCfg) -> Self {
+        Prompt { lang: lang_cfg, ..Prompt::default() }
+    }
+
+    pub fn clear(&mut self) {
+        Log::ep_s("★　Prompt clear");
+        self.disp_row_num = 0;
+        self.disp_row_posi = 0;
+        self.disp_col_num = 0;
+        self.is_close_confirm = false;
+        self.is_save_new_file = false;
+        self.is_search = false;
+        self.is_replace = false;
+        self.cont = PromptCont::default();
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct PromptCont {
     pub lang: LangCfg,
-    pub desc: String,
-    pub input_desc: String,
+    pub guide: String,
+    pub key_desc: String,
+    pub buf_desc: String,
     pub buf: Vec<char>,
     pub cur: Cursor,
 }
@@ -82,13 +114,20 @@ impl Default for PromptCont {
     fn default() -> Self {
         PromptCont {
             lang: LangCfg::default(),
-            desc: String::new(),
-            input_desc: String::new(),
+            guide: String::new(),
+            key_desc: String::new(),
+            buf_desc: String::new(),
             buf: vec![],
             cur: Cursor { y: 0, x: 0, disp_x: 1, updown_x: 0 },
         }
     }
 }
+#[derive(PartialEq)]
+pub enum PromptContType {
+    Main,
+    Sub,
+}
+
 #[derive(Debug, Clone)]
 pub struct Terminal {}
 impl Default for Terminal {

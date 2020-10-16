@@ -30,16 +30,9 @@ impl Editor {
         if self.cur.updown_x == 0 {
             self.cur.updown_x = self.cur.disp_x;
         }
-        let (cursorx, line_width) = self.get_row_width(self.cur.y, 0, self.buf[self.cur.y].len());
-
         // Left,Rightの場合は設定しない
         if self.curt_evt == Key(Left.into()) || self.curt_evt == Key(Right.into()) {
-        } else if line_width < self.x_offset_disp {
-            Log::ep_s("c_d x_offset 切り替わる");
-            self.cur.disp_x = line_width + self.lnw + 1;
-            self.cur.x = cursorx + self.lnw;
         } else {
-            Log::ep_s("c_d x_offset 切り替わっていない");
             let (cursorx, disp_x) = self.get_until_updown_x();
             self.cur.disp_x = disp_x;
             self.cur.x = cursorx;
@@ -160,7 +153,7 @@ impl Editor {
 
     pub fn home(&mut self) {
         self.cur.x = self.lnw;
-        self.cur.disp_x = self.get_cur_x_width(self.cur.y) + self.lnw;
+        self.cur.disp_x = self.lnw + 1;
         self.scroll_horizontal();
     }
     pub fn end(&mut self) {
@@ -185,26 +178,22 @@ impl Editor {
     }
 
     pub fn search_str(&mut self, is_asc: bool) {
-        Log::ep_s("★★★★★★★★★　search_str");
+        Log::ep_s("★　search_str");
 
         if self.search.str.len() > 0 {
             // 初回検索
             if self.search.index == Search::INDEX_UNDEFINED {
                 self.search.search_ranges.clear();
-                Log::ep("search_str", self.search.str.clone());
                 let len = self.search.str.chars().count() - 1;
 
                 for (i, chars) in self.buf.iter().enumerate() {
                     let row_str = chars.iter().collect::<String>();
                     let v: Vec<(usize, &str)> = row_str.match_indices(&self.search.str).collect();
-
                     if v.len() == 0 {
                         continue;
                     }
                     for (index, _) in v {
-                        Log::ep("index", index);
                         let x = get_char_count(&chars, index);
-                        eprintln!("x {:?}", x);
                         self.search.search_ranges.push(SearchRange { y: i, sx: x, ex: x + len });
                     }
                 }
@@ -226,6 +215,7 @@ impl Editor {
                 self.cur.x = range.sx + self.lnw;
                 let (_, width) = self.get_row_width(self.cur.y, 0, range.sx);
                 self.cur.disp_x = width + self.lnw + 1;
+
                 self.scroll();
                 self.scroll_horizontal();
             }
@@ -243,13 +233,6 @@ impl Editor {
             // 循環検索の為に0返却
             return 0;
         } else {
-            //
-            //
-            // descの場合にdisp_xがずれる場合の対応
-            //
-            //
-            //
-
             let index = self.search.search_ranges.len() - 1;
             let mut ranges = self.search.search_ranges.clone();
             ranges.reverse();

@@ -1,46 +1,12 @@
 use crate::model::{Editor, EvtProcess, MsgBar, Process, Prompt, PromptCont, StatusBar, Terminal};
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 use termion::color;
 
 impl Process {
     pub fn save_new_filenm<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtProcess {
         match editor.curt_evt {
-            Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
-                Char('c') => {
-                    prom.clear();
-                    mbar.clear();
-                    terminal.draw(out, editor, mbar, prom, sbar).unwrap();
-                    return EvtProcess::Next;
-                }
-                _ => return EvtProcess::Hold,
-            },
-            Key(KeyEvent { code: Char(c), .. }) => {
-                prom.cont.insert_char(c);
-                prom.draw_only(out);
-                return EvtProcess::Hold;
-            }
             Key(KeyEvent { code, .. }) => match code {
-                Left => {
-                    prom.cont.cursor_left();
-                    prom.draw_only(out);
-                    return EvtProcess::Hold;
-                }
-                Right => {
-                    prom.cont.cursor_right();
-                    prom.draw_only(out);
-                    return EvtProcess::Hold;
-                }
-                Delete => {
-                    prom.cont.delete();
-                    prom.draw_only(out);
-                    return EvtProcess::Hold;
-                }
-                Backspace => {
-                    prom.cont.backspace();
-                    prom.draw_only(out);
-                    return EvtProcess::Hold;
-                }
                 Enter => {
                     if prom.cont.buf.len() == 0 {
                         mbar.set_not_entered_filenm();
@@ -70,8 +36,8 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_new_file_name(&mut self) {
-        self.desc = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.set_new_filenm.clone(), "\n");
-        self.input_desc = format!(
+        self.guide = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.set_new_filenm.clone(), "\n");
+        self.key_desc = format!(
             "{}{}:{}Enter  {}{}:{}Ctrl + c{}",
             &color::Fg(color::White).to_string(),
             self.lang.fixed.clone(),

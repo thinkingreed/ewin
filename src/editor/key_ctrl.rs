@@ -31,7 +31,7 @@ impl Editor {
         if prompt.is_change == true {
             prompt.save_confirm_str();
             // self.draw_cursor(out, sbar).unwrap();
-            prompt.is_save_confirm = true;
+            prompt.is_close_confirm = true;
             return false;
         };
         return true;
@@ -223,8 +223,14 @@ impl Editor {
     }
 
     pub fn search_prom(&mut self, prom: &mut Prompt) {
-        Log::ep_s("★　search");
-        prom.is_search_prom = true;
+        Log::ep_s("★　search_prom");
+        prom.is_search = true;
         prom.search();
+    }
+
+    pub fn replace_prom(&mut self, prom: &mut Prompt) {
+        Log::ep_s("★　replace_prom");
+        prom.is_replace = true;
+        prom.replace();
     }
 }

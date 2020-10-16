@@ -138,21 +138,16 @@ impl Editor {
             if range.y != y {
                 continue;
             } else {
-                // Log::ep("ctl_search_color x", x);
-                // Log::ep("ctl_search_color y", y);
-                // eprintln!("range {:?}", range.clone());
                 if range.sx <= x && x <= range.ex {
-                    //        Log::ep_s("set_search_color");
                     self.set_search_color(str_vec);
                     break;
                 } else {
-                    //         Log::ep_s("set_textarea_color");
                     self.set_textarea_color(str_vec)
                 }
             }
         }
     }
-    pub fn draw_cur_only<T: Write>(&mut self, out: &mut T, sbar: &mut StatusBar) -> Result<(), io::Error> {
+    pub fn draw_cur<T: Write>(&mut self, out: &mut T, sbar: &mut StatusBar) {
         Log::ep_s("★  draw_cursor");
         Log::ep("disp_x", self.cur.disp_x);
 
@@ -161,8 +156,7 @@ impl Editor {
         sbar.draw_cur(str_vec, self);
         let cur_str = format!("{}", cursor::Goto((self.cur.disp_x - self.x_offset_disp) as u16, (self.cur.y + 1 - self.y_offset) as u16));
         str_vec.push(cur_str);
-        write!(out, "{}", str_vec.concat())?;
-        out.flush()?;
-        return Ok(());
+        write!(out, "{}", str_vec.concat()).unwrap();
+        out.flush().unwrap();
     }
 }

@@ -80,6 +80,7 @@ fn main() {
                         Char('v') => editor.paste(),
                         Char('a') => editor.all_select(),
                         Char('f') => editor.search_prom(&mut prom),
+                        Char('r') => editor.replace_prom(&mut prom),
                         Home => editor.ctl_home(),
                         End => editor.ctl_end(),
                         _ => {}

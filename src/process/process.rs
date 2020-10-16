@@ -5,22 +5,49 @@ use std::io::Write;
 impl Process {
     pub fn check_next_process<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtProcess {
         match editor.curt_evt {
-            Resize(_, _) => {
-                return EvtProcess::Next;
-            }
+            Resize(_, _) => return EvtProcess::Next,
+            Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
+                Char('c') => {
+                    prom.clear();
+                    terminal.draw(out, editor, mbar, prom, sbar).unwrap();
+                    return EvtProcess::Next;
+                }
+                _ => {}
+            },
             _ => {}
         }
+
         terminal.set_disp_size(editor, mbar, prom, sbar);
+
+        if prom.is_save_new_file == true || prom.is_search == true {
+            match editor.curt_evt {
+                Key(KeyEvent { code, .. }) => match code {
+                    Left | Right | Delete | Backspace => {
+                        prom.cont.edit(code);
+                        prom.draw_only(out);
+                        return EvtProcess::Hold;
+                    }
+                    Char(c) => {
+                        prom.cont.insert_char(c);
+                        prom.draw_only(out);
+                        return EvtProcess::Hold;
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
 
         if prom.is_save_new_file == true {
             return Process::save_new_filenm(out, terminal, editor, mbar, prom, sbar);
-        } else if prom.is_save_confirm == true {
+        } else if prom.is_close_confirm == true {
             return Process::close(out, terminal, editor, mbar, prom, sbar);
-        } else if prom.is_search_prom == true {
-            return Process::search(out, terminal, editor, mbar, prom, sbar);
+        } else if prom.is_search == true {
+            return Process::search(editor, mbar, prom);
+        } else if prom.is_replace == true {
+            return Process::replace(out, editor, mbar, prom);
         } else {
-            Log::ep_s("EvtProcess::NextEvtProcess::NextEvtProcess::Next");
-
+            Log::ep_s("EvtProcess::NextEvtProcess");
             return EvtProcess::Next;
         }
     }

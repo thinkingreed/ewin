@@ -85,7 +85,8 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `Shift` + `HOME`        | Select the head of line.                                                         | 
 | `Shift` + `END`         | Select the end of line.                                                          |
 | `Ctrl` + `a`            | Select all.                                                                      | 
-| `F3`                    | Search for characters・strings.                                                  |
+| `F3`                    | Search for characters below.     　　　　　                                       |
+| `Shift` + `F2`          | Search for above characters below.　　　　　                                      |
 | `Mouse` + `Left.Down, Drag, Up`    | Select a range.|
 
 ### Future Works

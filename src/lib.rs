@@ -12,6 +12,7 @@ pub mod model;
 pub mod process {
     pub mod close;
     pub mod process;
+    pub mod replace;
     pub mod save_new_file;
     pub mod search;
 }
