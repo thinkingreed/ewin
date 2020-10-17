@@ -1,4 +1,5 @@
 use crate::model::{Editor, Log};
+use crate::util::*;
 
 impl Editor {
     pub fn shift_right(&mut self) {
@@ -131,7 +132,7 @@ impl Editor {
         self.sel.s_disp_x = self.cur.disp_x;
         self.sel.ey = self.cur.y;
         self.sel.ex = self.buf[self.cur.y].len();
-        let (_, width) = self.get_row_width(self.cur.y, self.cur.x - self.lnw, self.buf[self.cur.y].len());
+        let (_, width) = get_row_width(&self.buf[self.cur.y], self.cur.x - self.lnw, self.buf[self.cur.y].len());
         self.sel.e_disp_x = self.cur.disp_x + width;
 
         self.cur.disp_x = self.sel.e_disp_x;

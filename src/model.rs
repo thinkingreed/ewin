@@ -40,7 +40,7 @@ pub struct Prompt {
     // Prompt Content
     pub cont: PromptCont,
     pub cont_sub: PromptCont,
-    pub cur_posi: PromptContType,
+    pub buf_posi: PromptBufPosi,
     pub is_change: bool,
     pub is_close_confirm: bool,
     pub is_save_new_file: bool,
@@ -71,7 +71,7 @@ impl Default for Prompt {
                 buf: vec![],
                 cur: Cursor { y: 0, x: 0, disp_x: 1, updown_x: 0 },
             },
-            cur_posi: PromptContType::Main,
+            buf_posi: PromptBufPosi::Main,
             search_str: String::new(),
             is_change: false,
             is_close_confirm: false,
@@ -123,7 +123,7 @@ impl Default for PromptCont {
     }
 }
 #[derive(PartialEq)]
-pub enum PromptContType {
+pub enum PromptBufPosi {
     Main,
     Sub,
 }

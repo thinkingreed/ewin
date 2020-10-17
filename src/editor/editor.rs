@@ -1,4 +1,5 @@
 use crate::model::{CopyRange, Editor, Log, StatusBar};
+use crate::util::*;
 use crossterm::event::KeyCode;
 use std::cmp::{max, min};
 use std::io::Write;
@@ -18,7 +19,7 @@ impl Editor {
         self.x_offset_y = self.cur.y;
 
         self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.lnw);
-        let (_, width) = self.get_row_width(self.cur.y, 0, self.x_offset);
+        let (_, width) = get_row_width(&self.buf[self.cur.y], 0, self.x_offset);
         self.x_offset_disp = width;
     }
 
@@ -39,6 +40,7 @@ impl Editor {
         self.draw_cur(out, sbar);
     }
 
+    /*
     /// updown_xまでのwidthを加算してdisp_xとcursorx算出
     pub fn get_until_updown_x(&mut self) -> (usize, usize) {
         let (mut cursorx, mut width) = (self.lnw, self.lnw);
@@ -61,7 +63,8 @@ impl Editor {
             }
         }
         return (cursorx, width);
-    }
+    }*/
+    /*
     pub fn get_cur_x_width(&mut self, y: usize) -> usize {
         if let Some(c) = self.buf[y].get(self.cur.x - self.lnw) {
             // Log::ep("ccc", c);
@@ -70,6 +73,7 @@ impl Editor {
         // 最右端の空白対応
         return 1;
     }
+    */
     pub fn get_char_width(&mut self, y: usize, x: usize) -> usize {
         Log::ep("self.buf[y].len()", self.buf[y].len());
         Log::ep("xxx", x);
@@ -81,21 +85,6 @@ impl Editor {
         }
         // 最右端の空白対応
         return 1;
-    }
-    pub fn get_row_width(&mut self, y: usize, sx: usize, ex: usize) -> (usize, usize) {
-        let (mut cur_x, mut width) = (0, 0);
-        for i in sx..ex {
-            if let Some(c) = self.buf[y].get(i) {
-                let c_len = c.width().unwrap_or(0);
-
-                width += c_len;
-                cur_x += 1;
-            } else {
-                // 最終端の空白対応
-                width += 1;
-            }
-        }
-        return (cur_x, width);
     }
 
     /// 指定のy・xからx_offsetを取得
@@ -162,7 +151,7 @@ impl Editor {
                     self.cur.x = min(sx, ex) + self.lnw;
                 // 開始行
                 } else if sy == i {
-                    let (cursorx, _) = self.get_row_width(sy, sx, self.buf[sy].len());
+                    let (cursorx, _) = get_row_width(&self.buf[sy], sx, self.buf[sy].len());
                     self.buf[i].drain(sx..sx + cursorx);
                     self.cur.disp_x = s_disp_x;
                     self.cur.x = sx + self.lnw;

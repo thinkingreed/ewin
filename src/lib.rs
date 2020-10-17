@@ -9,16 +9,18 @@ pub mod editor {
     pub mod mouse;
 }
 pub mod model;
-pub mod process {
-    pub mod close;
-    pub mod process;
-    pub mod replace;
-    pub mod save_new_file;
-    pub mod search;
+pub mod prompt {
+    pub mod process {
+        pub mod close;
+        pub mod replace;
+        pub mod save_new_file;
+        pub mod search;
+    }
+    pub mod prompt;
 }
 pub mod msgbar;
+pub mod process;
 
-pub mod prompt;
 pub mod statusbar;
 pub mod terminal;
 pub mod util;

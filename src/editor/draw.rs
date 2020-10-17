@@ -1,7 +1,7 @@
 use crate::model::{Cursor, Editor, Log, SearchRange, SelectRange, StatusBar};
-
+use crate::util::*;
 use std::fs;
-use std::io::{self, Write};
+use std::io::Write;
 use std::path;
 use termion::{clear, cursor};
 use unicode_width::UnicodeWidthChar;
@@ -23,7 +23,7 @@ impl Editor {
         self.path = Some(path.into());
         self.lnw = self.buf.len().to_string().len();
         self.cur = Cursor { y: 0, x: self.lnw, disp_x: 0, updown_x: 0 };
-        self.cur.disp_x = self.lnw + self.get_cur_x_width(self.cur.y);
+        self.cur.disp_x = self.lnw + get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.lnw);
     }
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         let (rows, cols) = (self.disp_row_num, self.disp_col_num);
@@ -105,7 +105,7 @@ impl Editor {
 
         // １行または下に複数行選択
         if ranges.sy <= y && y <= ranges.ey {
-            let (_, width) = self.get_row_width(y, 0, _x);
+            let (_, width) = get_row_width(&self.buf[y], 0, _x);
             // １行または下に複数行選択
             let x = width + self.lnw + 1;
             // 開始・終了が同じ行

@@ -33,7 +33,7 @@ impl Editor {
         // Left,Rightの場合は設定しない
         if self.curt_evt == Key(Left.into()) || self.curt_evt == Key(Right.into()) {
         } else {
-            let (cursorx, disp_x) = self.get_until_updown_x();
+            let (cursorx, disp_x) = get_until_updown_x(self.lnw, &self.buf[self.cur.y], self.cur.updown_x);
             self.cur.disp_x = disp_x;
             self.cur.x = cursorx;
         }
@@ -48,13 +48,13 @@ impl Editor {
         } else if self.cur.x == self.lnw {
             let rowlen = self.buf[self.cur.y - 1].len();
             self.cur.x = rowlen + self.lnw;
-            let (_, width) = self.get_row_width(self.cur.y - 1, 0, rowlen);
+            let (_, width) = get_row_width(&self.buf[self.cur.y - 1], 0, rowlen);
             self.cur.disp_x = width + self.lnw + 1;
 
             self.cursor_up();
         } else {
             self.cur.x = max(self.cur.x - 1, self.lnw);
-            self.cur.disp_x -= self.get_cur_x_width(self.cur.y);
+            self.cur.disp_x -= get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.lnw);
         }
         self.scroll();
         self.scroll_horizontal();
@@ -74,7 +74,7 @@ impl Editor {
                 self.cursor_down();
             }
         } else {
-            self.cur.disp_x += self.get_cur_x_width(self.cur.y);
+            self.cur.disp_x += get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.lnw);
             self.cur.x = min(self.cur.x + 1, self.buf[self.cur.y].len() + self.lnw);
         }
         self.scroll();
@@ -112,7 +112,7 @@ impl Editor {
                 let line = self.buf.remove(self.cur.y);
                 self.cur.y -= 1;
                 self.cur.x = self.buf[self.cur.y].len() + self.lnw;
-                let (_, width) = self.get_row_width(self.cur.y, 0, self.buf[self.cur.y].len());
+                let (_, width) = get_row_width(&self.buf[self.cur.y], 0, self.buf[self.cur.y].len());
                 self.cur.disp_x = self.lnw + width + 1;
                 self.buf[self.cur.y].extend(line.into_iter());
 
@@ -158,7 +158,7 @@ impl Editor {
     }
     pub fn end(&mut self) {
         self.cur.x = self.buf[self.cur.y].len() + self.lnw;
-        let (_, disp_x) = self.get_row_width(self.cur.y, 0, self.cur.x + 1);
+        let (_, disp_x) = get_row_width(&self.buf[self.cur.y], 0, self.cur.x + 1);
         self.cur.disp_x = disp_x;
         self.scroll_horizontal();
     }
@@ -213,7 +213,7 @@ impl Editor {
                 let range = self.search.search_ranges[self.search.index];
                 self.cur.y = range.y;
                 self.cur.x = range.sx + self.lnw;
-                let (_, width) = self.get_row_width(self.cur.y, 0, range.sx);
+                let (_, width) = get_row_width(&self.buf[self.cur.y], 0, range.sx);
                 self.cur.disp_x = width + self.lnw + 1;
 
                 self.scroll();

@@ -53,6 +53,8 @@ fn main() {
 
         editor.curt_evt = event.unwrap().clone();
 
+        // eprintln!("evt {:?}", editor.curt_evt.clone());
+
         let evt_next_process = Process::check_next_process(&mut out, &mut terminal, &mut editor, &mut mbar, &mut prom, &mut sbar);
 
         match evt_next_process {

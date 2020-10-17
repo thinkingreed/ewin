@@ -24,6 +24,7 @@ set_replace="検索する文字と置換する文字を入力して下さい"
 ## Msg ##
 not_entered_filenm="ファイル名が入力されていません"
 not_entered_search_str="検索する文字が入力されていません"
+not_entered_replace_str="置換する文字が入力されていません"
 no_search_str_bottom="これより下に検索文字はありません"
 [en]
 row="row"
@@ -49,5 +50,6 @@ set_replace="Enter the character to search for and the character to replace"
 ## Msg ##
 not_entered_filenm="File name is not entered"
 not_entered_search_str="Search charctor is not entered"
+not_entered_replace_str="Replace charctor is not entered"
 no_search_str_bottom="There are no search characters below this"
 "#;

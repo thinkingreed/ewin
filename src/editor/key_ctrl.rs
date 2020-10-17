@@ -11,7 +11,7 @@ impl Editor {
         self.sel.ey = self.buf.len() - 1;
         self.sel.sx = 0;
         self.sel.s_disp_x = self.lnw + 1;
-        let (cur_x, width) = self.get_row_width(self.sel.ey, 0, self.buf[self.buf.len() - 1].len());
+        let (cur_x, width) = get_row_width(&self.buf[self.sel.ey], 0, self.buf[self.buf.len() - 1].len());
         self.sel.ex = cur_x + self.lnw;
         self.sel.e_disp_x = width + self.lnw;
     }
@@ -202,7 +202,7 @@ impl Editor {
             self.cur.updown_x = self.cur.disp_x;
         }
         self.cur.y = 0;
-        let (cur_x, width) = self.get_until_updown_x();
+        let (cur_x, width) = get_until_updown_x(self.lnw, &self.buf[self.cur.y], self.cur.updown_x);
         self.cur.disp_x = width;
         self.cur.x = cur_x;
         self.scroll();
@@ -215,7 +215,7 @@ impl Editor {
             self.cur.updown_x = self.cur.disp_x;
         }
         self.cur.y = self.buf.len() - 1;
-        let (cur_x, width) = self.get_until_updown_x();
+        let (cur_x, width) = get_until_updown_x(self.lnw, &self.buf[self.cur.y], self.cur.updown_x);
         self.cur.disp_x = width;
         self.cur.x = cur_x;
         self.scroll();
@@ -231,6 +231,23 @@ impl Editor {
     pub fn replace_prom(&mut self, prom: &mut Prompt) {
         Log::ep_s("★　replace_prom");
         prom.is_replace = true;
+        prom.replace();
+    }
+
+    pub fn replace(&mut self, prom: &mut Prompt) {
+        Log::ep_s("★　replace");
+        prom.is_replace = false;
+
+        let search_str = prom.cont.buf.iter().collect::<String>();
+        let replace_str = prom.cont_sub.buf.iter().collect::<String>();
+        for i in 0..self.buf.len() {
+            //let buf = &self.buf[i];
+            let row_str = &self.buf[i].iter().collect::<String>();
+            let row_str = row_str.replace(&search_str, &replace_str);
+            self.buf[i] = row_str.chars().collect::<Vec<char>>();
+            //  std::mem::replace(&mut self.buf[i], row_str.chars().collect::<Vec<char>>());
+        }
+
         prom.replace();
     }
 }
