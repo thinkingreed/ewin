@@ -10,8 +10,10 @@ impl Terminal {
         self.set_disp_size(editor, mbar, prom, sbar);
         let str_vec: &mut Vec<String> = &mut vec![];
 
-        editor.draw(str_vec);
-        mbar.draw(str_vec);
+        editor.draw(out);
+        mbar.draw(out);
+
+        eprintln!("draw.mbar {:?}", str_vec);
 
         prom.draw(str_vec);
         sbar.draw(str_vec, editor);
@@ -28,6 +30,7 @@ impl Terminal {
         if prom.is_save_new_file || prom.is_search || prom.is_replace {
             prom.draw_cur(str_vec);
         } else {
+            str_vec.push(cursor::Show.to_string());
             str_vec.push(cursor::Goto((editor.cur.disp_x - editor.x_offset_disp) as u16, (editor.cur.y + 1 - editor.y_offset) as u16).to_string());
         }
     }
@@ -46,6 +49,7 @@ impl Terminal {
         let (cols, rows) = (cols as usize, rows as usize);
 
         Log::ep("rows", rows);
+        Log::ep("cols", cols);
 
         if rows <= 10 {
             sbar.disp_row_num = 0;

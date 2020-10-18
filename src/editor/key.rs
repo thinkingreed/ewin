@@ -1,4 +1,4 @@
-use crate::model::{Editor, Log, Search, SearchRange};
+use crate::model::*;
 use crate::util::*;
 use crossterm::event::Event::Key;
 use crossterm::event::KeyCode::{Left, Right};
@@ -85,7 +85,7 @@ impl Editor {
         let rest: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.lnw..).collect();
         self.buf.insert(self.cur.y + 1, rest);
         self.cur.y += 1;
-        self.lnw = self.buf.len().to_string().len();
+        self.lnw = self.buf.len().to_string().len() + 1;
         self.cur.x = self.lnw;
         self.cur.disp_x = self.lnw + 1;
         self.scroll();
@@ -95,18 +95,20 @@ impl Editor {
         //  if !c.is_control() {
         self.buf[self.cur.y].insert(self.cur.x - self.lnw, c);
         self.cursor_right();
-        //}
+        self.e_ranges.push(EditRnage { y: self.cur.y, e_type: EType::Mod });
     }
 
     pub fn back_space(&mut self) {
         Log::ep_s("★  back_space");
-        if self.sel.is_unselected() {
+        if self.sel.is_selected() {
+            self.del_sel_range();
+        } else {
             // 0,0の位置の場合
             if self.cur.y == 0 && self.cur.x == self.lnw {
                 return;
             }
             if self.cur.x == self.lnw {
-                let row_len_org = self.buf.len().to_string().len();
+                let row_len_org = self.buf.len().to_string().len() + 1;
 
                 // 行の先頭
                 let line = self.buf.remove(self.cur.y);
@@ -116,7 +118,7 @@ impl Editor {
                 self.cur.disp_x = self.lnw + width + 1;
                 self.buf[self.cur.y].extend(line.into_iter());
 
-                let row_len_curt = self.buf.len().to_string().len();
+                let row_len_curt = self.buf.len().to_string().len() + 1;
                 // 行番号の桁数が減った場合
                 if row_len_org != row_len_curt {
                     self.lnw -= 1;
@@ -127,8 +129,7 @@ impl Editor {
                 self.cursor_left();
                 self.buf[self.cur.y].remove(self.cur.x - self.lnw);
             }
-        } else {
-            self.del_sel_range();
+            self.e_ranges.push(EditRnage { y: self.cur.y, e_type: EType::Mod });
         }
         self.scroll();
         self.scroll_horizontal();
@@ -138,7 +139,9 @@ impl Editor {
         if self.cur.y == self.buf.len() - 1 && self.cur.x == self.buf[self.cur.y].len() + self.lnw {
             return;
         }
-        if self.sel.is_unselected() {
+        if self.sel.is_selected() {
+            self.del_sel_range();
+        } else {
             if self.cur.x == self.buf[self.cur.y].len() + self.lnw {
                 // 行末
                 let line = self.buf.remove(self.cur.y + 1);
@@ -146,8 +149,6 @@ impl Editor {
             } else {
                 self.buf[self.cur.y].remove(self.cur.x - self.lnw);
             }
-        } else {
-            self.del_sel_range();
         }
     }
 
@@ -158,8 +159,12 @@ impl Editor {
     }
     pub fn end(&mut self) {
         self.cur.x = self.buf[self.cur.y].len() + self.lnw;
-        let (_, disp_x) = get_row_width(&self.buf[self.cur.y], 0, self.cur.x + 1);
-        self.cur.disp_x = disp_x;
+        let (_, disp_x) = get_row_width(&self.buf[self.cur.y], 0, self.buf[self.cur.y].len());
+        self.cur.disp_x = disp_x + self.lnw + 1;
+
+        Log::ep("end.cur.disp_x ", self.cur.disp_x);
+        Log::ep("end.cur.x ", self.cur.x);
+
         self.scroll_horizontal();
     }
     pub fn page_down(&mut self) {
@@ -175,74 +180,5 @@ impl Editor {
         }
         self.cur.x = self.lnw;
         self.scroll();
-    }
-
-    pub fn search_str(&mut self, is_asc: bool) {
-        Log::ep_s("★　search_str");
-
-        if self.search.str.len() > 0 {
-            // 初回検索
-            if self.search.index == Search::INDEX_UNDEFINED {
-                self.search.search_ranges.clear();
-                let len = self.search.str.chars().count() - 1;
-
-                for (i, chars) in self.buf.iter().enumerate() {
-                    let row_str = chars.iter().collect::<String>();
-                    let v: Vec<(usize, &str)> = row_str.match_indices(&self.search.str).collect();
-                    if v.len() == 0 {
-                        continue;
-                    }
-                    for (index, _) in v {
-                        let x = get_char_count(&chars, index);
-                        self.search.search_ranges.push(SearchRange { y: i, sx: x, ex: x + len });
-                    }
-                }
-                eprintln!("self.search.search_ranges {:?}", self.search.search_ranges);
-
-                if self.search.search_ranges.len() > 0 {
-                    self.search.index = 0;
-                }
-            } else {
-                self.search.index = self.get_search_str_index(is_asc);
-            }
-
-            if self.search.search_ranges.len() == 0 {
-                return;
-            }
-            if self.search.index != Search::INDEX_UNDEFINED {
-                let range = self.search.search_ranges[self.search.index];
-                self.cur.y = range.y;
-                self.cur.x = range.sx + self.lnw;
-                let (_, width) = get_row_width(&self.buf[self.cur.y], 0, range.sx);
-                self.cur.disp_x = width + self.lnw + 1;
-
-                self.scroll();
-                self.scroll_horizontal();
-            }
-        }
-    }
-
-    fn get_search_str_index(&mut self, is_asc: bool) -> usize {
-        let cur_x = self.cur.x - self.lnw;
-        if is_asc {
-            for (i, range) in self.search.search_ranges.iter().enumerate() {
-                if self.cur.y < range.y || (self.cur.y == range.y && cur_x < range.sx) {
-                    return i;
-                }
-            }
-            // 循環検索の為に0返却
-            return 0;
-        } else {
-            let index = self.search.search_ranges.len() - 1;
-            let mut ranges = self.search.search_ranges.clone();
-            ranges.reverse();
-            for (i, range) in ranges.iter().enumerate() {
-                if self.cur.y > range.y || (self.cur.y == range.y && cur_x > range.sx) {
-                    return index - i;
-                }
-            }
-            // 循環検索の為にindex返却
-            return index;
-        }
     }
 }

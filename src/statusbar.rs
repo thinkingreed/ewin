@@ -1,7 +1,8 @@
 use crate::_cfg::lang::cfg::LangCfg;
-use crate::model::{Editor, StatusBar};
+use crate::model::*;
 use crate::util::*;
-use termion::color;
+use termion::color::*;
+use termion::*;
 use unicode_width::UnicodeWidthChar;
 
 impl StatusBar {
@@ -10,6 +11,8 @@ impl StatusBar {
     }
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
+        Log::ep_s("StatusBar.draw");
+
         //let mut str_vec: Vec<String> = vec![];
         if self.disp_row_num == 0 {
             return;
@@ -23,21 +26,29 @@ impl StatusBar {
         }
 
         let filenm = self.cut_str(file_str.clone(), filenm_w);
-
         let filenm_disp = format!("{fnm:^width$}", fnm = filenm, width = filenm_w - (get_str_width(&filenm) - filenm.chars().count()));
 
         // 文字横幅と文字数の差分で調整
         let cur_s = self.get_cur_str(editor);
         let cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
-        str_vec.push("\r\n".to_string());
-        self.set_color(str_vec);
-        str_vec.push(filenm_disp.clone());
-        str_vec.push(cur_str.clone());
+        // str_vec.push("\r\n".to_string());
+        let sber_str = format!(
+            "{}{}{}{}{}",
+            cursor::Goto(1, self.disp_row_posi as u16),
+            clear::CurrentLine,
+            Fg(Rgb(221, 72, 20)),
+            format!("{}{}", filenm_disp, cur_str),
+            Fg(White).to_string(),
+        );
+
+        // self.set_color(str_vec);
+        str_vec.push(sber_str);
         editor.set_textarea_color(str_vec);
         self.filenm_disp = filenm_disp;
         self.cur_str = cur_str;
     }
     pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
+        Log::ep_s("StatusBar.draw_cur");
         let rows = self.disp_row_posi;
 
         // statusber表示領域がない場合

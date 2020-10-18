@@ -43,7 +43,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 | Mapping                             | Description                        |
 |-------------------------------------|------------------------------------|
-| `Ctrl` + `w`                        | Quit ewin.                         |
+| `Ctrl` + `w`                        | Quit.                              |
 | `Ctrl` + `s`                        | Save current buffer to file.       |
 | `Ctrl` + `f`                        | Enter the character・string to search.     |
 
@@ -73,6 +73,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `Ctrl` + `x`            | Select range cut.         |
 | `Ctrl` + `c`            | Select range cop.         |
 | `Ctrl` + `v`            | Paste the copied characters.|
+| `Ctrl` + `r`            | Replace character.|
 
 - **Select text**
 
@@ -86,7 +87,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `Shift` + `END`         | Select the end of line.                                                          |
 | `Ctrl` + `a`            | Select all.                                                                      | 
 | `F3`                    | Search for characters below.     　　　　　                                       |
-| `Shift` + `F2`          | Search for above characters below.　　　　　                                      |
+| `Shift` + `F4`          | Search for above characters below.　　　　　                                      |
 | `Mouse` + `Left.Down, Drag, Up`    | Select a range.|
 
 ### Future Works

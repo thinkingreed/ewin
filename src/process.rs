@@ -34,11 +34,12 @@ impl Process {
             },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 Down | Up | Left | Right => editor.is_all_redraw = true,
+                F(4) => editor.is_all_redraw = false,
                 _ => editor.is_all_redraw = true,
             },
             Key(KeyEvent { code, .. }) => match code {
-                Down | Up | Left | Right => {
-                    if !editor.sel.is_unselected() {
+                Down | Up | Left | Right | Home | End | F(3) => {
+                    if editor.sel.is_selected() {
                         editor.is_all_redraw = true;
                     }
                 }

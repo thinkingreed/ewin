@@ -1,6 +1,7 @@
 use crate::model::{CopyRange, Editor, Log, StatusBar};
 use crate::util::*;
-use crossterm::event::KeyCode;
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
+
 use std::cmp::{max, min};
 use std::io::Write;
 use unicode_width::UnicodeWidthChar;
@@ -23,57 +24,53 @@ impl Editor {
         self.x_offset_disp = width;
     }
 
-    /// カーソル移動のEventでoffsetの変更有無でエディタ全体、又はカーソルのみの再描画の判定
-    pub fn move_cursor<T: Write>(&mut self, key: KeyCode, out: &mut T, sbar: &mut StatusBar) {
+    /*
+       pub fn move_cursor<T: Write>(&mut self, key: KeyCode, out: &mut T, sbar: &mut StatusBar) {
+           let y_offset_org: usize = self.y_offset;
+           let x_offset_disp_org: usize = self.x_offset_disp;
+           match key {
+               KeyCode::Up => self.cursor_up(),
+               KeyCode::Down => self.cursor_down(),
+               KeyCode::Left => self.cursor_left(),
+               KeyCode::Right => self.cursor_right(),
+               KeyCode::Home => self.home(),
+               KeyCode::End => self.end(),
+               _ => {}
+           }
+           if self.is_all_redraw != true {
+               self.is_all_redraw = y_offset_org != self.y_offset || (x_offset_disp_org != self.x_offset_disp || (x_offset_disp_org == self.x_offset_disp && self.x_offset_disp != 0));
+           }
+           self.draw_cur(out, sbar);
+       }
+    */
+
+    /// カーソル移動のEventでoffsetの変更有無で再描画範囲を設定設定
+    pub fn move_cursor<T: Write>(&mut self, out: &mut T, sbar: &mut StatusBar) {
         let y_offset_org: usize = self.y_offset;
         let x_offset_disp_org: usize = self.x_offset_disp;
-        match key {
-            KeyCode::Up => self.cursor_up(),
-            KeyCode::Down => self.cursor_down(),
-            KeyCode::Left => self.cursor_left(),
-            KeyCode::Right => self.cursor_right(),
+        match self.curt_evt {
+            Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {
+                F(4) => self.search_str(false),
+                _ => {}
+            },
+            Key(KeyEvent { code, .. }) => match code {
+                Up => self.cursor_up(),
+                Down => self.cursor_down(),
+                Left => self.cursor_left(),
+                Right => self.cursor_right(),
+                Home => self.home(),
+                End => self.end(),
+                F(3) => self.search_str(true),
+                _ => {}
+            },
             _ => {}
         }
+
         if self.is_all_redraw != true {
             self.is_all_redraw = y_offset_org != self.y_offset || (x_offset_disp_org != self.x_offset_disp || (x_offset_disp_org == self.x_offset_disp && self.x_offset_disp != 0));
         }
         self.draw_cur(out, sbar);
     }
-
-    /*
-    /// updown_xまでのwidthを加算してdisp_xとcursorx算出
-    pub fn get_until_updown_x(&mut self) -> (usize, usize) {
-        let (mut cursorx, mut width) = (self.lnw, self.lnw);
-        for i in 0..self.buf[self.cur.y].len() + 1 {
-            if let Some(c) = self.buf[self.cur.y].get(i) {
-                let mut c_len = c.width().unwrap_or(0);
-                if width + c_len >= self.cur.updown_x {
-                    if c_len > 1 {
-                        c_len = 1;
-                    }
-                    width += c_len;
-                    break;
-                } else {
-                    width += c_len;
-                }
-                cursorx += 1;
-            // 最終端の空白の場合
-            } else {
-                width += 1;
-            }
-        }
-        return (cursorx, width);
-    }*/
-    /*
-    pub fn get_cur_x_width(&mut self, y: usize) -> usize {
-        if let Some(c) = self.buf[y].get(self.cur.x - self.lnw) {
-            // Log::ep("ccc", c);
-            return c.width().unwrap_or(0);
-        }
-        // 最右端の空白対応
-        return 1;
-    }
-    */
     pub fn get_char_width(&mut self, y: usize, x: usize) -> usize {
         Log::ep("self.buf[y].len()", self.buf[y].len());
         Log::ep("xxx", x);
@@ -105,26 +102,29 @@ impl Editor {
         let copy_posi = self.sel.get_range();
 
         let mut copy_ranges: Vec<CopyRange> = vec![];
+        if copy_posi.sy == 0 && copy_posi.ey == 0 && copy_posi.ex == 0 {
+            return copy_ranges;
+        }
 
-        if copy_posi.sy != copy_posi.ey && copy_posi.ex == 0 {}
-        for ii in copy_posi.sy..=copy_posi.ey {
-            let i = ii as usize;
+        Log::ep("copy_posi.sy", copy_posi.sy);
+        Log::ep("copy_posi.ey", copy_posi.ey);
+        Log::ep("copy_posi.sx", copy_posi.sx);
+        Log::ep("copy_posi.ex", copy_posi.ex);
+
+        for i in copy_posi.sy..=copy_posi.ey {
+            if copy_posi.sy != copy_posi.ey && copy_posi.ex == 0 {
+                continue;
+            }
+            Log::ep("iii", i);
             // 開始行==終了行
             if copy_posi.sy == copy_posi.ey {
-                copy_ranges.push(CopyRange {
-                    y: i,
-                    sx: copy_posi.sx as usize,
-                    ex: copy_posi.ex as usize,
-                });
+                copy_ranges.push(CopyRange { y: i, sx: copy_posi.sx, ex: copy_posi.ex });
             // 開始行
-            } else if i == copy_posi.sy as usize {
-                copy_ranges.push(CopyRange {
-                    y: i,
-                    sx: copy_posi.sx as usize,
-                    ex: self.buf[i].len(),
-                });
+            } else if i == copy_posi.sy {
+                Log::ep("i == copy_posi.sy", i == copy_posi.sy);
+                copy_ranges.push(CopyRange { y: i, sx: copy_posi.sx, ex: self.buf[i].len() });
             // 終了行
-            } else if i == copy_posi.ey as usize {
+            } else if i == copy_posi.ey {
                 // カーソルが行頭の対応
                 copy_ranges.push(CopyRange { y: i, sx: 0, ex: copy_posi.ex });
             // 中間行 全て対象

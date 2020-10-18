@@ -1,5 +1,5 @@
 use crate::model::{Editor, EvtProcess, Log, MsgBar, Process, Prompt, PromptBufPosi, PromptCont, StatusBar, Terminal};
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 use termion::color;
 
@@ -8,6 +8,14 @@ impl Process {
         Log::ep_s("Process.replace");
 
         match editor.curt_evt {
+            Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {
+                BackTab => {
+                    prom.tab();
+                    prom.draw_only(out);
+                    return EvtProcess::Hold;
+                }
+                _ => return EvtProcess::Hold,
+            },
             Key(KeyEvent { code, .. }) => match code {
                 Char(c) => {
                     match prom.buf_posi {
@@ -59,13 +67,26 @@ impl Process {
                     prom.draw_only(out);
                     return EvtProcess::Hold;
                 }
+                Tab => {
+                    prom.tab();
+                    prom.draw_only(out);
+                    return EvtProcess::Hold;
+                }
+
                 Enter => {
-                    if prom.cont.buf.len() == 0 {
-                        mbar.set_err_str(mbar.lang.not_entered_search_str.clone());
+                    let search_str = prom.cont.buf.iter().collect::<String>();
+
+                    if search_str.len() == 0 {
+                        mbar.set_err(mbar.lang.not_entered_search_str.clone());
                     } else if prom.cont_sub.buf.len() == 0 {
-                        mbar.set_err_str(mbar.lang.not_entered_replace_str.clone());
+                        mbar.set_err(mbar.lang.not_entered_replace_str.clone());
+                    } else if editor.get_search_ranges(search_str.clone()).len() == 0 {
+                        mbar.set_err(mbar.lang.cannot_find_char_search_for.clone());
                     } else {
                         editor.replace(prom);
+                        mbar.clear();
+                        prom.clear();
+                        prom.is_change = true;
                     }
                     terminal.draw(out, editor, mbar, prom, sbar).unwrap();
                     return EvtProcess::Hold;

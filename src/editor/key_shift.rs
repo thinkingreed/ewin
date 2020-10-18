@@ -1,15 +1,15 @@
-use crate::model::{Editor, Log};
+use crate::model::*;
 use crate::util::*;
 
 impl Editor {
     pub fn shift_right(&mut self) {
         Log::ep_s("★  shift_right");
 
-        let is_unselected_org = self.sel.is_unselected();
+        let is_selected_org = self.sel.is_selected();
         let e_disp_x_org = self.sel.e_disp_x;
         let disp_x_org = self.cur.disp_x;
 
-        if self.sel.is_unselected() {
+        if !self.sel.is_selected() {
             self.sel.sy = self.cur.y;
             self.sel.sx = self.cur.x - self.lnw;
             self.sel.s_disp_x = self.cur.disp_x;
@@ -25,7 +25,7 @@ impl Editor {
             self.sel.e_disp_x = self.cur.disp_x;
         }
         // 選択開始位置とカーソルが重なった場合
-        if !is_unselected_org
+        if is_selected_org
         // 行の終端から次行に移る場合の不具合対応でcur.yと比較
             && self.sel.sy == self.cur.y
             // sel.s_disp_x == sel.e_disp_x + 1文字でclear
@@ -37,11 +37,11 @@ impl Editor {
     pub fn shift_left(&mut self) {
         Log::ep_s("★  shift_left");
 
-        let is_unselected_org = self.sel.is_unselected();
+        let is_selected_org = self.sel.is_selected();
         let e_disp_x_org = self.sel.e_disp_x;
         let disp_x_org = self.cur.disp_x;
 
-        if self.sel.is_unselected() {
+        if !self.sel.is_selected() {
             self.sel.sy = self.cur.y;
             self.sel.sx = self.cur.x - self.lnw;
             self.sel.s_disp_x = self.cur.disp_x;
@@ -57,16 +57,16 @@ impl Editor {
             self.sel.e_disp_x -= 1;
         }
         // 選択開始位置とカーソルが重なった場合
-        if !is_unselected_org && self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
+        if is_selected_org && self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
             self.sel.clear();
         }
     }
 
     pub fn shift_down(&mut self) {
         Log::ep_s("★　shift_down");
-        let is_unselected_org = self.sel.is_unselected();
+        let is_selected_org = self.sel.is_selected();
 
-        if self.sel.is_unselected() {
+        if !self.sel.is_selected() {
             self.sel.sy = self.cur.y;
             self.sel.sx = self.cur.x - self.lnw;
             self.sel.s_disp_x = self.cur.disp_x;
@@ -80,7 +80,7 @@ impl Editor {
         Log::ep("sel.e_disp_x ", self.sel.e_disp_x);
 
         // 選択開始位置とカーソルが重なった場合
-        if !is_unselected_org && self.sel.s_disp_x == self.sel.e_disp_x && self.sel.sy == self.sel.ey {
+        if is_selected_org && self.sel.s_disp_x == self.sel.e_disp_x && self.sel.sy == self.sel.ey {
             self.sel.clear();
         }
     }
@@ -89,12 +89,12 @@ impl Editor {
 
         Log::ep("cur.x", self.cur.x);
 
-        let is_unselected_org = self.sel.is_unselected();
+        let is_selected_org = self.sel.is_selected();
 
         if self.cur.y == 0 {
             return;
         } else {
-            if self.sel.is_unselected() {
+            if !self.sel.is_selected() {
                 self.sel.sy = self.cur.y;
                 self.sel.sx = self.cur.x - 1;
                 self.sel.s_disp_x = self.cur.disp_x;
@@ -109,7 +109,7 @@ impl Editor {
             self.sel.e_disp_x = self.cur.disp_x;
         }
         // 選択開始位置とカーソルが重なった場合
-        if !is_unselected_org && self.sel.s_disp_x == self.sel.e_disp_x && self.sel.sy == self.sel.ey {
+        if is_selected_org && self.sel.s_disp_x == self.sel.e_disp_x && self.sel.sy == self.sel.ey {
             self.sel.clear();
         }
     }
@@ -137,5 +137,7 @@ impl Editor {
 
         self.cur.disp_x = self.sel.e_disp_x;
         self.cur.x = self.buf[self.cur.y].len() + self.lnw;
+
+        self.e_ranges.push(EditRnage { y: self.cur.y, e_type: EType::Mod });
     }
 }

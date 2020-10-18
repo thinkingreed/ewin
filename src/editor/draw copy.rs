@@ -1,4 +1,4 @@
-use crate::model::*;
+use crate::model::{Cursor, Editor, Log, StatusBar};
 use crate::util::*;
 use std::fs;
 use std::io::Write;
@@ -25,33 +25,15 @@ impl Editor {
         self.cur = Cursor { y: 0, x: self.lnw, disp_x: 0, updown_x: 0 };
         self.cur.disp_x = self.lnw + get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.lnw);
     }
-    pub fn draw<T: Write>(&mut self, out: &mut T) {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         let (rows, cols) = (self.disp_row_num, self.disp_col_num);
-        let str_vec: &mut Vec<String> = &mut vec![];
 
-        let mut y_draw_s = self.y_offset;
-        let mut y_draw_e = self.buf.len();
-        eprintln!("edit_ranges {:?}", self.e_ranges);
-
-        if self.e_ranges.len() == 0 {
+        if self.edit_ranges.len() == 0 {
             str_vec.push(clear::All.to_string());
-            str_vec.push(cursor::Goto(1, 1).to_string());
         } else {
-            eprintln!("edit_ranges[0] {:?}", self.e_ranges[0]);
-            if self.e_ranges[0].e_type == EType::Mod {
-                for e_range in &self.e_ranges {
-                    str_vec.push(format!("{}{}", cursor::Goto(1, (e_range.y + 1) as u16), clear::CurrentLine));
-                }
-                str_vec.push(cursor::Hide.to_string());
-                str_vec.push(cursor::Goto(1, (self.e_ranges[0].y + 1) as u16).to_string());
-                y_draw_e = self.e_ranges[self.e_ranges.len() - 1].y + 1;
-            } else {
-                let e_range = &self.e_ranges[0];
-                let clear = format!("{}{}", cursor::Goto(1, (e_range.y + 1) as u16), clear::AfterCursor);
-                str_vec.push(clear);
-            }
-            y_draw_s = self.e_ranges[0].y;
+            str_vec.append(&mut self.str_vec);
         }
+        str_vec.push(cursor::Goto(1, 1).to_string());
         // 画面上の行、列
         let mut y = 0;
         let mut x = 0;
@@ -60,10 +42,9 @@ impl Editor {
         let sel_range = self.sel.get_range();
         let search_ranges = self.search.search_ranges.clone();
 
-        Log::ep("y_draw_s", y_draw_s);
-        Log::ep("y_draw_e", y_draw_e);
+        Log::ep("y_offset", self.y_offset);
 
-        for i in y_draw_s..y_draw_e {
+        for i in self.y_offset..self.buf.len() {
             // 行番号の空白
             if self.x_offset_y == i && self.x_offset_disp > 0 {
                 for _ in 0..self.lnw - 1 {
@@ -77,7 +58,7 @@ impl Editor {
                 str_vec.push((i + 1).to_string());
                 str_vec.push('|'.to_string());
             }
-            self.set_textarea_color(str_vec);
+            // self.set_textarea_color(str_vec);
             for j in 0..=self.buf[i].len() + 1 {
                 if self.buf[i].len() == 0 {
                     break;
@@ -117,11 +98,11 @@ impl Editor {
                 str_vec.push("\r\n".to_string());
             }
         }
-
-        eprintln!("str_vec {:?}", str_vec);
-        write!(out, "{}", &str_vec.concat()).unwrap();
-        out.flush().unwrap();
-        self.e_ranges.clear();
+        // 色をデフォルトに戻す
+        //self.set_textarea_color(str_vec);
+        for _ in self.buf.len() + 1..rows {
+            str_vec.push("\r\n".to_string());
+        }
     }
 
     pub fn draw_cur<T: Write>(&mut self, out: &mut T, sbar: &mut StatusBar) {

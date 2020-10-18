@@ -9,7 +9,7 @@ impl Process {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {
                     if prom.cont.buf.len() == 0 {
-                        mbar.set_not_entered_filenm();
+                        mbar.set_err(mbar.lang.not_entered_filenm.clone());
                     } else {
                         // TODO 存在するファイル名の対応
                         sbar.filenm = prom.cont.buf.iter().collect::<String>();
@@ -47,13 +47,5 @@ impl PromptCont {
             &color::Fg(color::LightGreen).to_string(),
             &color::Fg(color::White).to_string(),
         );
-    }
-}
-
-impl MsgBar {
-    pub fn set_not_entered_filenm(&mut self) {
-        let msg = format!("{}{}", &color::Fg(color::White).to_string(), self.lang.not_entered_filenm.clone());
-        let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num);
-        self.msg_disp = format!("{}{}{}", &color::Bg(color::Red).to_string(), msg_str, &color::Bg(color::Black).to_string(),);
     }
 }

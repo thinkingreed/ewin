@@ -1,4 +1,4 @@
-use crate::model::{CopyRange, Editor, Log, MsgBar, Prompt, StatusBar};
+use crate::model::*;
 use crate::util::*;
 use std::fs::File;
 use std::io::Write;
@@ -11,18 +11,21 @@ impl Editor {
         self.sel.ey = self.buf.len() - 1;
         self.sel.sx = 0;
         self.sel.s_disp_x = self.lnw + 1;
-        let (cur_x, width) = get_row_width(&self.buf[self.sel.ey], 0, self.buf[self.buf.len() - 1].len());
+        let (cur_x, width) = get_row_width(&self.buf[self.sel.ey], 0, self.buf[self.sel.ey].len());
         self.sel.ex = cur_x + self.lnw;
-        self.sel.e_disp_x = width + self.lnw;
+        self.sel.e_disp_x = width + self.lnw + 1;
     }
     pub fn cut(&mut self) {
         Log::ep_s("★★  cut");
-        if self.sel.is_unselected() {
+        if !self.sel.is_selected() {
             return;
         }
 
         self.copy();
         self.del_sel_range();
+        let sel = self.sel.get_range();
+
+        self.e_ranges.push(EditRnage { y: sel.sy, e_type: EType::Del });
     }
 
     pub fn close(&mut self, prompt: &mut Prompt) -> bool {
@@ -87,29 +90,27 @@ impl Editor {
     pub fn copy(&mut self) {
         Log::ep_s("★  copy");
         let copy_ranges: Vec<CopyRange> = self.get_copy_range();
-
+        if copy_ranges.len() == 0 {
+            return;
+        };
         let mut vec: Vec<char> = vec![];
         for (i, copy_range) in copy_ranges.iter().enumerate() {
-            // 行の終端までコピーの場合の改行対応
-
-            if vec.len() > 0 {
-                // コピー最終行がex == 0以外の場合
-                if i == copy_ranges.len() - 1 && copy_range.ex == 0 {
-                } else {
-                    // WSL PowerShell用の','
-                    vec.push(',');
-                }
-            }
+            // WSL PowerShell用に’で囲む
+            vec.push('\'');
             for j in copy_range.sx..copy_range.ex {
                 if let Some(c) = self.buf[copy_range.y].get(j) {
-                    Log::ep("ccc", c);
+                    // Log::ep("ccc", c);
                     vec.push(c.clone());
                 }
+            }
+            vec.push('\'');
+            // WSL PowerShell用の','
+            if i != copy_ranges.len() - 1 {
+                vec.push(',');
             }
         }
 
         let copy_string = vec.iter().collect::<String>().clone();
-        Log::ep("&copy_string", &copy_string);
 
         self.set_clipboard(&copy_string);
     }
@@ -227,6 +228,78 @@ impl Editor {
         prom.is_search = true;
         prom.search();
     }
+    pub fn search_str(&mut self, is_asc: bool) {
+        Log::ep_s("★　search_str");
+
+        if self.search.str.len() > 0 {
+            // 初回検索
+            if self.search.index == Search::INDEX_UNDEFINED {
+                self.search.search_ranges = self.get_search_ranges(self.search.str.clone());
+
+                eprintln!("self.search.search_ranges {:?}", self.search.search_ranges);
+
+                if self.search.search_ranges.len() > 0 {
+                    self.search.index = 0;
+                }
+            } else {
+                self.search.index = self.get_search_str_index(is_asc);
+            }
+
+            if self.search.search_ranges.len() == 0 {
+                return;
+            }
+            if self.search.index != Search::INDEX_UNDEFINED {
+                let range = self.search.search_ranges[self.search.index];
+                self.cur.y = range.y;
+                self.cur.x = range.sx + self.lnw;
+                let (_, width) = get_row_width(&self.buf[self.cur.y], 0, range.sx);
+                self.cur.disp_x = width + self.lnw + 1;
+
+                self.scroll();
+                self.scroll_horizontal();
+            }
+        }
+    }
+    pub fn get_search_ranges(&mut self, search_str: String) -> Vec<SearchRange> {
+        let mut vec = vec![];
+        let len = search_str.chars().count() - 1;
+
+        for (i, chars) in self.buf.iter().enumerate() {
+            let row_str = chars.iter().collect::<String>();
+            let v: Vec<(usize, &str)> = row_str.match_indices(&search_str).collect();
+            if v.len() == 0 {
+                continue;
+            }
+            for (index, _) in v {
+                let x = get_char_count(&chars, index);
+                vec.push(SearchRange { y: i, sx: x, ex: x + len });
+            }
+        }
+        return vec;
+    }
+    pub fn get_search_str_index(&mut self, is_asc: bool) -> usize {
+        let cur_x = self.cur.x - self.lnw;
+        if is_asc {
+            for (i, range) in self.search.search_ranges.iter().enumerate() {
+                if self.cur.y < range.y || (self.cur.y == range.y && cur_x < range.sx) {
+                    return i;
+                }
+            }
+            // 循環検索の為に0返却
+            return 0;
+        } else {
+            let index = self.search.search_ranges.len() - 1;
+            let mut ranges = self.search.search_ranges.clone();
+            ranges.reverse();
+            for (i, range) in ranges.iter().enumerate() {
+                if self.cur.y > range.y || (self.cur.y == range.y && cur_x > range.sx) {
+                    return index - i;
+                }
+            }
+            // 循環検索の為にindex返却
+            return index;
+        }
+    }
 
     pub fn replace_prom(&mut self, prom: &mut Prompt) {
         Log::ep_s("★　replace_prom");
@@ -236,7 +309,6 @@ impl Editor {
 
     pub fn replace(&mut self, prom: &mut Prompt) {
         Log::ep_s("★　replace");
-        prom.is_replace = false;
 
         let search_str = prom.cont.buf.iter().collect::<String>();
         let replace_str = prom.cont_sub.buf.iter().collect::<String>();
@@ -247,7 +319,5 @@ impl Editor {
             self.buf[i] = row_str.chars().collect::<Vec<char>>();
             //  std::mem::replace(&mut self.buf[i], row_str.chars().collect::<Vec<char>>());
         }
-
-        prom.replace();
     }
 }

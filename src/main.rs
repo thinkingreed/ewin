@@ -88,8 +88,7 @@ fn main() {
                         _ => {}
                     },
                     Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {
-                        F(2) => editor.search_str(false),
-                        F(3) => editor.search_str(false),
+                        F(4) => editor.move_cursor(&mut out, &mut sbar),
                         Right => editor.shift_right(),
                         Left => editor.shift_left(),
                         Down => editor.shift_down(),
@@ -99,27 +98,27 @@ fn main() {
                         Char(c) => editor.insert_char(c.to_ascii_uppercase()),
                         _ => {}
                     },
-                    Key(KeyEvent { code: Char(c), .. }) => editor.insert_char(c),
+                    // Key(KeyEvent { code: Char(c), .. }) => editor.insert_char(c),
                     Key(KeyEvent { code, .. }) => match code {
+                        Char(c) => editor.insert_char(c),
                         Enter => editor.enter(),
                         Backspace => editor.back_space(),
                         Delete => editor.delete(),
-                        Home => editor.home(),
-                        End => editor.end(),
                         PageDown => editor.page_down(),
                         PageUp => editor.page_up(),
-                        Down => editor.move_cursor(Down, &mut out, &mut sbar),
-                        Up => editor.move_cursor(Up, &mut out, &mut sbar),
-                        Left => editor.move_cursor(Left, &mut out, &mut sbar),
-                        Right => editor.move_cursor(Right, &mut out, &mut sbar),
-                        F(3) => editor.search_str(true),
-
+                        Home => editor.move_cursor(&mut out, &mut sbar),
+                        End => editor.move_cursor(&mut out, &mut sbar),
+                        Down => editor.move_cursor(&mut out, &mut sbar),
+                        Up => editor.move_cursor(&mut out, &mut sbar),
+                        Left => editor.move_cursor(&mut out, &mut sbar),
+                        Right => editor.move_cursor(&mut out, &mut sbar),
+                        F(3) => editor.move_cursor(&mut out, &mut sbar),
                         _ => {
                             Log::ep_s("Un Supported no modifiers");
                         }
                     },
-                    Mouse(MouseEvent::ScrollUp(_, _, _)) => editor.move_cursor(Up, &mut out, &mut sbar),
-                    Mouse(MouseEvent::ScrollDown(_, _, _)) => editor.move_cursor(Down, &mut out, &mut sbar),
+                    Mouse(MouseEvent::ScrollUp(_, _, _)) => editor.move_cursor(&mut out, &mut sbar),
+                    Mouse(MouseEvent::ScrollDown(_, _, _)) => editor.move_cursor(&mut out, &mut sbar),
                     Mouse(MouseEvent::Down(MouseButton::Left, x, y, _)) => editor.mouse_left_press((x + 1) as usize, y as usize),
                     Mouse(MouseEvent::Down(_, _, _, _)) => {}
                     Mouse(MouseEvent::Up(_, x, y, _)) => editor.mouse_release((x + 1) as usize, y as usize),

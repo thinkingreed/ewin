@@ -5,7 +5,6 @@ use crossterm::event::KeyCode;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::cmp::{max, min};
 use std::io::Write;
-use termion::color;
 use termion::{clear, cursor};
 use unicode_width::UnicodeWidthChar;
 
@@ -99,7 +98,7 @@ impl Prompt {
         } else if self.is_close_confirm == true {
             return Process::close(out, terminal, editor, mbar, self, sbar);
         } else if self.is_search == true {
-            return Process::search(editor, mbar, self);
+            return Process::search(out, terminal, editor, mbar, self, sbar);
         } else if self.is_replace == true {
             return Process::replace(out, terminal, editor, mbar, self, sbar);
         } else {
@@ -127,6 +126,14 @@ impl Prompt {
             let (cur_x, width) = get_until_updown_x(0, &self.cont.buf, self.cont.cur.updown_x);
             self.cont.cur.x = cur_x;
             self.cont.cur.disp_x = width;
+        }
+    }
+    pub fn tab(&mut self) {
+        Log::ep_s("cursor_up");
+        if self.buf_posi == PromptBufPosi::Main {
+            self.cursor_down();
+        } else {
+            self.cursor_up();
         }
     }
 }
@@ -175,13 +182,5 @@ impl PromptCont {
             KeyCode::Backspace => self.backspace(),
             _ => {}
         }
-    }
-}
-
-impl MsgBar {
-    pub fn set_err_str(&mut self, msg: String) {
-        let msg = format!("{}{}", &color::Fg(color::White).to_string(), msg,);
-        let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num);
-        self.msg_disp = format!("{}{}{}", &color::Bg(color::Red).to_string(), msg_str, &color::Bg(color::Black).to_string(),);
     }
 }

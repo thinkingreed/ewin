@@ -55,22 +55,8 @@ impl Default for Prompt {
             disp_row_num: 0,
             disp_row_posi: 0,
             disp_col_num: 0,
-            cont: PromptCont {
-                lang: LangCfg::default(),
-                guide: String::new(),
-                key_desc: String::new(),
-                buf_desc: String::new(),
-                buf: vec![],
-                cur: Cursor { y: 0, x: 0, disp_x: 1, updown_x: 0 },
-            },
-            cont_sub: PromptCont {
-                lang: LangCfg::default(),
-                guide: String::new(),
-                key_desc: String::new(),
-                buf_desc: String::new(),
-                buf: vec![],
-                cur: Cursor { y: 0, x: 0, disp_x: 1, updown_x: 0 },
-            },
+            cont: PromptCont::default(),
+            cont_sub: PromptCont::default(),
             buf_posi: PromptBufPosi::Main,
             search_str: String::new(),
             is_change: false,
@@ -88,6 +74,8 @@ impl Prompt {
     }
 
     pub fn clear(&mut self) {
+        //  self = &mut Prompt { disp_row_num: 0, ..Prompt::default() };
+
         Log::ep_s("★　Prompt clear");
         self.disp_row_num = 0;
         self.disp_row_posi = 0;
@@ -95,8 +83,11 @@ impl Prompt {
         self.is_close_confirm = false;
         self.is_save_new_file = false;
         self.is_search = false;
+        self.search_str = String::new();
         self.is_replace = false;
         self.cont = PromptCont::default();
+        self.cont_sub = PromptCont::default();
+        self.buf_posi = PromptBufPosi::Main;
     }
 }
 
@@ -181,6 +172,11 @@ pub struct Search {
 
 impl Search {
     pub const INDEX_UNDEFINED: usize = usize::MAX;
+    pub fn clear(&mut self) {
+        self.str = String::new();
+        self.index = Search::INDEX_UNDEFINED;
+        self.search_ranges = vec![];
+    }
 }
 
 impl Default for Search {
@@ -233,8 +229,8 @@ impl SelectRange {
         self.s_disp_x = 0;
         self.e_disp_x = 0;
     }
-    pub fn is_unselected(&mut self) -> bool {
-        return self.sy == 0 && self.ey == 0 && self.s_disp_x == 0 && self.e_disp_x == 0;
+    pub fn is_selected(&mut self) -> bool {
+        return !(self.sy == 0 && self.ey == 0 && self.s_disp_x == 0 && self.e_disp_x == 0);
     }
 
     /// 開始位置 < 終了位置に変換
@@ -308,7 +304,9 @@ pub struct Editor {
     pub disp_row_num: usize,
     pub disp_col_num: usize,
     pub search: Search,
-    // pub search_range
+    //pub str_vec: Vec<String>,
+    // edit_ranges
+    pub e_ranges: Vec<EditRnage>,
 }
 
 impl Editor {}
@@ -337,10 +335,27 @@ impl Default for Editor {
             disp_row_num: 0,
             disp_col_num: 0,
             search: Search::default(),
-            //     search_range: vec![Range::new()],
+            // str_vec: vec![],
+            e_ranges: vec![],
         }
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EditRnage {
+    pub y: usize,
+    // pub vec: Vec<char>,
+    pub e_type: EType,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+/// EditType
+pub enum EType {
+    Add,
+    Mod,
+    Del,
+    None,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Log {
     pub log_path: String,

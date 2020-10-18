@@ -27,7 +27,7 @@ pub struct LangCfg {
     pub not_entered_filenm: String,
     pub not_entered_search_str: String,
     pub not_entered_replace_str: String,
-    pub no_search_str_bottom: String,
+    pub cannot_find_char_search_for: String,
 }
 #[derive(Debug, Deserialize)]
 pub struct LangMulti {
@@ -60,7 +60,7 @@ impl LangCfg {
             not_entered_filenm: String::new(),
             not_entered_search_str: String::new(),
             not_entered_replace_str: String::new(),
-            no_search_str_bottom: String::new(),
+            cannot_find_char_search_for: String::new(),
         }
     }
     pub fn read_lang_cfg() -> LangCfg {
