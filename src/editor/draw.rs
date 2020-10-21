@@ -1,5 +1,6 @@
 use crate::model::*;
 use crate::util::*;
+use std::cmp::min;
 use std::fs;
 use std::io::Write;
 use std::path;
@@ -21,7 +22,7 @@ impl Editor {
             .unwrap_or_else(|| vec![Vec::new()]);
 
         self.path = Some(path.into());
-        self.lnw = self.buf.len().to_string().len() + 1;
+        self.lnw = self.buf.len().to_string().len();
         self.cur = Cursor { y: 0, x: self.lnw, disp_x: 0, updown_x: 0 };
         self.cur.disp_x = self.lnw + get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.lnw);
     }
@@ -30,33 +31,32 @@ impl Editor {
         let str_vec: &mut Vec<String> = &mut vec![];
 
         let mut y_draw_s = self.y_offset;
-        let mut y_draw_e = self.buf.len();
-        eprintln!("edit_ranges {:?}", self.e_ranges);
+        let mut y_draw_e = self.y_offset + min(self.disp_row_num, self.buf.len());
 
-        if self.e_ranges.len() == 0 {
+        let d_range = self.d_range.get_range();
+        eprintln!("edit_ranges {:?}", d_range);
+
+        if d_range.e_type == EType::None || d_range.e_type == EType::All {
             str_vec.push(clear::All.to_string());
             str_vec.push(cursor::Goto(1, 1).to_string());
         } else {
-            eprintln!("edit_ranges[0] {:?}", self.e_ranges[0]);
-            if self.e_ranges[0].e_type == EType::Mod {
-                for e_range in &self.e_ranges {
-                    str_vec.push(format!("{}{}", cursor::Goto(1, (e_range.y + 1) as u16), clear::CurrentLine));
+            y_draw_s = d_range.sy;
+            if d_range.e_type == EType::Mod {
+                for i in d_range.sy - self.y_offset..=d_range.ey - self.y_offset {
+                    str_vec.push(format!("{}{}", cursor::Goto(1, (i + 1) as u16), clear::CurrentLine));
                 }
-                str_vec.push(cursor::Hide.to_string());
-                str_vec.push(cursor::Goto(1, (self.e_ranges[0].y + 1) as u16).to_string());
-                y_draw_e = self.e_ranges[self.e_ranges.len() - 1].y + 1;
+                str_vec.push(cursor::Goto(1, (d_range.sy + 1 - self.y_offset) as u16).to_string());
+                y_draw_e = d_range.ey + 1;
             } else {
-                let e_range = &self.e_ranges[0];
-                let clear = format!("{}{}", cursor::Goto(1, (e_range.y + 1) as u16), clear::AfterCursor);
-                str_vec.push(clear);
+                Log::ep_s("clear::AfterCursor");
+                str_vec.push(format!("{}{}", cursor::Goto(1, (d_range.sy + 1 - self.y_offset) as u16), clear::AfterCursor));
             }
-            y_draw_s = self.e_ranges[0].y;
         }
         // 画面上の行、列
         let mut y = 0;
         let mut x = 0;
         // let rowlen =
-        self.lnw = self.buf.len().to_string().len() + 1;
+        self.lnw = self.buf.len().to_string().len();
         let sel_range = self.sel.get_range();
         let search_ranges = self.search.search_ranges.clone();
 
@@ -64,18 +64,17 @@ impl Editor {
         Log::ep("y_draw_e", y_draw_e);
 
         for i in y_draw_s..y_draw_e {
+            self.set_rownum_color(str_vec);
             // 行番号の空白
             if self.x_offset_y == i && self.x_offset_disp > 0 {
-                for _ in 0..self.lnw - 1 {
+                for _ in 0..self.lnw {
                     str_vec.push(">".to_string());
                 }
-                str_vec.push('|'.to_string());
             } else {
-                for _ in (i + 1).to_string().len()..self.lnw - 1 {
+                for _ in (i + 1).to_string().len()..self.lnw {
                     str_vec.push(" ".to_string());
                 }
                 str_vec.push((i + 1).to_string());
-                str_vec.push('|'.to_string());
             }
             self.set_textarea_color(str_vec);
             for j in 0..=self.buf[i].len() + 1 {
@@ -118,20 +117,17 @@ impl Editor {
             }
         }
 
-        eprintln!("str_vec {:?}", str_vec);
         write!(out, "{}", &str_vec.concat()).unwrap();
         out.flush().unwrap();
-        self.e_ranges.clear();
+        self.d_range.clear();
     }
 
     pub fn draw_cur<T: Write>(&mut self, out: &mut T, sbar: &mut StatusBar) {
         Log::ep_s("★  draw_cursor");
-        Log::ep("disp_x", self.cur.disp_x);
 
         let str_vec: &mut Vec<String> = &mut vec![];
-
         sbar.draw_cur(str_vec, self);
-        let cur_str = format!("{}", cursor::Goto((self.cur.disp_x - self.x_offset_disp) as u16, (self.cur.y + 1 - self.y_offset) as u16));
+        let cur_str = format!("{}{}", cursor::Show, cursor::Goto((self.cur.disp_x - self.x_offset_disp) as u16, (self.cur.y + 1 - self.y_offset) as u16));
         str_vec.push(cur_str);
         write!(out, "{}", str_vec.concat()).unwrap();
         out.flush().unwrap();

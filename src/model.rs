@@ -305,11 +305,10 @@ pub struct Editor {
     pub disp_col_num: usize,
     pub search: Search,
     //pub str_vec: Vec<String>,
-    // edit_ranges
-    pub e_ranges: Vec<EditRnage>,
+    // draw_ranges
+    pub d_range: DRnage,
 }
 
-impl Editor {}
 impl Default for Editor {
     fn default() -> Self {
         Editor {
@@ -336,24 +335,51 @@ impl Default for Editor {
             disp_col_num: 0,
             search: Search::default(),
             // str_vec: vec![],
-            e_ranges: vec![],
+            d_range: DRnage { sy: 0, ey: 0, e_type: EType::None },
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EditRnage {
-    pub y: usize,
-    // pub vec: Vec<char>,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+// DrawRnage
+pub struct DRnage {
+    pub sy: usize,
+    pub ey: usize,
     pub e_type: EType,
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
+
+impl Default for DRnage {
+    fn default() -> Self {
+        DRnage { sy: 0, ey: 0, e_type: EType::None }
+    }
+}
+
+impl DRnage {
+    pub fn get_range(&mut self) -> Self {
+        let mut sy = self.sy;
+        let mut ey = self.ey;
+
+        if self.sy > self.ey {
+            sy = self.ey;
+            ey = self.sy;
+        }
+        return DRnage { sy: sy, ey: ey, e_type: self.e_type };
+    }
+    pub fn clear(&mut self) {
+        self.sy = 0;
+        self.ey = 0;
+        self.e_type = EType::None;
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// EditType
 pub enum EType {
     Add,
     Mod,
     Del,
     None,
+    All,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

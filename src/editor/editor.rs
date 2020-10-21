@@ -1,7 +1,6 @@
 use crate::model::{CopyRange, Editor, Log, StatusBar};
 use crate::util::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
-
 use std::cmp::{max, min};
 use std::io::Write;
 use unicode_width::UnicodeWidthChar;
@@ -15,6 +14,7 @@ impl Editor {
             self.y_offset = max(self.y_offset, self.cur.y + 1 - self.disp_row_num);
         }
     }
+
     pub fn scroll_horizontal(&mut self) {
         Log::ep_s("★ scroll_horizontal");
         self.x_offset_y = self.cur.y;
@@ -23,26 +23,6 @@ impl Editor {
         let (_, width) = get_row_width(&self.buf[self.cur.y], 0, self.x_offset);
         self.x_offset_disp = width;
     }
-
-    /*
-       pub fn move_cursor<T: Write>(&mut self, key: KeyCode, out: &mut T, sbar: &mut StatusBar) {
-           let y_offset_org: usize = self.y_offset;
-           let x_offset_disp_org: usize = self.x_offset_disp;
-           match key {
-               KeyCode::Up => self.cursor_up(),
-               KeyCode::Down => self.cursor_down(),
-               KeyCode::Left => self.cursor_left(),
-               KeyCode::Right => self.cursor_right(),
-               KeyCode::Home => self.home(),
-               KeyCode::End => self.end(),
-               _ => {}
-           }
-           if self.is_all_redraw != true {
-               self.is_all_redraw = y_offset_org != self.y_offset || (x_offset_disp_org != self.x_offset_disp || (x_offset_disp_org == self.x_offset_disp && self.x_offset_disp != 0));
-           }
-           self.draw_cur(out, sbar);
-       }
-    */
 
     /// カーソル移動のEventでoffsetの変更有無で再描画範囲を設定設定
     pub fn move_cursor<T: Write>(&mut self, out: &mut T, sbar: &mut StatusBar) {
@@ -112,9 +92,9 @@ impl Editor {
         Log::ep("copy_posi.ex", copy_posi.ex);
 
         for i in copy_posi.sy..=copy_posi.ey {
-            if copy_posi.sy != copy_posi.ey && copy_posi.ex == 0 {
+            /* if copy_posi.sy != copy_posi.ey && copy_posi.ex == 0 {
                 continue;
-            }
+            }*/
             Log::ep("iii", i);
             // 開始行==終了行
             if copy_posi.sy == copy_posi.ey {
@@ -137,10 +117,12 @@ impl Editor {
     }
 
     pub fn del_sel_range(&mut self) {
-        Log::ep_s("★★★★★  del_sel_range");
+        Log::ep_s("★  del_sel_range");
         // s < e の状態に変換した値を使用
         let sel = self.sel.get_range();
         let (sy, ey, sx, ex, s_disp_x, e_disp_x) = (sel.sy, sel.ey, sel.sx, sel.ex, sel.s_disp_x, sel.e_disp_x);
+
+        eprintln!("sel {:?}", sel);
 
         for i in 0..self.buf.len() {
             if sy <= i && i <= ey {

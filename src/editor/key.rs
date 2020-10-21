@@ -82,20 +82,37 @@ impl Editor {
     }
     pub fn enter(&mut self) {
         Log::ep_s("★  enter");
+        let y_offset_org: usize = self.y_offset;
+
         let rest: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.lnw..).collect();
         self.buf.insert(self.cur.y + 1, rest);
         self.cur.y += 1;
-        self.lnw = self.buf.len().to_string().len() + 1;
+        self.lnw = self.buf.len().to_string().len();
         self.cur.x = self.lnw;
         self.cur.disp_x = self.lnw + 1;
+
         self.scroll();
         self.scroll_horizontal();
+
+        if y_offset_org == self.y_offset {
+            self.d_range = DRnage {
+                sy: self.cur.y - 1,
+                ey: self.cur.y,
+                e_type: EType::Add,
+            };
+        } else {
+            self.d_range = DRnage { e_type: EType::All, ..DRnage::default() };
+        }
     }
     pub fn insert_char(&mut self, c: char) {
         //  if !c.is_control() {
         self.buf[self.cur.y].insert(self.cur.x - self.lnw, c);
         self.cursor_right();
-        self.e_ranges.push(EditRnage { y: self.cur.y, e_type: EType::Mod });
+        self.d_range = DRnage {
+            sy: self.cur.y,
+            ey: self.cur.y,
+            e_type: EType::Mod,
+        };
     }
 
     pub fn back_space(&mut self) {
@@ -108,7 +125,7 @@ impl Editor {
                 return;
             }
             if self.cur.x == self.lnw {
-                let row_len_org = self.buf.len().to_string().len() + 1;
+                let row_len_org = self.buf.len().to_string().len();
 
                 // 行の先頭
                 let line = self.buf.remove(self.cur.y);
@@ -118,7 +135,7 @@ impl Editor {
                 self.cur.disp_x = self.lnw + width + 1;
                 self.buf[self.cur.y].extend(line.into_iter());
 
-                let row_len_curt = self.buf.len().to_string().len() + 1;
+                let row_len_curt = self.buf.len().to_string().len();
                 // 行番号の桁数が減った場合
                 if row_len_org != row_len_curt {
                     self.lnw -= 1;
@@ -129,19 +146,26 @@ impl Editor {
                 self.cursor_left();
                 self.buf[self.cur.y].remove(self.cur.x - self.lnw);
             }
-            self.e_ranges.push(EditRnage { y: self.cur.y, e_type: EType::Mod });
+            self.d_range = DRnage {
+                sy: self.cur.y,
+                ey: self.cur.y,
+                e_type: EType::Del,
+            };
         }
         self.scroll();
         self.scroll_horizontal();
     }
     pub fn delete(&mut self) {
-        // 最終行の終端
-        if self.cur.y == self.buf.len() - 1 && self.cur.x == self.buf[self.cur.y].len() + self.lnw {
-            return;
-        }
+        Log::ep_s("★  delete");
+
         if self.sel.is_selected() {
             self.del_sel_range();
         } else {
+            // 最終行の終端
+            if self.cur.y == self.buf.len() - 1 && self.cur.x == self.buf[self.cur.y].len() + self.lnw {
+                return;
+            }
+
             if self.cur.x == self.buf[self.cur.y].len() + self.lnw {
                 // 行末
                 let line = self.buf.remove(self.cur.y + 1);
@@ -149,6 +173,12 @@ impl Editor {
             } else {
                 self.buf[self.cur.y].remove(self.cur.x - self.lnw);
             }
+
+            self.d_range = DRnage {
+                sy: self.cur.y,
+                ey: self.cur.y,
+                e_type: EType::Del,
+            };
         }
     }
 

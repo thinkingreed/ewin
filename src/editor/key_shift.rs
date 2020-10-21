@@ -1,11 +1,11 @@
 use crate::model::*;
 use crate::util::*;
+use std::cmp::{max, min};
 
 impl Editor {
     pub fn shift_right(&mut self) {
         Log::ep_s("★  shift_right");
 
-        let is_selected_org = self.sel.is_selected();
         let e_disp_x_org = self.sel.e_disp_x;
         let disp_x_org = self.cur.disp_x;
 
@@ -24,20 +24,24 @@ impl Editor {
             self.sel.ex = self.cur.x - self.lnw;
             self.sel.e_disp_x = self.cur.disp_x;
         }
+
         // 選択開始位置とカーソルが重なった場合
-        if is_selected_org
-        // 行の終端から次行に移る場合の不具合対応でcur.yと比較
-            && self.sel.sy == self.cur.y
-            // sel.s_disp_x == sel.e_disp_x + 1文字でclear
-            && self.sel.s_disp_x + self.get_char_width(self.cur.y, self.cur.x - 1) == self.cur.disp_x
-        {
+        if self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
             self.sel.clear();
         }
+
+        self.scroll();
+        self.scroll_horizontal();
+
+        self.d_range = DRnage {
+            sy: self.cur.y,
+            ey: self.cur.y,
+            e_type: EType::Mod,
+        };
     }
     pub fn shift_left(&mut self) {
         Log::ep_s("★  shift_left");
 
-        let is_selected_org = self.sel.is_selected();
         let e_disp_x_org = self.sel.e_disp_x;
         let disp_x_org = self.cur.disp_x;
 
@@ -57,14 +61,26 @@ impl Editor {
             self.sel.e_disp_x -= 1;
         }
         // 選択開始位置とカーソルが重なった場合
-        if is_selected_org && self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
+        if self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
             self.sel.clear();
         }
+        self.scroll();
+        self.scroll_horizontal();
+
+        self.d_range = DRnage {
+            sy: self.cur.y,
+            ey: self.cur.y,
+            e_type: EType::Mod,
+        };
     }
 
     pub fn shift_down(&mut self) {
         Log::ep_s("★　shift_down");
-        let is_selected_org = self.sel.is_selected();
+
+        if self.cur.y == self.buf.len() - 1 {
+            return;
+        }
+        let y_offset_org: usize = self.y_offset;
 
         if !self.sel.is_selected() {
             self.sel.sy = self.cur.y;
@@ -76,42 +92,64 @@ impl Editor {
         self.sel.ex = self.cur.x - self.lnw;
         self.sel.e_disp_x = self.cur.disp_x;
 
-        Log::ep("sel.ex", self.sel.ex);
-        Log::ep("sel.e_disp_x ", self.sel.e_disp_x);
-
+        // ShiftUp,Down繰り返す場合の対応
+        let mut sy = min(self.sel.sy, self.sel.ey);
+        if sy > 0 {
+            sy -= 1;
+        }
+        self.d_range = DRnage {
+            sy: sy,
+            ey: max(self.sel.sy, self.sel.ey),
+            e_type: EType::Mod,
+        };
         // 選択開始位置とカーソルが重なった場合
-        if is_selected_org && self.sel.s_disp_x == self.sel.e_disp_x && self.sel.sy == self.sel.ey {
+        if self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
             self.sel.clear();
         }
+
+        self.scroll();
+        self.scroll_horizontal();
+
+        if y_offset_org != self.y_offset {
+            self.d_range = DRnage { e_type: EType::All, ..DRnage::default() };
+        }
     }
+
     pub fn shift_up(&mut self) {
         Log::ep_s("★　shift_up");
 
-        Log::ep("cur.x", self.cur.x);
-
-        let is_selected_org = self.sel.is_selected();
-
         if self.cur.y == 0 {
             return;
-        } else {
-            if !self.sel.is_selected() {
-                self.sel.sy = self.cur.y;
-                self.sel.sx = self.cur.x - 1;
-                self.sel.s_disp_x = self.cur.disp_x;
-                // 行頭の場合に先頭文字を含めない
-                if self.cur.x == self.lnw {
-                    self.sel.s_disp_x = self.cur.disp_x - 1;
-                }
-            }
-            self.cursor_up();
-            self.sel.ey = self.cur.y;
-            self.sel.ex = self.cur.x - self.lnw;
-            self.sel.e_disp_x = self.cur.disp_x;
         }
+
+        if !self.sel.is_selected() {
+            self.sel.sy = self.cur.y;
+            self.sel.sx = self.cur.x - self.lnw;
+            self.sel.s_disp_x = self.cur.disp_x;
+            // 行頭の場合に先頭文字を含めない
+            if self.cur.x == self.lnw {
+                self.sel.s_disp_x = self.cur.disp_x - 1;
+            }
+        }
+        self.cursor_up();
+        self.sel.ey = self.cur.y;
+        self.sel.ex = self.cur.x - self.lnw;
+        self.sel.e_disp_x = self.cur.disp_x;
+
+        // ShiftUp,Down繰り返す場合の対応
+        let mut sy = max(self.sel.sy, self.sel.ey);
+        if self.buf.len() > sy + 1 {
+            sy += 1;
+        }
+        self.d_range = DRnage { sy: sy, ey: self.sel.ey, e_type: EType::Mod };
+
         // 選択開始位置とカーソルが重なった場合
-        if is_selected_org && self.sel.s_disp_x == self.sel.e_disp_x && self.sel.sy == self.sel.ey {
+        if self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
             self.sel.clear();
         }
+
+        self.scroll();
+        self.scroll_horizontal();
     }
     pub fn shift_home(&mut self) {
         Log::ep_s("★　shift_home");
@@ -123,6 +161,12 @@ impl Editor {
         self.sel.e_disp_x = self.lnw;
         self.cur.x = self.lnw;
         self.cur.disp_x = self.lnw + 1;
+
+        self.d_range = DRnage {
+            sy: self.cur.y,
+            ey: self.cur.y,
+            e_type: EType::Mod,
+        };
     }
     pub fn shift_end(&mut self) {
         Log::ep_s("★  shift_end");
@@ -138,6 +182,10 @@ impl Editor {
         self.cur.disp_x = self.sel.e_disp_x;
         self.cur.x = self.buf[self.cur.y].len() + self.lnw;
 
-        self.e_ranges.push(EditRnage { y: self.cur.y, e_type: EType::Mod });
+        self.d_range = DRnage {
+            sy: self.cur.y,
+            ey: self.cur.y,
+            e_type: EType::Mod,
+        };
     }
 }

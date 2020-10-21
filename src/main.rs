@@ -4,13 +4,13 @@ use crossterm::event::{Event::*, KeyEvent, MouseButton, MouseEvent};
 use ewin::_cfg::lang::cfg::LangCfg;
 use ewin::model::{Editor, EvtProcess, Log, MsgBar, Process, Prompt, StatusBar, Terminal};
 use std::ffi::OsStr;
-
 use std::io::{stdout, BufWriter, Write};
 use std::path::Path;
 use termion::clear;
 use termion::input::MouseTerminal;
 use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
+use termion::*;
 
 fn main() {
     let matches = App::new("ew")
@@ -52,6 +52,9 @@ fn main() {
         let event = read();
 
         editor.curt_evt = event.unwrap().clone();
+
+        write!(out, "{}", cursor::Hide.to_string()).unwrap();
+        out.flush().unwrap();
 
         // eprintln!("evt {:?}", editor.curt_evt.clone());
 

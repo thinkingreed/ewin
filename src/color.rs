@@ -2,13 +2,12 @@ use crate::model::*;
 use termion::color;
 
 impl Editor {
-    /*
     pub fn set_rownum_color(&mut self, str_vec: &mut Vec<String>) {
         //     str_vec.push(color::Fg(color::LightGreen).to_string());
         str_vec.push(color::Fg(color::Rgb(0, 100, 0)).to_string());
         str_vec.push(color::Bg(color::Black).to_string());
     }
-    */
+
     pub fn set_textarea_color(&mut self, str_vec: &mut Vec<String>) {
         str_vec.push(color::Fg(color::White).to_string());
         str_vec.push(color::Bg(color::Black).to_string());

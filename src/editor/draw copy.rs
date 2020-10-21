@@ -21,7 +21,7 @@ impl Editor {
             .unwrap_or_else(|| vec![Vec::new()]);
 
         self.path = Some(path.into());
-        self.lnw = self.buf.len().to_string().len() + 1;
+        self.lnw = self.buf.len().to_string().len();
         self.cur = Cursor { y: 0, x: self.lnw, disp_x: 0, updown_x: 0 };
         self.cur.disp_x = self.lnw + get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.lnw);
     }
@@ -38,27 +38,26 @@ impl Editor {
         let mut y = 0;
         let mut x = 0;
         // let rowlen =
-        self.lnw = self.buf.len().to_string().len() + 1;
+        self.lnw = self.buf.len().to_string().len();
         let sel_range = self.sel.get_range();
         let search_ranges = self.search.search_ranges.clone();
 
         Log::ep("y_offset", self.y_offset);
 
         for i in self.y_offset..self.buf.len() {
+            self.set_rownum_color(str_vec);
             // 行番号の空白
             if self.x_offset_y == i && self.x_offset_disp > 0 {
-                for _ in 0..self.lnw - 1 {
+                for _ in 0..self.lnw {
                     str_vec.push(">".to_string());
                 }
-                str_vec.push('|'.to_string());
             } else {
-                for _ in (i + 1).to_string().len()..self.lnw - 1 {
+                for _ in (i + 1).to_string().len()..self.lnw {
                     str_vec.push(" ".to_string());
                 }
                 str_vec.push((i + 1).to_string());
-                str_vec.push('|'.to_string());
             }
-            // self.set_textarea_color(str_vec);
+            self.set_textarea_color(str_vec);
             for j in 0..=self.buf[i].len() + 1 {
                 if self.buf[i].len() == 0 {
                     break;

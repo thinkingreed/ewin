@@ -25,7 +25,7 @@ impl Editor {
         self.del_sel_range();
         let sel = self.sel.get_range();
 
-        self.e_ranges.push(EditRnage { y: sel.sy, e_type: EType::Del });
+        self.d_range = DRnage { sy: sel.sy, ey: sel.ey, e_type: EType::Del };
     }
 
     pub fn close(&mut self, prompt: &mut Prompt) -> bool {
@@ -111,6 +111,8 @@ impl Editor {
         }
 
         let copy_string = vec.iter().collect::<String>().clone();
+
+        Log::ep("copy_string", copy_string.clone());
 
         self.set_clipboard(&copy_string);
     }

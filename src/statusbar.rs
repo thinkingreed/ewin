@@ -33,9 +33,10 @@ impl StatusBar {
         let cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
         // str_vec.push("\r\n".to_string());
         let sber_str = format!(
-            "{}{}{}{}{}",
+            "{}{}{}{}{}{}",
             cursor::Goto(1, self.disp_row_posi as u16),
             clear::CurrentLine,
+            Bg(color::Black),
             Fg(Rgb(221, 72, 20)),
             format!("{}{}", filenm_disp, cur_str),
             Fg(White).to_string(),
@@ -56,7 +57,7 @@ impl StatusBar {
             return;
         }
         let cur_str = format!("{cur:>w$}", cur = self.get_cur_str(editor), w = self.cur_str.chars().count());
-        let all_str = format!("{}{}{}", color::Fg(color::Rgb(221, 72, 20)).to_string(), self.filenm_disp, cur_str);
+        let all_str = format!("{}{}{}{}", Bg(color::Black).to_string(), color::Fg(color::Rgb(221, 72, 20)).to_string(), self.filenm_disp, cur_str);
         let sber_str = format!("{}{}{}{}", termion::cursor::Goto(1, rows as u16), termion::clear::CurrentLine, all_str, color::Fg(color::White).to_string());
 
         str_vec.push(sber_str);
