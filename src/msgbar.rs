@@ -27,6 +27,6 @@ impl MsgBar {
     }
     pub fn set_err(&mut self, msg: String) {
         let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num - (get_str_width(&msg) - msg.chars().count()));
-        self.msg_disp = format!("{}{}{}{}", &Bg(Red).to_string(), &Fg(White).to_string(), msg_str, &Bg(Black).to_string(),);
+        self.msg_disp = format!("{}{}", &Fg(Red).to_string(), msg_str,);
     }
 }

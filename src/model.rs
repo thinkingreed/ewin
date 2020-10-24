@@ -133,6 +133,7 @@ pub struct StatusBar {
     // 起動時ファイル未指定の場合の仮ファイル名
     pub filenm_tmp: String,
     pub filenm_disp: String,
+    pub filenm_disp_flg: bool,
     pub cur_str: String,
     /// ターミナル上の表示数
     pub disp_row_num: usize,
@@ -147,6 +148,7 @@ impl Default for StatusBar {
             filenm: String::new(),
             filenm_tmp: String::new(),
             filenm_disp: String::new(),
+            filenm_disp_flg: false,
             cur_str: String::new(),
             disp_row_num: 1,
             disp_row_posi: 0,

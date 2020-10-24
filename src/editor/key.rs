@@ -83,6 +83,7 @@ impl Editor {
     pub fn enter(&mut self) {
         Log::ep_s("★  enter");
         let y_offset_org: usize = self.y_offset;
+        let lnw_org = self.lnw;
 
         let rest: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.lnw..).collect();
         self.buf.insert(self.cur.y + 1, rest);
@@ -94,7 +95,7 @@ impl Editor {
         self.scroll();
         self.scroll_horizontal();
 
-        if y_offset_org == self.y_offset {
+        if y_offset_org == self.y_offset && lnw_org == self.lnw {
             self.d_range = DRnage {
                 sy: self.cur.y - 1,
                 ey: self.cur.y,

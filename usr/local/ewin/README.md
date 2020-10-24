@@ -1,7 +1,7 @@
 ewin
 ====
 
-[ewin] Simple editor for Winodws users.
+[ewin][] Simple editor for Winodws users.
   There is no need to learn new operation commands.
 
 It provides basic features as a minimal text editor:
@@ -11,6 +11,7 @@ It provides basic features as a minimal text editor:
 - Edit a text (put/delete characters, insert/delete lines, ...)
 - Support editing UTF-8 characters
 - Resizing terminal window supported. Screen size is responsible
+
 
 ## Installation
 

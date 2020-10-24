@@ -3,6 +3,7 @@ use crate::util::*;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+use termion::cursor;
 
 impl Editor {
     pub fn all_select(&mut self) {
@@ -28,7 +29,7 @@ impl Editor {
         self.d_range = DRnage { sy: sel.sy, ey: sel.ey, e_type: EType::Del };
     }
 
-    pub fn close(&mut self, prompt: &mut Prompt) -> bool {
+    pub fn close<T: Write>(&mut self, out: &mut T, prompt: &mut Prompt) -> bool {
         Log::ep("is_change", prompt.is_change);
 
         if prompt.is_change == true {
@@ -37,6 +38,9 @@ impl Editor {
             prompt.is_close_confirm = true;
             return false;
         };
+        write!(out, "{}", cursor::Hide.to_string()).unwrap();
+        out.flush().unwrap();
+
         return true;
     }
     pub fn save(&mut self, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> bool {

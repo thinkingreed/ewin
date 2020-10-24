@@ -6,11 +6,10 @@ use ewin::model::{Editor, EvtProcess, Log, MsgBar, Process, Prompt, StatusBar, T
 use std::ffi::OsStr;
 use std::io::{stdout, BufWriter, Write};
 use std::path::Path;
-use termion::clear;
 use termion::input::MouseTerminal;
 use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
-use termion::*;
+use termion::{clear, cursor};
 
 fn main() {
     let matches = App::new("ew")
@@ -73,7 +72,7 @@ fn main() {
                     }
                     Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
                         Char('w') => {
-                            if editor.close(&mut prom) == true {
+                            if editor.close(&mut out, &mut prom) == true {
                                 return;
                             }
                         }
