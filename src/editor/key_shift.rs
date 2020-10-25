@@ -1,6 +1,5 @@
 use crate::model::*;
 use crate::util::*;
-use std::cmp::{max, min};
 
 impl Editor {
     pub fn shift_right(&mut self) {
@@ -78,6 +77,7 @@ impl Editor {
         Log::ep_s("★　shift_down");
 
         if self.cur.y == self.buf.len() - 1 {
+            self.d_range = DRnage { e_type: EType::Not, ..DRnage::default() };
             return;
         }
         let y_offset_org: usize = self.y_offset;
@@ -92,16 +92,13 @@ impl Editor {
         self.sel.ex = self.cur.x - self.lnw;
         self.sel.e_disp_x = self.cur.disp_x;
 
-        // ShiftUp,Down繰り返す場合の対応
-        let mut sy = min(self.sel.sy, self.sel.ey);
-        if sy > 0 {
-            sy -= 1;
-        }
         self.d_range = DRnage {
-            sy: sy,
-            ey: max(self.sel.sy, self.sel.ey),
+            // ShiftUp,Down繰り返す場合の対応でcur.y - 1,
+            sy: self.cur.y - 1,
+            ey: self.cur.y,
             e_type: EType::Mod,
         };
+
         // 選択開始位置とカーソルが重なった場合
         if self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
             self.sel.clear();
@@ -119,8 +116,10 @@ impl Editor {
         Log::ep_s("★　shift_up");
 
         if self.cur.y == 0 {
+            self.d_range = DRnage { e_type: EType::Not, ..DRnage::default() };
             return;
         }
+        let y_offset_org: usize = self.y_offset;
 
         if !self.sel.is_selected() {
             self.sel.sy = self.cur.y;
@@ -136,12 +135,12 @@ impl Editor {
         self.sel.ex = self.cur.x - self.lnw;
         self.sel.e_disp_x = self.cur.disp_x;
 
-        // ShiftUp,Down繰り返す場合の対応
-        let mut sy = max(self.sel.sy, self.sel.ey);
-        if self.buf.len() > sy + 1 {
-            sy += 1;
-        }
-        self.d_range = DRnage { sy: sy, ey: self.sel.ey, e_type: EType::Mod };
+        self.d_range = DRnage {
+            // ShiftUp,Down繰り返す場合の対応でcur.y + 1,
+            sy: self.cur.y + 1,
+            ey: self.cur.y,
+            e_type: EType::Mod,
+        };
 
         // 選択開始位置とカーソルが重なった場合
         if self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
@@ -150,6 +149,10 @@ impl Editor {
 
         self.scroll();
         self.scroll_horizontal();
+
+        if y_offset_org != self.y_offset {
+            self.d_range = DRnage { e_type: EType::All, ..DRnage::default() };
+        }
     }
     pub fn shift_home(&mut self) {
         Log::ep_s("★　shift_home");

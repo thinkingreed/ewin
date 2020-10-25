@@ -16,16 +16,26 @@ impl Editor {
         self.sel.ex = cur_x + self.lnw;
         self.sel.e_disp_x = width + self.lnw + 1;
     }
-    pub fn cut(&mut self) {
+    pub fn cut(&mut self, term: &Terminal) {
         Log::ep_s("★★  cut");
         if !self.sel.is_selected() {
             return;
         }
 
-        self.copy();
-        self.del_sel_range();
+        self.copy(term);
         let sel = self.sel.get_range();
+        let dr = DoRange {
+            e_type: EType::Del,
+            sy: sel.sy,
+            ey: sel.ey,
+            x: self.cur.x - self.lnw,
+            disp_x: self.cur.disp_x,
+            vec: self.get_sel_range_vec(),
+        };
+        eprintln!("drdrdrdrdr {:?}", dr);
 
+        self.del_sel_range();
+        self.undo_vec.push(dr);
         self.d_range = DRnage { sy: sel.sy, ey: sel.ey, e_type: EType::Del };
     }
 
@@ -91,34 +101,44 @@ impl Editor {
         return false;
     }
 
-    pub fn copy(&mut self) {
+    pub fn copy(&mut self, term: &Terminal) {
         Log::ep_s("★  copy");
         let copy_ranges: Vec<CopyRange> = self.get_copy_range();
         if copy_ranges.len() == 0 {
             return;
         };
         let mut vec: Vec<char> = vec![];
-        for (i, copy_range) in copy_ranges.iter().enumerate() {
-            // WSL PowerShell用に’で囲む
-            vec.push('\'');
-            for j in copy_range.sx..copy_range.ex {
-                if let Some(c) = self.buf[copy_range.y].get(j) {
-                    // Log::ep("ccc", c);
-                    vec.push(c.clone());
+
+        let sel_vec = self.get_sel_range_vec();
+        if term.env == Env::WSL {
+            vec = self.set_wsl_vec(sel_vec);
+        } else {
+            for (i, v) in sel_vec.iter().enumerate() {
+                vec.append(&mut v.clone());
+                if sel_vec.len() - 1 != i {
+                    vec.push('\n');
                 }
-            }
-            vec.push('\'');
-            // WSL PowerShell用の','
-            if i != copy_ranges.len() - 1 {
-                vec.push(',');
             }
         }
 
         let copy_string = vec.iter().collect::<String>().clone();
-
         Log::ep("copy_string", copy_string.clone());
-
         self.set_clipboard(&copy_string);
+    }
+
+    // WSL:powershell.clipboard対応で"’"で文字列を囲み、改行は","
+    fn set_wsl_vec(&mut self, sel_vec: Vec<Vec<char>>) -> Vec<char> {
+        let mut vec: Vec<char> = vec![];
+
+        for (i, v) in sel_vec.iter().enumerate() {
+            vec.push('\'');
+            vec.append(&mut v.clone());
+            vec.push('\'');
+            if i != sel_vec.len() - 1 {
+                vec.push(',');
+            }
+        }
+        return vec;
     }
 
     pub fn paste(&mut self) {

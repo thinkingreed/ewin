@@ -12,9 +12,9 @@ It provides basic features as a minimal text editor:
 - Support editing UTF-8 characters
 - Resizing terminal window supported. Screen size is responsible
 
-# Installation
+## Installation
 
-## On Ubuntu
+### On Ubuntu
 
 _... and other Debian-based Linux distributions_
 
@@ -24,7 +24,7 @@ Download the latest .deb package from the [release page](https://github.com/thin
 sudo apt install ewin_0.5.1_amd64.deb 
 ```
 
-## Snap
+### Snap
 
 Please install Snap Store or Command
 
@@ -32,9 +32,9 @@ Please install Snap Store or Command
 $ sudo snap install --edge ewin
 ```
 
-# Usage
+## Usage
 
-## CLI
+### CLI
 
 Installing package introduces `ewin` command in your system.
 
@@ -45,7 +45,7 @@ $ ewin file         # Open files to edit
 Please see `ewin --help` for command usage.
 
 
-# Edit Text
+## Edit Text
 
 ewin is a mode-less text editor. Like other famous mode-less text editors such as Nano, Emacs, you can edit text in terminal window using a keyboard.
 And several keys with Ctrl or Alt modifiers are mapped to various features.
@@ -102,12 +102,12 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `Shift` + `F4`          | Search for above characters below.　　　　　                                      |
 | `Mouse` + `Left.Down, Drag, Up`    | Select a range.|
 
-# Future Works
+## Future Works
 
-- Character replacement function
 - Redo/Undo function
+- Grep function
 - WASI support
 
-# License
+## License
 
 This project is distributed under [the MIT License](./LICENSE.txt).

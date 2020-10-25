@@ -1,7 +1,13 @@
 use crate::_cfg::lang::cfg::LangCfg;
-use crate::model::{Editor, Log, MsgBar, Prompt, StatusBar, Terminal};
+use crate::model::*;
+use crate::model::{Editor, Log};
 use std::io::{self, Write};
 use termion::cursor;
+
+use anyhow::Context;
+use std::io::Read;
+use std::process;
+use std::process::Command;
 
 impl Terminal {
     pub fn draw<T: Write>(&mut self, out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> Result<(), io::Error> {
@@ -10,17 +16,23 @@ impl Terminal {
         self.set_disp_size(editor, mbar, prom, sbar);
         let str_vec: &mut Vec<String> = &mut vec![];
 
-        editor.draw(out);
-        mbar.draw(out);
+        let d_range = editor.d_range.get_range();
+        eprintln!("edit_ranges {:?}", d_range);
+        if d_range.e_type != EType::Not {
+            editor.draw(out);
+            mbar.draw(out);
 
-        eprintln!("draw.mbar {:?}", str_vec);
+            eprintln!("draw.mbar {:?}", str_vec);
 
-        prom.draw(str_vec);
-        sbar.draw(str_vec, editor);
+            prom.draw(str_vec);
+            sbar.draw(str_vec, editor);
+        }
+
         self.draw_cur(str_vec, editor, prom);
-
         write!(out, "{}", &str_vec.concat())?;
         out.flush()?;
+        editor.d_range.clear();
+
         return Ok(());
     }
 
@@ -58,15 +70,10 @@ impl Terminal {
             sbar.disp_row_posi = rows;
             sbar.disp_col_num = cols;
         }
-        // Log::ep("sbar.disp_row_num", sbar.disp_row_num);
-        // Log::ep("prom.disp_row_num", prom.disp_row_num);
         prom.disp_row_posi = rows - prom.disp_row_num + 1 - sbar.disp_row_num;
-        mbar.disp_col_num = cols;
 
+        mbar.disp_col_num = cols;
         mbar.disp_row_posi = rows - prom.disp_row_num - sbar.disp_row_num;
-        // Log::ep("prom.disp_row_posi", prom.disp_row_posi);
-        // Log::ep("mbar.disp_col_num", mbar.disp_col_num);
-        // Log::ep(" mbar.disp_row_posi", mbar.disp_row_posi);
 
         if mbar.msg_disp.len() > 0 {
             mbar.disp_row_num = 1;
@@ -75,9 +82,22 @@ impl Terminal {
         }
 
         editor.disp_row_num = rows - prom.disp_row_num - mbar.disp_row_num - sbar.disp_row_num;
-
-        Log::ep("editor.disp_row_num", editor.disp_row_num);
-
+        // Log::ep("editor.disp_row_num", editor.disp_row_num);
         editor.disp_col_num = cols;
+    }
+
+    pub fn set_env(&mut self) {
+        // WSL環境を判定出来ない為にpowershell試行
+        let p = Command::new("uname").arg("-r").stdout(process::Stdio::piped()).spawn().unwrap();
+        let mut stdout = p.stdout.context("take stdout").unwrap();
+        let mut buf = String::new();
+        stdout.read_to_string(&mut buf).unwrap();
+        //   buf = buf.clone().trim().to_string();
+
+        if buf.to_ascii_lowercase().contains("microsoft") {
+            self.env = Env::WSL;
+        } else {
+            self.env = Env::Linux;
+        }
     }
 }

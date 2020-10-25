@@ -31,6 +31,7 @@ fn main() {
     if !terminal.check_displayable(&lang_cfg) {
         return;
     }
+    terminal.set_env();
     let mut sbar = StatusBar::new(lang_cfg.clone());
     if file_path.len() == 0 {
         sbar.filenm_tmp = lang_cfg.new_file.clone();
@@ -79,8 +80,8 @@ fn main() {
                         Char('s') => {
                             editor.save(&mut mbar, &mut prom, &mut sbar);
                         }
-                        Char('c') => editor.copy(),
-                        Char('x') => editor.cut(),
+                        Char('c') => editor.copy(&terminal),
+                        Char('x') => editor.cut(&terminal),
                         Char('v') => editor.paste(),
                         Char('a') => editor.all_select(),
                         Char('f') => editor.search_prom(&mut prom),
@@ -126,6 +127,7 @@ fn main() {
                     Mouse(MouseEvent::Up(_, x, y, _)) => editor.mouse_release((x + 1) as usize, y as usize),
                     Mouse(MouseEvent::Drag(_, x, y, _)) => editor.mouse_hold((x + 1) as usize, y as usize),
                 }
+
                 Process::finalize(&mut editor);
                 if editor.is_all_redraw == true {
                     terminal.draw(&mut out, &mut editor, &mut mbar, &mut prom, &mut sbar).unwrap();

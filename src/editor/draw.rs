@@ -119,7 +119,6 @@ impl Editor {
 
         write!(out, "{}", &str_vec.concat()).unwrap();
         out.flush().unwrap();
-        self.d_range.clear();
     }
 
     pub fn draw_cur<T: Write>(&mut self, out: &mut T, sbar: &mut StatusBar) {

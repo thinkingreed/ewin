@@ -118,12 +118,19 @@ pub enum PromptBufPosi {
     Main,
     Sub,
 }
+#[derive(Debug, PartialEq)]
+pub enum Env {
+    WSL,
+    Linux,
+}
 
-#[derive(Debug, Clone)]
-pub struct Terminal {}
+#[derive(Debug)]
+pub struct Terminal {
+  pub  env:Env,
+}
 impl Default for Terminal {
     fn default() -> Self {
-        Terminal {}
+        Terminal {env:Env::Linux}
     }
 }
 #[derive(Debug, Clone)]
@@ -153,6 +160,31 @@ impl Default for StatusBar {
             disp_row_num: 1,
             disp_row_posi: 0,
             disp_col_num: 0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+/// undo,redo範囲
+pub struct DoRange {
+    pub e_type: EType,
+    pub sy: usize,
+    pub ey: usize,
+    // self.buffer[self.cur.y] lnwを含まない
+    pub x: usize,
+    pub disp_x: usize,
+    pub vec: Vec<Vec<char>>,
+}
+
+impl Default for DoRange {
+    fn default() -> Self {
+        DoRange {
+            sy: 0,
+            ey: 0,
+            x: 0,
+            disp_x: 0,
+            vec: vec![],
+            e_type: EType::None,
         }
     }
 }
@@ -284,7 +316,7 @@ pub struct Editor {
     pub buf: Vec<Vec<char>>,
     /// 現在のカーソルの位置
     /// self.cursor.y < self.buffer.len()
-    /// self.cursor.x <= self.buffer[self.cursor.y].len() + self.x_default_posi
+    /// self.cursor.x <= self.buffer[self.cursor.y].len() + self.lnw
     /// を常に保証する
     pub cur: Cursor,
     /// 画面の一番上はバッファの何行目か
@@ -306,9 +338,9 @@ pub struct Editor {
     pub disp_row_num: usize,
     pub disp_col_num: usize,
     pub search: Search,
-    //pub str_vec: Vec<String>,
     // draw_ranges
     pub d_range: DRnage,
+    pub undo_vec: Vec<DoRange>,
 }
 
 impl Default for Editor {
@@ -337,7 +369,8 @@ impl Default for Editor {
             disp_col_num: 0,
             search: Search::default(),
             // str_vec: vec![],
-            d_range: DRnage { sy: 0, ey: 0, e_type: EType::None },
+            d_range: DRnage::default(),
+            undo_vec: vec![],
         }
     }
 }
@@ -382,6 +415,7 @@ pub enum EType {
     Del,
     None,
     All,
+    Not,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

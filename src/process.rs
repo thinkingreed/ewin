@@ -28,7 +28,7 @@ impl Process {
         // all_redraw判定
         editor.is_all_redraw = false;
         match editor.curt_evt {
-            Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
+            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                 Char('c') => {}
                 _ => editor.is_all_redraw = true,
             },

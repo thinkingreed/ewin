@@ -157,4 +157,21 @@ impl Editor {
         }
         self.cur.y = sy;
     }
+    pub fn get_sel_range_vec(&mut self) -> Vec<Vec<char>> {
+        let mut all_vec: Vec<Vec<char>> = vec![];
+        let copy_ranges: Vec<CopyRange> = self.get_copy_range();
+
+        for copy_range in copy_ranges {
+            let mut vec: Vec<char> = vec![];
+
+            for j in copy_range.sx..copy_range.ex {
+                if let Some(c) = self.buf[copy_range.y].get(j) {
+                    // Log::ep("ccc", c);
+                    vec.push(c.clone());
+                }
+            }
+            all_vec.push(vec);
+        }
+        return all_vec;
+    }
 }
