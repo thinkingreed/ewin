@@ -18,7 +18,7 @@ impl Terminal {
 
         let d_range = editor.d_range.get_range();
         eprintln!("edit_ranges {:?}", d_range);
-        if d_range.e_type != EType::Not {
+        if d_range.e_type != EvtType::Not {
             editor.draw(out);
             mbar.draw(out);
 
@@ -38,6 +38,8 @@ impl Terminal {
 
     pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor, prom: &mut Prompt) {
         Log::ep_s("★  set_cur_str");
+        Log::ep("cur.disp_x", editor.cur.disp_x);
+        Log::ep("x_offset_disp", editor.x_offset_disp);
 
         if prom.is_save_new_file || prom.is_search || prom.is_replace {
             prom.draw_cur(str_vec);

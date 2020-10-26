@@ -35,7 +35,7 @@ impl Editor {
         self.d_range = DRnage {
             sy: self.cur.y,
             ey: self.cur.y,
-            e_type: EType::Mod,
+            e_type: EvtType::Mod,
         };
     }
     pub fn shift_left(&mut self) {
@@ -69,7 +69,7 @@ impl Editor {
         self.d_range = DRnage {
             sy: self.cur.y,
             ey: self.cur.y,
-            e_type: EType::Mod,
+            e_type: EvtType::Mod,
         };
     }
 
@@ -77,7 +77,7 @@ impl Editor {
         Log::ep_s("★　shift_down");
 
         if self.cur.y == self.buf.len() - 1 {
-            self.d_range = DRnage { e_type: EType::Not, ..DRnage::default() };
+            self.d_range = DRnage { e_type: EvtType::Not, ..DRnage::default() };
             return;
         }
         let y_offset_org: usize = self.y_offset;
@@ -96,7 +96,7 @@ impl Editor {
             // ShiftUp,Down繰り返す場合の対応でcur.y - 1,
             sy: self.cur.y - 1,
             ey: self.cur.y,
-            e_type: EType::Mod,
+            e_type: EvtType::Mod,
         };
 
         // 選択開始位置とカーソルが重なった場合
@@ -108,7 +108,7 @@ impl Editor {
         self.scroll_horizontal();
 
         if y_offset_org != self.y_offset {
-            self.d_range = DRnage { e_type: EType::All, ..DRnage::default() };
+            self.d_range = DRnage { e_type: EvtType::All, ..DRnage::default() };
         }
     }
 
@@ -116,7 +116,7 @@ impl Editor {
         Log::ep_s("★　shift_up");
 
         if self.cur.y == 0 {
-            self.d_range = DRnage { e_type: EType::Not, ..DRnage::default() };
+            self.d_range = DRnage { e_type: EvtType::Not, ..DRnage::default() };
             return;
         }
         let y_offset_org: usize = self.y_offset;
@@ -139,7 +139,7 @@ impl Editor {
             // ShiftUp,Down繰り返す場合の対応でcur.y + 1,
             sy: self.cur.y + 1,
             ey: self.cur.y,
-            e_type: EType::Mod,
+            e_type: EvtType::Mod,
         };
 
         // 選択開始位置とカーソルが重なった場合
@@ -151,7 +151,7 @@ impl Editor {
         self.scroll_horizontal();
 
         if y_offset_org != self.y_offset {
-            self.d_range = DRnage { e_type: EType::All, ..DRnage::default() };
+            self.d_range = DRnage { e_type: EvtType::All, ..DRnage::default() };
         }
     }
     pub fn shift_home(&mut self) {
@@ -168,7 +168,7 @@ impl Editor {
         self.d_range = DRnage {
             sy: self.cur.y,
             ey: self.cur.y,
-            e_type: EType::Mod,
+            e_type: EvtType::Mod,
         };
     }
     pub fn shift_end(&mut self) {
@@ -188,7 +188,7 @@ impl Editor {
         self.d_range = DRnage {
             sy: self.cur.y,
             ey: self.cur.y,
-            e_type: EType::Mod,
+            e_type: EvtType::Mod,
         };
     }
 }

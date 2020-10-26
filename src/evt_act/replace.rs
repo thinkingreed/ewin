@@ -1,10 +1,10 @@
-use crate::model::{Editor, EvtProcess, Log, MsgBar, Process, Prompt, PromptBufPosi, PromptCont, StatusBar, Terminal};
+use crate::model::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 use termion::color;
 
-impl Process {
-    pub fn replace<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtProcess {
+impl EvtAct {
+    pub fn replace<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         Log::ep_s("Process.replace");
 
         match editor.curt_evt {
@@ -12,9 +12,9 @@ impl Process {
                 BackTab => {
                     prom.tab();
                     prom.draw_only(out);
-                    return EvtProcess::Hold;
+                    return EvtActType::Hold;
                 }
-                _ => return EvtProcess::Hold,
+                _ => return EvtActType::Hold,
             },
             Key(KeyEvent { code, .. }) => match code {
                 Char(c) => {
@@ -23,17 +23,17 @@ impl Process {
                         PromptBufPosi::Sub => prom.cont_sub.insert_char(c),
                     }
                     prom.draw_only(out);
-                    return EvtProcess::Hold;
+                    return EvtActType::Hold;
                 }
                 Down => {
                     prom.cursor_down();
                     prom.draw_only(out);
-                    return EvtProcess::Hold;
+                    return EvtActType::Hold;
                 }
                 Up => {
                     prom.cursor_up();
                     prom.draw_only(out);
-                    return EvtProcess::Hold;
+                    return EvtActType::Hold;
                 }
                 Left => {
                     match prom.buf_posi {
@@ -41,7 +41,7 @@ impl Process {
                         PromptBufPosi::Sub => prom.cont_sub.cursor_left(),
                     }
                     prom.draw_only(out);
-                    return EvtProcess::Hold;
+                    return EvtActType::Hold;
                 }
                 Right => {
                     match prom.buf_posi {
@@ -49,7 +49,7 @@ impl Process {
                         PromptBufPosi::Sub => prom.cont_sub.cursor_right(),
                     }
                     prom.draw_only(out);
-                    return EvtProcess::Hold;
+                    return EvtActType::Hold;
                 }
                 Delete => {
                     match prom.buf_posi {
@@ -57,7 +57,7 @@ impl Process {
                         PromptBufPosi::Sub => prom.cont_sub.delete(),
                     }
                     prom.draw_only(out);
-                    return EvtProcess::Hold;
+                    return EvtActType::Hold;
                 }
                 Backspace => {
                     match prom.buf_posi {
@@ -65,12 +65,12 @@ impl Process {
                         PromptBufPosi::Sub => prom.cont_sub.backspace(),
                     }
                     prom.draw_only(out);
-                    return EvtProcess::Hold;
+                    return EvtActType::Hold;
                 }
                 Tab => {
                     prom.tab();
                     prom.draw_only(out);
-                    return EvtProcess::Hold;
+                    return EvtActType::Hold;
                 }
 
                 Enter => {
@@ -89,12 +89,12 @@ impl Process {
                         prom.is_change = true;
                     }
                     terminal.draw(out, editor, mbar, prom, sbar).unwrap();
-                    return EvtProcess::Hold;
+                    return EvtActType::Hold;
                 }
 
-                _ => return EvtProcess::Hold,
+                _ => return EvtActType::Hold,
             },
-            _ => return EvtProcess::Hold,
+            _ => return EvtActType::Hold,
         }
     }
 }

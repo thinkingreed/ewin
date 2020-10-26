@@ -157,8 +157,9 @@ impl Editor {
         }
         self.cur.y = sy;
     }
-    pub fn get_sel_range_vec(&mut self) -> Vec<Vec<char>> {
-        let mut all_vec: Vec<Vec<char>> = vec![];
+
+    pub fn get_sel_range_str(&mut self) -> Vec<String> {
+        let mut all_vec: Vec<String> = vec![];
         let copy_ranges: Vec<CopyRange> = self.get_copy_range();
 
         for copy_range in copy_ranges {
@@ -170,8 +171,9 @@ impl Editor {
                     vec.push(c.clone());
                 }
             }
-            all_vec.push(vec);
+            all_vec.push(vec.iter().collect::<String>());
         }
+        eprintln!("get_sel_range_vec {:?}", all_vec);
         return all_vec;
     }
 }

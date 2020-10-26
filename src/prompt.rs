@@ -1,5 +1,5 @@
 use crate::_cfg::lang::cfg::LangCfg;
-use crate::model::{Editor, EvtProcess, Log, MsgBar, Process, Prompt, PromptBufPosi, PromptCont, StatusBar, Terminal};
+use crate::model::*;
 use crate::util::*;
 use crossterm::event::KeyCode;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
@@ -59,7 +59,7 @@ impl Prompt {
             str_vec.push(cursor::Goto(self.cont.cur.disp_x as u16, (self.disp_row_posi + self.disp_row_num - 1) as u16).to_string());
         }
     }
-    pub fn check_prom<T: Write>(&mut self, out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, sbar: &mut StatusBar) -> EvtProcess {
+    pub fn check_prom<T: Write>(&mut self, out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, sbar: &mut StatusBar) -> EvtActType {
         if self.is_save_new_file == true || self.is_search == true || self.is_close_confirm == true || self.is_replace == true {
             match editor.curt_evt {
                 Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
@@ -67,7 +67,7 @@ impl Prompt {
                         self.clear();
                         mbar.clear();
                         terminal.draw(out, editor, mbar, self, sbar).unwrap();
-                        return EvtProcess::Next;
+                        return EvtActType::Next;
                     }
                     _ => {}
                 },
@@ -81,12 +81,12 @@ impl Prompt {
                     Left | Right | Delete | Backspace => {
                         self.cont.edit(code);
                         self.draw_only(out);
-                        return EvtProcess::Hold;
+                        return EvtActType::Hold;
                     }
                     Char(c) => {
                         self.cont.insert_char(c);
                         self.draw_only(out);
-                        return EvtProcess::Hold;
+                        return EvtActType::Hold;
                     }
                     _ => {}
                 },
@@ -95,16 +95,16 @@ impl Prompt {
         }
 
         if self.is_save_new_file == true {
-            return Process::save_new_filenm(out, terminal, editor, mbar, self, sbar);
+            return EvtAct::save_new_filenm(out, terminal, editor, mbar, self, sbar);
         } else if self.is_close_confirm == true {
-            return Process::close(out, terminal, editor, mbar, self, sbar);
+            return EvtAct::close(out, terminal, editor, mbar, self, sbar);
         } else if self.is_search == true {
-            return Process::search(out, terminal, editor, mbar, self, sbar);
+            return EvtAct::search(out, terminal, editor, mbar, self, sbar);
         } else if self.is_replace == true {
-            return Process::replace(out, terminal, editor, mbar, self, sbar);
+            return EvtAct::replace(out, terminal, editor, mbar, self, sbar);
         } else {
             Log::ep_s("EvtProcess::NextEvtProcess");
-            return EvtProcess::Next;
+            return EvtActType::Next;
         }
     }
     pub fn cursor_down(&mut self) {

@@ -24,8 +24,8 @@ impl Default for MsgBar {
     }
 }
 #[derive(Debug, Clone)]
-pub struct Process {}
-pub enum EvtProcess {
+pub struct EvtAct {}
+pub enum EvtActType {
     Hold,
     Next,
     Exit,
@@ -126,11 +126,11 @@ pub enum Env {
 
 #[derive(Debug)]
 pub struct Terminal {
-  pub  env:Env,
+    pub env: Env,
 }
 impl Default for Terminal {
     fn default() -> Self {
-        Terminal {env:Env::Linux}
+        Terminal { env: Env::Linux }
     }
 }
 #[derive(Debug, Clone)]
@@ -166,25 +166,26 @@ impl Default for StatusBar {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// undo,redo範囲
-pub struct DoRange {
-    pub e_type: EType,
+/// EvtProcess
+pub struct EvtProc {
+    pub e_type: EvtType,
     pub sy: usize,
     pub ey: usize,
     // self.buffer[self.cur.y] lnwを含まない
     pub x: usize,
     pub disp_x: usize,
-    pub vec: Vec<Vec<char>>,
+    pub str_vec: Vec<String>,
 }
 
-impl Default for DoRange {
+impl Default for EvtProc {
     fn default() -> Self {
-        DoRange {
+        EvtProc {
             sy: 0,
             ey: 0,
             x: 0,
             disp_x: 0,
-            vec: vec![],
-            e_type: EType::None,
+            str_vec: vec![],
+            e_type: EvtType::None,
         }
     }
 }
@@ -340,7 +341,8 @@ pub struct Editor {
     pub search: Search,
     // draw_ranges
     pub d_range: DRnage,
-    pub undo_vec: Vec<DoRange>,
+    pub undo_vec: Vec<EvtProc>,
+    pub redo_vec: Vec<EvtProc>,
 }
 
 impl Default for Editor {
@@ -371,6 +373,7 @@ impl Default for Editor {
             // str_vec: vec![],
             d_range: DRnage::default(),
             undo_vec: vec![],
+            redo_vec: vec![],
         }
     }
 }
@@ -380,12 +383,12 @@ impl Default for Editor {
 pub struct DRnage {
     pub sy: usize,
     pub ey: usize,
-    pub e_type: EType,
+    pub e_type: EvtType,
 }
 
 impl Default for DRnage {
     fn default() -> Self {
-        DRnage { sy: 0, ey: 0, e_type: EType::None }
+        DRnage { sy: 0, ey: 0, e_type: EvtType::None }
     }
 }
 
@@ -403,13 +406,13 @@ impl DRnage {
     pub fn clear(&mut self) {
         self.sy = 0;
         self.ey = 0;
-        self.e_type = EType::None;
+        self.e_type = EvtType::None;
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// EditType
-pub enum EType {
+pub enum EvtType {
     Add,
     Mod,
     Del,
@@ -418,6 +421,14 @@ pub enum EType {
     Not,
 }
 
+/*
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// DoType
+pub enum DoType {
+    Undo,
+    Redo,
+    None,
+}*/
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Log {
     pub log_path: String,

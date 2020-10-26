@@ -1,11 +1,11 @@
-use crate::model::{Editor, EvtProcess, MsgBar, Process, Prompt, StatusBar, Terminal};
+use crate::model::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
 use std::io::Write;
 
-impl Process {
-    pub fn check_next_process<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtProcess {
+impl EvtAct {
+    pub fn check_next_process<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         match editor.curt_evt {
-            Resize(_, _) => return EvtProcess::Next,
+            Resize(_, _) => return EvtActType::Next,
             _ => {}
         }
 

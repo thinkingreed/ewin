@@ -1,10 +1,10 @@
-use crate::model::{Editor, EvtProcess, Log, MsgBar, Process, Prompt, PromptCont, Search, StatusBar, Terminal};
+use crate::model::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 use termion::color;
 
-impl Process {
-    pub fn search<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtProcess {
+impl EvtAct {
+    pub fn search<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         Log::ep_s("Process.search");
 
         match editor.curt_evt {
@@ -30,11 +30,11 @@ impl Process {
                         editor.search.index = Search::INDEX_UNDEFINED;
                         terminal.draw(out, editor, mbar, prom, sbar).unwrap();
                     }
-                    return EvtProcess::Next;
+                    return EvtActType::Next;
                 }
-                _ => return EvtProcess::Hold,
+                _ => return EvtActType::Hold,
             },
-            _ => return EvtProcess::Hold,
+            _ => return EvtActType::Hold,
         }
     }
 }

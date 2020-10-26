@@ -16,27 +16,17 @@ impl Editor {
         self.sel.ex = cur_x + self.lnw;
         self.sel.e_disp_x = width + self.lnw + 1;
     }
+
     pub fn cut(&mut self, term: &Terminal) {
-        Log::ep_s("★★  cut");
+        Log::ep_s("★  cut");
         if !self.sel.is_selected() {
             return;
         }
-
         self.copy(term);
-        let sel = self.sel.get_range();
-        let dr = DoRange {
-            e_type: EType::Del,
-            sy: sel.sy,
-            ey: sel.ey,
-            x: self.cur.x - self.lnw,
-            disp_x: self.cur.disp_x,
-            vec: self.get_sel_range_vec(),
-        };
-        eprintln!("drdrdrdrdr {:?}", dr);
+        self.save_sel_del_evtproc();
+        self.set_sel_del_d_range();
 
         self.del_sel_range();
-        self.undo_vec.push(dr);
-        self.d_range = DRnage { sy: sel.sy, ey: sel.ey, e_type: EType::Del };
     }
 
     pub fn close<T: Write>(&mut self, out: &mut T, prompt: &mut Prompt) -> bool {
@@ -107,36 +97,31 @@ impl Editor {
         if copy_ranges.len() == 0 {
             return;
         };
-        let mut vec: Vec<char> = vec![];
 
-        let sel_vec = self.get_sel_range_vec();
+        let copy_string;
+        let sel_vec = self.get_sel_range_str();
         if term.env == Env::WSL {
-            vec = self.set_wsl_vec(sel_vec);
+            copy_string = self.set_wsl_vec(sel_vec).join("\n");
         } else {
-            for (i, v) in sel_vec.iter().enumerate() {
-                vec.append(&mut v.clone());
-                if sel_vec.len() - 1 != i {
-                    vec.push('\n');
-                }
-            }
+            copy_string = sel_vec.join("\n");
         }
 
-        let copy_string = vec.iter().collect::<String>().clone();
+        //  let copy_string = vec.iter().collect::<String>().clone();
         Log::ep("copy_string", copy_string.clone());
         self.set_clipboard(&copy_string);
     }
 
     // WSL:powershell.clipboard対応で"’"で文字列を囲み、改行は","
-    fn set_wsl_vec(&mut self, sel_vec: Vec<Vec<char>>) -> Vec<char> {
-        let mut vec: Vec<char> = vec![];
+    fn set_wsl_vec(&mut self, sel_vec: Vec<String>) -> Vec<String> {
+        let mut vec: Vec<String> = vec![];
 
-        for (i, v) in sel_vec.iter().enumerate() {
-            vec.push('\'');
-            vec.append(&mut v.clone());
-            vec.push('\'');
+        for (i, s) in sel_vec.iter().enumerate() {
+            let mut str = format!("{}{}", "'", s);
+            str.push_str("'");
             if i != sel_vec.len() - 1 {
-                vec.push(',');
+                str.push_str(",");
             }
+            vec.push(str);
         }
         return vec;
     }
@@ -144,12 +129,16 @@ impl Editor {
     pub fn paste(&mut self) {
         Log::ep_s("★★  paste");
 
-        let contexts = self.get_clipboard().unwrap_or("".to_string());
+        let mut contexts = self.get_clipboard().unwrap_or("".to_string());
         Log::ep("clipboard str", &contexts);
-
         if contexts.len() == 0 {
             return;
         }
+
+        self.insert_str(&mut contexts);
+    }
+
+    fn insert_str(&mut self, contexts: &mut String) {
         let mut copy_strings: Vec<&str> = contexts.split('\n').collect();
 
         let mut add_line_count = 0;
@@ -208,7 +197,10 @@ impl Editor {
                 }
                 self.buf[self.cur.y].insert(self.cur.x - self.lnw, c.clone());
                 // 元々のコピペ文字分は移動
+
+                Log::ep("cur.disp_x 111", self.cur.disp_x);
                 self.cursor_right();
+                Log::ep("cur.disp_x 222", self.cur.disp_x);
             }
         }
         // 複数行の場合はカーソル位置調整
@@ -222,7 +214,6 @@ impl Editor {
             }
         }
     }
-
     pub fn ctl_home(&mut self) {
         Log::ep_s("ctl_home");
         if self.cur.updown_x == 0 {
@@ -345,5 +336,21 @@ impl Editor {
             self.buf[i] = row_str.chars().collect::<Vec<char>>();
             //  std::mem::replace(&mut self.buf[i], row_str.chars().collect::<Vec<char>>());
         }
+    }
+    pub fn undo(&mut self) {
+        Log::ep_s("★　undo");
+        eprintln!("EvtProcess {:?}", self.undo_vec);
+        if let Some(ep) = self.undo_vec.pop() {
+            if ep.e_type == EvtType::Del {
+                if ep.str_vec.len() == 0 {
+                } else {
+                    self.cur.y = ep.sy;
+                    self.cur.x = ep.x + self.lnw;
+                    self.cur.disp_x = ep.disp_x;
+                    self.insert_str(&mut ep.str_vec.join("\n"));
+                }
+            }
+            self.redo_vec.push(ep);
+        };
     }
 }

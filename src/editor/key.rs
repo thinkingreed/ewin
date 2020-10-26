@@ -99,10 +99,10 @@ impl Editor {
             self.d_range = DRnage {
                 sy: self.cur.y - 1,
                 ey: self.cur.y,
-                e_type: EType::Add,
+                e_type: EvtType::Add,
             };
         } else {
-            self.d_range = DRnage { e_type: EType::All, ..DRnage::default() };
+            self.d_range = DRnage { e_type: EvtType::All, ..DRnage::default() };
         }
     }
     pub fn insert_char(&mut self, c: char) {
@@ -112,7 +112,7 @@ impl Editor {
         self.d_range = DRnage {
             sy: self.cur.y,
             ey: self.cur.y,
-            e_type: EType::Mod,
+            e_type: EvtType::Mod,
         };
     }
 
@@ -150,7 +150,7 @@ impl Editor {
             self.d_range = DRnage {
                 sy: self.cur.y,
                 ey: self.cur.y,
-                e_type: EType::Del,
+                e_type: EvtType::Del,
             };
         }
         self.scroll();
@@ -160,6 +160,8 @@ impl Editor {
         Log::ep_s("★  delete");
 
         if self.sel.is_selected() {
+            self.save_sel_del_evtproc();
+            self.set_sel_del_d_range();
             self.del_sel_range();
         } else {
             // 最終行の終端
@@ -172,13 +174,14 @@ impl Editor {
                 let line = self.buf.remove(self.cur.y + 1);
                 self.buf[self.cur.y].extend(line.into_iter());
             } else {
+                self.save_del_char_evtproc(true);
                 self.buf[self.cur.y].remove(self.cur.x - self.lnw);
             }
 
             self.d_range = DRnage {
                 sy: self.cur.y,
                 ey: self.cur.y,
-                e_type: EType::Del,
+                e_type: EvtType::Del,
             };
         }
     }

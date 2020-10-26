@@ -1,10 +1,10 @@
-use crate::model::{Editor, EvtProcess, MsgBar, Process, Prompt, PromptCont, StatusBar, Terminal};
+use crate::model::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 use termion::color;
 
-impl Process {
-    pub fn save_new_filenm<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtProcess {
+impl EvtAct {
+    pub fn save_new_filenm<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         match editor.curt_evt {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {
@@ -16,11 +16,11 @@ impl Process {
                         editor.save(mbar, prom, sbar);
                     }
                     terminal.draw(out, editor, mbar, prom, sbar).unwrap();
-                    return EvtProcess::Hold;
+                    return EvtActType::Hold;
                 }
-                _ => return EvtProcess::Hold,
+                _ => return EvtActType::Hold,
             },
-            _ => return EvtProcess::Hold,
+            _ => return EvtActType::Hold,
         }
     }
 }

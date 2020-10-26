@@ -2,7 +2,7 @@ use clap::{App, Arg};
 use crossterm::event::{read, KeyCode::*, KeyModifiers};
 use crossterm::event::{Event::*, KeyEvent, MouseButton, MouseEvent};
 use ewin::_cfg::lang::cfg::LangCfg;
-use ewin::model::{Editor, EvtProcess, Log, MsgBar, Process, Prompt, StatusBar, Terminal};
+use ewin::model::*;
 use std::ffi::OsStr;
 use std::io::{stdout, BufWriter, Write};
 use std::path::Path;
@@ -58,13 +58,13 @@ fn main() {
 
         // eprintln!("evt {:?}", editor.curt_evt.clone());
 
-        let evt_next_process = Process::check_next_process(&mut out, &mut terminal, &mut editor, &mut mbar, &mut prom, &mut sbar);
+        let evt_next_process = EvtAct::check_next_process(&mut out, &mut terminal, &mut editor, &mut mbar, &mut prom, &mut sbar);
 
         match evt_next_process {
-            EvtProcess::Exit => return,
-            EvtProcess::Hold => {}
-            EvtProcess::Next => {
-                Process::init(&mut editor, &mut prom);
+            EvtActType::Exit => return,
+            EvtActType::Hold => {}
+            EvtActType::Next => {
+                EvtAct::init(&mut editor, &mut prom);
 
                 match editor.curt_evt {
                     Resize(_, _) => {
@@ -86,6 +86,7 @@ fn main() {
                         Char('a') => editor.all_select(),
                         Char('f') => editor.search_prom(&mut prom),
                         Char('r') => editor.replace_prom(&mut prom),
+                        Char('z') => editor.undo(),
                         Home => editor.ctl_home(),
                         End => editor.ctl_end(),
                         _ => {}
@@ -128,7 +129,7 @@ fn main() {
                     Mouse(MouseEvent::Drag(_, x, y, _)) => editor.mouse_hold((x + 1) as usize, y as usize),
                 }
 
-                Process::finalize(&mut editor);
+                EvtAct::finalize(&mut editor);
                 if editor.is_all_redraw == true {
                     terminal.draw(&mut out, &mut editor, &mut mbar, &mut prom, &mut sbar).unwrap();
                 }
