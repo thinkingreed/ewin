@@ -192,7 +192,7 @@ impl Default for EvtProc {
     }
 }
 impl EvtProc {
-    pub fn new(do_type: DoType, editor: &mut Editor) -> Self {
+    pub fn new(do_type: DoType, editor: &Editor) -> Self {
         return EvtProc {
             do_type: do_type,
             cur_s: Cur {
@@ -270,14 +270,7 @@ pub struct SelRange {
 }
 impl Default for SelRange {
     fn default() -> Self {
-        SelRange {
-            sy: 0,
-            ey: 0,
-            sx: 0,
-            ex: 0,
-            s_disp_x: 0,
-            e_disp_x: 0,
-        }
+        SelRange { sy: 0, ey: 0, sx: 0, ex: 0, s_disp_x: 0, e_disp_x: 0 }
     }
 }
 
@@ -366,6 +359,7 @@ pub struct Editor {
     pub sel: SelRange,
     pub curt_evt: Event,
     pub is_redraw: bool,
+    pub is_undo: bool,
     pub clipboard: String,
     /// ターミナル上の表示数
     pub disp_row_num: usize,
@@ -392,6 +386,7 @@ impl Default for Editor {
             sel: SelRange::default(),
             curt_evt: Key(End.into()),
             is_redraw: false,
+            is_undo: false,
             clipboard: String::new(),
             disp_row_num: 0,
             disp_col_num: 0,
@@ -419,6 +414,10 @@ impl Default for DRnage {
 }
 
 impl DRnage {
+    pub fn new(sy: usize, ey: usize, d_type: DType) -> Self {
+        return DRnage { sy: sy, ey: ey, d_type: d_type };
+    }
+
     pub fn get_range(&mut self) -> Self {
         let mut sy = self.sy;
         let mut ey = self.ey;
@@ -450,9 +449,11 @@ pub enum DType {
 /// UnDo ReDo Type
 pub enum DoType {
     Del,
+    Enter,
     BS,
     Cut,
     Paste,
+    InsertChar,
     None,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]

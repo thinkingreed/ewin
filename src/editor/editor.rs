@@ -177,7 +177,9 @@ impl Editor {
             }
             eprintln!("get_sel_range_str vec {:?}", vec);
             eprintln!("get_sel_range_str vec.len {:?}", vec.len());
-            all_vec.push(vec.iter().collect::<String>());
+            if vec.len() > 0 {
+                all_vec.push(vec.iter().collect::<String>());
+            }
         }
         eprintln!("get_sel_range_vec {:?}", all_vec);
         return all_vec;

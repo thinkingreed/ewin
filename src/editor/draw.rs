@@ -35,7 +35,9 @@ impl Editor {
 
         let d_range = self.d_range.get_range();
 
-        if d_range.d_type == DType::None || d_range.d_type == DType::All {
+        if d_range.d_type == DType::Not {
+            return;
+        } else if d_range.d_type == DType::None || d_range.d_type == DType::All {
             str_vec.push(clear::All.to_string());
             str_vec.push(cursor::Goto(1, 1).to_string());
         } else {
@@ -58,9 +60,6 @@ impl Editor {
         self.lnw = self.buf.len().to_string().len();
         let sel_range = self.sel.get_range();
         let search_ranges = self.search.search_ranges.clone();
-
-        Log::ep("y_draw_s", y_draw_s);
-        Log::ep("y_draw_e", y_draw_e);
 
         for i in y_draw_s..y_draw_e {
             self.set_rownum_color(str_vec);
@@ -115,6 +114,9 @@ impl Editor {
                 str_vec.push("\r\n".to_string());
             }
         }
+        Log::ep("cur.x", self.cur.x);
+        Log::ep("cur.disp_x", self.cur.disp_x);
+        Log::ep("x_offset", self.x_offset);
 
         write!(out, "{}", &str_vec.concat()).unwrap();
         out.flush().unwrap();

@@ -85,6 +85,8 @@ impl Editor {
         let y_offset_org: usize = self.y_offset;
         let lnw_org = self.lnw;
 
+        let mut evt_proc = EvtProc::new(DoType::Enter, &self);
+
         let rest: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.lnw..).collect();
         self.buf.insert(self.cur.y + 1, rest);
         self.cur.y += 1;
@@ -96,24 +98,28 @@ impl Editor {
         self.scroll_horizontal();
 
         if y_offset_org == self.y_offset && lnw_org == self.lnw {
-            self.d_range = DRnage {
-                sy: self.cur.y - 1,
-                ey: self.cur.y,
-                d_type: DType::After,
-            };
+            self.d_range = DRnage::new(self.cur.y - 1, self.cur.y, DType::After);
         } else {
             self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
         }
+        evt_proc.d_range = self.d_range;
+        evt_proc.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
+
+        if !self.is_undo {
+            self.undo_vec.push(evt_proc);
+        }
     }
     pub fn insert_char(&mut self, c: char) {
-        //  if !c.is_control() {
         self.buf[self.cur.y].insert(self.cur.x - self.lnw, c);
+
+        let mut ep = EvtProc::new(DoType::InsertChar, &self);
         self.cursor_right();
-        self.d_range = DRnage {
-            sy: self.cur.y,
-            ey: self.cur.y,
-            d_type: DType::Target,
-        };
+        ep.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
+        self.d_range = DRnage::new(self.cur.y, self.cur.y, DType::Target);
+
+        ep.d_range = self.d_range;
+        ep.str_vec = vec![c.to_string()];
+        self.undo_vec.push(ep);
     }
 
     pub fn back_space(&mut self) {
@@ -128,21 +134,10 @@ impl Editor {
             if self.cur.y == 0 && self.cur.x == self.lnw {
                 return;
             }
-            self.d_range = DRnage {
-                sy: self.cur.y,
-                ey: self.cur.y,
-                d_type: DType::Target,
-            };
-            let mut ep = EvtProc {
-                do_type: DoType::BS,
-                cur_s: Cur {
-                    y: self.cur.y,
-                    x: self.cur.x,
-                    disp_x: self.cur.disp_x,
-                },
-                d_range: self.d_range,
-                ..EvtProc::default()
-            };
+            self.d_range = DRnage::new(self.cur.y, self.cur.y, DType::Target);
+
+            let mut ep = EvtProc::new(DoType::BS, &self);
+
             if self.cur.x == self.lnw {
                 let row_len_org = self.buf.len().to_string().len();
 
@@ -172,12 +167,11 @@ impl Editor {
                 self.buf[self.cur.y].remove(self.cur.x - self.lnw);
             }
             // BS後のcurを設定
-            ep.cur_e = Cur {
-                y: self.cur.y,
-                x: self.cur.x,
-                disp_x: self.cur.disp_x,
-            };
-            self.undo_vec.push(ep);
+            ep.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
+
+            if !self.is_undo {
+                self.undo_vec.push(ep);
+            }
         }
         self.scroll();
         self.scroll_horizontal();
@@ -195,11 +189,7 @@ impl Editor {
             if self.cur.y == self.buf.len() - 1 && self.cur.x == self.buf[self.cur.y].len() + self.lnw {
                 return;
             }
-            self.d_range = DRnage {
-                sy: self.cur.y,
-                ey: self.cur.y,
-                d_type: DType::Target,
-            };
+            self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
             // 行末
             if self.cur.x == self.buf[self.cur.y].len() + self.lnw {
                 self.d_range.d_type = DType::After;

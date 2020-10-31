@@ -142,12 +142,41 @@ impl Editor {
             return;
         }
 
+        self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::After };
+        // paste1行の場合
+        if contexts.match_indices("\n").count() == 0 {
+            self.d_range.d_type = DType::Target;
+        }
+        // EvtProcデータ設定
+        let mut ep = EvtProc::new(DoType::Paste, &self);
+        {
+            /*
+                        let vec: Vec<&str> = contexts.split('\n').collect();
+                        let mut v: Vec<String> = vec![];
+                        for str in vec {
+                            v.push(str.to_string());
+                        }
+                          ep.str_vec = v;
+            */
+            ep.str_vec = vec![contexts.clone()];
+
+            ep.sel.sy = self.cur.y;
+            ep.sel.sx = self.cur.x - self.lnw;
+            ep.sel.s_disp_x = self.cur.disp_x;
+        }
+
         self.insert_str(&mut contexts);
-        self.d_range = DRnage {
-            sy: self.cur.y,
-            ey: self.cur.y,
-            d_type: DType::After,
-        };
+
+        {
+            ep.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
+            ep.sel.ey = self.cur.y;
+            ep.sel.ex = self.cur.x - self.lnw;
+            ep.sel.e_disp_x = self.cur.disp_x;
+        }
+
+        eprintln!("paste ep.sel {:?}", ep.sel);
+
+        self.undo_vec.push(ep);
     }
 
     fn insert_str(&mut self, contexts: &mut String) {
@@ -349,24 +378,27 @@ impl Editor {
     }
     pub fn undo(&mut self) {
         Log::ep_s("★　undo");
-        eprintln!("EvtProc {:?}", self.undo_vec);
+        eprintln!("EvtProc 111 {:?}", self.undo_vec);
         if let Some(ep) = self.undo_vec.pop() {
-            // 行末でDel or 行頭でBS
+            eprintln!("EvtProc 222 {:?}", self.undo_vec);
+            self.is_undo = true;
             if ep.str_vec.len() == 0 {
+                // 行末でDelete
                 if ep.do_type == DoType::Del {
-                    // 行末でDelete
-                    Log::ep_s("行末でDelete");
                     self.set_evtproc(&ep, ep.cur_s);
                     self.enter();
                     self.set_evtproc(&ep, ep.cur_s);
+                // 行頭でBS
                 } else if ep.do_type == DoType::BS {
-                    Log::ep_s("行頭でBS");
                     self.set_evtproc(&ep, ep.cur_e);
                     self.enter();
+                } else if ep.do_type == DoType::Enter {
+                    self.set_evtproc(&ep, ep.cur_e);
+                    self.back_space();
                 }
             // 行中
             } else {
-                if ep.do_type == DoType::Cut || ep.do_type == DoType::Del {
+                if ep.do_type == DoType::Cut || ep.do_type == DoType::Del || ep.do_type == DoType::InsertChar || ep.do_type == DoType::Paste {
                     self.set_evtproc(&ep, ep.cur_s);
                 } else if ep.do_type == DoType::BS {
                     if ep.sel.is_selected() {
@@ -375,21 +407,41 @@ impl Editor {
                         self.set_evtproc(&ep, ep.cur_e);
                     }
                 }
-                self.insert_str(&mut ep.str_vec.join("\n"));
-                if ep.sel.is_selected() {
+                if ep.do_type == DoType::InsertChar {
+                    self.delete();
+                } else if ep.do_type == DoType::Paste {
+                    self.sel.clear();
+                    // paste対象をselで設定
+                    self.sel = ep.sel;
+                    eprintln!("self.sel {:?}", self.sel);
+
+                    self.set_sel_del_d_range();
+                    self.del_sel_range();
+                    self.sel.clear();
+                } else {
+                    self.insert_str(&mut ep.str_vec.join("\n"));
+                }
+
+                if ep.sel.is_selected() && ep.do_type != DoType::Paste {
                     self.set_evtproc(&ep, ep.cur_e);
                 } else {
                     self.set_evtproc(&ep, ep.cur_s);
                 }
             }
+            self.scroll();
+            self.scroll_horizontal();
+
             self.redo_vec.push(ep);
-        };
+            self.is_undo = false;
+        } else {
+            self.d_range = DRnage { d_type: DType::Not, ..DRnage::default() };
+        }
     }
 
     pub fn redo(&mut self, term: &Terminal) {
         Log::ep_s("★　redo");
         eprintln!("redo_vec {:?}", self.redo_vec);
-        if let Some(ep) = self.redo_vec.pop() {
+        if let Some(mut ep) = self.redo_vec.pop() {
             self.set_evtproc(&ep, ep.cur_s);
             self.sel = ep.sel;
 
@@ -397,8 +449,17 @@ impl Editor {
                 DoType::Del => self.delete(),
                 DoType::BS => self.back_space(),
                 DoType::Cut => self.cut(term),
+                DoType::Enter => self.enter(),
+                DoType::InsertChar => self.insert_char(ep.str_vec[0].chars().nth(0).unwrap_or(' ')),
+                DoType::Paste => {
+                    self.insert_str(&mut ep.str_vec[0]);
+                    self.undo_vec.push(ep);
+                    self.sel.clear();
+                }
                 _ => {}
             }
+        } else {
+            self.d_range = DRnage { d_type: DType::Not, ..DRnage::default() };
         }
     }
 }

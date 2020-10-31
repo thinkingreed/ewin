@@ -13,11 +13,7 @@ impl Editor {
                 x: sel.sx + self.lnw,
                 disp_x: get_row_width(&self.buf[self.cur.y], 0, sel.sx).1 + self.lnw + 1,
             },
-            cur_e: Cur {
-                y: self.cur.y,
-                x: self.cur.x,
-                disp_x: self.cur.disp_x,
-            },
+            cur_e: Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x },
             sel: self.sel,
             d_range: self.d_range,
             ..EvtProc::default()
@@ -33,7 +29,9 @@ impl Editor {
             Log::ep("save_del_char_evtproc", c.to_string());
             ep.str_vec = vec![c.to_string()];
         }
-        self.undo_vec.push(ep);
+        if !self.is_undo {
+            self.undo_vec.push(ep);
+        }
     }
 
     pub fn set_evtproc(&mut self, ep: &EvtProc, cur: Cur) {

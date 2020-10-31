@@ -32,11 +32,7 @@ impl Editor {
         self.scroll();
         self.scroll_horizontal();
 
-        self.d_range = DRnage {
-            sy: self.cur.y,
-            ey: self.cur.y,
-            d_type: DType::Target,
-        };
+        self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
     }
     pub fn shift_left(&mut self) {
         Log::ep_s("★  shift_left");
@@ -66,11 +62,7 @@ impl Editor {
         self.scroll();
         self.scroll_horizontal();
 
-        self.d_range = DRnage {
-            sy: self.cur.y,
-            ey: self.cur.y,
-            d_type: DType::Target,
-        };
+        self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
     }
 
     pub fn shift_down(&mut self) {
@@ -165,11 +157,7 @@ impl Editor {
         self.cur.x = self.lnw;
         self.cur.disp_x = self.lnw + 1;
 
-        self.d_range = DRnage {
-            sy: self.cur.y,
-            ey: self.cur.y,
-            d_type: DType::Target,
-        };
+        self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
     }
     pub fn shift_end(&mut self) {
         Log::ep_s("★  shift_end");
@@ -185,10 +173,6 @@ impl Editor {
         self.cur.disp_x = self.sel.e_disp_x;
         self.cur.x = self.buf[self.cur.y].len() + self.lnw;
 
-        self.d_range = DRnage {
-            sy: self.cur.y,
-            ey: self.cur.y,
-            d_type: DType::Target,
-        };
+        self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
     }
 }

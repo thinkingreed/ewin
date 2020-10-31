@@ -4,6 +4,9 @@ use termion::color;
 impl Editor {
     pub fn set_rownum_color(&mut self, str_vec: &mut Vec<String>) {
         str_vec.push(color::Fg(color::Rgb(0, 100, 0)).to_string());
+
+        //str_vec.push(color::Fg(color::Rgb(80, 80, 80)).to_string());
+
         str_vec.push(color::Bg(color::Black).to_string());
     }
 
