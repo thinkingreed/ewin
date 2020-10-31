@@ -127,8 +127,7 @@ impl Editor {
 
         let str_vec: &mut Vec<String> = &mut vec![];
         sbar.draw_cur(str_vec, self);
-        let cur_str = format!("{}{}", cursor::Show, cursor::Goto((self.cur.disp_x - self.x_offset_disp) as u16, (self.cur.y + 1 - self.y_offset) as u16));
-        str_vec.push(cur_str);
+        str_vec.push(cursor::Goto((self.cur.disp_x - self.x_offset_disp) as u16, (self.cur.y + 1 - self.y_offset) as u16).to_string());
         write!(out, "{}", str_vec.concat()).unwrap();
         out.flush().unwrap();
     }

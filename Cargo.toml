@@ -1,6 +1,6 @@
 [package]
 name = "ewin"
-version = "0.5.1"
+version = "0.7.0"
 description = "Simple editor for Winodws users."
 authors = ["thinkingreed"]
 edition = "2018"

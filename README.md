@@ -85,6 +85,8 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `Ctrl` + `c`            | Select range cop.         |
 | `Ctrl` + `v`            | Paste the copied characters.|
 | `Ctrl` + `r`            | Replace character.|
+| `Ctrl` + `z`            | Undo.Undo the last edit and return to the original state.|
+| `Ctrl` + `y`            | Redo.Make the last update again.|
 
 
 - **Select text**
@@ -104,7 +106,6 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 ## Future Works
 
-- Redo/Undo function
 - Grep function
 - WASI support
 

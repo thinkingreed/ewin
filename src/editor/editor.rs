@@ -16,7 +16,7 @@ impl Editor {
     }
 
     pub fn scroll_horizontal(&mut self) {
-        Log::ep_s("★ scroll_horizontal");
+        // Log::ep_s("★ scroll_horizontal");
         self.x_offset_y = self.cur.y;
 
         self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.lnw);

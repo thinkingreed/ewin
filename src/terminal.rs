@@ -42,7 +42,7 @@ impl Terminal {
         if prom.is_save_new_file || prom.is_search || prom.is_replace {
             prom.draw_cur(str_vec);
         } else {
-            str_vec.push(cursor::Show.to_string());
+            //str_vec.push(cursor::Show.to_string());
             str_vec.push(cursor::Goto((editor.cur.disp_x - editor.x_offset_disp) as u16, (editor.cur.y + 1 - editor.y_offset) as u16).to_string());
         }
     }

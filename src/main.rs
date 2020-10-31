@@ -62,10 +62,7 @@ fn main() {
 
         match evt_next_process {
             EvtActType::Exit => return,
-            EvtActType::Hold => {
-                write!(out, "{}", cursor::Show).unwrap();
-                out.flush().unwrap();
-            }
+            EvtActType::Hold => {}
             EvtActType::Next => {
                 EvtAct::init(&mut editor, &mut prom);
 
@@ -139,5 +136,7 @@ fn main() {
                 }
             }
         }
+        write!(out, "{}", cursor::Show).unwrap();
+        out.flush().unwrap();
     }
 }

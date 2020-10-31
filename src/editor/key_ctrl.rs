@@ -143,23 +143,14 @@ impl Editor {
         }
 
         self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::After };
-        // paste1行の場合
+        // paste 1行の場合
         if contexts.match_indices("\n").count() == 0 {
             self.d_range.d_type = DType::Target;
         }
         // EvtProcデータ設定
         let mut ep = EvtProc::new(DoType::Paste, &self);
         {
-            /*
-                        let vec: Vec<&str> = contexts.split('\n').collect();
-                        let mut v: Vec<String> = vec![];
-                        for str in vec {
-                            v.push(str.to_string());
-                        }
-                          ep.str_vec = v;
-            */
             ep.str_vec = vec![contexts.clone()];
-
             ep.sel.sy = self.cur.y;
             ep.sel.sx = self.cur.x - self.lnw;
             ep.sel.s_disp_x = self.cur.disp_x;
@@ -227,7 +218,7 @@ impl Editor {
 
             let chars: Vec<char> = copy_str.chars().collect();
             for (j, c) in chars.iter().enumerate() {
-                Log::ep("ccc", c);
+                // Log::ep("ccc", c);
 
                 // 複数行のコピペで既存行で不足の場合
                 if self.cur.y == self.buf.len() {
@@ -241,7 +232,9 @@ impl Editor {
 
                 self.cursor_right();
             }
+            eprintln!("self.buf[self.cur.y] {:?}", self.buf[self.cur.y]);
         }
+
         // 複数行の場合はカーソル位置調整
         if copy_strings.len() > 1 {
             self.cur.x = last_line_str_org.chars().count() + self.lnw;
@@ -252,6 +245,8 @@ impl Editor {
                 self.cur.disp_x -= get_str_width(&line_rest_string);
             }
         }
+        self.scroll();
+        self.scroll_horizontal();
     }
     pub fn ctl_home(&mut self) {
         Log::ep_s("ctl_home");
@@ -291,8 +286,6 @@ impl Editor {
             // 初回検索
             if self.search.index == Search::INDEX_UNDEFINED {
                 self.search.search_ranges = self.get_search_ranges(self.search.str.clone());
-
-                eprintln!("self.search.search_ranges {:?}", self.search.search_ranges);
 
                 if self.search.search_ranges.len() > 0 {
                     self.search.index = 0;
@@ -378,9 +371,7 @@ impl Editor {
     }
     pub fn undo(&mut self) {
         Log::ep_s("★　undo");
-        eprintln!("EvtProc 111 {:?}", self.undo_vec);
         if let Some(ep) = self.undo_vec.pop() {
-            eprintln!("EvtProc 222 {:?}", self.undo_vec);
             self.is_undo = true;
             if ep.str_vec.len() == 0 {
                 // 行末でDelete
@@ -413,8 +404,6 @@ impl Editor {
                     self.sel.clear();
                     // paste対象をselで設定
                     self.sel = ep.sel;
-                    eprintln!("self.sel {:?}", self.sel);
-
                     self.set_sel_del_d_range();
                     self.del_sel_range();
                     self.sel.clear();

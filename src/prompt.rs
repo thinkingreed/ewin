@@ -33,7 +33,7 @@ impl Prompt {
                 let buf_sub = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 5) as u16), clear::CurrentLine, self.cont_sub.buf.iter().collect::<String>());
                 str_vec.push(buf_sub);
             }
-            str_vec.push(cursor::Show.to_string());
+//            str_vec.push(cursor::Show.to_string());
         }
     }
 

@@ -60,7 +60,7 @@ impl Editor {
         self.scroll_horizontal();
     }
     pub fn cursor_right(&mut self) {
-        Log::ep_s("★  c_r start");
+        // Log::ep_s("★  c_r start");
         // 行末
         if self.cur.x == self.buf[self.cur.y].len() + self.lnw {
             // 最終行の行末
