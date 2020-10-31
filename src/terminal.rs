@@ -18,11 +18,9 @@ impl Terminal {
 
         let d_range = editor.d_range.get_range();
         eprintln!("edit_ranges {:?}", d_range);
-        if d_range.e_type != EvtType::Not {
+        if d_range.d_type != DType::Not {
             editor.draw(out);
             mbar.draw(out);
-
-            eprintln!("draw.mbar {:?}", str_vec);
 
             prom.draw(str_vec);
             sbar.draw(str_vec, editor);

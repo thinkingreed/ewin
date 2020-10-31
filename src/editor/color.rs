@@ -1,9 +1,9 @@
-use crate::model::{Editor, SearchRange, SelectRange};
+use crate::model::{Editor, SearchRange, SelRange};
 use crate::util::*;
 
 impl Editor {
     /// 選択箇所のhighlight
-    pub fn ctl_select_color(&mut self, str_vec: &mut Vec<String>, ranges: SelectRange, y: usize, _x: usize) {
+    pub fn ctl_select_color(&mut self, str_vec: &mut Vec<String>, ranges: SelRange, y: usize, _x: usize) {
         if ranges.sy == 0 && ranges.s_disp_x == 0 {
             return;
         }

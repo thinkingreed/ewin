@@ -15,6 +15,7 @@ impl Editor {
         let (cur_x, width) = get_row_width(&self.buf[self.sel.ey], 0, self.buf[self.sel.ey].len());
         self.sel.ex = cur_x + self.lnw;
         self.sel.e_disp_x = width + self.lnw + 1;
+        self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
     }
 
     pub fn cut(&mut self, term: &Terminal) {
@@ -23,10 +24,10 @@ impl Editor {
             return;
         }
         self.copy(term);
-        self.save_sel_del_evtproc();
         self.set_sel_del_d_range();
-
+        self.save_sel_del_evtproc(DoType::Cut);
         self.del_sel_range();
+        self.sel.clear();
     }
 
     pub fn close<T: Write>(&mut self, out: &mut T, prompt: &mut Prompt) -> bool {
@@ -109,6 +110,12 @@ impl Editor {
         //  let copy_string = vec.iter().collect::<String>().clone();
         Log::ep("copy_string", copy_string.clone());
         self.set_clipboard(&copy_string);
+
+        self.d_range = DRnage {
+            sy: self.sel.sy,
+            ey: self.sel.ey,
+            d_type: DType::Target,
+        };
     }
 
     // WSL:powershell.clipboard対応で"’"で文字列を囲み、改行は","
@@ -127,7 +134,7 @@ impl Editor {
     }
 
     pub fn paste(&mut self) {
-        Log::ep_s("★★  paste");
+        Log::ep_s("★  paste");
 
         let mut contexts = self.get_clipboard().unwrap_or("".to_string());
         Log::ep("clipboard str", &contexts);
@@ -136,6 +143,11 @@ impl Editor {
         }
 
         self.insert_str(&mut contexts);
+        self.d_range = DRnage {
+            sy: self.cur.y,
+            ey: self.cur.y,
+            d_type: DType::After,
+        };
     }
 
     fn insert_str(&mut self, contexts: &mut String) {
@@ -198,9 +210,7 @@ impl Editor {
                 self.buf[self.cur.y].insert(self.cur.x - self.lnw, c.clone());
                 // 元々のコピペ文字分は移動
 
-                Log::ep("cur.disp_x 111", self.cur.disp_x);
                 self.cursor_right();
-                Log::ep("cur.disp_x 222", self.cur.disp_x);
             }
         }
         // 複数行の場合はカーソル位置調整
@@ -216,11 +226,11 @@ impl Editor {
     }
     pub fn ctl_home(&mut self) {
         Log::ep_s("ctl_home");
-        if self.cur.updown_x == 0 {
-            self.cur.updown_x = self.cur.disp_x;
+        if self.updown_x == 0 {
+            self.updown_x = self.cur.disp_x;
         }
         self.cur.y = 0;
-        let (cur_x, width) = get_until_updown_x(self.lnw, &self.buf[self.cur.y], self.cur.updown_x);
+        let (cur_x, width) = get_until_updown_x(self.lnw, &self.buf[self.cur.y], self.updown_x);
         self.cur.disp_x = width;
         self.cur.x = cur_x;
         self.scroll();
@@ -229,11 +239,11 @@ impl Editor {
 
     pub fn ctl_end(&mut self) {
         Log::ep_s("★　ctl_end");
-        if self.cur.updown_x == 0 {
-            self.cur.updown_x = self.cur.disp_x;
+        if self.updown_x == 0 {
+            self.updown_x = self.cur.disp_x;
         }
         self.cur.y = self.buf.len() - 1;
-        let (cur_x, width) = get_until_updown_x(self.lnw, &self.buf[self.cur.y], self.cur.updown_x);
+        let (cur_x, width) = get_until_updown_x(self.lnw, &self.buf[self.cur.y], self.updown_x);
         self.cur.disp_x = width;
         self.cur.x = cur_x;
         self.scroll();
@@ -258,6 +268,8 @@ impl Editor {
                 if self.search.search_ranges.len() > 0 {
                     self.search.index = 0;
                 }
+
+                self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
             } else {
                 self.search.index = self.get_search_str_index(is_asc);
             }
@@ -330,27 +342,63 @@ impl Editor {
         let search_str = prom.cont.buf.iter().collect::<String>();
         let replace_str = prom.cont_sub.buf.iter().collect::<String>();
         for i in 0..self.buf.len() {
-            //let buf = &self.buf[i];
             let row_str = &self.buf[i].iter().collect::<String>();
             let row_str = row_str.replace(&search_str, &replace_str);
             self.buf[i] = row_str.chars().collect::<Vec<char>>();
-            //  std::mem::replace(&mut self.buf[i], row_str.chars().collect::<Vec<char>>());
         }
     }
     pub fn undo(&mut self) {
         Log::ep_s("★　undo");
-        eprintln!("EvtProcess {:?}", self.undo_vec);
+        eprintln!("EvtProc {:?}", self.undo_vec);
         if let Some(ep) = self.undo_vec.pop() {
-            if ep.e_type == EvtType::Del {
-                if ep.str_vec.len() == 0 {
+            // 行末でDel or 行頭でBS
+            if ep.str_vec.len() == 0 {
+                if ep.do_type == DoType::Del {
+                    // 行末でDelete
+                    Log::ep_s("行末でDelete");
+                    self.set_evtproc(&ep, ep.cur_s);
+                    self.enter();
+                    self.set_evtproc(&ep, ep.cur_s);
+                } else if ep.do_type == DoType::BS {
+                    Log::ep_s("行頭でBS");
+                    self.set_evtproc(&ep, ep.cur_e);
+                    self.enter();
+                }
+            // 行中
+            } else {
+                if ep.do_type == DoType::Cut || ep.do_type == DoType::Del {
+                    self.set_evtproc(&ep, ep.cur_s);
+                } else if ep.do_type == DoType::BS {
+                    if ep.sel.is_selected() {
+                        self.set_evtproc(&ep, ep.cur_s);
+                    } else {
+                        self.set_evtproc(&ep, ep.cur_e);
+                    }
+                }
+                self.insert_str(&mut ep.str_vec.join("\n"));
+                if ep.sel.is_selected() {
+                    self.set_evtproc(&ep, ep.cur_e);
                 } else {
-                    self.cur.y = ep.sy;
-                    self.cur.x = ep.x + self.lnw;
-                    self.cur.disp_x = ep.disp_x;
-                    self.insert_str(&mut ep.str_vec.join("\n"));
+                    self.set_evtproc(&ep, ep.cur_s);
                 }
             }
             self.redo_vec.push(ep);
         };
+    }
+
+    pub fn redo(&mut self, term: &Terminal) {
+        Log::ep_s("★　redo");
+        eprintln!("redo_vec {:?}", self.redo_vec);
+        if let Some(ep) = self.redo_vec.pop() {
+            self.set_evtproc(&ep, ep.cur_s);
+            self.sel = ep.sel;
+
+            match ep.do_type {
+                DoType::Del => self.delete(),
+                DoType::BS => self.back_space(),
+                DoType::Cut => self.cut(term),
+                _ => {}
+            }
+        }
     }
 }

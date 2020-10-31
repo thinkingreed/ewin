@@ -98,7 +98,8 @@ pub struct PromptCont {
     pub key_desc: String,
     pub buf_desc: String,
     pub buf: Vec<char>,
-    pub cur: Cursor,
+    pub cur: Cur,
+    pub updown_x: usize,
 }
 
 impl Default for PromptCont {
@@ -109,7 +110,8 @@ impl Default for PromptCont {
             key_desc: String::new(),
             buf_desc: String::new(),
             buf: vec![],
-            cur: Cursor { y: 0, x: 0, disp_x: 1, updown_x: 0 },
+            cur: Cur::default(),
+            updown_x: 0,
         }
     }
 }
@@ -168,28 +170,41 @@ impl Default for StatusBar {
 /// undo,redo範囲
 /// EvtProcess
 pub struct EvtProc {
-    pub e_type: EvtType,
-    pub sy: usize,
-    pub ey: usize,
-    // self.buffer[self.cur.y] lnwを含まない
-    pub x: usize,
-    pub disp_x: usize,
+    pub do_type: DoType,
+    // lnwを含まない
+    pub cur_s: Cur,
+    pub cur_e: Cur,
     pub str_vec: Vec<String>,
+    pub sel: SelRange,
+    pub d_range: DRnage,
 }
 
 impl Default for EvtProc {
     fn default() -> Self {
         EvtProc {
-            sy: 0,
-            ey: 0,
-            x: 0,
-            disp_x: 0,
+            cur_s: Cur::default(),
+            cur_e: Cur::default(),
             str_vec: vec![],
-            e_type: EvtType::None,
+            do_type: DoType::None,
+            sel: SelRange::default(),
+            d_range: DRnage::default(),
         }
     }
 }
-
+impl EvtProc {
+    pub fn new(do_type: DoType, editor: &mut Editor) -> Self {
+        return EvtProc {
+            do_type: do_type,
+            cur_s: Cur {
+                y: editor.cur.y,
+                x: editor.cur.x,
+                disp_x: editor.cur.disp_x,
+            },
+            d_range: editor.d_range,
+            ..EvtProc::default()
+        };
+    }
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// コピー範囲
 pub struct CopyRange {
@@ -240,8 +255,9 @@ impl Default for SearchRange {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// SelectRange
 /// マウスの選択操作関連 0-indexed
-pub struct SelectRange {
+pub struct SelRange {
     // y 0-indexed
     pub sy: usize,
     pub ey: usize,
@@ -252,11 +268,22 @@ pub struct SelectRange {
     pub s_disp_x: usize,
     pub e_disp_x: usize,
 }
+impl Default for SelRange {
+    fn default() -> Self {
+        SelRange {
+            sy: 0,
+            ey: 0,
+            sx: 0,
+            ex: 0,
+            s_disp_x: 0,
+            e_disp_x: 0,
+        }
+    }
+}
 
-impl SelectRange {
+impl SelRange {
     // 0-indexedの為に初期値を-1
     pub fn clear(&mut self) {
-        // Log::ep_s("SelectRange clear");
         self.sy = 0;
         self.ey = 0;
         self.sx = 0;
@@ -264,7 +291,7 @@ impl SelectRange {
         self.s_disp_x = 0;
         self.e_disp_x = 0;
     }
-    pub fn is_selected(&mut self) -> bool {
+    pub fn is_selected(&self) -> bool {
         return !(self.sy == 0 && self.ey == 0 && self.s_disp_x == 0 && self.e_disp_x == 0);
     }
 
@@ -285,7 +312,7 @@ impl SelectRange {
             e_disp_x = self.s_disp_x;
         }
         // 範囲選択が続く可能性がある為に新規構造体を返却
-        SelectRange {
+        SelRange {
             sy: sy,
             ey: ey,
             sx: sx,
@@ -296,18 +323,21 @@ impl SelectRange {
     }
 }
 
-/// カーソル位置 　0-indexed
+/// Cursor 　0-indexed
 /// Editor,Prompt
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Cursor {
+pub struct Cur {
     // Editor.bufferの[y]
     pub y: usize,
     // Editor.bufferの[y][x] + line_num_width
     pub x: usize,
-    // カーソルの表示位置(２バイト文字対応) line_num_width + 1以上
+    // カis_redraw文字対応) line_num_width + 1以上
     pub disp_x: usize,
-    // 連続でカーソル上下時の基本x位置(２バイト文字対応)  line_num_width + 1以上 初期値:0
-    pub updown_x: usize,
+}
+impl Default for Cur {
+    fn default() -> Self {
+        Cur { y: 0, x: 0, disp_x: 1 }
+    }
 }
 // エディタの内部状態
 #[derive(Debug, Clone)]
@@ -319,7 +349,7 @@ pub struct Editor {
     /// self.cursor.y < self.buffer.len()
     /// self.cursor.x <= self.buffer[self.cursor.y].len() + self.lnw
     /// を常に保証する
-    pub cur: Cursor,
+    pub cur: Cur,
     /// 画面の一番上はバッファの何行目か
     /// スクロール処理に使う
     pub y_offset: usize,
@@ -328,12 +358,14 @@ pub struct Editor {
     pub x_offset_disp: usize,
     // x_offset対象の行
     pub x_offset_y: usize,
+    // 連続でカーソル上下時の基本x位置(２バイト文字対応)  line_num_width + 1以上 初期値:0
+    pub updown_x: usize,
     pub path: Option<path::PathBuf>,
     /// 行番号の列数 line_num_width
     pub lnw: usize,
-    pub sel: SelectRange,
+    pub sel: SelRange,
     pub curt_evt: Event,
-    pub is_all_redraw: bool,
+    pub is_redraw: bool,
     pub clipboard: String,
     /// ターミナル上の表示数
     pub disp_row_num: usize,
@@ -349,23 +381,17 @@ impl Default for Editor {
     fn default() -> Self {
         Editor {
             buf: vec![Vec::new()],
-            cur: Cursor { y: 0, x: 0, disp_x: 0, updown_x: 0 },
+            cur: Cur::default(),
             y_offset: 0,
             x_offset: 0,
             x_offset_disp: 0,
             x_offset_y: 0,
+            updown_x: 0,
             path: None,
             lnw: 0,
-            sel: SelectRange {
-                sy: 0,
-                ey: 0,
-                sx: 0,
-                ex: 0,
-                s_disp_x: 0,
-                e_disp_x: 0,
-            },
+            sel: SelRange::default(),
             curt_evt: Key(End.into()),
-            is_all_redraw: false,
+            is_redraw: false,
             clipboard: String::new(),
             disp_row_num: 0,
             disp_col_num: 0,
@@ -383,12 +409,12 @@ impl Default for Editor {
 pub struct DRnage {
     pub sy: usize,
     pub ey: usize,
-    pub e_type: EvtType,
+    pub d_type: DType,
 }
 
 impl Default for DRnage {
     fn default() -> Self {
-        DRnage { sy: 0, ey: 0, e_type: EvtType::None }
+        DRnage { sy: 0, ey: 0, d_type: DType::All }
     }
 }
 
@@ -401,34 +427,34 @@ impl DRnage {
             sy = self.ey;
             ey = self.sy;
         }
-        return DRnage { sy: sy, ey: ey, e_type: self.e_type };
+        return DRnage { sy: sy, ey: ey, d_type: self.d_type };
     }
     pub fn clear(&mut self) {
         self.sy = 0;
         self.ey = 0;
-        self.e_type = EvtType::None;
+        self.d_type = DType::None;
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// EditType
-pub enum EvtType {
-    Add,
-    Mod,
-    Del,
+/// DrawType
+pub enum DType {
+    Target, // Target row only redraw
+    After,  // Redraw after the specified line
     None,
     All,
     Not,
 }
 
-/*
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// DoType
+/// UnDo ReDo Type
 pub enum DoType {
-    Undo,
-    Redo,
+    Del,
+    BS,
+    Cut,
+    Paste,
     None,
-}*/
+}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Log {
     pub log_path: String,

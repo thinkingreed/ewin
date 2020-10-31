@@ -23,7 +23,7 @@ impl Editor {
 
         self.path = Some(path.into());
         self.lnw = self.buf.len().to_string().len();
-        self.cur = Cursor { y: 0, x: self.lnw, disp_x: 0, updown_x: 0 };
+        self.cur = Cur { y: 0, x: self.lnw, disp_x: 0 };
         self.cur.disp_x = self.lnw + get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.lnw);
     }
     pub fn draw<T: Write>(&mut self, out: &mut T) {
@@ -34,14 +34,13 @@ impl Editor {
         let mut y_draw_e = self.y_offset + min(self.disp_row_num, self.buf.len());
 
         let d_range = self.d_range.get_range();
-        eprintln!("edit_ranges {:?}", d_range);
 
-        if d_range.e_type == EvtType::None || d_range.e_type == EvtType::All {
+        if d_range.d_type == DType::None || d_range.d_type == DType::All {
             str_vec.push(clear::All.to_string());
             str_vec.push(cursor::Goto(1, 1).to_string());
         } else {
             y_draw_s = d_range.sy;
-            if d_range.e_type == EvtType::Mod {
+            if d_range.d_type == DType::Target {
                 for i in d_range.sy - self.y_offset..=d_range.ey - self.y_offset {
                     str_vec.push(format!("{}{}", cursor::Goto(1, (i + 1) as u16), clear::CurrentLine));
                 }
@@ -134,6 +133,6 @@ impl Editor {
 
     pub fn set_sel_del_d_range(&mut self) {
         let sel = self.sel.get_range();
-        self.d_range = DRnage { sy: sel.sy, ey: sel.ey, e_type: EvtType::Del };
+        self.d_range = DRnage { sy: sel.sy, ey: sel.ey, d_type: DType::After };
     }
 }

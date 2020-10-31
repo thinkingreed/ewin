@@ -26,12 +26,12 @@ fn main() {
     let mut editor = Editor::default();
     let lang_cfg = LangCfg::read_lang_cfg();
 
-    let mut terminal = Terminal::default();
+    let mut term = Terminal::default();
     // ターミナルサイズが小さい場合に処理終了
-    if !terminal.check_displayable(&lang_cfg) {
+    if !term.check_displayable(&lang_cfg) {
         return;
     }
-    terminal.set_env();
+    term.set_env();
     let mut sbar = StatusBar::new(lang_cfg.clone());
     if file_path.len() == 0 {
         sbar.filenm_tmp = lang_cfg.new_file.clone();
@@ -41,12 +41,12 @@ fn main() {
     let mut mbar = MsgBar::new(lang_cfg.clone());
     let mut prom = Prompt::new(lang_cfg.clone());
 
-    terminal.set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
+    term.set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
     editor.open(Path::new(&file_path));
 
     let stdout = MouseTerminal::from(AlternateScreen::from(stdout()).into_raw_mode().unwrap());
     let mut out = BufWriter::new(stdout.lock());
-    terminal.draw(&mut out, &mut editor, &mut mbar, &mut prom, &mut sbar).unwrap();
+    term.draw(&mut out, &mut editor, &mut mbar, &mut prom, &mut sbar).unwrap();
 
     loop {
         let event = read();
@@ -58,18 +58,21 @@ fn main() {
 
         // eprintln!("evt {:?}", editor.curt_evt.clone());
 
-        let evt_next_process = EvtAct::check_next_process(&mut out, &mut terminal, &mut editor, &mut mbar, &mut prom, &mut sbar);
+        let evt_next_process = EvtAct::check_next_process(&mut out, &mut term, &mut editor, &mut mbar, &mut prom, &mut sbar);
 
         match evt_next_process {
             EvtActType::Exit => return,
-            EvtActType::Hold => {}
+            EvtActType::Hold => {
+                write!(out, "{}", cursor::Show).unwrap();
+                out.flush().unwrap();
+            }
             EvtActType::Next => {
                 EvtAct::init(&mut editor, &mut prom);
 
                 match editor.curt_evt {
                     Resize(_, _) => {
                         write!(out, "{}", clear::All.to_string()).unwrap();
-                        terminal.set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
+                        term.set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
                     }
                     Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
                         Char('w') => {
@@ -80,13 +83,14 @@ fn main() {
                         Char('s') => {
                             editor.save(&mut mbar, &mut prom, &mut sbar);
                         }
-                        Char('c') => editor.copy(&terminal),
-                        Char('x') => editor.cut(&terminal),
+                        Char('c') => editor.copy(&term),
+                        Char('x') => editor.cut(&term),
                         Char('v') => editor.paste(),
                         Char('a') => editor.all_select(),
                         Char('f') => editor.search_prom(&mut prom),
                         Char('r') => editor.replace_prom(&mut prom),
                         Char('z') => editor.undo(),
+                        Char('y') => editor.redo(&term),
                         Home => editor.ctl_home(),
                         End => editor.ctl_end(),
                         _ => {}
@@ -129,9 +133,9 @@ fn main() {
                     Mouse(MouseEvent::Drag(_, x, y, _)) => editor.mouse_hold((x + 1) as usize, y as usize),
                 }
 
-                EvtAct::finalize(&mut editor);
-                if editor.is_all_redraw == true {
-                    terminal.draw(&mut out, &mut editor, &mut mbar, &mut prom, &mut sbar).unwrap();
+                // EvtAct::finalize(&mut editor);
+                if editor.is_redraw == true {
+                    term.draw(&mut out, &mut editor, &mut mbar, &mut prom, &mut sbar).unwrap();
                 }
             }
         }

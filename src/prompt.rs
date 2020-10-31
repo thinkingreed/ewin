@@ -69,8 +69,9 @@ impl Prompt {
                         terminal.draw(out, editor, mbar, self, sbar).unwrap();
                         return EvtActType::Next;
                     }
-                    _ => {}
+                    _ => return EvtActType::Hold,
                 },
+                Key(KeyEvent { modifiers: KeyModifiers::SHIFT, .. }) => return EvtActType::Hold,
                 _ => {}
             }
         }
@@ -112,8 +113,8 @@ impl Prompt {
 
         if self.buf_posi == PromptBufPosi::Main {
             self.buf_posi = PromptBufPosi::Sub;
-            self.cont_sub.cur.updown_x = self.cont.cur.disp_x;
-            let (cur_x, width) = get_until_updown_x(0, &self.cont_sub.buf, self.cont_sub.cur.updown_x);
+            self.cont_sub.updown_x = self.cont.cur.disp_x;
+            let (cur_x, width) = get_until_updown_x(0, &self.cont_sub.buf, self.cont_sub.updown_x);
             self.cont_sub.cur.x = cur_x;
             self.cont_sub.cur.disp_x = width;
         }
@@ -123,8 +124,8 @@ impl Prompt {
 
         if self.buf_posi == PromptBufPosi::Sub {
             self.buf_posi = PromptBufPosi::Main;
-            self.cont.cur.updown_x = self.cont_sub.cur.disp_x;
-            let (cur_x, width) = get_until_updown_x(0, &self.cont.buf, self.cont.cur.updown_x);
+            self.cont.updown_x = self.cont_sub.cur.disp_x;
+            let (cur_x, width) = get_until_updown_x(0, &self.cont.buf, self.cont.updown_x);
             self.cont.cur.x = cur_x;
             self.cont.cur.disp_x = width;
         }

@@ -27,13 +27,13 @@ impl Editor {
     }
 
     pub fn cursor_updown_com(&mut self) {
-        if self.cur.updown_x == 0 {
-            self.cur.updown_x = self.cur.disp_x;
+        if self.updown_x == 0 {
+            self.updown_x = self.cur.disp_x;
         }
         // Left,Rightの場合は設定しない
         if self.curt_evt == Key(Left.into()) || self.curt_evt == Key(Right.into()) {
         } else {
-            let (cursorx, disp_x) = get_until_updown_x(self.lnw, &self.buf[self.cur.y], self.cur.updown_x);
+            let (cursorx, disp_x) = get_until_updown_x(self.lnw, &self.buf[self.cur.y], self.updown_x);
             self.cur.disp_x = disp_x;
             self.cur.x = cursorx;
         }
@@ -68,7 +68,7 @@ impl Editor {
                 return;
             // その他の行末
             } else {
-                self.cur.updown_x = self.lnw;
+                self.updown_x = self.lnw;
                 self.cur.disp_x = self.lnw + 1;
                 self.cur.x = self.lnw;
                 self.cursor_down();
@@ -99,10 +99,10 @@ impl Editor {
             self.d_range = DRnage {
                 sy: self.cur.y - 1,
                 ey: self.cur.y,
-                e_type: EvtType::Add,
+                d_type: DType::After,
             };
         } else {
-            self.d_range = DRnage { e_type: EvtType::All, ..DRnage::default() };
+            self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
         }
     }
     pub fn insert_char(&mut self, c: char) {
@@ -112,21 +112,42 @@ impl Editor {
         self.d_range = DRnage {
             sy: self.cur.y,
             ey: self.cur.y,
-            e_type: EvtType::Mod,
+            d_type: DType::Target,
         };
     }
 
     pub fn back_space(&mut self) {
         Log::ep_s("★  back_space");
         if self.sel.is_selected() {
+            self.set_sel_del_d_range();
+            self.save_sel_del_evtproc(DoType::BS);
             self.del_sel_range();
+            self.sel.clear();
         } else {
             // 0,0の位置の場合
             if self.cur.y == 0 && self.cur.x == self.lnw {
                 return;
             }
+            self.d_range = DRnage {
+                sy: self.cur.y,
+                ey: self.cur.y,
+                d_type: DType::Target,
+            };
+            let mut ep = EvtProc {
+                do_type: DoType::BS,
+                cur_s: Cur {
+                    y: self.cur.y,
+                    x: self.cur.x,
+                    disp_x: self.cur.disp_x,
+                },
+                d_range: self.d_range,
+                ..EvtProc::default()
+            };
             if self.cur.x == self.lnw {
                 let row_len_org = self.buf.len().to_string().len();
+
+                self.d_range.d_type = DType::After;
+                self.d_range.sy -= 1;
 
                 // 行の先頭
                 let line = self.buf.remove(self.cur.y);
@@ -145,13 +166,18 @@ impl Editor {
                 }
             } else {
                 self.cursor_left();
+                if let Some(c) = self.buf[self.cur.y].get(self.cur.x - self.lnw) {
+                    ep.str_vec = vec![c.to_string()];
+                };
                 self.buf[self.cur.y].remove(self.cur.x - self.lnw);
             }
-            self.d_range = DRnage {
-                sy: self.cur.y,
-                ey: self.cur.y,
-                e_type: EvtType::Del,
+            // BS後のcurを設定
+            ep.cur_e = Cur {
+                y: self.cur.y,
+                x: self.cur.x,
+                disp_x: self.cur.disp_x,
             };
+            self.undo_vec.push(ep);
         }
         self.scroll();
         self.scroll_horizontal();
@@ -160,29 +186,31 @@ impl Editor {
         Log::ep_s("★  delete");
 
         if self.sel.is_selected() {
-            self.save_sel_del_evtproc();
             self.set_sel_del_d_range();
+            self.save_sel_del_evtproc(DoType::Del);
             self.del_sel_range();
+            self.sel.clear();
         } else {
             // 最終行の終端
             if self.cur.y == self.buf.len() - 1 && self.cur.x == self.buf[self.cur.y].len() + self.lnw {
                 return;
             }
-
-            if self.cur.x == self.buf[self.cur.y].len() + self.lnw {
-                // 行末
-                let line = self.buf.remove(self.cur.y + 1);
-                self.buf[self.cur.y].extend(line.into_iter());
-            } else {
-                self.save_del_char_evtproc(true);
-                self.buf[self.cur.y].remove(self.cur.x - self.lnw);
-            }
-
             self.d_range = DRnage {
                 sy: self.cur.y,
                 ey: self.cur.y,
-                e_type: EvtType::Del,
+                d_type: DType::Target,
             };
+            // 行末
+            if self.cur.x == self.buf[self.cur.y].len() + self.lnw {
+                self.d_range.d_type = DType::After;
+
+                self.save_del_char_evtproc(DoType::Del);
+                let line = self.buf.remove(self.cur.y + 1);
+                self.buf[self.cur.y].extend(line.into_iter());
+            } else {
+                self.save_del_char_evtproc(DoType::Del);
+                self.buf[self.cur.y].remove(self.cur.x - self.lnw);
+            }
         }
     }
 

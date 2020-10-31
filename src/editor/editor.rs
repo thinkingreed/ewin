@@ -1,6 +1,6 @@
 use crate::model::{CopyRange, Editor, Log, StatusBar};
 use crate::util::*;
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
 use std::cmp::{max, min};
 use std::io::Write;
 use unicode_width::UnicodeWidthChar;
@@ -43,11 +43,13 @@ impl Editor {
                 F(3) => self.search_str(true),
                 _ => {}
             },
+            Mouse(MouseEvent::ScrollUp(_, _, _)) => self.cursor_up(),
+            Mouse(MouseEvent::ScrollDown(_, _, _)) => self.cursor_down(),
             _ => {}
         }
 
-        if self.is_all_redraw != true {
-            self.is_all_redraw = y_offset_org != self.y_offset || (x_offset_disp_org != self.x_offset_disp || (x_offset_disp_org == self.x_offset_disp && self.x_offset_disp != 0));
+        if self.is_redraw != true {
+            self.is_redraw = y_offset_org != self.y_offset || (x_offset_disp_org != self.x_offset_disp || (x_offset_disp_org == self.x_offset_disp && self.x_offset_disp != 0));
         }
         self.draw_cur(out, sbar);
     }
@@ -68,12 +70,13 @@ impl Editor {
     pub fn get_x_offset(&mut self, y: usize, x: usize) -> usize {
         let (mut count, mut width) = (0, 0);
         for i in (0..x).rev() {
-            let c = self.buf[y].get(i).unwrap();
-            width += c.width().unwrap_or(0);
-            if width + self.lnw + 1 > self.disp_col_num {
-                break;
+            if let Some(c) = self.buf[y].get(i) {
+                width += c.width().unwrap_or(0);
+                if width + self.lnw + 1 > self.disp_col_num {
+                    break;
+                }
+                count += 1;
             }
-            count += 1;
         }
         return x - count;
     }
@@ -128,6 +131,7 @@ impl Editor {
             if sy <= i && i <= ey {
                 // 1行
                 if sy == ey {
+                    eprintln!("self.buf[i] {:?}", self.buf[i]);
                     self.buf[i].drain(sx..ex);
                     self.cur.disp_x = min(s_disp_x, e_disp_x);
                     self.cur.x = min(sx, ex) + self.lnw;
@@ -171,6 +175,8 @@ impl Editor {
                     vec.push(c.clone());
                 }
             }
+            eprintln!("get_sel_range_str vec {:?}", vec);
+            eprintln!("get_sel_range_str vec.len {:?}", vec.len());
             all_vec.push(vec.iter().collect::<String>());
         }
         eprintln!("get_sel_range_vec {:?}", all_vec);

@@ -6,9 +6,9 @@ impl EvtAct {
     pub fn check_next_process<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         match editor.curt_evt {
             Resize(_, _) => return EvtActType::Next,
+
             _ => {}
         }
-
         terminal.set_disp_size(editor, mbar, prom, sbar);
 
         return prom.check_prom(out, terminal, editor, mbar, sbar);
@@ -20,34 +20,38 @@ impl EvtAct {
             //  Down | Up | ShiftDown | ShiftUp
             Key(KeyEvent { code, .. }) => match code {
                 Down | Up => {}
-                _ => editor.cur.updown_x = 0,
+                _ => editor.updown_x = 0,
             },
             Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) => {}
-            _ => editor.cur.updown_x = 0,
+            _ => editor.updown_x = 0,
         }
         // all_redraw判定
-        editor.is_all_redraw = false;
+        editor.is_redraw = false;
         match editor.curt_evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                 Char('c') => {}
-                _ => editor.is_all_redraw = true,
+                _ => editor.is_redraw = true,
             },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                Down | Up | Left | Right => editor.is_all_redraw = true,
-                F(4) => editor.is_all_redraw = false,
-                _ => editor.is_all_redraw = true,
+                Down | Up | Left | Right => editor.is_redraw = true,
+                F(4) => editor.is_redraw = false,
+                _ => editor.is_redraw = true,
             },
             Key(KeyEvent { code, .. }) => match code {
                 Down | Up | Left | Right | Home | End | F(3) => {
                     if editor.sel.is_selected() {
-                        editor.is_all_redraw = true;
+                        editor.is_redraw = true;
                     }
                 }
-                _ => editor.is_all_redraw = true,
+                _ => editor.is_redraw = true,
             },
             Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) => {}
-            _ => editor.is_all_redraw = true,
+            _ => editor.is_redraw = true,
         }
+        if editor.is_redraw {
+            editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
+        }
+
         // 選択範囲クリア判定
         match editor.curt_evt {
             Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {
@@ -84,17 +88,17 @@ impl EvtAct {
         }
     }
 
+    /*
     pub fn finalize(editor: &mut Editor) {
         match editor.curt_evt {
             Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
-                Char('x') => editor.sel.clear(),
                 _ => {}
             },
             Key(KeyEvent { code, .. }) => match code {
-                Backspace | Delete => editor.sel.clear(),
                 _ => {}
             },
             _ => {}
         }
     }
+    */
 }
