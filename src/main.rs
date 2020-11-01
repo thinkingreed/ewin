@@ -56,8 +56,6 @@ fn main() {
         write!(out, "{}", cursor::Hide.to_string()).unwrap();
         out.flush().unwrap();
 
-        // eprintln!("evt {:?}", editor.curt_evt.clone());
-
         let evt_next_process = EvtAct::check_next_process(&mut out, &mut term, &mut editor, &mut mbar, &mut prom, &mut sbar);
 
         match evt_next_process {

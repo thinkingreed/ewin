@@ -1,4 +1,4 @@
-use crate::model::{Editor, Log};
+use crate::model::*;
 use clipboard::{ClipboardContext, ClipboardProvider};
 
 use anyhow::Context;
@@ -8,7 +8,7 @@ use std::process;
 use std::process::Command;
 
 impl Editor {
-    pub fn set_clipboard(&mut self, copy_string: &str) {
+    pub fn set_clipboard(&mut self, copy_string: &str, term: &Terminal) {
         if let Err(err) = self.try_set_clipboard(&copy_string) {
             Log::ep("try_set_clipboard err", err.to_string());
 

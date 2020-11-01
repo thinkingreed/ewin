@@ -2,7 +2,7 @@ use crate::_cfg::lang::cfg::LangCfg;
 use crate::model::*;
 use crate::model::{Editor, Log};
 use std::io::{self, Write};
-use termion::{color, cursor};
+use termion::cursor;
 
 use anyhow::Context;
 use std::io::Read;
@@ -17,7 +17,6 @@ impl Terminal {
         let str_vec: &mut Vec<String> = &mut vec![];
 
         let d_range = editor.d_range.get_range();
-        eprintln!("edit_ranges {:?}", d_range);
         if d_range.d_type != DType::Not {
             editor.set_textarea_color(str_vec);
             editor.draw(out);

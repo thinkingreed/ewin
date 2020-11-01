@@ -125,13 +125,10 @@ impl Editor {
         let sel = self.sel.get_range();
         let (sy, ey, sx, ex, s_disp_x, e_disp_x) = (sel.sy, sel.ey, sel.sx, sel.ex, sel.s_disp_x, sel.e_disp_x);
 
-        eprintln!("sel {:?}", sel);
-
         for i in 0..self.buf.len() {
             if sy <= i && i <= ey {
                 // 1行
                 if sy == ey {
-                    eprintln!("self.buf[i] {:?}", self.buf[i]);
                     self.buf[i].drain(sx..ex);
                     self.cur.disp_x = min(s_disp_x, e_disp_x);
                     self.cur.x = min(sx, ex) + self.lnw;
@@ -175,13 +172,10 @@ impl Editor {
                     vec.push(c.clone());
                 }
             }
-            eprintln!("get_sel_range_str vec {:?}", vec);
-            eprintln!("get_sel_range_str vec.len {:?}", vec.len());
             if vec.len() > 0 {
                 all_vec.push(vec.iter().collect::<String>());
             }
         }
-        eprintln!("get_sel_range_vec {:?}", all_vec);
         return all_vec;
     }
 }

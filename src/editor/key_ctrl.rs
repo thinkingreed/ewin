@@ -53,8 +53,6 @@ impl Editor {
             self.path = Some(Path::new(&s).into());
         }
 
-        eprintln!("self.path {:?}", self.path);
-
         Log::ep("sbar.filenm", &sbar.filenm);
         Log::ep("prom.cont.buf", prom.cont.buf.iter().collect::<String>());
         // Log::ep("path", self.path.to_owned());
@@ -84,7 +82,6 @@ impl Editor {
                     Err(err) => {
                         Log::ep("err", err.to_string());
                         // TODO 新規ファイル時はフォルダの権限をmainで先に確認が必要
-                        // eprintln!("err.kind() {:?}", err.kind()); // 権限が無い場合のout PermissionDenied
                     }
                 }
             }
@@ -109,7 +106,7 @@ impl Editor {
 
         //  let copy_string = vec.iter().collect::<String>().clone();
         Log::ep("copy_string", copy_string.clone());
-        self.set_clipboard(&copy_string);
+        self.set_clipboard(&copy_string, &term);
 
         self.d_range = DRnage {
             sy: self.sel.sy,
@@ -164,8 +161,6 @@ impl Editor {
             ep.sel.ex = self.cur.x - self.lnw;
             ep.sel.e_disp_x = self.cur.disp_x;
         }
-
-        eprintln!("paste ep.sel {:?}", ep.sel);
 
         self.undo_vec.push(ep);
     }
@@ -232,7 +227,6 @@ impl Editor {
 
                 self.cursor_right();
             }
-            eprintln!("self.buf[self.cur.y] {:?}", self.buf[self.cur.y]);
         }
 
         // 複数行の場合はカーソル位置調整
@@ -429,7 +423,6 @@ impl Editor {
 
     pub fn redo(&mut self, term: &Terminal) {
         Log::ep_s("★　redo");
-        eprintln!("redo_vec {:?}", self.redo_vec);
         if let Some(mut ep) = self.redo_vec.pop() {
             self.set_evtproc(&ep, ep.cur_s);
             self.sel = ep.sel;
