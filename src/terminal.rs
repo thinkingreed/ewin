@@ -2,7 +2,7 @@ use crate::_cfg::lang::cfg::LangCfg;
 use crate::model::*;
 use crate::model::{Editor, Log};
 use std::io::{self, Write};
-use termion::cursor;
+use termion::{color, cursor};
 
 use anyhow::Context;
 use std::io::Read;
@@ -19,6 +19,7 @@ impl Terminal {
         let d_range = editor.d_range.get_range();
         eprintln!("edit_ranges {:?}", d_range);
         if d_range.d_type != DType::Not {
+            editor.set_textarea_color(str_vec);
             editor.draw(out);
             mbar.draw(out);
 
@@ -27,6 +28,7 @@ impl Terminal {
         }
 
         self.draw_cur(str_vec, editor, prom);
+
         write!(out, "{}", &str_vec.concat())?;
         out.flush()?;
         editor.d_range.clear();
