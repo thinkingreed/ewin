@@ -72,6 +72,8 @@ fn main() {
                     Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
                         Char('w') => {
                             if editor.close(&mut out, &mut prom) == true {
+                                write!(out, "{}", cursor::Show).unwrap();
+                                out.flush().unwrap();
                                 return;
                             }
                         }

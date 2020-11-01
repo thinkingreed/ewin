@@ -76,7 +76,7 @@ impl Log {
         if cfg!(debug_assertions) {
             eprintln!("{} {}", format!("{:?}", m), v);
         } else {
-            eprintln!("{} {}", format!("{:?}", m), v);
+            // eprintln!("{} {}", format!("{:?}", m), v);
 
             /*
             let debug_mode: &str = ARGS.get("debug_mode").unwrap();
@@ -90,7 +90,8 @@ impl Log {
         if cfg!(debug_assertions) {
             eprintln!("{}", m);
         } else {
-            eprintln!("{}", m);
+            // eprintln!("{}", m);
+
             /*
             let debug_mode: &str = ARGS.get("debug_mode").unwrap();
             if debug_mode == "true" {

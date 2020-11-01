@@ -18,7 +18,6 @@ impl Terminal {
 
         let d_range = editor.d_range.get_range();
         if d_range.d_type != DType::Not {
-            editor.set_textarea_color(str_vec);
             editor.draw(out);
             mbar.draw(out);
 

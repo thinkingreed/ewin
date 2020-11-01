@@ -9,19 +9,22 @@ use std::process::Command;
 
 impl Editor {
     pub fn set_clipboard(&mut self, copy_string: &str, term: &Terminal) {
-        if let Err(err) = self.try_set_clipboard(&copy_string) {
-            Log::ep("try_set_clipboard err", err.to_string());
-
+        if term.env == Env::WSL {
+            Log::ep_s("try_set_clipboard ");
+            if let Err(err) = self.try_set_clipboard(&copy_string) {
+                Log::ep("try_set_clipboard err", err.to_string());
+            }
+        } else {
+            Log::ep_s("ClipboardProvider::new() ");
             let result: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
             match result {
                 Ok(mut ctx) => ctx.set_contents(copy_string.to_string()).unwrap(),
                 Err(err) => {
                     Log::ep("ClipboardProvider err", err.to_string());
-                    Log::ep_s("set memory");
                     self.clipboard = copy_string.to_string();
                 }
             }
-        }
+        };
     }
     fn try_set_clipboard(&mut self, copy_string: &str) -> anyhow::Result<()> {
         // WSL環境を判定出来ない為にpowershell試行
