@@ -38,6 +38,7 @@ impl Editor {
         if d_range.d_type == DType::Not {
             return;
         } else if d_range.d_type == DType::None || d_range.d_type == DType::All {
+            self.set_textarea_color(str_vec);
             str_vec.push(clear::All.to_string());
             str_vec.push(cursor::Goto(1, 1).to_string());
         } else {
