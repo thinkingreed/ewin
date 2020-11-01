@@ -1,7 +1,7 @@
 ewin
 ====
 
-[ewin]h Simple editor for Winodws users.
+[ewin]h Simple editor for Windows(GUI) users.
   There is no need to learn new operation commands.
 
 It provides basic features as a minimal text editor:
