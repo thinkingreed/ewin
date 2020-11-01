@@ -139,7 +139,7 @@ impl Editor {
             let mut ep = EvtProc::new(DoType::BS, &self);
 
             if self.cur.x == self.lnw {
-                let row_len_org = self.buf.len().to_string().len();
+                let lnw_org = self.lnw;
 
                 self.d_range.d_type = DType::After;
                 self.d_range.sy -= 1;
@@ -151,13 +151,13 @@ impl Editor {
                 let (_, width) = get_row_width(&self.buf[self.cur.y], 0, self.buf[self.cur.y].len());
                 self.cur.disp_x = self.lnw + width + 1;
                 self.buf[self.cur.y].extend(line.into_iter());
+                self.lnw = self.buf.len().to_string().len();
 
-                let row_len_curt = self.buf.len().to_string().len();
                 // 行番号の桁数が減った場合
-                if row_len_org != row_len_curt {
-                    self.lnw -= 1;
+                if lnw_org != self.lnw {
                     self.cur.x -= 1;
                     self.cur.disp_x -= 1;
+                    self.d_range.d_type = DType::All;
                 }
             } else {
                 self.cursor_left();
@@ -194,9 +194,19 @@ impl Editor {
             if self.cur.x == self.buf[self.cur.y].len() + self.lnw {
                 self.d_range.d_type = DType::After;
 
+                let lnw_org = self.lnw;
+
                 self.save_del_char_evtproc(DoType::Del);
                 let line = self.buf.remove(self.cur.y + 1);
                 self.buf[self.cur.y].extend(line.into_iter());
+
+                self.lnw = self.buf.len().to_string().len();
+                // 行番号の桁数が減った場合
+                if lnw_org != self.lnw {
+                    self.cur.x -= 1;
+                    self.cur.disp_x -= 1;
+                    self.d_range.d_type = DType::All;
+                }
             } else {
                 self.save_del_char_evtproc(DoType::Del);
                 self.buf[self.cur.y].remove(self.cur.x - self.lnw);
