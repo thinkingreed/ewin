@@ -82,7 +82,7 @@ fn main() {
                         }
                         Char('c') => editor.copy(&term),
                         Char('x') => editor.cut(&term),
-                        Char('v') => editor.paste(),
+                        Char('v') => editor.paste(&term),
                         Char('a') => editor.all_select(),
                         Char('f') => editor.search_prom(&mut prom),
                         Char('r') => editor.replace_prom(&mut prom),

@@ -130,10 +130,10 @@ impl Editor {
         return vec;
     }
 
-    pub fn paste(&mut self) {
+    pub fn paste(&mut self, term: &Terminal) {
         Log::ep_s("★  paste");
 
-        let mut contexts = self.get_clipboard().unwrap_or("".to_string());
+        let mut contexts = self.get_clipboard(&term).unwrap_or("".to_string());
         Log::ep("clipboard str", &contexts);
         if contexts.len() == 0 {
             return;

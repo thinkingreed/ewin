@@ -37,20 +37,18 @@ impl Editor {
         Ok(())
     }
 
-    pub fn get_clipboard(&mut self) -> anyhow::Result<String> {
-        let result = self.try_get_clipboard();
-
-        match result {
-            Ok(string) => return Ok(string),
-            Err(err) => {
-                Log::ep("try_get_clipboard err", err.to_string());
-                let provider: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
-                match provider {
-                    Ok(mut ctx) => return Ok(ctx.get_contents().unwrap_or("".to_string())),
-                    Err(_) => {
-                        Log::ep_s("get memory");
-                        return Ok(self.clipboard.clone());
-                    }
+    pub fn get_clipboard(&mut self, term: &Terminal) -> anyhow::Result<String> {
+        if term.env == Env::WSL {
+            Log::ep_s("try_get_clipboard");
+            return self.try_get_clipboard();
+        } else {
+            Log::ep_s("ClipboardProvider::new() ");
+            let provider: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
+            match provider {
+                Ok(mut ctx) => return Ok(ctx.get_contents().unwrap_or("".to_string())),
+                Err(_) => {
+                    Log::ep_s("get memory");
+                    return Ok(self.clipboard.clone());
                 }
             }
         }
