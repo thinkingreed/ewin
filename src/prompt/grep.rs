@@ -1,7 +1,5 @@
 use crate::model::*;
-use anyhow::Context;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
-use std::io::Read;
 use std::io::Write;
 use std::process;
 use std::process::Command;
@@ -114,35 +112,11 @@ impl EvtAct {
     pub fn exec_grep(term: &Terminal, search_str: String, search_file: String, search_folder: String) {
         if term.env == Env::WSL {
             Log::ep_s("exec_grep ");
-            if let Err(err) = EvtAct::try_exec_grep(search_str, search_file, search_folder) {
+            if let Err(err) = Command::new("/mnt/c/windows/system32/cmd.exe").arg("/c").arg("start").arg("wsl").arg("--").arg(PKG_NAME).stdin(process::Stdio::piped()).stdout(process::Stdio::null()).spawn() {
                 Log::ep("exec_grep err", err.to_string());
             }
         } else {
         };
-    }
-    fn try_exec_grep(search_str: String, search_file: String, search_folder: String) -> anyhow::Result<()> {
-        // WSL環境を判定出来ない為にpowershell試行
-        let mut p = Command::new("/mnt/c/windows/system32/cmd.exe")
-            .arg("/c")
-            .arg("start")
-            .arg("wsl")
-            .arg("--")
-            .arg(PKG_NAME)
-            //     .arg(">")
-            //     .arg("/dev/null")
-            //     .arg("2>&1")
-            .stdin(process::Stdio::piped())
-            .spawn()?;
-        // let mut p = Command::new("cmd.exe").arg("/c").arg("start").arg("wsl").arg(">").arg("/dev/null").arg("2>&1").stdin(process::Stdio::piped()).spawn()?;
-        //let mut p = Command::new("cmd.exe").arg("/c").arg("start").arg("wsl").arg(">").arg("/dev/null").arg("2>&1").stdin(process::Stdio::piped()).spawn()?;
-
-        let mut stdout = p.stdout.context("take stdout")?;
-        let mut buf = String::new();
-        stdout.read_to_string(&mut buf)?;
-
-        Log::ep("try_exec_grep", buf.clone().trim().to_string());
-
-        Ok(())
     }
 }
 
