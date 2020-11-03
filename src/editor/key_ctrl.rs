@@ -46,18 +46,18 @@ impl Editor {
     }
     pub fn save(&mut self, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> bool {
         Log::ep_s("★  save");
-        Log::ep("prom.cont.buf.len()", prom.cont.buf.len());
+        Log::ep("prom.cont_1.buf.len()", prom.cont_1.buf.len());
 
-        if prom.cont.buf.len() > 0 {
-            let s = prom.cont.buf.iter().collect::<String>();
+        if prom.cont_1.buf.len() > 0 {
+            let s = prom.cont_1.buf.iter().collect::<String>();
             self.path = Some(Path::new(&s).into());
         }
 
         Log::ep("sbar.filenm", &sbar.filenm);
-        Log::ep("prom.cont.buf", prom.cont.buf.iter().collect::<String>());
+        Log::ep("prom.cont_1.buf", prom.cont_1.buf.iter().collect::<String>());
         // Log::ep("path", self.path.to_owned());
 
-        if !Path::new(&sbar.filenm).exists() && prom.cont.buf.len() == 0 {
+        if !Path::new(&sbar.filenm).exists() && prom.cont_1.buf.len() == 0 {
             prom.is_save_new_file = true;
             prom.save_new_file();
             return false;
@@ -351,12 +351,17 @@ impl Editor {
         prom.is_replace = true;
         prom.replace();
     }
+    pub fn grep_prom(&mut self, prom: &mut Prompt) {
+        Log::ep_s("★　grep_prom");
+        prom.is_grep = true;
+        prom.grep();
+    }
 
     pub fn replace(&mut self, prom: &mut Prompt) {
         Log::ep_s("★　replace");
 
-        let search_str = prom.cont.buf.iter().collect::<String>();
-        let replace_str = prom.cont_sub.buf.iter().collect::<String>();
+        let search_str = prom.cont_1.buf.iter().collect::<String>();
+        let replace_str = prom.cont_2.buf.iter().collect::<String>();
         for i in 0..self.buf.len() {
             let row_str = &self.buf[i].iter().collect::<String>();
             let row_str = row_str.replace(&search_str, &replace_str);

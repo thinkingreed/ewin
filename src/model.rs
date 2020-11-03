@@ -2,6 +2,8 @@ use crate::_cfg::lang::cfg::LangCfg;
 use crossterm::event::{Event, Event::Key, KeyCode::End};
 use std::path;
 
+pub const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
+
 #[derive(Debug, Clone)]
 pub struct MsgBar {
     pub lang: LangCfg,
@@ -37,15 +39,17 @@ pub struct Prompt {
     pub disp_row_posi: usize,
     pub disp_col_num: usize,
     pub search_str: String,
-    // Prompt Content
-    pub cont: PromptCont,
-    pub cont_sub: PromptCont,
+    // Prompt Content_Sequence number
+    pub cont_1: PromptCont,
+    pub cont_2: PromptCont,
+    pub cont_3: PromptCont,
     pub buf_posi: PromptBufPosi,
     pub is_change: bool,
     pub is_close_confirm: bool,
     pub is_save_new_file: bool,
     pub is_search: bool,
     pub is_replace: bool,
+    pub is_grep: bool,
 }
 
 impl Default for Prompt {
@@ -55,15 +59,17 @@ impl Default for Prompt {
             disp_row_num: 0,
             disp_row_posi: 0,
             disp_col_num: 0,
-            cont: PromptCont::default(),
-            cont_sub: PromptCont::default(),
-            buf_posi: PromptBufPosi::Main,
+            cont_1: PromptCont::default(),
+            cont_2: PromptCont::default(),
+            cont_3: PromptCont::default(),
+            buf_posi: PromptBufPosi::First,
             search_str: String::new(),
             is_change: false,
             is_close_confirm: false,
             is_save_new_file: false,
             is_search: false,
             is_replace: false,
+            is_grep: false,
         }
     }
 }
@@ -85,9 +91,11 @@ impl Prompt {
         self.is_search = false;
         self.search_str = String::new();
         self.is_replace = false;
-        self.cont = PromptCont::default();
-        self.cont_sub = PromptCont::default();
-        self.buf_posi = PromptBufPosi::Main;
+        self.is_grep = false;
+        self.cont_1 = PromptCont::default();
+        self.cont_2 = PromptCont::default();
+        self.cont_3 = PromptCont::default();
+        self.buf_posi = PromptBufPosi::First;
     }
 }
 
@@ -117,8 +125,9 @@ impl Default for PromptCont {
 }
 #[derive(PartialEq)]
 pub enum PromptBufPosi {
-    Main,
-    Sub,
+    First,
+    Second,
+    Third,
 }
 #[derive(Debug, PartialEq)]
 pub enum Env {

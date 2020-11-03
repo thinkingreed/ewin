@@ -8,11 +8,11 @@ impl EvtAct {
         match editor.curt_evt {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {
-                    if prom.cont.buf.len() == 0 {
+                    if prom.cont_1.buf.len() == 0 {
                         mbar.set_err(mbar.lang.not_entered_filenm.clone());
                     } else {
                         // TODO 存在するファイル名の対応
-                        sbar.filenm = prom.cont.buf.iter().collect::<String>();
+                        sbar.filenm = prom.cont_1.buf.iter().collect::<String>();
                         editor.save(mbar, prom, sbar);
                     }
                     terminal.draw(out, editor, mbar, prom, sbar).unwrap();
@@ -30,7 +30,7 @@ impl Prompt {
         self.disp_row_num = 3;
         let mut cont = PromptCont::new(self.lang.clone());
         cont.set_new_file_name();
-        self.cont = cont;
+        self.cont_1 = cont;
     }
 }
 

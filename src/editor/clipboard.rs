@@ -29,6 +29,7 @@ impl Editor {
     fn try_set_clipboard(&mut self, copy_string: &str) -> anyhow::Result<()> {
         // WSL環境を判定出来ない為にpowershell試行
         let mut p = Command::new("powershell.exe").arg("set-clipboard").arg("-Value").arg(copy_string).stdin(process::Stdio::piped()).spawn()?;
+        // let mut p = Command::new("echo").arg("off").arg(copy_string).arg("|").arg("clip.exe").stdin(process::Stdio::piped()).spawn()?;
         {
             let mut stdin = p.stdin.take().context("take stdin")?;
             write!(stdin, "{}", copy_string)?;

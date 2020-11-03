@@ -53,6 +53,8 @@ fn main() {
 
         editor.curt_evt = event.unwrap().clone();
 
+        eprintln!("evt {:?}", editor.curt_evt.clone());
+
         write!(out, "{}", cursor::Hide.to_string()).unwrap();
         out.flush().unwrap();
 
@@ -69,7 +71,7 @@ fn main() {
                         write!(out, "{}", clear::All.to_string()).unwrap();
                         term.set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
                     }
-                    Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
+                    Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                         Char('w') => {
                             if editor.close(&mut out, &mut prom) == true {
                                 write!(out, "{}", cursor::Show).unwrap();
@@ -86,13 +88,14 @@ fn main() {
                         Char('a') => editor.all_select(),
                         Char('f') => editor.search_prom(&mut prom),
                         Char('r') => editor.replace_prom(&mut prom),
+                        Char('g') => editor.grep_prom(&mut prom),
                         Char('z') => editor.undo(),
                         Char('y') => editor.redo(&term),
                         Home => editor.ctl_home(),
                         End => editor.ctl_end(),
                         _ => {}
                     },
-                    Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {
+                    Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                         F(4) => editor.move_cursor(&mut out, &mut sbar),
                         Right => editor.shift_right(),
                         Left => editor.shift_left(),

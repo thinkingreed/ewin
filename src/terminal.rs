@@ -39,7 +39,7 @@ impl Terminal {
         Log::ep("cur.disp_x", editor.cur.disp_x);
         Log::ep("x_offset_disp", editor.x_offset_disp);
 
-        if prom.is_save_new_file || prom.is_search || prom.is_replace {
+        if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep {
             prom.draw_cur(str_vec);
         } else {
             //str_vec.push(cursor::Show.to_string());

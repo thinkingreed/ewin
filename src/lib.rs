@@ -11,15 +11,16 @@ pub mod editor {
     pub mod mouse;
 }
 pub mod model;
-pub mod evt_act {
+pub mod prompt {
     pub mod close;
-    pub mod evt_act;
+    pub mod grep;
+    pub mod prompt;
     pub mod replace;
     pub mod save_new_file;
     pub mod search;
 }
+pub mod evt_act;
 pub mod msgbar;
-pub mod prompt;
 pub mod statusbar;
 pub mod terminal;
 pub mod util;

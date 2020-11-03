@@ -31,7 +31,7 @@ impl Prompt {
         self.disp_row_num = 2;
         let mut cont = PromptCont::new(self.lang.clone());
         cont.set_save_confirm();
-        self.cont = cont;
+        self.cont_1 = cont;
     }
 }
 

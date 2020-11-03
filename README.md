@@ -21,7 +21,7 @@ _... and other Debian-based Linux distributions_
 Download the latest .deb package from the [release page](https://github.com/thinkingreed/ewin/releases) and install it via:
 
 ```
-sudo apt install ewin_0.5.1_amd64.deb 
+sudo apt install ewin_0.0.0_amd64.deb 
 ```
 
 ### Snap
@@ -107,6 +107,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 ## Future Works
 
 - Grep function
+- Macro function(Record keystrokes) 
 - WASI support
 
 ## License
