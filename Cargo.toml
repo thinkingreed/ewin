@@ -30,3 +30,8 @@ serde = { version = "1.0.115", features = ["derive"] }
 toml = "0.5.6"
 signal-hook = "0.1"
 cargo-deb = "1.28.0"
+tokio = { version = "0.3.3", features = ["full"] }
+tokio-util = { version = "0.5.0", features = ["codec"] }
+
+mio = "0.7.0, 0.7.5"
+futures="0.3.7"

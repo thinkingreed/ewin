@@ -32,15 +32,7 @@ impl StatusBar {
         let cur_s = self.get_cur_str(editor);
         let cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
         // str_vec.push("\r\n".to_string());
-        let sber_str = format!(
-            "{}{}{}{}{}{}",
-            cursor::Goto(1, self.disp_row_posi as u16),
-            clear::CurrentLine,
-            Bg(color::Black),
-            Fg(Rgb(221, 72, 20)),
-            format!("{}{}", filenm_disp, cur_str),
-            Fg(White).to_string(),
-        );
+        let sber_str = format!("{}{}{}{}{}{}", cursor::Goto(1, self.disp_row_posi as u16), clear::CurrentLine, Bg(color::Black), Fg(Rgb(221, 72, 20)), format!("{}{}", filenm_disp, cur_str), Fg(White).to_string(),);
 
         // self.set_color(str_vec);
         str_vec.push(sber_str);
@@ -96,8 +88,8 @@ impl StatusBar {
         } else if cols < cur_w_max + filenm_w_max {
             return (cols - cur_w_max, cur_w_max);
         } else {
-            let (area_w, rest) = (cols / 6, cols % 6);
-            let (filenm_w, cur_w) = (area_w * 3, (area_w * 3) + rest);
+            let (area_w, rest) = (cols / 8, cols % 8);
+            let (filenm_w, cur_w) = (area_w * 5, (area_w * 3) + rest);
             return (filenm_w, cur_w);
         }
     }

@@ -122,7 +122,7 @@ impl EvtAct {
     }
     fn startup_terminal(term: &Terminal, search_str: String, search_file: String) {
         if term.env == Env::WSL {
-            Log::ep_s("startup_terminal ");
+            Log::ep_s("exec_grep ");
 
             if let Err(err) = Command::new("/mnt/c/windows/system32/cmd.exe").arg("/c").arg("start").arg("wsl").arg("--").arg(PKG_NAME).stdin(process::Stdio::piped()).stdout(process::Stdio::null()).spawn() {
                 Log::ep("exec_grep err", err.to_string());
@@ -134,37 +134,38 @@ impl EvtAct {
     pub async fn exec_grep(search_str: String, search_file: String) -> anyhow::Result<()> {
         Log::ep_s("exec_grep");
 
-        let mut path = PathBuf::from(&search_file);
+        let mut path = PathBuf::from(search_file);
         let filenm = &path.file_name().unwrap_or(OsStr::new("")).to_string_lossy().to_string();
         path.pop();
 
+        Log::ep_s("exec_grep");
         Log::ep("path", path.display());
         eprintln!("filenm {:?}", filenm);
-        eprintln!("filenm {:?}", format!("--include={}", filenm));
 
         // 1 行ずつ結果を読み取ります
-        let mut child = Command::new("grep")
-            // .arg(path.to_string_lossy().to_string())
-            .arg("-rHn")
-            .arg("111333")
-            .arg(format!("--include={}", filenm))
-            .arg("/home/hi/rust/ewin/target/debug")
+        let mut child = Command::new("find")
+            .arg(path.to_string_lossy().to_string())
+            .arg("-type")
+            .arg("f")
+            .arg("-name")
+            .arg(filenm)
+            .arg("-exec")
+            .arg("grep")
+            .arg("-Hn")
+            .arg(search_str)
+            .arg(r" {} \\; ")
             // .arg(r"\;")
-            .stdout(process::Stdio::piped())
-            .spawn()
-            .unwrap();
+            .stdin(process::Stdio::piped())
+            .spawn()?;
+
         let stdout = child.stdout.take().unwrap();
+        let mut reader = BufReader::new(stdout).lines();
 
-        // let result: Vec<_> = BufReader::new(stdout).lines().inspect(|s| println!("> {:?}", s)).collect().await;
-
-        // let mut reader = BufReader::new(stdout).lines();
-
-        let mut reader = FramedRead::new(stdout, LinesCodec::new());
         while let Some(line) = reader.next().await {
-            Log::ep_s(&line?);
+            println!("{}", line?);
         }
 
-        Log::ep_s("stdout after");
+        eprintln!("childchildchild {:?}", child);
 
         Ok(())
     }

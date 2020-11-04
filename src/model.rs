@@ -25,6 +25,7 @@ impl Default for MsgBar {
         }
     }
 }
+/// Event後のEditor以外の操作
 #[derive(Debug, Clone)]
 pub struct EvtAct {}
 pub enum EvtActType {

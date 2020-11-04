@@ -13,25 +13,20 @@ use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
 use termion::{clear, cursor};
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let matches = App::new("ewin")
         .version(crate_version!())
         .bin_name("ewin")
         .arg(Arg::with_name("file").required(false))
         .arg(Arg::with_name("search_str").long("search_str").value_name("search_str").help("Sets a search target string").takes_value(true))
         .arg(Arg::with_name("search_file").long("search_file").value_name("search_file").help("Sets a search target file name").takes_value(true))
-        .arg(Arg::with_name("search_folder").long("search_folder").value_name("search_folder").help("Sets a search target folder name").takes_value(true))
         //.arg(Arg::with_name("-debug").help("debug mode").short("-d").long("-debug"))
         .get_matches();
 
     let file_path: String = matches.value_of_os("file").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
     let search_str: String = matches.value_of_os("search_str").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
     let search_file: String = matches.value_of_os("search_file").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
-    let search_folder: String = matches.value_of_os("search_folder").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
-
-    Log::ep("search_str", search_str.clone());
-    Log::ep("search_file", search_file.clone());
-    Log::ep("search_folder", search_folder.clone());
 
     let mut editor = Editor::default();
     let lang_cfg = LangCfg::read_lang_cfg();
@@ -47,12 +42,22 @@ fn main() {
     let mut mbar = MsgBar::new(lang_cfg.clone());
     let mut prom = Prompt::new(lang_cfg.clone());
     term.set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
-    if search_str.len() > 0 && search_file.len() > 0 && search_folder.len() > 0 {
-        //
-        //
-        //
-        //
-        //
+    if search_str.len() > 0 && search_file.len() > 0 {
+        sbar.filenm = format!("grep \"{}\" {}", search_str, search_file);
+
+        Log::ep("sbar.filenm", sbar.filenm.clone());
+        Log::ep("search_str", search_str.clone());
+        Log::ep("search_file", search_file.clone());
+
+        if let Err(err) = EvtAct::exec_grep(search_str, search_file).await {
+            Log::ep("exec_grep err", err.to_string());
+        }
+
+        Log::ep_s("search after");
+    //
+    //
+    //
+    //
     } else {
         if file_path.len() == 0 {
             sbar.filenm_tmp = lang_cfg.new_file.clone();
