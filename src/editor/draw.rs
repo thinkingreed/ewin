@@ -22,9 +22,9 @@ impl Editor {
             .unwrap_or_else(|| vec![Vec::new()]);
 
         self.path = Some(path.into());
-        self.lnw = self.buf.len().to_string().len();
-        self.cur = Cur { y: 0, x: self.lnw, disp_x: 0 };
-        self.cur.disp_x = self.lnw + get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.lnw);
+        self.rnw = self.buf.len().to_string().len();
+        self.cur = Cur { y: 0, x: self.rnw, disp_x: 0 };
+        self.cur.disp_x = self.rnw + get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.rnw);
     }
     pub fn draw<T: Write>(&mut self, out: &mut T) {
         let (rows, cols) = (self.disp_row_num, self.disp_col_num);
@@ -50,7 +50,6 @@ impl Editor {
                 str_vec.push(cursor::Goto(1, (d_range.sy + 1 - self.y_offset) as u16).to_string());
                 y_draw_e = d_range.ey + 1;
             } else {
-                Log::ep_s("clear::AfterCursor");
                 str_vec.push(format!("{}{}", cursor::Goto(1, (d_range.sy + 1 - self.y_offset) as u16), clear::AfterCursor));
             }
         }
@@ -58,7 +57,7 @@ impl Editor {
         let mut y = 0;
         let mut x = 0;
         // let rowlen =
-        self.lnw = self.buf.len().to_string().len();
+        self.rnw = self.buf.len().to_string().len();
         let sel_range = self.sel.get_range();
         let search_ranges = self.search.search_ranges.clone();
 
@@ -66,11 +65,11 @@ impl Editor {
             self.set_rownum_color(str_vec);
             // 行番号の空白
             if self.x_offset_y == i && self.x_offset_disp > 0 {
-                for _ in 0..self.lnw {
+                for _ in 0..self.rnw {
                     str_vec.push(">".to_string());
                 }
             } else {
-                for _ in (i + 1).to_string().len()..self.lnw {
+                for _ in (i + 1).to_string().len()..self.rnw {
                     str_vec.push(" ".to_string());
                 }
                 str_vec.push((i + 1).to_string());
@@ -91,7 +90,7 @@ impl Editor {
                         x += width;
                         continue;
                     }
-                    let x_w_l = x + width + self.lnw;
+                    let x_w_l = x + width + self.rnw;
                     if i == self.x_offset_y {
                         if x_w_l - self.x_offset_disp > cols {
                             break;
@@ -115,6 +114,7 @@ impl Editor {
                 str_vec.push("\r\n".to_string());
             }
         }
+        Log::ep("cur.y", self.cur.y);
         Log::ep("cur.x", self.cur.x);
         Log::ep("cur.disp_x", self.cur.disp_x);
         Log::ep("x_offset", self.x_offset);

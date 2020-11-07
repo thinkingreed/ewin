@@ -19,7 +19,7 @@ impl Editor {
         // Log::ep_s("★ scroll_horizontal");
         self.x_offset_y = self.cur.y;
 
-        self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.lnw);
+        self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.rnw);
         let (_, width) = get_row_width(&self.buf[self.cur.y], 0, self.x_offset);
         self.x_offset_disp = width;
     }
@@ -58,7 +58,7 @@ impl Editor {
         Log::ep("xxx", x);
 
         if self.buf[y].len() >= x {
-            if let Some(c) = self.buf[y].get(x - self.lnw) {
+            if let Some(c) = self.buf[y].get(x - self.rnw) {
                 return c.width().unwrap_or(0);
             }
         }
@@ -72,7 +72,7 @@ impl Editor {
         for i in (0..x).rev() {
             if let Some(c) = self.buf[y].get(i) {
                 width += c.width().unwrap_or(0);
-                if width + self.lnw + 1 > self.disp_col_num {
+                if width + self.rnw + 1 > self.disp_col_num {
                     break;
                 }
                 count += 1;
@@ -131,13 +131,13 @@ impl Editor {
                 if sy == ey {
                     self.buf[i].drain(sx..ex);
                     self.cur.disp_x = min(s_disp_x, e_disp_x);
-                    self.cur.x = min(sx, ex) + self.lnw;
+                    self.cur.x = min(sx, ex) + self.rnw;
                 // 開始行
                 } else if sy == i {
                     let (cursorx, _) = get_row_width(&self.buf[sy], sx, self.buf[sy].len());
                     self.buf[i].drain(sx..sx + cursorx);
                     self.cur.disp_x = s_disp_x;
-                    self.cur.x = sx + self.lnw;
+                    self.cur.x = sx + self.rnw;
 
                 // 終了行
                 } else if ey == i {

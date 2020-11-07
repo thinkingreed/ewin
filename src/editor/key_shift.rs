@@ -10,17 +10,17 @@ impl Editor {
 
         if !self.sel.is_selected() {
             self.sel.sy = self.cur.y;
-            self.sel.sx = self.cur.x - self.lnw;
+            self.sel.sx = self.cur.x - self.rnw;
             self.sel.s_disp_x = self.cur.disp_x;
         }
         self.cursor_right();
         self.sel.ey = self.cur.y;
-        self.sel.ex = self.cur.x - self.lnw;
+        self.sel.ex = self.cur.x - self.rnw;
         self.sel.e_disp_x = self.cur.disp_x;
         // shift_leftからのshift_right
         if e_disp_x_org == disp_x_org {
             self.sel.ey = self.cur.y;
-            self.sel.ex = self.cur.x - self.lnw;
+            self.sel.ex = self.cur.x - self.rnw;
             self.sel.e_disp_x = self.cur.disp_x;
         }
 
@@ -42,13 +42,13 @@ impl Editor {
 
         if !self.sel.is_selected() {
             self.sel.sy = self.cur.y;
-            self.sel.sx = self.cur.x - self.lnw;
+            self.sel.sx = self.cur.x - self.rnw;
             self.sel.s_disp_x = self.cur.disp_x;
         }
         self.cursor_left();
 
         self.sel.ey = self.cur.y;
-        self.sel.ex = self.cur.x - self.lnw;
+        self.sel.ex = self.cur.x - self.rnw;
         self.sel.e_disp_x = self.cur.disp_x;
 
         // shift_rightからのshift_left
@@ -76,12 +76,12 @@ impl Editor {
 
         if !self.sel.is_selected() {
             self.sel.sy = self.cur.y;
-            self.sel.sx = self.cur.x - self.lnw;
+            self.sel.sx = self.cur.x - self.rnw;
             self.sel.s_disp_x = self.cur.disp_x;
         }
         self.cursor_down();
         self.sel.ey = self.cur.y;
-        self.sel.ex = self.cur.x - self.lnw;
+        self.sel.ex = self.cur.x - self.rnw;
         self.sel.e_disp_x = self.cur.disp_x;
 
         self.d_range = DRnage {
@@ -115,16 +115,16 @@ impl Editor {
 
         if !self.sel.is_selected() {
             self.sel.sy = self.cur.y;
-            self.sel.sx = self.cur.x - self.lnw;
+            self.sel.sx = self.cur.x - self.rnw;
             self.sel.s_disp_x = self.cur.disp_x;
             // 行頭の場合に先頭文字を含めない
-            if self.cur.x == self.lnw {
+            if self.cur.x == self.rnw {
                 self.sel.s_disp_x = self.cur.disp_x - 1;
             }
         }
         self.cursor_up();
         self.sel.ey = self.cur.y;
-        self.sel.ex = self.cur.x - self.lnw;
+        self.sel.ex = self.cur.x - self.rnw;
         self.sel.e_disp_x = self.cur.disp_x;
 
         self.d_range = DRnage {
@@ -149,13 +149,13 @@ impl Editor {
     pub fn shift_home(&mut self) {
         Log::ep_s("★　shift_home");
         self.sel.sy = self.cur.y;
-        self.sel.sx = self.cur.x - self.lnw;
+        self.sel.sx = self.cur.x - self.rnw;
         self.sel.s_disp_x = self.cur.disp_x;
         self.sel.ey = self.cur.y;
-        self.sel.ex = self.lnw;
-        self.sel.e_disp_x = self.lnw;
-        self.cur.x = self.lnw;
-        self.cur.disp_x = self.lnw + 1;
+        self.sel.ex = self.rnw;
+        self.sel.e_disp_x = self.rnw;
+        self.cur.x = self.rnw;
+        self.cur.disp_x = self.rnw + 1;
 
         self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
     }
@@ -163,15 +163,15 @@ impl Editor {
         Log::ep_s("★  shift_end");
 
         self.sel.sy = self.cur.y;
-        self.sel.sx = self.cur.x - self.lnw;
+        self.sel.sx = self.cur.x - self.rnw;
         self.sel.s_disp_x = self.cur.disp_x;
         self.sel.ey = self.cur.y;
         self.sel.ex = self.buf[self.cur.y].len();
-        let (_, width) = get_row_width(&self.buf[self.cur.y], self.cur.x - self.lnw, self.buf[self.cur.y].len());
+        let (_, width) = get_row_width(&self.buf[self.cur.y], self.cur.x - self.rnw, self.buf[self.cur.y].len());
         self.sel.e_disp_x = self.cur.disp_x + width;
 
         self.cur.disp_x = self.sel.e_disp_x;
-        self.cur.x = self.buf[self.cur.y].len() + self.lnw;
+        self.cur.x = self.buf[self.cur.y].len() + self.rnw;
 
         self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
     }

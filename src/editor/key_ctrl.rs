@@ -11,10 +11,10 @@ impl Editor {
         self.sel.sy = 0;
         self.sel.ey = self.buf.len() - 1;
         self.sel.sx = 0;
-        self.sel.s_disp_x = self.lnw + 1;
+        self.sel.s_disp_x = self.rnw + 1;
         let (cur_x, width) = get_row_width(&self.buf[self.sel.ey], 0, self.buf[self.sel.ey].len());
-        self.sel.ex = cur_x + self.lnw;
-        self.sel.e_disp_x = width + self.lnw + 1;
+        self.sel.ex = cur_x + self.rnw;
+        self.sel.e_disp_x = width + self.rnw + 1;
         self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
     }
 
@@ -149,7 +149,7 @@ impl Editor {
         {
             ep.str_vec = vec![contexts.clone()];
             ep.sel.sy = self.cur.y;
-            ep.sel.sx = self.cur.x - self.lnw;
+            ep.sel.sx = self.cur.x - self.rnw;
             ep.sel.s_disp_x = self.cur.disp_x;
         }
 
@@ -158,7 +158,7 @@ impl Editor {
         {
             ep.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
             ep.sel.ey = self.cur.y;
-            ep.sel.ex = self.cur.x - self.lnw;
+            ep.sel.ex = self.cur.x - self.rnw;
             ep.sel.e_disp_x = self.cur.disp_x;
         }
 
@@ -175,10 +175,10 @@ impl Editor {
             }
         }
 
-        // self.lnwの増加対応
+        // self.rnwの増加対応
         if copy_strings.len() > 1 {
-            let diff = (self.buf.len() + add_line_count).to_string().len() - self.lnw;
-            self.lnw += diff;
+            let diff = (self.buf.len() + add_line_count).to_string().len() - self.rnw;
+            self.rnw += diff;
             self.cur.x += diff;
             self.cur.disp_x += diff;
         }
@@ -187,7 +187,7 @@ impl Editor {
         let last_line_str_org = last_line_str.clone();
 
         // 複数行のペーストでカーソル以降の行末までの残りの文字
-        let line_rest: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.lnw..).collect();
+        let line_rest: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.rnw..).collect();
 
         let line_rest_string: String = line_rest.iter().collect();
 
@@ -204,8 +204,8 @@ impl Editor {
             // ペーストが複数行の場合にcursorを進める
             if i != 0 {
                 self.cur.y += 1;
-                self.cur.x = self.lnw;
-                self.cur.disp_x = self.lnw;
+                self.cur.x = self.rnw;
+                self.cur.disp_x = self.rnw;
             }
             if copy_str.len() == 0 {
                 continue;
@@ -222,7 +222,7 @@ impl Editor {
                 if i != 0 && j == 0 {
                     self.buf.insert(self.cur.y, vec![]);
                 }
-                self.buf[self.cur.y].insert(self.cur.x - self.lnw, c.clone());
+                self.buf[self.cur.y].insert(self.cur.x - self.rnw, c.clone());
                 // 元々のコピペ文字分は移動
 
                 self.cursor_right();
@@ -231,8 +231,8 @@ impl Editor {
 
         // 複数行の場合はカーソル位置調整
         if copy_strings.len() > 1 {
-            self.cur.x = last_line_str_org.chars().count() + self.lnw;
-            self.cur.disp_x = get_str_width(&last_line_str_org) + 1 + self.lnw;
+            self.cur.x = last_line_str_org.chars().count() + self.rnw;
+            self.cur.disp_x = get_str_width(&last_line_str_org) + 1 + self.rnw;
         } else {
             if line_rest_string.len() > 0 {
                 self.cur.x -= line_rest_string.chars().count();
@@ -248,7 +248,7 @@ impl Editor {
             self.updown_x = self.cur.disp_x;
         }
         self.cur.y = 0;
-        let (cur_x, width) = get_until_updown_x(self.lnw, &self.buf[self.cur.y], self.updown_x);
+        let (cur_x, width) = get_until_updown_x(self.rnw, &self.buf[self.cur.y], self.updown_x);
         self.cur.disp_x = width;
         self.cur.x = cur_x;
         self.scroll();
@@ -261,7 +261,7 @@ impl Editor {
             self.updown_x = self.cur.disp_x;
         }
         self.cur.y = self.buf.len() - 1;
-        let (cur_x, width) = get_until_updown_x(self.lnw, &self.buf[self.cur.y], self.updown_x);
+        let (cur_x, width) = get_until_updown_x(self.rnw, &self.buf[self.cur.y], self.updown_x);
         self.cur.disp_x = width;
         self.cur.x = cur_x;
         self.scroll();
@@ -296,9 +296,9 @@ impl Editor {
             if self.search.index != Search::INDEX_UNDEFINED {
                 let range = self.search.search_ranges[self.search.index];
                 self.cur.y = range.y;
-                self.cur.x = range.sx + self.lnw;
+                self.cur.x = range.sx + self.rnw;
                 let (_, width) = get_row_width(&self.buf[self.cur.y], 0, range.sx);
-                self.cur.disp_x = width + self.lnw + 1;
+                self.cur.disp_x = width + self.rnw + 1;
 
                 self.scroll();
                 self.scroll_horizontal();
@@ -307,7 +307,15 @@ impl Editor {
     }
     pub fn get_search_ranges(&mut self, search_str: String) -> Vec<SearchRange> {
         let mut vec = vec![];
-        let len = search_str.chars().count() - 1;
+
+        /*
+        let mut target_vec = &vec![vec![]];
+        if let Some(vec) = search_vec {
+            target_vec = &vec;
+        } else {
+            target_vec = &self.buf;
+        }
+        */
 
         for (i, chars) in self.buf.iter().enumerate() {
             let row_str = chars.iter().collect::<String>();
@@ -317,13 +325,13 @@ impl Editor {
             }
             for (index, _) in v {
                 let x = get_char_count(&chars, index);
-                vec.push(SearchRange { y: i, sx: x, ex: x + len });
+                vec.push(SearchRange { y: i, sx: x, ex: x + search_str.chars().count() - 1 });
             }
         }
         return vec;
     }
     pub fn get_search_str_index(&mut self, is_asc: bool) -> usize {
-        let cur_x = self.cur.x - self.lnw;
+        let cur_x = self.cur.x - self.rnw;
         if is_asc {
             for (i, range) in self.search.search_ranges.iter().enumerate() {
                 if self.cur.y < range.y || (self.cur.y == range.y && cur_x < range.sx) {

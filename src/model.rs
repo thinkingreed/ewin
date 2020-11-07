@@ -39,7 +39,6 @@ pub struct Prompt {
     pub disp_row_num: usize,
     pub disp_row_posi: usize,
     pub disp_col_num: usize,
-    pub search_str: String,
     // Prompt Content_Sequence number
     pub cont_1: PromptCont,
     pub cont_2: PromptCont,
@@ -51,6 +50,9 @@ pub struct Prompt {
     pub is_search: bool,
     pub is_replace: bool,
     pub is_grep: bool,
+    // grep result stdout/stderr output complete flg
+    pub is_grep_stdout: bool,
+    pub is_grep_stderr: bool,
 }
 
 impl Default for Prompt {
@@ -60,17 +62,18 @@ impl Default for Prompt {
             disp_row_num: 0,
             disp_row_posi: 0,
             disp_col_num: 0,
+            is_change: false,
             cont_1: PromptCont::default(),
             cont_2: PromptCont::default(),
             cont_3: PromptCont::default(),
             buf_posi: PromptBufPosi::First,
-            search_str: String::new(),
-            is_change: false,
             is_close_confirm: false,
             is_save_new_file: false,
             is_search: false,
             is_replace: false,
             is_grep: false,
+            is_grep_stdout: false,
+            is_grep_stderr: false,
         }
     }
 }
@@ -87,16 +90,17 @@ impl Prompt {
         self.disp_row_num = 0;
         self.disp_row_posi = 0;
         self.disp_col_num = 0;
-        self.is_close_confirm = false;
-        self.is_save_new_file = false;
-        self.is_search = false;
-        self.search_str = String::new();
-        self.is_replace = false;
-        self.is_grep = false;
         self.cont_1 = PromptCont::default();
         self.cont_2 = PromptCont::default();
         self.cont_3 = PromptCont::default();
         self.buf_posi = PromptBufPosi::First;
+        self.is_close_confirm = false;
+        self.is_save_new_file = false;
+        self.is_search = false;
+        self.is_replace = false;
+        self.is_grep = false;
+        self.is_grep_stdout = false;
+        self.is_grep_stderr = false;
     }
 }
 
@@ -222,12 +226,27 @@ pub struct CopyRange {
     pub sx: usize,
     pub ex: usize,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+/// 検索範囲
+pub struct GrepResult {
+    pub filenm: String,
+    pub row_num: usize,
+}
+impl GrepResult {
+    pub fn new(filenm: String, row_num: usize) -> Self {
+        return GrepResult { filenm: filenm, row_num: row_num };
+    }
+}
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// 検索範囲
 pub struct Search {
     pub str: String,
     pub index: usize,
     pub search_ranges: Vec<SearchRange>,
+    pub file: String,
+    pub filenm: String,
+    pub folder: String,
 }
 
 impl Search {
@@ -236,6 +255,10 @@ impl Search {
         self.str = String::new();
         self.index = Search::INDEX_UNDEFINED;
         self.search_ranges = vec![];
+        // file full path
+        self.file = String::new();
+        self.filenm = String::new();
+        self.folder = String::new();
     }
 }
 
@@ -246,6 +269,9 @@ impl Default for Search {
             // 未設定
             index: Search::INDEX_UNDEFINED,
             search_ranges: vec![],
+            file: String::new(),
+            filenm: String::new(),
+            folder: String::new(),
         }
     }
 }
@@ -364,8 +390,8 @@ pub struct Editor {
     // 連続でカーソル上下時の基本x位置(２バイト文字対応)  line_num_width + 1以上 初期値:0
     pub updown_x: usize,
     pub path: Option<path::PathBuf>,
-    /// 行番号の列数 line_num_width
-    pub lnw: usize,
+    /// 行番号の列数 row_num_width
+    pub rnw: usize,
     pub sel: SelRange,
     pub curt_evt: Event,
     pub is_redraw: bool,
@@ -379,12 +405,13 @@ pub struct Editor {
     pub d_range: DRnage,
     pub undo_vec: Vec<EvtProc>,
     pub redo_vec: Vec<EvtProc>,
+    pub grep_result_vec: Vec<GrepResult>,
 }
 
 impl Default for Editor {
     fn default() -> Self {
         Editor {
-            buf: vec![Vec::new()],
+            buf: vec![vec![]],
             cur: Cur::default(),
             y_offset: 0,
             x_offset: 0,
@@ -392,7 +419,7 @@ impl Default for Editor {
             x_offset_y: 0,
             updown_x: 0,
             path: None,
-            lnw: 0,
+            rnw: 0,
             sel: SelRange::default(),
             curt_evt: Key(End.into()),
             is_redraw: false,
@@ -405,6 +432,7 @@ impl Default for Editor {
             d_range: DRnage::default(),
             undo_vec: vec![],
             redo_vec: vec![],
+            grep_result_vec: vec![],
         }
     }
 }

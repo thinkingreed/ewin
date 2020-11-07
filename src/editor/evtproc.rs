@@ -10,8 +10,8 @@ impl Editor {
             str_vec: self.get_sel_range_str(),
             cur_s: Cur {
                 y: sel.sy,
-                x: sel.sx + self.lnw,
-                disp_x: get_row_width(&self.buf[self.cur.y], 0, sel.sx).1 + self.lnw + 1,
+                x: sel.sx + self.rnw,
+                disp_x: get_row_width(&self.buf[self.cur.y], 0, sel.sx).1 + self.rnw + 1,
             },
             cur_e: Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x },
             sel: self.sel,
@@ -25,7 +25,7 @@ impl Editor {
     pub fn save_del_char_evtproc(&mut self, do_type: DoType) {
         let mut ep = EvtProc::new(do_type, self);
 
-        if let Some(c) = self.buf[self.cur.y].get(self.cur.x - self.lnw) {
+        if let Some(c) = self.buf[self.cur.y].get(self.cur.x - self.rnw) {
             Log::ep("save_del_char_evtproc", c.to_string());
             ep.str_vec = vec![c.to_string()];
         }

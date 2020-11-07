@@ -16,7 +16,7 @@ impl Editor {
         if ranges.sy <= y && y <= ranges.ey {
             let (_, width) = get_row_width(&self.buf[y], 0, _x);
             // １行または下に複数行選択
-            let x = width + self.lnw + 1;
+            let x = width + self.rnw + 1;
             // 開始・終了が同じ行
             if ranges.sy == ranges.ey {
                 if ranges.s_disp_x <= x && x < ranges.e_disp_x {

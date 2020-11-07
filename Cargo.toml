@@ -19,19 +19,24 @@ assets = [
     ["README.md", "usr/share/doc/ewin/README", "644"],
 ]
 
+
 [dependencies]
 anyhow = "1"
 termion = "1.5.5"
 clap = "2"
 unicode-width = "0"
 clipboard = "0.5.0"
-crossterm  = "0.18.1" 
+crossterm  = {version ="0.18.1", features = ["event-stream"]} 
 serde = { version = "1.0.115", features = ["derive"] }
 toml = "0.5.6"
 signal-hook = "0.1"
 cargo-deb = "1.28.0"
 tokio = { version = "0.3.3", features = ["full"] }
 tokio-util = { version = "0.5.0", features = ["codec"] }
-
 mio = "0.7.0, 0.7.5"
-futures="0.3.7"
+futures = "0.3"
+futures-core = { version = "0.3", optional = true, default-features = false }
+futures-timer = "3.0"
+futures-util = "0.3.7"
+
+

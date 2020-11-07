@@ -100,4 +100,12 @@ impl Terminal {
             self.env = Env::Linux;
         }
     }
+    pub fn show_cur<T: Write>(&mut self, out: &mut T) {
+        write!(out, "{}", cursor::Show).unwrap();
+        out.flush().unwrap();
+    }
+    pub fn hide_cur<T: Write>(&mut self, out: &mut T) {
+        write!(out, "{}", cursor::Hide.to_string()).unwrap();
+        out.flush().unwrap();
+    }
 }
