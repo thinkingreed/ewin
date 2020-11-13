@@ -3,7 +3,7 @@ use crate::util::*;
 
 impl Editor {
     pub fn shift_right(&mut self) {
-        Log::ep_s("★  shift_right");
+        Log::ep_s("　　　　　　　  shift_right");
 
         let e_disp_x_org = self.sel.e_disp_x;
         let disp_x_org = self.cur.disp_x;
@@ -35,7 +35,7 @@ impl Editor {
         self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
     }
     pub fn shift_left(&mut self) {
-        Log::ep_s("★  shift_left");
+        Log::ep_s("　　　　　　　  shift_left");
 
         let e_disp_x_org = self.sel.e_disp_x;
         let disp_x_org = self.cur.disp_x;
@@ -66,7 +66,7 @@ impl Editor {
     }
 
     pub fn shift_down(&mut self) {
-        Log::ep_s("★　shift_down");
+        Log::ep_s("　　　　　　　　shift_down");
 
         if self.cur.y == self.buf.len() - 1 {
             self.d_range = DRnage { d_type: DType::Not, ..DRnage::default() };
@@ -105,7 +105,7 @@ impl Editor {
     }
 
     pub fn shift_up(&mut self) {
-        Log::ep_s("★　shift_up");
+        Log::ep_s("　　　　　　　　shift_up");
 
         if self.cur.y == 0 {
             self.d_range = DRnage { d_type: DType::Not, ..DRnage::default() };
@@ -147,7 +147,7 @@ impl Editor {
         }
     }
     pub fn shift_home(&mut self) {
-        Log::ep_s("★　shift_home");
+        Log::ep_s("　　　　　　　　shift_home");
         self.sel.sy = self.cur.y;
         self.sel.sx = self.cur.x - self.rnw;
         self.sel.s_disp_x = self.cur.disp_x;
@@ -160,7 +160,7 @@ impl Editor {
         self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
     }
     pub fn shift_end(&mut self) {
-        Log::ep_s("★  shift_end");
+        Log::ep_s("　　　　　　　  shift_end");
 
         self.sel.sy = self.cur.y;
         self.sel.sx = self.cur.x - self.rnw;

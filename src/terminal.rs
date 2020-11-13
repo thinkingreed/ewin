@@ -11,15 +11,15 @@ use std::process::Command;
 
 impl Terminal {
     pub fn draw<T: Write>(&mut self, out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> Result<(), io::Error> {
-        Log::ep_s("★　All draw");
+        Log::ep_s("　　　　　　　　All draw");
 
         self.set_disp_size(editor, mbar, prom, sbar);
         let str_vec: &mut Vec<String> = &mut vec![];
 
         let d_range = editor.d_range.get_range();
         if d_range.d_type != DType::Not {
-            editor.draw(out);
-            mbar.draw(out);
+            editor.draw(str_vec);
+            mbar.draw(str_vec);
 
             prom.draw(str_vec);
             sbar.draw(str_vec, editor);
@@ -35,9 +35,7 @@ impl Terminal {
     }
 
     pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor, prom: &mut Prompt) {
-        Log::ep_s("★  set_cur_str");
-        Log::ep("cur.disp_x", editor.cur.disp_x);
-        Log::ep("x_offset_disp", editor.x_offset_disp);
+        Log::ep_s("　　　　　　　set_cur_str");
 
         if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep {
             prom.draw_cur(str_vec);
@@ -84,6 +82,11 @@ impl Terminal {
         editor.disp_row_num = rows - prom.disp_row_num - mbar.disp_row_num - sbar.disp_row_num;
         // Log::ep("editor.disp_row_num", editor.disp_row_num);
         editor.disp_col_num = cols;
+
+        Log::ep("editor.disp_row_num", editor.disp_row_num);
+        Log::ep("prom.disp_row_num", prom.disp_row_num);
+        Log::ep("mbar.disp_row_num", mbar.disp_row_num);
+        Log::ep("sbar.disp_row_num", sbar.disp_row_num);
     }
 
     pub fn set_env(&mut self) {

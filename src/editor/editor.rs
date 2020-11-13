@@ -16,20 +16,92 @@ impl Editor {
     }
 
     pub fn scroll_horizontal(&mut self) {
-        // Log::ep_s("★ scroll_horizontal");
-        self.x_offset_y = self.cur.y;
+        Log::ep_s("　　　　　　　 scroll_horizontal");
 
-        self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.rnw);
-        let (_, width) = get_row_width(&self.buf[self.cur.y], 0, self.x_offset);
-        self.x_offset_disp = width;
+        // offset切替基準余分文字数(残文字数時にoffset切替)
+        let extra = 5;
+        // 上記offset切替時の増減文字数
+        let extra_2 = 10;
+        Log::ep("disp_col_num", self.disp_col_num);
+        Log::ep("cur.x", self.cur.x);
+        Log::ep("cur.disp_x", self.cur.disp_x);
+        Log::ep("x_offset 111", self.x_offset);
+        Log::ep("x_offset_disp 111", self.x_offset_disp);
+
+        let x_offset_org = self.x_offset;
+
+        // Up・Down
+        if self.rnw == self.cur.x {
+            self.x_offset = 0;
+            self.x_offset_disp = 0;
+        } else {
+            // right
+            // TODO 週末に詳細試験
+            /*
+            if self.x_offset_disp + self.disp_col_num < self.cur.disp_x + extra {
+                self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.rnw + extra);
+            } else if self.x_offset_disp + extra > self.cur.disp_x - self.rnw && self.cur.x - self.rnw > extra {
+                self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.rnw - extra);
+            }
+             */
+            self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.rnw + extra);
+        }
+
+        Log::ep("x_offset 222", self.x_offset);
+
+        // TODO extra一旦保留
+        /*
+                // Left移動
+                if self.x_offset_disp + extra > self.cur.disp_x {
+                    Log::ep_s(" self.x_offset + self.rnw + extra > self.cur.x ");
+                    if self.x_offset >= extra_2 {
+                        self.x_offset -= extra_2;
+                    }
+                // Right移動
+                } else if self.x_offset_disp + self.disp_col_num < self.cur.disp_x + extra {
+                    Log::ep_s(" self.cur.x - self.x_offset + extra > self.disp_col_num ");
+                    self.x_offset += extra_2;
+                }
+        */
+        Log::ep("x_offset 333", self.x_offset);
+
+        if self.rnw != self.cur.x {
+            let vec = &self.buf[self.cur.y];
+            if self.cur_y_org != self.cur.y {
+                let (_, width) = get_row_width(vec, 0, self.x_offset);
+                Log::ep("width  11111", width);
+                self.x_offset_disp = width;
+
+            // offsetに差分
+            } else if x_offset_org != self.x_offset {
+                if self.x_offset < x_offset_org {
+                    let (_, width) = get_row_width(vec, self.x_offset, x_offset_org);
+                    Log::ep("width  22222", width);
+
+                    self.x_offset_disp -= width;
+                } else {
+                    let (_, width) = get_row_width(vec, x_offset_org, self.x_offset);
+                    Log::ep("width  33333", width);
+                    self.x_offset_disp += width;
+                }
+            }
+        }
+        Log::ep("x_offset 444", self.x_offset);
+        Log::ep("x_offset_disp 222", self.x_offset_disp);
     }
 
     /// カーソル移動のEventでoffsetの変更有無で再描画範囲を設定設定
     pub fn move_cursor<T: Write>(&mut self, out: &mut T, sbar: &mut StatusBar) {
         let y_offset_org: usize = self.y_offset;
         let x_offset_disp_org: usize = self.x_offset_disp;
+        self.cur_y_org = self.cur.y;
         match self.curt_evt {
-            Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {
+            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
+                Home => self.ctl_home(),
+                End => self.ctl_end(),
+                _ => {}
+            },
+            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 F(4) => self.search_str(false),
                 _ => {}
             },
@@ -71,10 +143,15 @@ impl Editor {
         let (mut count, mut width) = (0, 0);
         for i in (0..x).rev() {
             if let Some(c) = self.buf[y].get(i) {
+                //Log::ep("ccccc", c);
                 width += c.width().unwrap_or(0);
+                //Log::ep("width", width);
                 if width + self.rnw + 1 > self.disp_col_num {
                     break;
                 }
+                count += 1;
+            // 行終端の空白
+            } else {
                 count += 1;
             }
         }
@@ -120,7 +197,7 @@ impl Editor {
     }
 
     pub fn del_sel_range(&mut self) {
-        Log::ep_s("★  del_sel_range");
+        Log::ep_s("　　　　　　　  del_sel_range");
         // s < e の状態に変換した値を使用
         let sel = self.sel.get_range();
         let (sy, ey, sx, ex, s_disp_x, e_disp_x) = (sel.sy, sel.ey, sel.sx, sel.ex, sel.s_disp_x, sel.e_disp_x);

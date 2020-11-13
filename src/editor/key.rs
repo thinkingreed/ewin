@@ -6,7 +6,7 @@ use std::cmp::{max, min};
 
 impl Editor {
     pub fn cursor_up(&mut self) {
-        Log::ep_s("★ c_u start");
+        Log::ep_s("　　　　　　　 c_u start");
         if self.cur.y > 0 {
             self.cur.y -= 1;
 
@@ -16,7 +16,7 @@ impl Editor {
         self.scroll_horizontal();
     }
     pub fn cursor_down(&mut self) {
-        Log::ep_s("★ c_d start");
+        Log::ep_s("　　　　　　　 c_d start");
         if self.cur.y + 1 < self.buf.len() {
             self.cur.y += 1;
 
@@ -40,7 +40,7 @@ impl Editor {
     }
 
     pub fn cursor_left(&mut self) {
-        Log::ep_s("★  c_l start");
+        Log::ep_s("　　　　　　　  c_l start");
         // 0, 0の位置の場合
         if self.cur.y == 0 && self.cur.x == self.rnw {
             return;
@@ -50,17 +50,19 @@ impl Editor {
             self.cur.x = rowlen + self.rnw;
             let (_, width) = get_row_width(&self.buf[self.cur.y - 1], 0, rowlen);
             self.cur.disp_x = width + self.rnw + 1;
+            self.d_range = DRnage::new(self.cur.y - 1, self.cur.y, DType::Target);
 
             self.cursor_up();
         } else {
             self.cur.x = max(self.cur.x - 1, self.rnw);
             self.cur.disp_x -= get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.rnw);
+            self.d_range = DRnage::new(self.cur.y, self.cur.y, DType::Target);
         }
         self.scroll();
         self.scroll_horizontal();
     }
     pub fn cursor_right(&mut self) {
-        // Log::ep_s("★  c_r start");
+        // Log::ep_s("　　　　　　　  c_r start");
         // 行末
         if self.cur.x == self.buf[self.cur.y].len() + self.rnw {
             // 最終行の行末
@@ -81,7 +83,7 @@ impl Editor {
         self.scroll_horizontal();
     }
     pub fn enter(&mut self) {
-        Log::ep_s("★  enter");
+        Log::ep_s("　　　　　　　  enter");
         let y_offset_org: usize = self.y_offset;
         let rnw_org = self.rnw;
 
@@ -123,7 +125,7 @@ impl Editor {
     }
 
     pub fn back_space(&mut self) {
-        Log::ep_s("★  back_space");
+        Log::ep_s("　　　　　　　  back_space");
         if self.sel.is_selected() {
             self.set_sel_del_d_range();
             self.save_sel_del_evtproc(DoType::BS);
@@ -177,7 +179,7 @@ impl Editor {
         self.scroll_horizontal();
     }
     pub fn delete(&mut self) {
-        Log::ep_s("★  delete");
+        Log::ep_s("　　　　　　　  delete");
 
         if self.sel.is_selected() {
             self.set_sel_del_d_range();

@@ -10,7 +10,7 @@ use unicode_width::UnicodeWidthChar;
 
 impl Prompt {
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
-        Log::ep_s("★　Prompt draw");
+        // Log::ep_s("　　　　　　　　Prompt draw");
         if self.cont_1.guide.len() > 0 {
             let cont_desc = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi) as u16), clear::CurrentLine, self.cont_1.guide.clone());
             str_vec.push(cont_desc);
@@ -43,7 +43,7 @@ impl Prompt {
     }
 
     pub fn draw_only<T: Write>(&mut self, out: &mut T) {
-        Log::ep_s("★　Prompt draw_only");
+        Log::ep_s("　　　　　　　　Prompt draw_only");
         let mut v: Vec<String> = vec![];
         self.draw(&mut v);
         self.draw_cur(&mut v);
@@ -67,16 +67,24 @@ impl Prompt {
         }
     }
     pub fn check_prom<T: Write>(&mut self, out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, sbar: &mut StatusBar) -> EvtActType {
-        if self.is_save_new_file == true || self.is_search == true || self.is_close_confirm == true || self.is_replace == true || self.is_grep == true {
+        if self.is_save_new_file == true || self.is_search == true || self.is_close_confirm == true || self.is_replace == true || self.is_grep == true || self.is_grep_result == true {
             match editor.curt_evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                     Char('c') => {
-                        self.clear();
-                        mbar.clear();
-                        terminal.draw(out, editor, mbar, self, sbar).unwrap();
-                        return EvtActType::Next;
+                        if self.is_grep_result && self.is_grep_result_cancel == false {
+                            self.is_grep_result_cancel = true;
+                        } else {
+                            self.clear();
+                            mbar.clear();
+                            terminal.draw(out, editor, mbar, self, sbar).unwrap();
+                        }
+                        return EvtActType::Hold;
                     }
-                    _ => return EvtActType::Hold,
+                    _ => {
+                        if !self.is_grep_result {
+                            return EvtActType::Hold;
+                        }
+                    }
                 },
                 _ => {}
             }
@@ -137,6 +145,8 @@ impl Prompt {
             return EvtAct::replace(out, terminal, editor, mbar, self, sbar);
         } else if self.is_grep == true {
             return EvtAct::grep(out, terminal, editor, mbar, self, sbar);
+        } else if self.is_grep_result == true {
+            return EvtAct::grep_result(out, terminal, editor, mbar, self, sbar);
         } else {
             Log::ep_s("EvtProcess::NextEvtProcess");
             return EvtActType::Next;
@@ -178,6 +188,7 @@ impl Prompt {
             }
         }
     }
+
     pub fn tab(&mut self, is_asc: bool) {
         Log::ep_s("tab");
         Log::ep("is_asc ", is_asc);

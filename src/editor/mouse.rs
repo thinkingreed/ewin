@@ -16,7 +16,7 @@ impl Editor {
     }
 
     pub fn mouse_left_press(&mut self, x: usize, y: usize) {
-        Log::ep_s("★  mouse_left_press");
+        Log::ep_s("　　　　　　　  mouse_left_press");
 
         self.sel.clear();
         self.sel.sy = y;

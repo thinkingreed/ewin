@@ -1,4 +1,3 @@
-#![recursion_limit = "512"]
 #[macro_use]
 extern crate clap;
 use clap::{App, Arg};
@@ -6,18 +5,16 @@ use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton
 use ewin::_cfg::lang::cfg::LangCfg;
 use ewin::model::*;
 use std::ffi::OsStr;
-use std::io;
 use std::io::{stdout, BufWriter, Write};
 use std::path::{Path, PathBuf};
-use termion::clear;
 use termion::input::MouseTerminal;
 use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
+use termion::{clear, cursor};
 use tokio_util::codec::{FramedRead, LinesCodec};
 
 use crossterm::{
     event::{Event, EventStream},
-    terminal::disable_raw_mode,
     ErrorKind,
 };
 use futures::{future::FutureExt, select, StreamExt};
@@ -28,14 +25,17 @@ async fn main() {
         .version(crate_version!())
         .bin_name("ewin")
         .arg(Arg::with_name("file").required(false))
-        .arg(Arg::with_name("search_str").long("search_str").value_name("search_str").help("Sets a search target string").takes_value(true))
-        .arg(Arg::with_name("search_file").long("search_file").value_name("search_file").help("Sets a search target file name").takes_value(true))
+        // .arg(Arg::with_name("search_str").long("search_str").value_name("search_str").help("Sets a search target string").takes_value(true))
+        // .arg(Arg::with_name("search_file").long("search_file").value_name("search_file").help("Sets a search target file name").takes_value(true))
         //.arg(Arg::with_name("-debug").help("debug mode").short("-d").long("-debug"))
         .get_matches();
 
     let file_path: String = matches.value_of_os("file").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
-    let search_str: String = matches.value_of_os("search_str").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
-    let search_file: String = matches.value_of_os("search_file").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
+    // let  search_str: String = matches.value_of_os("search_str").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
+    // let search_file: String = matches.value_of_os("search_file").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
+
+    let mut search_str: String = String::new();
+    let mut search_file: String = String::new();
 
     let stdout = MouseTerminal::from(AlternateScreen::from(stdout()).into_raw_mode().unwrap());
     let mut out = BufWriter::new(stdout.lock());
@@ -56,10 +56,18 @@ async fn main() {
     term.set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
 
     // grep_result
-    if search_str.len() > 0 && search_file.len() > 0 {
+    if file_path.match_indices("search_str").count() > 0 && file_path.match_indices("search_file").count() > 0 {
+        let v: Vec<&str> = file_path.split_ascii_whitespace().collect();
+        let search_strs: Vec<&str> = v[0].split("=").collect();
+        search_str = search_strs[1].to_string();
+        let search_files: Vec<&str> = v[1].split("=").collect();
+        search_file = search_files[1].to_string();
+
         sbar.filenm = format!("grep \"{}\" {}", search_str, search_file);
+        prom.is_grep_result = true;
         prom.is_grep_stdout = true;
         prom.is_grep_stderr = true;
+        prom.grep_result();
 
         let path = PathBuf::from(&search_file);
         let filenm = path.file_name().unwrap_or(OsStr::new("")).to_string_lossy().to_string();
@@ -80,10 +88,9 @@ async fn main() {
     term.draw(&mut out, &mut editor, &mut mbar, &mut prom, &mut sbar).unwrap();
 
     if let Err(err) = exec_events(&mut out, &mut term, &mut editor, &mut mbar, &mut prom, &mut sbar).await {
-        eprintln!("err {:?}", err.to_string());
+        Log::ep("err", err.to_string());
     }
-
-    disable_raw_mode();
+    term.show_cur(&mut out);
 }
 
 async fn exec_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> anyhow::Result<()> {
@@ -98,13 +105,12 @@ async fn exec_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Ed
 
     loop {
         let mut event_next = reader.next().fuse();
+
         if prom.is_grep_stdout || prom.is_grep_stderr {
             //   if prom.is_grep_result {
             let mut std_out_str = reader_stdout.next().fuse();
             let mut std_err_str = reader_stderr.next().fuse();
             //   }
-
-            //  Log::ep("is_grep_result", prom.is_grep_result);
 
             select! {
                 std_out_event = std_out_str => {
@@ -118,7 +124,6 @@ async fn exec_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Ed
                     }
             }
         } else {
-            //  Log::ep("is_grep_result", prom.is_grep_result);
             select! {
                 maybe_event = event_next => {
                      is_exit =  run_events(out,  term,  editor, mbar, prom,  sbar, maybe_event);
@@ -157,7 +162,6 @@ fn run_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, m
                         Char('w') => {
                             if editor.close(out, prom) == true {
                                 Log::ep_s("Char('w')");
-                                term.show_cur(out);
                                 return true;
                             }
                         }
@@ -173,8 +177,8 @@ fn run_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, m
                         Char('g') => editor.grep_prom(prom),
                         Char('z') => editor.undo(),
                         Char('y') => editor.redo(&term),
-                        Home => editor.ctl_home(),
-                        End => editor.ctl_end(),
+                        Home => editor.move_cursor(out, sbar),
+                        End => editor.move_cursor(out, sbar),
                         _ => {}
                     },
                     Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {

@@ -44,7 +44,11 @@ pub struct Prompt {
     pub cont_2: PromptCont,
     pub cont_3: PromptCont,
     pub buf_posi: PromptBufPosi,
+    // fn clear not clear
     pub is_change: bool,
+    pub is_grep_result: bool,
+    pub is_grep_result_cancel: bool,
+    // *************
     pub is_close_confirm: bool,
     pub is_save_new_file: bool,
     pub is_search: bool,
@@ -63,6 +67,8 @@ impl Default for Prompt {
             disp_row_posi: 0,
             disp_col_num: 0,
             is_change: false,
+            is_grep_result: false,
+            is_grep_result_cancel: false,
             cont_1: PromptCont::default(),
             cont_2: PromptCont::default(),
             cont_3: PromptCont::default(),
@@ -86,7 +92,7 @@ impl Prompt {
     pub fn clear(&mut self) {
         //  self = &mut Prompt { disp_row_num: 0, ..Prompt::default() };
 
-        Log::ep_s("★　Prompt clear");
+        Log::ep_s("　　　　　　　　Prompt clear");
         self.disp_row_num = 0;
         self.disp_row_posi = 0;
         self.disp_col_num = 0;
@@ -385,8 +391,10 @@ pub struct Editor {
     pub x_offset: usize,
     // 表示幅単位
     pub x_offset_disp: usize,
+    // 元の行のx_offset_di行の算出用
+    pub cur_y_org: usize,
     // x_offset対象の行
-    pub x_offset_y: usize,
+    // pub x_offset_y: usize,
     // 連続でカーソル上下時の基本x位置(２バイト文字対応)  line_num_width + 1以上 初期値:0
     pub updown_x: usize,
     pub path: Option<path::PathBuf>,
@@ -416,7 +424,9 @@ impl Default for Editor {
             y_offset: 0,
             x_offset: 0,
             x_offset_disp: 0,
-            x_offset_y: 0,
+            cur_y_org: 0,
+            // x_offset_disp_org: 0,
+            //    x_offset_y: 0,
             updown_x: 0,
             path: None,
             rnw: 0,

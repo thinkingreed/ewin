@@ -19,7 +19,7 @@ impl Editor {
     }
 
     pub fn cut(&mut self, term: &Terminal) {
-        Log::ep_s("★  cut");
+        Log::ep_s("　　　　　　　  cut");
         if !self.sel.is_selected() {
             return;
         }
@@ -45,7 +45,7 @@ impl Editor {
         return true;
     }
     pub fn save(&mut self, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> bool {
-        Log::ep_s("★  save");
+        Log::ep_s("　　　　　　　  save");
         Log::ep("prom.cont_1.buf.len()", prom.cont_1.buf.len());
 
         if prom.cont_1.buf.len() > 0 {
@@ -90,7 +90,7 @@ impl Editor {
     }
 
     pub fn copy(&mut self, term: &Terminal) {
-        Log::ep_s("★  copy");
+        Log::ep_s("　　　　　　　  copy");
         let copy_ranges: Vec<CopyRange> = self.get_copy_range();
         if copy_ranges.len() == 0 {
             return;
@@ -131,7 +131,7 @@ impl Editor {
     }
 
     pub fn paste(&mut self, term: &Terminal) {
-        Log::ep_s("★  paste");
+        Log::ep_s("　　　　　　　  paste");
 
         let mut contexts = self.get_clipboard(&term).unwrap_or("".to_string());
         Log::ep("clipboard str", &contexts);
@@ -244,37 +244,32 @@ impl Editor {
     }
     pub fn ctl_home(&mut self) {
         Log::ep_s("ctl_home");
-        if self.updown_x == 0 {
-            self.updown_x = self.cur.disp_x;
-        }
-        self.cur.y = 0;
-        let (cur_x, width) = get_until_updown_x(self.rnw, &self.buf[self.cur.y], self.updown_x);
-        self.cur.disp_x = width;
-        self.cur.x = cur_x;
+        self.updown_x = 0;
+        self.set_cur_default();
         self.scroll();
         self.scroll_horizontal();
     }
 
     pub fn ctl_end(&mut self) {
-        Log::ep_s("★　ctl_end");
+        Log::ep_s("　　　　　　　　ctl_end");
+        self.cur.y = self.buf.len() - 1;
+        self.cur.x = self.buf[self.buf.len() - 1].len() + self.rnw;
+        let (_, width) = get_row_width(&self.buf[self.buf.len() - 1], 0, self.buf[self.buf.len() - 1].len());
+        self.cur.disp_x = width + self.rnw + 1;
         if self.updown_x == 0 {
             self.updown_x = self.cur.disp_x;
         }
-        self.cur.y = self.buf.len() - 1;
-        let (cur_x, width) = get_until_updown_x(self.rnw, &self.buf[self.cur.y], self.updown_x);
-        self.cur.disp_x = width;
-        self.cur.x = cur_x;
         self.scroll();
         self.scroll_horizontal();
     }
 
     pub fn search_prom(&mut self, prom: &mut Prompt) {
-        Log::ep_s("★　search_prom");
+        Log::ep_s("　　　　　　　　search_prom");
         prom.is_search = true;
         prom.search();
     }
     pub fn search_str(&mut self, is_asc: bool) {
-        Log::ep_s("★　search_str");
+        Log::ep_s("　　　　　　　　search_str");
 
         if self.search.str.len() > 0 {
             // 初回検索
@@ -307,15 +302,6 @@ impl Editor {
     }
     pub fn get_search_ranges(&mut self, search_str: String) -> Vec<SearchRange> {
         let mut vec = vec![];
-
-        /*
-        let mut target_vec = &vec![vec![]];
-        if let Some(vec) = search_vec {
-            target_vec = &vec;
-        } else {
-            target_vec = &self.buf;
-        }
-        */
 
         for (i, chars) in self.buf.iter().enumerate() {
             let row_str = chars.iter().collect::<String>();
@@ -355,18 +341,18 @@ impl Editor {
     }
 
     pub fn replace_prom(&mut self, prom: &mut Prompt) {
-        Log::ep_s("★　replace_prom");
+        Log::ep_s("　　　　　　　　replace_prom");
         prom.is_replace = true;
         prom.replace();
     }
     pub fn grep_prom(&mut self, prom: &mut Prompt) {
-        Log::ep_s("★　grep_prom");
+        Log::ep_s("　　　　　　　　grep_prom");
         prom.is_grep = true;
         prom.grep();
     }
 
     pub fn replace(&mut self, prom: &mut Prompt) {
-        Log::ep_s("★　replace");
+        Log::ep_s("　　　　　　　　replace");
 
         let search_str = prom.cont_1.buf.iter().collect::<String>();
         let replace_str = prom.cont_2.buf.iter().collect::<String>();
@@ -377,7 +363,7 @@ impl Editor {
         }
     }
     pub fn undo(&mut self) {
-        Log::ep_s("★　undo");
+        Log::ep_s("　　　　　　　　undo");
         if let Some(ep) = self.undo_vec.pop() {
             self.is_undo = true;
             if ep.str_vec.len() == 0 {
@@ -435,7 +421,7 @@ impl Editor {
     }
 
     pub fn redo(&mut self, term: &Terminal) {
-        Log::ep_s("★　redo");
+        Log::ep_s("　　　　　　　　redo");
         if let Some(mut ep) = self.redo_vec.pop() {
             self.set_evtproc(&ep, ep.cur_s);
             self.sel = ep.sel;

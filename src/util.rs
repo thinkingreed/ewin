@@ -10,19 +10,24 @@ pub fn get_str_width(msg: &str) -> usize {
     }
     return width;
 }
-pub fn get_row_width(buf: &Vec<char>, sx: usize, ex: usize) -> (usize, usize) {
+pub fn get_row_width(vec: &Vec<char>, sx: usize, ex: usize) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
     for i in sx..ex {
-        if let Some(c) = buf.get(i) {
+        if let Some(c) = vec.get(i) {
+            // Log::ep("ccccc", c);
             let c_len = c.width().unwrap_or(0);
-
             width += c_len;
             cur_x += 1;
         } else {
             // 最終端の空白対応
-            width += 1;
+            if i == ex - 1 {
+                width += 1;
+            }
         }
     }
+    Log::ep("cur_x", cur_x);
+    Log::ep("width", width);
+
     return (cur_x, width);
 }
 

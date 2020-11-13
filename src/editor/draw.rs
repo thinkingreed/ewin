@@ -1,5 +1,4 @@
 use crate::model::*;
-use crate::util::*;
 use std::cmp::min;
 use std::fs;
 use std::io::Write;
@@ -23,12 +22,17 @@ impl Editor {
 
         self.path = Some(path.into());
         self.rnw = self.buf.len().to_string().len();
-        self.cur = Cur { y: 0, x: self.rnw, disp_x: 0 };
-        self.cur.disp_x = self.rnw + get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.rnw);
+        self.set_cur_default();
     }
-    pub fn draw<T: Write>(&mut self, out: &mut T) {
+    pub fn set_cur_default(&mut self) {
+        self.cur = Cur { y: 0, x: self.rnw, disp_x: self.rnw + 1 };
+        self.scroll();
+        self.scroll_horizontal();
+    }
+    pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         let (rows, cols) = (self.disp_row_num, self.disp_col_num);
-        let str_vec: &mut Vec<String> = &mut vec![];
+        Log::ep("rows", rows);
+        Log::ep("cols", cols);
 
         let mut y_draw_s = self.y_offset;
         let mut y_draw_e = self.y_offset + min(self.disp_row_num, self.buf.len());
@@ -64,7 +68,7 @@ impl Editor {
         for i in y_draw_s..y_draw_e {
             self.set_rownum_color(str_vec);
             // 行番号の空白
-            if self.x_offset_y == i && self.x_offset_disp > 0 {
+            if self.cur.y == i && self.x_offset_disp > 0 {
                 for _ in 0..self.rnw {
                     str_vec.push(">".to_string());
                 }
@@ -75,7 +79,15 @@ impl Editor {
                 str_vec.push((i + 1).to_string());
             }
             self.set_textarea_color(str_vec);
-            for j in 0..=self.buf[i].len() + 1 {
+
+            let mut x_draw_s = 0;
+
+            if i == self.cur.y {
+                x_draw_s = self.x_offset;
+                Log::ep("x_draw_s", x_draw_s);
+            }
+            let x_draw_e = self.buf[i].len() + 1;
+            for j in x_draw_s..=x_draw_e {
                 if self.buf[i].len() == 0 {
                     break;
                 }
@@ -86,19 +98,10 @@ impl Editor {
 
                 if let Some(c) = &self.buf[i].get(j) {
                     let width = c.width().unwrap_or(0);
-                    if i == self.x_offset_y && x + width <= self.x_offset_disp {
-                        x += width;
-                        continue;
-                    }
                     let x_w_l = x + width + self.rnw;
-                    if i == self.x_offset_y {
-                        if x_w_l - self.x_offset_disp > cols {
-                            break;
-                        }
-                    } else {
-                        if x_w_l > cols {
-                            break;
-                        }
+                    // Log::ep("x_w_l", x_w_l);
+                    if x_w_l > cols {
+                        break;
                     }
 
                     x += width;
@@ -115,16 +118,18 @@ impl Editor {
             }
         }
         Log::ep("cur.y", self.cur.y);
+        Log::ep("y_offset", self.y_offset);
         Log::ep("cur.x", self.cur.x);
         Log::ep("cur.disp_x", self.cur.disp_x);
         Log::ep("x_offset", self.x_offset);
+        Log::ep("x_offset_disp", self.x_offset_disp);
 
-        write!(out, "{}", &str_vec.concat()).unwrap();
-        out.flush().unwrap();
+        //write!(out, "{}", &str_vec.concat()).unwrap();
+        //out.flush().unwrap();
     }
 
     pub fn draw_cur<T: Write>(&mut self, out: &mut T, sbar: &mut StatusBar) {
-        Log::ep_s("★  draw_cursor");
+        Log::ep_s("　　　　　　　  draw_cursor");
 
         let str_vec: &mut Vec<String> = &mut vec![];
         sbar.draw_cur(str_vec, self);

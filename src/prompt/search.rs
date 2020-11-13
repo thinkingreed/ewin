@@ -32,10 +32,10 @@ impl EvtAct {
         let search_str = prom.cont_1.buf.iter().collect::<String>();
         if search_str.len() == 0 {
             mbar.set_err(mbar.lang.not_entered_search_str.clone());
-            mbar.draw(out);
+            mbar.draw_only(out);
         } else if editor.get_search_ranges(search_str.clone()).len() == 0 {
             mbar.set_err(mbar.lang.cannot_find_char_search_for.clone());
-            mbar.draw(out);
+            mbar.draw_only(out);
         } else {
             mbar.clear();
             prom.clear();

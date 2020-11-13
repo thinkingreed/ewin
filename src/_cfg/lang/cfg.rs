@@ -17,6 +17,7 @@ pub struct LangCfg {
     pub search_str: String,
     pub search_file: String,
     pub search_folder: String,
+    pub searching: String,
     pub new_file: String,
     pub all_replace: String,
     pub move_input_field: String,
@@ -27,13 +28,17 @@ pub struct LangCfg {
     pub set_search: String,
     pub set_replace: String,
     pub set_grep: String,
-    // Msg
+    pub unable_to_edit: String,
+    pub open_target_file_in_another_terminal: String,
+    // Long msg
     pub not_entered_filenm: String,
     pub not_entered_search_str: String,
     pub not_entered_search_file: String,
     pub not_entered_search_folder: String,
     pub not_entered_replace_str: String,
     pub cannot_find_char_search_for: String,
+    pub long_time_to_search: String,
+    pub show_search_result: String,
 }
 #[derive(Debug, Deserialize)]
 pub struct LangMulti {
@@ -57,10 +62,14 @@ impl LangCfg {
             search_str: String::new(),
             search_file: String::new(),
             search_folder: String::new(),
+            searching: String::new(),
             all_replace: String::new(),
             move_input_field: String::new(),
             new_file: String::new(),
             replace_char: String::new(),
+            unable_to_edit: String::new(),
+            open_target_file_in_another_terminal: String::new(),
+            // Long msg
             save_confirmation_to_close: String::new(),
             terminal_size_small: String::new(),
             set_new_filenm: String::new(),
@@ -73,6 +82,8 @@ impl LangCfg {
             not_entered_search_folder: String::new(),
             not_entered_replace_str: String::new(),
             cannot_find_char_search_for: String::new(),
+            long_time_to_search: String::new(),
+            show_search_result: String::new(),
         }
     }
     pub fn read_lang_cfg() -> LangCfg {
