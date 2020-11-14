@@ -277,9 +277,12 @@ impl Editor {
                 self.search.search_ranges = self.get_search_ranges(self.search.str.clone());
 
                 if self.search.search_ranges.len() > 0 {
-                    self.search.index = 0;
+                    if self.search.row_num.len() == 0 {
+                        self.search.index = 0;
+                    } else {
+                        self.search.index = self.get_search_row_no_index(&self.search.row_num);
+                    }
                 }
-
                 self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
             } else {
                 self.search.index = self.get_search_str_index(is_asc);
@@ -316,6 +319,7 @@ impl Editor {
         }
         return vec;
     }
+
     pub fn get_search_str_index(&mut self, is_asc: bool) -> usize {
         let cur_x = self.cur.x - self.rnw;
         if is_asc {
@@ -339,7 +343,16 @@ impl Editor {
             return index;
         }
     }
-
+    pub fn get_search_row_no_index(&self, row_num: &String) -> usize {
+        let row_num: usize = row_num.parse().unwrap();
+        let index = 0;
+        for (i, range) in self.search.search_ranges.iter().enumerate() {
+            if row_num == range.y + 1 {
+                return i;
+            }
+        }
+        return index;
+    }
     pub fn replace_prom(&mut self, prom: &mut Prompt) {
         Log::ep_s("　　　　　　　　replace_prom");
         prom.is_replace = true;

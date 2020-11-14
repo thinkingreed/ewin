@@ -7,10 +7,10 @@ use ewin::model::*;
 use std::ffi::OsStr;
 use std::io::{stdout, BufWriter, Write};
 use std::path::{Path, PathBuf};
+use termion::clear;
 use termion::input::MouseTerminal;
 use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
-use termion::{clear, cursor};
 use tokio_util::codec::{FramedRead, LinesCodec};
 
 use crossterm::{
@@ -34,9 +34,6 @@ async fn main() {
     // let  search_str: String = matches.value_of_os("search_str").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
     // let search_file: String = matches.value_of_os("search_file").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
 
-    let mut search_str: String = String::new();
-    let mut search_file: String = String::new();
-
     let stdout = MouseTerminal::from(AlternateScreen::from(stdout()).into_raw_mode().unwrap());
     let mut out = BufWriter::new(stdout.lock());
 
@@ -59,23 +56,30 @@ async fn main() {
     if file_path.match_indices("search_str").count() > 0 && file_path.match_indices("search_file").count() > 0 {
         let v: Vec<&str> = file_path.split_ascii_whitespace().collect();
         let search_strs: Vec<&str> = v[0].split("=").collect();
-        search_str = search_strs[1].to_string();
+        editor.search.str = search_strs[1].to_string();
         let search_files: Vec<&str> = v[1].split("=").collect();
-        search_file = search_files[1].to_string();
+        editor.search.file = search_files[1].to_string();
 
-        sbar.filenm = format!("grep \"{}\" {}", search_str, search_file);
-        prom.is_grep_result = true;
-        prom.is_grep_stdout = true;
-        prom.is_grep_stderr = true;
-        prom.grep_result();
-
-        let path = PathBuf::from(&search_file);
+        let path = PathBuf::from(&editor.search.file);
         let filenm = path.file_name().unwrap_or(OsStr::new("")).to_string_lossy().to_string();
         let path_str = path.to_string_lossy().to_string();
-        editor.search.str = search_str;
-        editor.search.file = search_file;
         editor.search.folder = path_str.replace(&filenm, "");
         editor.search.filenm = path.file_name().unwrap_or(OsStr::new("")).to_string_lossy().to_string();
+
+        if file_path.match_indices("search_row_num").count() == 0 {
+            sbar.filenm = format!("grep \"{}\" {}", &editor.search.str, &editor.search.file);
+            prom.is_grep_result = true;
+            prom.is_grep_stdout = true;
+            prom.is_grep_stderr = true;
+            prom.grep_result();
+        } else {
+            sbar.filenm = editor.search.file.clone();
+            let search_row_nums: Vec<&str> = v[2].split("=").collect();
+            editor.search.row_num = search_row_nums[1].to_string();
+            Log::ep("search_row_num", editor.search.row_num.clone());
+            editor.open(Path::new(&sbar.filenm));
+            editor.search_str(true);
+        }
     } else {
         if file_path.len() == 0 {
             sbar.filenm_tmp = lang_cfg.new_file.clone();

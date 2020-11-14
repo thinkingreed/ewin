@@ -27,8 +27,11 @@ impl Terminal {
 
         self.draw_cur(str_vec, editor, prom);
 
-        write!(out, "{}", &str_vec.concat())?;
+        // write!(out, "{}", &str_vec.concat())?;
+        let _ = out.write(&str_vec.concat().as_bytes());
+        // let _ = out.write(b"\n");
         out.flush()?;
+
         editor.d_range.clear();
 
         return Ok(());
@@ -110,5 +113,30 @@ impl Terminal {
     pub fn hide_cur<T: Write>(&mut self, out: &mut T) {
         write!(out, "{}", cursor::Hide.to_string()).unwrap();
         out.flush().unwrap();
+    }
+    pub fn startup_terminal(&mut self, search_strs: String) {
+        if self.env == Env::WSL {
+            let mut exe_path = "";
+            if cfg!(debug_assertions) {
+                exe_path = "/home/hi/rust/ewin/target/release/ewin";
+            } else {
+                //       exe_path = "/user/bin/ewin";
+                exe_path = "/home/hi/rust/ewin/target/release/ewin";
+            }
+
+            if let Err(err) = Command::new("cmd.exe")
+                .arg("/c")
+                .arg("start")
+                .arg("wsl")
+                .arg("-e")
+                .arg(exe_path)
+                .arg(search_strs)
+                // .current_dir(".")
+                .spawn()
+            {
+                Log::ep("exec_grep err", err.to_string());
+            }
+        } else {
+        };
     }
 }

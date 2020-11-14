@@ -44,6 +44,9 @@ pub struct Prompt {
     pub cont_2: PromptCont,
     pub cont_3: PromptCont,
     pub buf_posi: PromptBufPosi,
+    // cache
+    pub cache_search_filenm: String,
+    pub cache_search_folder: String,
     // fn clear not clear
     pub is_change: bool,
     pub is_grep_result: bool,
@@ -73,6 +76,8 @@ impl Default for Prompt {
             cont_2: PromptCont::default(),
             cont_3: PromptCont::default(),
             buf_posi: PromptBufPosi::First,
+            cache_search_filenm: String::new(),
+            cache_search_folder: String::new(),
             is_close_confirm: false,
             is_save_new_file: false,
             is_search: false,
@@ -253,6 +258,7 @@ pub struct Search {
     pub file: String,
     pub filenm: String,
     pub folder: String,
+    pub row_num: String,
 }
 
 impl Search {
@@ -278,6 +284,7 @@ impl Default for Search {
             file: String::new(),
             filenm: String::new(),
             folder: String::new(),
+            row_num: String::new(),
         }
     }
 }

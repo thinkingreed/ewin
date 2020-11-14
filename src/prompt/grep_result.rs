@@ -2,6 +2,7 @@ use crate::model::*;
 use crate::util::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
 use std::io::Write;
+use std::path::Path;
 use std::process;
 use termion::color;
 use tokio::process::{Child, Command};
@@ -136,21 +137,15 @@ impl EvtAct {
                     return EvtActType::Next;
                 }
                 Enter => {
-                    let search_str = prom.cont_1.buf.iter().collect::<String>();
-                    let search_file = prom.cont_2.buf.iter().collect::<String>();
-                    let search_folder = prom.cont_3.buf.iter().collect::<String>();
+                    eprintln!("editor.grep_result_vec {:?}", editor.grep_result_vec[editor.cur.y]);
 
-                    if search_str.len() == 0 {
-                        mbar.set_err(mbar.lang.not_entered_search_str.clone());
-                    } else if search_file.len() == 0 {
-                        mbar.set_err(mbar.lang.not_entered_search_file.clone());
-                    } else if search_folder.len() == 0 {
-                        mbar.set_err(mbar.lang.not_entered_search_folder.clone());
-                    } else {
-                        mbar.clear();
-                        prom.clear();
-                    }
-                    term.draw(out, editor, mbar, prom, sbar).unwrap();
+                    let grep_result = &editor.grep_result_vec[editor.cur.y];
+                    let search_str = &editor.search.str;
+                    let path = Path::new(&editor.search.folder).join(&grep_result.filenm);
+
+                    eprintln!("strstr {:?}", format!(r#"search_str={} search_file={} search_row_num={}"#, search_str, path.to_string_lossy().to_string(), grep_result.row_num.to_string()));
+
+                    term.startup_terminal(format!("search_str={} search_file={} search_row_num={}", search_str, path.to_string_lossy().to_string(), grep_result.row_num.to_string()));
                     return EvtActType::Hold;
                 }
                 _ => return EvtActType::Hold,
