@@ -94,8 +94,8 @@ impl Terminal {
 
     pub fn set_env(&mut self) {
         // WSL環境を判定出来ない為にpowershell試行
-        let p = Command::new("uname").arg("-r").stdout(process::Stdio::piped()).spawn().unwrap();
-        let mut stdout = p.stdout.context("take stdout").unwrap();
+        let child_1 = Command::new("uname").arg("-r").stdout(process::Stdio::piped()).spawn().unwrap();
+        let mut stdout = child_1.stdout.context("take stdout").unwrap();
         let mut buf = String::new();
         stdout.read_to_string(&mut buf).unwrap();
         //   buf = buf.clone().trim().to_string();
@@ -115,22 +115,26 @@ impl Terminal {
         out.flush().unwrap();
     }
     pub fn startup_terminal(&mut self, search_strs: String) {
-        if self.env == Env::WSL {
-            let mut exe_path = "";
-            if cfg!(debug_assertions) {
-                exe_path = "/home/hi/rust/ewin/target/release/ewin";
+        let mut exe_path = "";
+        if cfg!(debug_assertions) {
+            exe_path = "/home/hi/rust/ewin/target/release/ewin";
+        } else {
+            if Path::new("/usr/bin/ewin").exists() {
+                exe_path = "/usr/bin/ewin";
             } else {
-                if Path::new("/usr/bin/ewin").exists() {
-                    exe_path = "/usr/bin/ewin";
-                } else {
-                    exe_path = "/home/hi/rust/ewin/target/release/ewin";
-                }
+                exe_path = "/home/hi/rust/ewin/target/release/ewin";
             }
+        }
 
+        if self.env == Env::WSL {
             if let Err(err) = Command::new("/mnt/c/windows/system32/cmd.exe").arg("/c").arg("start").arg("wsl").arg("-e").arg(exe_path).arg(search_strs).spawn() {
                 Log::ep("exec_grep err", err.to_string());
             }
         } else {
+            // Ubuntu
+            if let Err(err) = Command::new("gnome-terminal").arg("--").arg(exe_path).arg(search_strs).spawn() {
+                Log::ep("exec_grep err", err.to_string());
+            }
         };
     }
 }
