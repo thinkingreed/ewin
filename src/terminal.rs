@@ -125,16 +125,6 @@ impl Terminal {
                 } else {
                     exe_path = "/home/hi/rust/ewin/target/release/ewin";
                 }
-
-                // TODO 本番と開発環境のreleaseの判定必要
-                /*
-                // 開発環境かの判定
-                if let Ok(_) = env::var("EWIN_PATH") {
-                    exe_path = "/home/hi/rust/ewin/target/release/ewin";
-                } else {
-                    exe_path = "/usr/bin/ewin";
-                }
-                */
             }
 
             if let Err(err) = Command::new("/mnt/c/windows/system32/cmd.exe").arg("/c").arg("start").arg("wsl").arg("-e").arg(exe_path).arg(search_strs).spawn() {
