@@ -162,6 +162,7 @@ fn run_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, m
                         write!(out, "{}", clear::All.to_string()).unwrap();
                         term.set_disp_size(editor, mbar, prom, sbar);
                     }
+
                     Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                         Char('w') => {
                             if editor.close(out, prom) == true {
@@ -185,6 +186,7 @@ fn run_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, m
                         End => editor.move_cursor(out, sbar),
                         _ => {}
                     },
+
                     Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                         F(4) => editor.move_cursor(out, sbar),
                         Right => editor.shift_right(),
@@ -211,6 +213,7 @@ fn run_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, m
                         Left => editor.move_cursor(out, sbar),
                         Right => editor.move_cursor(out, sbar),
                         F(3) => editor.move_cursor(out, sbar),
+
                         _ => {
                             Log::ep_s("Un Supported no modifiers");
                         }
