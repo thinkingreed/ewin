@@ -4,7 +4,7 @@ use std::io::Write;
 use termion::color;
 
 impl EvtAct {
-    pub fn save_new_filenm<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn save_new_filenm<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         match editor.curt_evt {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {
@@ -15,7 +15,7 @@ impl EvtAct {
                         sbar.filenm = prom.cont_1.buf.iter().collect::<String>();
                         editor.save(mbar, prom, sbar);
                     }
-                    terminal.draw(out, editor, mbar, prom, sbar).unwrap();
+                    term.draw(out, editor, mbar, prom, sbar).unwrap();
                     return EvtActType::Hold;
                 }
                 _ => return EvtActType::Hold,

@@ -21,7 +21,7 @@ impl Editor {
         // offset切替基準余分文字数(残文字数時にoffset切替)
         let extra = 5;
         // 上記offset切替時の増減文字数
-        let extra_2 = 10;
+        // let extra_2 = 10;
         Log::ep("disp_col_num", self.disp_col_num);
         Log::ep("cur.x", self.cur.x);
         Log::ep("cur.disp_x", self.cur.disp_x);

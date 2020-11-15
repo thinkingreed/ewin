@@ -4,7 +4,7 @@ use std::io::Write;
 use termion::color;
 
 impl EvtAct {
-    pub fn close<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prompt: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn close<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prompt: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         match editor.curt_evt {
             Key(KeyEvent { code: Char(c), .. }) => {
                 if c == 'y' {
@@ -12,7 +12,7 @@ impl EvtAct {
                     if editor.save(mbar, prompt, sbar) {
                         return EvtActType::Exit;
                     } else {
-                        terminal.draw(out, editor, mbar, prompt, sbar).unwrap();
+                        term.draw(out, editor, mbar, prompt, sbar).unwrap();
                         return EvtActType::Hold;
                     }
                 } else if c == 'n' {

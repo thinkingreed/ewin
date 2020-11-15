@@ -50,7 +50,7 @@ impl EvtAct {
 
             if rnw_org == editor.rnw && cur_y_org == editor.cur.y {
                 editor.d_range = DRnage::new(y, y, DType::Target);
-                eprintln!("d_range {:?}", editor.d_range);
+                // eprintln!("d_range {:?}", editor.d_range);
             } else {
                 editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
             }
@@ -118,7 +118,7 @@ impl EvtAct {
             return Command::new("echo").arg(" ").stdout(process::Stdio::piped()).stderr(process::Stdio::piped()).spawn().unwrap();
         }
     }
-    pub fn grep_result<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn grep_result(term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar) -> EvtActType {
         match editor.curt_evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 F(4) | Right | Left | Down | Up | Home | End => {
@@ -137,13 +137,13 @@ impl EvtAct {
                     return EvtActType::Next;
                 }
                 Enter => {
-                    eprintln!("editor.grep_result_vec {:?}", editor.grep_result_vec[editor.cur.y]);
+//                    eprintln!("editor.grep_result_vec {:?}", editor.grep_result_vec[editor.cur.y]);
 
                     let grep_result = &editor.grep_result_vec[editor.cur.y];
                     let search_str = &editor.search.str;
                     let path = Path::new(&editor.search.folder).join(&grep_result.filenm);
 
-                    eprintln!("strstr {:?}", format!(r#"search_str={} search_file={} search_row_num={}"#, search_str, path.to_string_lossy().to_string(), grep_result.row_num.to_string()));
+//                    eprintln!("strstr {:?}", format!(r#"search_str={} search_file={} search_row_num={}"#, search_str, path.to_string_lossy().to_string(), grep_result.row_num.to_string()));
 
                     term.startup_terminal(format!("search_str={} search_file={} search_row_num={}", search_str, path.to_string_lossy().to_string(), grep_result.row_num.to_string()));
                     return EvtActType::Hold;

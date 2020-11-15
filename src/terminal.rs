@@ -1,13 +1,13 @@
 use crate::_cfg::lang::cfg::LangCfg;
 use crate::model::*;
 use crate::model::{Editor, Log};
-use std::io::{self, Write};
-use termion::cursor;
-
 use anyhow::Context;
 use std::io::Read;
+use std::io::{self, Write};
+use std::path::Path;
 use std::process;
 use std::process::Command;
+use termion::cursor;
 
 impl Terminal {
     pub fn draw<T: Write>(&mut self, out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> Result<(), io::Error> {
@@ -120,20 +120,24 @@ impl Terminal {
             if cfg!(debug_assertions) {
                 exe_path = "/home/hi/rust/ewin/target/release/ewin";
             } else {
-                //       exe_path = "/user/bin/ewin";
-                exe_path = "/home/hi/rust/ewin/target/release/ewin";
+                if Path::new("/usr/bin/ewin").exists() {
+                    exe_path = "/usr/bin/ewin";
+                } else {
+                    exe_path = "/home/hi/rust/ewin/target/release/ewin";
+                }
+
+                // TODO 本番と開発環境のreleaseの判定必要
+                /*
+                // 開発環境かの判定
+                if let Ok(_) = env::var("EWIN_PATH") {
+                    exe_path = "/home/hi/rust/ewin/target/release/ewin";
+                } else {
+                    exe_path = "/usr/bin/ewin";
+                }
+                */
             }
 
-            if let Err(err) = Command::new("cmd.exe")
-                .arg("/c")
-                .arg("start")
-                .arg("wsl")
-                .arg("-e")
-                .arg(exe_path)
-                .arg(search_strs)
-                // .current_dir(".")
-                .spawn()
-            {
+            if let Err(err) = Command::new("/mnt/c/windows/system32/cmd.exe").arg("/c").arg("start").arg("wsl").arg("-e").arg(exe_path).arg(search_strs).spawn() {
                 Log::ep("exec_grep err", err.to_string());
             }
         } else {

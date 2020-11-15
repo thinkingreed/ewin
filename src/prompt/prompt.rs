@@ -66,7 +66,7 @@ impl Prompt {
             str_vec.push(cursor::Goto(self.cont_1.cur.disp_x as u16, (self.disp_row_posi + self.disp_row_num - 1) as u16).to_string());
         }
     }
-    pub fn check_prom<T: Write>(&mut self, out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, sbar: &mut StatusBar) -> EvtActType {
+    pub fn check_prom<T: Write>(&mut self, out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, sbar: &mut StatusBar) -> EvtActType {
         if self.is_save_new_file == true || self.is_search == true || self.is_close_confirm == true || self.is_replace == true || self.is_grep == true || self.is_grep_result == true {
             match editor.curt_evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
@@ -76,7 +76,7 @@ impl Prompt {
                         } else {
                             self.clear();
                             mbar.clear();
-                            terminal.draw(out, editor, mbar, self, sbar).unwrap();
+                            term.draw(out, editor, mbar, self, sbar).unwrap();
                         }
                         return EvtActType::Hold;
                     }
@@ -136,17 +136,17 @@ impl Prompt {
         }
 
         if self.is_save_new_file == true {
-            return EvtAct::save_new_filenm(out, terminal, editor, mbar, self, sbar);
+            return EvtAct::save_new_filenm(out, term, editor, mbar, self, sbar);
         } else if self.is_close_confirm == true {
-            return EvtAct::close(out, terminal, editor, mbar, self, sbar);
+            return EvtAct::close(out, term, editor, mbar, self, sbar);
         } else if self.is_search == true {
-            return EvtAct::search(out, terminal, editor, mbar, self, sbar);
+            return EvtAct::search(out, term, editor, mbar, self, sbar);
         } else if self.is_replace == true {
-            return EvtAct::replace(out, terminal, editor, mbar, self, sbar);
+            return EvtAct::replace(out, term, editor, mbar, self, sbar);
         } else if self.is_grep == true {
-            return EvtAct::grep(out, terminal, editor, mbar, self, sbar);
+            return EvtAct::grep(out, term, editor, mbar, self, sbar);
         } else if self.is_grep_result == true {
-            return EvtAct::grep_result(out, terminal, editor, mbar, self, sbar);
+            return EvtAct::grep_result(term, editor, mbar);
         } else {
             Log::ep_s("EvtProcess::NextEvtProcess");
             return EvtActType::Next;

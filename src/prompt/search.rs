@@ -4,14 +4,14 @@ use std::io::Write;
 use termion::color;
 
 impl EvtAct {
-    pub fn search<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn search<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         Log::ep_s("Process.search");
 
         match editor.curt_evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 F(2) => {
                     Log::ep_s("search.Shift + F2");
-                    EvtAct::exec_search(out, terminal, editor, mbar, prom, sbar, false);
+                    EvtAct::exec_search(out, term, editor, mbar, prom, sbar, false);
                     return EvtActType::Next;
                 }
                 _ => return EvtActType::Hold,
@@ -19,7 +19,7 @@ impl EvtAct {
             Key(KeyEvent { code, .. }) => match code {
                 F(3) => {
                     Log::ep_s("search.F3");
-                    EvtAct::exec_search(out, terminal, editor, mbar, prom, sbar, true);
+                    EvtAct::exec_search(out, term, editor, mbar, prom, sbar, true);
                     return EvtActType::Next;
                 }
                 _ => return EvtActType::Hold,
@@ -28,7 +28,7 @@ impl EvtAct {
         }
     }
 
-    fn exec_search<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, is_asc: bool) {
+    fn exec_search<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, is_asc: bool) {
         let search_str = prom.cont_1.buf.iter().collect::<String>();
         if search_str.len() == 0 {
             mbar.set_err(mbar.lang.not_entered_search_str.clone());
@@ -45,7 +45,7 @@ impl EvtAct {
             editor.search_str(is_asc);
             // indexを初期値に戻す
             editor.search.index = Search::INDEX_UNDEFINED;
-            terminal.draw(out, editor, mbar, prom, sbar).unwrap();
+            term.draw(out, editor, mbar, prom, sbar).unwrap();
         }
     }
 }

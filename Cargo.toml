@@ -1,6 +1,6 @@
 [package]
 name = "ewin"
-version = "0.7.2"
+version = "0.7.3"
 description = "Simple editor for Window(GUI) users."
 authors = ["thinkingreed"]
 edition = "2018"
@@ -19,6 +19,9 @@ assets = [
     ["README.md", "usr/share/doc/ewin/README", "644"],
 ]
 
+[profile.dev]
+#opt-level = 3               # Use slightly better optimizations.
+#overflow-checks = false   
 
 [dependencies]
 anyhow = "1"
@@ -33,8 +36,5 @@ signal-hook = "0.1"
 cargo-deb = "1.28.0"
 tokio = { version = "0.3.3", features = ["full"] }
 tokio-util = { version = "0.5.0", features = ["codec"] }
-mio = "0.7.0, 0.7.5"
 futures = "0.3"
-futures-core = { version = "0.3", optional = true, default-features = false }
-futures-timer = "3.0"
 futures-util = "0.3.7"

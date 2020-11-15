@@ -3,7 +3,6 @@ use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 use std::path::Path;
 use termion::color;
-use tokio::process::Command;
 
 impl EvtAct {
     pub fn grep<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
