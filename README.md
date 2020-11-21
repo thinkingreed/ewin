@@ -20,11 +20,15 @@ _... and other Debian-based Linux distributions_
 
 Download the latest .deb package from the [release page](https://github.com/thinkingreed/ewin/releases) and install it via:
 
+### On CentOS
+
+Download the latest .rpm package from the [release page](https://github.com/thinkingreed/ewin/releases) and install it via:
+
 ```
-sudo apt install ewin_0.0.0_amd64.deb 
+sudo yun install ewin_0.0.0.x86_64.rpm
 ```
 
-### Snap
+### Via Snap
 
 Please install Snap Store or Command
 
@@ -45,23 +49,24 @@ $ ewin file         # Open files to edit
 Please see `ewin --help` for command usage.
 
 
-## Edit Text
+## Operation
 
 ewin is a mode-less text editor. Like other famous mode-less text editors such as Nano, Emacs, you can edit text in terminal window using a keyboard.
 And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 - **Operations**
 
-| Mapping                             | Description                        |
+| Mapping                             | motion                        |
 |-------------------------------------|------------------------------------|
 | `Ctrl` + `w`                        | Quit.                              |
 | `Ctrl` + `s`                        | Save current buffer to file.       |
-| `Ctrl` + `f`                        | Enter the character・string to search.     |
+| `Ctrl` + `f`                        | Enter the characters to search.Search target is open file.|
+| `Ctrl` + `g`                        | Grep.Enter the characters to search.The search target is the entered file pattern|
 
 
 - **Moving cursor**
 
-| Mapping                             | Description                        |
+| Mapping                             | motion                        |
 |-------------------------------------|------------------------------------|
 | `↑` or `Mouse ScrollUp`             | Move cursor up.                    |
 | `↓` or `Mouse ScrollDown`           | Move cursor down.                  |
@@ -76,7 +81,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 - **Edit text**
 
-| Mapping                 | Description               |
+| Mapping                 | motion               |
 |-------------------------|---------------------------|
 | `Enter`                 | Insert new line           |
 | `BACKSPACE`             | Delete character          |
@@ -91,7 +96,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 - **Select text**
 
-| Mapping                 | Description               |
+| Mapping                 | motion               |
 |-------------------------|----------------------------------------------------------------------------------|
 | `Shift` + `↑`           | Select from the beginning of the current line and the end of the line above.     |
 | `Shift` + `↓`           | Select from the end of the current line and the beginning of the line below.     |
@@ -104,11 +109,17 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `Shift` + `F4`          | Search for above characters below.　　　　　                                      |
 | `Mouse` + `Left.Down, Drag, Up`    | Select a range.|
 
+
+## Operation restrictions
+| motion   | Mapping                 | environment     |Contents                         |
+|----------|-------------------------|-----------------|---------------------------------|
+| Grep     | `Ctrl` + `g`            | WSL             | Run on default WSL              |
+|          |                         | Ubuntu・CentOS  | Only when using "gnome-terminal"|
+
 ## Future Works
 
-- Grep function
 - Macro function(Record keystrokes) 
-- WASI support
+- Grep-Replace function
 
 ## License
 

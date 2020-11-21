@@ -20,6 +20,16 @@ assets = [
     ["README.md", "usr/share/doc/ewin/README", "644"],
 ]
 
+[package.metadata.rpm]
+package = "ewin"
+
+[package.metadata.rpm.cargo]
+buildflags = ["--release"]
+
+[package.metadata.rpm.targets]
+ewin = { path = "/usr/bin/ewin" }
+
+
 [dependencies]
 anyhow = "1"
 termion = "1.5.5"
@@ -35,12 +45,3 @@ tokio = { version = "0.3.3", features = ["full"] }
 tokio-util = { version = "0.5.0", features = ["codec"] }
 futures = "0.3"
 futures-util = "0.3.7"
-
-[package.metadata.rpm]
-package = "ewin"
-
-[package.metadata.rpm.cargo]
-buildflags = ["--release"]
-
-[package.metadata.rpm.targets]
-ewin = { path = "/usr/bin/ewin" }

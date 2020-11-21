@@ -127,11 +127,11 @@ impl Terminal {
         }
 
         if self.env == Env::WSL {
-            if let Err(err) = Command::new("/mnt/c/windows/system32/cmd.exe").arg("/c").arg("start").arg("wsl").arg("-e").arg(exe_path).arg(search_strs).spawn() {
+            if let Err(err) = Command::new("/mnt/c/windows/system32/cmd.exe").arg("/c").arg("start").arg("wsl").arg("-e").arg(exe_path).arg(search_strs).stdout(process::Stdio::null()).spawn() {
                 Log::ep("startup_terminal err", err.to_string());
             }
         } else {
-            // Ubuntu
+            // gnome-terminal
             if let Err(err) = Command::new("gnome-terminal").arg("--").arg(exe_path).arg(search_strs).spawn() {
                 Log::ep("startup_terminal err", err.to_string());
             }
