@@ -50,7 +50,7 @@ impl EvtAct {
 
             if rnw_org == editor.rnw && cur_y_org == editor.cur.y {
                 editor.d_range = DRnage::new(y, y, DType::Target);
-                // eprintln!("d_range {:?}", editor.d_range);
+            // eprintln!("d_range {:?}", editor.d_range);
             } else {
                 editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
             }
@@ -93,7 +93,11 @@ impl EvtAct {
         child.kill();
         mbar.clear();
         prom.clear();
-        prom.grep_result_after();
+        if editor.grep_result_vec.len() > 0 {
+            prom.grep_result_after();
+        } else {
+            prom.set_grep_result_after_no_result();
+        }
         editor.set_cur_default();
         term.draw(out, editor, mbar, prom, sbar).unwrap();
     }
@@ -137,13 +141,9 @@ impl EvtAct {
                     return EvtActType::Next;
                 }
                 Enter => {
-//                    eprintln!("editor.grep_result_vec {:?}", editor.grep_result_vec[editor.cur.y]);
-
                     let grep_result = &editor.grep_result_vec[editor.cur.y];
                     let search_str = &editor.search.str;
                     let path = Path::new(&editor.search.folder).join(&grep_result.filenm);
-
-//                    eprintln!("strstr {:?}", format!(r#"search_str={} search_file={} search_row_num={}"#, search_str, path.to_string_lossy().to_string(), grep_result.row_num.to_string()));
 
                     term.startup_terminal(format!("search_str={} search_file={} search_row_num={}", search_str, path.to_string_lossy().to_string(), grep_result.row_num.to_string()));
                     return EvtActType::Hold;
@@ -172,6 +172,12 @@ impl Prompt {
         cont.set_grep_result_after();
         self.cont_1 = cont;
     }
+    pub fn set_grep_result_after_no_result(&mut self) {
+        self.disp_row_num = 2;
+        let mut cont = PromptCont::new(self.lang.clone());
+        cont.set_grep_result_after_no_result();
+        self.cont_1 = cont;
+    }
 }
 
 impl PromptCont {
@@ -180,7 +186,11 @@ impl PromptCont {
         self.key_desc = format!("{}{}:{}Ctrl + c", &color::Fg(color::White).to_string(), self.lang.cancel.clone(), &color::Fg(color::LightGreen).to_string(),);
     }
     pub fn set_grep_result_after(&mut self) {
-        self.guide = format!("{}{}  {}{}", &color::Fg(color::LightGreen).to_string(), self.lang.show_search_result.clone(), self.lang.unable_to_edit.clone(), "\n");
+        self.guide = format!("{}{}({}){}", &color::Fg(color::LightGreen).to_string(), self.lang.show_search_result.clone(), self.lang.unable_to_edit.clone(), "\n");
         self.key_desc = format!("{}{}:{}Enter", &color::Fg(color::White).to_string(), self.lang.open_target_file_in_another_terminal.clone(), &color::Fg(color::LightGreen).to_string(),);
+    }
+    pub fn set_grep_result_after_no_result(&mut self) {
+        self.guide = format!("{}{}({}){}", &color::Fg(color::LightGreen).to_string(), self.lang.show_search_no_result.clone(), self.lang.unable_to_edit.clone(), "\n");
+        self.key_desc = format!("{}{}:{}Ctrl + w", &color::Fg(color::White).to_string(), self.lang.close.clone(), &color::Fg(color::LightGreen).to_string(),);
     }
 }

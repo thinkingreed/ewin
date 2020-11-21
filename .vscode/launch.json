@@ -6,6 +6,7 @@
     "configurations": [
         {
             "name": "debug",
+            // CentOS:lldb-vscode
             "type": "lldb",
             "request": "launch",
             //           "program": "${workspaceFolder/todo.exe)",

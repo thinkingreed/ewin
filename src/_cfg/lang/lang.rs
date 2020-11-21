@@ -37,6 +37,7 @@ not_entered_replace_str="置換する文字が入力されていません"
 cannot_find_char_search_for="検索する文字が見つかりません"
 long_time_to_search="検索対象ファイル多い場合に非常に時間がかかる場合があります"
 show_search_result="検索結果を表示しています"
+show_search_no_result="検索対象は1件も存在しませんでした"
 [en]
 row="row"
 col="col"
@@ -74,5 +75,5 @@ not_entered_replace_str="Replace charctor is not entered"
 cannot_find_char_search_for="Cannot find the character to search for"
 long_time_to_search="It may take a long time if there are many files to be searched"
 show_search_result="show search result"
-
+show_search_no_result="There was no search target"
 "#;

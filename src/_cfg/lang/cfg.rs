@@ -39,6 +39,7 @@ pub struct LangCfg {
     pub cannot_find_char_search_for: String,
     pub long_time_to_search: String,
     pub show_search_result: String,
+    pub show_search_no_result: String,
 }
 #[derive(Debug, Deserialize)]
 pub struct LangMulti {
@@ -84,6 +85,7 @@ impl LangCfg {
             cannot_find_char_search_for: String::new(),
             long_time_to_search: String::new(),
             show_search_result: String::new(),
+            show_search_no_result: String::new(),
         }
     }
     pub fn read_lang_cfg() -> LangCfg {
