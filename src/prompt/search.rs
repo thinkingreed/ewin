@@ -1,7 +1,6 @@
 use crate::model::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
-use termion::color;
 
 impl EvtAct {
     pub fn search<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
@@ -61,19 +60,19 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_search(&mut self) {
-        self.guide = format!("{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.set_search.clone());
+        self.guide = format!("{}{}", Colors::get_msg_fg(), self.lang.set_search.clone());
         self.key_desc = format!(
             "{}{}:{}F3  {}{}:{}Shift + F2  {}{}:{}Ctrl + c{}",
-            &color::Fg(color::White).to_string(),
+            Colors::get_default_fg(),
             self.lang.search_bottom.clone(),
-            &color::Fg(color::LightGreen).to_string(),
-            &color::Fg(color::White).to_string(),
+            Colors::get_msg_fg(),
+            Colors::get_default_fg(),
             self.lang.search_top.clone(),
-            &color::Fg(color::LightGreen).to_string(),
-            &color::Fg(color::White).to_string(),
+            Colors::get_msg_fg(),
+            Colors::get_default_fg(),
             self.lang.close.clone(),
-            &color::Fg(color::LightGreen).to_string(),
-            &color::Fg(color::White).to_string(),
+            Colors::get_msg_fg(),
+            Colors::get_default_fg(),
         );
     }
 }

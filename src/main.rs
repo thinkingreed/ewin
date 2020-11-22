@@ -21,21 +21,8 @@ use futures::{future::FutureExt, select, StreamExt};
 
 #[tokio::main]
 async fn main() {
-    let matches = App::new("ewin")
-        .version(crate_version!())
-        .bin_name("ewin")
-        .arg(Arg::with_name("file").required(false))
-        // .arg(Arg::with_name("search_str").long("search_str").value_name("search_str").help("Sets a search target string").takes_value(true))
-        // .arg(Arg::with_name("search_file").long("search_file").value_name("search_file").help("Sets a search target file name").takes_value(true))
-        //.arg(Arg::with_name("-debug").help("debug mode").short("-d").long("-debug"))
-        .get_matches();
-
+    let matches = App::new("ewin").version(crate_version!()).bin_name("ewin").arg(Arg::with_name("file").required(false)).get_matches();
     let file_path: String = matches.value_of_os("file").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
-    // let  search_str: String = matches.value_of_os("search_str").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
-    // let search_file: String = matches.value_of_os("search_file").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
-
-    let stdout = MouseTerminal::from(AlternateScreen::from(stdout()).into_raw_mode().unwrap());
-    let mut out = BufWriter::new(stdout.lock());
 
     let mut editor = Editor::default();
     let lang_cfg = LangCfg::read_lang_cfg();
@@ -88,6 +75,9 @@ async fn main() {
         }
         editor.open(Path::new(&file_path));
     }
+
+    let stdout = MouseTerminal::from(AlternateScreen::from(stdout()).into_raw_mode().unwrap());
+    let mut out = BufWriter::new(stdout.lock());
 
     term.draw(&mut out, &mut editor, &mut mbar, &mut prom, &mut sbar).unwrap();
 

@@ -70,9 +70,12 @@ pub fn get_char_count(vec: &Vec<char>, byte_nm: usize) -> usize {
 }
 pub fn get_cur_x_width(buf: &Vec<char>, x: usize) -> usize {
     if let Some(c) = buf.get(x) {
+        Log::ep_s("get_cur_x_width 111");
+
         return c.width().unwrap_or(0);
     }
-    // 最右端の空白対応
+    Log::ep_s("get_cur_x_width 222");
+
     return 1;
 }
 

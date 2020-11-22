@@ -1,8 +1,7 @@
 use crate::_cfg::lang::cfg::LangCfg;
-use crate::model::{Log, MsgBar};
+use crate::model::*;
 use crate::util::*;
 use std::io::Write;
-use termion::color::*;
 use termion::{clear, cursor};
 
 impl MsgBar {
@@ -34,11 +33,11 @@ impl MsgBar {
     }
     pub fn set_info(&mut self, msg: String) {
         let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num - (get_str_width(&msg) - msg.chars().count()));
-        self.msg_disp = format!("{}{}", &Fg(LightGreen).to_string(), msg_str,);
+        self.msg_disp = format!("{}{}", Colors::get_msg_fg(), msg_str,);
     }
 
     pub fn set_err(&mut self, msg: String) {
         let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num - (get_str_width(&msg) - msg.chars().count()));
-        self.msg_disp = format!("{}{}", &Fg(Red).to_string(), msg_str,);
+        self.msg_disp = format!("{}{}", Colors::get_msg_err_fg(), msg_str,);
     }
 }

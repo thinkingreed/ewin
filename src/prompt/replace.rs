@@ -1,7 +1,6 @@
 use crate::model::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
-use termion::color;
 
 impl EvtAct {
     pub fn replace<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
@@ -123,22 +122,22 @@ impl Prompt {
 impl PromptCont {
     pub fn set_replace(&mut self, cont_type: PromptBufPosi) {
         if cont_type == PromptBufPosi::First {
-            self.guide = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.set_replace.clone(), "\n");
+            self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.set_replace.clone(), "\n");
             self.key_desc = format!(
                 "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Ctrl + c",
-                &color::Fg(color::White).to_string(),
+                Colors::get_default_fg(),
                 self.lang.all_replace.clone(),
-                &color::Fg(color::LightGreen).to_string(),
-                &color::Fg(color::White).to_string(),
+                Colors::get_msg_fg(),
+                Colors::get_default_fg(),
                 self.lang.move_input_field.clone(),
-                &color::Fg(color::LightGreen).to_string(),
-                &color::Fg(color::White).to_string(),
+                Colors::get_msg_fg(),
+                Colors::get_default_fg(),
                 self.lang.close.clone(),
-                &color::Fg(color::LightGreen).to_string(),
+                Colors::get_msg_fg(),
             );
-            self.buf_desc = format!("{}{}", &color::Fg(color::White).to_string(), self.lang.search_str.clone(),);
+            self.buf_desc = format!("{}{}", Colors::get_default_fg(), self.lang.search_str.clone(),);
         } else {
-            self.buf_desc = format!("{}{}", &color::Fg(color::White).to_string(), self.lang.replace_char.clone(),);
+            self.buf_desc = format!("{}{}", Colors::get_default_fg(), self.lang.replace_char.clone(),);
         }
     }
 }

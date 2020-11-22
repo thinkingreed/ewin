@@ -18,16 +18,17 @@ impl Editor {
     pub fn scroll_horizontal(&mut self) {
         Log::ep_s("　　　　　　　 scroll_horizontal");
 
-        // offset切替基準余分文字数(残文字数時にoffset切替)
-        let extra = 5;
-        // 上記offset切替時の増減文字数
-        // let extra_2 = 10;
-        Log::ep("disp_col_num", self.disp_col_num);
-        Log::ep("cur.x", self.cur.x);
-        Log::ep("cur.disp_x", self.cur.disp_x);
-        Log::ep("x_offset 111", self.x_offset);
-        Log::ep("x_offset_disp 111", self.x_offset_disp);
-
+        // offset_x切替余分文字数(残文字数時にoffset切替)
+        let offset_x_extra_num = 3;
+        // 上記offset切替時のoffset増減数
+        let offset_x_change_num = 10;
+        /*
+                Log::ep("disp_col_num", self.disp_col_num);
+                Log::ep("cur.x", self.cur.x);
+                Log::ep("cur.disp_x", self.cur.disp_x);
+                Log::ep("x_offset 111", self.x_offset);
+                Log::ep("x_offset_disp 111", self.x_offset_disp);
+        */
         let x_offset_org = self.x_offset;
 
         // Up・Down
@@ -35,59 +36,44 @@ impl Editor {
             self.x_offset = 0;
             self.x_offset_disp = 0;
         } else {
-            // right
-            // TODO 週末に詳細試験
-            /*
-            if self.x_offset_disp + self.disp_col_num < self.cur.disp_x + extra {
-                self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.rnw + extra);
-            } else if self.x_offset_disp + extra > self.cur.disp_x - self.rnw && self.cur.x - self.rnw > extra {
-                self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.rnw - extra);
+            if self.x_offset == 0 || self.cur_y_org != self.cur.y {
+                self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.rnw);
             }
-             */
-            self.x_offset = self.get_x_offset(self.cur.y, self.cur.x - self.rnw + extra);
         }
 
-        Log::ep("x_offset 222", self.x_offset);
-
-        // TODO extra一旦保留
-        /*
-                // Left移動
-                if self.x_offset_disp + extra > self.cur.disp_x {
-                    Log::ep_s(" self.x_offset + self.rnw + extra > self.cur.x ");
-                    if self.x_offset >= extra_2 {
-                        self.x_offset -= extra_2;
-                    }
-                // Right移動
-                } else if self.x_offset_disp + self.disp_col_num < self.cur.disp_x + extra {
-                    Log::ep_s(" self.cur.x - self.x_offset + extra > self.disp_col_num ");
-                    self.x_offset += extra_2;
-                }
-        */
-        Log::ep("x_offset 333", self.x_offset);
+        // Right移動
+        if self.x_offset_disp + self.disp_col_num < self.cur.disp_x + offset_x_extra_num {
+            Log::ep_s(" self.cur.x - self.x_offset + extra > self.disp_col_num ");
+            if self.x_offset + self.disp_col_num - self.rnw < self.buf[self.cur.y].len() {
+                self.x_offset += offset_x_change_num;
+            }
+        // Left移動
+        } else if self.cur.disp_x - 1 >= self.rnw + offset_x_extra_num && self.x_offset_disp >= self.cur.disp_x - 1 - self.rnw - offset_x_extra_num {
+            Log::ep_s(" self.x_offset + self.rnw + extra > self.cur.x ");
+            if self.x_offset >= offset_x_change_num {
+                self.x_offset -= offset_x_change_num;
+            } else {
+                self.x_offset = 0;
+            }
+        }
 
         if self.rnw != self.cur.x {
             let vec = &self.buf[self.cur.y];
             if self.cur_y_org != self.cur.y {
                 let (_, width) = get_row_width(vec, 0, self.x_offset);
-                Log::ep("width  11111", width);
                 self.x_offset_disp = width;
 
             // offsetに差分
             } else if x_offset_org != self.x_offset {
                 if self.x_offset < x_offset_org {
                     let (_, width) = get_row_width(vec, self.x_offset, x_offset_org);
-                    Log::ep("width  22222", width);
-
                     self.x_offset_disp -= width;
                 } else {
                     let (_, width) = get_row_width(vec, x_offset_org, self.x_offset);
-                    Log::ep("width  33333", width);
                     self.x_offset_disp += width;
                 }
             }
         }
-        Log::ep("x_offset 444", self.x_offset);
-        Log::ep("x_offset_disp 222", self.x_offset_disp);
     }
 
     /// カーソル移動のEventでoffsetの変更有無で再描画範囲を設定設定
@@ -121,7 +107,9 @@ impl Editor {
         }
 
         if self.is_redraw != true {
-            self.is_redraw = y_offset_org != self.y_offset || (x_offset_disp_org != self.x_offset_disp || (x_offset_disp_org == self.x_offset_disp && self.x_offset_disp != 0));
+            // 右記の条件不明な為に一旦コメント x_offset_disp_org == self.x_offset_disp && self.x_offset_disp != 0
+            //        self.is_redraw = y_offset_org != self.y_offset || (x_offset_disp_org != self.x_offset_disp || (x_offset_disp_org == self.x_offset_disp && self.x_offset_disp != 0));
+            self.is_redraw = y_offset_org != self.y_offset || (x_offset_disp_org != self.x_offset_disp);
         }
         self.draw_cur(out, sbar);
     }

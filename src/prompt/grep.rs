@@ -2,7 +2,6 @@ use crate::model::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 use std::path::Path;
-use termion::color;
 
 impl EvtAct {
     pub fn grep<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
@@ -133,22 +132,22 @@ impl Prompt {
 impl PromptCont {
     pub fn set_grep(&mut self, prom: &Prompt, cont_type: PromptBufPosi) {
         if cont_type == PromptBufPosi::First {
-            self.guide = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.set_grep.clone(), "\n");
+            self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.set_grep.clone(), "\n");
             self.key_desc = format!(
                 "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Ctrl + c",
-                &color::Fg(color::White).to_string(),
+                Colors::get_default_fg(),
                 self.lang.search.clone(),
-                &color::Fg(color::LightGreen).to_string(),
-                &color::Fg(color::White).to_string(),
+                Colors::get_msg_fg(),
+                Colors::get_default_fg(),
                 self.lang.move_input_field.clone(),
-                &color::Fg(color::LightGreen).to_string(),
-                &color::Fg(color::White).to_string(),
+                Colors::get_msg_fg(),
+                Colors::get_default_fg(),
                 self.lang.close.clone(),
-                &color::Fg(color::LightGreen).to_string(),
+                Colors::get_msg_fg()
             );
-            self.buf_desc = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.search_str.clone(), &color::Fg(color::White).to_string(),);
+            self.buf_desc = format!("{}{}{}", Colors::get_msg_fg(), self.lang.search_str.clone(), Colors::get_default_fg());
         } else if cont_type == PromptBufPosi::Second {
-            self.buf_desc = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.search_file.clone(), &color::Fg(color::White).to_string(),);
+            self.buf_desc = format!("{}{}{}", Colors::get_msg_fg(), self.lang.search_file.clone(), Colors::get_default_fg());
 
             if prom.cache_search_filenm.len() > 0 {
                 self.buf = prom.cache_search_filenm.chars().collect();
@@ -156,7 +155,7 @@ impl PromptCont {
 
             self.buf = "*.txt".chars().collect();
         } else {
-            self.buf_desc = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.search_folder.clone(), &color::Fg(color::White).to_string(),);
+            self.buf_desc = format!("{}{}{}", Colors::get_msg_fg(), self.lang.search_folder.clone(), Colors::get_default_fg());
             if prom.cache_search_folder.len() > 0 {
                 self.buf = prom.cache_search_folder.chars().collect();
             }

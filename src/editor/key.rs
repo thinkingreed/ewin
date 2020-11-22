@@ -63,7 +63,7 @@ impl Editor {
     }
     pub fn cursor_right(&mut self) {
         // Log::ep_s("　　　　　　　  c_r start");
-        // 行末
+        // 行末(行末の空白対応で)
         if self.cur.x == self.buf[self.cur.y].len() + self.rnw {
             // 最終行の行末
             if self.cur.y == self.buf.len() - 1 {
@@ -76,8 +76,8 @@ impl Editor {
                 self.cursor_down();
             }
         } else {
-            self.cur.disp_x += get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.rnw);
             self.cur.x = min(self.cur.x + 1, self.buf[self.cur.y].len() + self.rnw);
+            self.cur.disp_x += get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.rnw);
         }
         self.scroll();
         self.scroll_horizontal();

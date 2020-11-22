@@ -1,7 +1,6 @@
 use crate::model::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
-use termion::color;
 
 impl EvtAct {
     pub fn save_new_filenm<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
@@ -36,16 +35,16 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_new_file_name(&mut self) {
-        self.guide = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.set_new_filenm.clone(), "\n");
+        self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.set_new_filenm.clone(), "\n");
         self.key_desc = format!(
             "{}{}:{}Enter  {}{}:{}Ctrl + c{}",
-            &color::Fg(color::White).to_string(),
+            Colors::get_default_fg(),
             self.lang.fixed.clone(),
-            &color::Fg(color::LightGreen).to_string(),
-            &color::Fg(color::White).to_string(),
+            Colors::get_msg_fg(),
+            Colors::get_default_fg(),
             self.lang.cancel.clone(),
-            &color::Fg(color::LightGreen).to_string(),
-            &color::Fg(color::White).to_string(),
+            Colors::get_msg_fg(),
+            Colors::get_default_fg(),
         );
     }
 }

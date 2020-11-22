@@ -516,4 +516,5 @@ pub struct Log {
     pub log_path: String,
 }
 
-impl Log {}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Colors {}

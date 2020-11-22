@@ -4,7 +4,6 @@ use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent}
 use std::io::Write;
 use std::path::Path;
 use std::process;
-use termion::color;
 use tokio::process::{Child, Command};
 use tokio_util::codec::LinesCodecError;
 
@@ -182,15 +181,15 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_grep_result(&mut self) {
-        self.guide = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.long_time_to_search.clone(), "\n");
-        self.key_desc = format!("{}{}:{}Ctrl + c", &color::Fg(color::White).to_string(), self.lang.cancel.clone(), &color::Fg(color::LightGreen).to_string(),);
+        self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.long_time_to_search.clone(), "\n");
+        self.key_desc = format!("{}{}:{}Ctrl + c", Colors::get_default_fg(), self.lang.cancel.clone(), Colors::get_msg_fg(),);
     }
     pub fn set_grep_result_after(&mut self) {
-        self.guide = format!("{}{}({}){}", &color::Fg(color::LightGreen).to_string(), self.lang.show_search_result.clone(), self.lang.unable_to_edit.clone(), "\n");
-        self.key_desc = format!("{}{}:{}Enter", &color::Fg(color::White).to_string(), self.lang.open_target_file_in_another_terminal.clone(), &color::Fg(color::LightGreen).to_string(),);
+        self.guide = format!("{}{}({}){}", Colors::get_msg_fg(), self.lang.show_search_result.clone(), self.lang.unable_to_edit.clone(), "\n");
+        self.key_desc = format!("{}{}:{}Enter", Colors::get_default_fg(), self.lang.open_target_file_in_another_terminal.clone(), Colors::get_msg_fg(),);
     }
     pub fn set_grep_result_after_no_result(&mut self) {
-        self.guide = format!("{}{}({}){}", &color::Fg(color::LightGreen).to_string(), self.lang.show_search_no_result.clone(), self.lang.unable_to_edit.clone(), "\n");
-        self.key_desc = format!("{}{}:{}Ctrl + w", &color::Fg(color::White).to_string(), self.lang.close.clone(), &color::Fg(color::LightGreen).to_string(),);
+        self.guide = format!("{}{}({}){}", Colors::get_msg_fg(), self.lang.show_search_no_result.clone(), self.lang.unable_to_edit.clone(), "\n");
+        self.key_desc = format!("{}{}:{}Ctrl + w", Colors::get_default_fg(), self.lang.close.clone(), Colors::get_msg_fg(),);
     }
 }

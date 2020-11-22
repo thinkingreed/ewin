@@ -1,7 +1,6 @@
 use crate::model::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
-use termion::color;
 
 impl EvtAct {
     pub fn close<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prompt: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
@@ -37,19 +36,19 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_save_confirm(&mut self) {
-        self.guide = format!("{}{}{}", &color::Fg(color::LightGreen).to_string(), self.lang.save_confirmation_to_close.clone(), "\n");
+        self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.save_confirmation_to_close.clone(), "\n");
         self.key_desc = format!(
             "{}{}:{}Y  {}{}:{}N  {}{}:{}Ctrl + c{}",
-            &color::Fg(color::White).to_string(),
+            Colors::get_default_fg(),
             self.lang.yes.clone(),
-            &color::Fg(color::LightGreen).to_string(),
-            &color::Fg(color::White).to_string(),
+            Colors::get_msg_fg(),
+            Colors::get_default_fg(),
             self.lang.no.clone(),
-            &color::Fg(color::LightGreen).to_string(),
-            &color::Fg(color::White).to_string(),
+            Colors::get_msg_fg(),
+            Colors::get_default_fg(),
             self.lang.cancel.clone(),
-            &color::Fg(color::LightGreen).to_string(),
-            &color::Fg(color::White).to_string(),
+            Colors::get_msg_fg(),
+            Colors::get_default_fg(),
         );
     }
 }

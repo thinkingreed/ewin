@@ -1,7 +1,6 @@
 use crate::_cfg::lang::cfg::LangCfg;
 use crate::model::*;
 use crate::util::*;
-use termion::color::*;
 use termion::*;
 use unicode_width::UnicodeWidthChar;
 
@@ -32,11 +31,19 @@ impl StatusBar {
         let cur_s = self.get_cur_str(editor);
         let cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
         // str_vec.push("\r\n".to_string());
-        let sber_str = format!("{}{}{}{}{}{}", cursor::Goto(1, self.disp_row_posi as u16), clear::CurrentLine, Bg(color::Black), Fg(Rgb(221, 72, 20)), format!("{}{}", filenm_disp, cur_str), Fg(White).to_string(),);
+        let sber_str = format!(
+            "{}{}{}{}{}{}",
+            cursor::Goto(1, self.disp_row_posi as u16),
+            clear::CurrentLine,
+            Colors::get_sber_bg(),
+            Colors::get_sber_fg(),
+            format!("{}{}", filenm_disp, cur_str),
+            Colors::get_default_fg(),
+        );
 
         // self.set_color(str_vec);
         str_vec.push(sber_str);
-        editor.set_textarea_color(str_vec);
+        Colors::set_textarea_color(str_vec);
         self.filenm_disp = filenm_disp;
         self.cur_str = cur_str;
     }
@@ -49,8 +56,8 @@ impl StatusBar {
             return;
         }
         let cur_str = format!("{cur:>w$}", cur = self.get_cur_str(editor), w = self.cur_str.chars().count());
-        let all_str = format!("{}{}{}{}", Bg(color::Black).to_string(), color::Fg(color::Rgb(221, 72, 20)).to_string(), self.filenm_disp, cur_str);
-        let sber_str = format!("{}{}{}{}", termion::cursor::Goto(1, rows as u16), termion::clear::CurrentLine, all_str, color::Fg(color::White).to_string());
+        let all_str = format!("{}{}{}{}", Colors::get_sber_bg(), Colors::get_sber_fg(), self.filenm_disp, cur_str);
+        let sber_str = format!("{}{}{}{}", termion::cursor::Goto(1, rows as u16), termion::clear::CurrentLine, all_str, Colors::get_default_fg());
 
         str_vec.push(sber_str);
     }

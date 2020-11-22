@@ -1,4 +1,4 @@
-pub mod color;
+pub mod colors;
 pub mod editor {
     pub mod clipboard;
     pub mod color;

@@ -8,17 +8,22 @@ use unicode_width::UnicodeWidthChar;
 
 impl Editor {
     pub fn open(&mut self, path: &path::Path) {
-        self.buf = fs::read_to_string(path)
-            .ok()
-            .map(|s| {
+        let result = fs::read_to_string(path);
+
+        match result {
+            Ok(s) => {
                 let buffer: Vec<Vec<char>> = s.lines().map(|line| line.trim_end().chars().collect()).collect();
                 if buffer.is_empty() {
-                    vec![Vec::new()]
+                    self.buf = vec![Vec::new()]
                 } else {
-                    buffer
+                    self.buf = buffer
                 }
-            })
-            .unwrap_or_else(|| vec![Vec::new()]);
+            }
+            Err(error) => {
+                eprintln!("There was a problem opening the file: {:?}", error);
+                std::process::exit(1);
+            }
+        };
 
         self.path = Some(path.into());
         self.rnw = self.buf.len().to_string().len();
@@ -39,10 +44,12 @@ impl Editor {
 
         let d_range = self.d_range.get_range();
 
+        // eprintln!("d_range {:?}", d_range);
+
         if d_range.d_type == DType::Not {
             return;
         } else if d_range.d_type == DType::None || d_range.d_type == DType::All {
-            self.set_textarea_color(str_vec);
+            Colors::set_textarea_color(str_vec);
             str_vec.push(clear::All.to_string());
             str_vec.push(cursor::Goto(1, 1).to_string());
         } else {
@@ -66,7 +73,7 @@ impl Editor {
         let search_ranges = self.search.search_ranges.clone();
 
         for i in y_draw_s..y_draw_e {
-            self.set_rownum_color(str_vec);
+            Colors::set_rownum_color(str_vec);
             // 行番号の空白
             if self.cur.y == i && self.x_offset_disp > 0 {
                 for _ in 0..self.rnw {
@@ -78,7 +85,7 @@ impl Editor {
                 }
                 str_vec.push((i + 1).to_string());
             }
-            self.set_textarea_color(str_vec);
+            Colors::set_textarea_color(str_vec);
 
             let mut x_draw_s = 0;
 
