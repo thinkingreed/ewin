@@ -1,6 +1,7 @@
 use crate::model::*;
 use std::cmp::min;
 use std::fs;
+use std::io::ErrorKind;
 use std::io::Write;
 use std::path;
 use termion::{clear, cursor};
@@ -19,12 +20,15 @@ impl Editor {
                     self.buf = buffer
                 }
             }
-            Err(error) => {
-                eprintln!("There was a problem opening the file: {:?}", error);
-                std::process::exit(1);
-            }
-        };
-
+            Err(err) => match err.kind() {
+                ErrorKind::NotFound => self.buf = vec![Vec::new()],
+                ErrorKind::PermissionDenied => {}
+                _ => {
+                    eprintln!("There was a problem opening the file: {:?}", err);
+                    std::process::exit(1);
+                }
+            },
+        }
         self.path = Some(path.into());
         self.rnw = self.buf.len().to_string().len();
         self.set_cur_default();

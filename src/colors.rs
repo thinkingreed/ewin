@@ -28,7 +28,7 @@ impl Colors {
         return Bg(Rgb(0, 0, 0)).to_string();
     }
     pub fn get_sber_fg() -> String {
-        return Fg(Rgb(221, 72, 20)).to_string();
+        return Fg(Rgb(128, 0, 0)).to_string();
     }
 
     pub fn get_default_fg() -> String {
