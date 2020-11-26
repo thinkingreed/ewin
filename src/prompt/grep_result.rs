@@ -36,7 +36,6 @@ impl EvtAct {
             let v = line_str.trim_end().chars().collect();
             if editor.buf[0].len() == 0 {
                 editor.buf[0] = v;
-                mbar.set_info(mbar.lang.searching.clone());
             } else {
                 editor.buf.push(v);
             }

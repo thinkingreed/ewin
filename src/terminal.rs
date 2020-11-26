@@ -19,12 +19,14 @@ impl Terminal {
         let d_range = editor.d_range.get_range();
         if d_range.d_type != DType::Not {
             editor.draw(str_vec);
-            mbar.draw(str_vec);
-
-            prom.draw(str_vec);
-            sbar.draw(str_vec, editor);
         }
 
+        mbar.draw(str_vec);
+        prom.draw(str_vec);
+
+        if d_range.d_type != DType::Not {
+            sbar.draw(str_vec, editor);
+        }
         self.draw_cur(str_vec, editor, prom);
 
         // write!(out, "{}", &str_vec.concat())?;
@@ -115,10 +117,8 @@ impl Terminal {
         out.flush().unwrap();
     }
     pub fn startup_terminal(&mut self, search_strs: String) {
-        let mut exe_path = "";
-        if cfg!(debug_assertions) {
-            exe_path = "/home/hi/rust/ewin/target/release/ewin";
-        } else {
+        let mut exe_path = "/home/hi/rust/ewin/target/release/ewin";
+        if !cfg!(debug_assertions) {
             if Path::new("/usr/bin/ewin").exists() {
                 exe_path = "/usr/bin/ewin";
             } else {

@@ -56,17 +56,17 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 - **Operations**
 
-| Mapping                             | motion                        |
-|-------------------------------------|------------------------------------|
-| `Ctrl` + `w`                        | Quit.                              |
-| `Ctrl` + `s`                        | Save current buffer to file.       |
-| `Ctrl` + `f`                        | Enter the characters to search.Search target is open file.|
-| `Ctrl` + `g`                        | Grep.Enter the characters to search.The search target is the entered file pattern|
+| Mapping        | Motion                                                                           | Recording target|
+|----------------|----------------------------------------------------------------------------------|-----------------|
+| `Ctrl` + `w`   | Quit.                                                                            |target           |
+| `Ctrl` + `s`   | Save current buffer to file.                                                     |                 |
+| `Ctrl` + `f`   | Enter the characters to search.Search target is open file.                       |                 |
+| `Ctrl` + `g`   | Grep.Enter the characters to search.The search target is the entered file pattern|                 |
 
 
 - **Moving cursor**
 
-| Mapping                             | motion                        |
+| Mapping                             | Motion                             |
 |-------------------------------------|------------------------------------|
 | `↑` or `Mouse ScrollUp`             | Move cursor up.                    |
 | `↓` or `Mouse ScrollDown`           | Move cursor down.                  |
@@ -81,7 +81,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 - **Edit text**
 
-| Mapping                 | motion               |
+| Mapping                 | Motion                    |
 |-------------------------|---------------------------|
 | `Enter`                 | Insert new line           |
 | `BACKSPACE`             | Delete character          |
@@ -96,7 +96,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 - **Select text**
 
-| Mapping                 | motion               |
+| Mapping                 | Motion               |
 |-------------------------|----------------------------------------------------------------------------------|
 | `Shift` + `↑`           | Select from the beginning of the current line and the end of the line above.     |
 | `Shift` + `↓`           | Select from the end of the current line and the beginning of the line below.     |

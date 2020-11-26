@@ -263,7 +263,7 @@ impl Editor {
         self.scroll_horizontal();
     }
 
-    pub fn search_prom(&mut self, prom: &mut Prompt) {
+    pub fn search(&mut self, prom: &mut Prompt) {
         Log::ep_s("　　　　　　　　search_prom");
         prom.is_search = true;
         prom.search();
@@ -358,12 +358,6 @@ impl Editor {
         prom.is_replace = true;
         prom.replace();
     }
-    pub fn grep_prom(&mut self, prom: &mut Prompt) {
-        Log::ep_s("　　　　　　　　grep_prom");
-        prom.is_grep = true;
-        prom.grep();
-    }
-
     pub fn replace(&mut self, prom: &mut Prompt) {
         Log::ep_s("　　　　　　　　replace");
 
@@ -375,6 +369,12 @@ impl Editor {
             self.buf[i] = row_str.chars().collect::<Vec<char>>();
         }
     }
+    pub fn grep_prom(&mut self, prom: &mut Prompt) {
+        Log::ep_s("　　　　　　　　grep_prom");
+        prom.is_grep = true;
+        prom.grep();
+    }
+
     pub fn undo(&mut self) {
         Log::ep_s("　　　　　　　　undo");
         if let Some(ep) = self.undo_vec.pop() {

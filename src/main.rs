@@ -1,13 +1,11 @@
 #[macro_use]
 extern crate clap;
 use clap::{App, Arg};
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton, MouseEvent};
 use ewin::_cfg::lang::cfg::LangCfg;
 use ewin::model::*;
 use std::ffi::OsStr;
 use std::io::{stdout, BufWriter, Write};
 use std::path::{Path, PathBuf};
-use termion::clear;
 use termion::input::MouseTerminal;
 use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
@@ -37,6 +35,7 @@ async fn main() {
     let mut sbar = StatusBar::new(lang_cfg.clone());
     let mut mbar = MsgBar::new(lang_cfg.clone());
     let mut prom = Prompt::new(lang_cfg.clone());
+
     term.set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
 
     // grep_result
@@ -59,6 +58,7 @@ async fn main() {
             prom.is_grep_stdout = true;
             prom.is_grep_stderr = true;
             prom.grep_result();
+            mbar.set_info(mbar.lang.searching.clone());
         } else {
             sbar.filenm = editor.search.file.clone();
             let search_row_nums: Vec<&str> = v[2].split("=").collect();
@@ -120,8 +120,8 @@ async fn exec_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Ed
         } else {
             select! {
                 maybe_event = event_next => {
-                     is_exit =  run_events(out,  term,  editor, mbar, prom,  sbar, maybe_event);
-                    }
+                    is_exit =  run_events(out,  term,  editor, mbar, prom,  sbar, maybe_event);
+                }
             }
         }
         if is_exit {
@@ -132,97 +132,18 @@ async fn exec_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Ed
 }
 
 fn run_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, maybe_event: Option<Result<Event, ErrorKind>>) -> bool {
-    if let Some(Ok(event)) = maybe_event {
-        term.hide_cur(out);
+    let mut is_exit = false;
 
+    if let Some(Ok(event)) = maybe_event {
         editor.curt_evt = event.clone();
 
         // eprintln!("evt {:?}", editor.curt_evt);
 
-        let evt_next_process = EvtAct::check_next_process(out, term, editor, mbar, prom, sbar);
+        is_exit = EvtAct::match_event(out, term, editor, mbar, prom, sbar);
 
-        match evt_next_process {
-            EvtActType::Exit => return true,
-            EvtActType::Hold => {}
-            EvtActType::Next => {
-                EvtAct::init(editor, prom);
-
-                match editor.curt_evt {
-                    Resize(_, _) => {
-                        write!(out, "{}", clear::All.to_string()).unwrap();
-                        term.set_disp_size(editor, mbar, prom, sbar);
-                    }
-
-                    Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                        Char('w') => {
-                            if editor.close(out, prom) == true {
-                                Log::ep_s("Char('w')");
-                                return true;
-                            }
-                        }
-                        Char('s') => {
-                            editor.save(mbar, prom, sbar);
-                        }
-                        Char('c') => editor.copy(&term),
-                        Char('x') => editor.cut(&term),
-                        Char('v') => editor.paste(&term),
-                        Char('a') => editor.all_select(),
-                        Char('f') => editor.search_prom(prom),
-                        Char('r') => editor.replace_prom(prom),
-                        Char('g') => editor.grep_prom(prom),
-                        Char('z') => editor.undo(),
-                        Char('y') => editor.redo(&term),
-                        Home => editor.move_cursor(out, sbar),
-                        End => editor.move_cursor(out, sbar),
-                        _ => {}
-                    },
-
-                    Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                        F(4) => editor.move_cursor(out, sbar),
-                        Right => editor.shift_right(),
-                        Left => editor.shift_left(),
-                        Down => editor.shift_down(),
-                        Up => editor.shift_up(),
-                        Home => editor.shift_home(),
-                        End => editor.shift_end(),
-                        Char(c) => editor.insert_char(c.to_ascii_uppercase()),
-                        _ => {}
-                    },
-                    // Key(KeyEvent { code: Char(c), .. }) => editor.insert_char(c),
-                    Key(KeyEvent { code, .. }) => match code {
-                        Char(c) => editor.insert_char(c),
-                        Enter => editor.enter(),
-                        Backspace => editor.back_space(),
-                        Delete => editor.delete(),
-                        PageDown => editor.page_down(),
-                        PageUp => editor.page_up(),
-                        Home => editor.move_cursor(out, sbar),
-                        End => editor.move_cursor(out, sbar),
-                        Down => editor.move_cursor(out, sbar),
-                        Up => editor.move_cursor(out, sbar),
-                        Left => editor.move_cursor(out, sbar),
-                        Right => editor.move_cursor(out, sbar),
-                        F(3) => editor.move_cursor(out, sbar),
-
-                        _ => {
-                            Log::ep_s("Un Supported no modifiers");
-                        }
-                    },
-                    Mouse(MouseEvent::ScrollUp(_, _, _)) => editor.move_cursor(out, sbar),
-                    Mouse(MouseEvent::ScrollDown(_, _, _)) => editor.move_cursor(out, sbar),
-                    Mouse(MouseEvent::Down(MouseButton::Left, x, y, _)) => editor.mouse_left_press((x + 1) as usize, y as usize),
-                    Mouse(MouseEvent::Down(_, _, _, _)) => {}
-                    Mouse(MouseEvent::Up(_, x, y, _)) => editor.mouse_release((x + 1) as usize, y as usize),
-                    Mouse(MouseEvent::Drag(_, x, y, _)) => editor.mouse_hold((x + 1) as usize, y as usize),
-                }
-
-                // EvtAct::finalize(&mut editor);
-                if editor.is_redraw == true {
-                    term.draw(out, editor, mbar, prom, sbar).unwrap();
-                }
-            }
+        if prom.is_record_macro {
+            editor.record_macro();
         }
-        term.show_cur(out);
     }
-    return false;
+    return is_exit;
 }

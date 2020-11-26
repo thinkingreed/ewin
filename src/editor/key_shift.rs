@@ -1,5 +1,7 @@
 use crate::model::*;
 use crate::util::*;
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
+use std::io::Write;
 
 impl Editor {
     pub fn shift_right(&mut self) {
@@ -174,5 +176,57 @@ impl Editor {
         self.cur.x = self.buf[self.cur.y].len() + self.rnw;
 
         self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
+    }
+
+    pub fn record_macro_start(&mut self, mbar: &mut MsgBar, prom: &mut Prompt) {
+        Log::ep_s("　　　　　　　　macro_record_start");
+        if prom.is_record_macro {
+            prom.is_record_macro = false;
+            mbar.clear();
+            self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
+        } else {
+            prom.is_record_macro = true;
+            mbar.set_info(mbar.lang.operation_recording.clone());
+            self.macro_vec = vec![];
+        }
+    }
+    pub fn record_macro(&mut self) {
+        match self.curt_evt {
+            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
+                Char('c') | Char('x') | Char('a') | Home | End => self.macro_vec.push(Macro {
+                    evt: self.curt_evt.clone(),
+                    sel: self.sel,
+                    ..Macro::default()
+                }),
+                Char('v') => {}
+                Char('w') | Char('s') | Char('f') | Char('r') | Char('g') | Char('z') | Char('y') => {}
+                _ => {}
+            },
+            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
+                F(4) => print!(""),
+                Char(c) => print!(""),
+                Right | Left | Down | Up | Home | End | F(1) => {}
+                _ => {}
+            },
+            // Key(KeyEvent { code: Char(c), .. }) => self.insert_char(c),
+            Key(KeyEvent { code, .. }) => match code {
+                Enter | Backspace | Delete | PageDown | PageUp | Home | End | Down | Up | Left | Right => self.macro_vec.push(Macro { evt: self.curt_evt.clone(), ..Macro::default() }),
+                Char(c) => print!(""),
+                F(3) => print!(""),
+
+                _ => {}
+            },
+            _ => {}
+        }
+    }
+
+    pub fn exec_macro<T: Write>(&mut self, out: &mut T, term: &mut Terminal, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
+        if self.macro_vec.len() > 0 {
+            let macro_vec = self.macro_vec.clone();
+            for mac in macro_vec {
+                self.curt_evt = mac.evt;
+                EvtAct::match_event(out, term, self, mbar, prom, sbar);
+            }
+        }
     }
 }

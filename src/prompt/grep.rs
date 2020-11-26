@@ -1,5 +1,6 @@
 use crate::model::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
+use std::env;
 use std::io::Write;
 use std::path::Path;
 
@@ -153,13 +154,16 @@ impl PromptCont {
                 self.buf = prom.cache_search_filenm.chars().collect();
             }
 
-            self.buf = "*.txt".chars().collect();
+            self.buf = "*.*".chars().collect();
         } else {
             self.buf_desc = format!("{}{}{}", Colors::get_msg_fg(), self.lang.search_folder.clone(), Colors::get_default_fg());
             if prom.cache_search_folder.len() > 0 {
                 self.buf = prom.cache_search_folder.chars().collect();
-            }
-            self.buf = "/home/hi/rust/ewin/target/debug".chars().collect();
+            } else {
+                if let Ok(path) = env::current_dir() {
+                    self.buf = path.to_string_lossy().to_string().chars().collect();
+                }
+            };
         }
     }
 }

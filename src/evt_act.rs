@@ -1,17 +1,109 @@
 use crate::model::*;
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton, MouseEvent};
 use std::io::Write;
+use termion::clear;
 
 impl EvtAct {
-    pub fn check_next_process<T: Write>(out: &mut T, terminal: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn match_event<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> bool {
+        term.hide_cur(out);
+
+        let evt_next_process = EvtAct::check_next_process(out, term, editor, mbar, prom, sbar);
+
+        match evt_next_process {
+            EvtActType::Exit => return true,
+            EvtActType::Hold => {}
+            EvtActType::Next => {
+                EvtAct::init(editor, prom);
+
+                match editor.curt_evt {
+                    Resize(_, _) => {
+                        write!(out, "{}", clear::All.to_string()).unwrap();
+                        term.set_disp_size(editor, mbar, prom, sbar);
+                    }
+
+                    Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
+                        Char('w') => {
+                            if editor.close(out, prom) == true {
+                                return true;
+                            }
+                        }
+                        Char('s') => {
+                            editor.save(mbar, prom, sbar);
+                        }
+                        Char('c') => editor.copy(&term),
+                        Char('x') => editor.cut(&term),
+                        Char('v') => editor.paste(&term),
+                        Char('a') => editor.all_select(),
+                        Char('f') => editor.search(prom),
+                        Char('r') => editor.replace_prom(prom),
+                        Char('g') => editor.grep_prom(prom),
+                        Char('z') => editor.undo(),
+                        Char('y') => editor.redo(&term),
+                        Home => editor.move_cursor(out, sbar),
+                        End => editor.move_cursor(out, sbar),
+                        _ => {}
+                    },
+
+                    Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
+                        Right => editor.shift_right(),
+                        Left => editor.shift_left(),
+                        Down => editor.shift_down(),
+                        Up => editor.shift_up(),
+                        Home => editor.shift_home(),
+                        End => editor.shift_end(),
+                        Char(c) => editor.insert_char(c.to_ascii_uppercase()),
+                        F(1) => editor.record_macro_start(mbar, prom),
+                        F(2) => editor.exec_macro(out, term, mbar, prom, sbar),
+                        F(4) => editor.move_cursor(out, sbar),
+                        _ => {}
+                    },
+                    // Key(KeyEvent { code: Char(c), .. }) => editor.insert_char(c),
+                    Key(KeyEvent { code, .. }) => match code {
+                        Char(c) => editor.insert_char(c),
+                        Enter => editor.enter(),
+                        Backspace => editor.back_space(),
+                        Delete => editor.delete(),
+                        PageDown => editor.page_down(),
+                        PageUp => editor.page_up(),
+                        Home => editor.move_cursor(out, sbar),
+                        End => editor.move_cursor(out, sbar),
+                        Down => editor.move_cursor(out, sbar),
+                        Up => editor.move_cursor(out, sbar),
+                        Left => editor.move_cursor(out, sbar),
+                        Right => editor.move_cursor(out, sbar),
+                        F(3) => editor.move_cursor(out, sbar),
+
+                        _ => {
+                            Log::ep_s("Un Supported no modifiers");
+                        }
+                    },
+                    Mouse(MouseEvent::ScrollUp(_, _, _)) => editor.move_cursor(out, sbar),
+                    Mouse(MouseEvent::ScrollDown(_, _, _)) => editor.move_cursor(out, sbar),
+                    Mouse(MouseEvent::Down(MouseButton::Left, x, y, _)) => editor.mouse_left_press((x + 1) as usize, y as usize),
+                    Mouse(MouseEvent::Down(_, _, _, _)) => {}
+                    Mouse(MouseEvent::Up(_, x, y, _)) => editor.mouse_release((x + 1) as usize, y as usize),
+                    Mouse(MouseEvent::Drag(_, x, y, _)) => editor.mouse_hold((x + 1) as usize, y as usize),
+                }
+
+                // EvtAct::finalize(&mut editor);
+                if editor.is_redraw == true {
+                    term.draw(out, editor, mbar, prom, sbar).unwrap();
+                }
+            }
+        }
+        term.show_cur(out);
+        return false;
+    }
+
+    pub fn check_next_process<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         match editor.curt_evt {
             Resize(_, _) => return EvtActType::Next,
 
             _ => {}
         }
-        terminal.set_disp_size(editor, mbar, prom, sbar);
+        term.set_disp_size(editor, mbar, prom, sbar);
 
-        return prom.check_prom(out, terminal, editor, mbar, sbar);
+        return prom.check_prom(out, term, editor, mbar, sbar);
     }
 
     pub fn init(editor: &mut Editor, prom: &mut Prompt) {

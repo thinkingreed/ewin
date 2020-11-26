@@ -12,7 +12,6 @@ impl StatusBar {
     pub fn draw(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
         // Log::ep_s("　　　　　　　　StatusBar.draw");
 
-        //let mut str_vec: Vec<String> = vec![];
         if self.disp_row_num == 0 {
             return;
         }

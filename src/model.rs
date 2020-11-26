@@ -60,6 +60,7 @@ pub struct Prompt {
     // grep result stdout/stderr output complete flg
     pub is_grep_stdout: bool,
     pub is_grep_stderr: bool,
+    pub is_record_macro: bool,
 }
 
 impl Default for Prompt {
@@ -85,6 +86,7 @@ impl Default for Prompt {
             is_grep: false,
             is_grep_stdout: false,
             is_grep_stderr: false,
+            is_record_macro: false,
         }
     }
 }
@@ -273,6 +275,24 @@ impl Search {
         self.folder = String::new();
     }
 }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Macro {
+    pub evt: Event,
+    pub search: Search,
+    pub sel: SelRange,
+    pub c: char,
+}
+
+impl Default for Macro {
+    fn default() -> Self {
+        Macro {
+            evt: Event::Resize(0, 0),
+            search: Search::default(),
+            sel: SelRange::default(),
+            c: ' ',
+        }
+    }
+}
 
 impl Default for Search {
     fn default() -> Self {
@@ -421,6 +441,7 @@ pub struct Editor {
     pub undo_vec: Vec<EvtProc>,
     pub redo_vec: Vec<EvtProc>,
     pub grep_result_vec: Vec<GrepResult>,
+    pub macro_vec: Vec<Macro>,
 }
 
 impl Default for Editor {
@@ -450,6 +471,7 @@ impl Default for Editor {
             undo_vec: vec![],
             redo_vec: vec![],
             grep_result_vec: vec![],
+            macro_vec: vec![],
         }
     }
 }

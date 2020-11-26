@@ -76,8 +76,8 @@ impl Editor {
                 self.cursor_down();
             }
         } else {
-            self.cur.x = min(self.cur.x + 1, self.buf[self.cur.y].len() + self.rnw);
             self.cur.disp_x += get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.rnw);
+            self.cur.x = min(self.cur.x + 1, self.buf[self.cur.y].len() + self.rnw);
         }
         self.scroll();
         self.scroll_horizontal();
