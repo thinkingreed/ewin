@@ -140,10 +140,6 @@ fn run_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, m
         // eprintln!("evt {:?}", editor.curt_evt);
 
         is_exit = EvtAct::match_event(out, term, editor, mbar, prom, sbar);
-
-        if prom.is_record_macro {
-            editor.record_macro();
-        }
     }
     return is_exit;
 }

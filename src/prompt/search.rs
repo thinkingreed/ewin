@@ -8,8 +8,8 @@ impl EvtAct {
 
         match editor.curt_evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                F(2) => {
-                    Log::ep_s("search.Shift + F2");
+                F(4) => {
+                    Log::ep_s("search.Shift + F4");
                     EvtAct::exec_search(out, term, editor, mbar, prom, sbar, false);
                     return EvtActType::Next;
                 }
@@ -18,8 +18,11 @@ impl EvtAct {
             Key(KeyEvent { code, .. }) => match code {
                 F(3) => {
                     Log::ep_s("search.F3");
-                    EvtAct::exec_search(out, term, editor, mbar, prom, sbar, true);
-                    return EvtActType::Next;
+                    if EvtAct::exec_search(out, term, editor, mbar, prom, sbar, true) {
+                        return EvtActType::Next;
+                    } else {
+                        return EvtActType::Hold;
+                    }
                 }
                 _ => return EvtActType::Hold,
             },
@@ -27,14 +30,18 @@ impl EvtAct {
         }
     }
 
-    fn exec_search<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, is_asc: bool) {
+    fn exec_search<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, is_asc: bool) -> bool {
         let search_str = prom.cont_1.buf.iter().collect::<String>();
         if search_str.len() == 0 {
             mbar.set_err(mbar.lang.not_entered_search_str.clone());
-            mbar.draw_only(out);
+            mbar.draw_only(out, term, editor, prom, sbar);
+            prom.draw_only(out);
+            return false;
         } else if editor.get_search_ranges(search_str.clone()).len() == 0 {
             mbar.set_err(mbar.lang.cannot_find_char_search_for.clone());
-            mbar.draw_only(out);
+            mbar.draw_only(out, term, editor, prom, sbar);
+            prom.draw_only(out);
+            return false;
         } else {
             mbar.clear();
             prom.clear();
@@ -45,6 +52,7 @@ impl EvtAct {
             // indexを初期値に戻す
             editor.search.index = Search::INDEX_UNDEFINED;
             term.draw(out, editor, mbar, prom, sbar).unwrap();
+            return true;
         }
     }
 }
@@ -62,7 +70,7 @@ impl PromptCont {
     pub fn set_search(&mut self) {
         self.guide = format!("{}{}", Colors::get_msg_fg(), self.lang.set_search.clone());
         self.key_desc = format!(
-            "{}{}:{}F3  {}{}:{}Shift + F2  {}{}:{}Ctrl + c{}",
+            "{}{}:{}F3  {}{}:{}Shift + F4  {}{}:{}Ctrl + c{}",
             Colors::get_default_fg(),
             self.lang.search_bottom.clone(),
             Colors::get_msg_fg(),

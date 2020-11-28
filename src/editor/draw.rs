@@ -44,7 +44,12 @@ impl Editor {
         Log::ep("cols", cols);
 
         let mut y_draw_s = self.y_offset;
-        let mut y_draw_e = self.y_offset + min(self.disp_row_num, self.buf.len());
+        //let mut y_draw_e = self.y_offset + min(self.disp_row_num, self.buf.len());
+        let mut y_draw_e = min(self.buf.len(), self.y_offset + min(self.disp_row_num, self.buf.len()));
+
+        Log::ep("y_draw_e 111", y_draw_e);
+        Log::ep("self.y_offset", self.y_offset);
+        Log::ep("self.disp_row_num", self.disp_row_num);
 
         let d_range = self.d_range.get_range();
 
@@ -75,6 +80,8 @@ impl Editor {
         self.rnw = self.buf.len().to_string().len();
         let sel_range = self.sel.get_range();
         let search_ranges = self.search.search_ranges.clone();
+
+        Log::ep("y_draw_e 222", y_draw_e);
 
         for i in y_draw_s..y_draw_e {
             Colors::set_rownum_color(str_vec);

@@ -40,12 +40,11 @@ impl Colors {
         // lime
         return Fg(Rgb(0, 255, 0)).to_string();
     }
-    /*
-    pub fn get_msg_bg() -> String {
-        // lime
-        return Bg(Rgb(255, 255, 255)).to_string();
+    pub fn get_msg_warning_fg() -> String {
+        // orange
+        return Fg(Rgb(255, 165, 0)).to_string();
     }
-    */
+
     pub fn get_msg_err_fg() -> String {
         return Fg(Rgb(255, 0, 0)).to_string();
     }

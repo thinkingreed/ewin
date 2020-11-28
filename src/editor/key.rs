@@ -221,16 +221,16 @@ impl Editor {
         self.cur.disp_x = self.rnw + 1;
         self.scroll_horizontal();
     }
-    pub fn end(&mut self) {
-        self.cur.x = self.buf[self.cur.y].len() + self.rnw;
-        let (_, disp_x) = get_row_width(&self.buf[self.cur.y], 0, self.buf[self.cur.y].len());
-        self.cur.disp_x = disp_x + self.rnw + 1;
 
-        Log::ep("end.cur.disp_x ", self.cur.disp_x);
-        Log::ep("end.cur.x ", self.cur.x);
+    pub fn end(&mut self) {
+        let row = &self.buf[self.cur.y];
+        self.cur.x = row.len() + self.rnw;
+        let (_, disp_x) = get_row_width(row, 0, row.len());
+        self.cur.disp_x = disp_x + self.rnw + 1;
 
         self.scroll_horizontal();
     }
+
     pub fn page_down(&mut self) {
         self.cur.y = min(self.cur.y + self.disp_row_num, self.buf.len() - 1);
         self.cursor_updown_com();

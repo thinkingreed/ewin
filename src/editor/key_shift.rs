@@ -36,6 +36,7 @@ impl Editor {
 
         self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
     }
+
     pub fn shift_left(&mut self) {
         Log::ep_s("　　　　　　　  shift_left");
 
@@ -178,15 +179,20 @@ impl Editor {
         self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
     }
 
-    pub fn record_macro_start(&mut self, mbar: &mut MsgBar, prom: &mut Prompt) {
+    pub fn record_macro_start(&mut self, term: &mut Terminal, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
         Log::ep_s("　　　　　　　　macro_record_start");
         if prom.is_record_macro {
             prom.is_record_macro = false;
-            mbar.clear();
+            mbar.clear_macro();
+            {
+                // disp_row_num変更の可能性がある為にoffset_y再計算
+                term.set_disp_size(self, mbar, prom, sbar);
+                self.scroll();
+            }
             self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
         } else {
             prom.is_record_macro = true;
-            mbar.set_info(mbar.lang.operation_recording.clone());
+            mbar.set_operation_recording(mbar.lang.operation_recording.clone());
             self.macro_vec = vec![];
         }
     }
@@ -203,8 +209,12 @@ impl Editor {
                 _ => {}
             },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                F(4) => print!(""),
-                Char(c) => print!(""),
+                Char(_) => self.macro_vec.push(Macro { evt: self.curt_evt.clone(), ..Macro::default() }),
+                F(4) => self.macro_vec.push(Macro {
+                    evt: self.curt_evt.clone(),
+                    search: Search { str: self.search.str.clone(), ..Search::default() },
+                    ..Macro::default()
+                }),
                 Right | Left | Down | Up | Home | End | F(1) => {}
                 _ => {}
             },
@@ -212,7 +222,11 @@ impl Editor {
             Key(KeyEvent { code, .. }) => match code {
                 Enter | Backspace | Delete | PageDown | PageUp | Home | End | Down | Up | Left | Right => self.macro_vec.push(Macro { evt: self.curt_evt.clone(), ..Macro::default() }),
                 Char(_) => self.macro_vec.push(Macro { evt: self.curt_evt.clone(), ..Macro::default() }),
-                F(3) => print!(""),
+                F(3) => self.macro_vec.push(Macro {
+                    evt: self.curt_evt.clone(),
+                    search: Search { str: self.search.str.clone(), ..Search::default() },
+                    ..Macro::default()
+                }),
 
                 _ => {}
             },

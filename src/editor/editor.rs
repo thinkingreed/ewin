@@ -8,10 +8,15 @@ use unicode_width::UnicodeWidthChar;
 impl Editor {
     // カーソルが画面に映るようにする
     pub fn scroll(&mut self) {
+        Log::ep_s("　　　　　　　 scroll");
         self.y_offset = min(self.y_offset, self.cur.y);
 
         if self.cur.y + 1 >= self.disp_row_num {
             self.y_offset = max(self.y_offset, self.cur.y + 1 - self.disp_row_num);
+            // y_offsetが減少
+            if self.y_offset + self.disp_row_num > self.buf.len() {
+                self.y_offset = self.buf.len() - self.disp_row_num;
+            }
         }
     }
 

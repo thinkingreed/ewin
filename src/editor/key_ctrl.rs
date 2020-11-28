@@ -286,6 +286,7 @@ impl Editor {
                 self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
             } else {
                 self.search.index = self.get_search_str_index(is_asc);
+                Log::ep("search.index", self.search.index);
             }
 
             if self.search.search_ranges.len() == 0 {
@@ -297,10 +298,9 @@ impl Editor {
                 self.cur.x = range.sx + self.rnw;
                 let (_, width) = get_row_width(&self.buf[self.cur.y], 0, range.sx);
                 self.cur.disp_x = width + self.rnw + 1;
-
-                self.scroll();
-                self.scroll_horizontal();
             }
+            self.scroll();
+            self.scroll_horizontal();
         }
     }
     pub fn get_search_ranges(&mut self, search_str: String) -> Vec<SearchRange> {

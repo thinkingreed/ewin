@@ -52,7 +52,7 @@ impl EvtAct {
                         Home => editor.shift_home(),
                         End => editor.shift_end(),
                         Char(c) => editor.insert_char(c.to_ascii_uppercase()),
-                        F(1) => editor.record_macro_start(mbar, prom),
+                        F(1) => editor.record_macro_start(term, mbar, prom, sbar),
                         F(2) => editor.exec_macro(out, term, mbar, prom, sbar),
                         F(4) => editor.move_cursor(out, sbar),
                         _ => {}
@@ -85,7 +85,12 @@ impl EvtAct {
                     Mouse(MouseEvent::Drag(_, x, y, _)) => editor.mouse_hold((x + 1) as usize, y as usize),
                 }
 
-                // EvtAct::finalize(&mut editor);
+                if prom.is_record_macro {
+                    editor.record_macro();
+                }
+
+                EvtAct::finalize(editor);
+
                 if editor.is_redraw == true {
                     term.draw(out, editor, mbar, prom, sbar).unwrap();
                 }
@@ -180,17 +185,10 @@ impl EvtAct {
         }
     }
 
-    /*
     pub fn finalize(editor: &mut Editor) {
-        match editor.curt_evt {
-            Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
-                _ => {}
-            },
-            Key(KeyEvent { code, .. }) => match code {
-                _ => {}
-            },
-            _ => {}
+        // 検索後に検索対象文字の変更対応で、再検索
+        if editor.search.str.len() > 0 {
+            editor.search.search_ranges = editor.get_search_ranges(editor.search.str.clone());
         }
     }
-    */
 }

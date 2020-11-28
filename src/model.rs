@@ -7,9 +7,12 @@ pub const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
 #[derive(Debug, Clone)]
 pub struct MsgBar {
     pub lang: LangCfg,
+    pub msg_disp_macro: String,
     pub msg_disp: String,
     /// ターミナル上の表示数
+    pub disp_macro_row_posi: usize,
     pub disp_row_posi: usize,
+    pub disp_macro_row_num: usize,
     pub disp_row_num: usize,
     pub disp_col_num: usize,
 }
@@ -18,8 +21,11 @@ impl Default for MsgBar {
     fn default() -> Self {
         MsgBar {
             lang: LangCfg::default(),
+            msg_disp_macro: String::new(),
             msg_disp: String::new(),
+            disp_macro_row_posi: 0,
             disp_row_posi: 0,
+            disp_macro_row_num: 0,
             disp_row_num: 0,
             disp_col_num: 0,
         }
@@ -275,6 +281,21 @@ impl Search {
         self.folder = String::new();
     }
 }
+impl Default for Search {
+    fn default() -> Self {
+        Search {
+            str: String::new(),
+            // 未設定
+            index: 0,
+            search_ranges: vec![],
+            file: String::new(),
+            filenm: String::new(),
+            folder: String::new(),
+            row_num: String::new(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Macro {
     pub evt: Event,
@@ -290,21 +311,6 @@ impl Default for Macro {
             search: Search::default(),
             sel: SelRange::default(),
             c: ' ',
-        }
-    }
-}
-
-impl Default for Search {
-    fn default() -> Self {
-        Search {
-            str: String::new(),
-            // 未設定
-            index: Search::INDEX_UNDEFINED,
-            search_ranges: vec![],
-            file: String::new(),
-            filenm: String::new(),
-            folder: String::new(),
-            row_num: String::new(),
         }
     }
 }
