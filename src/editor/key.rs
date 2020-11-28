@@ -33,7 +33,7 @@ impl Editor {
         // Left,Rightの場合は設定しない
         if self.curt_evt == Key(Left.into()) || self.curt_evt == Key(Right.into()) {
         } else {
-            let (cursorx, disp_x) = get_until_updown_x(self.rnw, &self.buf[self.cur.y], self.updown_x);
+            let (cursorx, disp_x) = get_until_x(self.rnw, &self.buf[self.cur.y], self.updown_x);
             self.cur.disp_x = disp_x;
             self.cur.x = cursorx;
         }
@@ -233,7 +233,7 @@ impl Editor {
     }
     pub fn page_down(&mut self) {
         self.cur.y = min(self.cur.y + self.disp_row_num, self.buf.len() - 1);
-        self.cur.x = self.rnw;
+        self.cursor_updown_com();
         self.scroll();
     }
     pub fn page_up(&mut self) {
@@ -242,7 +242,7 @@ impl Editor {
         } else {
             self.cur.y = 0
         }
-        self.cur.x = self.rnw;
+        self.cursor_updown_com();
         self.scroll();
     }
 }

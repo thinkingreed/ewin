@@ -31,13 +31,13 @@ pub fn get_row_width(vec: &Vec<char>, sx: usize, ex: usize) -> (usize, usize) {
     return (cur_x, width);
 }
 
-/// updown_xまでのwidthを加算してdisp_xとcursorx算出
-pub fn get_until_updown_x(rnw: usize, buf: &Vec<char>, updown_x: usize) -> (usize, usize) {
+/// xまでのwidthを加算してdisp_xとcursorx算出
+pub fn get_until_x(rnw: usize, buf: &Vec<char>, x: usize) -> (usize, usize) {
     let (mut cursorx, mut width) = (rnw, rnw);
     for i in 0..buf.len() + 1 {
         if let Some(c) = buf.get(i) {
             let mut c_len = c.width().unwrap_or(0);
-            if width + c_len >= updown_x {
+            if width + c_len >= x {
                 if c_len > 1 {
                     c_len = 1;
                 }

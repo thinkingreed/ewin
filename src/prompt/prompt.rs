@@ -221,7 +221,7 @@ impl Prompt {
     }
     fn set_cur(cont_org: &PromptCont, cont: &mut PromptCont) {
         cont.updown_x = cont_org.cur.disp_x;
-        let (cur_x, width) = get_until_updown_x(0, &cont.buf, cont.updown_x);
+        let (cur_x, width) = get_until_x(0, &cont.buf, cont.updown_x);
         cont.cur.x = cur_x;
         cont.cur.disp_x = width;
     }
