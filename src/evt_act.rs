@@ -15,6 +15,8 @@ impl EvtAct {
             EvtActType::Next => {
                 EvtAct::init(editor, prom);
 
+                // eprintln!("editor.curt_evt.clone(){:?}", editor.curt_evt);
+
                 match editor.curt_evt {
                     Resize(_, _) => {
                         write!(out, "{}", clear::All.to_string()).unwrap();
@@ -142,13 +144,16 @@ impl EvtAct {
                 }
                 _ => editor.is_redraw = true,
             },
-            Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) => {}
+
+            Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) | Mouse(MouseEvent::Down(MouseButton::Left, _, _, _)) | Mouse(MouseEvent::Up(_, _, _, _)) => {}
             _ => editor.is_redraw = true,
         }
+
         if editor.is_redraw {
             editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
         }
 
+        /*
         // 選択範囲クリア判定
         match editor.curt_evt {
             Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {
@@ -166,6 +171,7 @@ impl EvtAct {
             Mouse(MouseEvent::Down(_, _, _, _)) | Mouse(MouseEvent::Up(_, _, _, _)) | Mouse(MouseEvent::Drag(_, _, _, _)) => {}
             _ => editor.sel.clear(),
         }
+        */
         // is_change判定
         match editor.curt_evt {
             Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => {
@@ -186,6 +192,35 @@ impl EvtAct {
     }
 
     pub fn finalize(editor: &mut Editor) {
+        // 選択範囲クリア判定
+        match editor.curt_evt {
+            Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {
+                Down | Up | Left | Right => {}
+                _ => {
+                    editor.sel.clear();
+                    editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
+                }
+            },
+            Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
+                Char('a') | Char('c') => {}
+                _ => {
+                    editor.sel.clear();
+                    editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
+                }
+            },
+            Key(KeyEvent { code, .. }) => match code {
+                _ => {
+                    editor.sel.clear();
+                    editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
+                }
+            },
+            Mouse(MouseEvent::Down(_, _, _, _)) | Mouse(MouseEvent::Up(_, _, _, _)) | Mouse(MouseEvent::Drag(_, _, _, _)) => {}
+            _ => {
+                editor.sel.clear();
+                editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
+            }
+        }
+
         // 検索後に検索対象文字の変更対応で、再検索
         if editor.search.str.len() > 0 {
             editor.search.search_ranges = editor.get_search_ranges(editor.search.str.clone());

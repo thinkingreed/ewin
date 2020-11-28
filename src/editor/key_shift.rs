@@ -199,23 +199,23 @@ impl Editor {
     pub fn record_macro(&mut self) {
         match self.curt_evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                Char('c') | Char('x') | Char('a') | Home | End => self.macro_vec.push(Macro {
-                    evt: self.curt_evt.clone(),
-                    sel: self.sel,
-                    ..Macro::default()
-                }),
-                Char('v') => {}
+                Char('c') | Char('x') | Char('a') | Char('v') | Home | End => self.macro_vec.push(Macro { evt: self.curt_evt.clone(), ..Macro::default() }),
                 Char('w') | Char('s') | Char('f') | Char('r') | Char('g') | Char('z') | Char('y') => {}
                 _ => {}
             },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 Char(_) => self.macro_vec.push(Macro { evt: self.curt_evt.clone(), ..Macro::default() }),
+                Right | Left | Down | Up | Home | End => self.macro_vec.push(Macro {
+                    evt: self.curt_evt.clone(),
+                    //  sel: self.sel,
+                    ..Macro::default()
+                }),
                 F(4) => self.macro_vec.push(Macro {
                     evt: self.curt_evt.clone(),
                     search: Search { str: self.search.str.clone(), ..Search::default() },
                     ..Macro::default()
                 }),
-                Right | Left | Down | Up | Home | End | F(1) => {}
+                F(1) => {}
                 _ => {}
             },
             // Key(KeyEvent { code: Char(c), .. }) => self.insert_char(c),
@@ -237,6 +237,7 @@ impl Editor {
     pub fn exec_macro<T: Write>(&mut self, out: &mut T, term: &mut Terminal, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
         if self.macro_vec.len() > 0 {
             let macro_vec = self.macro_vec.clone();
+            eprintln!("macro_vec {:?}", macro_vec);
             for mac in macro_vec {
                 self.curt_evt = mac.evt;
                 EvtAct::match_event(out, term, self, mbar, prom, sbar);

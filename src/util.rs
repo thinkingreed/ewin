@@ -25,15 +25,15 @@ pub fn get_row_width(vec: &Vec<char>, sx: usize, ex: usize) -> (usize, usize) {
             }
         }
     }
-    Log::ep("cur_x", cur_x);
-    Log::ep("width", width);
+    // Log::ep("cur_x", cur_x);
+    // Log::ep("width", width);
 
     return (cur_x, width);
 }
 
-/// xまでのwidthを加算してdisp_xとcursorx算出
-pub fn get_until_x(rnw: usize, buf: &Vec<char>, x: usize) -> (usize, usize) {
-    let (mut cursorx, mut width) = (rnw, rnw);
+/// updown_xまでのwidthを加算してdisp_xとcursorx算出
+pub fn get_until_updown_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
+    let (mut cur_x, mut width) = (0, 0);
     for i in 0..buf.len() + 1 {
         if let Some(c) = buf.get(i) {
             let mut c_len = c.width().unwrap_or(0);
@@ -46,13 +46,30 @@ pub fn get_until_x(rnw: usize, buf: &Vec<char>, x: usize) -> (usize, usize) {
             } else {
                 width += c_len;
             }
-            cursorx += 1;
+            cur_x += 1;
         // 最終端の空白の場合
         } else {
             width += 1;
         }
     }
-    return (cursorx, width);
+    return (cur_x, width);
+}
+
+/// xまでのwidthを加算してdisp_xとcursorx算出
+pub fn get_until_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
+    let (mut cur_x, mut sum_width) = (0, 0);
+    for i in 0..buf.len() + 1 {
+        if let Some(c) = buf.get(i) {
+            let width = c.width().unwrap_or(0);
+            if sum_width + width > x {
+                break;
+            } else {
+                sum_width += width;
+                cur_x += 1;
+            }
+        }
+    }
+    return (cur_x, sum_width);
 }
 
 // 特定の文字列の先頭から指定バイト数となる文字数取得
@@ -68,13 +85,11 @@ pub fn get_char_count(vec: &Vec<char>, byte_nm: usize) -> usize {
     }
     return x;
 }
+
 pub fn get_cur_x_width(buf: &Vec<char>, x: usize) -> usize {
     if let Some(c) = buf.get(x) {
-        Log::ep_s("get_cur_x_width 111");
-
         return c.width().unwrap_or(0);
     }
-    Log::ep_s("get_cur_x_width 222");
 
     return 1;
 }

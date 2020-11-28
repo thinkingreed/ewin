@@ -33,9 +33,9 @@ impl Editor {
         // Left,Rightの場合は設定しない
         if self.curt_evt == Key(Left.into()) || self.curt_evt == Key(Right.into()) {
         } else {
-            let (cursorx, disp_x) = get_until_x(self.rnw, &self.buf[self.cur.y], self.updown_x);
-            self.cur.disp_x = disp_x;
-            self.cur.x = cursorx;
+            let (cur_x, disp_x) = get_until_updown_x(&self.buf[self.cur.y], self.updown_x - self.rnw);
+            self.cur.disp_x = disp_x + self.rnw;
+            self.cur.x = cur_x + self.rnw;
         }
     }
 
@@ -58,6 +58,7 @@ impl Editor {
             self.cur.disp_x -= get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.rnw);
             self.d_range = DRnage::new(self.cur.y, self.cur.y, DType::Target);
         }
+
         self.scroll();
         self.scroll_horizontal();
     }
