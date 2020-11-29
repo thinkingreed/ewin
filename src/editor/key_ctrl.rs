@@ -98,6 +98,10 @@ impl Editor {
 
         let copy_string;
         let sel_vec = self.get_sel_range_str();
+
+        eprintln!("self.get_copy_range() {:?}", self.get_copy_range());
+        Log::ep("sel_vec.concat()", sel_vec.concat());
+
         if term.env == Env::WSL {
             copy_string = self.set_wsl_vec(sel_vec).join("\n");
         } else {

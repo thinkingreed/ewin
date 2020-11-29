@@ -101,6 +101,7 @@ impl Editor {
     }
 
     pub fn mouse_hold(&mut self, x: usize, y: usize) {
+        Log::ep_s("　　　　　　　  mouse_hold");
         if x <= self.rnw || y >= self.disp_row_num {
             return;
         }
