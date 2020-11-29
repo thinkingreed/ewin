@@ -233,27 +233,22 @@ impl Editor {
         let mut all_vec: Vec<String> = vec![];
         let copy_ranges: Vec<CopyRange> = self.get_copy_range();
 
-        for (i, copy_range) in copy_ranges.iter().enumerate() {
-            let mut vec: Vec<char> = vec![];
+        for copy_range in copy_ranges {
+            let mut vec: Vec<String> = vec![];
 
             for j in copy_range.sx..copy_range.ex {
                 if let Some(c) = self.buf[copy_range.y].get(j) {
                     // Log::ep("ccc", c);
-                    vec.push(c.clone());
+                    vec.push(c.to_string());
                 }
             }
-            // 最終行以外の空行対応
-            /*
-                        if i != copy_ranges.len() - 1 && copy_range.sx == 0 && copy_range.ex == 0 {
-                            vec.push('\n');
-                        }
-            */
+            // 空行
             if copy_range.sx == 0 && copy_range.ex == 0 {
-                vec.push('\n');
+                vec.push("".to_string());
             }
 
             if vec.len() > 0 {
-                all_vec.push(vec.iter().collect::<String>());
+                all_vec.append(&mut vec);
             }
         }
         return all_vec;
