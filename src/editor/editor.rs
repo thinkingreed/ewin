@@ -238,17 +238,17 @@ impl Editor {
 
             for j in copy_range.sx..copy_range.ex {
                 if let Some(c) = self.buf[copy_range.y].get(j) {
-                    // Log::ep("ccc", c);
-                    vec.push(c.to_string());
+                    vec.insert(vec.len(), c.to_string());
                 }
             }
+
             // 空行
             if copy_range.sx == 0 && copy_range.ex == 0 {
                 vec.push("".to_string());
             }
 
             if vec.len() > 0 {
-                all_vec.append(&mut vec);
+                all_vec.push(vec.join(""));
             }
         }
         return all_vec;
