@@ -137,7 +137,7 @@ fn run_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, m
     if let Some(Ok(event)) = maybe_event {
         editor.curt_evt = event.clone();
 
-        // eprintln!("evt {:?}", editor.curt_evt);
+        eprintln!("evtevtevtevtevtevtevtevtevtevt {:?}", editor.curt_evt);
 
         is_exit = EvtAct::match_event(out, term, editor, mbar, prom, sbar);
     }

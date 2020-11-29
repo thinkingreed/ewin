@@ -301,7 +301,6 @@ pub struct Macro {
     pub evt: Event,
     pub search: Search,
     pub sel: SelRange,
-    pub c: char,
 }
 
 impl Default for Macro {
@@ -310,7 +309,6 @@ impl Default for Macro {
             evt: Event::Resize(0, 0),
             search: Search::default(),
             sel: SelRange::default(),
-            c: ' ',
         }
     }
 }

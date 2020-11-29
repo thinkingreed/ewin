@@ -221,7 +221,7 @@ impl Editor {
             // Key(KeyEvent { code: Char(c), .. }) => self.insert_char(c),
             Key(KeyEvent { code, .. }) => match code {
                 Enter | Backspace | Delete | PageDown | PageUp | Home | End | Down | Up | Left | Right => self.macro_vec.push(Macro { evt: self.curt_evt.clone(), ..Macro::default() }),
-                Char(_) => self.macro_vec.push(Macro { evt: self.curt_evt.clone(), ..Macro::default() }),
+                //   Char(_) => self.macro_vec.push(Macro { evt: self.curt_evt.clone(), ..Macro::default() }),
                 F(3) => self.macro_vec.push(Macro {
                     evt: self.curt_evt.clone(),
                     search: Search { str: self.search.str.clone(), ..Search::default() },

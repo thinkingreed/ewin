@@ -59,9 +59,10 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | Mapping        | Motion                                                                           | Recording target|
 |----------------|----------------------------------------------------------------------------------|-----------------|
 | `Ctrl` + `w`   | Quit.                                                                            |target           |
-| `Ctrl` + `s`   | Save current buffer to file.                                                     |                 |
-| `Ctrl` + `f`   | Enter the characters to search.Search target is open file.                       |                 |
-| `Ctrl` + `g`   | Grep.Enter the characters to search.The search target is the entered file pattern|                 |
+| `Ctrl` + `s`   | Save current buffer to file.                                                     |―                |
+| `Ctrl` + `f`   | Enter the characters to search.Search target is open file.                       |―                |
+| `Ctrl` + `g`   | Grep.Enter the characters to search.The search target is the entered file pattern|―                |
+| `Ctrl` + `F1`  | Key record.Recording key operation.                                              |―                |
 
 
 - **Moving cursor**
@@ -111,10 +112,12 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 
 ## Operation restrictions
-| motion   | Mapping                 | environment     |Contents                         |
-|----------|-------------------------|-----------------|---------------------------------|
-| Grep     | `Ctrl` + `g`            | WSL             | Run on default WSL              |
-|          |                         | Ubuntu・CentOS  | Only when using "gnome-terminal"|
+| motion     | Mapping                 | environment     |Contents                                           |
+|------------|-------------------------|-----------------|---------------------------------------------------|
+|`Grep`      | `Ctrl` + `g`            | WSL             | Run on default WSL                                |
+|            |                         | Ubuntu・CentOS  | Only when using "gnome-terminal"                  |
+|`Key record`| `Ctrl` + `F1`           | WSL             | keybindings.command."copy" and "paste" needs to be changed to something other than Ctrl+c, Ctrl+v. Ex)Ctrl+Shift+c, Ctrl+Shift+v                                 |
+
 
 ## Future Works
 

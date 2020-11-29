@@ -99,16 +99,12 @@ impl Editor {
         let copy_string;
         let sel_vec = self.get_sel_range_str();
 
-        eprintln!("self.get_copy_range() {:?}", self.get_copy_range());
-        Log::ep("sel_vec.concat()", sel_vec.concat());
-
         if term.env == Env::WSL {
             copy_string = self.set_wsl_vec(sel_vec).join("\n");
         } else {
             copy_string = sel_vec.join("\n");
         }
 
-        //  let copy_string = vec.iter().collect::<String>().clone();
         Log::ep("copy_string", copy_string.clone());
         self.set_clipboard(&copy_string, &term);
 

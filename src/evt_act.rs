@@ -153,25 +153,6 @@ impl EvtAct {
             editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
         }
 
-        /*
-        // 選択範囲クリア判定
-        match editor.curt_evt {
-            Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {
-                Down | Up | Left | Right => {}
-                _ => editor.sel.clear(),
-            },
-            Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
-                Char('a') | Char('c') | Char('x') => {}
-                _ => editor.sel.clear(),
-            },
-            Key(KeyEvent { code, .. }) => match code {
-                Backspace | Delete => {}
-                _ => editor.sel.clear(),
-            },
-            Mouse(MouseEvent::Down(_, _, _, _)) | Mouse(MouseEvent::Up(_, _, _, _)) | Mouse(MouseEvent::Drag(_, _, _, _)) => {}
-            _ => editor.sel.clear(),
-        }
-        */
         // is_change判定
         match editor.curt_evt {
             Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => {
