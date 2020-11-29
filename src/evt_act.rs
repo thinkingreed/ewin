@@ -54,8 +54,8 @@ impl EvtAct {
                         Home => editor.shift_home(),
                         End => editor.shift_end(),
                         Char(c) => editor.insert_char(c.to_ascii_uppercase()),
-                        F(1) => editor.record_macro_start(term, mbar, prom, sbar),
-                        F(2) => editor.exec_macro(out, term, mbar, prom, sbar),
+                        F(1) => editor.record_key_start(term, mbar, prom, sbar),
+                        F(2) => editor.exec_record_key(out, term, mbar, prom, sbar),
                         F(4) => editor.move_cursor(out, sbar),
                         _ => {}
                     },
@@ -87,13 +87,14 @@ impl EvtAct {
                     Mouse(MouseEvent::Drag(_, x, y, _)) => editor.mouse_hold((x + 1) as usize, y as usize),
                 }
 
-                if prom.is_record_macro {
-                    editor.record_macro();
+                if prom.is_key_record {
+                    editor.record_key();
                 }
 
                 EvtAct::finalize(editor);
 
-                if editor.is_redraw == true {
+                // key_record実行時は最終時のみredraw
+                if editor.is_redraw == true && prom.is_key_record_exec == false || prom.is_key_record_exec == true && prom.is_key_record_exec_draw == true {
                     term.draw(out, editor, mbar, prom, sbar).unwrap();
                 }
             }

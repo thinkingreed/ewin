@@ -179,10 +179,10 @@ impl Editor {
         self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
     }
 
-    pub fn record_macro_start(&mut self, term: &mut Terminal, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
+    pub fn record_key_start(&mut self, term: &mut Terminal, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
         Log::ep_s("　　　　　　　　macro_record_start");
-        if prom.is_record_macro {
-            prom.is_record_macro = false;
+        if prom.is_key_record {
+            prom.is_key_record = false;
             mbar.clear_macro();
             {
                 // disp_row_num変更の可能性がある為にoffset_y再計算
@@ -190,42 +190,44 @@ impl Editor {
                 self.scroll();
             }
             self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
+
+            eprintln!("self.key_record_vec {:?}", self.key_record_vec);
         } else {
-            prom.is_record_macro = true;
+            prom.is_key_record = true;
             mbar.set_operation_recording(mbar.lang.operation_recording.clone());
-            self.macro_vec = vec![];
+            self.key_record_vec = vec![];
         }
     }
-    pub fn record_macro(&mut self) {
+    pub fn record_key(&mut self) {
         match self.curt_evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                Char('c') | Char('x') | Char('a') | Char('v') | Home | End => self.macro_vec.push(Macro { evt: self.curt_evt.clone(), ..Macro::default() }),
+                Char('c') | Char('x') | Char('a') | Char('v') | Home | End => self.key_record_vec.push(KeyRecord { evt: self.curt_evt.clone(), ..KeyRecord::default() }),
                 Char('w') | Char('s') | Char('f') | Char('r') | Char('g') | Char('z') | Char('y') => {}
                 _ => {}
             },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                Char(_) => self.macro_vec.push(Macro { evt: self.curt_evt.clone(), ..Macro::default() }),
-                Right | Left | Down | Up | Home | End => self.macro_vec.push(Macro {
+                Char(_) => self.key_record_vec.push(KeyRecord { evt: self.curt_evt.clone(), ..KeyRecord::default() }),
+                Right | Left | Down | Up | Home | End => self.key_record_vec.push(KeyRecord {
                     evt: self.curt_evt.clone(),
                     //  sel: self.sel,
-                    ..Macro::default()
+                    ..KeyRecord::default()
                 }),
-                F(4) => self.macro_vec.push(Macro {
+                F(4) => self.key_record_vec.push(KeyRecord {
                     evt: self.curt_evt.clone(),
                     search: Search { str: self.search.str.clone(), ..Search::default() },
-                    ..Macro::default()
+                    ..KeyRecord::default()
                 }),
                 F(1) => {}
                 _ => {}
             },
             // Key(KeyEvent { code: Char(c), .. }) => self.insert_char(c),
             Key(KeyEvent { code, .. }) => match code {
-                Enter | Backspace | Delete | PageDown | PageUp | Home | End | Down | Up | Left | Right => self.macro_vec.push(Macro { evt: self.curt_evt.clone(), ..Macro::default() }),
+                Enter | Backspace | Delete | PageDown | PageUp | Home | End | Down | Up | Left | Right => self.key_record_vec.push(KeyRecord { evt: self.curt_evt.clone(), ..KeyRecord::default() }),
                 //   Char(_) => self.macro_vec.push(Macro { evt: self.curt_evt.clone(), ..Macro::default() }),
-                F(3) => self.macro_vec.push(Macro {
+                F(3) => self.key_record_vec.push(KeyRecord {
                     evt: self.curt_evt.clone(),
                     search: Search { str: self.search.str.clone(), ..Search::default() },
-                    ..Macro::default()
+                    ..KeyRecord::default()
                 }),
 
                 _ => {}
@@ -234,14 +236,19 @@ impl Editor {
         }
     }
 
-    pub fn exec_macro<T: Write>(&mut self, out: &mut T, term: &mut Terminal, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
-        if self.macro_vec.len() > 0 {
-            let macro_vec = self.macro_vec.clone();
-            eprintln!("macro_vec {:?}", macro_vec);
-            for mac in macro_vec {
+    pub fn exec_record_key<T: Write>(&mut self, out: &mut T, term: &mut Terminal, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
+        if self.key_record_vec.len() > 0 {
+            prom.is_key_record_exec = true;
+            let macro_vec = self.key_record_vec.clone();
+            for (i, mac) in macro_vec.iter().enumerate() {
                 self.curt_evt = mac.evt;
+                if i == macro_vec.len() - 1 {
+                    prom.is_key_record_exec_draw = true;
+                }
                 EvtAct::match_event(out, term, self, mbar, prom, sbar);
             }
+            prom.is_key_record_exec = false;
+            prom.is_key_record_exec_draw = false;
         }
     }
 }

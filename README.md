@@ -121,7 +121,6 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 ## Future Works
 
-- Macro function(Record keystrokes) 
 - Grep-Replace function
 
 ## License
