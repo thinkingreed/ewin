@@ -30,8 +30,8 @@ pub struct LangCfg {
     pub set_grep: String,
     pub unable_to_edit: String,
     pub open_target_file_in_another_terminal: String,
-    pub operation_recording: String,
-    // Long msg
+    pub key_recording: String,
+    /// Long msg
     pub not_entered_filenm: String,
     pub not_entered_search_str: String,
     pub not_entered_search_file: String,
@@ -41,6 +41,10 @@ pub struct LangCfg {
     pub long_time_to_search: String,
     pub show_search_result: String,
     pub show_search_no_result: String,
+    // File open
+    pub no_read_permission: String,
+    pub file_opening_problem: String,
+    pub file_not_found: String,
 }
 #[derive(Debug, Deserialize)]
 pub struct LangMulti {
@@ -71,7 +75,7 @@ impl LangCfg {
             replace_char: String::new(),
             unable_to_edit: String::new(),
             open_target_file_in_another_terminal: String::new(),
-            operation_recording: String::new(),
+            key_recording: String::new(),
             // Long msg
             save_confirmation_to_close: String::new(),
             terminal_size_small: String::new(),
@@ -88,6 +92,10 @@ impl LangCfg {
             long_time_to_search: String::new(),
             show_search_result: String::new(),
             show_search_no_result: String::new(),
+            // File open
+            no_read_permission: String::new(),
+            file_opening_problem: String::new(),
+            file_not_found: String::new(),
         }
     }
     pub fn read_lang_cfg() -> LangCfg {

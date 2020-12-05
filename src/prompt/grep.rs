@@ -8,7 +8,7 @@ impl EvtAct {
     pub fn grep<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         Log::ep_s("Process.replace");
 
-        match editor.curt_evt {
+        match editor.evt {
             Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {
                 Char(c) => {
                     let c_up = c.to_ascii_uppercase();

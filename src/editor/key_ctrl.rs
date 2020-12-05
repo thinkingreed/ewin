@@ -13,7 +13,7 @@ impl Editor {
         self.sel.sx = 0;
         self.sel.s_disp_x = self.rnw + 1;
         let (cur_x, width) = get_row_width(&self.buf[self.sel.ey], 0, self.buf[self.sel.ey].len());
-        self.sel.ex = cur_x + self.rnw;
+        self.sel.ex = cur_x;
         self.sel.e_disp_x = width + self.rnw + 1;
         self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
     }

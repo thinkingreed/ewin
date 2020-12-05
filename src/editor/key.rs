@@ -31,7 +31,7 @@ impl Editor {
             self.updown_x = self.cur.disp_x;
         }
         // Left,Rightの場合は設定しない
-        if self.curt_evt == Key(Left.into()) || self.curt_evt == Key(Right.into()) {
+        if self.evt == Key(Left.into()) || self.evt == Key(Right.into()) {
         } else {
             let (cur_x, disp_x) = get_until_updown_x(&self.buf[self.cur.y], self.updown_x - self.rnw);
             self.cur.disp_x = disp_x + self.rnw;
@@ -99,6 +99,9 @@ impl Editor {
 
         self.scroll();
         self.scroll_horizontal();
+
+        Log::ep("y_offset_org == self.y_offset", y_offset_org == self.y_offset);
+        Log::ep("rnw_org == self.rnw", rnw_org == self.rnw);
 
         if y_offset_org == self.y_offset && rnw_org == self.rnw {
             self.d_range = DRnage::new(self.cur.y - 1, self.cur.y, DType::After);

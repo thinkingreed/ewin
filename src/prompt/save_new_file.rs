@@ -4,7 +4,7 @@ use std::io::Write;
 
 impl EvtAct {
     pub fn save_new_filenm<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
-        match editor.curt_evt {
+        match editor.evt {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {
                     if prom.cont_1.buf.len() == 0 {

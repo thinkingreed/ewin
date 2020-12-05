@@ -18,7 +18,7 @@ impl Terminal {
         let str_vec: &mut Vec<String> = &mut vec![];
         let d_range = editor.d_range.get_range();
 
-        eprintln!("d_range {:?}", d_range.d_type);
+        Log::ep("d_range", d_range);
 
         if d_range.d_type != DType::Not {
             editor.draw(str_vec);
@@ -79,22 +79,28 @@ impl Terminal {
         prom.disp_row_posi = rows - prom.disp_row_num + 1 - sbar.disp_row_num;
 
         mbar.disp_col_num = cols;
-        if mbar.msg_disp_macro.len() > 0 {
-            mbar.disp_macro_row_num = 1;
+        if mbar.msg_readonly.len() > 0 {
+            mbar.disp_readonly_row_num = 1;
         } else {
-            mbar.disp_macro_row_num = 0;
+            mbar.disp_readonly_row_num = 0;
         }
-        if mbar.msg_disp.len() > 0 {
+        if mbar.msg_keyrecord.len() > 0 {
+            mbar.disp_keyrecord_row_num = 1;
+        } else {
+            mbar.disp_keyrecord_row_num = 0;
+        }
+        if mbar.msg.len() > 0 {
             mbar.disp_row_num = 1;
         } else {
             mbar.disp_row_num = 0;
         }
 
-        mbar.disp_macro_row_posi = rows - mbar.disp_row_num - prom.disp_row_num - sbar.disp_row_num;
         mbar.disp_row_posi = rows - prom.disp_row_num - sbar.disp_row_num;
+        mbar.disp_keyrecord_row_posi = rows - mbar.disp_row_num - prom.disp_row_num - sbar.disp_row_num;
+        mbar.disp_readonly_row_posi = rows - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - sbar.disp_row_num;
 
         editor.disp_col_num = cols;
-        editor.disp_row_num = rows - mbar.disp_macro_row_num - mbar.disp_row_num - prom.disp_row_num - sbar.disp_row_num;
+        editor.disp_row_num = rows - mbar.disp_readonly_row_num - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - sbar.disp_row_num;
 
         /*
             Log::ep("editor.disp_row_num", editor.disp_row_num);

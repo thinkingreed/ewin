@@ -1,18 +1,21 @@
 use crate::_cfg::lang::cfg::LangCfg;
 use crossterm::event::{Event, Event::Key, KeyCode::End};
+use std::fmt;
 use std::path;
-
 pub const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
 
 #[derive(Debug, Clone)]
 pub struct MsgBar {
     pub lang: LangCfg,
-    pub msg_disp_macro: String,
-    pub msg_disp: String,
+    pub msg_readonly: String,
+    pub msg_keyrecord: String,
+    pub msg: String,
     /// ターミナル上の表示数
-    pub disp_macro_row_posi: usize,
+    pub disp_readonly_row_posi: usize,
+    pub disp_keyrecord_row_posi: usize,
     pub disp_row_posi: usize,
-    pub disp_macro_row_num: usize,
+    pub disp_readonly_row_num: usize,
+    pub disp_keyrecord_row_num: usize,
     pub disp_row_num: usize,
     pub disp_col_num: usize,
 }
@@ -21,11 +24,14 @@ impl Default for MsgBar {
     fn default() -> Self {
         MsgBar {
             lang: LangCfg::default(),
-            msg_disp_macro: String::new(),
-            msg_disp: String::new(),
-            disp_macro_row_posi: 0,
+            msg_readonly: String::new(),
+            msg_keyrecord: String::new(),
+            msg: String::new(),
+            disp_readonly_row_posi: 0,
+            disp_keyrecord_row_posi: 0,
             disp_row_posi: 0,
-            disp_macro_row_num: 0,
+            disp_readonly_row_num: 0,
+            disp_keyrecord_row_num: 0,
             disp_row_num: 0,
             disp_col_num: 0,
         }
@@ -304,16 +310,11 @@ impl Default for Search {
 pub struct KeyRecord {
     pub evt: Event,
     pub search: Search,
-    pub sel: SelRange,
 }
 
 impl Default for KeyRecord {
     fn default() -> Self {
-        KeyRecord {
-            evt: Event::Resize(0, 0),
-            search: Search::default(),
-            sel: SelRange::default(),
-        }
+        KeyRecord { evt: Event::Resize(0, 0), search: Search::default() }
     }
 }
 
@@ -354,6 +355,8 @@ impl Default for SelRange {
 impl SelRange {
     // 0-indexedの為に初期値を-1
     pub fn clear(&mut self) {
+        Log::ep_s("SelRange.clear");
+
         self.sy = 0;
         self.ey = 0;
         self.sx = 0;
@@ -390,6 +393,11 @@ impl SelRange {
             s_disp_x: s_disp_x,
             e_disp_x: e_disp_x,
         }
+    }
+}
+impl fmt::Display for SelRange {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "SelRange sy:{}, ey:{}, sx:{}, ex:{}, s_disp_x:{}, e_disp_x:{},", self.sy, self.ey, self.sx, self.ex, self.s_disp_x, self.e_disp_x)
     }
 }
 
@@ -436,7 +444,7 @@ pub struct Editor {
     /// 行番号の列数 row_num_width
     pub rnw: usize,
     pub sel: SelRange,
-    pub curt_evt: Event,
+    pub evt: Event,
     pub is_redraw: bool,
     pub is_undo: bool,
     pub clipboard: String,
@@ -467,7 +475,7 @@ impl Default for Editor {
             path: None,
             rnw: 0,
             sel: SelRange::default(),
-            curt_evt: Key(End.into()),
+            evt: Key(End.into()),
             is_redraw: false,
             is_undo: false,
             clipboard: String::new(),
@@ -519,6 +527,11 @@ impl DRnage {
         self.d_type = DType::None;
     }
 }
+impl fmt::Display for DRnage {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "SelRange sy:{}, ey:{}, d_type:{}, ", self.sy, self.ey, self.d_type)
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// DrawType
@@ -528,6 +541,18 @@ pub enum DType {
     None,
     All,
     Not,
+}
+
+impl fmt::Display for DType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            DType::Target => write!(f, "Target"),
+            DType::After => write!(f, "After"),
+            DType::None => write!(f, "None"),
+            DType::All => write!(f, "All"),
+            DType::Not => write!(f, "Not"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

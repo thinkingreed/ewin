@@ -36,6 +36,11 @@ impl Colors {
     pub fn get_default_fg() -> String {
         return Fg(Rgb(255, 255, 255)).to_string();
     }
+
+    pub fn get_default_bg() -> String {
+        return Bg(Rgb(0, 0, 0)).to_string();
+    }
+
     pub fn get_msg_fg() -> String {
         // lime
         return Fg(Rgb(0, 255, 0)).to_string();

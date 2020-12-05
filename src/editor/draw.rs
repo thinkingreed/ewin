@@ -8,7 +8,19 @@ use termion::{clear, cursor};
 use unicode_width::UnicodeWidthChar;
 
 impl Editor {
-    pub fn open(&mut self, path: &path::Path) {
+    pub fn open(&mut self, path: &path::Path, mbar: &mut MsgBar) {
+        if path.to_string_lossy().to_string().len() > 0 {
+            if path.exists() {
+                let metadata = fs::metadata(path).unwrap();
+                if metadata.permissions().readonly() {
+                    mbar.set_readonly(mbar.lang.unable_to_edit.clone());
+                }
+            } else {
+                println!("{}", mbar.lang.file_not_found.clone());
+                std::process::exit(1);
+            }
+        }
+
         let result = fs::read_to_string(path);
 
         match result {
@@ -21,10 +33,13 @@ impl Editor {
                 }
             }
             Err(err) => match err.kind() {
+                ErrorKind::PermissionDenied => {
+                    println!("{}", mbar.lang.no_read_permission.clone());
+                    std::process::exit(1);
+                }
                 ErrorKind::NotFound => self.buf = vec![Vec::new()],
-                ErrorKind::PermissionDenied => {}
                 _ => {
-                    eprintln!("There was a problem opening the file: {:?}", err);
+                    println!("{} {:?}", mbar.lang.file_opening_problem, err);
                     std::process::exit(1);
                 }
             },
@@ -47,13 +62,8 @@ impl Editor {
         //let mut y_draw_e = self.y_offset + min(self.disp_row_num, self.buf.len());
         let mut y_draw_e = min(self.buf.len(), self.y_offset + min(self.disp_row_num, self.buf.len()));
 
-        Log::ep("y_draw_e 111", y_draw_e);
-        Log::ep("self.y_offset", self.y_offset);
-        Log::ep("self.disp_row_num", self.disp_row_num);
-
         let d_range = self.d_range.get_range();
-
-        // eprintln!("d_range {:?}", d_range);
+        Log::ep("d_range", d_range);
 
         if d_range.d_type == DType::Not {
             return;
@@ -141,9 +151,6 @@ impl Editor {
         Log::ep("cur.disp_x", self.cur.disp_x);
         Log::ep("x_offset", self.x_offset);
         Log::ep("x_offset_disp", self.x_offset_disp);
-
-        //write!(out, "{}", &str_vec.concat()).unwrap();
-        //out.flush().unwrap();
     }
 
     pub fn draw_cur<T: Write>(&mut self, out: &mut T, sbar: &mut StatusBar) {

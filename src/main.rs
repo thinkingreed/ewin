@@ -64,7 +64,7 @@ async fn main() {
             let search_row_nums: Vec<&str> = v[2].split("=").collect();
             editor.search.row_num = search_row_nums[1].to_string();
             Log::ep("search_row_num", editor.search.row_num.clone());
-            editor.open(Path::new(&sbar.filenm));
+            editor.open(Path::new(&sbar.filenm), &mut mbar);
             editor.search_str(true);
         }
     } else {
@@ -73,7 +73,7 @@ async fn main() {
         } else {
             sbar.filenm = file_path.to_string();
         }
-        editor.open(Path::new(&file_path));
+        editor.open(Path::new(&file_path), &mut mbar);
     }
 
     let stdout = MouseTerminal::from(AlternateScreen::from(stdout()).into_raw_mode().unwrap());
@@ -135,9 +135,9 @@ fn run_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, m
     let mut is_exit = false;
 
     if let Some(Ok(event)) = maybe_event {
-        editor.curt_evt = event.clone();
+        editor.evt = event.clone();
 
-        eprintln!("evtevtevtevtevtevtevtevtevtevt {:?}", editor.curt_evt);
+        // eprintln!("evtevtevtevtevtevtevtevtevtevt {:?}", editor.evt);
 
         is_exit = EvtAct::match_event(out, term, editor, mbar, prom, sbar);
     }

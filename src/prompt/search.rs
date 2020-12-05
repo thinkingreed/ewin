@@ -6,7 +6,7 @@ impl EvtAct {
     pub fn search<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         Log::ep_s("Process.search");
 
-        match editor.curt_evt {
+        match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 F(4) => {
                     Log::ep_s("search.Shift + F4");

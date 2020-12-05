@@ -21,7 +21,7 @@ move_input_field="入力箇所移動"
 replace_char="置換文字"
 unable_to_edit="編集不可"
 open_target_file_in_another_terminal="対象のファイルを別のターミナルで開く"
-operation_recording="操作記録中..."
+key_recording="操作記録中..."
 ## Msg ##
 save_confirmation_to_close="保存して終了しますか？"
 terminal_size_small="ターミナルサイズが小さい為に終了します。サイズを大きくして再実行して下さい"
@@ -38,6 +38,10 @@ cannot_find_char_search_for="検索する文字が見つかりません"
 long_time_to_search="検索対象ファイル多い場合に非常に時間がかかる場合があります"
 show_search_result="検索結果を表示しています"
 show_search_no_result="検索対象は1件も存在しませんでした"
+no_read_permission="読み込み権限がありません"
+file_opening_problem="ファイルを開く際に問題が発生しました"
+file_not_found="ファイルが存在しません"
+
 [en]
 row="row"
 col="col"
@@ -59,7 +63,8 @@ move_input_field="move input field"
 replace_char="replace character"
 unable_to_edit="unable to edit"
 open_target_file_in_another_terminal="open target file in another terminal"
-operation_recording="operation recording..."
+key_recording="operation recording..."
+
 
 ## Msg ##
 save_confirmation_to_close="Do you want to save and exit?"
@@ -77,4 +82,8 @@ cannot_find_char_search_for="Cannot find the character to search for"
 long_time_to_search="It may take a long time if there are many files to be searched"
 show_search_result="show search result"
 show_search_no_result="There was no search target"
+no_read_permission="No read permission"
+file_opening_problem="There was a problem in opening the file"
+file_not_found="File not found"
+
 "#;

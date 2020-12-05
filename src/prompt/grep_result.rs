@@ -89,8 +89,9 @@ impl EvtAct {
 
     pub fn exit_grep_result<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, child: &mut Child) {
         child.kill();
-        mbar.clear();
         prom.clear();
+        mbar.msg = String::new();
+        mbar.set_readonly(mbar.lang.unable_to_edit.clone());
         if editor.grep_result_vec.len() > 0 {
             prom.grep_result_after();
         } else {
@@ -121,7 +122,7 @@ impl EvtAct {
         }
     }
     pub fn grep_result(term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar) -> EvtActType {
-        match editor.curt_evt {
+        match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 F(4) | Right | Left | Down | Up | Home | End => {
                     return EvtActType::Next;
@@ -184,11 +185,11 @@ impl PromptCont {
         self.key_desc = format!("{}{}:{}Ctrl + c", Colors::get_default_fg(), self.lang.cancel.clone(), Colors::get_msg_fg(),);
     }
     pub fn set_grep_result_after(&mut self) {
-        self.guide = format!("{}{}({}){}", Colors::get_msg_fg(), self.lang.show_search_result.clone(), self.lang.unable_to_edit.clone(), "\n");
+        self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.show_search_result.clone(), "\n");
         self.key_desc = format!("{}{}:{}Enter", Colors::get_default_fg(), self.lang.open_target_file_in_another_terminal.clone(), Colors::get_msg_fg(),);
     }
     pub fn set_grep_result_after_no_result(&mut self) {
-        self.guide = format!("{}{}({}){}", Colors::get_msg_fg(), self.lang.show_search_no_result.clone(), self.lang.unable_to_edit.clone(), "\n");
+        self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.show_search_no_result.clone(), "\n");
         self.key_desc = format!("{}{}:{}Ctrl + w", Colors::get_default_fg(), self.lang.close.clone(), Colors::get_msg_fg(),);
     }
 }

@@ -6,7 +6,7 @@ impl EvtAct {
     pub fn replace<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         Log::ep_s("Process.replace");
 
-        match editor.curt_evt {
+        match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 Char(c) => {
                     match prom.buf_posi {

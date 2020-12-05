@@ -151,30 +151,45 @@ impl Editor {
     }
     pub fn shift_home(&mut self) {
         Log::ep_s("　　　　　　　　shift_home");
-        self.sel.sy = self.cur.y;
-        self.sel.sx = self.cur.x - self.rnw;
-        self.sel.s_disp_x = self.cur.disp_x;
-        self.sel.ey = self.cur.y;
-        self.sel.ex = self.rnw;
-        self.sel.e_disp_x = self.rnw;
+        if !self.sel.is_selected() {
+            self.sel.sy = self.cur.y;
+            self.sel.sx = self.cur.x - self.rnw;
+            self.sel.s_disp_x = self.cur.disp_x;
+        }
         self.cur.x = self.rnw;
         self.cur.disp_x = self.rnw + 1;
+
+        self.sel.ey = self.cur.y;
+        self.sel.ex = 0;
+        self.sel.e_disp_x = self.rnw + 1;
+
+        // 選択開始位置とカーソルが重なった場合
+        if self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
+            self.sel.clear();
+        }
 
         self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
     }
     pub fn shift_end(&mut self) {
         Log::ep_s("　　　　　　　  shift_end");
 
-        self.sel.sy = self.cur.y;
-        self.sel.sx = self.cur.x - self.rnw;
-        self.sel.s_disp_x = self.cur.disp_x;
+        if !self.sel.is_selected() {
+            self.sel.sy = self.cur.y;
+            self.sel.sx = self.cur.x - self.rnw;
+            self.sel.s_disp_x = self.cur.disp_x;
+        }
+        let (_, width) = get_row_width(&self.buf[self.cur.y], self.cur.x - self.rnw, self.buf[self.cur.y].len());
+        self.cur.disp_x = self.cur.disp_x + width;
+        self.cur.x = self.buf[self.cur.y].len() + self.rnw;
+
         self.sel.ey = self.cur.y;
         self.sel.ex = self.buf[self.cur.y].len();
-        let (_, width) = get_row_width(&self.buf[self.cur.y], self.cur.x - self.rnw, self.buf[self.cur.y].len());
-        self.sel.e_disp_x = self.cur.disp_x + width;
+        self.sel.e_disp_x = self.cur.disp_x;
 
-        self.cur.disp_x = self.sel.e_disp_x;
-        self.cur.x = self.buf[self.cur.y].len() + self.rnw;
+        // 選択開始位置とカーソルが重なった場合
+        if self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
+            self.sel.clear();
+        }
 
         self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
     }
@@ -190,46 +205,42 @@ impl Editor {
                 self.scroll();
             }
             self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
-
-            eprintln!("self.key_record_vec {:?}", self.key_record_vec);
         } else {
             prom.is_key_record = true;
-            mbar.set_operation_recording(mbar.lang.operation_recording.clone());
+            mbar.set_keyrecord(mbar.lang.key_recording.clone());
             self.key_record_vec = vec![];
         }
     }
     pub fn record_key(&mut self) {
-        match self.curt_evt {
+        match self.evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                Char('c') | Char('x') | Char('a') | Char('v') | Home | End => self.key_record_vec.push(KeyRecord { evt: self.curt_evt.clone(), ..KeyRecord::default() }),
+                Char('c') | Char('x') | Char('a') | Char('v') | Home | End => self.key_record_vec.push(KeyRecord { evt: self.evt.clone(), ..KeyRecord::default() }),
                 Char('w') | Char('s') | Char('f') | Char('r') | Char('g') | Char('z') | Char('y') => {}
                 _ => {}
             },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                Char(_) => self.key_record_vec.push(KeyRecord { evt: self.curt_evt.clone(), ..KeyRecord::default() }),
-                Right | Left | Down | Up | Home | End => self.key_record_vec.push(KeyRecord {
-                    evt: self.curt_evt.clone(),
-                    //  sel: self.sel,
+                Right | Left | Down | Up | Home | End => self.key_record_vec.push(KeyRecord { evt: self.evt.clone(), ..KeyRecord::default() }),
+                Char(c) => self.key_record_vec.push(KeyRecord {
+                    evt: Key(KeyEvent {
+                        code: Char(c.to_ascii_uppercase()),
+                        modifiers: KeyModifiers::SHIFT,
+                    }),
                     ..KeyRecord::default()
                 }),
                 F(4) => self.key_record_vec.push(KeyRecord {
-                    evt: self.curt_evt.clone(),
+                    evt: self.evt.clone(),
                     search: Search { str: self.search.str.clone(), ..Search::default() },
-                    ..KeyRecord::default()
                 }),
                 F(1) => {}
                 _ => {}
             },
-            // Key(KeyEvent { code: Char(c), .. }) => self.insert_char(c),
             Key(KeyEvent { code, .. }) => match code {
-                Enter | Backspace | Delete | PageDown | PageUp | Home | End | Down | Up | Left | Right => self.key_record_vec.push(KeyRecord { evt: self.curt_evt.clone(), ..KeyRecord::default() }),
-                //   Char(_) => self.macro_vec.push(Macro { evt: self.curt_evt.clone(), ..Macro::default() }),
+                Enter | Backspace | Delete | PageDown | PageUp | Home | End | Down | Up | Left | Right => self.key_record_vec.push(KeyRecord { evt: self.evt.clone(), ..KeyRecord::default() }),
+                Char(_) => self.key_record_vec.push(KeyRecord { evt: self.evt.clone(), ..KeyRecord::default() }),
                 F(3) => self.key_record_vec.push(KeyRecord {
-                    evt: self.curt_evt.clone(),
+                    evt: self.evt.clone(),
                     search: Search { str: self.search.str.clone(), ..Search::default() },
-                    ..KeyRecord::default()
                 }),
-
                 _ => {}
             },
             _ => {}
@@ -241,7 +252,7 @@ impl Editor {
             prom.is_key_record_exec = true;
             let macro_vec = self.key_record_vec.clone();
             for (i, mac) in macro_vec.iter().enumerate() {
-                self.curt_evt = mac.evt;
+                self.evt = mac.evt;
                 if i == macro_vec.len() - 1 {
                     prom.is_key_record_exec_draw = true;
                 }

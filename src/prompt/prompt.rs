@@ -2,7 +2,7 @@ use crate::_cfg::lang::cfg::LangCfg;
 use crate::model::*;
 use crate::util::*;
 use crossterm::event::KeyCode;
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
 use std::cmp::{max, min};
 use std::io::Write;
 use termion::{clear, cursor};
@@ -66,92 +66,7 @@ impl Prompt {
             str_vec.push(cursor::Goto(self.cont_1.cur.disp_x as u16, (self.disp_row_posi + self.disp_row_num - 1) as u16).to_string());
         }
     }
-    pub fn check_prom<T: Write>(&mut self, out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, sbar: &mut StatusBar) -> EvtActType {
-        if self.is_save_new_file == true || self.is_search == true || self.is_close_confirm == true || self.is_replace == true || self.is_grep == true || self.is_grep_result == true {
-            match editor.curt_evt {
-                Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                    Char('c') => {
-                        if self.is_grep_result && self.is_grep_result_cancel == false {
-                            self.is_grep_result_cancel = true;
-                        } else {
-                            self.clear();
-                            mbar.clear();
-                            term.draw(out, editor, mbar, self, sbar).unwrap();
-                        }
-                        return EvtActType::Hold;
-                    }
-                    _ => {
-                        if !self.is_grep_result {
-                            return EvtActType::Hold;
-                        }
-                    }
-                },
-                _ => {}
-            }
-        }
-        if self.is_save_new_file == true || self.is_close_confirm == true {
-            match editor.curt_evt {
-                Key(KeyEvent { modifiers: KeyModifiers::SHIFT, .. }) => return EvtActType::Hold,
-                _ => {}
-            }
-        }
-        if self.is_save_new_file == true || self.is_search == true {
-            match editor.curt_evt {
-                Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                    Char(c) => {
-                        self.cont_1.insert_char(c.to_ascii_uppercase());
-                        self.draw_only(out);
-                        return EvtActType::Hold;
-                    }
-                    _ => {}
-                },
-                Key(KeyEvent { code, .. }) => match code {
-                    Left | Right | Delete | Backspace => {
-                        self.cont_1.edit(code);
-                        self.draw_only(out);
-                        return EvtActType::Hold;
-                    }
-                    Char(c) => {
-                        self.cont_1.insert_char(c);
-                        self.draw_only(out);
-                        return EvtActType::Hold;
-                    }
-                    _ => {}
-                },
-                _ => {}
-            }
-        }
-        if self.is_replace == true || self.is_grep == true {
-            match editor.curt_evt {
-                Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                    BackTab => {
-                        self.tab(false);
-                        self.draw_only(out);
-                        return EvtActType::Hold;
-                    }
-                    _ => {}
-                },
-                _ => {}
-            }
-        }
 
-        if self.is_save_new_file == true {
-            return EvtAct::save_new_filenm(out, term, editor, mbar, self, sbar);
-        } else if self.is_close_confirm == true {
-            return EvtAct::close(out, term, editor, mbar, self, sbar);
-        } else if self.is_search == true {
-            return EvtAct::search(out, term, editor, mbar, self, sbar);
-        } else if self.is_replace == true {
-            return EvtAct::replace(out, term, editor, mbar, self, sbar);
-        } else if self.is_grep == true {
-            return EvtAct::grep(out, term, editor, mbar, self, sbar);
-        } else if self.is_grep_result == true {
-            return EvtAct::grep_result(term, editor, mbar);
-        } else {
-            Log::ep_s("EvtProcess::NextEvtProcess");
-            return EvtActType::Next;
-        }
-    }
     pub fn cursor_down(&mut self) {
         Log::ep_s("◆　cursor_down");
         if self.is_replace {

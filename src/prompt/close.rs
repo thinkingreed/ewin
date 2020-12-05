@@ -4,7 +4,7 @@ use std::io::Write;
 
 impl EvtAct {
     pub fn close<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prompt: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
-        match editor.curt_evt {
+        match editor.evt {
             Key(KeyEvent { code: Char(c), .. }) => {
                 if c == 'y' {
                     // save成否判定

@@ -56,59 +56,60 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 - **Operations**
 
-| Mapping        | Motion                                                                           | Recording target|
-|----------------|----------------------------------------------------------------------------------|-----------------|
-| `Ctrl` + `w`   | Quit.                                                                            |target           |
-| `Ctrl` + `s`   | Save current buffer to file.                                                     |―                |
-| `Ctrl` + `f`   | Enter the characters to search.Search target is open file.                       |―                |
-| `Ctrl` + `g`   | Grep.Enter the characters to search.The search target is the entered file pattern|―                |
-| `Ctrl` + `F1`  | Key record.Recording key operation.                                              |―                |
+| Mapping        | Motion                                                                               |Key recording|
+|----------------|--------------------------------------------------------------------------------------|-------------|
+| `Ctrl` + `w`   | Quit.                                                                                |―            |
+| `Ctrl` + `s`   | Save current buffer to file.                                                         |―            |
+| `Ctrl` + `f`   | Enter the characters to search.Search target is open file.                           |―            |
+| `Ctrl` + `g`   | Grep.Enter the characters to search.The search target is the entered file pattern    |―            |
+| `Shift` + `F1` | Key record start or stop.Recording key operation.                                    |―            |
+| `Shift` + `F2` | Execution of the recorded key.                                                       |―            |
 
 
 - **Moving cursor**
 
-| Mapping                             | Motion                             |
-|-------------------------------------|------------------------------------|
-| `↑` or `Mouse ScrollUp`             | Move cursor up.                    |
-| `↓` or `Mouse ScrollDown`           | Move cursor down.                  |
-| `→`                                 | Move cursor right.                 |
-| `←`                                 | Move cursor left.                  |
-| `HOME`                              | Move cursor to head of line.       |
-| `END`                               | Move cursor to end of line.        |
-| `PAGE DOWN`                         | Next page.                         |
-| `PAGE UP`                           | Previous page.                     |
-| `Ctrl` + `HOME`                     | Move cursor to first of line.      |
-| `Ctrl` + `END`                      | Move cursor to last of line.       |
+| Mapping                             | Motion                             |Key recording|
+|-------------------------------------|------------------------------------|-------------|
+| `↑` or `Mouse ScrollUp`             | Move cursor up.                    |target       |
+| `↓` or `Mouse ScrollDown`           | Move cursor down.                  |target       |
+| `→`                                 | Move cursor right.                 |target       |
+| `←`                                 | Move cursor left.                  |target       |
+| `HOME`                              | Move cursor to head of line.       |target       |
+| `END`                               | Move cursor to end of line.        |target       |
+| `PAGE DOWN`                         | Next page.                         |target       |
+| `PAGE UP`                           | Previous page.                     |target       |
+| `Ctrl` + `HOME`                     | Move cursor to first of line.      |target       |
+| `Ctrl` + `END`                      | Move cursor to last of line.       |target       |
 
 - **Edit text**
 
-| Mapping                 | Motion                    |
-|-------------------------|---------------------------|
-| `Enter`                 | Insert new line           |
-| `BACKSPACE`             | Delete character          |
-| `DELETE`                | Delete next character     |
-| `Ctrl` + `x`            | Select range cut.         |
-| `Ctrl` + `c`            | Select range cop.         |
-| `Ctrl` + `v`            | Paste the copied characters.|
-| `Ctrl` + `r`            | Replace character.|
-| `Ctrl` + `z`            | Undo.Undo the last edit and return to the original state.|
-| `Ctrl` + `y`            | Redo.Make the last update again.|
+| Mapping                 | Motion                          |Key recording|
+|-------------------------|---------------------------------|-------------|
+| `Enter`                 | Insert new line                 |target       |
+| `BACKSPACE`             | Delete character                |target       |
+| `DELETE`                | Delete next character           |target       |
+| `Ctrl` + `x`            | Select range cut.               |target       |
+| `Ctrl` + `c`            | Select range cop.               |target       |
+| `Ctrl` + `v`            | Paste the copied characters.    |target       |
+| `Ctrl` + `r`            | Replace character.              |―            |
+| `Ctrl` + `z`            | Undo.Undo the last edit.        |―            |
+| `Ctrl` + `y`            | Redo.Make the last update again.|―            |
 
 
 - **Select text**
 
-| Mapping                 | Motion               |
-|-------------------------|----------------------------------------------------------------------------------|
-| `Shift` + `↑`           | Select from the beginning of the current line and the end of the line above.     |
-| `Shift` + `↓`           | Select from the end of the current line and the beginning of the line below.     |
-| `Shift` + `→`           | Select the next character.　　　　　　　　　　　　　　　　　　　　　　　　　　 　　 　| 
-| `Shift` + `←`           | Select the previous character.                                                   | 
-| `Shift` + `HOME`        | Select the head of line.                                                         | 
-| `Shift` + `END`         | Select the end of line.                                                          |
-| `Ctrl` + `a`            | Select all.                                                                      | 
-| `F3`                    | Search for characters below.     　　　　　                                       |
-| `Shift` + `F4`          | Search for above characters below.　　　　　                                      |
-| `Mouse` + `Left.Down, Drag, Up`    | Select a range.|
+| Mapping                   | Motion                                                                     |Key recording|
+|---------------------------|----------------------------------------------------------------------------|-------------|
+| `Shift` + `↑`             | Select from the beginning of the current line and the end of the line above|target       |
+| `Shift` + `↓`             | Select from the end of the current line and the beginning of the line below|target       |
+| `Shift` + `→`             | Select the next character.　　　　　　　　　　　　　　　　　　　　　　　　　　  |target       |
+| `Shift` + `←`             | Select the previous character.                                             |target       | 
+| `Shift` + `HOME`          | Select the head of line.                                                   |target       | 
+| `Shift` + `END`           | Select the end of line.                                                    |target       |
+| `Ctrl` + `a`              | Select all.                                                                |target       |
+| `F3`                      | Search for characters below.     　　　　　                                 |target       |
+| `Shift` + `F4`            | Search for above characters below.　　　　　                                |target       |
+| `Mouse Left.Down` + `Drag`| Select a range.                                                            |target       |
 
 
 ## Operation restrictions

@@ -17,7 +17,7 @@ impl EvtAct {
 
                 // eprintln!("editor.curt_evt.clone(){:?}", editor.curt_evt);
 
-                match editor.curt_evt {
+                match editor.evt {
                     Resize(_, _) => {
                         write!(out, "{}", clear::All.to_string()).unwrap();
                         term.set_disp_size(editor, mbar, prom, sbar);
@@ -104,20 +104,147 @@ impl EvtAct {
     }
 
     pub fn check_next_process<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
-        match editor.curt_evt {
+        match editor.evt {
             Resize(_, _) => return EvtActType::Next,
-
             _ => {}
         }
         term.set_disp_size(editor, mbar, prom, sbar);
 
-        return prom.check_prom(out, term, editor, mbar, sbar);
+        return EvtAct::check_prom(out, term, editor, mbar, prom, sbar);
+    }
+
+    pub fn check_prom<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+        if prom.is_save_new_file == true || prom.is_search == true || prom.is_close_confirm == true || prom.is_replace == true || prom.is_grep == true || prom.is_grep_result == true {
+            match editor.evt {
+                Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
+                    Char('c') => {
+                        if prom.is_grep_result && prom.is_grep_result_cancel == false {
+                            prom.is_grep_result_cancel = true;
+                        } else {
+                            prom.clear();
+                            mbar.clear();
+                            term.draw(out, editor, mbar, prom, sbar).unwrap();
+                        }
+                        return EvtActType::Hold;
+                    }
+                    _ => {
+                        if !prom.is_grep_result {
+                            return EvtActType::Hold;
+                        }
+                    }
+                },
+                _ => {}
+            }
+        }
+        if prom.is_save_new_file == true || prom.is_close_confirm == true {
+            match editor.evt {
+                Key(KeyEvent { modifiers: KeyModifiers::SHIFT, .. }) => return EvtActType::Hold,
+                _ => {}
+            }
+        }
+        if prom.is_save_new_file == true || prom.is_search == true {
+            match editor.evt {
+                Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
+                    Char(c) => {
+                        prom.cont_1.insert_char(c.to_ascii_uppercase());
+                        prom.draw_only(out);
+                        return EvtActType::Hold;
+                    }
+                    _ => {}
+                },
+                Key(KeyEvent { code, .. }) => match code {
+                    Left | Right | Delete | Backspace => {
+                        prom.cont_1.edit(code);
+                        prom.draw_only(out);
+                        return EvtActType::Hold;
+                    }
+                    Char(c) => {
+                        prom.cont_1.insert_char(c);
+                        prom.draw_only(out);
+                        return EvtActType::Hold;
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
+        if prom.is_replace == true || prom.is_grep == true {
+            match editor.evt {
+                Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
+                    BackTab => {
+                        prom.tab(false);
+                        prom.draw_only(out);
+                        return EvtActType::Hold;
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
+        // unable to edit
+        if prom.is_grep_result == true || mbar.msg_readonly.len() > 0 {
+            match editor.evt {
+                Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
+                    F(4) | Right | Left | Down | Up | Home | End => {
+                        return EvtActType::Next;
+                    }
+                    _ => return EvtActType::Hold,
+                },
+                Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
+                    Char('w') | Char('s') | Char('c') | Char('a') | Char('f') | Home | End => {
+                        return EvtActType::Next;
+                    }
+                    _ => return EvtActType::Hold,
+                },
+                Key(KeyEvent { code, .. }) => match code {
+                    PageDown | PageUp | Home | End | Down | Up | Left | Right => {
+                        return EvtActType::Next;
+                    }
+                    Enter => {
+                        if mbar.msg_readonly.len() > 0 {
+                            return EvtActType::Hold;
+                        }
+                    }
+                    F(3) => {}
+                    _ => {
+                        if !prom.is_close_confirm == true {
+                            return EvtActType::Hold;
+                        }
+                    }
+                },
+                Mouse(MouseEvent::ScrollUp(_, _, _)) => return EvtActType::Next,
+                Mouse(MouseEvent::ScrollDown(_, _, _)) => return EvtActType::Next,
+
+                _ => return EvtActType::Hold,
+            }
+        }
+
+        if prom.is_save_new_file == true {
+            return EvtAct::save_new_filenm(out, term, editor, mbar, prom, sbar);
+        } else if prom.is_close_confirm == true {
+            return EvtAct::close(out, term, editor, mbar, prom, sbar);
+        } else if prom.is_search == true {
+            return EvtAct::search(out, term, editor, mbar, prom, sbar);
+        } else if prom.is_replace == true {
+            return EvtAct::replace(out, term, editor, mbar, prom, sbar);
+        } else if prom.is_grep == true {
+            return EvtAct::grep(out, term, editor, mbar, prom, sbar);
+        } else if prom.is_grep_result == true {
+            return EvtAct::grep_result(term, editor, mbar);
+        } else {
+            Log::ep_s("EvtProcess::NextEvtProcess");
+            return EvtActType::Next;
+        }
     }
 
     pub fn init(editor: &mut Editor, prom: &mut Prompt) {
         // updown_xの初期化
-        match editor.curt_evt {
+        match editor.evt {
             //  Down | Up | ShiftDown | ShiftUp
+            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
+                Down | Up => {}
+                _ => editor.updown_x = 0,
+            },
             Key(KeyEvent { code, .. }) => match code {
                 Down | Up => {}
                 _ => editor.updown_x = 0,
@@ -127,7 +254,7 @@ impl EvtAct {
         }
         // all_redraw判定
         editor.is_redraw = false;
-        match editor.curt_evt {
+        match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                 Char('c') => {}
                 _ => editor.is_redraw = true,
@@ -155,7 +282,7 @@ impl EvtAct {
         }
 
         // is_change判定
-        match editor.curt_evt {
+        match editor.evt {
             Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => {
                 if code == Char('x') || code == Char('v') {
                     prom.is_change = true;
@@ -174,33 +301,24 @@ impl EvtAct {
     }
 
     pub fn finalize(editor: &mut Editor) {
+        Log::ep_s("finalize");
+
         // 選択範囲クリア判定
-        match editor.curt_evt {
-            Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {
-                Down | Up | Left | Right => {}
-                _ => {
-                    editor.sel.clear();
-                    editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
-                }
+        match editor.evt {
+            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
+                Down | Up | Left | Right | Home | End | F(4) => {}
+                _ => editor.sel.clear(),
             },
-            Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => match code {
+            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                 Char('a') | Char('c') => {}
-                _ => {
-                    editor.sel.clear();
-                    editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
-                }
+                _ => editor.sel.clear(),
             },
             Key(KeyEvent { code, .. }) => match code {
-                _ => {
-                    editor.sel.clear();
-                    editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
-                }
+                F(3) => {}
+                _ => editor.sel.clear(),
             },
             Mouse(MouseEvent::Down(_, _, _, _)) | Mouse(MouseEvent::Up(_, _, _, _)) | Mouse(MouseEvent::Drag(_, _, _, _)) => {}
-            _ => {
-                editor.sel.clear();
-                editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
-            }
+            _ => editor.sel.clear(),
         }
 
         // 検索後に検索対象文字の変更対応で、再検索

@@ -27,13 +27,7 @@ impl Editor {
         let offset_x_extra_num = 3;
         // 上記offset切替時のoffset増減数
         let offset_x_change_num = 10;
-        /*
-                Log::ep("disp_col_num", self.disp_col_num);
-                Log::ep("cur.x", self.cur.x);
-                Log::ep("cur.disp_x", self.cur.disp_x);
-                Log::ep("x_offset 111", self.x_offset);
-                Log::ep("x_offset_disp 111", self.x_offset_disp);
-        */
+
         let x_offset_org = self.x_offset;
 
         // Up・Down
@@ -86,7 +80,7 @@ impl Editor {
         let y_offset_org: usize = self.y_offset;
         let x_offset_disp_org: usize = self.x_offset_disp;
         self.cur_y_org = self.cur.y;
-        match self.curt_evt {
+        match self.evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                 Home => self.ctl_home(),
                 End => self.ctl_end(),
@@ -191,19 +185,21 @@ impl Editor {
 
     pub fn del_sel_range(&mut self) {
         Log::ep_s("　　　　　　　  del_sel_range");
-        // s < e の状態に変換した値を使用
         let sel = self.sel.get_range();
         let (sy, ey, sx, ex, s_disp_x, e_disp_x) = (sel.sy, sel.ey, sel.sx, sel.ex, sel.s_disp_x, sel.e_disp_x);
+        Log::ep("sel", sel);
 
         for i in 0..self.buf.len() {
             if sy <= i && i <= ey {
                 // 1行
                 if sy == ey {
+                    Log::ep("sy == ey　iii", i);
                     self.buf[i].drain(sx..ex);
                     self.cur.disp_x = min(s_disp_x, e_disp_x);
                     self.cur.x = min(sx, ex) + self.rnw;
                 // 開始行
                 } else if sy == i {
+                    Log::ep("sy == i　iii", i);
                     let (cursorx, _) = get_row_width(&self.buf[sy], sx, self.buf[sy].len());
                     self.buf[i].drain(sx..sx + cursorx);
                     self.cur.disp_x = s_disp_x;
@@ -211,8 +207,8 @@ impl Editor {
 
                 // 終了行
                 } else if ey == i {
+                    Log::ep("ey == i　iii", i);
                     self.buf[i].drain(0..ex);
-
                     let mut rest: Vec<char> = self.buf[i].clone();
                     self.buf[sy].append(&mut rest);
                     self.buf.remove(i);
@@ -223,7 +219,9 @@ impl Editor {
         // 中間行を纏めて削除
         for i in 0..self.buf.len() {
             if sy < i && i < ey {
-                self.buf.remove(i);
+                Log::ep("sy < i && i < ey", i);
+                //     self.buf.remove(i);
+                self.buf[i] = vec![];
             }
         }
         self.cur.y = sy;
