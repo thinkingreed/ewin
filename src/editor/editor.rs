@@ -1,4 +1,4 @@
-use crate::model::{CopyRange, Editor, Log, StatusBar};
+use crate::model::*;
 use crate::util::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
 use std::cmp::{max, min};
@@ -145,44 +145,6 @@ impl Editor {
         return x - count;
     }
 
-    pub fn get_copy_range(&mut self) -> Vec<CopyRange> {
-        let copy_posi = self.sel.get_range();
-
-        let mut copy_ranges: Vec<CopyRange> = vec![];
-        if copy_posi.sy == 0 && copy_posi.ey == 0 && copy_posi.ex == 0 {
-            return copy_ranges;
-        }
-
-        Log::ep("copy_posi.sy", copy_posi.sy);
-        Log::ep("copy_posi.ey", copy_posi.ey);
-        Log::ep("copy_posi.sx", copy_posi.sx);
-        Log::ep("copy_posi.ex", copy_posi.ex);
-
-        for i in copy_posi.sy..=copy_posi.ey {
-            /* if copy_posi.sy != copy_posi.ey && copy_posi.ex == 0 {
-                continue;
-            }*/
-            Log::ep("iii", i);
-            // 開始行==終了行
-            if copy_posi.sy == copy_posi.ey {
-                copy_ranges.push(CopyRange { y: i, sx: copy_posi.sx, ex: copy_posi.ex });
-            // 開始行
-            } else if i == copy_posi.sy {
-                Log::ep("i == copy_posi.sy", i == copy_posi.sy);
-                copy_ranges.push(CopyRange { y: i, sx: copy_posi.sx, ex: self.buf[i].len() });
-            // 終了行
-            } else if i == copy_posi.ey {
-                // カーソルが行頭の対応
-                copy_ranges.push(CopyRange { y: i, sx: 0, ex: copy_posi.ex });
-            // 中間行 全て対象
-            } else {
-                copy_ranges.push(CopyRange { y: i, sx: 0, ex: self.buf[i].len() });
-            }
-        }
-
-        return copy_ranges;
-    }
-
     pub fn del_sel_range(&mut self) {
         Log::ep_s("　　　　　　　  del_sel_range");
         let sel = self.sel.get_range();
@@ -225,30 +187,5 @@ impl Editor {
             }
         }
         self.cur.y = sy;
-    }
-
-    pub fn get_sel_range_str(&mut self) -> Vec<String> {
-        let mut all_vec: Vec<String> = vec![];
-        let copy_ranges: Vec<CopyRange> = self.get_copy_range();
-
-        for copy_range in copy_ranges {
-            let mut vec: Vec<String> = vec![];
-
-            for j in copy_range.sx..copy_range.ex {
-                if let Some(c) = self.buf[copy_range.y].get(j) {
-                    vec.insert(vec.len(), c.to_string());
-                }
-            }
-
-            // 空行
-            if copy_range.sx == 0 && copy_range.ex == 0 {
-                vec.push("".to_string());
-            }
-
-            if vec.len() > 0 {
-                all_vec.push(vec.join(""));
-            }
-        }
-        return all_vec;
     }
 }

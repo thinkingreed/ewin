@@ -56,6 +56,7 @@ pub struct Prompt {
     pub cont_2: PromptCont,
     pub cont_3: PromptCont,
     pub buf_posi: PromptBufPosi,
+    pub tab_comp: TabComp,
     // cache
     pub cache_search_filenm: String,
     pub cache_search_folder: String,
@@ -72,6 +73,7 @@ pub struct Prompt {
     // grep result stdout/stderr output complete flg
     pub is_grep_stdout: bool,
     pub is_grep_stderr: bool,
+
     pub is_key_record: bool,
     pub is_key_record_exec: bool,
     pub is_key_record_exec_draw: bool,
@@ -91,6 +93,7 @@ impl Default for Prompt {
             cont_2: PromptCont::default(),
             cont_3: PromptCont::default(),
             buf_posi: PromptBufPosi::First,
+            tab_comp: TabComp::default(),
             cache_search_filenm: String::new(),
             cache_search_folder: String::new(),
             is_close_confirm: false,
@@ -132,6 +135,23 @@ impl Prompt {
         self.is_grep_stderr = false;
     }
 }
+#[derive(Debug, Clone)]
+pub struct TabComp {
+    pub index: usize,
+    pub dirs: Vec<String>,
+    pub is_end: bool,
+}
+
+impl Default for TabComp {
+    fn default() -> Self {
+        TabComp { index: 0, dirs: vec![], is_end: false }
+    }
+}
+impl fmt::Display for TabComp {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "TabComp index:{}, dirs:{}, is_comp_end:{},", self.index, self.dirs.join(" "), self.is_end,)
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct PromptCont {
@@ -142,6 +162,7 @@ pub struct PromptCont {
     pub buf: Vec<char>,
     pub cur: Cur,
     pub updown_x: usize,
+    pub sel: SelRange,
 }
 
 impl Default for PromptCont {
@@ -154,6 +175,7 @@ impl Default for PromptCont {
             buf: vec![],
             cur: Cur::default(),
             updown_x: 0,
+            sel: SelRange::default(),
         }
     }
 }
@@ -490,6 +512,10 @@ impl Default for Editor {
             key_record_vec: vec![],
         }
     }
+}
+pub trait CurMove {
+    fn cursor_right(&mut self);
+    fn cursor_left(&mut self);
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

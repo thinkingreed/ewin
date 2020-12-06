@@ -91,13 +91,13 @@ impl Editor {
 
     pub fn copy(&mut self, term: &Terminal) {
         Log::ep_s("　　　　　　　  copy");
-        let copy_ranges: Vec<CopyRange> = self.get_copy_range();
+        let copy_ranges: Vec<CopyRange> = get_copy_range(&mut self.buf, &mut self.sel);
         if copy_ranges.len() == 0 {
             return;
         };
 
         let copy_string;
-        let sel_vec = self.get_sel_range_str();
+        let sel_vec = get_sel_range_str(&mut self.buf, &mut self.sel);
 
         if term.env == Env::WSL {
             copy_string = self.set_wsl_vec(sel_vec).join("\n");
@@ -166,24 +166,24 @@ impl Editor {
     }
 
     fn insert_str(&mut self, contexts: &mut String) {
-        let mut copy_strings: Vec<&str> = contexts.split('\n').collect();
+        let mut ins_strings: Vec<&str> = contexts.split('\n').collect();
 
         let mut add_line_count = 0;
-        for str in &copy_strings {
+        for str in &ins_strings {
             if str.len() > 0 {
                 add_line_count += 1;
             }
         }
 
         // self.rnwの増加対応
-        if copy_strings.len() > 1 {
+        if ins_strings.len() > 1 {
             let diff = (self.buf.len() + add_line_count).to_string().len() - self.rnw;
             self.rnw += diff;
             self.cur.x += diff;
             self.cur.disp_x += diff;
         }
 
-        let mut last_line_str = copy_strings.get(copy_strings.len() - 1).unwrap().to_string();
+        let mut last_line_str = ins_strings.get(ins_strings.len() - 1).unwrap().to_string();
         let last_line_str_org = last_line_str.clone();
 
         // 複数行のペーストでカーソル以降の行末までの残りの文字
@@ -192,15 +192,15 @@ impl Editor {
         let line_rest_string: String = line_rest.iter().collect();
 
         // ペーストが複数行の場合にカーソル行のカーソル以降の文字列をペースト文字列最終行に追加
-        if copy_strings.len() > 0 {
+        if ins_strings.len() > 0 {
             for c in line_rest {
                 last_line_str.push(c);
             }
-            copy_strings.pop();
-            copy_strings.push((&*last_line_str).clone());
+            ins_strings.pop();
+            ins_strings.push((&*last_line_str).clone());
         }
 
-        for (i, copy_str) in copy_strings.iter().enumerate() {
+        for (i, copy_str) in ins_strings.iter().enumerate() {
             // ペーストが複数行の場合にcursorを進める
             if i != 0 {
                 self.cur.y += 1;
@@ -230,7 +230,7 @@ impl Editor {
         }
 
         // 複数行の場合はカーソル位置調整
-        if copy_strings.len() > 1 {
+        if ins_strings.len() > 1 {
             self.cur.x = last_line_str_org.chars().count() + self.rnw;
             self.cur.disp_x = get_str_width(&last_line_str_org) + 1 + self.rnw;
         } else {

@@ -1,3 +1,4 @@
+use crate::model::PromptBufPosi::*;
 use crate::model::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton, MouseEvent};
 use std::io::Write;
@@ -127,39 +128,94 @@ impl EvtAct {
                         }
                         return EvtActType::Hold;
                     }
-                    _ => {
-                        if !prom.is_grep_result {
-                            return EvtActType::Hold;
-                        }
-                    }
+                    _ => {}
                 },
                 _ => {}
             }
         }
-        if prom.is_save_new_file == true || prom.is_close_confirm == true {
-            match editor.evt {
-                Key(KeyEvent { modifiers: KeyModifiers::SHIFT, .. }) => return EvtActType::Hold,
-                _ => {}
-            }
-        }
-        if prom.is_save_new_file == true || prom.is_search == true {
+
+        // edit
+        if prom.is_save_new_file == true || prom.is_search == true || prom.is_replace == true || prom.is_grep == true {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                    Char(c) => {
-                        prom.cont_1.insert_char(c.to_ascii_uppercase());
+                    Left | Right | BackTab | Home | End | Char(_) => {
+                        match code {
+                            Right => match prom.buf_posi {
+                                First => prom.cont_1.shift_right(),
+                                Second => prom.cont_2.shift_right(),
+                                Third => prom.cont_3.shift_right(),
+                            },
+                            Left => match prom.buf_posi {
+                                First => prom.cont_1.shift_left(),
+                                Second => prom.cont_2.shift_left(),
+                                Third => prom.cont_3.shift_left(),
+                            },
+                            BackTab => {
+                                prom.tab(false);
+                                prom.clear_sels();
+                            }
+                            Home => match prom.buf_posi {
+                                First => prom.cont_1.shift_home(),
+                                Second => prom.cont_2.shift_home(),
+                                Third => prom.cont_3.shift_home(),
+                            },
+                            End => match prom.buf_posi {
+                                First => prom.cont_1.shift_end(),
+                                Second => prom.cont_2.shift_end(),
+                                Third => prom.cont_3.shift_end(),
+                            },
+                            Char(c) => {
+                                match prom.buf_posi {
+                                    First => prom.cont_1.insert_char(c.to_ascii_uppercase()),
+                                    Second => prom.cont_2.insert_char(c.to_ascii_uppercase()),
+                                    Third => prom.cont_3.insert_char(c.to_ascii_uppercase()),
+                                }
+                                prom.clear_sels();
+                            }
+                            _ => {}
+                        }
                         prom.draw_only(out);
+                        return EvtActType::Hold;
+                    }
+                    _ => {}
+                },
+                Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
+                    Char('v') => {
+                        let mut is_all_redrow = false;
+                        match prom.buf_posi {
+                            First => is_all_redrow = prom.cont_1.paste(&term, editor, mbar),
+                            Second => is_all_redrow = prom.cont_2.paste(&term, editor, mbar),
+                            Third => is_all_redrow = prom.cont_3.paste(&term, editor, mbar),
+                        }
+                        if is_all_redrow {
+                            term.draw(out, editor, mbar, prom, sbar).unwrap();
+                        } else {
+                            prom.clear_sels();
+                            prom.draw_only(out);
+                        }
                         return EvtActType::Hold;
                     }
                     _ => {}
                 },
                 Key(KeyEvent { code, .. }) => match code {
-                    Left | Right | Delete | Backspace => {
-                        prom.cont_1.edit(code);
-                        prom.draw_only(out);
-                        return EvtActType::Hold;
-                    }
-                    Char(c) => {
-                        prom.cont_1.insert_char(c);
+                    Left | Right | Char(_) | Delete | Backspace | Home | End | Up | Down | Tab => {
+                        match code {
+                            Left | Right | Delete | Backspace | Home | End => match prom.buf_posi {
+                                First => prom.cont_1.edit(code),
+                                Second => prom.cont_2.edit(code),
+                                Third => prom.cont_3.edit(code),
+                            },
+                            Up => prom.cursor_up(),
+                            Down => prom.cursor_down(),
+                            Tab => prom.tab(true),
+                            Char(c) => match prom.buf_posi {
+                                First => prom.cont_1.insert_char(c),
+                                Second => prom.cont_2.insert_char(c),
+                                Third => prom.cont_3.insert_char(c),
+                            },
+                            _ => {}
+                        }
+                        prom.clear_sels();
                         prom.draw_only(out);
                         return EvtActType::Hold;
                     }
@@ -168,19 +224,7 @@ impl EvtAct {
                 _ => {}
             }
         }
-        if prom.is_replace == true || prom.is_grep == true {
-            match editor.evt {
-                Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                    BackTab => {
-                        prom.tab(false);
-                        prom.draw_only(out);
-                        return EvtActType::Hold;
-                    }
-                    _ => {}
-                },
-                _ => {}
-            }
-        }
+
         // unable to edit
         if prom.is_grep_result == true || mbar.msg_readonly.len() > 0 {
             match editor.evt {

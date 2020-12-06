@@ -1,5 +1,4 @@
-use crate::model::Log;
-use std::fmt::Display;
+use crate::model::*;
 use unicode_width::UnicodeWidthChar;
 
 pub fn get_str_width(msg: &str) -> usize {
@@ -94,33 +93,65 @@ pub fn get_cur_x_width(buf: &Vec<char>, x: usize) -> usize {
     return 1;
 }
 
-impl Log {
-    pub fn ep<T: Display>(m: &str, v: T) {
-        if cfg!(debug_assertions) {
-            eprintln!("{} {}", format!("{:?}", m), v);
-        } else {
-            // eprintln!("{} {}", format!("{:?}", m), v);
+pub fn get_sel_range_str(buf: &mut Vec<Vec<char>>, sel: &mut SelRange) -> Vec<String> {
+    let mut all_vec: Vec<String> = vec![];
+    let copy_ranges: Vec<CopyRange> = get_copy_range(buf, sel);
 
-            /*
-            let debug_mode: &str = ARGS.get("debug_mode").unwrap();
-            if debug_mode == "true" {
-                eprintln!("{} {}", format!("{:?}", m), v);
+    for copy_range in copy_ranges {
+        let mut vec: Vec<String> = vec![];
+
+        for j in copy_range.sx..copy_range.ex {
+            if let Some(c) = buf[copy_range.y].get(j) {
+                vec.insert(vec.len(), c.to_string());
             }
-            */
+        }
+
+        // 空行
+        if copy_range.sx == 0 && copy_range.ex == 0 {
+            vec.push("".to_string());
+        }
+
+        if vec.len() > 0 {
+            all_vec.push(vec.join(""));
         }
     }
-    pub fn ep_s(m: &str) {
-        if cfg!(debug_assertions) {
-            eprintln!("{}", m);
-        } else {
-            // eprintln!("{}", m);
+    return all_vec;
+}
 
-            /*
-            let debug_mode: &str = ARGS.get("debug_mode").unwrap();
-            if debug_mode == "true" {
-                eprintln!("{}", m);
-            }
-            */
+pub fn get_copy_range(buf: &mut Vec<Vec<char>>, sel: &mut SelRange) -> Vec<CopyRange> {
+    let copy_posi = sel.get_range();
+
+    let mut copy_ranges: Vec<CopyRange> = vec![];
+    if copy_posi.sy == 0 && copy_posi.ey == 0 && copy_posi.ex == 0 {
+        return copy_ranges;
+    }
+
+    Log::ep("copy_posi.sy", copy_posi.sy);
+    Log::ep("copy_posi.ey", copy_posi.ey);
+    Log::ep("copy_posi.sx", copy_posi.sx);
+    Log::ep("copy_posi.ex", copy_posi.ex);
+
+    for i in copy_posi.sy..=copy_posi.ey {
+        /* if copy_posi.sy != copy_posi.ey && copy_posi.ex == 0 {
+            continue;
+        }*/
+        Log::ep("iii", i);
+        // 開始行==終了行
+        if copy_posi.sy == copy_posi.ey {
+            copy_ranges.push(CopyRange { y: i, sx: copy_posi.sx, ex: copy_posi.ex });
+        // 開始行
+        } else if i == copy_posi.sy {
+            Log::ep("i == copy_posi.sy", i == copy_posi.sy);
+            copy_ranges.push(CopyRange { y: i, sx: copy_posi.sx, ex: buf[i].len() });
+        // 終了行
+        } else if i == copy_posi.ey {
+            // カーソルが行頭の対応
+            copy_ranges.push(CopyRange { y: i, sx: 0, ex: copy_posi.ex });
+        // 中間行 全て対象
+        } else {
+            copy_ranges.push(CopyRange { y: i, sx: 0, ex: buf[i].len() });
         }
     }
+
+    return copy_ranges;
 }

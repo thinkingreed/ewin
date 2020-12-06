@@ -41,6 +41,7 @@ show_search_no_result="検索対象は1件も存在しませんでした"
 no_read_permission="読み込み権限がありません"
 file_opening_problem="ファイルを開く際に問題が発生しました"
 file_not_found="ファイルが存在しません"
+cannot_paste_multi_lines="複数行を貼り付けることは出来ません"
 
 [en]
 row="row"
@@ -82,8 +83,11 @@ cannot_find_char_search_for="Cannot find the character to search for"
 long_time_to_search="It may take a long time if there are many files to be searched"
 show_search_result="show search result"
 show_search_no_result="There was no search target"
+# File open
 no_read_permission="No read permission"
 file_opening_problem="There was a problem in opening the file"
 file_not_found="File not found"
+# paste
+cannot_paste_multi_lines="Can not paste multilines"
 
 "#;

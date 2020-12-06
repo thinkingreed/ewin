@@ -7,7 +7,7 @@ impl Editor {
 
         let ep = EvtProc {
             do_type: do_type,
-            str_vec: self.get_sel_range_str(),
+            str_vec: get_sel_range_str(&mut self.buf, &mut self.sel),
             cur_s: Cur {
                 y: sel.sy,
                 x: sel.sx + self.rnw,

@@ -12,6 +12,12 @@ pub mod editor {
 }
 pub mod model;
 pub mod prompt {
+    pub mod promptcont {
+        pub mod key;
+        pub mod key_ctrl;
+        pub mod key_shift;
+        pub mod promptcont;
+    }
     pub mod close;
     pub mod grep;
     pub mod grep_result;
@@ -21,6 +27,7 @@ pub mod prompt {
     pub mod search;
 }
 pub mod evt_act;
+pub mod log;
 pub mod msgbar;
 pub mod statusbar;
 pub mod terminal;
@@ -30,5 +37,4 @@ pub mod _cfg {
         pub mod cfg;
         pub mod lang;
     }
-    //   pub mod args;
 }

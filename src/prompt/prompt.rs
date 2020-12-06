@@ -1,12 +1,8 @@
-use crate::_cfg::lang::cfg::LangCfg;
 use crate::model::*;
 use crate::util::*;
-use crossterm::event::KeyCode;
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
-use std::cmp::{max, min};
+use std::fs;
 use std::io::Write;
 use termion::{clear, cursor};
-use unicode_width::UnicodeWidthChar;
 
 impl Prompt {
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
@@ -19,24 +15,24 @@ impl Prompt {
             str_vec.push(key_desc);
 
             if self.is_save_new_file || self.is_search {
-                let buf = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 2) as u16), clear::CurrentLine, self.cont_1.buf.iter().collect::<String>());
+                let buf = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 2) as u16), clear::CurrentLine, self.cont_1.ctl_select_color());
                 str_vec.push(buf);
             }
 
             if self.is_replace || self.is_grep {
                 let buf_desc_1 = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 2) as u16), clear::CurrentLine, self.cont_1.buf_desc.clone());
                 str_vec.push(buf_desc_1);
-                let buf_1 = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 3) as u16), clear::CurrentLine, self.cont_1.buf.iter().collect::<String>());
+                let buf_1 = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 3) as u16), clear::CurrentLine, self.cont_1.ctl_select_color());
                 str_vec.push(buf_1);
                 let buf_desc_2 = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 4) as u16), clear::CurrentLine, self.cont_2.buf_desc.clone());
                 str_vec.push(buf_desc_2);
-                let buf_2 = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 5) as u16), clear::CurrentLine, self.cont_2.buf.iter().collect::<String>());
+                let buf_2 = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 5) as u16), clear::CurrentLine, self.cont_2.ctl_select_color());
                 str_vec.push(buf_2);
             }
             if self.is_grep {
                 let buf_desc_3 = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 6) as u16), clear::CurrentLine, self.cont_3.buf_desc.clone());
                 str_vec.push(buf_desc_3);
-                let buf_3 = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 7) as u16), clear::CurrentLine, self.cont_3.buf.iter().collect::<String>());
+                let buf_3 = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 7) as u16), clear::CurrentLine, self.cont_3.ctl_select_color());
                 str_vec.push(buf_3);
             }
         }
@@ -109,82 +105,113 @@ impl Prompt {
         Log::ep("is_asc ", is_asc);
 
         if self.is_replace {
-            if self.buf_posi == PromptBufPosi::First {
-                self.cursor_down();
-            } else {
-                self.cursor_up();
+            match self.buf_posi {
+                PromptBufPosi::First => self.cursor_down(),
+                PromptBufPosi::Second => self.cursor_up(),
+                _ => {}
             }
         } else if self.is_grep {
             if is_asc {
-                if self.buf_posi == PromptBufPosi::First || self.buf_posi == PromptBufPosi::Second {
-                    self.cursor_down();
-                // PromptBufPosi::Third
-                } else {
-                    self.buf_posi = PromptBufPosi::First;
-                    Prompt::set_cur(&self.cont_3, &mut self.cont_1);
+                match self.buf_posi {
+                    PromptBufPosi::First | PromptBufPosi::Second => self.cursor_down(),
+                    PromptBufPosi::Third => {
+                        self.set_path();
+                    }
                 }
             } else {
-                if self.buf_posi == PromptBufPosi::Second || self.buf_posi == PromptBufPosi::Third {
-                    self.cursor_up();
-                // PromptBufPosi::First
-                } else {
-                    self.buf_posi = PromptBufPosi::Third;
-                    Prompt::set_cur(&self.cont_1, &mut self.cont_3);
+                match self.buf_posi {
+                    PromptBufPosi::First => {
+                        self.buf_posi = PromptBufPosi::Third;
+                        Prompt::set_cur(&self.cont_1, &mut self.cont_3);
+                    }
+                    PromptBufPosi::Second => self.cursor_down(),
+                    PromptBufPosi::Third => {}
                 }
             }
         }
     }
+
+    fn set_path(&mut self) {
+        let mut dirs: Vec<String> = Vec::new();
+
+        let input_path = self.cont_3.buf.iter().collect::<String>();
+        Log::ep("             self.cont_3.buf", input_path.clone());
+
+        if input_path.len() == 0 || self.cont_3.buf[self.cont_3.buf.len() - 1] == '/' {
+            let mut prefix = "".to_string();
+            self.tab_comp.index = 0;
+            if self.cont_3.buf.len() == 0 {
+                prefix = "/".to_string();
+            } else {
+                prefix = input_path.clone();
+            }
+
+            if let Ok(mut read_dir) = fs::read_dir(prefix) {
+                while let Some(Ok(path)) = read_dir.next() {
+                    if path.path().is_dir() {
+                        dirs.push(path.path().display().to_string());
+                    }
+                }
+            }
+            dirs.sort();
+            Log::ep("read_dir", dirs.clone().join(""));
+            self.tab_comp.dirs = dirs;
+        } else {
+        }
+        for (i, dir_str) in self.tab_comp.dirs.iter().enumerate() {
+            Log::ep("dir_str", dir_str.clone());
+
+            let v: Vec<(usize, &str)> = dir_str.match_indices(&input_path).collect();
+            let mut char_vec: Vec<char> = vec![];
+
+            // input_path 完全一致 or 入力無し
+            if input_path == dir_str.to_string() || input_path.len() == 0 {
+                Log::ep_s("input_path 完全一致");
+                if !self.tab_comp.is_end {
+                    char_vec = self.tab_comp.dirs[self.tab_comp.index].chars().collect();
+
+                    if self.tab_comp.index + 1 >= self.tab_comp.dirs.len() {
+                        self.tab_comp.index = 0;
+                    } else {
+                        self.tab_comp.index += 1;
+                    }
+                    break;
+                }
+
+            // input_path 部分一致
+            } else if input_path.len() > 0 && v.len() > 0 {
+                Log::ep_s("input_path 部分一致");
+                char_vec = self.tab_comp.dirs[i].chars().collect();
+
+            // 一致しない場合
+            } else {
+                Log::ep_s("一致しない");
+                // pass
+            }
+            let (cur_x, width) = get_row_width(&char_vec, 0, char_vec.len());
+
+            self.cont_3.buf = char_vec;
+            self.cont_3.cur.x = cur_x;
+            self.cont_3.cur.disp_x = width + 1;
+
+            Log::ep("cont_3.buf", self.cont_3.buf.clone().iter().collect::<String>());
+            Log::ep("cont_3.cur.x", self.cont_3.cur.x);
+            Log::ep("cont_3.cur.disp_x", width + 1);
+        }
+
+        Log::ep("             set_path", &self.tab_comp);
+    }
+
     fn set_cur(cont_org: &PromptCont, cont: &mut PromptCont) {
         cont.updown_x = cont_org.cur.disp_x;
         let (cur_x, width) = get_until_updown_x(&cont.buf, cont.updown_x);
         cont.cur.x = cur_x;
         cont.cur.disp_x = width;
     }
-}
 
-impl PromptCont {
-    pub fn new(lang_cfg: LangCfg) -> Self {
-        PromptCont { lang: lang_cfg, ..PromptCont::default() }
-    }
-
-    pub fn insert_char(&mut self, c: char) {
-        self.buf.insert(self.cur.x, c);
-        self.cur.disp_x += c.width().unwrap_or(0);
-        self.cur.x += 1;
-    }
-
-    pub fn cursor_left(&mut self) {
-        if self.cur.x != 0 {
-            self.cur.x = max(self.cur.x - 1, 0);
-            self.cur.disp_x -= get_cur_x_width(&self.buf, self.cur.x);
-        }
-    }
-    pub fn cursor_right(&mut self) {
-        if self.cur.x < self.buf.len() {
-            self.cur.disp_x += get_cur_x_width(&self.buf, self.cur.x);
-            self.cur.x = min(self.cur.x + 1, self.buf.len());
-        }
-    }
-    pub fn delete(&mut self) {
-        if self.cur.x < self.buf.len() {
-            self.buf.remove(self.cur.x);
-        }
-    }
-    pub fn backspace(&mut self) {
-        if self.cur.x > 0 {
-            self.cur.x -= 1;
-            self.cur.disp_x -= self.buf[self.cur.x].width().unwrap_or(0);
-            self.buf.remove(self.cur.x);
-        }
-    }
-
-    pub fn edit(&mut self, key: KeyCode) {
-        match key {
-            KeyCode::Left => self.cursor_left(),
-            KeyCode::Right => self.cursor_right(),
-            KeyCode::Delete => self.delete(),
-            KeyCode::Backspace => self.backspace(),
-            _ => {}
-        }
+    pub fn clear_sels(&mut self) {
+        self.cont_1.sel.clear();
+        self.cont_2.sel.clear();
+        self.cont_3.sel.clear();
     }
 }

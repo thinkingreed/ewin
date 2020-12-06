@@ -45,6 +45,8 @@ pub struct LangCfg {
     pub no_read_permission: String,
     pub file_opening_problem: String,
     pub file_not_found: String,
+    // Paste
+    pub cannot_paste_multi_lines: String,
 }
 #[derive(Debug, Deserialize)]
 pub struct LangMulti {
@@ -96,6 +98,8 @@ impl LangCfg {
             no_read_permission: String::new(),
             file_opening_problem: String::new(),
             file_not_found: String::new(),
+            // Paste
+            cannot_paste_multi_lines: String::new(),
         }
     }
     pub fn read_lang_cfg() -> LangCfg {

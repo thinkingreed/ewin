@@ -1,5 +1,5 @@
 use crate::model::*;
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::env;
 use std::io::Write;
 use std::path::Path;
@@ -9,81 +9,7 @@ impl EvtAct {
         Log::ep_s("Process.replace");
 
         match editor.evt {
-            Key(KeyEvent { code, modifiers: KeyModifiers::SHIFT }) => match code {
-                Char(c) => {
-                    let c_up = c.to_ascii_uppercase();
-                    match prom.buf_posi {
-                        PromptBufPosi::First => prom.cont_1.insert_char(c_up),
-                        PromptBufPosi::Second => prom.cont_2.insert_char(c_up),
-                        PromptBufPosi::Third => prom.cont_3.insert_char(c_up),
-                    }
-                    prom.draw_only(out);
-                    return EvtActType::Hold;
-                }
-                _ => return EvtActType::Hold,
-            },
             Key(KeyEvent { code, .. }) => match code {
-                Char(c) => {
-                    match prom.buf_posi {
-                        PromptBufPosi::First => prom.cont_1.insert_char(c),
-                        PromptBufPosi::Second => prom.cont_2.insert_char(c),
-                        PromptBufPosi::Third => prom.cont_3.insert_char(c),
-                    }
-                    prom.draw_only(out);
-                    return EvtActType::Hold;
-                }
-                Down => {
-                    prom.cursor_down();
-                    prom.draw_only(out);
-                    return EvtActType::Hold;
-                }
-                Up => {
-                    prom.cursor_up();
-                    prom.draw_only(out);
-                    return EvtActType::Hold;
-                }
-                Left => {
-                    match prom.buf_posi {
-                        PromptBufPosi::First => prom.cont_1.cursor_left(),
-                        PromptBufPosi::Second => prom.cont_2.cursor_left(),
-                        PromptBufPosi::Third => prom.cont_3.cursor_left(),
-                    }
-                    prom.draw_only(out);
-                    return EvtActType::Hold;
-                }
-                Right => {
-                    match prom.buf_posi {
-                        PromptBufPosi::First => prom.cont_1.cursor_right(),
-                        PromptBufPosi::Second => prom.cont_2.cursor_right(),
-                        PromptBufPosi::Third => prom.cont_3.cursor_right(),
-                    }
-                    prom.draw_only(out);
-                    return EvtActType::Hold;
-                }
-                Delete => {
-                    match prom.buf_posi {
-                        PromptBufPosi::First => prom.cont_1.delete(),
-                        PromptBufPosi::Second => prom.cont_2.delete(),
-                        PromptBufPosi::Third => prom.cont_3.delete(),
-                    }
-                    prom.draw_only(out);
-                    return EvtActType::Hold;
-                }
-                Backspace => {
-                    match prom.buf_posi {
-                        PromptBufPosi::First => prom.cont_1.backspace(),
-                        PromptBufPosi::Second => prom.cont_2.backspace(),
-                        PromptBufPosi::Third => prom.cont_3.backspace(),
-                    }
-                    prom.draw_only(out);
-                    return EvtActType::Hold;
-                }
-                Tab => {
-                    prom.tab(true);
-                    prom.draw_only(out);
-                    return EvtActType::Hold;
-                }
-
                 Enter => {
                     let search_str = prom.cont_1.buf.iter().collect::<String>();
                     let search_filenm = prom.cont_2.buf.iter().collect::<String>();
