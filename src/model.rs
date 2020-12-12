@@ -1,8 +1,8 @@
 use crate::_cfg::lang::cfg::LangCfg;
+use crate::def::*;
 use crossterm::event::{Event, Event::Key, KeyCode::End};
 use std::fmt;
 use std::path;
-pub const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
 
 #[derive(Debug, Clone)]
 pub struct MsgBar {
@@ -135,21 +135,31 @@ impl Prompt {
         self.is_grep_stderr = false;
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct TabComp {
-    pub index: usize,
+    // 補完候補一覧
     pub dirs: Vec<String>,
+    // 補完候補一覧index
+    pub index: usize,
+    // 補完終了判定
     pub is_end: bool,
+    pub search_str: String,
 }
-
+impl TabComp {}
 impl Default for TabComp {
     fn default() -> Self {
-        TabComp { index: 0, dirs: vec![], is_end: false }
+        TabComp {
+            index: USIZE_UNDEFINED,
+            dirs: vec![],
+            is_end: false,
+            search_str: STR_UNDEFINED.to_string(),
+        }
     }
 }
 impl fmt::Display for TabComp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "TabComp index:{}, dirs:{}, is_comp_end:{},", self.index, self.dirs.join(" "), self.is_end,)
+        write!(f, "TabComp index:{}, dirs:{}, is_end:{},", self.index, self.dirs.join(" "), self.is_end,)
     }
 }
 
@@ -302,10 +312,9 @@ pub struct Search {
 }
 
 impl Search {
-    pub const INDEX_UNDEFINED: usize = usize::MAX;
     pub fn clear(&mut self) {
         self.str = String::new();
-        self.index = Search::INDEX_UNDEFINED;
+        self.index = USIZE_UNDEFINED;
         self.search_ranges = vec![];
         // file full path
         self.file = String::new();
@@ -317,8 +326,7 @@ impl Default for Search {
     fn default() -> Self {
         Search {
             str: String::new(),
-            // 未設定
-            index: 0,
+            index: USIZE_UNDEFINED,
             search_ranges: vec![],
             file: String::new(),
             filenm: String::new(),
@@ -377,7 +385,7 @@ impl Default for SelRange {
 impl SelRange {
     // 0-indexedの為に初期値を-1
     pub fn clear(&mut self) {
-        Log::ep_s("SelRange.clear");
+        //  Log::ep_s("SelRange.clear");
 
         self.sy = 0;
         self.ey = 0;

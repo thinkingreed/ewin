@@ -3,7 +3,7 @@ use termion::color::*;
 
 impl Colors {
     pub fn set_rownum_color(str_vec: &mut Vec<String>) {
-        str_vec.push(Fg(Rgb(0, 128, 0)).to_string());
+        str_vec.push(Fg(Rgb(47, 79, 79)).to_string());
 
         str_vec.push(Bg(Rgb(0, 0, 0)).to_string());
     }
@@ -30,7 +30,7 @@ impl Colors {
     }
 
     pub fn get_sber_fg() -> String {
-        return Fg(Rgb(255, 69, 0)).to_string();
+        return Fg(Rgb(210, 108, 31)).to_string();
     }
 
     pub fn get_default_fg() -> String {

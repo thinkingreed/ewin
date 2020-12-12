@@ -60,7 +60,6 @@ impl EvtAct {
                         F(4) => editor.move_cursor(out, sbar),
                         _ => {}
                     },
-                    // Key(KeyEvent { code: Char(c), .. }) => editor.insert_char(c),
                     Key(KeyEvent { code, .. }) => match code {
                         Char(c) => editor.insert_char(c),
                         Enter => editor.enter(),
@@ -111,7 +110,11 @@ impl EvtAct {
         }
         term.set_disp_size(editor, mbar, prom, sbar);
 
-        return EvtAct::check_prom(out, term, editor, mbar, prom, sbar);
+        let evt_act = EvtAct::check_prom(out, term, editor, mbar, prom, sbar);
+
+        EvtAct::finalize_check_prom(prom, editor);
+
+        return evt_act;
     }
 
     pub fn check_prom<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
@@ -245,7 +248,7 @@ impl EvtAct {
                         return EvtActType::Next;
                     }
                     Enter => {
-                        if mbar.msg_readonly.len() > 0 {
+                        if !prom.is_grep_result {
                             return EvtActType::Hold;
                         }
                     }
@@ -304,7 +307,7 @@ impl EvtAct {
                 _ => editor.is_redraw = true,
             },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                Down | Up | Left | Right => editor.is_redraw = true,
+                Down | Up | Left | Right | Home | End => editor.is_redraw = true,
                 F(4) => editor.is_redraw = false,
                 _ => editor.is_redraw = true,
             },
@@ -325,21 +328,29 @@ impl EvtAct {
             editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
         }
 
-        // is_change判定
+        // Edit    is_change=true, Clear redo_vec,
         match editor.evt {
-            Key(KeyEvent { code, modifiers: KeyModifiers::CONTROL }) => {
-                if code == Char('x') || code == Char('v') {
+            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
+                Char('x') | Char('v') => {
                     prom.is_change = true;
+                    editor.redo_vec.clear();
                 }
-            }
-            Key(KeyEvent { code: Char(_), .. }) => {
-                prom.is_change = true;
-            }
-            Key(KeyEvent { code, .. }) => {
-                if code == Enter || code == Backspace || code == Delete {
+                _ => {}
+            },
+            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
+                Char(_) => {
                     prom.is_change = true;
+                    editor.redo_vec.clear();
                 }
-            }
+                _ => {}
+            },
+            Key(KeyEvent { code, .. }) => match code {
+                Char(_) | Enter | Backspace | Delete => {
+                    prom.is_change = true;
+                    editor.redo_vec.clear();
+                }
+                _ => {}
+            },
             _ => {}
         }
     }
@@ -368,6 +379,24 @@ impl EvtAct {
         // 検索後に検索対象文字の変更対応で、再検索
         if editor.search.str.len() > 0 {
             editor.search.search_ranges = editor.get_search_ranges(editor.search.str.clone());
+        }
+    }
+    pub fn finalize_check_prom(prom: &mut Prompt, editor: &mut Editor) {
+        Log::ep_s("finalize_check_prom");
+
+        if prom.is_grep {
+            // 選択範囲クリア判定
+            match editor.evt {
+                Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
+                    Left | Right | Home | End => prom.clear_tab_comp(),
+                    _ => {}
+                },
+                Key(KeyEvent { code, .. }) => match code {
+                    Char(_) | Left | Right | Home | End | Backspace | Delete => prom.clear_tab_comp(),
+                    _ => {}
+                },
+                _ => {}
+            }
         }
     }
 }

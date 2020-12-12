@@ -1,3 +1,4 @@
+use crate::def::*;
 use crate::model::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
@@ -50,7 +51,7 @@ impl EvtAct {
             // all redrowの為に検索処理実施
             editor.search_str(is_asc);
             // indexを初期値に戻す
-            editor.search.index = Search::INDEX_UNDEFINED;
+            editor.search.index = USIZE_UNDEFINED;
             term.draw(out, editor, mbar, prom, sbar).unwrap();
             return true;
         }

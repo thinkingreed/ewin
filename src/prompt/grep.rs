@@ -13,7 +13,7 @@ impl EvtAct {
                 Enter => {
                     let search_str = prom.cont_1.buf.iter().collect::<String>();
                     let search_filenm = prom.cont_2.buf.iter().collect::<String>();
-                    let search_folder = prom.cont_3.buf.iter().collect::<String>();
+                    let mut search_folder = prom.cont_3.buf.iter().collect::<String>();
 
                     if search_str.len() == 0 {
                         mbar.set_err(mbar.lang.not_entered_search_str.clone());
@@ -24,6 +24,14 @@ impl EvtAct {
                     } else {
                         mbar.clear();
                         prom.clear();
+
+                        let current_dir = env::current_dir().unwrap().display().to_string();
+                        Log::ep_s(&current_dir);
+                        Log::ep_s(&search_folder);
+                        if search_folder.chars().nth(0).unwrap() != '/' {
+                            search_folder = format!("{}/{}", current_dir, search_folder);
+                        }
+                        Log::ep_s(&search_folder);
                         let path = Path::new(&search_folder).join(&search_filenm);
 
                         prom.cache_search_filenm = search_filenm.clone();
@@ -61,7 +69,7 @@ impl PromptCont {
         if cont_type == PromptBufPosi::First {
             self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.set_grep.clone(), "\n");
             self.key_desc = format!(
-                "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Ctrl + c",
+                "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Ctrl + c  {}{}:{}Tab {}({})",
                 Colors::get_default_fg(),
                 self.lang.search.clone(),
                 Colors::get_msg_fg(),
@@ -70,7 +78,12 @@ impl PromptCont {
                 Colors::get_msg_fg(),
                 Colors::get_default_fg(),
                 self.lang.close.clone(),
-                Colors::get_msg_fg()
+                Colors::get_msg_fg(),
+                Colors::get_default_fg(),
+                self.lang.complement.clone(),
+                Colors::get_msg_fg(),
+                Colors::get_default_fg(),
+                self.lang.search_folder.clone(),
             );
             self.buf_desc = format!("{}{}{}", Colors::get_msg_fg(), self.lang.search_str.clone(), Colors::get_default_fg());
         } else if cont_type == PromptBufPosi::Second {

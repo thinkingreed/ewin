@@ -1,7 +1,10 @@
+use crate::def::*;
 use crate::model::*;
 use crate::util::*;
+use std::env;
 use std::fs;
 use std::io::Write;
+use std::path::Path;
 use termion::{clear, cursor};
 
 impl Prompt {
@@ -115,7 +118,10 @@ impl Prompt {
                 match self.buf_posi {
                     PromptBufPosi::First | PromptBufPosi::Second => self.cursor_down(),
                     PromptBufPosi::Third => {
-                        self.set_path();
+                        self.cont_3.buf = self.get_tab_candidate().chars().collect();
+                        let (cur_x, width) = get_row_width(&self.cont_3.buf, 0, self.cont_3.buf.len());
+                        self.cont_3.cur.x = cur_x;
+                        self.cont_3.cur.disp_x = width + 1;
                     }
                 }
             } else {
@@ -131,75 +137,84 @@ impl Prompt {
         }
     }
 
-    fn set_path(&mut self) {
-        let mut dirs: Vec<String> = Vec::new();
+    fn get_tab_candidate(&mut self) -> String {
+        Log::ep_s("set_path");
+        let mut target_path = self.cont_3.buf.iter().collect::<String>();
 
-        let input_path = self.cont_3.buf.iter().collect::<String>();
-        Log::ep("             self.cont_3.buf", input_path.clone());
-
-        if input_path.len() == 0 || self.cont_3.buf[self.cont_3.buf.len() - 1] == '/' {
-            let mut prefix = "".to_string();
-            self.tab_comp.index = 0;
-            if self.cont_3.buf.len() == 0 {
-                prefix = "/".to_string();
-            } else {
-                prefix = input_path.clone();
+        // 検索対象folder
+        let mut base_dir = String::new();
+        // cur.xまでの文字列対象
+        let _ = target_path.split_off(self.cont_3.cur.x);
+        let vec: Vec<(usize, &str)> = target_path.match_indices("/").collect();
+        // "/"有り
+        if vec.len() > 0 {
+            let (base, search) = target_path.split_at(vec[vec.len() - 1].0 + 1);
+            if self.tab_comp.search_str == STR_UNDEFINED.to_string() {
+                self.tab_comp.search_str = search.to_string();
             }
+            base_dir = base.to_string();
+        } else {
+            if self.tab_comp.search_str == STR_UNDEFINED.to_string() {
+                self.tab_comp.search_str = target_path.clone();
+            }
+            base_dir = ".".to_string();
+        }
 
-            if let Ok(mut read_dir) = fs::read_dir(prefix) {
+        if self.tab_comp.dirs.len() == 0 {
+            if let Ok(mut read_dir) = fs::read_dir(&base_dir) {
                 while let Some(Ok(path)) = read_dir.next() {
                     if path.path().is_dir() {
-                        dirs.push(path.path().display().to_string());
+                        let mut dir_str = path.path().display().to_string();
+                        let v: Vec<(usize, &str)> = dir_str.match_indices(target_path.as_str()).collect();
+                        if v.len() > 0 {
+                            // 表示用に"./"置換
+                            if &base_dir == "." {
+                                dir_str = dir_str.replace("./", "");
+                            }
+                            self.tab_comp.dirs.push(dir_str);
+                        }
                     }
                 }
             }
-            dirs.sort();
-            Log::ep("read_dir", dirs.clone().join(""));
-            self.tab_comp.dirs = dirs;
-        } else {
+            self.tab_comp.dirs.sort();
         }
-        for (i, dir_str) in self.tab_comp.dirs.iter().enumerate() {
-            Log::ep("dir_str", dir_str.clone());
 
-            let v: Vec<(usize, &str)> = dir_str.match_indices(&input_path).collect();
-            let mut char_vec: Vec<char> = vec![];
+        Log::ep("read_dir", self.tab_comp.dirs.clone().join(" "));
+        Log::ep("self.tab_comp", self.tab_comp.clone());
 
-            // input_path 完全一致 or 入力無し
-            if input_path == dir_str.to_string() || input_path.len() == 0 {
-                Log::ep_s("input_path 完全一致");
+        let mut cont_3_str: String = String::new();
+        for candidate in &self.tab_comp.dirs {
+            // 部分一致 補完後 確定
+            if self.tab_comp.search_str.len() > 0 && self.tab_comp.dirs.len() == 1 {
+                Log::ep_s("　　One candidate");
+                cont_3_str = candidate.to_string();
+                self.tab_comp.is_end = true;
+                break;
+
+            // 候補複数
+            } else if self.tab_comp.dirs.len() > 1 {
+                Log::ep_s("　　Multi candidates");
+
                 if !self.tab_comp.is_end {
-                    char_vec = self.tab_comp.dirs[self.tab_comp.index].chars().collect();
-
-                    if self.tab_comp.index + 1 >= self.tab_comp.dirs.len() {
+                    if self.tab_comp.index + 1 >= self.tab_comp.dirs.len() || self.tab_comp.index == USIZE_UNDEFINED {
                         self.tab_comp.index = 0;
                     } else {
                         self.tab_comp.index += 1;
                     }
-                    break;
+                    cont_3_str = self.tab_comp.dirs[self.tab_comp.index].clone();
                 }
-
-            // input_path 部分一致
-            } else if input_path.len() > 0 && v.len() > 0 {
-                Log::ep_s("input_path 部分一致");
-                char_vec = self.tab_comp.dirs[i].chars().collect();
-
-            // 一致しない場合
-            } else {
-                Log::ep_s("一致しない");
-                // pass
+                break;
             }
-            let (cur_x, width) = get_row_width(&char_vec, 0, char_vec.len());
-
-            self.cont_3.buf = char_vec;
-            self.cont_3.cur.x = cur_x;
-            self.cont_3.cur.disp_x = width + 1;
-
-            Log::ep("cont_3.buf", self.cont_3.buf.clone().iter().collect::<String>());
-            Log::ep("cont_3.cur.x", self.cont_3.cur.x);
-            Log::ep("cont_3.cur.disp_x", width + 1);
         }
+        return cont_3_str;
+    }
 
-        Log::ep("             set_path", &self.tab_comp);
+    pub fn clear_tab_comp(&mut self) {
+        Log::ep_s("                  clear_tab_comp ");
+        self.tab_comp.index = 0;
+        self.tab_comp.search_str = STR_UNDEFINED.to_string();
+        self.tab_comp.dirs.clear();
+        self.tab_comp.is_end = false;
     }
 
     fn set_cur(cont_org: &PromptCont, cont: &mut PromptCont) {

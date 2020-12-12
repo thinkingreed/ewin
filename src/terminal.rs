@@ -134,6 +134,8 @@ impl Terminal {
         out.flush().unwrap();
     }
     pub fn startup_terminal(&mut self, search_strs: String) {
+        Log::ep("search_strs", search_strs.clone());
+
         let mut exe_path = "/home/hi/rust/ewin/target/release/ewin";
         if !cfg!(debug_assertions) {
             if Path::new("/usr/bin/ewin").exists() {

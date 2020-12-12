@@ -66,6 +66,7 @@ async fn main() {
             Log::ep("search_row_num", editor.search.row_num.clone());
             editor.open(Path::new(&sbar.filenm), &mut mbar);
             editor.search_str(true);
+            //   editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
         }
     } else {
         if file_path.len() == 0 {

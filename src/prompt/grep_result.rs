@@ -144,6 +144,7 @@ impl EvtAct {
                     let search_str = &editor.search.str;
                     let path = Path::new(&editor.search.folder).join(&grep_result.filenm);
 
+                    Log::ep_s("startup_terminal");
                     term.startup_terminal(format!("search_str={} search_file={} search_row_num={}", search_str, path.to_string_lossy().to_string(), grep_result.row_num.to_string()));
                     return EvtActType::Hold;
                 }

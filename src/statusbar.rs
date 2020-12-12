@@ -46,6 +46,7 @@ impl StatusBar {
         self.filenm_disp = filenm_disp;
         self.cur_str = cur_str;
     }
+
     pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
         Log::ep_s("StatusBar.draw_cur");
         let rows = self.disp_row_posi;

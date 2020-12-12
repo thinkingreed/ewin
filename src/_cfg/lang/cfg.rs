@@ -31,6 +31,7 @@ pub struct LangCfg {
     pub unable_to_edit: String,
     pub open_target_file_in_another_terminal: String,
     pub key_recording: String,
+    pub complement: String,
     /// Long msg
     pub not_entered_filenm: String,
     pub not_entered_search_str: String,
@@ -78,6 +79,7 @@ impl LangCfg {
             unable_to_edit: String::new(),
             open_target_file_in_another_terminal: String::new(),
             key_recording: String::new(),
+            complement: String::new(),
             // Long msg
             save_confirmation_to_close: String::new(),
             terminal_size_small: String::new(),

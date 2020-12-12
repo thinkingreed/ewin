@@ -22,6 +22,8 @@ replace_char="置換文字"
 unable_to_edit="編集不可"
 open_target_file_in_another_terminal="対象のファイルを別のターミナルで開く"
 key_recording="操作記録中..."
+complement="補完"
+
 ## Msg ##
 save_confirmation_to_close="保存して終了しますか？"
 terminal_size_small="ターミナルサイズが小さい為に終了します。サイズを大きくして再実行して下さい"
@@ -65,7 +67,7 @@ replace_char="replace character"
 unable_to_edit="unable to edit"
 open_target_file_in_another_terminal="open target file in another terminal"
 key_recording="operation recording..."
-
+complement="complement"
 
 ## Msg ##
 save_confirmation_to_close="Do you want to save and exit?"

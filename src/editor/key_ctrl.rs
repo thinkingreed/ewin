@@ -1,3 +1,4 @@
+use crate::def::*;
 use crate::model::*;
 use crate::util::*;
 use std::fs::File;
@@ -273,9 +274,11 @@ impl Editor {
 
         if self.search.str.len() > 0 {
             // 初回検索
-            if self.search.index == Search::INDEX_UNDEFINED {
+            Log::ep("search.index", self.search.index);
+            if self.search.index == USIZE_UNDEFINED {
                 self.search.search_ranges = self.get_search_ranges(self.search.str.clone());
 
+                eprintln!("search_ranges {:?}", self.search.search_ranges);
                 if self.search.search_ranges.len() > 0 {
                     if self.search.row_num.len() == 0 {
                         self.search.index = 0;
@@ -292,7 +295,7 @@ impl Editor {
             if self.search.search_ranges.len() == 0 {
                 return;
             }
-            if self.search.index != Search::INDEX_UNDEFINED {
+            if self.search.index != USIZE_UNDEFINED {
                 let range = self.search.search_ranges[self.search.index];
                 self.cur.y = range.y;
                 self.cur.x = range.sx + self.rnw;
