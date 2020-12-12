@@ -1,3 +1,4 @@
+use crate::global::*;
 use crate::model::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::env;
@@ -16,11 +17,11 @@ impl EvtAct {
                     let mut search_folder = prom.cont_3.buf.iter().collect::<String>();
 
                     if search_str.len() == 0 {
-                        mbar.set_err(mbar.lang.not_entered_search_str.clone());
+                        mbar.set_err(&LANG.lock().unwrap().not_entered_search_str);
                     } else if search_filenm.len() == 0 {
-                        mbar.set_err(mbar.lang.not_entered_search_file.clone());
+                        mbar.set_err(&LANG.lock().unwrap().not_entered_search_file);
                     } else if search_folder.len() == 0 {
-                        mbar.set_err(mbar.lang.not_entered_search_folder.clone());
+                        mbar.set_err(&LANG.lock().unwrap().not_entered_search_folder);
                     } else {
                         mbar.clear();
                         prom.clear();

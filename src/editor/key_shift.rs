@@ -1,3 +1,4 @@
+use crate::global::*;
 use crate::model::*;
 use crate::util::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
@@ -207,7 +208,7 @@ impl Editor {
             self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
         } else {
             prom.is_key_record = true;
-            mbar.set_keyrecord(mbar.lang.key_recording.clone());
+            mbar.set_keyrecord(&LANG.lock().unwrap().key_recording);
             self.key_record_vec = vec![];
         }
     }

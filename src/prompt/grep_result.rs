@@ -1,3 +1,4 @@
+use crate::global::*;
 use crate::model::*;
 use crate::util::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
@@ -91,7 +92,7 @@ impl EvtAct {
         child.kill();
         prom.clear();
         mbar.msg = String::new();
-        mbar.set_readonly(mbar.lang.unable_to_edit.clone());
+        mbar.set_readonly(&LANG.lock().unwrap().unable_to_edit);
         if editor.grep_result_vec.len() > 0 {
             prom.grep_result_after();
         } else {

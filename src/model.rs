@@ -6,7 +6,6 @@ use std::path;
 
 #[derive(Debug, Clone)]
 pub struct MsgBar {
-    pub lang: LangCfg,
     pub msg_readonly: String,
     pub msg_keyrecord: String,
     pub msg: String,
@@ -24,7 +23,6 @@ pub struct MsgBar {
 impl Default for MsgBar {
     fn default() -> Self {
         MsgBar {
-            lang: LangCfg::default(),
             msg_readonly: String::new(),
             msg_keyrecord: String::new(),
             msg: String::new(),

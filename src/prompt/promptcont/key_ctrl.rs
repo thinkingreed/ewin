@@ -1,3 +1,4 @@
+use crate::global::*;
 use crate::model::*;
 
 impl PromptCont {
@@ -12,7 +13,7 @@ impl PromptCont {
             }
             return false;
         } else {
-            mbar.set_err(mbar.lang.cannot_paste_multi_lines.clone());
+            mbar.set_err(&LANG.lock().unwrap().cannot_paste_multi_lines.clone());
             return true;
         }
     }

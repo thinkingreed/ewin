@@ -1,12 +1,11 @@
-use crate::_cfg::lang::cfg::LangCfg;
 use crate::model::*;
 use crate::util::*;
 use std::io::Write;
 use termion::{clear, cursor};
 
 impl MsgBar {
-    pub fn new(lang_cfg: LangCfg) -> Self {
-        MsgBar { lang: lang_cfg, ..MsgBar::default() }
+    pub fn new() -> Self {
+        MsgBar { ..MsgBar::default() }
     }
 
     pub fn clear_mag(&mut self) {
@@ -75,17 +74,17 @@ impl MsgBar {
         self.msg = format!("{}{}{}", Colors::get_msg_fg(), Colors::get_default_bg(), msg_str,);
     }
 
-    pub fn set_err(&mut self, msg: String) {
+    pub fn set_err(&mut self, msg: &str) {
         let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num - (get_str_width(&msg) - msg.chars().count()));
         self.msg = format!("{}{}{}{}", Colors::get_msg_err_fg(), Colors::get_default_bg(), msg_str, Colors::get_default_fg());
     }
 
-    pub fn set_keyrecord(&mut self, msg: String) {
+    pub fn set_keyrecord(&mut self, msg: &str) {
         let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num - (get_str_width(&msg) - msg.chars().count()));
         self.msg_keyrecord = format!("{}{}{}", Colors::get_msg_warning_fg(), Colors::get_default_bg(), msg_str,);
     }
 
-    pub fn set_readonly(&mut self, msg: String) {
+    pub fn set_readonly(&mut self, msg: &str) {
         let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num - (get_str_width(&msg) - msg.chars().count()));
         self.msg_readonly = format!("{}{}{}", Colors::get_msg_err_fg(), Colors::get_default_bg(), msg_str,);
     }

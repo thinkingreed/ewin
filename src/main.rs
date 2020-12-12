@@ -6,13 +6,12 @@ use crossterm::{
     ErrorKind,
 };
 use ewin::_cfg::lang::cfg::LangCfg;
+use ewin::global::*;
 use ewin::model::*;
 use futures::{future::FutureExt, select, StreamExt};
-use once_cell::sync::Lazy;
 use std::ffi::OsStr;
 use std::io::{stdout, BufWriter, Write};
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
 use termion::input::MouseTerminal;
 use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
@@ -34,7 +33,7 @@ async fn main() {
     term.set_env();
 
     let mut sbar = StatusBar::new(lang_cfg.clone());
-    let mut mbar = MsgBar::new(lang_cfg.clone());
+    let mut mbar = MsgBar::new();
     let mut prom = Prompt::new(lang_cfg.clone());
 
     term.set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
@@ -59,7 +58,7 @@ async fn main() {
             prom.is_grep_stdout = true;
             prom.is_grep_stderr = true;
             prom.grep_result();
-            mbar.set_info(mbar.lang.searching.clone());
+            mbar.set_info(LANG.lock().unwrap().searching.clone());
         } else {
             sbar.filenm = editor.search.file.clone();
             let search_row_nums: Vec<&str> = v[2].split("=").collect();

@@ -1,4 +1,5 @@
 use crate::def::*;
+use crate::global::*;
 use crate::model::*;
 use crate::util::*;
 use std::fs::File;
@@ -433,7 +434,7 @@ impl Editor {
             self.is_undo = false;
         } else {
             Log::ep("undo_vec.len", self.undo_vec.len());
-            mbar.set_err(mbar.lang.no_undo_operation.to_string());
+            mbar.set_err(&LANG.lock().unwrap().no_undo_operation.to_string());
         }
     }
 
@@ -458,7 +459,7 @@ impl Editor {
             }
         } else {
             Log::ep("undo_vec.len", self.undo_vec.len());
-            mbar.set_err(mbar.lang.no_operation_re_exec.to_string());
+            mbar.set_err(&LANG.lock().unwrap().no_operation_re_exec.to_string());
         }
     }
 }

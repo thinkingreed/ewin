@@ -1,3 +1,4 @@
+use crate::global::*;
 use crate::model::*;
 use std::cmp::min;
 use std::fs;
@@ -13,10 +14,10 @@ impl Editor {
             if path.exists() {
                 let metadata = fs::metadata(path).unwrap();
                 if metadata.permissions().readonly() {
-                    mbar.set_readonly(mbar.lang.unable_to_edit.clone());
+                    mbar.set_readonly(&LANG.lock().unwrap().unable_to_edit.clone());
                 }
             } else {
-                println!("{}", mbar.lang.file_not_found.clone());
+                println!("{}", LANG.lock().unwrap().file_not_found.clone());
                 std::process::exit(1);
             }
         }
@@ -34,12 +35,12 @@ impl Editor {
             }
             Err(err) => match err.kind() {
                 ErrorKind::PermissionDenied => {
-                    println!("{}", mbar.lang.no_read_permission.clone());
+                    println!("{}", LANG.lock().unwrap().no_read_permission.clone());
                     std::process::exit(1);
                 }
                 ErrorKind::NotFound => self.buf = vec![Vec::new()],
                 _ => {
-                    println!("{} {:?}", mbar.lang.file_opening_problem, err);
+                    println!("{} {:?}", LANG.lock().unwrap().file_opening_problem, err);
                     std::process::exit(1);
                 }
             },

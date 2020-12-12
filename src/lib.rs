@@ -1,4 +1,4 @@
-pub mod GLOBAL {
+pub mod global {
     use crate::_cfg::lang::cfg::LangCfg;
     use once_cell::sync::Lazy;
     use std::sync::Mutex;

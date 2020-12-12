@@ -1,3 +1,4 @@
+use crate::global::*;
 use crate::model::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
@@ -8,7 +9,7 @@ impl EvtAct {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {
                     if prom.cont_1.buf.len() == 0 {
-                        mbar.set_err(mbar.lang.not_entered_filenm.clone());
+                        mbar.set_err(&LANG.lock().unwrap().not_entered_filenm);
                     } else {
                         // TODO 存在するファイル名の対応
                         sbar.filenm = prom.cont_1.buf.iter().collect::<String>();

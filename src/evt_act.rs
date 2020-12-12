@@ -1,3 +1,4 @@
+use crate::global::*;
 use crate::model::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton, MouseEvent};
 use std::io::Write;
@@ -45,7 +46,7 @@ impl EvtAct {
                         Char('y') => editor.redo(&term, mbar),
                         End => editor.move_cursor(out, sbar),
                         Home => editor.move_cursor(out, sbar),
-                        _ => mbar.set_err(mbar.lang.unsupported_operation.clone()),
+                        _ => mbar.set_err(&LANG.lock().unwrap().unsupported_operation),
                     },
 
                     Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
