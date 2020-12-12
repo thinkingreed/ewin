@@ -16,6 +16,15 @@ impl Terminal {
         self.set_disp_size(editor, mbar, prom, sbar);
 
         let str_vec: &mut Vec<String> = &mut vec![];
+
+        // mbar.msg変更の場合は全再描画
+        Log::ep("mbar.msg_org", mbar.msg_org.clone());
+        Log::ep("mbar.msg", mbar.msg.clone());
+
+        if mbar.msg_org != mbar.msg {
+            editor.d_range.d_type = DType::All;
+        }
+
         let d_range = editor.d_range.get_range();
 
         Log::ep("d_range", d_range);

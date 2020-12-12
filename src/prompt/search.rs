@@ -1,5 +1,6 @@
 use crate::def::*;
 use crate::model::*;
+use crate::GLOBAL::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 
@@ -69,7 +70,7 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_search(&mut self) {
-        self.guide = format!("{}{}", Colors::get_msg_fg(), self.lang.set_search.clone());
+        self.guide = format!("{}{}", Colors::get_msg_fg(), LANG.lock().unwrap().set_search);
         self.key_desc = format!(
             "{}{}:{}F3  {}{}:{}Shift + F4  {}{}:{}Ctrl + c{}",
             Colors::get_default_fg(),

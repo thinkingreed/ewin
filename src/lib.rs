@@ -1,5 +1,15 @@
+pub mod GLOBAL {
+    use crate::_cfg::lang::cfg::LangCfg;
+    use once_cell::sync::Lazy;
+    use std::sync::Mutex;
+    pub static LANG: Lazy<Mutex<LangCfg>> = Lazy::new(|| {
+        let lang_cfg = LangCfg::read_lang_cfg();
+        return Mutex::new(lang_cfg);
+    });
+}
 pub mod colors;
 pub mod def;
+pub mod evt_act_prom;
 pub mod editor {
     pub mod clipboard;
     pub mod color;

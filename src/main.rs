@@ -1,21 +1,22 @@
 #[macro_use]
 extern crate clap;
 use clap::{App, Arg};
-use ewin::_cfg::lang::cfg::LangCfg;
-use ewin::model::*;
-use std::ffi::OsStr;
-use std::io::{stdout, BufWriter, Write};
-use std::path::{Path, PathBuf};
-use termion::input::MouseTerminal;
-use termion::raw::IntoRawMode;
-use termion::screen::AlternateScreen;
-use tokio_util::codec::{FramedRead, LinesCodec};
-
 use crossterm::{
     event::{Event, EventStream},
     ErrorKind,
 };
+use ewin::_cfg::lang::cfg::LangCfg;
+use ewin::model::*;
 use futures::{future::FutureExt, select, StreamExt};
+use once_cell::sync::Lazy;
+use std::ffi::OsStr;
+use std::io::{stdout, BufWriter, Write};
+use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use termion::input::MouseTerminal;
+use termion::raw::IntoRawMode;
+use termion::screen::AlternateScreen;
+use tokio_util::codec::{FramedRead, LinesCodec};
 
 #[tokio::main]
 async fn main() {
@@ -102,10 +103,8 @@ async fn exec_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Ed
         let mut event_next = reader.next().fuse();
 
         if prom.is_grep_stdout || prom.is_grep_stderr {
-            //   if prom.is_grep_result {
             let mut std_out_str = reader_stdout.next().fuse();
             let mut std_err_str = reader_stderr.next().fuse();
-            //   }
 
             select! {
                 std_out_event = std_out_str => {

@@ -9,6 +9,11 @@ impl MsgBar {
         MsgBar { lang: lang_cfg, ..MsgBar::default() }
     }
 
+    pub fn clear_mag(&mut self) {
+        Log::ep_s("　　　　　　　　MsgBar.clear_mag");
+        self.msg = String::new();
+    }
+
     pub fn clear(&mut self) {
         Log::ep_s("　　　　　　　　MsgBar.clear");
         self.msg = String::new();
@@ -72,7 +77,7 @@ impl MsgBar {
 
     pub fn set_err(&mut self, msg: String) {
         let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num - (get_str_width(&msg) - msg.chars().count()));
-        self.msg = format!("{}{}{}", Colors::get_msg_err_fg(), Colors::get_default_bg(), msg_str,);
+        self.msg = format!("{}{}{}{}", Colors::get_msg_err_fg(), Colors::get_default_bg(), msg_str, Colors::get_default_fg());
     }
 
     pub fn set_keyrecord(&mut self, msg: String) {

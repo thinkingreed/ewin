@@ -42,12 +42,15 @@ pub struct LangCfg {
     pub long_time_to_search: String,
     pub show_search_result: String,
     pub show_search_no_result: String,
+    pub no_undo_operation: String,
+    pub no_operation_re_exec: String,
     // File open
     pub no_read_permission: String,
     pub file_opening_problem: String,
     pub file_not_found: String,
     // Paste
     pub cannot_paste_multi_lines: String,
+    pub unsupported_operation: String,
 }
 #[derive(Debug, Deserialize)]
 pub struct LangMulti {
@@ -96,12 +99,15 @@ impl LangCfg {
             long_time_to_search: String::new(),
             show_search_result: String::new(),
             show_search_no_result: String::new(),
+            no_undo_operation: String::new(),
+            no_operation_re_exec: String::new(),
             // File open
             no_read_permission: String::new(),
             file_opening_problem: String::new(),
             file_not_found: String::new(),
             // Paste
             cannot_paste_multi_lines: String::new(),
+            unsupported_operation: String::new(),
         }
     }
     pub fn read_lang_cfg() -> LangCfg {

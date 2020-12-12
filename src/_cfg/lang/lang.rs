@@ -40,10 +40,18 @@ cannot_find_char_search_for="検索する文字が見つかりません"
 long_time_to_search="検索対象ファイル多い場合に非常に時間がかかる場合があります"
 show_search_result="検索結果を表示しています"
 show_search_no_result="検索対象は1件も存在しませんでした"
+# File open
 no_read_permission="読み込み権限がありません"
 file_opening_problem="ファイルを開く際に問題が発生しました"
 file_not_found="ファイルが存在しません"
+# paste
 cannot_paste_multi_lines="複数行を貼り付けることは出来ません"
+
+# undo・redo
+no_undo_operation="元に戻す操作はありません"
+no_operation_re_exec="再実行する操作はありません"
+# other
+unsupported_operation="サポートされていない操作です"
 
 [en]
 row="row"
@@ -91,5 +99,11 @@ file_opening_problem="There was a problem in opening the file"
 file_not_found="File not found"
 # paste
 cannot_paste_multi_lines="Can not paste multilines"
+# undo・redo
+no_undo_operation="There is no undo operation"
+no_operation_re_exec="No operation re-execute"
+# other
+unsupported_operation="This is an unsupported operation"
+
 
 "#;

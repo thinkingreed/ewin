@@ -378,7 +378,7 @@ impl Editor {
         prom.grep();
     }
 
-    pub fn undo(&mut self) {
+    pub fn undo(&mut self, mbar: &mut MsgBar) {
         Log::ep_s("　　　　　　　　undo");
         if let Some(ep) = self.undo_vec.pop() {
             self.is_undo = true;
@@ -432,11 +432,12 @@ impl Editor {
             self.redo_vec.push(ep);
             self.is_undo = false;
         } else {
-            self.d_range = DRnage { d_type: DType::Not, ..DRnage::default() };
+            Log::ep("undo_vec.len", self.undo_vec.len());
+            mbar.set_err(mbar.lang.no_undo_operation.to_string());
         }
     }
 
-    pub fn redo(&mut self, term: &Terminal) {
+    pub fn redo(&mut self, term: &Terminal, mbar: &mut MsgBar) {
         Log::ep_s("　　　　　　　　redo");
         if let Some(mut ep) = self.redo_vec.pop() {
             self.set_evtproc(&ep, ep.cur_s);
@@ -456,7 +457,8 @@ impl Editor {
                 _ => {}
             }
         } else {
-            self.d_range = DRnage { d_type: DType::Not, ..DRnage::default() };
+            Log::ep("undo_vec.len", self.undo_vec.len());
+            mbar.set_err(mbar.lang.no_operation_re_exec.to_string());
         }
     }
 }

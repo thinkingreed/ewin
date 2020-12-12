@@ -10,6 +10,7 @@ pub struct MsgBar {
     pub msg_readonly: String,
     pub msg_keyrecord: String,
     pub msg: String,
+    pub msg_org: String,
     /// ターミナル上の表示数
     pub disp_readonly_row_posi: usize,
     pub disp_keyrecord_row_posi: usize,
@@ -27,6 +28,7 @@ impl Default for MsgBar {
             msg_readonly: String::new(),
             msg_keyrecord: String::new(),
             msg: String::new(),
+            msg_org: String::new(),
             disp_readonly_row_posi: 0,
             disp_keyrecord_row_posi: 0,
             disp_row_posi: 0,
@@ -40,6 +42,7 @@ impl Default for MsgBar {
 /// Event後のEditor以外の操作
 #[derive(Debug, Clone)]
 pub struct EvtAct {}
+#[derive(Debug, PartialEq)]
 pub enum EvtActType {
     Hold,
     Next,
@@ -563,7 +566,7 @@ impl DRnage {
 }
 impl fmt::Display for DRnage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SelRange sy:{}, ey:{}, d_type:{}, ", self.sy, self.ey, self.d_type)
+        write!(f, "DRnage sy:{}, ey:{}, d_type:{}, ", self.sy, self.ey, self.d_type)
     }
 }
 
