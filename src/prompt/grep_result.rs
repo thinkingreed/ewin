@@ -1,6 +1,6 @@
-use crate::global::*;
 use crate::model::*;
 use crate::util::*;
+use crate::{def::USIZE_UNDEFINED, global::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
 use std::io::Write;
 use std::path::Path;
@@ -77,10 +77,14 @@ impl EvtAct {
 
             if vec.len() > 1 {
                 let result: Result<usize, _> = vec[1].parse();
-                if let Ok(row_num) = result {
-                    let grep_result = GrepResult::new(vec[0].to_string(), row_num);
-                    editor.grep_result_vec.push(grep_result);
-                }
+
+                let grep_result = match result {
+                    // text.txt:100:検索文字列 等
+                    Ok(row_num) => GrepResult::new(vec[0].to_string(), row_num),
+                    // grep: text.txt: 許可がありません
+                    Err(_) => GrepResult::new(vec[1].to_string().as_str().trim().to_string(), USIZE_UNDEFINED),
+                };
+                editor.grep_result_vec.push(grep_result);
             }
         } else {
             Log::ep_s("grep is canceled");
@@ -142,11 +146,14 @@ impl EvtAct {
                 }
                 Enter => {
                     let grep_result = &editor.grep_result_vec[editor.cur.y];
-                    let search_str = &editor.search.str;
-                    let path = Path::new(&editor.search.folder).join(&grep_result.filenm);
+                    // 読取権限がある場合
+                    if grep_result.row_num != USIZE_UNDEFINED {
+                        let search_str = &editor.search.str;
+                        let path = Path::new(&editor.search.folder).join(&grep_result.filenm);
 
-                    Log::ep_s("startup_terminal");
-                    term.startup_terminal(format!("search_str={} search_file={} search_row_num={}", search_str, path.to_string_lossy().to_string(), grep_result.row_num.to_string()));
+                        Log::ep_s("startup_terminal");
+                        term.startup_terminal(format!("search_str={} search_file={} search_row_num={}", search_str, path.to_string_lossy().to_string(), grep_result.row_num.to_string()));
+                    }
                     return EvtActType::Hold;
                 }
                 _ => return EvtActType::Hold,

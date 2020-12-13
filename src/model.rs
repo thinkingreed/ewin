@@ -145,17 +145,11 @@ pub struct TabComp {
     pub index: usize,
     // 補完終了判定
     pub is_end: bool,
-    pub search_str: String,
 }
 impl TabComp {}
 impl Default for TabComp {
     fn default() -> Self {
-        TabComp {
-            index: USIZE_UNDEFINED,
-            dirs: vec![],
-            is_end: false,
-            search_str: STR_UNDEFINED.to_string(),
-        }
+        TabComp { index: USIZE_UNDEFINED, dirs: vec![], is_end: false }
     }
 }
 impl fmt::Display for TabComp {
@@ -300,6 +294,12 @@ impl GrepResult {
         return GrepResult { filenm: filenm, row_num: row_num };
     }
 }
+impl fmt::Display for GrepResult {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "GrepResult filenm:{}, row_num:{},", self.filenm, self.row_num)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// 検索範囲
 pub struct Search {

@@ -41,9 +41,7 @@ impl Terminal {
         }
         self.draw_cur(str_vec, editor, prom);
 
-        // write!(out, "{}", &str_vec.concat())?;
         let _ = out.write(&str_vec.concat().as_bytes());
-        // let _ = out.write(b"\n");
         out.flush()?;
 
         editor.d_range.clear();
@@ -149,9 +147,7 @@ impl Terminal {
         if !cfg!(debug_assertions) {
             if Path::new("/usr/bin/ewin").exists() {
                 exe_path = "/usr/bin/ewin";
-            } else {
-                exe_path = "/home/hi/rust/ewin/target/release/ewin";
-            }
+            } 
         }
 
         if self.env == Env::WSL {
