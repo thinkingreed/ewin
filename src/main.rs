@@ -58,7 +58,7 @@ async fn main() {
             prom.is_grep_stdout = true;
             prom.is_grep_stderr = true;
             prom.grep_result();
-            mbar.set_info(LANG.lock().unwrap().searching.clone());
+            mbar.set_info(&LANG.lock().unwrap().searching);
         } else {
             sbar.filenm = editor.search.file.clone();
             let search_row_nums: Vec<&str> = v[2].split("=").collect();

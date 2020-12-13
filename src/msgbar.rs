@@ -69,7 +69,7 @@ impl MsgBar {
         return format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi) as u16), clear::CurrentLine, self.msg.clone());
     }
 
-    pub fn set_info(&mut self, msg: String) {
+    pub fn set_info(&mut self, msg: &str) {
         let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num - (get_str_width(&msg) - msg.chars().count()));
         self.msg = format!("{}{}{}", Colors::get_msg_fg(), Colors::get_default_bg(), msg_str,);
     }
