@@ -261,6 +261,8 @@ impl Editor {
             }
             prom.is_key_record_exec = false;
             prom.is_key_record_exec_draw = false;
+        } else {
+            mbar.set_err(&LANG.lock().unwrap().no_key_record_exec.to_string());
         }
     }
 }

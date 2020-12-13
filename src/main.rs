@@ -1,10 +1,8 @@
 #[macro_use]
 extern crate clap;
 use clap::{App, Arg};
-use crossterm::{
-    event::{Event, EventStream},
-    ErrorKind,
-};
+use crossterm::event::{Event, EventStream};
+use crossterm::ErrorKind;
 use ewin::_cfg::lang::cfg::LangCfg;
 use ewin::global::*;
 use ewin::model::*;

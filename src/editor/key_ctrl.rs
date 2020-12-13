@@ -458,7 +458,6 @@ impl Editor {
                 _ => {}
             }
         } else {
-            Log::ep("undo_vec.len", self.undo_vec.len());
             mbar.set_err(&LANG.lock().unwrap().no_operation_re_exec.to_string());
         }
     }

@@ -28,10 +28,11 @@ complement="補完"
 save_confirmation_to_close="保存して終了しますか？"
 terminal_size_small="ターミナルサイズが小さい為に終了します。サイズを大きくして再実行して下さい"
 set_new_filenm="新規に作成するファイル名を入力してください"
+not_entered_filenm="ファイル名が入力されていません"
+# Search・Replace
 set_search="検索する文字を入力してください"
 set_replace="検索する文字と置換する文字を入力して下さい"
 set_grep="検索する文字と検索するファイル、検索するフォルダを入力して下さい"
-not_entered_filenm="ファイル名が入力されていません"
 not_entered_search_str="検索する文字が入力されていません"
 not_entered_search_file="検索するファイルが入力されていません"
 not_entered_search_folder="検索するフォルダが入力されていません"
@@ -50,6 +51,8 @@ cannot_paste_multi_lines="複数行を貼り付けることは出来ません"
 # undo・redo
 no_undo_operation="元に戻す操作はありません"
 no_operation_re_exec="再実行する操作はありません"
+# key record
+no_key_record_exec="実行する操作記録はありません"
 # other
 unsupported_operation="サポートされていない操作です"
 
@@ -81,10 +84,11 @@ complement="complement"
 save_confirmation_to_close="Do you want to save and exit?"
 terminal_size_small="It will end because the terminal size is small. Please increase the size and try again"
 set_new_filenm="Enter the name of the newly created file"
+not_entered_filenm="File name is not entered"
+# Search・Replace
 set_search="Enter the characters you want to search for"
 set_replace="Enter the character to search for and the character to replace"
 set_grep="Enter the characters to search, the files to search, and the folder to search"
-not_entered_filenm="File name is not entered"
 not_entered_search_str="Search charctor is not entered"
 not_entered_search_file="Search file is not entered"
 not_entered_search_folder="Search folder is not entered"
@@ -101,7 +105,9 @@ file_not_found="File not found"
 cannot_paste_multi_lines="Can not paste multilines"
 # undo・redo
 no_undo_operation="There is no undo operation"
-no_operation_re_exec="No operation re-execute"
+no_operation_re_exec="There is no operation re-execute"
+# key record
+no_key_record_exec="There is no operation record to be executed"
 # other
 unsupported_operation="This is an unsupported operation"
 

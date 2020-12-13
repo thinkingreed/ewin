@@ -50,6 +50,9 @@ pub struct LangCfg {
     pub file_not_found: String,
     // Paste
     pub cannot_paste_multi_lines: String,
+    // key record
+    pub no_key_record_exec: String,
+    // other
     pub unsupported_operation: String,
 }
 #[derive(Debug, Deserialize)]
@@ -107,6 +110,7 @@ impl LangCfg {
             file_not_found: String::new(),
             // Paste
             cannot_paste_multi_lines: String::new(),
+            no_key_record_exec: String::new(),
             unsupported_operation: String::new(),
         }
     }
