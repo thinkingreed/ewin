@@ -121,8 +121,6 @@ impl Editor {
     fn set_wsl_vec(&mut self, sel_vec: Vec<String>) -> Vec<String> {
         let mut vec: Vec<String> = vec![];
 
-        eprintln!("sel_vec{:?}", sel_vec);
-
         for (i, s) in sel_vec.iter().enumerate() {
             let mut str = format!("{}{}{}", "'", s, "'");
             if i != sel_vec.len() - 1 {
@@ -180,7 +178,6 @@ impl Editor {
                 self.d_range = DRnage { sy: cur_y_org, ey: self.cur.y, d_type: DType::After };
             }
         }
-        eprintln!("self.buf {:?}", self.buf)
     }
 
     fn insert_str(&mut self, contexts: &mut String) {
