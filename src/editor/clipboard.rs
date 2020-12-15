@@ -1,7 +1,6 @@
 use crate::model::*;
-use clipboard::{ClipboardContext, ClipboardProvider};
-
 use anyhow::Context;
+use clipboard::{ClipboardContext, ClipboardProvider};
 use std::io::Read;
 use std::io::Write;
 use std::process;
@@ -27,7 +26,6 @@ impl Editor {
         };
     }
     fn try_set_clipboard(&mut self, copy_string: &str) -> anyhow::Result<()> {
-        // WSL環境を判定出来ない為にpowershell試行
         let mut p = Command::new("powershell.exe").arg("set-clipboard").arg("-Value").arg(copy_string).stdin(process::Stdio::piped()).spawn()?;
         // let mut p = Command::new("echo").arg("off").arg(copy_string).arg("|").arg("clip.exe").stdin(process::Stdio::piped()).spawn()?;
         {
@@ -56,13 +54,14 @@ impl Editor {
     }
 
     fn try_get_clipboard(&mut self) -> anyhow::Result<String> {
-        // WSL環境を判定出来ない為にpowershell試行
         let p = Command::new("powershell.exe").arg("get-clipboard").stdout(process::Stdio::piped()).spawn()?;
         let mut stdout = p.stdout.context("take stdout")?;
         let mut buf = String::new();
         stdout.read_to_string(&mut buf)?;
-        buf = buf.clone().trim().to_string();
-
+        // Windowsからのpasteで\r\n対応
+        let mut buf = buf.replace("\r\n", "\n");
+        // 末尾の自動挿入の改行の削除
+        buf = buf.clone()[0..buf.chars().count() - 1].to_string();
         Ok(buf)
     }
 }

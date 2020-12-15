@@ -121,13 +121,20 @@ impl Editor {
     fn set_wsl_vec(&mut self, sel_vec: Vec<String>) -> Vec<String> {
         let mut vec: Vec<String> = vec![];
 
+        eprintln!("sel_vec{:?}", sel_vec);
+
         for (i, s) in sel_vec.iter().enumerate() {
-            let mut str = format!("{}{}", "'", s);
-            str.push_str("'");
+            let mut str = format!("{}{}{}", "'", s, "'");
             if i != sel_vec.len() - 1 {
                 str.push_str(",");
             }
             vec.push(str);
+            /*
+            if i == sel_vec.len() - 1 && s.len() == 0 {
+                vec.push(format!("{}{}{}", "'", COPY_END, "'"));
+            } else {
+                vec.push(str);
+            }*/
         }
         return vec;
     }
@@ -135,17 +142,17 @@ impl Editor {
     pub fn paste(&mut self, term: &Terminal) {
         Log::ep_s("　　　　　　　  paste");
 
+        let y_offset_org = self.y_offset;
+        let cur_y_org = self.cur.y;
+        let rnw_org = self.rnw;
+
         let mut contexts = self.get_clipboard(&term).unwrap_or("".to_string());
+
         Log::ep("clipboard str", &contexts);
         if contexts.len() == 0 {
             return;
         }
 
-        self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::After };
-        // paste 1行の場合
-        if contexts.match_indices("\n").count() == 0 {
-            self.d_range.d_type = DType::Target;
-        }
         // EvtProcデータ設定
         let mut ep = EvtProc::new(DoType::Paste, &self);
         {
@@ -154,73 +161,74 @@ impl Editor {
             ep.sel.sx = self.cur.x - self.rnw;
             ep.sel.s_disp_x = self.cur.disp_x;
         }
-
         self.insert_str(&mut contexts);
-
         {
             ep.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
             ep.sel.ey = self.cur.y;
             ep.sel.ex = self.cur.x - self.rnw;
             ep.sel.e_disp_x = self.cur.disp_x;
         }
-
         self.undo_vec.push(ep);
+
+        // d_range
+        if contexts.match_indices("\n").count() == 0 {
+            self.d_range = DRnage { sy: cur_y_org, ey: self.cur.y, d_type: DType::Target };
+        } else {
+            if y_offset_org != self.y_offset || rnw_org != self.rnw {
+                self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
+            } else {
+                self.d_range = DRnage { sy: cur_y_org, ey: self.cur.y, d_type: DType::After };
+            }
+        }
+        eprintln!("self.buf {:?}", self.buf)
     }
 
     fn insert_str(&mut self, contexts: &mut String) {
-        let mut ins_strings: Vec<&str> = contexts.split('\n').collect();
+        Log::ep_s("        insert_str");
 
-        let mut add_line_count = 0;
-        for str in &ins_strings {
-            if str.len() > 0 {
-                add_line_count += 1;
-            }
-        }
+        Log::ep("contexts", contexts.clone());
+        let mut insert_strs: Vec<&str> = contexts.split('\n').collect();
+        let add_line_count = insert_strs.len() - 1;
 
         // self.rnwの増加対応
-        if ins_strings.len() > 1 {
+        if insert_strs.len() > 1 {
             let diff = (self.buf.len() + add_line_count).to_string().len() - self.rnw;
             self.rnw += diff;
             self.cur.x += diff;
             self.cur.disp_x += diff;
         }
 
-        let mut last_line_str = ins_strings.get(ins_strings.len() - 1).unwrap().to_string();
+        let mut last_line_str = insert_strs.get(insert_strs.len() - 1).unwrap().to_string();
         let last_line_str_org = last_line_str.clone();
 
         // 複数行のペーストでカーソル以降の行末までの残りの文字
         let line_rest: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.rnw..).collect();
-
         let line_rest_string: String = line_rest.iter().collect();
 
         // ペーストが複数行の場合にカーソル行のカーソル以降の文字列をペースト文字列最終行に追加
-        if ins_strings.len() > 0 {
+        if insert_strs.len() > 0 {
             for c in line_rest {
                 last_line_str.push(c);
             }
-            ins_strings.pop();
-            ins_strings.push((&*last_line_str).clone());
+            insert_strs.pop();
+            insert_strs.push((&*last_line_str).clone());
         }
 
-        for (i, copy_str) in ins_strings.iter().enumerate() {
+        for (i, copy_str) in insert_strs.iter().enumerate() {
             // ペーストが複数行の場合にcursorを進める
+            Log::ep("copy_str", copy_str);
             if i != 0 {
                 self.cur.y += 1;
                 self.cur.x = self.rnw;
                 self.cur.disp_x = self.rnw;
             }
             if copy_str.len() == 0 {
+                self.buf.insert(self.cur.y, vec![]);
                 continue;
             }
 
             let chars: Vec<char> = copy_str.chars().collect();
             for (j, c) in chars.iter().enumerate() {
-                // Log::ep("ccc", c);
-
-                // 複数行のコピペで既存行で不足の場合
-                if self.cur.y == self.buf.len() {
-                    self.buf.push(vec![]);
-                }
                 if i != 0 && j == 0 {
                     self.buf.insert(self.cur.y, vec![]);
                 }
@@ -232,7 +240,7 @@ impl Editor {
         }
 
         // 複数行の場合はカーソル位置調整
-        if ins_strings.len() > 1 {
+        if insert_strs.len() > 1 {
             self.cur.x = last_line_str_org.chars().count() + self.rnw;
             self.cur.disp_x = get_str_width(&last_line_str_org) + 1 + self.rnw;
         } else {
@@ -244,6 +252,7 @@ impl Editor {
         self.scroll();
         self.scroll_horizontal();
     }
+
     pub fn ctl_home(&mut self) {
         Log::ep_s("ctl_home");
         self.updown_x = 0;
@@ -287,7 +296,6 @@ impl Editor {
                         self.search.index = self.get_search_row_no_index(&self.search.row_num);
                     }
                 }
-                self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
             } else {
                 self.search.index = self.get_search_str_index(is_asc);
                 Log::ep("search.index", self.search.index);

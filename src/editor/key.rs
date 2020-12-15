@@ -103,7 +103,7 @@ impl Editor {
         Log::ep("y_offset_org == self.y_offset", y_offset_org == self.y_offset);
         Log::ep("rnw_org == self.rnw", rnw_org == self.rnw);
 
-        if y_offset_org == self.y_offset && rnw_org == self.rnw {
+        if y_offset_org == self.y_offset && rnw_org == self.rnw && !self.sel.is_selected() {
             self.d_range = DRnage::new(self.cur.y - 1, self.cur.y, DType::After);
         } else {
             self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };

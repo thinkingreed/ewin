@@ -8,7 +8,7 @@ use unicode_width::UnicodeWidthChar;
 impl Editor {
     // カーソルが画面に映るようにする
     pub fn scroll(&mut self) {
-        Log::ep_s("　　　　　　　 scroll");
+        // Log::ep_s("　　　　　　　 scroll");
         self.y_offset = min(self.y_offset, self.cur.y);
 
         if self.cur.y + 1 >= self.disp_row_num {
@@ -21,7 +21,7 @@ impl Editor {
     }
 
     pub fn scroll_horizontal(&mut self) {
-        Log::ep_s("　　　　　　　 scroll_horizontal");
+        // Log::ep_s("　　　　　　　 scroll_horizontal");
 
         // offset_x切替余分文字数(残文字数時にoffset切替)
         let offset_x_extra_num = 3;
@@ -42,13 +42,13 @@ impl Editor {
 
         // Right移動
         if self.x_offset_disp + self.disp_col_num < self.cur.disp_x + offset_x_extra_num {
-            Log::ep_s(" self.cur.x - self.x_offset + extra > self.disp_col_num ");
+            // Log::ep_s(" self.cur.x - self.x_offset + extra > self.disp_col_num ");
             if self.x_offset + self.disp_col_num - self.rnw < self.buf[self.cur.y].len() {
                 self.x_offset += offset_x_change_num;
             }
         // Left移動
         } else if self.cur.disp_x - 1 >= self.rnw + offset_x_extra_num && self.x_offset_disp >= self.cur.disp_x - 1 - self.rnw - offset_x_extra_num {
-            Log::ep_s(" self.x_offset + self.rnw + extra > self.cur.x ");
+            // Log::ep_s(" self.x_offset + self.rnw + extra > self.cur.x ");
             if self.x_offset >= offset_x_change_num {
                 self.x_offset -= offset_x_change_num;
             } else {
@@ -169,21 +169,20 @@ impl Editor {
 
                 // 終了行
                 } else if ey == i {
-                    Log::ep("ey == i　iii", i);
+                    Log::ep("ey == i", i);
                     self.buf[i].drain(0..ex);
                     let mut rest: Vec<char> = self.buf[i].clone();
                     self.buf[sy].append(&mut rest);
-                    self.buf.remove(i);
                 }
             }
         }
 
-        // 中間行を纏めて削除
-        for i in 0..self.buf.len() {
-            if sy < i && i < ey {
+        // 中間行と最終行を纏めて削除
+        for i in (0..self.buf.len()).rev() {
+            if sy < i && i <= ey {
                 Log::ep("sy < i && i < ey", i);
                 //     self.buf.remove(i);
-                self.buf[i] = vec![];
+                self.buf.remove(i);
             }
         }
         self.cur.y = sy;

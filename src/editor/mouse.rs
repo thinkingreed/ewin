@@ -84,7 +84,7 @@ impl Editor {
     */
     pub fn mouse_left_press(&mut self, x: usize, y: usize) {
         Log::ep_s("　　　　　　　  mouse_left_press");
-        if x <= self.rnw || y >= self.disp_row_num {
+        if x <= self.rnw || y >= self.disp_row_num || y >= self.buf.len() {
             return;
         }
         self.cur.y = y;
@@ -102,7 +102,7 @@ impl Editor {
 
     pub fn mouse_hold(&mut self, x: usize, y: usize) {
         Log::ep_s("　　　　　　　  mouse_hold");
-        if x <= self.rnw || y >= self.disp_row_num {
+        if x <= self.rnw || y >= self.disp_row_num || y >= self.buf.len() {
             return;
         }
         self.cur.y = y;
@@ -117,10 +117,9 @@ impl Editor {
 
     pub fn mouse_release(&mut self, x: usize, y: usize) {
         Log::ep_s("　　　　　　　  mouse_release");
-        if x <= self.rnw || y >= self.disp_row_num {
+        if x <= self.rnw || y >= self.disp_row_num || y >= self.buf.len() {
             return;
         }
-        Log::ep("xxxxx", x);
 
         self.cur.y = y;
         let (cur_x, width) = get_until_x(&self.buf[y], x - self.rnw - 1);
