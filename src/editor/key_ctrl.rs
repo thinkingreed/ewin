@@ -1,7 +1,4 @@
-use crate::def::*;
-use crate::global::*;
-use crate::model::*;
-use crate::util::*;
+use crate::{def::*, global::*, model::*, util::*};
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
@@ -76,6 +73,18 @@ impl Editor {
                             }
                             writeln!(file).unwrap();
                         }
+                        /*
+                        for line in &self.buf {
+                            let mut line_str: String = line.iter().collect();
+                            //  Log::ep("&line_str[..line_str.chars().count() - 1]", &line_str[..line_str.chars().count() - 1]);
+
+                            if &line_str[..line_str.chars().count() - 1] == NEW_LINE_MARK.to_string() {
+
+                            }
+                            Log::ep("line_str", line_str.clone());
+                            write!(file, "{}", line_str).unwrap();
+                        }
+                        */
                         prom.is_change = false;
                         prom.clear();
                         mbar.clear();
@@ -102,9 +111,9 @@ impl Editor {
         let sel_vec = get_sel_range_str(&mut self.buf, &mut self.sel);
 
         if term.env == Env::WSL {
-            copy_string = self.set_wsl_vec(sel_vec).join("\n");
+            copy_string = self.set_wsl_vec(sel_vec).join(NEW_LINE.to_string().as_str());
         } else {
-            copy_string = sel_vec.join("\n");
+            copy_string = sel_vec.join(NEW_LINE.to_string().as_str());
         }
 
         Log::ep("copy_string", copy_string.clone());
@@ -169,7 +178,7 @@ impl Editor {
         self.undo_vec.push(ep);
 
         // d_range
-        if contexts.match_indices("\n").count() == 0 {
+        if contexts.match_indices(NEW_LINE).count() == 0 {
             self.d_range = DRnage { sy: cur_y_org, ey: self.cur.y, d_type: DType::Target };
         } else {
             if y_offset_org != self.y_offset || rnw_org != self.rnw {
@@ -184,7 +193,7 @@ impl Editor {
         Log::ep_s("        insert_str");
 
         Log::ep("contexts", contexts.clone());
-        let mut insert_strs: Vec<&str> = contexts.split('\n').collect();
+        let mut insert_strs: Vec<&str> = contexts.split(NEW_LINE).collect();
         let add_line_count = insert_strs.len() - 1;
 
         // self.rnwの増加対応
@@ -423,7 +432,7 @@ impl Editor {
                     self.del_sel_range();
                     self.sel.clear();
                 } else {
-                    self.insert_str(&mut ep.str_vec.join("\n"));
+                    self.insert_str(&mut ep.str_vec.join(NEW_LINE.to_string().as_str()));
                 }
 
                 if ep.sel.is_selected() && ep.do_type != DoType::Paste {

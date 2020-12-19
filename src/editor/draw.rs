@@ -1,5 +1,4 @@
-use crate::global::*;
-use crate::model::*;
+use crate::{def::*, global::*, model::*};
 use std::cmp::min;
 use std::fs;
 use std::io::ErrorKind;
@@ -12,8 +11,8 @@ impl Editor {
     pub fn open(&mut self, path: &path::Path, mbar: &mut MsgBar) {
         if path.to_string_lossy().to_string().len() > 0 {
             if path.exists() {
-                let metadata = fs::metadata(path).unwrap();
-                if metadata.permissions().readonly() {
+                let meta = fs::metadata(path).unwrap();
+                if meta.permissions().readonly() {
                     mbar.set_readonly(&LANG.lock().unwrap().unable_to_edit.clone());
                 }
             } else {
@@ -26,11 +25,33 @@ impl Editor {
 
         match result {
             Ok(s) => {
-                let buffer: Vec<Vec<char>> = s.lines().map(|line| line.trim_end().chars().collect()).collect();
-                if buffer.is_empty() {
-                    self.buf = vec![Vec::new()]
+                eprintln!("sss {:?}", s);
+                let (mut buf, mut vec) = (vec![], vec![]);
+                let (chars, chars_len) = (s.chars(), s.chars().count());
+                for (i, mut c) in chars.enumerate() {
+                    if c == NEW_LINE {
+                        c = NEW_LINE_MARK;
+                    }
+                    vec.push(c);
+
+                    if c == NEW_LINE_MARK || i == chars_len - 1 {
+                        if c == NEW_LINE_MARK && i == chars_len - 1 {
+                            buf.push(vec);
+                            buf.push(vec![EOF]);
+                            break;
+                        } else if i == chars_len - 1 {
+                            vec.push(EOF);
+                        }
+                        buf.push(vec);
+                        vec = vec![];
+                    }
+                }
+
+                eprintln!("buffers {:?}", buf);
+                if buf.is_empty() {
+                    self.buf = vec![Vec::new()];
                 } else {
-                    self.buf = buffer
+                    self.buf = buf;
                 }
             }
             Err(err) => match err.kind() {
@@ -49,18 +70,19 @@ impl Editor {
         self.rnw = self.buf.len().to_string().len();
         self.set_cur_default();
     }
+
     pub fn set_cur_default(&mut self) {
         self.cur = Cur { y: 0, x: self.rnw, disp_x: self.rnw + 1 };
         self.scroll();
         self.scroll_horizontal();
     }
+
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         let (rows, cols) = (self.disp_row_num, self.disp_col_num);
         Log::ep("rows", rows);
         Log::ep("cols", cols);
 
         let mut y_draw_s = self.y_offset;
-        //let mut y_draw_e = self.y_offset + min(self.disp_row_num, self.buf.len());
         let mut y_draw_e = min(self.buf.len(), self.y_offset + min(self.disp_row_num, self.buf.len()));
 
         let d_range = self.d_range.get_range();
@@ -84,6 +106,7 @@ impl Editor {
                 str_vec.push(format!("{}{}", cursor::Goto(1, (d_range.sy + 1 - self.y_offset) as u16), clear::AfterCursor));
             }
         }
+
         // 画面上の行、列
         let mut y = 0;
         let mut x = 0;
@@ -107,6 +130,8 @@ impl Editor {
                 }
                 str_vec.push((i + 1).to_string());
             }
+            Log::ep("str_vec", str_vec.join(" "));
+
             Colors::set_textarea_color(str_vec);
 
             let mut x_draw_s = 0;
@@ -115,37 +140,50 @@ impl Editor {
                 x_draw_s = self.x_offset;
                 Log::ep("x_draw_s", x_draw_s);
             }
-            let x_draw_e = self.buf[i].len() + 1;
-            for j in x_draw_s..=x_draw_e {
-                if self.buf[i].len() == 0 {
-                    break;
-                }
-
-                // 選択箇所のhighlight
-                self.ctl_select_color(str_vec, sel_range, i, j);
-                &self.ctl_search_color(str_vec, &search_ranges, i, j);
-
-                if let Some(c) = &self.buf[i].get(j) {
-                    let width = c.width().unwrap_or(0);
-                    let x_w_l = x + width + self.rnw;
-                    // Log::ep("x_w_l", x_w_l);
-                    if x_w_l > cols {
+            // 改行EOF対応
+            if i < self.buf.len() {
+                let x_draw_e = self.buf[i].len() + 1;
+                for j in x_draw_s..=x_draw_e {
+                    if self.buf[i].len() == 0 {
                         break;
                     }
+                    // select target highlight
+                    self.ctl_selcolor_eof(str_vec, sel_range, i, j);
+                    // search target highlight
+                    self.ctl_searchcolor_eof(str_vec, &search_ranges, i, j);
 
-                    x += width;
-                    // 検索対象のhighlight
-                    str_vec.push(c.to_string());
+                    if let Some(c) = self.buf[i].get(j) {
+                        let width = c.width().unwrap_or(0);
+                        let x_w_l = x + width + self.rnw;
+                        // Log::ep("x_w_l", x_w_l);
+                        if x_w_l > cols {
+                            break;
+                        }
+
+                        x += width;
+                        // 検索対象のhighlight
+
+                        if c == &EOF {
+                            self.set_eof(str_vec);
+                        } else {
+                            str_vec.push(c.to_string());
+                        }
+                    }
                 }
             }
             y += 1;
             x = 0;
+
+            Log::ep("rowsrowsrows", rows);
+            Log::ep("yyy", y);
+
             if y >= rows {
                 break;
             } else {
                 str_vec.push("\r\n".to_string());
             }
         }
+
         Log::ep("cur.y", self.cur.y);
         Log::ep("y_offset", self.y_offset);
         Log::ep("cur.x", self.cur.x);

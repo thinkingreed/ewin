@@ -185,6 +185,11 @@ impl Editor {
                 self.buf.remove(i);
             }
         }
+
         self.cur.y = sy;
+        let (cur_x, width) = get_row_width(&self.buf[self.cur.y], 0, self.buf[self.cur.y].len());
+        self.rnw = self.buf.len().to_string().len();
+        self.cur.x = cur_x + self.rnw;
+        self.cur.disp_x = width + self.rnw + 1;
     }
 }

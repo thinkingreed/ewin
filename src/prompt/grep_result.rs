@@ -1,6 +1,4 @@
-use crate::model::*;
-use crate::util::*;
-use crate::{def::USIZE_UNDEFINED, global::*};
+use crate::{def::*, global::*, model::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
 use std::io::Write;
 use std::path::Path;
@@ -190,15 +188,15 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_grep_result(&mut self) {
-        self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.long_time_to_search.clone(), "\n");
+        self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.long_time_to_search.clone(), NEW_LINE);
         self.key_desc = format!("{}{}:{}Ctrl + c", Colors::get_default_fg(), self.lang.cancel.clone(), Colors::get_msg_fg(),);
     }
     pub fn set_grep_result_after(&mut self) {
-        self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.show_search_result.clone(), "\n");
+        self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.show_search_result.clone(), NEW_LINE);
         self.key_desc = format!("{}{}:{}Enter", Colors::get_default_fg(), self.lang.open_target_file_in_another_terminal.clone(), Colors::get_msg_fg(),);
     }
     pub fn set_grep_result_after_no_result(&mut self) {
-        self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.show_search_no_result.clone(), "\n");
+        self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.show_search_no_result.clone(), NEW_LINE);
         self.key_desc = format!("{}{}:{}Ctrl + w", Colors::get_default_fg(), self.lang.close.clone(), Colors::get_msg_fg(),);
     }
 }

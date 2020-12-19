@@ -1,5 +1,4 @@
-use crate::global::*;
-use crate::model::*;
+use crate::{def::*, global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::env;
 use std::io::Write;
@@ -68,7 +67,7 @@ impl Prompt {
 impl PromptCont {
     pub fn set_grep(&mut self, prom: &Prompt, cont_type: PromptBufPosi) {
         if cont_type == PromptBufPosi::First {
-            self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.set_grep.clone(), "\n");
+            self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.set_grep.clone(), NEW_LINE);
             self.key_desc = format!(
                 "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Ctrl + c  {}{}:{}Tab {}({})",
                 Colors::get_default_fg(),

@@ -25,12 +25,18 @@ impl Colors {
         str_vec.push(Bg(Rgb(221, 72, 20)).to_string());
     }
 
+    pub fn set_new_line_color(str_vec: &mut Vec<String>) {
+        str_vec.push(Fg(Rgb(55, 55, 55)).to_string());
+
+        str_vec.push(Bg(Rgb(0, 0, 0)).to_string());
+    }
+
     pub fn get_sber_bg() -> String {
         return Bg(Rgb(0, 0, 0)).to_string();
     }
 
     pub fn get_sber_fg() -> String {
-        return Fg(Rgb(210, 108, 31)).to_string();
+        return Fg(Rgb(135, 65, 31)).to_string();
     }
 
     pub fn get_default_fg() -> String {

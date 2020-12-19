@@ -1,5 +1,5 @@
-use crate::model::*;
-use crate::util::*;
+use crate::{def::EOF, model::*};
+use crate::{def::NEW_LINE_MARK, util::*};
 use crossterm::event::Event::Key;
 use crossterm::event::KeyCode::{Left, Right};
 use std::cmp::{max, min};
@@ -46,10 +46,10 @@ impl Editor {
             return;
         // 行頭の場合
         } else if self.cur.x == self.rnw {
-            let rowlen = self.buf[self.cur.y - 1].len();
-            self.cur.x = rowlen + self.rnw;
-            let (_, width) = get_row_width(&self.buf[self.cur.y - 1], 0, rowlen);
-            self.cur.disp_x = width + self.rnw + 1;
+            //   self.cur.x = rowlen + self.rnw - 1;
+            let (cur_x, width) = get_row_width(&self.buf[self.cur.y - 1], 0, self.buf[self.cur.y - 1].len());
+            self.cur.x = cur_x - 1 + self.rnw;
+            self.cur.disp_x = width + self.rnw;
             self.d_range = DRnage::new(self.cur.y - 1, self.cur.y, DType::Target);
 
             self.cursor_up();
@@ -65,7 +65,7 @@ impl Editor {
     pub fn cursor_right(&mut self) {
         // Log::ep_s("　　　　　　　  c_r start");
         // 行末(行末の空白対応で)
-        if self.cur.x == self.buf[self.cur.y].len() + self.rnw {
+        if self.cur.x == self.buf[self.cur.y].len() + self.rnw - 1 {
             // 最終行の行末
             if self.cur.y == self.buf.len() - 1 {
                 return;
@@ -77,6 +77,13 @@ impl Editor {
                 self.cursor_down();
             }
         } else {
+            // EOF
+            if self.buf[self.cur.y].len() + self.rnw > self.cur.x {
+                let c = self.buf[self.cur.y][self.cur.x - self.rnw];
+                if c == EOF || c == NEW_LINE_MARK {
+                    return;
+                }
+            }
             self.cur.disp_x += get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.rnw);
             self.cur.x = min(self.cur.x + 1, self.buf[self.cur.y].len() + self.rnw);
         }
@@ -91,6 +98,7 @@ impl Editor {
         let mut evt_proc = EvtProc::new(DoType::Enter, &self);
 
         let rest: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.rnw..).collect();
+        self.buf[self.cur.y].push(NEW_LINE_MARK);
         self.buf.insert(self.cur.y + 1, rest);
         self.cur.y += 1;
         self.rnw = self.buf.len().to_string().len();

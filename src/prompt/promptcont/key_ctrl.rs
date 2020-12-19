@@ -1,11 +1,10 @@
-use crate::global::*;
-use crate::model::*;
+use crate::{def::*, global::*, model::*};
 
 impl PromptCont {
     pub fn paste(&mut self, term: &Terminal, editor: &mut Editor, mbar: &mut MsgBar) -> bool {
         Log::ep_s("　　　　　　　PromptCont.paste");
         let contexts = editor.get_clipboard(&term).unwrap_or("".to_string());
-        if contexts.match_indices("\n").count() == 0 {
+        if contexts.match_indices(NEW_LINE).count() == 0 {
             let chars: Vec<char> = contexts.chars().collect();
             for c in chars {
                 self.buf.insert(self.cur.x, c);

@@ -1,10 +1,6 @@
-use crate::def::*;
-use crate::model::*;
-use crate::util::*;
-use std::env;
+use crate::{def::*, model::*, util::*};
 use std::fs;
 use std::io::Write;
-use std::path::Path;
 use termion::{clear, cursor};
 
 impl Prompt {
@@ -142,7 +138,7 @@ impl Prompt {
         let mut target_path = self.cont_3.buf.iter().collect::<String>();
 
         // 検索対象folder
-        let mut base_dir = String::new();
+        let mut base_dir = ".".to_string();
         // cur.xまでの文字列対象
         let _ = target_path.split_off(self.cont_3.cur.x);
         let vec: Vec<(usize, &str)> = target_path.match_indices("/").collect();
@@ -150,8 +146,6 @@ impl Prompt {
         if vec.len() > 0 {
             let (base, _) = target_path.split_at(vec[vec.len() - 1].0 + 1);
             base_dir = base.to_string();
-        } else {
-            base_dir = ".".to_string();
         }
 
         if self.tab_comp.dirs.len() == 0 {

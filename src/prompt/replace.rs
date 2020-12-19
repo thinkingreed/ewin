@@ -1,5 +1,4 @@
-use crate::global::*;
-use crate::model::*;
+use crate::{def::*, global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 
@@ -50,7 +49,7 @@ impl Prompt {
 impl PromptCont {
     pub fn set_replace(&mut self, cont_type: PromptBufPosi) {
         if cont_type == PromptBufPosi::First {
-            self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.set_replace.clone(), "\n");
+            self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.set_replace.clone(), NEW_LINE);
             self.key_desc = format!(
                 "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Ctrl + c",
                 Colors::get_default_fg(),

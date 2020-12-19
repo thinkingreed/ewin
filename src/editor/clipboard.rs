@@ -1,4 +1,4 @@
-use crate::model::*;
+use crate::{def::*, model::*};
 use anyhow::Context;
 use clipboard::{ClipboardContext, ClipboardProvider};
 use std::io::Read;
@@ -59,7 +59,7 @@ impl Editor {
         let mut buf = String::new();
         stdout.read_to_string(&mut buf)?;
         // Windowsからのpasteで\r\n対応
-        let mut buf = buf.replace("\r\n", "\n");
+        let mut buf = buf.replace("\r\n", NEW_LINE.to_string().as_str());
         // 末尾の自動挿入の改行の削除
         buf = buf.clone()[0..buf.chars().count() - 1].to_string();
         Ok(buf)
