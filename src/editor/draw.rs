@@ -174,9 +174,6 @@ impl Editor {
             y += 1;
             x = 0;
 
-            Log::ep("rowsrowsrows", rows);
-            Log::ep("yyy", y);
-
             if y >= rows {
                 break;
             } else {

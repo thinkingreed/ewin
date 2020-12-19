@@ -148,48 +148,38 @@ impl Editor {
     pub fn del_sel_range(&mut self) {
         Log::ep_s("　　　　　　　  del_sel_range");
         let sel = self.sel.get_range();
-        let (sy, ey, sx, ex, s_disp_x, e_disp_x) = (sel.sy, sel.ey, sel.sx, sel.ex, sel.s_disp_x, sel.e_disp_x);
+        let (sy, ey, sx, ex, s_disp_x) = (sel.sy, sel.ey, sel.sx, sel.ex, sel.s_disp_x);
         Log::ep("sel", sel);
 
         for i in 0..self.buf.len() {
             if sy <= i && i <= ey {
                 // 1行
                 if sy == ey {
-                    Log::ep("sy == ey　iii", i);
                     self.buf[i].drain(sx..ex);
-                    self.cur.disp_x = min(s_disp_x, e_disp_x);
-                    self.cur.x = min(sx, ex) + self.rnw;
                 // 開始行
                 } else if sy == i {
-                    Log::ep("sy == i　iii", i);
                     let (cursorx, _) = get_row_width(&self.buf[sy], sx, self.buf[sy].len());
                     self.buf[i].drain(sx..sx + cursorx);
-                    self.cur.disp_x = s_disp_x;
-                    self.cur.x = sx + self.rnw;
 
                 // 終了行
                 } else if ey == i {
-                    Log::ep("ey == i", i);
                     self.buf[i].drain(0..ex);
                     let mut rest: Vec<char> = self.buf[i].clone();
                     self.buf[sy].append(&mut rest);
                 }
             }
         }
-
-        // 中間行と最終行を纏めて削除
+        // 行削除
         for i in (0..self.buf.len()).rev() {
-            if sy < i && i <= ey {
-                Log::ep("sy < i && i < ey", i);
-                //     self.buf.remove(i);
+            if sy == i && self.buf[sy].len() == 0 || sy < i && i <= ey {
+                Log::ep("sy == i && self.buf[sy].len() == 0 || sy < i && i <= ey", i);
                 self.buf.remove(i);
             }
         }
 
         self.cur.y = sy;
-        let (cur_x, width) = get_row_width(&self.buf[self.cur.y], 0, self.buf[self.cur.y].len());
         self.rnw = self.buf.len().to_string().len();
-        self.cur.x = cur_x + self.rnw;
-        self.cur.disp_x = width + self.rnw + 1;
+        self.cur.disp_x = s_disp_x;
+        self.cur.x = sx + self.rnw;
     }
 }

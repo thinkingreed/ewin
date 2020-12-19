@@ -57,34 +57,32 @@ impl Editor {
         // Log::ep("path", self.path.to_owned());
 
         if !Path::new(&sbar.filenm).exists() && prom.cont_1.buf.len() == 0 {
+            Log::ep_s("!Path::new(&sbar.filenm).exists()");
+
             prom.is_save_new_file = true;
             prom.save_new_file();
             return false;
         } else {
             if let Some(path) = self.path.as_ref() {
+                Log::ep("Some(path)", "");
                 let result = File::create(path);
 
                 match result {
                     Ok(mut file) => {
-                        for line in &self.buf {
-                            for &c in line {
-                                Log::ep("save c", c);
-                                write!(file, "{}", c).unwrap();
-                            }
-                            writeln!(file).unwrap();
-                        }
-                        /*
-                        for line in &self.buf {
+                        Log::ep_s("Ok(mut file)");
+
+                        for (i, line) in self.buf.iter().enumerate() {
                             let mut line_str: String = line.iter().collect();
-                            //  Log::ep("&line_str[..line_str.chars().count() - 1]", &line_str[..line_str.chars().count() - 1]);
-
-                            if &line_str[..line_str.chars().count() - 1] == NEW_LINE_MARK.to_string() {
-
+                            if i == self.buf.len() - 1 {
+                                line_str = line_str.replace(EOF, "");
+                                write!(file, "{}", line_str).unwrap();
+                            } else {
+                                if &line_str.chars().last().unwrap() == &NEW_LINE_MARK {
+                                    line_str = format!("{}{}", &line_str[..line_str.chars().count() - 1], "");
+                                }
+                                writeln!(file, "{}", line_str).unwrap();
                             }
-                            Log::ep("line_str", line_str.clone());
-                            write!(file, "{}", line_str).unwrap();
                         }
-                        */
                         prom.is_change = false;
                         prom.clear();
                         mbar.clear();

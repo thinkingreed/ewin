@@ -4,7 +4,7 @@ use std::fmt::Display;
 impl Log {
     pub fn ep<T: Display>(m: &str, v: T) {
         if cfg!(debug_assertions) {
-            eprintln!("{} {}", format!("{:?}", m), v);
+            eprintln!("{}{} {}", Colors::get_default_fg(), format!("{:?}", m), v);
         } else {
             // eprintln!("{} {}", format!("{:?}", m), v);
 
@@ -18,7 +18,7 @@ impl Log {
     }
     pub fn ep_s(m: &str) {
         if cfg!(debug_assertions) {
-            eprintln!("{}", m);
+            eprintln!("{}{}", Colors::get_default_fg(), m);
         } else {
             // eprintln!("{}", m);
 

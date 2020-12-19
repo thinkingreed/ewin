@@ -1,7 +1,5 @@
-use crate::{def::EOF, model::*};
-use crate::{def::NEW_LINE_MARK, util::*};
-use crossterm::event::Event::Key;
-use crossterm::event::KeyCode::{Left, Right};
+use crate::{def::*, model::*, util::*};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::cmp::{max, min};
 
 impl Editor {
@@ -63,9 +61,16 @@ impl Editor {
         self.scroll_horizontal();
     }
     pub fn cursor_right(&mut self) {
-        // Log::ep_s("　　　　　　　  c_r start");
+        Log::ep_s("　　　　　　　  c_r start");
+        let mut end_of_line = self.buf[self.cur.y].len() + self.rnw - 1;
+        if self.evt == Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Right }) {
+            // EOF
+            if self.buf.len() - 1 != self.cur.y {
+                end_of_line += 1;
+            }
+        }
         // 行末(行末の空白対応で)
-        if self.cur.x == self.buf[self.cur.y].len() + self.rnw - 1 {
+        if self.cur.x == end_of_line {
             // 最終行の行末
             if self.cur.y == self.buf.len() - 1 {
                 return;
@@ -78,9 +83,9 @@ impl Editor {
             }
         } else {
             // EOF
-            if self.buf[self.cur.y].len() + self.rnw > self.cur.x {
+            if self.evt != Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Right }) {
                 let c = self.buf[self.cur.y][self.cur.x - self.rnw];
-                if c == EOF || c == NEW_LINE_MARK {
+                if c == NEW_LINE_MARK {
                     return;
                 }
             }
