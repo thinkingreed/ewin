@@ -105,19 +105,10 @@ pub fn get_sel_range_str(buf: &mut Vec<Vec<char>>, sel: &mut SelRange) -> Vec<St
 
         for j in copy_range.sx..copy_range.ex {
             if let Some(mut c) = buf[copy_range.y].get(j) {
-                if c == &NEW_LINE_MARK {
-                    c = &NEW_LINE;
-                }
                 vec.insert(vec.len(), c.to_string());
             }
         }
 
-        /*
-                // 空行
-                if copy_range.sx == 0 && copy_range.ex == 0 {
-                    vec.push("".to_string());
-                }
-        */
         if vec.len() > 0 {
             all_vec.push(vec.join(""));
         }

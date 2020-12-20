@@ -105,15 +105,15 @@ impl Editor {
             return;
         };
 
-        let copy_string;
+        let mut copy_string;
         Log::ep("self.sel", self.sel);
         let sel_vec = get_sel_range_str(&mut self.buf, &mut self.sel);
 
-        eprintln!("sel_vec {:?}", sel_vec);
         if term.env == Env::WSL {
             copy_string = self.get_wsl_str(sel_vec);
         } else {
             copy_string = sel_vec.join("");
+            copy_string = copy_string.replace(NEW_LINE_MARK, "");
         }
 
         Log::ep("copy_string", copy_string.clone());
@@ -128,21 +128,19 @@ impl Editor {
 
     // WSL:powershell.clipboard対応で"’"で文字列を囲み、改行は","
     fn get_wsl_str(&mut self, sel_vec: Vec<String>) -> String {
-        let mut vec: Vec<String> = vec![];
-
         let mut copy_str: String = String::new();
 
         for (i, s) in sel_vec.iter().enumerate() {
             let mut str = format!("'{}'", s);
             if i == sel_vec.len() - 1 {
-                if s.chars().last().unwrap() == NEW_LINE {
+                if s.chars().last().unwrap() == NEW_LINE_MARK {
                     str.push_str(",");
                     str.push_str("''");
                 }
             } else {
                 str.push_str(",");
             }
-            str = str.replace(NEW_LINE, "");
+            str = str.replace(NEW_LINE_MARK, "");
             copy_str.push_str(&str);
         }
 
