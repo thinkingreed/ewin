@@ -166,7 +166,12 @@ impl Editor {
                 // 行の先頭
                 let line = self.buf.remove(self.cur.y);
                 self.cur.y -= 1;
+                // del line feed code
+                let len = self.buf[self.cur.y].len();
+                self.buf[self.cur.y].remove(len - 1);
                 self.cur.x = self.buf[self.cur.y].len() + self.rnw;
+                Log::ep("self.cur.x", self.cur.x);
+
                 let (_, width) = get_row_width(&self.buf[self.cur.y], 0, self.buf[self.cur.y].len());
                 self.cur.disp_x = self.rnw + width + 1;
                 self.buf[self.cur.y].extend(line.into_iter());
@@ -205,18 +210,22 @@ impl Editor {
             self.sel.clear();
         } else {
             // 最終行の終端
-            if self.cur.y == self.buf.len() - 1 && self.cur.x == self.buf[self.cur.y].len() + self.rnw {
+            if self.cur.y == self.buf.len() - 1 && self.cur.x == self.buf[self.cur.y].len() + self.rnw - 1 {
                 return;
             }
             self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
             // 行末
-            if self.cur.x == self.buf[self.cur.y].len() + self.rnw {
+            if self.cur.x == self.buf[self.cur.y].len() + self.rnw - 1 {
                 self.d_range.d_type = DType::After;
 
                 let rnw_org = self.rnw;
 
                 self.save_del_char_evtproc(DoType::Del);
                 let line = self.buf.remove(self.cur.y + 1);
+                // del line feed code
+                let len = self.buf[self.cur.y].len();
+                self.buf[self.cur.y].remove(len - 1);
+
                 self.buf[self.cur.y].extend(line.into_iter());
 
                 self.rnw = self.buf.len().to_string().len();

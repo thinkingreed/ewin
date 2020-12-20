@@ -24,11 +24,13 @@ impl Editor {
         let result = fs::read_to_string(path);
 
         match result {
-            Ok(s) => {
+            Ok(mut s) => {
+                s = s.replace(NEW_LINE_CRLF, NEW_LINE.to_string().as_str());
                 eprintln!("sss {:?}", s);
                 let (mut buf, mut vec) = (vec![], vec![]);
                 let (chars, chars_len) = (s.chars(), s.chars().count());
                 for (i, mut c) in chars.enumerate() {
+                    Log::ep("ccc", c);
                     if c == NEW_LINE {
                         c = NEW_LINE_MARK;
                     }

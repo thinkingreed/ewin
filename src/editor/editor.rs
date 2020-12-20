@@ -153,15 +153,15 @@ impl Editor {
 
         for i in 0..self.buf.len() {
             if sy <= i && i <= ey {
-                // 1行
+                // one line
                 if sy == ey {
                     self.buf[i].drain(sx..ex);
-                // 開始行
+                // start line
                 } else if sy == i {
                     let (cursorx, _) = get_row_width(&self.buf[sy], sx, self.buf[sy].len());
                     self.buf[i].drain(sx..sx + cursorx);
 
-                // 終了行
+                // end line
                 } else if ey == i {
                     self.buf[i].drain(0..ex);
                     let mut rest: Vec<char> = self.buf[i].clone();
@@ -169,7 +169,7 @@ impl Editor {
                 }
             }
         }
-        // 行削除
+        // delete row
         for i in (0..self.buf.len()).rev() {
             if sy == i && self.buf[sy].len() == 0 || sy < i && i <= ey {
                 Log::ep("sy == i && self.buf[sy].len() == 0 || sy < i && i <= ey", i);

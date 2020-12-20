@@ -70,7 +70,7 @@ impl Editor {
 
     /// 検索箇所のhighlight
     pub fn ctl_new_line_mark_color(&mut self, str_vec: &mut Vec<String>, y: usize, x: usize) {
-        if self.buf[y].len() - 1 == x {
+        if self.buf[y].len() - 1 == x && self.buf[y][x] == NEW_LINE_MARK {
             Colors::set_new_line_color(str_vec);
         } else {
             Colors::set_textarea_color(str_vec);
