@@ -57,7 +57,7 @@ impl EvtAct {
             if vec.len() > 2 && vec[0] != "grep" {
                 let pre_str = format!("{}:{}:", vec[0], vec[1]);
                 let pre_str_vec = pre_str.chars().collect();
-                let (pre_str_x, _) = get_row_width(&pre_str_vec, 0, pre_str_vec.len());
+                let (pre_str_x, _) = get_row_width(&pre_str_vec, 0, pre_str_vec.len(), false);
 
                 let search_target_str = &line_str.replace(&pre_str, "");
 

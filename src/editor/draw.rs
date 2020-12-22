@@ -26,11 +26,9 @@ impl Editor {
         match result {
             Ok(mut s) => {
                 s = s.replace(NEW_LINE_CRLF, NEW_LINE.to_string().as_str());
-                eprintln!("sss {:?}", s);
                 let (mut buf, mut vec) = (vec![], vec![]);
                 let (chars, chars_len) = (s.chars(), s.chars().count());
                 for (i, mut c) in chars.enumerate() {
-                    Log::ep("ccc", c);
                     if c == NEW_LINE {
                         c = NEW_LINE_MARK;
                     }
@@ -49,7 +47,6 @@ impl Editor {
                     }
                 }
 
-                eprintln!("buffers {:?}", buf);
                 if buf.is_empty() {
                     self.buf = vec![Vec::new()];
                 } else {
@@ -132,7 +129,6 @@ impl Editor {
                 }
                 str_vec.push((i + 1).to_string());
             }
-            Log::ep("str_vec", str_vec.join(" "));
 
             Colors::set_textarea_color(str_vec);
 

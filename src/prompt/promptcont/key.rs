@@ -48,7 +48,7 @@ impl PromptCont {
     }
     pub fn end(&mut self) {
         self.cur.x = self.buf.len();
-        let (_, width) = get_row_width(&self.buf, 0, self.cur.x);
+        let (_, width) = get_row_width(&self.buf, 0, self.cur.x, false);
         self.cur.disp_x = width + 1;
     }
 

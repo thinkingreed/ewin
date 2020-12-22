@@ -11,7 +11,7 @@ impl Editor {
         self.sel.ey = self.buf.len() - 1;
         self.sel.sx = 0;
         self.sel.s_disp_x = self.rnw + 1;
-        let (cur_x, width) = get_row_width(&self.buf[self.sel.ey], 0, self.buf[self.sel.ey].len());
+        let (cur_x, width) = get_row_width(&self.buf[self.sel.ey], 0, self.buf[self.sel.ey].len(), true);
         self.sel.ex = cur_x;
         self.sel.e_disp_x = width + self.rnw + 1;
         self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
@@ -77,7 +77,7 @@ impl Editor {
                                 line_str = line_str.replace(EOF, "");
                                 write!(file, "{}", line_str).unwrap();
                             } else {
-                                if &line_str.chars().last().unwrap() == &NEW_LINE_MARK {
+                                if &line_str.chars().last().unwrap_or(' ') == &NEW_LINE_MARK {
                                     line_str = format!("{}{}", &line_str[..line_str.chars().count() - 1], "");
                                 }
                                 writeln!(file, "{}", line_str).unwrap();
@@ -133,7 +133,7 @@ impl Editor {
         for (i, s) in sel_vec.iter().enumerate() {
             let mut str = format!("'{}'", s);
             if i == sel_vec.len() - 1 {
-                if s.chars().last().unwrap() == NEW_LINE_MARK {
+                if s.chars().last().unwrap_or(' ') == NEW_LINE_MARK {
                     str.push_str(",");
                     str.push_str("''");
                 }
@@ -156,10 +156,10 @@ impl Editor {
 
         let mut contexts = self.get_clipboard(&term).unwrap_or("".to_string());
 
-        Log::ep("clipboard str", &contexts);
         if contexts.len() == 0 {
             return;
         }
+        Log::ep("clipboard str", &contexts);
 
         // EvtProcデータ設定
         let mut ep = EvtProc::new(DoType::Paste, &self);
@@ -169,6 +169,7 @@ impl Editor {
             ep.sel.sx = self.cur.x - self.rnw;
             ep.sel.s_disp_x = self.cur.disp_x;
         }
+        contexts = contexts.replace(NEW_LINE, NEW_LINE_MARK.to_string().as_str());
         self.insert_str(&mut contexts);
         {
             ep.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
@@ -179,7 +180,7 @@ impl Editor {
         self.undo_vec.push(ep);
 
         // d_range
-        if contexts.match_indices(NEW_LINE).count() == 0 {
+        if contexts.match_indices(NEW_LINE_MARK).count() == 0 {
             self.d_range = DRnage { sy: cur_y_org, ey: self.cur.y, d_type: DType::Target };
         } else {
             if y_offset_org != self.y_offset || rnw_org != self.rnw {
@@ -194,66 +195,49 @@ impl Editor {
         Log::ep_s("        insert_str");
 
         Log::ep("contexts", contexts.clone());
-        let mut insert_strs: Vec<&str> = contexts.split(NEW_LINE).collect();
-        let add_line_count = insert_strs.len() - 1;
+        let insert_strs: Vec<String> = split_inclusive(contexts, NEW_LINE_MARK);
+        let insert_s_y = self.cur.y;
 
-        // self.rnwの増加対応
+        // rnw increase
         if insert_strs.len() > 1 {
-            let diff = (self.buf.len() + add_line_count).to_string().len() - self.rnw;
+            let diff = (self.buf.len() + insert_strs.len() - 1).to_string().len() - self.rnw;
             self.rnw += diff;
             self.cur.x += diff;
             self.cur.disp_x += diff;
         }
 
-        let mut last_line_str = insert_strs.get(insert_strs.len() - 1).unwrap().to_string();
-        let last_line_str_org = last_line_str.clone();
-
-        // 複数行のペーストでカーソル以降の行末までの残りの文字
-        let line_rest: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.rnw..).collect();
-        let line_rest_string: String = line_rest.iter().collect();
-
-        // ペーストが複数行の場合にカーソル行のカーソル以降の文字列をペースト文字列最終行に追加
-        if insert_strs.len() > 0 {
-            for c in line_rest {
-                last_line_str.push(c);
+        if insert_strs.len() > 1 {
+            // rest char from the cursor to the end of the line when inserting multi line
+            let rest_char_vec: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.rnw..).collect();
+            // add line
+            for i in 1..insert_strs.len() {
+                self.buf.insert(insert_s_y + i, vec![]);
             }
-            insert_strs.pop();
-            insert_strs.push((&*last_line_str).clone());
+            self.buf[insert_s_y + insert_strs.len() - 1] = rest_char_vec;
         }
 
         for (i, copy_str) in insert_strs.iter().enumerate() {
-            // ペーストが複数行の場合にcursorを進める
             Log::ep("copy_str", copy_str);
             if i != 0 {
-                self.cur.y += 1;
                 self.cur.x = self.rnw;
-                self.cur.disp_x = self.rnw;
             }
-            if copy_str.len() == 0 {
-                self.buf.insert(self.cur.y, vec![]);
-                continue;
-            }
-
             let chars: Vec<char> = copy_str.chars().collect();
-            for (j, c) in chars.iter().enumerate() {
-                if i != 0 && j == 0 {
-                    self.buf.insert(self.cur.y, vec![]);
-                }
-                self.buf[self.cur.y].insert(self.cur.x - self.rnw, c.clone());
-                // 元々のコピペ文字分は移動
-
+            for c in chars {
+                // Log::ep("ccc", c);
+                self.buf[insert_s_y + i].insert(self.cur.x - self.rnw, c.clone());
                 self.cursor_right();
             }
         }
 
-        // 複数行の場合はカーソル位置調整
+        // cursor posi adjustment
         if insert_strs.len() > 1 {
-            self.cur.x = last_line_str_org.chars().count() + self.rnw;
-            self.cur.disp_x = get_str_width(&last_line_str_org) + 1 + self.rnw;
-        } else {
-            if line_rest_string.len() > 0 {
-                self.cur.x -= line_rest_string.chars().count();
-                self.cur.disp_x -= get_str_width(&line_rest_string);
+            let last_line_str = insert_strs.get(insert_strs.len() - 1).unwrap().to_string();
+            if last_line_str.chars().last().unwrap_or(' ') == NEW_LINE_MARK {
+                self.cur.x = self.rnw;
+                self.cur.disp_x = 1 + self.rnw;
+            } else {
+                self.cur.x = last_line_str.chars().count() + self.rnw;
+                self.cur.disp_x = get_str_width(&last_line_str) + 1 + self.rnw;
             }
         }
         self.scroll();
@@ -272,7 +256,7 @@ impl Editor {
         Log::ep_s("　　　　　　　　ctl_end");
         self.cur.y = self.buf.len() - 1;
         self.cur.x = self.buf[self.buf.len() - 1].len() + self.rnw;
-        let (_, width) = get_row_width(&self.buf[self.buf.len() - 1], 0, self.buf[self.buf.len() - 1].len());
+        let (_, width) = get_row_width(&self.buf[self.buf.len() - 1], 0, self.buf[self.buf.len() - 1].len(), false);
         self.cur.disp_x = width + self.rnw + 1;
         if self.updown_x == 0 {
             self.updown_x = self.cur.disp_x;
@@ -315,7 +299,7 @@ impl Editor {
                 let range = self.search.search_ranges[self.search.index];
                 self.cur.y = range.y;
                 self.cur.x = range.sx + self.rnw;
-                let (_, width) = get_row_width(&self.buf[self.cur.y], 0, range.sx);
+                let (_, width) = get_row_width(&self.buf[self.cur.y], 0, range.sx, false);
                 self.cur.disp_x = width + self.rnw + 1;
             }
             self.scroll();

@@ -179,12 +179,12 @@ impl Editor {
             self.sel.sx = self.cur.x - self.rnw;
             self.sel.s_disp_x = self.cur.disp_x;
         }
-        let (_, width) = get_row_width(&self.buf[self.cur.y], self.cur.x - self.rnw, self.buf[self.cur.y].len());
+        let (cur_x, width) = get_row_width(&self.buf[self.cur.y], self.cur.x - self.rnw, self.buf[self.cur.y].len(), false);
+        self.cur.x = cur_x + self.rnw;
         self.cur.disp_x = self.cur.disp_x + width;
-        self.cur.x = self.buf[self.cur.y].len() + self.rnw;
 
         self.sel.ey = self.cur.y;
-        self.sel.ex = self.buf[self.cur.y].len();
+        self.sel.ex = cur_x;
         self.sel.e_disp_x = self.cur.disp_x;
 
         // 選択開始位置とカーソルが重なった場合

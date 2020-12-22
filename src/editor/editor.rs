@@ -59,16 +59,16 @@ impl Editor {
         if self.rnw != self.cur.x {
             let vec = &self.buf[self.cur.y];
             if self.cur_y_org != self.cur.y {
-                let (_, width) = get_row_width(vec, 0, self.x_offset);
+                let (_, width) = get_row_width(vec, 0, self.x_offset, false);
                 self.x_offset_disp = width;
 
             // offsetに差分
             } else if x_offset_org != self.x_offset {
                 if self.x_offset < x_offset_org {
-                    let (_, width) = get_row_width(vec, self.x_offset, x_offset_org);
+                    let (_, width) = get_row_width(vec, self.x_offset, x_offset_org, false);
                     self.x_offset_disp -= width;
                 } else {
-                    let (_, width) = get_row_width(vec, x_offset_org, self.x_offset);
+                    let (_, width) = get_row_width(vec, x_offset_org, self.x_offset, false);
                     self.x_offset_disp += width;
                 }
             }
@@ -158,7 +158,7 @@ impl Editor {
                     self.buf[i].drain(sx..ex);
                 // start line
                 } else if sy == i {
-                    let (cursorx, _) = get_row_width(&self.buf[sy], sx, self.buf[sy].len());
+                    let (cursorx, _) = get_row_width(&self.buf[sy], sx, self.buf[sy].len(), true);
                     self.buf[i].drain(sx..sx + cursorx);
 
                 // end line

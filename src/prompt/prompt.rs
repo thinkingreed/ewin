@@ -115,7 +115,7 @@ impl Prompt {
                     PromptBufPosi::First | PromptBufPosi::Second => self.cursor_down(),
                     PromptBufPosi::Third => {
                         self.cont_3.buf = self.get_tab_candidate().chars().collect();
-                        let (cur_x, width) = get_row_width(&self.cont_3.buf, 0, self.cont_3.buf.len());
+                        let (cur_x, width) = get_row_width(&self.cont_3.buf, 0, self.cont_3.buf.len(), false);
                         self.cont_3.cur.x = cur_x;
                         self.cont_3.cur.disp_x = width + 1;
                     }

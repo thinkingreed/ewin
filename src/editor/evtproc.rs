@@ -11,7 +11,7 @@ impl Editor {
             cur_s: Cur {
                 y: sel.sy,
                 x: sel.sx + self.rnw,
-                disp_x: get_row_width(&self.buf[self.cur.y], 0, sel.sx).1 + self.rnw + 1,
+                disp_x: get_row_width(&self.buf[self.cur.y], 0, sel.sx, false).1 + self.rnw + 1,
             },
             cur_e: Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x },
             sel: self.sel,

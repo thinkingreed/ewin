@@ -1,5 +1,5 @@
 use crate::{def::*, model::*, util::*};
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
+use crossterm::event::{Event::*, KeyCode::*};
 use std::cmp::{max, min};
 
 impl Editor {
@@ -45,8 +45,8 @@ impl Editor {
         // 行頭の場合
         } else if self.cur.x == self.rnw {
             //   self.cur.x = rowlen + self.rnw - 1;
-            let (cur_x, width) = get_row_width(&self.buf[self.cur.y - 1], 0, self.buf[self.cur.y - 1].len());
-            self.cur.x = cur_x - 1 + self.rnw;
+            let (cur_x, width) = get_row_width(&self.buf[self.cur.y - 1], 0, self.buf[self.cur.y - 1].len(), true);
+            self.cur.x = cur_x + self.rnw;
             self.cur.disp_x = width + self.rnw;
             self.d_range = DRnage::new(self.cur.y - 1, self.cur.y, DType::Target);
 
@@ -62,15 +62,25 @@ impl Editor {
     }
     pub fn cursor_right(&mut self) {
         Log::ep_s("　　　　　　　  c_r start");
-        let mut end_of_line = self.buf[self.cur.y].len() + self.rnw - 1;
-        if self.evt == Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Right }) {
-            // EOF
-            if self.buf.len() - 1 != self.cur.y {
-                end_of_line += 1;
+        Log::ep("self.cur.y", self.cur.y);
+        Log::ep("self.cur.x", self.cur.x);
+
+        let mut is_end_of_line = false;
+        if self.evt == RIGHT || self.evt == CTRL_V {
+            //   if self.buf.len() - 1 >= self.cur.x - self.rnw {
+            let char = self.buf[self.cur.y][self.cur.x - self.rnw];
+            if char == NEW_LINE_MARK {
+                is_end_of_line = true;
             }
+        //  }
+        } else if self.evt == SHIFT_RIGHT && self.cur.x == self.buf[self.cur.y].len() + self.rnw {
+            is_end_of_line = true;
         }
+
         // 行末(行末の空白対応で)
-        if self.cur.x == end_of_line {
+        if is_end_of_line {
+            Log::ep_s("End of line");
+
             // 最終行の行末
             if self.cur.y == self.buf.len() - 1 {
                 return;
@@ -82,10 +92,17 @@ impl Editor {
                 self.cursor_down();
             }
         } else {
+            Log::ep_s("Not end of line");
+
+            let c = self.buf[self.cur.y][self.cur.x - self.rnw];
+            if c == EOF {
+                Log::ep_s("return 222");
+                return;
+            }
             // EOF
-            if self.evt != Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Right }) {
-                let c = self.buf[self.cur.y][self.cur.x - self.rnw];
+            if self.evt != SHIFT_RIGHT {
                 if c == NEW_LINE_MARK {
+                    Log::ep_s("return 111");
                     return;
                 }
             }
@@ -151,6 +168,7 @@ impl Editor {
         } else {
             // 0,0の位置の場合
             if self.cur.y == 0 && self.cur.x == self.rnw {
+                self.d_range = DRnage { d_type: DType::Not, ..DRnage::default() };
                 return;
             }
             self.d_range = DRnage::new(self.cur.y, self.cur.y, DType::Target);
@@ -172,7 +190,7 @@ impl Editor {
                 self.cur.x = self.buf[self.cur.y].len() + self.rnw;
                 Log::ep("self.cur.x", self.cur.x);
 
-                let (_, width) = get_row_width(&self.buf[self.cur.y], 0, self.buf[self.cur.y].len());
+                let (_, width) = get_row_width(&self.buf[self.cur.y], 0, self.buf[self.cur.y].len(), true);
                 self.cur.disp_x = self.rnw + width + 1;
                 self.buf[self.cur.y].extend(line.into_iter());
                 self.rnw = self.buf.len().to_string().len();
@@ -211,6 +229,7 @@ impl Editor {
         } else {
             // 最終行の終端
             if self.cur.y == self.buf.len() - 1 && self.cur.x == self.buf[self.cur.y].len() + self.rnw - 1 {
+                self.d_range = DRnage { d_type: DType::Not, ..DRnage::default() };
                 return;
             }
             self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
@@ -243,6 +262,7 @@ impl Editor {
     }
 
     pub fn home(&mut self) {
+        Log::ep_s("　　　　　　　  home");
         self.cur.x = self.rnw;
         self.cur.disp_x = self.rnw + 1;
         self.scroll_horizontal();
@@ -250,8 +270,8 @@ impl Editor {
 
     pub fn end(&mut self) {
         let row = &self.buf[self.cur.y];
-        self.cur.x = row.len() + self.rnw;
-        let (_, disp_x) = get_row_width(row, 0, row.len());
+        let (cur_x, disp_x) = get_row_width(row, 0, row.len(), false);
+        self.cur.x = cur_x + self.rnw;
         self.cur.disp_x = disp_x + self.rnw + 1;
 
         self.scroll_horizontal();

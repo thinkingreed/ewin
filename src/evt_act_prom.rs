@@ -91,12 +91,11 @@ impl EvtAct {
                 },
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                     Char('v') => {
-                        let mut is_all_redrow = false;
-                        match prom.buf_posi {
-                            First => is_all_redrow = prom.cont_1.paste(&term, editor, mbar),
-                            Second => is_all_redrow = prom.cont_2.paste(&term, editor, mbar),
-                            Third => is_all_redrow = prom.cont_3.paste(&term, editor, mbar),
-                        }
+                        let is_all_redrow = match prom.buf_posi {
+                            First => prom.cont_1.paste(&term, editor, mbar),
+                            Second => prom.cont_2.paste(&term, editor, mbar),
+                            Third => prom.cont_3.paste(&term, editor, mbar),
+                        };
                         if is_all_redrow {
                             term.draw(out, editor, mbar, prom, sbar).unwrap();
                         } else {

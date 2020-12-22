@@ -14,7 +14,6 @@ use termion::input::MouseTerminal;
 use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
 use tokio_util::codec::{FramedRead, LinesCodec};
-
 #[tokio::main]
 async fn main() {
     let matches = App::new("ewin").version(crate_version!()).bin_name("ewin").arg(Arg::with_name("file").required(false)).get_matches();
@@ -134,7 +133,7 @@ fn run_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, m
     if let Some(Ok(event)) = maybe_event {
         editor.evt = event.clone();
 
-        // eprintln!("evtevtevtevtevtevtevtevtevtevt {:?}", editor.evt);
+        // eprintln!("event {:?}", editor.evt);
 
         is_exit = EvtAct::match_event(out, term, editor, mbar, prom, sbar);
     }

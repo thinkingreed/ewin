@@ -147,7 +147,7 @@ impl Terminal {
         if !cfg!(debug_assertions) {
             if Path::new("/usr/bin/ewin").exists() {
                 exe_path = "/usr/bin/ewin";
-            } 
+            }
         }
 
         if self.env == Env::WSL {

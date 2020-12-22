@@ -1,5 +1,5 @@
 use crate::{
-    def::{NEW_LINE, NEW_LINE_MARK},
+    def::{EOF, NEW_LINE_MARK},
     model::*,
 };
 use unicode_width::UnicodeWidthChar;
@@ -12,11 +12,17 @@ pub fn get_str_width(msg: &str) -> usize {
     }
     return width;
 }
-pub fn get_row_width(vec: &Vec<char>, sx: usize, ex: usize) -> (usize, usize) {
+pub fn get_row_width(vec: &Vec<char>, sx: usize, ex: usize, is_ctrlchar_include: bool) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
     for i in sx..ex {
         if let Some(c) = vec.get(i) {
             // Log::ep("ccccc", c);
+            if c == &EOF || c == &NEW_LINE_MARK {
+                if is_ctrlchar_include {
+                    width += 1;
+                }
+                break;
+            }
             let c_len = c.width().unwrap_or(0);
             width += c_len;
             cur_x += 1;
@@ -27,9 +33,6 @@ pub fn get_row_width(vec: &Vec<char>, sx: usize, ex: usize) -> (usize, usize) {
             }
         }
     }
-    // Log::ep("cur_x", cur_x);
-    // Log::ep("width", width);
-
     return (cur_x, width);
 }
 
@@ -38,6 +41,10 @@ pub fn get_until_updown_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
     for i in 0..buf.len() + 1 {
         if let Some(c) = buf.get(i) {
+            if c == &EOF || c == &NEW_LINE_MARK {
+                width += 1;
+                break;
+            }
             let mut c_len = c.width().unwrap_or(0);
             if width + c_len >= x {
                 if c_len > 1 {
@@ -92,7 +99,6 @@ pub fn get_cur_x_width(buf: &Vec<char>, x: usize) -> usize {
     if let Some(c) = buf.get(x) {
         return c.width().unwrap_or(0);
     }
-
     return 1;
 }
 
@@ -104,7 +110,7 @@ pub fn get_sel_range_str(buf: &mut Vec<Vec<char>>, sel: &mut SelRange) -> Vec<St
         let mut vec: Vec<String> = vec![];
 
         for j in copy_range.sx..copy_range.ex {
-            if let Some(mut c) = buf[copy_range.y].get(j) {
+            if let Some(c) = buf[copy_range.y].get(j) {
                 vec.insert(vec.len(), c.to_string());
             }
         }
@@ -152,4 +158,22 @@ pub fn get_copy_range(buf: &mut Vec<Vec<char>>, sel: &mut SelRange) -> Vec<CopyR
     }
 
     return copy_ranges;
+}
+
+pub fn split_inclusive(target: &mut String, split_char: char) -> Vec<String> {
+    let mut vec: Vec<String> = vec![];
+    let mut string = String::new();
+
+    let chars: Vec<char> = target.chars().collect();
+    for (i, c) in chars.iter().enumerate() {
+        string.push(*c);
+        if *c == split_char {
+            vec.push(string.clone());
+            string.clear();
+        }
+        if i == chars.len() - 1 {
+            vec.push(string.clone());
+        }
+    }
+    return vec;
 }

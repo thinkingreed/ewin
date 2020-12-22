@@ -26,7 +26,7 @@ impl PromptCont {
             self.sel.sx = self.cur.x;
             self.sel.s_disp_x = self.cur.disp_x;
         }
-        let (_, width) = get_row_width(&self.buf, self.cur.x, self.buf.len());
+        let (_, width) = get_row_width(&self.buf, self.cur.x, self.buf.len(), false);
         self.cur.disp_x = self.cur.disp_x + width;
         self.cur.x = self.buf.len();
 
