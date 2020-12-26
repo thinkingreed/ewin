@@ -25,6 +25,7 @@ impl Terminal {
         Log::ep("d_range", d_range);
 
         if d_range.d_type != DType::Not {
+            Log::ep_s("editor.draw");
             editor.draw(str_vec);
         }
 

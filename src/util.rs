@@ -18,7 +18,7 @@ pub fn get_row_width(vec: &Vec<char>, sx: usize, ex: usize, is_ctrlchar_include:
         if let Some(c) = vec.get(i) {
             // Log::ep("ccccc", c);
             if c == &EOF || c == &NEW_LINE_MARK {
-                if is_ctrlchar_include {
+                if is_ctrlchar_include && c == &NEW_LINE_MARK {
                     width += 1;
                     cur_x += 1;
                 }

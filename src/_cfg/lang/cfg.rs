@@ -49,6 +49,8 @@ pub struct LangCfg {
     pub no_write_permission: String,
     pub file_opening_problem: String,
     pub file_not_found: String,
+    // Not sel range
+    pub no_sel_range: String,
     // Paste
     pub cannot_paste_multi_lines: String,
     // key record
@@ -105,12 +107,11 @@ impl LangCfg {
             show_search_no_result: String::new(),
             no_undo_operation: String::new(),
             no_operation_re_exec: String::new(),
-            // File open
             no_read_permission: String::new(),
             no_write_permission: String::new(),
             file_opening_problem: String::new(),
             file_not_found: String::new(),
-            // Paste
+            no_sel_range: String::new(),
             cannot_paste_multi_lines: String::new(),
             no_key_record_exec: String::new(),
             unsupported_operation: String::new(),

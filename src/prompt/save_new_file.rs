@@ -35,7 +35,7 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_new_file_name(&mut self) {
-        self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.set_new_filenm.clone(), NEW_LINE);
+        self.guide = format!("{}{}", Colors::get_msg_fg(), self.lang.set_new_filenm.clone());
         self.key_desc = format!(
             "{}{}:{}Enter  {}{}:{}Ctrl + c{}",
             Colors::get_default_fg(),

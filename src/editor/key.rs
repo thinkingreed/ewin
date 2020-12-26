@@ -136,7 +136,7 @@ impl Editor {
         if y_offset_org == self.y_offset && rnw_org == self.rnw && !self.sel.is_selected() {
             self.d_range = DRnage::new(self.cur.y - 1, self.cur.y, DType::After);
         } else {
-            self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
+            self.d_range.d_type = DType::All;
         }
         evt_proc.d_range = self.d_range;
         evt_proc.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
@@ -151,8 +151,11 @@ impl Editor {
         let mut ep = EvtProc::new(DoType::InsertChar, &self);
         self.cursor_right();
         ep.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
-        self.d_range = DRnage::new(self.cur.y, self.cur.y, DType::Target);
-
+        if self.sel.is_selected() {
+            self.d_range.d_type = DType::All;
+        } else {
+            self.d_range = DRnage::new(self.cur.y, self.cur.y, DType::Target);
+        }
         ep.d_range = self.d_range;
         ep.str_vec = vec![c.to_string()];
         self.undo_vec.push(ep);
@@ -168,7 +171,7 @@ impl Editor {
         } else {
             // 0,0の位置の場合
             if self.cur.y == 0 && self.cur.x == self.rnw {
-                self.d_range = DRnage { d_type: DType::Not, ..DRnage::default() };
+                self.d_range.d_type = DType::Not;
                 return;
             }
             self.d_range = DRnage::new(self.cur.y, self.cur.y, DType::Target);
@@ -229,7 +232,7 @@ impl Editor {
         } else {
             // 最終行の終端
             if self.cur.y == self.buf.len() - 1 && self.cur.x == self.buf[self.cur.y].len() + self.rnw - 1 {
-                self.d_range = DRnage { d_type: DType::Not, ..DRnage::default() };
+                self.d_range.d_type = DType::Not;
                 return;
             }
             self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };

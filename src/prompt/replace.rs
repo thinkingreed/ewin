@@ -49,7 +49,7 @@ impl Prompt {
 impl PromptCont {
     pub fn set_replace(&mut self, cont_type: PromptBufPosi) {
         if cont_type == PromptBufPosi::First {
-            self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.set_replace.clone(), NEW_LINE);
+            self.guide = format!("{}{}", Colors::get_msg_fg(), self.lang.set_replace.clone());
             self.key_desc = format!(
                 "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Ctrl + c",
                 Colors::get_default_fg(),

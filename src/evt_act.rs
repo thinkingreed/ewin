@@ -35,8 +35,8 @@ impl EvtAct {
                         Char('s') => {
                             editor.save(mbar, prom, sbar);
                         }
-                        Char('c') => editor.copy(&term),
-                        Char('x') => editor.cut(&term),
+                        Char('c') => editor.copy(&term, mbar),
+                        Char('x') => editor.cut(&term, mbar),
                         Char('v') => editor.paste(&term),
                         Char('a') => editor.all_select(),
                         Char('f') => editor.search(prom),
@@ -125,7 +125,6 @@ impl EvtAct {
         editor.is_redraw = false;
         match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                Char('c') => {}
                 _ => editor.is_redraw = true,
             },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
@@ -148,7 +147,7 @@ impl EvtAct {
         }
 
         if editor.is_redraw {
-            editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
+            editor.d_range.d_type = DType::All;
         }
 
         // Edit    is_change=true, Clear redo_vec,

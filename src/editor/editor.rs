@@ -1,8 +1,4 @@
-use crate::{
-    def::{NEW_LINE, NEW_LINE_MARK},
-    model::*,
-    util::*,
-};
+use crate::{def::NEW_LINE_MARK, model::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
 use std::cmp::{max, min};
 use std::io::Write;
@@ -124,7 +120,7 @@ impl Editor {
             //        self.is_redraw = y_offset_org != self.y_offset || (x_offset_disp_org != self.x_offset_disp || (x_offset_disp_org == self.x_offset_disp && self.x_offset_disp != 0));
             self.is_redraw = y_offset_org != self.y_offset || (x_offset_disp_org != self.x_offset_disp);
             if self.is_redraw {
-                DRnage { d_type: DType::All, ..DRnage::default() };
+                self.d_range.d_type = DType::All;
             }
         }
         self.draw_cur(out, sbar);

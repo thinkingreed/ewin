@@ -77,7 +77,7 @@ impl Editor {
         Log::ep_s("　　　　　　　　shift_down");
 
         if self.cur.y == self.buf.len() - 1 {
-            self.d_range = DRnage { d_type: DType::Not, ..DRnage::default() };
+            self.d_range.d_type = DType::Not;
             return;
         }
         let y_offset_org: usize = self.y_offset;
@@ -108,7 +108,7 @@ impl Editor {
         self.scroll_horizontal();
 
         if y_offset_org != self.y_offset {
-            self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
+            self.d_range.d_type = DType::All;
         }
     }
 
@@ -116,7 +116,7 @@ impl Editor {
         Log::ep_s("　　　　　　　　shift_up");
 
         if self.cur.y == 0 {
-            self.d_range = DRnage { d_type: DType::Not, ..DRnage::default() };
+            self.d_range.d_type = DType::Not;
             return;
         }
         let y_offset_org: usize = self.y_offset;
@@ -151,7 +151,7 @@ impl Editor {
         self.scroll_horizontal();
 
         if y_offset_org != self.y_offset {
-            self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
+            self.d_range.d_type = DType::All;
         }
     }
     pub fn shift_home(&mut self) {
@@ -209,7 +209,7 @@ impl Editor {
                 term.set_disp_size(self, mbar, prom, sbar);
                 self.scroll();
             }
-            self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
+            self.d_range.d_type = DType::All;
         } else {
             prom.is_key_record = true;
             mbar.set_keyrecord(&LANG.lock().unwrap().key_recording);

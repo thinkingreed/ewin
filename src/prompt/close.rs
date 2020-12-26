@@ -36,7 +36,7 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_save_confirm(&mut self) {
-        self.guide = format!("{}{}{}", Colors::get_msg_fg(), self.lang.save_confirmation_to_close.clone(), NEW_LINE);
+        self.guide = format!("{}{}", Colors::get_msg_fg(), self.lang.save_confirmation_to_close.clone());
         self.key_desc = format!(
             "{}{}:{}Y  {}{}:{}N  {}{}:{}Ctrl + c{}",
             Colors::get_default_fg(),

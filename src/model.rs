@@ -259,6 +259,11 @@ impl Default for EvtProc {
         }
     }
 }
+impl fmt::Display for EvtProc {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "EvtProc cur_s:{}, cur_e:{}, str_vec:{}, do_type:{}, sel:{}, d_range:{}", self.cur_s, self.cur_e, self.str_vec.join(" "), self.do_type, self.sel, self.d_range)
+    }
+}
 impl EvtProc {
     pub fn new(do_type: DoType, editor: &Editor) -> Self {
         return EvtProc {
@@ -450,6 +455,12 @@ impl Default for Cur {
         Cur { y: 0, x: 0, disp_x: 1 }
     }
 }
+
+impl fmt::Display for Cur {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Cur y:{}, x:{}, disp_x:{}, ", self.y, self.x, self.disp_x)
+    }
+}
 // エディタの内部状態
 #[derive(Debug, Clone)]
 pub struct Editor {
@@ -605,6 +616,19 @@ pub enum DoType {
     Paste,
     InsertChar,
     None,
+}
+impl fmt::Display for DoType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            DoType::Del => write!(f, "Del"),
+            DoType::Enter => write!(f, "Enter"),
+            DoType::BS => write!(f, "BS"),
+            DoType::Cut => write!(f, "Cut"),
+            DoType::Paste => write!(f, "Paste"),
+            DoType::InsertChar => write!(f, "InsertChar"),
+            DoType::None => write!(f, "None"),
+        }
+    }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Log {
