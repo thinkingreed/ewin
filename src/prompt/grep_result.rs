@@ -47,7 +47,6 @@ impl EvtAct {
 
             if rnw_org == editor.rnw && cur_y_org == editor.cur.y {
                 editor.d_range = DRnage::new(y, y, DType::Target);
-            // eprintln!("d_range {:?}", editor.d_range);
             } else {
                 editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
             }
@@ -121,9 +120,10 @@ impl EvtAct {
         } else {
             // 無害なコマンド実行
             // TODO 別の方法検討
-            return Command::new("echo").arg(" ").stdout(process::Stdio::piped()).stderr(process::Stdio::piped()).spawn().unwrap();
+            return Command::new("echo").stdout(process::Stdio::piped()).stderr(process::Stdio::piped()).spawn().unwrap();
         }
     }
+
     pub fn grep_result(term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar) -> EvtActType {
         match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {

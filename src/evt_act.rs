@@ -83,7 +83,7 @@ impl EvtAct {
                     },
                     Mouse(MouseEvent::ScrollUp(_, _, _)) => editor.move_cursor(out, sbar),
                     Mouse(MouseEvent::ScrollDown(_, _, _)) => editor.move_cursor(out, sbar),
-                    Mouse(MouseEvent::Down(MouseButton::Left, x, y, _)) => editor.mouse_left_press((x + 1) as usize, y as usize),
+                    Mouse(MouseEvent::Down(MouseButton::Left, x, y, _)) => editor.mouse_left_press(out, sbar, (x + 1) as usize, y as usize),
                     Mouse(MouseEvent::Down(_, _, _, _)) => {}
                     Mouse(MouseEvent::Up(_, x, y, _)) => editor.mouse_release((x + 1) as usize, y as usize),
                     Mouse(MouseEvent::Drag(_, x, y, _)) => editor.mouse_hold((x + 1) as usize, y as usize),
@@ -92,7 +92,6 @@ impl EvtAct {
                 if prom.is_key_record {
                     editor.record_key();
                 }
-
                 EvtAct::finalize(editor);
 
                 // key_record実行時は最終時のみredraw
@@ -143,7 +142,8 @@ impl EvtAct {
                 _ => editor.is_redraw = true,
             },
 
-            Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) | Mouse(MouseEvent::Down(MouseButton::Left, _, _, _)) | Mouse(MouseEvent::Up(_, _, _, _)) => {}
+            Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) | Mouse(MouseEvent::Up(_, _, _, _)) => {}
+            Mouse(MouseEvent::Down(MouseButton::Left, _, _, _)) => editor.is_redraw = true,
             _ => editor.is_redraw = true,
         }
 

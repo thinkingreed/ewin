@@ -153,7 +153,6 @@ impl Prompt {
                 while let Some(Ok(path)) = read_dir.next() {
                     if path.path().is_dir() {
                         let mut dir_str = path.path().display().to_string();
-                        // Log::ep("dir_str", dir_str.clone());
                         let v: Vec<(usize, &str)> = dir_str.match_indices(target_path.as_str()).collect();
                         if v.len() > 0 {
                             // 表示用に"./"置換
@@ -169,6 +168,7 @@ impl Prompt {
         }
 
         Log::ep("read_dir", self.tab_comp.dirs.clone().join(" "));
+        Log::ep("self.tab_comp 111", self.tab_comp.clone());
 
         let mut cont_3_str: String = self.cont_3.buf.iter().collect::<String>();
         for candidate in &self.tab_comp.dirs {
@@ -176,21 +176,24 @@ impl Prompt {
             if self.tab_comp.dirs.len() == 1 {
                 Log::ep_s("　　One candidate");
                 cont_3_str = format!("{}{}", candidate.to_string(), "/");
-                self.clear_tab_comp();
+                self.tab_comp.is_end = true;
                 break;
 
             // Multiple candidates
             } else if self.tab_comp.dirs.len() > 1 {
                 Log::ep_s("　　Multi candidates");
-                if self.tab_comp.index >= self.tab_comp.dirs.len() - 1 || self.tab_comp.index == USIZE_UNDEFINED {
-                    self.tab_comp.index = 0;
-                } else {
-                    self.tab_comp.index += 1;
+                if !self.tab_comp.is_end {
+                    if self.tab_comp.index >= self.tab_comp.dirs.len() - 1 || self.tab_comp.index == USIZE_UNDEFINED {
+                        self.tab_comp.index = 0;
+                    } else {
+                        self.tab_comp.index += 1;
+                    }
+                    cont_3_str = self.tab_comp.dirs[self.tab_comp.index].clone();
                 }
-                cont_3_str = self.tab_comp.dirs[self.tab_comp.index].clone();
                 break;
             }
         }
+        Log::ep("self.tab_comp 222", self.tab_comp.clone());
 
         return cont_3_str;
     }
@@ -198,7 +201,9 @@ impl Prompt {
     pub fn clear_tab_comp(&mut self) {
         Log::ep_s("                  clear_tab_comp ");
         self.tab_comp.index = USIZE_UNDEFINED;
+        //  self.tab_comp.search_str = STR_UNDEFINED.to_string();
         self.tab_comp.dirs.clear();
+        self.tab_comp.is_end = false;
     }
 
     fn set_cur(cont_org: &PromptCont, cont: &mut PromptCont) {

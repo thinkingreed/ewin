@@ -12,8 +12,9 @@ impl Editor {
         self.sel.sx = 0;
         self.sel.s_disp_x = self.rnw + 1;
         let (cur_x, width) = get_row_width(&self.buf[self.sel.ey], 0, self.buf[self.sel.ey].len(), true);
+
         self.sel.ex = cur_x;
-        self.sel.e_disp_x = width + self.rnw + 1;
+        self.sel.e_disp_x = width - 1 + self.rnw + 1;
         self.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
     }
 
@@ -25,6 +26,12 @@ impl Editor {
         self.copy(term);
         self.set_sel_del_d_range();
         self.save_sel_del_evtproc(DoType::Cut);
+        let sel_vec = get_sel_range_str(&mut self.buf, &mut self.sel);
+
+        if sel_vec[sel_vec.len() - 1].chars().last().unwrap_or(' ') == NEW_LINE_MARK {
+            self.del_end_of_line_new_line(self.cur.y);
+        }
+
         self.del_sel_range();
         self.sel.clear();
     }
@@ -54,7 +61,6 @@ impl Editor {
 
         Log::ep("sbar.filenm", &sbar.filenm);
         Log::ep("prom.cont_1.buf", prom.cont_1.buf.iter().collect::<String>());
-        // Log::ep("path", self.path.to_owned());
 
         if !Path::new(&sbar.filenm).exists() && prom.cont_1.buf.len() == 0 {
             Log::ep_s("!Path::new(&sbar.filenm).exists()");
@@ -78,7 +84,7 @@ impl Editor {
                                 write!(file, "{}", line_str).unwrap();
                             } else {
                                 if &line_str.chars().last().unwrap_or(' ') == &NEW_LINE_MARK {
-                                    line_str = format!("{}{}", &line_str[..line_str.chars().count() - 1], "");
+                                    line_str = line_str.chars().take(line_str.chars().count() - 1).collect::<String>();
                                 }
                                 writeln!(file, "{}", line_str).unwrap();
                             }
@@ -100,10 +106,11 @@ impl Editor {
 
     pub fn copy(&mut self, term: &Terminal) {
         Log::ep_s("　　　　　　　  copy");
-        let copy_ranges: Vec<CopyRange> = get_copy_range(&mut self.buf, &mut self.sel);
-        if copy_ranges.len() == 0 {
+
+        if !self.sel.is_selected() {
+            // TODO エラーメッセージ
             return;
-        };
+        }
 
         let mut copy_string;
         Log::ep("self.sel", self.sel);

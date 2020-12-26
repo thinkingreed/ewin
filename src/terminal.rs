@@ -1,9 +1,6 @@
-use crate::_cfg::lang::cfg::LangCfg;
-use crate::model::*;
-use crate::model::{Editor, Log};
+use crate::{_cfg::lang::cfg::LangCfg, model::*};
 use anyhow::Context;
-use std::io::Read;
-use std::io::{self, Write};
+use std::io::{self, Read, Write};
 use std::path::Path;
 use std::process;
 use std::process::Command;
@@ -18,8 +15,6 @@ impl Terminal {
         let str_vec: &mut Vec<String> = &mut vec![];
 
         // mbar.msg変更の場合は全再描画
-        Log::ep("mbar.msg_org", mbar.msg_org.clone());
-        Log::ep("mbar.msg", mbar.msg.clone());
 
         if mbar.msg_org != mbar.msg {
             editor.d_range.d_type = DType::All;
@@ -37,6 +32,7 @@ impl Terminal {
         prom.draw(str_vec);
 
         if d_range.d_type != DType::Not {
+            Log::ep_s("sbar.draw");
             sbar.draw(str_vec, editor);
         }
         self.draw_cur(str_vec, editor, prom);
@@ -55,7 +51,6 @@ impl Terminal {
         if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep {
             prom.draw_cur(str_vec);
         } else {
-            //str_vec.push(cursor::Show.to_string());
             str_vec.push(cursor::Goto((editor.cur.disp_x - editor.x_offset_disp) as u16, (editor.cur.y + 1 - editor.y_offset) as u16).to_string());
         }
     }

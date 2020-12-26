@@ -3,7 +3,6 @@
     "window.zoomLevel": 0,
     "editor.suggestFontSize": 14,
     "terminal.integrated.shell.linux": "/bin/bash",
-    "go.formatTool": "goimports",
     "workbench.iconTheme": "vscode-icons",
     "vs-kubernetes": {
         "vs-kubernetes.draft-path.linux": "/home/hi/.vs-kubernetes/tools/draft/linux-amd64/draft",

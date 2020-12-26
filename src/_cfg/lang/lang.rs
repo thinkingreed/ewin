@@ -43,6 +43,7 @@ show_search_result="検索結果を表示しています"
 show_search_no_result="検索対象は1件も存在しませんでした"
 # File open
 no_read_permission="読み込み権限がありません"
+no_write_permission="書込権限無し"
 file_opening_problem="ファイルを開く際に問題が発生しました"
 file_not_found="ファイルが存在しません"
 # paste
@@ -99,6 +100,7 @@ show_search_result="show search result"
 show_search_no_result="There was no search target"
 # File open
 no_read_permission="No read permission"
+no_write_permission="No write permission"
 file_opening_problem="There was a problem in opening the file"
 file_not_found="File not found"
 # paste

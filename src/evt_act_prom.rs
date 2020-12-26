@@ -144,7 +144,7 @@ impl EvtAct {
                     _ => return EvtActType::Hold,
                 },
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                    Char('w') | Char('s') | Char('c') | Char('a') | Char('f') | Home | End => {
+                    Char('w') | Home | End => {
                         return EvtActType::Next;
                     }
                     _ => return EvtActType::Hold,

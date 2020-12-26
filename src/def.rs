@@ -9,7 +9,7 @@ pub const NEW_LINE: char = '\n';
 pub const NEW_LINE_CRLF: &str = "\r\n";
 pub const NEW_LINE_MARK: char = '↲';
 // 暫定のEOFの印
-pub const EOF: char = '🚫';
+pub const EOF: char = '▚';
 pub const EOF_MARK: &str = "EOF";
 pub const RIGHT: Event = Key(KeyEvent { code: Right, modifiers: KeyModifiers::NONE });
 pub const SHIFT_RIGHT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Right });

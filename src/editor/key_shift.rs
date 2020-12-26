@@ -35,7 +35,11 @@ impl Editor {
         self.scroll();
         self.scroll_horizontal();
 
-        self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
+        self.d_range = DRnage {
+            sy: self.sel.sy,
+            d_type: DType::After,
+            ..DRnage::default()
+        };
     }
 
     pub fn shift_left(&mut self) {

@@ -143,18 +143,16 @@ pub struct TabComp {
     pub dirs: Vec<String>,
     // 補完候補一覧index
     pub index: usize,
-    // 補完終了判定
-    pub is_end: bool,
 }
 impl TabComp {}
 impl Default for TabComp {
     fn default() -> Self {
-        TabComp { index: USIZE_UNDEFINED, dirs: vec![], is_end: false }
+        TabComp { index: USIZE_UNDEFINED, dirs: vec![] }
     }
 }
 impl fmt::Display for TabComp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "TabComp index:{}, dirs:{}, is_end:{},", self.index, self.dirs.join(" "), self.is_end,)
+        write!(f, "TabComp index:{}, dirs:{},", self.index, self.dirs.join(" "),)
     }
 }
 
@@ -282,7 +280,11 @@ pub struct CopyRange {
     pub sx: usize,
     pub ex: usize,
 }
-
+impl fmt::Display for CopyRange {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "CopyRange y:{}, sx:{}, ex:{},", self.y, self.sx, self.ex,)
+    }
+}
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// 検索範囲
 pub struct GrepResult {
@@ -479,7 +481,7 @@ pub struct Editor {
     pub is_redraw: bool,
     pub is_undo: bool,
     pub clipboard: String,
-    /// ターミナル上の表示数
+    /// number displayed on the terminal
     pub disp_row_num: usize,
     pub disp_col_num: usize,
     pub search: Search,
@@ -489,6 +491,8 @@ pub struct Editor {
     pub redo_vec: Vec<EvtProc>,
     pub grep_result_vec: Vec<GrepResult>,
     pub key_record_vec: Vec<KeyRecord>,
+    // Corresponding to unexpected display by changing the background color multiple times
+    pub is_default_color: bool,
 }
 
 impl Default for Editor {
@@ -519,6 +523,7 @@ impl Default for Editor {
             redo_vec: vec![],
             grep_result_vec: vec![],
             key_record_vec: vec![],
+            is_default_color: true,
         }
     }
 }

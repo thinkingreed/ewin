@@ -1,8 +1,8 @@
 use crate::{def::*, global::*, model::*};
+use permissions::*;
 use std::cmp::min;
 use std::fs;
-use std::io::ErrorKind;
-use std::io::Write;
+use std::io::{ErrorKind, Write};
 use std::path;
 use termion::{clear, cursor};
 use unicode_width::UnicodeWidthChar;
@@ -11,18 +11,18 @@ impl Editor {
     pub fn open(&mut self, path: &path::Path, mbar: &mut MsgBar) {
         if path.to_string_lossy().to_string().len() > 0 {
             if path.exists() {
-                let meta = fs::metadata(path).unwrap();
-                if meta.permissions().readonly() {
-                    mbar.set_readonly(&LANG.lock().unwrap().unable_to_edit.clone());
+                if !is_writable(path).unwrap() {
+                    let msg_1 = &LANG.lock().unwrap().unable_to_edit.clone();
+                    let msg_2 = &LANG.lock().unwrap().no_write_permission.clone();
+                    mbar.set_readonly(&format!("{}({})", msg_1, msg_2));
                 }
             } else {
                 println!("{}", LANG.lock().unwrap().file_not_found.clone());
                 std::process::exit(1);
             }
         }
-
+        // read
         let result = fs::read_to_string(path);
-
         match result {
             Ok(mut s) => {
                 s = s.replace(NEW_LINE_CRLF, NEW_LINE.to_string().as_str());
@@ -46,7 +46,6 @@ impl Editor {
                         vec = vec![];
                     }
                 }
-
                 if buf.is_empty() {
                     self.buf = vec![Vec::new()];
                 } else {
@@ -140,15 +139,10 @@ impl Editor {
             }
             // 改行EOF対応
             if i < self.buf.len() {
-                let x_draw_e = self.buf[i].len() + 1;
+                let x_draw_e = self.buf[i].len() - 1;
                 for j in x_draw_s..=x_draw_e {
-                    if self.buf[i].len() == 0 {
-                        break;
-                    }
-                    // select target highlight
-                    self.ctl_selcolor_eof(str_vec, sel_range, i, j);
-                    // search target highlight
-                    self.ctl_searchcolor_eof(str_vec, &search_ranges, i, j);
+                    // highlight
+                    self.ctl_color(str_vec, sel_range, &search_ranges, i, j);
 
                     if let Some(c) = self.buf[i].get(j) {
                         let width = c.width().unwrap_or(0);
@@ -157,9 +151,7 @@ impl Editor {
                         if x_w_l > cols {
                             break;
                         }
-
                         x += width;
-                        // 検索対象のhighlight
 
                         if c == &EOF {
                             self.set_eof(str_vec);
@@ -185,10 +177,13 @@ impl Editor {
         Log::ep("cur.disp_x", self.cur.disp_x);
         Log::ep("x_offset", self.x_offset);
         Log::ep("x_offset_disp", self.x_offset_disp);
+        Log::ep("sel", self.sel);
     }
 
     pub fn draw_cur<T: Write>(&mut self, out: &mut T, sbar: &mut StatusBar) {
         Log::ep_s("　　　　　　　  draw_cursor");
+        Log::ep("cur.x", self.cur.x);
+        Log::ep("cur.disp_x", self.cur.disp_x);
 
         let str_vec: &mut Vec<String> = &mut vec![];
         sbar.draw_cur(str_vec, self);

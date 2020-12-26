@@ -46,6 +46,7 @@ pub struct LangCfg {
     pub no_operation_re_exec: String,
     // File open
     pub no_read_permission: String,
+    pub no_write_permission: String,
     pub file_opening_problem: String,
     pub file_not_found: String,
     // Paste
@@ -106,6 +107,7 @@ impl LangCfg {
             no_operation_re_exec: String::new(),
             // File open
             no_read_permission: String::new(),
+            no_write_permission: String::new(),
             file_opening_problem: String::new(),
             file_not_found: String::new(),
             // Paste

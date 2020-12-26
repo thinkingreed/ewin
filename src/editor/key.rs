@@ -45,9 +45,9 @@ impl Editor {
         // 行頭の場合
         } else if self.cur.x == self.rnw {
             //   self.cur.x = rowlen + self.rnw - 1;
-            let (cur_x, width) = get_row_width(&self.buf[self.cur.y - 1], 0, self.buf[self.cur.y - 1].len(), true);
+            let (cur_x, width) = get_row_width(&self.buf[self.cur.y - 1], 0, self.buf[self.cur.y - 1].len(), false);
             self.cur.x = cur_x + self.rnw;
-            self.cur.disp_x = width + self.rnw;
+            self.cur.disp_x = width + self.rnw + 1;
             self.d_range = DRnage::new(self.cur.y - 1, self.cur.y, DType::Target);
 
             self.cursor_up();
@@ -64,9 +64,10 @@ impl Editor {
         Log::ep_s("　　　　　　　  c_r start");
         Log::ep("self.cur.y", self.cur.y);
         Log::ep("self.cur.x", self.cur.x);
+        Log::ep("self.cur.disp_x", self.cur.disp_x);
 
         let mut is_end_of_line = false;
-        if self.evt == RIGHT || self.evt == CTRL_V {
+        if self.evt == RIGHT || self.evt == CTRL_V || self.evt == SHIFT_RIGHT {
             //   if self.buf.len() - 1 >= self.cur.x - self.rnw {
             let char = self.buf[self.cur.y][self.cur.x - self.rnw];
             if char == NEW_LINE_MARK {
@@ -96,13 +97,13 @@ impl Editor {
 
             let c = self.buf[self.cur.y][self.cur.x - self.rnw];
             if c == EOF {
-                Log::ep_s("return 222");
+                Log::ep_s("return 111");
                 return;
             }
             // EOF
             if self.evt != SHIFT_RIGHT {
                 if c == NEW_LINE_MARK {
-                    Log::ep_s("return 111");
+                    Log::ep_s("return 222");
                     return;
                 }
             }
@@ -116,7 +117,6 @@ impl Editor {
         Log::ep_s("　　　　　　　  enter");
         let y_offset_org: usize = self.y_offset;
         let rnw_org = self.rnw;
-
         let mut evt_proc = EvtProc::new(DoType::Enter, &self);
 
         let rest: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.rnw..).collect();
@@ -240,12 +240,10 @@ impl Editor {
                 let rnw_org = self.rnw;
 
                 self.save_del_char_evtproc(DoType::Del);
-                let line = self.buf.remove(self.cur.y + 1);
-                // del line feed code
-                let len = self.buf[self.cur.y].len();
-                self.buf[self.cur.y].remove(len - 1);
 
-                self.buf[self.cur.y].extend(line.into_iter());
+                let index = self.buf[self.cur.y].len() - 1;
+                self.buf[self.cur.y].remove(index);
+                self.del_end_of_line_new_line(self.cur.y + 1);
 
                 self.rnw = self.buf.len().to_string().len();
                 // 行番号の桁数が減った場合

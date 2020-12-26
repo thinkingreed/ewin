@@ -113,12 +113,13 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 
 ## Operation restrictions
-| motion     | Mapping          | environment     |Contents                                           |
-|------------|------------------|-----------------|---------------------------------------------------|
-|`Grep`      | `Ctrl` + `g`     | WSL             | Run on default WSL                                |
-|            |                  | Ubuntu・CentOS  | Only when using "gnome-terminal"                  |
-|`Key record`| `Ctrl` + `F1`    | WSL             | keybindings.command."copy" and "paste" needs to be changed to something other than Ctrl+c, Ctrl+v. Ex)Ctrl+Shift+c, Ctrl+Shift+v                                 |
-|`Save`      | `Ctrl` + `s`     | All             | Forcibly convert CR + LF of line feed code to LF  |
+| motion        | Mapping          | environment     |Contents                                           |
+|---------------|------------------|-----------------|---------------------------------------------------|
+|`Grep`         | `Ctrl` + `g`     | WSL             | Run on default WSL                                |
+|               |                  | Ubuntu・CentOS  | Only when using "gnome-terminal"                  |
+|`Key record`   | `Ctrl` + `F1`    | WSL             | keybindings.command."copy" and "paste" needs to be changed to something other than Ctrl+c, Ctrl+v. Ex)Ctrl+Shift+c, Ctrl+Shift+v                                 |
+|`Save`    　   | `Ctrl` + `s`     | All             | Forcibly convert CR + LF of line feed code to LF  |
+|`Copy`・`Paste`| `Ctrl` + `c`・`v`| WSL             | Need path to powershell.exe. Try $PSHOME at PowerShell terminal|
 
 
 

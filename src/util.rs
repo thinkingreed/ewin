@@ -20,6 +20,7 @@ pub fn get_row_width(vec: &Vec<char>, sx: usize, ex: usize, is_ctrlchar_include:
             if c == &EOF || c == &NEW_LINE_MARK {
                 if is_ctrlchar_include {
                     width += 1;
+                    cur_x += 1;
                 }
                 break;
             }
@@ -43,6 +44,7 @@ pub fn get_until_updown_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
         if let Some(c) = buf.get(i) {
             if c == &EOF || c == &NEW_LINE_MARK {
                 width += 1;
+                // cur_x += 1;
                 break;
             }
             let mut c_len = c.width().unwrap_or(0);
@@ -69,6 +71,9 @@ pub fn get_until_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
     let (mut cur_x, mut sum_width) = (0, 0);
     for i in 0..buf.len() + 1 {
         if let Some(c) = buf.get(i) {
+            if c == &NEW_LINE_MARK || c == &EOF {
+                break;
+            }
             let width = c.width().unwrap_or(0);
             if sum_width + width > x {
                 break;
@@ -107,11 +112,15 @@ pub fn get_sel_range_str(buf: &mut Vec<Vec<char>>, sel: &mut SelRange) -> Vec<St
     let copy_ranges: Vec<CopyRange> = get_copy_range(buf, sel);
 
     for copy_range in copy_ranges {
+        Log::ep("copy_range", copy_range);
         let mut vec: Vec<String> = vec![];
 
         for j in copy_range.sx..copy_range.ex {
             if let Some(c) = buf[copy_range.y].get(j) {
-                vec.insert(vec.len(), c.to_string());
+                Log::ep("ccc", c);
+                if c != &EOF {
+                    vec.insert(vec.len(), c.to_string());
+                }
             }
         }
 

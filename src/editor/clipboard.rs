@@ -58,10 +58,13 @@ impl Editor {
         let mut stdout = p.stdout.context("take stdout")?;
         let mut buf = String::new();
         stdout.read_to_string(&mut buf)?;
+
         // Windowsからのpasteで\r\n対応
         let mut buf = buf.replace(NEW_LINE_CRLF, NEW_LINE.to_string().as_str());
+        Log::ep("buf ", buf.clone());
         // 末尾の自動挿入の改行の削除
-        buf = buf.clone()[0..buf.chars().count() - 1].to_string();
+        buf = buf.chars().take(buf.chars().count() - 1).collect::<String>();
+
         Ok(buf)
     }
 }
