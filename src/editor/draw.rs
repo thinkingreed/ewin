@@ -47,7 +47,7 @@ impl Editor {
                     }
                 }
                 if buf.is_empty() {
-                    self.buf = vec![Vec::new()];
+                    self.buf.push(vec![EOF]);
                 } else {
                     self.buf = buf;
                 }
@@ -57,7 +57,7 @@ impl Editor {
                     println!("{}", LANG.lock().unwrap().no_read_permission.clone());
                     std::process::exit(1);
                 }
-                ErrorKind::NotFound => self.buf = vec![Vec::new()],
+                ErrorKind::NotFound => self.buf.push(vec![EOF]),
                 _ => {
                     println!("{} {:?}", LANG.lock().unwrap().file_opening_problem, err);
                     std::process::exit(1);
@@ -138,6 +138,7 @@ impl Editor {
                 Log::ep("x_draw_s", x_draw_s);
             }
             // 改行EOF対応
+            eprintln!("self.buf {:?}", self.buf);
             if i < self.buf.len() {
                 let x_draw_e = self.buf[i].len() - 1;
                 for j in x_draw_s..=x_draw_e {
