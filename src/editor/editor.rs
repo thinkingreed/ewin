@@ -200,7 +200,7 @@ impl Editor {
         }
         self.cur.y = sy;
         self.rnw = self.buf.len().to_string().len();
-        let (cur_x, width) = get_row_width(&self.buf[sy], 0, self.buf[sy].len(), true);
+        let (cur_x, width) = get_row_width(&self.buf[sy], 0, sx, false);
         self.cur.x = cur_x + self.rnw;
         self.cur.disp_x = width + self.rnw + 1;
     }
