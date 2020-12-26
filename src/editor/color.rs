@@ -1,5 +1,3 @@
-use std::collections::btree_map::Values;
-
 use crate::{def::*, model::*, util::*};
 
 impl Editor {
@@ -74,7 +72,7 @@ impl Editor {
                     break;
                 } else {
                     if !self.is_default_color {
-                        Log::ep_s("textarea_color textarea_color textarea_color");
+                        // Log::ep_s("textarea_color textarea_color textarea_color");
                         Colors::set_textarea_color(str_vec);
                         self.is_default_color = true;
                     }
@@ -88,12 +86,12 @@ impl Editor {
             return;
         }
         if self.buf[y].len() - 1 == x && self.buf[y][x] == NEW_LINE_MARK {
-            Log::ep_s("NEW_LINE_MARK NEW_LINE_MARK NEW_LINE_MARK");
+            // Log::ep_s("NEW_LINE_MARK NEW_LINE_MARK NEW_LINE_MARK");
             Colors::set_new_line_color(str_vec);
             self.is_default_color = false;
         } else {
             if !self.is_default_color {
-                Log::ep_s("textarea_color textarea_color textarea_color");
+                // Log::ep_s("textarea_color textarea_color textarea_color");
                 Colors::set_textarea_color(str_vec);
                 self.is_default_color = true;
             }

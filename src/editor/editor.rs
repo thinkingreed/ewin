@@ -150,7 +150,7 @@ impl Editor {
         let (mut count, mut width) = (0, 0);
         for i in (0..x).rev() {
             if let Some(c) = self.buf[y].get(i) {
-                Log::ep("ccccc", c);
+                // Log::ep("ccccc", c);
                 width += c.width().unwrap_or(0);
                 //Log::ep("width", width);
                 if width + self.rnw + 1 > self.disp_col_num {

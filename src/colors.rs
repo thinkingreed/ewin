@@ -3,7 +3,7 @@ use termion::color::*;
 
 impl Colors {
     pub fn set_rownum_color(str_vec: &mut Vec<String>) {
-        str_vec.push(Fg(Rgb(55, 55, 55)).to_string());
+        str_vec.push(Fg(Rgb(60, 60, 60)).to_string());
 
         str_vec.push(Bg(Rgb(0, 0, 0)).to_string());
     }
@@ -26,7 +26,7 @@ impl Colors {
     }
 
     pub fn set_new_line_color(str_vec: &mut Vec<String>) {
-        str_vec.push(Fg(Rgb(55, 55, 55)).to_string());
+        str_vec.push(Fg(Rgb(60, 60, 60)).to_string());
 
         str_vec.push(Bg(Rgb(0, 0, 0)).to_string());
     }
