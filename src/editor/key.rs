@@ -260,6 +260,8 @@ impl Editor {
                 self.buf[self.cur.y].remove(self.cur.x - self.rnw);
             }
         }
+        self.scroll();
+        self.scroll_horizontal();
     }
 
     pub fn home(&mut self) {

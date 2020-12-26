@@ -168,14 +168,13 @@ impl Editor {
     pub fn del_sel_range(&mut self) {
         Log::ep_s("　　　　　　　  del_sel_range");
         let sel = self.sel.get_range();
-        let (sy, ey, sx, ex, s_disp_x) = (sel.sy, sel.ey, sel.sx, sel.ex, sel.s_disp_x);
+        let (sy, ey, sx, ex) = (sel.sy, sel.ey, sel.sx, sel.ex);
         Log::ep("sel", sel);
 
         for i in 0..self.buf.len() {
             if sy <= i && i <= ey {
                 // one line
                 if sy == ey {
-                    Log::ep("self.buf[i][ex - 1]", self.buf[i][ex - 1]);
                     if self.buf[i][ex - 1] == NEW_LINE_MARK {
                         self.del_end_of_line_new_line(self.cur.y);
                     }
@@ -183,8 +182,7 @@ impl Editor {
                 // start line
                 } else if sy == i {
                     let (cur_x, _) = get_row_width(&self.buf[sy], sx, self.buf[sy].len(), true);
-                    let str = self.buf[i].drain(sx..sx + cur_x);
-                    eprintln!("drain {:?}", str);
+                    self.buf[i].drain(sx..sx + cur_x);
 
                 // end line
                 } else if ey == i {
@@ -197,15 +195,14 @@ impl Editor {
         // delete row
         for i in (0..self.buf.len()).rev() {
             if sy == i && self.buf[sy].len() == 0 || sy < i && i <= ey {
-                Log::ep("sy == i && self.buf[sy].len() == 0 || sy < i && i <= ey", i);
                 self.buf.remove(i);
             }
         }
-
         self.cur.y = sy;
         self.rnw = self.buf.len().to_string().len();
-        self.cur.disp_x = s_disp_x;
-        self.cur.x = sx + self.rnw;
+        let (cur_x, width) = get_row_width(&self.buf[sy], 0, self.buf[sy].len(), true);
+        self.cur.x = cur_x + self.rnw;
+        self.cur.disp_x = width + self.rnw + 1;
     }
 
     pub fn del_end_of_line_new_line(&mut self, remove_y: usize) {
