@@ -138,7 +138,6 @@ impl Editor {
                 Log::ep("x_draw_s", x_draw_s);
             }
             // 改行EOF対応
-            eprintln!("self.buf {:?}", self.buf);
             if i < self.buf.len() {
                 let x_draw_e = self.buf[i].len() - 1;
                 for j in x_draw_s..=x_draw_e {
