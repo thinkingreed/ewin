@@ -121,7 +121,7 @@ impl Editor {
             copy_string = self.get_wsl_str(sel_vec);
         } else {
             copy_string = sel_vec.join("");
-            copy_string = copy_string.replace(NEW_LINE_MARK, "");
+            copy_string = copy_string.replace(NEW_LINE_MARK, NEW_LINE.to_string().as_str());
         }
 
         Log::ep("copy_string", copy_string.clone());
