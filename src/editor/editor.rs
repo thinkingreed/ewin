@@ -1,24 +1,31 @@
-use crate::{def::NEW_LINE_MARK, model::*, util::*};
+use crate::{def::*, model::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
 use std::cmp::{max, min};
 use std::io::Write;
 use unicode_width::UnicodeWidthChar;
 
 impl Editor {
-    // カーソルが画面に映るようにする
+    // adjusting vertical posi of cursor
     pub fn scroll(&mut self) {
         // Log::ep_s("　　　　　　　 scroll");
         self.y_offset = min(self.y_offset, self.cur.y);
 
         if self.cur.y + 1 >= self.disp_row_num {
-            self.y_offset = max(self.y_offset, self.cur.y + 1 - self.disp_row_num);
-            // y_offsetが減少
-            if self.y_offset + self.disp_row_num > self.buf.len() {
-                self.y_offset = self.buf.len() - self.disp_row_num;
+            if self.evt == PAGE_DOWN {
+                if self.cur.y >= self.y_offset + self.disp_row_num {
+                    self.y_offset = self.cur.y;
+                }
+            } else {
+                self.y_offset = max(self.y_offset, self.cur.y + 1 - self.disp_row_num);
+                // y_offsetが減少
+                if self.y_offset + self.disp_row_num > self.buf.len() {
+                    self.y_offset = self.buf.len() - self.disp_row_num;
+                }
             }
         }
     }
 
+    // adjusting horizontal posi of cursor
     pub fn scroll_horizontal(&mut self) {
         Log::ep_s("　　　　　　　 scroll_horizontal");
 

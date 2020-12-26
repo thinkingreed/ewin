@@ -11,6 +11,8 @@ pub const NEW_LINE_MARK: char = '↲';
 // 暫定のEOFの印
 pub const EOF: char = '▚';
 pub const EOF_MARK: &str = "EOF";
+// Event
 pub const RIGHT: Event = Key(KeyEvent { code: Right, modifiers: KeyModifiers::NONE });
+pub const PAGE_DOWN: Event = Key(KeyEvent { code: PageDown, modifiers: KeyModifiers::NONE });
 pub const SHIFT_RIGHT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Right });
 pub const CTRL_V: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('v') });

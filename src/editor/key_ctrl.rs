@@ -28,13 +28,6 @@ impl Editor {
         self.set_sel_del_d_range();
         self.save_sel_del_evtproc(DoType::Cut);
 
-        /*
-        let sel_vec = get_sel_range_str(&mut self.buf, &mut self.sel);
-        Log::ep("sel_vec", sel_vec.join(" "));
-                if sel_vec[sel_vec.len() - 1].chars().last().unwrap_or(' ') == NEW_LINE_MARK {
-                    self.del_end_of_line_new_line(self.cur.y);
-                }
-        */
         self.del_sel_range();
         self.sel.clear();
     }
