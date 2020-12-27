@@ -18,7 +18,7 @@ impl EvtAct {
             EvtActType::Next => {
                 EvtAct::init(editor, mbar, prom);
 
-                // eprintln!("editor.curt_evt.clone(){:?}", editor.curt_evt);
+                // eprintln!("editor.evt.clone(){:?}", editor.evt.clone());
 
                 match editor.evt {
                     Resize(_, _) => {
@@ -80,9 +80,10 @@ impl EvtAct {
                     },
                     Mouse(MouseEvent::ScrollUp(_, _, _)) => editor.move_cursor(out, sbar),
                     Mouse(MouseEvent::ScrollDown(_, _, _)) => editor.move_cursor(out, sbar),
-                    Mouse(MouseEvent::Down(MouseButton::Left, x, y, _)) => editor.mouse_left_press(out, sbar, (x + 1) as usize, y as usize),
-                    Mouse(MouseEvent::Down(_, _, _, _)) => {}
-                    Mouse(MouseEvent::Up(_, x, y, _)) => editor.mouse_release((x + 1) as usize, y as usize),
+                    Mouse(MouseEvent::Down(MouseButton::Left, x, y, _)) => editor.mouse_left_press((x + 1) as usize, y as usize),
+                    Mouse(MouseEvent::Down(_, _, _, _)) => mbar.set_err(&LANG.lock().unwrap().unsupported_operation),
+                    Mouse(MouseEvent::Up(MouseButton::Left, x, y, _)) => editor.mouse_release((x + 1) as usize, y as usize),
+                    Mouse(MouseEvent::Up(_, _, _, _)) => {}
                     Mouse(MouseEvent::Drag(_, x, y, _)) => editor.mouse_hold((x + 1) as usize, y as usize),
                 }
 
@@ -138,9 +139,13 @@ impl EvtAct {
                 _ => editor.is_redraw = true,
             },
 
-            Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) | Mouse(MouseEvent::Up(_, _, _, _)) => {}
-            Mouse(MouseEvent::Down(MouseButton::Left, _, _, _)) => editor.is_redraw = true,
-            _ => editor.is_redraw = true,
+            Mouse(MouseEvent::Down(MouseButton::Left, _, _, _)) | Mouse(MouseEvent::Up(MouseButton::Left, _, _, _)) | Mouse(MouseEvent::Drag(MouseButton::Left, _, _, _)) => {
+                if editor.sel.is_selected() {
+                    editor.is_redraw = true;
+                }
+            }
+            Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) | Mouse(MouseEvent::Down(_, _, _, _)) | Mouse(MouseEvent::Up(_, _, _, _)) => {}
+            _ => editor.is_redraw = false,
         }
 
         if editor.is_redraw {
