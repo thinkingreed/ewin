@@ -6,12 +6,10 @@ impl Log {
         if cfg!(debug_assertions) {
             eprintln!("{}{} {}", Colors::get_default_fg(), format!("{:?}", m), v);
         } else {
-            // eprintln!("{} {}", format!("{:?}", m), v);
-
+      
             /*
             let debug_mode: &str = ARGS.get("debug_mode").unwrap();
             if debug_mode == "true" {
-                eprintln!("{} {}", format!("{:?}", m), v);
             }
             */
         }
@@ -20,13 +18,11 @@ impl Log {
         if cfg!(debug_assertions) {
             eprintln!("{}{}", Colors::get_default_fg(), m);
         } else {
-            // eprintln!("{}", m);
-
+      
             /*
             let debug_mode: &str = ARGS.get("debug_mode").unwrap();
             if debug_mode == "true" {
-                eprintln!("{}", m);
-            }
+           }
             */
         }
     }

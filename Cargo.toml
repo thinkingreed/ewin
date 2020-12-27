@@ -18,21 +18,16 @@ It provides basic features as a minimal text editor.\
 depends = "$auto"\
 """
 assets = [
-    ["target/release/ew", "usr/bin/", "755"],
+    ["target/release/ewin", "usr/bin/", "755"],
     ["README.md", "usr/share/doc/ewin/README", "644"],
 ]
-
-[[bin]]
-bench = false
-path = "src/main.rs"
-name = "ew"
 
 [package.metadata.rpm]
 package = "ewin"
 [package.metadata.rpm.cargo]
 buildflags = ["--release"]
 [package.metadata.rpm.targets]
-ew = { path = "/usr/bin/ew" }
+ewin = { path = "/usr/bin/ewin" }
 
 
 [dependencies]

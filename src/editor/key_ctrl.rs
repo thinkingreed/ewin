@@ -282,7 +282,6 @@ impl Editor {
             if self.search.index == USIZE_UNDEFINED {
                 self.search.search_ranges = self.get_search_ranges(self.search.str.clone());
 
-                // eprintln!("search_ranges {:?}", self.search.search_ranges);
                 if self.search.search_ranges.len() > 0 {
                     if self.search.row_num.len() == 0 {
                         self.search.index = 0;
