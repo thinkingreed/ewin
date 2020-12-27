@@ -91,9 +91,9 @@ impl PromptCont {
 
             if prom.cache_search_filenm.len() > 0 {
                 self.buf = prom.cache_search_filenm.chars().collect();
+            } else {
+                self.buf = "*.*".chars().collect();
             }
-
-            self.buf = "*.*".chars().collect();
         } else {
             self.buf_desc = format!("{}{}{}", Colors::get_msg_fg(), self.lang.search_folder.clone(), Colors::get_default_fg());
             if prom.cache_search_folder.len() > 0 {
