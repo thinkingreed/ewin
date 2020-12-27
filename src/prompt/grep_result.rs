@@ -120,7 +120,7 @@ impl EvtAct {
         } else {
             // 無害なコマンド実行
             // TODO 別の方法検討
-            return Command::new("echo").stdout(process::Stdio::piped()).stderr(process::Stdio::piped()).spawn().unwrap();
+            return Command::new("echo").arg(" ").stdout(process::Stdio::piped()).stderr(process::Stdio::piped()).spawn().unwrap();
         }
     }
 
@@ -144,7 +144,6 @@ impl EvtAct {
                 }
                 Enter => {
                     let grep_result = &editor.grep_result_vec[editor.cur.y];
-                    // 読取権限がある場合
                     if grep_result.row_num != USIZE_UNDEFINED {
                         let search_str = &editor.search.str;
                         let path = Path::new(&editor.search.folder).join(&grep_result.filenm);

@@ -18,7 +18,7 @@ It provides basic features as a minimal text editor.\
 depends = "$auto"\
 """
 assets = [
-    ["target/release/ewin", "usr/bin/", "755"],
+    ["target/release/ewin", "usr/bin/ewin", "755"],
     ["README.md", "usr/share/doc/ewin/README", "644"],
 ]
 
