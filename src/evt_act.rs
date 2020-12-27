@@ -18,7 +18,7 @@ impl EvtAct {
             EvtActType::Next => {
                 EvtAct::init(editor, mbar, prom);
 
-                // eprintln!("editor.evt.clone(){:?}", editor.evt.clone());
+                eprintln!("editor.evt.clone(){:?}", editor.evt.clone());
 
                 match editor.evt {
                     Resize(_, _) => {
@@ -81,10 +81,9 @@ impl EvtAct {
                     Mouse(MouseEvent::ScrollUp(_, _, _)) => editor.move_cursor(out, sbar),
                     Mouse(MouseEvent::ScrollDown(_, _, _)) => editor.move_cursor(out, sbar),
                     Mouse(MouseEvent::Down(MouseButton::Left, x, y, _)) => editor.mouse_left_press((x + 1) as usize, y as usize),
-                    Mouse(MouseEvent::Down(_, _, _, _)) => mbar.set_err(&LANG.lock().unwrap().unsupported_operation),
                     Mouse(MouseEvent::Up(MouseButton::Left, x, y, _)) => editor.mouse_release((x + 1) as usize, y as usize),
-                    Mouse(MouseEvent::Up(_, _, _, _)) => {}
-                    Mouse(MouseEvent::Drag(_, x, y, _)) => editor.mouse_hold((x + 1) as usize, y as usize),
+                    Mouse(MouseEvent::Drag(MouseButton::Left, x, y, _)) => editor.mouse_hold((x + 1) as usize, y as usize),
+                    _ => mbar.set_err(&LANG.lock().unwrap().unsupported_operation),
                 }
 
                 if prom.is_key_record {
@@ -144,7 +143,10 @@ impl EvtAct {
                     editor.is_redraw = true;
                 }
             }
-            Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) | Mouse(MouseEvent::Down(_, _, _, _)) | Mouse(MouseEvent::Up(_, _, _, _)) => {}
+
+            // for err msg
+            Mouse(MouseEvent::Down(_, _, _, _)) => editor.is_redraw = true,
+            Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) | Mouse(MouseEvent::Up(_, _, _, _)) => {}
             _ => editor.is_redraw = false,
         }
 
