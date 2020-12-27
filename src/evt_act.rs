@@ -60,7 +60,7 @@ impl EvtAct {
                         F(1) => editor.record_key_start(term, mbar, prom, sbar),
                         F(2) => editor.exec_record_key(out, term, mbar, prom, sbar),
                         F(4) => editor.move_cursor(out, sbar),
-                        _ => {}
+                        _ => mbar.set_err(&LANG.lock().unwrap().unsupported_operation),
                     },
                     Key(KeyEvent { code, .. }) => match code {
                         Char(c) => editor.insert_char(c),
@@ -76,10 +76,7 @@ impl EvtAct {
                         Left => editor.move_cursor(out, sbar),
                         Right => editor.move_cursor(out, sbar),
                         F(3) => editor.move_cursor(out, sbar),
-
-                        _ => {
-                            Log::ep_s("Un Supported no modifiers");
-                        }
+                        _ => mbar.set_err(&LANG.lock().unwrap().unsupported_operation),
                     },
                     Mouse(MouseEvent::ScrollUp(_, _, _)) => editor.move_cursor(out, sbar),
                     Mouse(MouseEvent::ScrollDown(_, _, _)) => editor.move_cursor(out, sbar),
