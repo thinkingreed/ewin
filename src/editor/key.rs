@@ -236,7 +236,6 @@ impl Editor {
                 return;
             }
             self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
-            self.save_del_char_evtproc(DoType::Del);
 
             // 行末
             if self.cur.x == self.buf[self.cur.y].len() + self.rnw - 1 {
@@ -244,6 +243,7 @@ impl Editor {
 
                 let rnw_org = self.rnw;
 
+                self.save_del_char_evtproc(DoType::Del);
                 let index = self.buf[self.cur.y].len() - 1;
                 self.buf[self.cur.y].remove(index);
                 self.del_end_of_line_new_line(self.cur.y + 1);
@@ -256,6 +256,7 @@ impl Editor {
                     self.d_range.d_type = DType::All;
                 }
             } else {
+                self.save_del_char_evtproc(DoType::Del);
                 self.buf[self.cur.y].remove(self.cur.x - self.rnw);
             }
         }
