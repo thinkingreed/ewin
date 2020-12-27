@@ -183,9 +183,9 @@ impl Editor {
             self.sel.sx = self.cur.x - self.rnw;
             self.sel.s_disp_x = self.cur.disp_x;
         }
-        let (cur_x, width) = get_row_width(&self.buf[self.cur.y], self.cur.x - self.rnw, self.buf[self.cur.y].len(), false);
+        let (cur_x, width) = get_row_width(&self.buf[self.cur.y], 0, self.buf[self.cur.y].len(), false);
         self.cur.x = cur_x + self.rnw;
-        self.cur.disp_x = self.cur.disp_x + width;
+        self.cur.disp_x = width + self.rnw + 1;
 
         self.sel.ey = self.cur.y;
         self.sel.ex = cur_x;
