@@ -1,4 +1,4 @@
-use crossterm::event::{Event, Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton, MouseEvent};
+use crossterm::event::{Event, Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 
 pub const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
 pub const STR_UNDEFINED: &str = "STR_UNDEFINED";

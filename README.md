@@ -111,7 +111,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `Ctrl` + `a`              | Select all.                                                                |target       |
 | `F3`                      | Search for characters below.     　　　　　                                 |target       |
 | `Shift` + `F4`            | Search for above characters below.　　　　　                                |target       |
-| `Mouse Left.Down` + `Drag`| Select a range.                                                            |target       |
+| `Mouse Left.Down` + `Drag`| Select a range.                                                            |―            |
 
 
 ## Operation restrictions
