@@ -1,4 +1,4 @@
-use crate::{def::*, global::*, model::*};
+use crate::{global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::env;
 use std::io::Write;

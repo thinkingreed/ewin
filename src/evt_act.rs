@@ -18,7 +18,7 @@ impl EvtAct {
             EvtActType::Next => {
                 EvtAct::init(editor, mbar, prom);
 
-                eprintln!("editor.evt.clone(){:?}", editor.evt.clone());
+                // eprintln!("editor.evt.clone(){:?}", editor.evt.clone());
 
                 match editor.evt {
                     Resize(_, _) => {

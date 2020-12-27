@@ -62,6 +62,8 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `Ctrl` + `s`   | Save current buffer to file.                                                         |―            |
 | `Ctrl` + `f`   | Enter the characters to search.Search target is open file.                           |―            |
 | `Ctrl` + `g`   | Grep.Enter the characters to search.The search target is the entered file pattern    |―            |
+|                | Command to use : grep -rHnI search_str --include=search_filenm search_folder         |             |
+|                | -r:Subfolder search,-H:File name display,-n:Line number display,-I: Binary file not applicable|             |
 | `Shift` + `F1` | Key record start or stop.Recording key operation.                                    |―            |
 | `Shift` + `F2` | Execution of the recorded key.                                                       |―            |
 
