@@ -80,9 +80,8 @@ impl EvtAct {
                     },
                     Mouse(MouseEvent::ScrollUp(_, _, _)) => editor.move_cursor(out, sbar),
                     Mouse(MouseEvent::ScrollDown(_, _, _)) => editor.move_cursor(out, sbar),
-                    Mouse(MouseEvent::Down(MouseButton::Left, x, y, _)) => editor.mouse_left_press((x + 1) as usize, y as usize),
-                    Mouse(MouseEvent::Up(MouseButton::Left, x, y, _)) => editor.mouse_release((x + 1) as usize, y as usize),
-                    Mouse(MouseEvent::Drag(MouseButton::Left, x, y, _)) => editor.mouse_hold((x + 1) as usize, y as usize),
+                    Mouse(MouseEvent::Down(MouseButton::Left, x, y, _)) => editor.ctrl_mouse((x + 1) as usize, y as usize, true),
+                    Mouse(MouseEvent::Up(MouseButton::Left, x, y, _)) | Mouse(MouseEvent::Drag(MouseButton::Left, x, y, _)) => editor.ctrl_mouse((x + 1) as usize, y as usize, false),
                     _ => mbar.set_err(&LANG.lock().unwrap().unsupported_operation),
                 }
 
