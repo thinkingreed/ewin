@@ -258,7 +258,7 @@ impl Editor {
     pub fn ctl_end(&mut self) {
         Log::ep_s("　　　　　　　　ctl_end");
         self.cur.y = self.buf.len() - 1;
-        self.cur.x = self.buf[self.buf.len() - 1].len() + self.rnw;
+        self.cur.x = self.buf[self.buf.len() - 1].len() - 1 + self.rnw;
         let (_, width) = get_row_width(&self.buf[self.buf.len() - 1], 0, self.buf[self.buf.len() - 1].len(), false);
         self.cur.disp_x = width + self.rnw + 1;
         if self.updown_x == 0 {
