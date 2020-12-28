@@ -57,7 +57,7 @@ impl Editor {
                     println!("{}", LANG.lock().unwrap().no_read_permission.clone());
                     std::process::exit(1);
                 }
-                ErrorKind::NotFound => self.buf.push(vec![EOF]),
+                ErrorKind::NotFound => self.buf[0] = vec![EOF],
                 _ => {
                     println!("{} {:?}", LANG.lock().unwrap().file_opening_problem, err);
                     std::process::exit(1);
@@ -140,7 +140,7 @@ impl Editor {
             // 改行EOF対応
             if i < self.buf.len() {
                 Log::ep("i < self.buf.len() iii ", i);
-
+                eprintln!("self.buf {:?}", self.buf);
                 let x_draw_e = self.buf[i].len();
                 for j in x_draw_s..x_draw_e {
                     // highlight
