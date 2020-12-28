@@ -120,6 +120,7 @@ impl EvtAct {
         // all_redraw判定
         editor.is_redraw = false;
         match editor.evt {
+            Resize(_, _) => editor.is_redraw = true,
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                 _ => editor.is_redraw = true,
             },

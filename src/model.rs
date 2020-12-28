@@ -509,7 +509,7 @@ pub struct Editor {
 impl Default for Editor {
     fn default() -> Self {
         Editor {
-            buf: vec![],
+            buf: vec![vec![]],
             cur: Cur::default(),
             y_offset: 0,
             x_offset: 0,

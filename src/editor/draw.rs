@@ -47,7 +47,7 @@ impl Editor {
                     }
                 }
                 if buf.is_empty() {
-                    self.buf.push(vec![EOF]);
+                    self.buf[0] = vec![EOF];
                 } else {
                     self.buf = buf;
                 }
@@ -139,8 +139,10 @@ impl Editor {
             }
             // 改行EOF対応
             if i < self.buf.len() {
-                let x_draw_e = self.buf[i].len() - 1;
-                for j in x_draw_s..=x_draw_e {
+                Log::ep("i < self.buf.len() iii ", i);
+
+                let x_draw_e = self.buf[i].len();
+                for j in x_draw_s..x_draw_e {
                     // highlight
                     self.ctl_color(str_vec, sel_range, &search_ranges, i, j);
 

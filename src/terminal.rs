@@ -143,6 +143,8 @@ impl Terminal {
         if !cfg!(debug_assertions) {
             if Path::new("/usr/bin/ewin").exists() {
                 exe_path = "/usr/bin/ewin";
+            } else {
+                exe_path = "/home/hi/rust/ewin/target/release/ewin";
             }
         }
 
