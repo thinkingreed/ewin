@@ -92,7 +92,6 @@ impl Editor {
                     }
                     Err(err) => {
                         Log::ep("err", err.to_string());
-                        // TODO 新規ファイル時はフォルダの権限をmainで先に確認が必要
                     }
                 }
             }

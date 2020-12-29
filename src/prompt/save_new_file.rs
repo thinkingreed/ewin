@@ -1,6 +1,7 @@
 use crate::{global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
+use std::path::Path;
 
 impl EvtAct {
     pub fn save_new_filenm<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
@@ -10,8 +11,12 @@ impl EvtAct {
                     if prom.cont_1.buf.len() == 0 {
                         mbar.set_err(&LANG.lock().unwrap().not_entered_filenm);
                     } else {
-                        // TODO 存在するファイル名の対応
-                        sbar.filenm = prom.cont_1.buf.iter().collect::<String>();
+                        let filenm = prom.cont_1.buf.iter().collect::<String>();
+                        if Path::new(&filenm).exists() {
+                            mbar.set_err(&LANG.lock().unwrap().file_already_exists);
+                            return EvtActType::Hold;
+                        }
+                        sbar.filenm = filenm;
                         editor.save(mbar, prom, sbar);
                     }
                     term.draw(out, editor, mbar, prom, sbar).unwrap();

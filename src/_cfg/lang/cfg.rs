@@ -49,6 +49,8 @@ pub struct LangCfg {
     pub no_write_permission: String,
     pub file_opening_problem: String,
     pub file_not_found: String,
+    // Save
+    pub file_already_exists: String,
     // Not sel range
     pub no_sel_range: String,
     // Paste
@@ -111,6 +113,7 @@ impl LangCfg {
             no_write_permission: String::new(),
             file_opening_problem: String::new(),
             file_not_found: String::new(),
+            file_already_exists: String::new(),
             no_sel_range: String::new(),
             cannot_paste_multi_lines: String::new(),
             no_key_record_exec: String::new(),

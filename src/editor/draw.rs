@@ -1,6 +1,7 @@
 use crate::{def::*, global::*, model::*};
 use permissions::*;
 use std::cmp::min;
+use std::env;
 use std::fs;
 use std::io::{ErrorKind, Write};
 use std::path;
@@ -18,6 +19,12 @@ impl Editor {
                 }
             } else {
                 println!("{}", LANG.lock().unwrap().file_not_found.clone());
+                std::process::exit(1);
+            }
+        } else {
+            let current = env::current_dir().unwrap();
+            if !is_writable(current).unwrap() {
+                println!("{}", LANG.lock().unwrap().no_write_permission.clone());
                 std::process::exit(1);
             }
         }
@@ -140,7 +147,6 @@ impl Editor {
             // 改行EOF対応
             if i < self.buf.len() {
                 Log::ep("i < self.buf.len() iii ", i);
-                eprintln!("self.buf {:?}", self.buf);
                 let x_draw_e = self.buf[i].len();
                 for j in x_draw_s..x_draw_e {
                     // highlight

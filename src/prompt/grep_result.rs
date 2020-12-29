@@ -105,23 +105,17 @@ impl EvtAct {
 
     pub fn exec_cmd(editor: &Editor) -> Child {
         Log::ep_s("　　　　　　　　exec_cmd");
-        if editor.search.file.len() > 0 {
-            return Command::new("grep")
-                // -r:サブフォルダ検索、-H:ファイル名表示、-n:行番号表示、-I:バイナリファイル対象外
-                .arg("-rHnI")
-                .arg(editor.search.str.clone())
-                .arg(format!("--include={}", editor.search.filenm))
-                // folder
-                .arg(editor.search.folder.clone())
-                .stdout(process::Stdio::piped())
-                .stderr(process::Stdio::piped())
-                .spawn()
-                .unwrap();
-        } else {
-            // 無害なコマンド実行
-            // TODO 別の方法検討
-            return Command::new("echo").arg(" ").stdout(process::Stdio::piped()).stderr(process::Stdio::piped()).spawn().unwrap();
-        }
+        return Command::new("grep")
+            // -r:サブフォルダ検索、-H:ファイル名表示、-n:行番号表示、-I:バイナリファイル対象外
+            .arg("-rHnI")
+            .arg(editor.search.str.clone())
+            .arg(format!("--include={}", editor.search.filenm))
+            // folder
+            .arg(editor.search.folder.clone())
+            .stdout(process::Stdio::piped())
+            .stderr(process::Stdio::piped())
+            .spawn()
+            .unwrap();
     }
 
     pub fn grep_result(term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar) -> EvtActType {

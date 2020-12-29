@@ -46,6 +46,8 @@ no_read_permission="読み込み権限がありません"
 no_write_permission="書込権限無し"
 file_opening_problem="ファイルを開く際に問題が発生しました"
 file_not_found="ファイルが存在しません"
+# Save
+file_already_exists="既に存在するファイル名です"
 # Not sel range
 no_sel_range="範囲を指定して下さい"
 # paste
@@ -105,6 +107,8 @@ no_read_permission="No read permission"
 no_write_permission="No write permission"
 file_opening_problem="There was a problem in opening the file"
 file_not_found="File not found"
+# Save
+file_already_exists="file already exists"
 # Not sel range
 no_sel_range="Please specify the copy range"
 # paste

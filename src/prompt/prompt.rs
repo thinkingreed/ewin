@@ -110,30 +110,33 @@ impl Prompt {
                 _ => {}
             }
         } else if self.is_grep {
-            if is_asc {
-                match self.buf_posi {
-                    PromptBufPosi::First | PromptBufPosi::Second => self.cursor_down(),
-                    PromptBufPosi::Third => {
-                        self.cont_3.buf = self.get_tab_candidate().chars().collect();
-                        let (cur_x, width) = get_row_width(&self.cont_3.buf, 0, self.cont_3.buf.len(), false);
-                        self.cont_3.cur.x = cur_x;
-                        self.cont_3.cur.disp_x = width + 1;
-                    }
-                }
-            } else {
-                match self.buf_posi {
-                    PromptBufPosi::First => {
+            match self.buf_posi {
+                PromptBufPosi::First => {
+                    if is_asc {
+                        self.cursor_down();
+                    } else {
                         self.buf_posi = PromptBufPosi::Third;
                         Prompt::set_cur(&self.cont_1, &mut self.cont_3);
                     }
-                    PromptBufPosi::Second => self.cursor_down(),
-                    PromptBufPosi::Third => {}
+                }
+                PromptBufPosi::Second => {
+                    if is_asc {
+                        self.cursor_down();
+                    } else {
+                        self.cursor_up();
+                    }
+                }
+                PromptBufPosi::Third => {
+                    self.cont_3.buf = self.get_tab_candidate(is_asc).chars().collect();
+                    let (cur_x, width) = get_row_width(&self.cont_3.buf, 0, self.cont_3.buf.len(), false);
+                    self.cont_3.cur.x = cur_x;
+                    self.cont_3.cur.disp_x = width + 1;
                 }
             }
         }
     }
 
-    fn get_tab_candidate(&mut self) -> String {
+    fn get_tab_candidate(&mut self, is_asc: bool) -> String {
         Log::ep_s("set_path");
         let mut target_path = self.cont_3.buf.iter().collect::<String>();
 
@@ -181,11 +184,14 @@ impl Prompt {
 
             // Multiple candidates
             } else if self.tab_comp.dirs.len() > 1 {
-                Log::ep_s("　　Multi candidates");
-                if self.tab_comp.index >= self.tab_comp.dirs.len() - 1 || self.tab_comp.index == USIZE_UNDEFINED {
+                Log::ep_s("  Multi candidates");
+                Log::ep("self.tab_comp.index", self.tab_comp.index);
+                if is_asc && self.tab_comp.index >= self.tab_comp.dirs.len() - 1 || self.tab_comp.index == USIZE_UNDEFINED {
                     self.tab_comp.index = 0;
+                } else if !is_asc && self.tab_comp.index == 0 {
+                    self.tab_comp.index = self.tab_comp.dirs.len() - 1;
                 } else {
-                    self.tab_comp.index += 1;
+                    self.tab_comp.index = if is_asc { self.tab_comp.index + 1 } else { self.tab_comp.index - 1 };
                 }
                 cont_3_str = self.tab_comp.dirs[self.tab_comp.index].clone();
                 break;
