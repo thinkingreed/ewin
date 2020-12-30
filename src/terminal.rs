@@ -67,7 +67,7 @@ impl Terminal {
 
     pub fn set_disp_size(&mut self, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
         let (cols, rows) = termion::terminal_size().unwrap();
-        let (cols, rows) = (cols as usize, rows as usize);
+        let (cols, rows) = (cols as usize, rows as usize + 1);
 
         Log::ep("rows", rows);
         Log::ep("cols", cols);
@@ -105,13 +105,11 @@ impl Terminal {
         editor.disp_col_num = cols;
         editor.disp_row_num = rows - mbar.disp_readonly_row_num - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - sbar.disp_row_num;
 
-        /*
-            Log::ep("editor.disp_row_num", editor.disp_row_num);
-            Log::ep("mbar.disp_macro_row_posi", mbar.disp_macro_row_posi);
-            Log::ep("mbar.disp_row_num", mbar.disp_row_posi);
-            Log::ep("prom.disp_row_posi", prom.disp_row_posi);
-            Log::ep("sbar.disp_row_num", sbar.disp_row_posi);
-        */
+        Log::ep("editor.disp_row_num", editor.disp_row_num);
+        Log::ep("mbar.disp_keyrecord_row_posi", mbar.disp_keyrecord_row_posi);
+        Log::ep("mbar.disp_row_posi", mbar.disp_row_posi);
+        Log::ep("prom.disp_row_posi", prom.disp_row_posi);
+        Log::ep("sbar.disp_row_posi", sbar.disp_row_posi);
     }
 
     pub fn set_env(&mut self) {

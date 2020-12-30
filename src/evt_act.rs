@@ -1,6 +1,6 @@
 use crate::global::*;
 use crate::model::*;
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton, MouseEvent};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use std::io::Write;
 use termion::clear;
 
@@ -78,10 +78,10 @@ impl EvtAct {
                         F(3) => editor.move_cursor(out, sbar),
                         _ => mbar.set_err(&LANG.lock().unwrap().unsupported_operation),
                     },
-                    Mouse(MouseEvent::ScrollUp(_, _, _)) => editor.move_cursor(out, sbar),
-                    Mouse(MouseEvent::ScrollDown(_, _, _)) => editor.move_cursor(out, sbar),
-                    Mouse(MouseEvent::Down(MouseButton::Left, x, y, _)) => editor.ctrl_mouse((x + 1) as usize, y as usize, true),
-                    Mouse(MouseEvent::Up(MouseButton::Left, x, y, _)) | Mouse(MouseEvent::Drag(MouseButton::Left, x, y, _)) => editor.ctrl_mouse((x + 1) as usize, y as usize, false),
+                    Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => editor.move_cursor(out, sbar),
+                    Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => editor.move_cursor(out, sbar),
+                    Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, true),
+                    Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: x, row: y, .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, false),
                     _ => mbar.set_err(&LANG.lock().unwrap().unsupported_operation),
                 }
 
@@ -114,7 +114,8 @@ impl EvtAct {
                 Down | Up => {}
                 _ => editor.updown_x = 0,
             },
-            Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) => {}
+            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => {}
+            Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {}
             _ => editor.updown_x = 0,
         }
         // all_redraw判定
@@ -138,15 +139,16 @@ impl EvtAct {
                 _ => editor.is_redraw = true,
             },
 
-            Mouse(MouseEvent::Down(MouseButton::Left, _, _, _)) | Mouse(MouseEvent::Up(MouseButton::Left, _, _, _)) | Mouse(MouseEvent::Drag(MouseButton::Left, _, _, _)) => {
+            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => {}
+            Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {}
+
+            // for err msg or selected
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) => editor.is_redraw = true,
+            Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
                 if editor.sel.is_selected() {
                     editor.is_redraw = true;
                 }
             }
-
-            // for err msg
-            Mouse(MouseEvent::Down(_, _, _, _)) => editor.is_redraw = true,
-            Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) | Mouse(MouseEvent::Up(_, _, _, _)) => {}
             _ => editor.is_redraw = false,
         }
 
@@ -187,8 +189,9 @@ impl EvtAct {
                 Down | Up | Left | Right | Home | End => {}
                 _ => mbar.clear_mag(),
             },
+            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => {}
+            Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {}
 
-            Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) => {}
             _ => mbar.clear_mag(),
         }
     }
@@ -210,7 +213,7 @@ impl EvtAct {
                 F(3) => {}
                 _ => editor.sel.clear(),
             },
-            Mouse(MouseEvent::Down(_, _, _, _)) | Mouse(MouseEvent::Up(_, _, _, _)) | Mouse(MouseEvent::Drag(_, _, _, _)) => {}
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) | Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {}
             _ => editor.sel.clear(),
         }
 

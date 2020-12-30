@@ -1,6 +1,6 @@
 use crate::model::PromptBufPosi::*;
 use crate::model::*;
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent as M_Event, MouseEventKind as M_EventKind};
 use std::io::Write;
 
 impl EvtAct {
@@ -165,8 +165,8 @@ impl EvtAct {
                         }
                     }
                 },
-                Mouse(MouseEvent::ScrollUp(_, _, _)) => return EvtActType::Next,
-                Mouse(MouseEvent::ScrollDown(_, _, _)) => return EvtActType::Next,
+                Mouse(M_Event { kind: M_EventKind::ScrollUp, .. }) => return EvtActType::Next,
+                Mouse(M_Event { kind: M_EventKind::ScrollDown, .. }) => return EvtActType::Next,
 
                 _ => return EvtActType::Hold,
             }
@@ -183,7 +183,7 @@ impl EvtAct {
         } else if prom.is_grep == true {
             return EvtAct::grep(out, term, editor, mbar, prom, sbar);
         } else if prom.is_grep_result == true {
-            return EvtAct::grep_result(term, editor, mbar);
+            return EvtAct::grep_result(term, editor);
         } else {
             Log::ep_s("EvtProcess::NextEvtProcess");
             return EvtActType::Next;
@@ -201,7 +201,8 @@ impl EvtAct {
                 _ => mbar.clear_mag(),
             },
 
-            Mouse(MouseEvent::ScrollUp(_, _, _)) | Mouse(MouseEvent::ScrollDown(_, _, _)) => {}
+            Mouse(M_Event { kind: M_EventKind::ScrollUp, .. }) => {}
+            Mouse(M_Event { kind: M_EventKind::ScrollDown, .. }) => {}
             _ => mbar.clear_mag(),
         }
     }

@@ -169,7 +169,7 @@ pub fn get_copy_range(buf: &mut Vec<Vec<char>>, sel: &mut SelRange) -> Vec<CopyR
     return copy_ranges;
 }
 
-pub fn split_inclusive(target: &mut String, split_char: char) -> Vec<String> {
+pub fn split_inclusive(target: &str, split_char: char) -> Vec<String> {
     let mut vec: Vec<String> = vec![];
     let mut string = String::new();
 

@@ -164,15 +164,14 @@ impl Editor {
         Log::ep("clipboard str", &contexts);
 
         // EvtProcデータ設定
-        let mut ep = EvtProc::new(DoType::Paste, &self);
+        let mut ep = EvtProc::new(DoType::Paste, self.cur, self.d_range);
         {
             ep.str_vec = vec![contexts.clone()];
             ep.sel.sy = self.cur.y;
             ep.sel.sx = self.cur.x - self.rnw;
             ep.sel.s_disp_x = self.cur.disp_x;
         }
-        contexts = contexts.replace(NEW_LINE, NEW_LINE_MARK.to_string().as_str());
-        self.insert_str(&mut contexts);
+        self.insert_str(&contexts);
         {
             ep.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
             ep.sel.ey = self.cur.y;
@@ -193,11 +192,12 @@ impl Editor {
         }
     }
 
-    fn insert_str(&mut self, contexts: &mut String) {
+    pub fn insert_str(&mut self, str: &str) {
         Log::ep_s("        insert_str");
 
-        Log::ep("contexts", contexts.clone());
-        let insert_strs: Vec<String> = split_inclusive(contexts, NEW_LINE_MARK);
+        Log::ep("contexts", str.clone());
+        let str = str.replace(NEW_LINE, NEW_LINE_MARK.to_string().as_str());
+        let insert_strs: Vec<String> = split_inclusive(&str, NEW_LINE_MARK);
         let insert_s_y = self.cur.y;
 
         // rnw increase
@@ -227,7 +227,7 @@ impl Editor {
             for c in chars {
                 // Log::ep("ccc", c);
                 self.buf[insert_s_y + i].insert(self.cur.x - self.rnw, c.clone());
-                self.cursor_right();
+                self.cur_right();
             }
         }
 
@@ -246,7 +246,7 @@ impl Editor {
         self.scroll_horizontal();
     }
 
-    pub fn ctl_home(&mut self) {
+    pub fn ctrl_home(&mut self) {
         Log::ep_s("ctl_home");
         self.updown_x = 0;
         self.set_cur_default();
@@ -254,7 +254,7 @@ impl Editor {
         self.scroll_horizontal();
     }
 
-    pub fn ctl_end(&mut self) {
+    pub fn ctrl_end(&mut self) {
         Log::ep_s("　　　　　　　　ctl_end");
         self.cur.y = self.buf.len() - 1;
         self.cur.x = self.buf[self.buf.len() - 1].len() - 1 + self.rnw;
@@ -420,7 +420,7 @@ impl Editor {
                     self.del_sel_range();
                     self.sel.clear();
                 } else {
-                    self.insert_str(&mut ep.str_vec.join(""));
+                    self.insert_str(&ep.str_vec.join(""));
                 }
 
                 // last cursor posi set
@@ -454,7 +454,7 @@ impl Editor {
                 DoType::Enter => self.enter(),
                 DoType::InsertChar => self.insert_char(ep.str_vec[0].chars().nth(0).unwrap_or(' ')),
                 DoType::Paste => {
-                    self.insert_str(&mut ep.str_vec[0]);
+                    self.insert_str(&ep.str_vec[0]);
                     self.undo_vec.push(ep);
                     self.sel.clear();
                 }
@@ -464,4 +464,10 @@ impl Editor {
             mbar.set_err(&LANG.lock().unwrap().no_operation_re_exec.to_string());
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
 }

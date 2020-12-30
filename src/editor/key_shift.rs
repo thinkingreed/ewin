@@ -16,7 +16,7 @@ impl Editor {
             self.sel.sx = self.cur.x - self.rnw;
             self.sel.s_disp_x = self.cur.disp_x;
         }
-        self.cursor_right();
+        self.cur_right();
         self.sel.ey = self.cur.y;
         self.sel.ex = self.cur.x - self.rnw;
         self.sel.e_disp_x = self.cur.disp_x;
@@ -53,7 +53,7 @@ impl Editor {
             self.sel.sx = self.cur.x - self.rnw;
             self.sel.s_disp_x = self.cur.disp_x;
         }
-        self.cursor_left();
+        self.cur_left();
 
         self.sel.ey = self.cur.y;
         self.sel.ex = self.cur.x - self.rnw;
@@ -87,7 +87,7 @@ impl Editor {
             self.sel.sx = self.cur.x - self.rnw;
             self.sel.s_disp_x = self.cur.disp_x;
         }
-        self.cursor_down();
+        self.cur_down();
         self.sel.ey = self.cur.y;
         self.sel.ex = self.cur.x - self.rnw;
         self.sel.e_disp_x = self.cur.disp_x;
@@ -130,7 +130,7 @@ impl Editor {
                 self.sel.s_disp_x = self.cur.disp_x - 1;
             }
         }
-        self.cursor_up();
+        self.cur_up();
         self.sel.ey = self.cur.y;
         self.sel.ex = self.cur.x - self.rnw;
         self.sel.e_disp_x = self.cur.disp_x;

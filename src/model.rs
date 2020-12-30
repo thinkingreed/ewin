@@ -265,15 +265,11 @@ impl fmt::Display for EvtProc {
     }
 }
 impl EvtProc {
-    pub fn new(do_type: DoType, editor: &Editor) -> Self {
+    pub fn new(do_type: DoType, cur: Cur, d_range: DRnage) -> Self {
         return EvtProc {
             do_type: do_type,
-            cur_s: Cur {
-                y: editor.cur.y,
-                x: editor.cur.x,
-                disp_x: editor.cur.disp_x,
-            },
-            d_range: editor.d_range,
+            cur_s: Cur { y: cur.y, x: cur.x, disp_x: cur.disp_x },
+            d_range: d_range,
             ..EvtProc::default()
         };
     }
@@ -537,10 +533,6 @@ impl Default for Editor {
             is_default_color: true,
         }
     }
-}
-pub trait CurMove {
-    fn cursor_right(&mut self);
-    fn cursor_left(&mut self);
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

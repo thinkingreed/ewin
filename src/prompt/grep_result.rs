@@ -1,5 +1,5 @@
 use crate::{def::*, global::*, model::*, util::*};
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 use std::path::Path;
 use std::process;
@@ -118,7 +118,7 @@ impl EvtAct {
             .unwrap();
     }
 
-    pub fn grep_result(term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar) -> EvtActType {
+    pub fn grep_result(term: &mut Terminal, editor: &mut Editor) -> EvtActType {
         match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 F(4) | Right | Left | Down | Up | Home | End => {
@@ -149,9 +149,6 @@ impl EvtAct {
                 }
                 _ => return EvtActType::Hold,
             },
-            Mouse(MouseEvent::ScrollUp(_, _, _)) => return EvtActType::Next,
-            Mouse(MouseEvent::ScrollDown(_, _, _)) => return EvtActType::Next,
-
             _ => return EvtActType::Hold,
         }
     }

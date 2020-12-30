@@ -72,11 +72,11 @@ impl Editor {
             },
         }
         self.path = Some(path.into());
-        self.rnw = self.buf.len().to_string().len();
         self.set_cur_default();
     }
 
     pub fn set_cur_default(&mut self) {
+        self.rnw = self.buf.len().to_string().len();
         self.cur = Cur { y: 0, x: self.rnw, disp_x: self.rnw + 1 };
         self.scroll();
         self.scroll_horizontal();
@@ -120,8 +120,6 @@ impl Editor {
         let sel_range = self.sel.get_range();
         let search_ranges = self.search.search_ranges.clone();
 
-        Log::ep("y_draw_e 222", y_draw_e);
-
         for i in y_draw_s..y_draw_e {
             Colors::set_rownum_color(str_vec);
             // 行番号の空白
@@ -142,12 +140,11 @@ impl Editor {
 
             if i == self.cur.y {
                 x_draw_s = self.x_offset;
-                Log::ep("x_draw_s", x_draw_s);
             }
             // 改行EOF対応
             if i < self.buf.len() {
-                Log::ep("i < self.buf.len() iii ", i);
                 let x_draw_e = self.buf[i].len();
+
                 for j in x_draw_s..x_draw_e {
                     // highlight
                     self.ctl_color(str_vec, sel_range, &search_ranges, i, j);
@@ -202,6 +199,6 @@ impl Editor {
 
     pub fn set_sel_del_d_range(&mut self) {
         let sel = self.sel.get_range();
-        self.d_range = DRnage { sy: sel.sy, ey: sel.ey, d_type: DType::After };
+        self.d_range = DRnage { sy: sel.sy, ey: sel.sy, d_type: DType::After };
     }
 }

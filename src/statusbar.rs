@@ -10,12 +10,11 @@ impl StatusBar {
     }
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
-        // Log::ep_s("　　　　　　　　StatusBar.draw");
+        Log::ep_s("　　　　　　　　StatusBar.draw");
 
         if self.disp_row_num == 0 {
             return;
         }
-
         let (filenm_w, cur_w) = self.get_areas_width(self.disp_col_num);
 
         let mut file_str = self.filenm.clone();
@@ -29,6 +28,8 @@ impl StatusBar {
         // 文字横幅と文字数の差分で調整
         let cur_s = self.get_cur_str(editor);
         let cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
+        Log::ep("self.disp_row_posi", self.disp_row_posi);
+
         let sber_str = format!(
             "{}{}{}{}{}{}",
             cursor::Goto(1, self.disp_row_posi as u16),

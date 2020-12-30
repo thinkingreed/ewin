@@ -3,10 +3,9 @@ use crate::{model::*, util::*};
 impl Editor {
     pub fn ctrl_mouse(&mut self, x: usize, y: usize, is_mouse_left_down: bool) {
         Log::ep_s("　　　　　　　  ctrl_mouse");
+        Log::ep("is_mouse_left_down", is_mouse_left_down);
+        Log::ep("self.sel", self.sel);
         if y >= self.disp_row_num || y >= self.buf.len() {
-            if is_mouse_left_down {
-                self.sel.clear();
-            }
             return;
         }
         self.cur.y = y;

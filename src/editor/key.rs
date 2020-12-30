@@ -3,28 +3,28 @@ use crossterm::event::{Event::*, KeyCode::*};
 use std::cmp::{max, min};
 
 impl Editor {
-    pub fn cursor_up(&mut self) {
+    pub fn cur_up(&mut self) {
         Log::ep_s("　　　　　　　 c_u start");
         if self.cur.y > 0 {
             self.cur.y -= 1;
 
-            self.cursor_updown_com();
+            self.cur_updown_com();
         }
         self.scroll();
         self.scroll_horizontal();
     }
-    pub fn cursor_down(&mut self) {
+    pub fn cur_down(&mut self) {
         Log::ep_s("　　　　　　　 c_d start");
         if self.cur.y + 1 < self.buf.len() {
             self.cur.y += 1;
 
-            self.cursor_updown_com();
+            self.cur_updown_com();
         }
         self.scroll();
         self.scroll_horizontal();
     }
 
-    pub fn cursor_updown_com(&mut self) {
+    pub fn cur_updown_com(&mut self) {
         if self.updown_x == 0 {
             self.updown_x = self.cur.disp_x;
         }
@@ -37,7 +37,7 @@ impl Editor {
         }
     }
 
-    pub fn cursor_left(&mut self) {
+    pub fn cur_left(&mut self) {
         Log::ep_s("　　　　　　　  c_l start");
         // 0, 0の位置の場合
         if self.cur.y == 0 && self.cur.x == self.rnw {
@@ -50,7 +50,7 @@ impl Editor {
             self.cur.disp_x = width + self.rnw + 1;
             self.d_range = DRnage::new(self.cur.y - 1, self.cur.y, DType::Target);
 
-            self.cursor_up();
+            self.cur_up();
         } else {
             self.cur.x = max(self.cur.x - 1, self.rnw);
             self.cur.disp_x -= get_cur_x_width(&self.buf[self.cur.y], self.cur.x - self.rnw);
@@ -60,11 +60,8 @@ impl Editor {
         self.scroll();
         self.scroll_horizontal();
     }
-    pub fn cursor_right(&mut self) {
+    pub fn cur_right(&mut self) {
         Log::ep_s("　　　　　　　  c_r start");
-        Log::ep("self.cur.y", self.cur.y);
-        Log::ep("self.cur.x", self.cur.x);
-        Log::ep("self.cur.disp_x", self.cur.disp_x);
 
         let mut is_end_of_line = false;
         if self.evt == RIGHT || self.evt == CTRL_V || self.evt == SHIFT_RIGHT {
@@ -80,8 +77,6 @@ impl Editor {
 
         // 行末(行末の空白対応で)
         if is_end_of_line {
-            Log::ep_s("End of line");
-
             // 最終行の行末
             if self.cur.y == self.buf.len() - 1 {
                 return;
@@ -90,20 +85,16 @@ impl Editor {
                 self.updown_x = self.rnw;
                 self.cur.disp_x = self.rnw + 1;
                 self.cur.x = self.rnw;
-                self.cursor_down();
+                self.cur_down();
             }
         } else {
-            Log::ep_s("Not end of line");
-
             let c = self.buf[self.cur.y][self.cur.x - self.rnw];
             if c == EOF {
-                Log::ep_s("return 111");
                 return;
             }
             // EOF
             if self.evt != SHIFT_RIGHT {
                 if c == NEW_LINE_MARK {
-                    Log::ep_s("return 222");
                     return;
                 }
             }
@@ -117,7 +108,7 @@ impl Editor {
         Log::ep_s("　　　　　　　  enter");
         let y_offset_org: usize = self.y_offset;
         let rnw_org = self.rnw;
-        let mut evt_proc = EvtProc::new(DoType::Enter, &self);
+        let mut evt_proc = EvtProc::new(DoType::Enter, self.cur, self.d_range);
 
         let rest: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.rnw..).collect();
         self.buf[self.cur.y].push(NEW_LINE_MARK);
@@ -130,7 +121,8 @@ impl Editor {
         self.scroll();
         self.scroll_horizontal();
 
-        Log::ep("y_offset_org == self.y_offset", y_offset_org == self.y_offset);
+        Log::ep("y_offset_org", y_offset_org);
+        Log::ep("y_offset", self.y_offset);
         Log::ep("rnw_org == self.rnw", rnw_org == self.rnw);
 
         if y_offset_org == self.y_offset && rnw_org == self.rnw && !self.sel.is_selected() {
@@ -148,8 +140,8 @@ impl Editor {
     pub fn insert_char(&mut self, c: char) {
         self.buf[self.cur.y].insert(self.cur.x - self.rnw, c);
 
-        let mut ep = EvtProc::new(DoType::InsertChar, &self);
-        self.cursor_right();
+        let mut ep = EvtProc::new(DoType::InsertChar, self.cur, self.d_range);
+        self.cur_right();
         ep.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
         if self.sel.is_selected() {
             self.d_range.d_type = DType::All;
@@ -169,25 +161,24 @@ impl Editor {
             self.del_sel_range();
             self.sel.clear();
         } else {
-            // 0,0の位置の場合
+            // For the starting point
             if self.cur.y == 0 && self.cur.x == self.rnw {
                 self.d_range.d_type = DType::Not;
                 return;
             }
-            self.d_range = DRnage::new(self.cur.y, self.cur.y, DType::Target);
 
-            let mut ep = EvtProc::new(DoType::BS, &self);
+            let mut ep = EvtProc::new(DoType::BS, self.cur, self.d_range);
 
+            // beginning of the line
             if self.cur.x == self.rnw {
                 let rnw_org = self.rnw;
 
-                self.d_range.d_type = DType::After;
-                self.d_range.sy -= 1;
+                self.d_range = DRnage::new(self.cur.y - 1, self.cur.y - 1, DType::After);
 
-                // 行の先頭
                 let line = self.buf.remove(self.cur.y);
                 self.cur.y -= 1;
-                // del line feed code
+
+                // del new line code
                 let len = self.buf[self.cur.y].len();
                 self.buf[self.cur.y].remove(len - 1);
                 self.cur.x = self.buf[self.cur.y].len() + self.rnw;
@@ -198,14 +189,16 @@ impl Editor {
                 self.buf[self.cur.y].extend(line.into_iter());
                 self.rnw = self.buf.len().to_string().len();
 
-                // 行番号の桁数が減った場合
+                // When the number of digits in the line number decreases
                 if rnw_org != self.rnw {
                     self.cur.x -= 1;
                     self.cur.disp_x -= 1;
                     self.d_range.d_type = DType::All;
                 }
             } else {
-                self.cursor_left();
+                self.d_range = DRnage::new(self.cur.y, self.cur.y, DType::Target);
+
+                self.cur_left();
                 if let Some(c) = self.buf[self.cur.y].get(self.cur.x - self.rnw) {
                     ep.str_vec = vec![c.to_string()];
                 };
@@ -282,7 +275,7 @@ impl Editor {
 
     pub fn page_down(&mut self) {
         self.cur.y = min(self.cur.y + self.disp_row_num, self.buf.len() - 1);
-        self.cursor_updown_com();
+        self.cur_updown_com();
         self.scroll();
     }
     pub fn page_up(&mut self) {
@@ -291,7 +284,109 @@ impl Editor {
         } else {
             self.cur.y = 0
         }
-        self.cursor_updown_com();
+        self.cur_updown_com();
         self.scroll();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    pub fn test_insert_char() {
+        let mut e = Editor::default();
+        let mut mbar = MsgBar::new();
+
+        e.init_ut_editor();
+
+        // first char
+        e.insert_char('A');
+        assert_eq!(e.get_buf_str(), format!("{}{}", "A", EOF));
+        assert_eq!(e.cur, Cur { y: 0, x: e.rnw + 1, disp_x: e.rnw + 1 + 1 });
+        assert_eq!(e.d_range, DRnage::new(e.cur.y, e.cur.y, DType::Target));
+        e.undo(&mut mbar);
+        assert_eq!(e.get_buf_str(), EOF.to_string());
+
+        // second char
+        e.insert_char('B');
+        assert_eq!(e.get_buf_str(), format!("{}{}", "AB", EOF));
+        // println!(" multi char {:?}", e.get_buf_str());
+        assert_eq!(e.cur, Cur { y: 0, x: e.rnw + 2, disp_x: e.rnw + 1 + 2 });
+        assert_eq!(e.d_range, DRnage::new(e.cur.y, e.cur.y, DType::Target));
+    }
+    #[test]
+    fn test_enter() {
+        let mut e = Editor::default();
+        e.init_ut_editor();
+        e.enter();
+        // println!(" enter {:?}", e.get_buf_str());
+        assert_eq!(e.get_buf_str(), format!("{}{}", NEW_LINE_MARK, EOF));
+        assert_eq!(e.cur, Cur { y: 1, x: e.rnw, disp_x: e.rnw + 1 });
+        assert_eq!(e.d_range, DRnage::new(e.cur.y - 1, e.cur.y, DType::After));
+
+        e.insert_char('A');
+        e.enter();
+        assert_eq!(e.get_buf_str(), format!("{}{}{}{}", NEW_LINE_MARK, "A", NEW_LINE_MARK, EOF));
+        assert_eq!(e.cur, Cur { y: 2, x: e.rnw, disp_x: e.rnw + 1 });
+        assert_eq!(e.d_range, DRnage::new(e.cur.y - 1, e.cur.y, DType::After));
+    }
+
+    #[test]
+    fn test_back_space() {
+        let mut e = Editor::default();
+        // normal
+        e.init_ut_editor();
+        e.insert_char('A');
+        e.back_space();
+        assert_eq!(e.get_buf_str(), format!("{}", EOF));
+        assert_eq!(e.cur, Cur { y: 0, x: e.rnw, disp_x: e.rnw + 1 });
+        assert_eq!(e.d_range, DRnage::new(e.cur.y, e.cur.y, DType::Target));
+
+        e.init_ut_editor();
+        e.enter();
+        e.back_space();
+        assert_eq!(e.get_buf_str(), format!("{}", EOF));
+        assert_eq!(e.cur, Cur { y: 0, x: e.rnw, disp_x: e.rnw + 1 });
+        assert_eq!(e.d_range, DRnage::new(e.cur.y, e.cur.y, DType::After));
+
+        // sel range  one line no newline
+        e.init_ut_editor();
+        e.insert_char('A');
+        e.shift_left();
+        e.back_space();
+        assert_eq!(e.get_buf_str(), format!("{}", EOF));
+        assert_eq!(e.cur, Cur { y: 0, x: e.rnw, disp_x: e.rnw + 1 });
+        assert_eq!(e.d_range, DRnage::new(e.sel.sy, e.sel.sy, DType::After));
+
+        // sel range  one line with newline
+        e.init_ut_editor();
+        e.insert_char('A');
+        e.enter();
+        e.ctrl_home();
+        e.shift_right();
+        e.evt = SHIFT_RIGHT;
+        e.shift_right();
+        // println!(" sel range  one line with newline {:?}", e.get_buf_str());
+        e.back_space();
+        // println!(" sel range  one line with newline {:?}", e.get_buf_str());
+        assert_eq!(e.get_buf_str(), format!("{}", EOF));
+        assert_eq!(e.cur, Cur { y: 0, x: e.rnw, disp_x: e.rnw + 1 });
+        assert_eq!(e.d_range, DRnage::new(e.sel.sy, e.sel.sy, DType::After));
+
+        // sel range  multi line
+        e.init_ut_editor();
+        e.insert_str("AB");
+        e.enter();
+        e.insert_str("CD");
+        // println!("sel range  multi line {:?}", e.get_buf_str());
+        e.ctrl_home();
+        e.cur_right();
+        e.shift_down();
+        e.back_space();
+        // println!("sel range  multi line {:?}", e.get_buf_str());
+        assert_eq!(e.get_buf_str(), format!("{}{}", "AD", EOF));
+        assert_eq!(e.cur, Cur { y: 0, x: e.rnw + 1, disp_x: e.rnw + 1 + 1 });
+        assert_eq!(e.d_range, DRnage::new(e.sel.sy, e.sel.sy, DType::After));
     }
 }

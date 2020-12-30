@@ -11,6 +11,7 @@ It provides basic features as a minimal text editor:
 - Edit a text (put/delete characters, insert/delete lines, ...)
 - Support editing UTF-8 characters
 - Resizing terminal window supported. Screen size is responsible
+- Mouse support
 
 ## Installation
 

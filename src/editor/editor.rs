@@ -1,5 +1,5 @@
 use crate::{def::*, model::*, util::*};
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use std::cmp::{max, min};
 use std::io::Write;
 use unicode_width::UnicodeWidthChar;
@@ -27,7 +27,7 @@ impl Editor {
 
     // adjusting horizontal posi of cursor
     pub fn scroll_horizontal(&mut self) {
-        Log::ep_s("　　　　　　　 scroll_horizontal");
+        // Log::ep_s("　　　　　　　 scroll_horizontal");
 
         // offset_x切替余分文字数(残文字数時にoffset切替)
         let offset_x_extra_num = 3;
@@ -36,7 +36,7 @@ impl Editor {
 
         let x_offset_org = self.x_offset;
 
-        Log::ep("self.x_offset 111", self.x_offset);
+        // Log::ep("self.x_offset 111", self.x_offset);
 
         // Up・Down
         if self.rnw == self.cur.x {
@@ -50,16 +50,13 @@ impl Editor {
 
         // Right移動
         if self.x_offset_disp + self.disp_col_num < self.cur.disp_x + offset_x_extra_num {
-            Log::ep_s(" self.cur.x - self.x_offset + extra > self.disp_col_num ");
-            Log::ep(" self.disp_col_num ", self.disp_col_num);
-            Log::ep(" self.buf[self.cur.y].len() ", self.buf[self.cur.y].len());
-            Log::ep(" self.x_offset_disp ", self.x_offset_disp);
+            // Log::ep_s(" self.cur.x - self.x_offset + extra > self.disp_col_num ");
             //  if self.x_offset + self.disp_col_num - self.rnw < self.buf[self.cur.y].len() {
             self.x_offset += offset_x_change_num;
         //  }
         // Left移動
         } else if self.cur.disp_x - 1 >= self.rnw + offset_x_extra_num && self.x_offset_disp >= self.cur.disp_x - 1 - self.rnw - offset_x_extra_num {
-            Log::ep_s(" self.x_offset + self.rnw + extra > self.cur.x ");
+            // Log::ep_s(" self.x_offset + self.rnw + extra > self.cur.x ");
             if self.x_offset >= offset_x_change_num {
                 self.x_offset -= offset_x_change_num;
             } else {
@@ -70,7 +67,7 @@ impl Editor {
         if self.rnw != self.cur.x {
             let vec = &self.buf[self.cur.y];
             if self.cur_y_org != self.cur.y {
-                Log::ep_s(" self.cur_y_org != self.cur.y ");
+                // Log::ep_s(" self.cur_y_org != self.cur.y ");
 
                 let (_, width) = get_row_width(vec, 0, self.x_offset, false);
                 self.x_offset_disp = width;
@@ -78,18 +75,18 @@ impl Editor {
             // offsetに差分
             } else if x_offset_org != self.x_offset {
                 if self.x_offset < x_offset_org {
-                    Log::ep_s(" self.x_offset < x_offset_org  ");
+                    // Log::ep_s(" self.x_offset < x_offset_org  ");
                     let (_, width) = get_row_width(vec, self.x_offset, x_offset_org, false);
                     self.x_offset_disp -= width;
                 } else {
-                    Log::ep_s("elseelseelse self.x_offset < x_offset_org  ");
+                    // Log::ep_s("else self.x_offset < x_offset_org  ");
 
                     let (_, width) = get_row_width(vec, x_offset_org, self.x_offset, false);
                     self.x_offset_disp += width;
                 }
             }
         }
-        Log::ep("self.x_offset 222", self.x_offset);
+        // Log::ep("self.x_offset 222", self.x_offset);
     }
 
     /// カーソル移動のEventでoffsetの変更有無で再描画範囲を設定設定
@@ -99,8 +96,8 @@ impl Editor {
         self.cur_y_org = self.cur.y;
         match self.evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                Home => self.ctl_home(),
-                End => self.ctl_end(),
+                Home => self.ctrl_home(),
+                End => self.ctrl_end(),
                 _ => {}
             },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
@@ -108,17 +105,17 @@ impl Editor {
                 _ => {}
             },
             Key(KeyEvent { code, .. }) => match code {
-                Up => self.cursor_up(),
-                Down => self.cursor_down(),
-                Left => self.cursor_left(),
-                Right => self.cursor_right(),
+                Up => self.cur_up(),
+                Down => self.cur_down(),
+                Left => self.cur_left(),
+                Right => self.cur_right(),
                 Home => self.home(),
                 End => self.end(),
                 F(3) => self.search_str(true),
                 _ => {}
             },
-            Mouse(MouseEvent::ScrollUp(_, _, _)) => self.cursor_up(),
-            Mouse(MouseEvent::ScrollDown(_, _, _)) => self.cursor_down(),
+            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => self.cur_up(),
+            Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => self.cur_down(),
             _ => {}
         }
 
@@ -209,5 +206,21 @@ impl Editor {
         Log::ep_s("　　　　　　　  del_end_of_line_new_line");
         let mut bottom_line: Vec<char> = self.buf.remove(remove_y);
         self.buf[remove_y - 1].append(&mut bottom_line);
+    }
+
+    pub fn get_buf_str(&mut self) -> String {
+        let mut s = String::new();
+        for vec in &self.buf {
+            s.push_str(&vec.iter().collect::<String>());
+        }
+        return s;
+    }
+
+    pub fn init_ut_editor(&mut self) {
+        self.buf = vec![vec![]];
+        self.buf[0] = vec![EOF];
+        self.disp_row_num = 5;
+        self.set_cur_default();
+        self.d_range = DRnage::default();
     }
 }
