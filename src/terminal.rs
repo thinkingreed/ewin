@@ -1,4 +1,4 @@
-use crate::{_cfg::lang::cfg::LangCfg, model::*};
+use crate::{_cfg::lang::cfg::LangCfg, def::*, model::*};
 use anyhow::Context;
 use std::io::{self, Read, Write};
 use std::path::Path;
@@ -67,7 +67,7 @@ impl Terminal {
 
     pub fn set_disp_size(&mut self, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
         let (cols, rows) = termion::terminal_size().unwrap();
-        let (cols, rows) = (cols as usize, rows as usize + 1);
+        let (cols, rows) = (cols as usize, rows as usize);
 
         Log::ep("rows", rows);
         Log::ep("cols", cols);
@@ -166,5 +166,39 @@ impl Terminal {
                 Log::ep("startup_terminal err", err.to_string());
             }
         };
+    }
+}
+impl UT {
+    pub fn init_ut() -> (Editor, MsgBar) {
+        let mut e = Editor::default();
+        e.buf = vec![vec![]];
+        e.buf[0] = vec![EOF];
+        e.disp_row_num = 5;
+        e.set_cur_default();
+        e.d_range = DRnage::default();
+
+        let mbar = MsgBar::new();
+
+        return (e, mbar);
+    }
+
+    pub fn insert_str(e: &mut Editor, str: &str) {
+        for c in str.chars() {
+            e.insert_char(c);
+        }
+    }
+    pub fn undo_all(e: &mut Editor, mbar: &mut MsgBar) {
+        let vec = e.undo_vec.clone();
+        for evt_proc in vec.iter().rev() {
+            Log::ep("undo_all.evt_proc.do_type", evt_proc.do_type);
+            e.undo(mbar);
+        }
+    }
+    pub fn get_buf_str(e: &mut Editor) -> String {
+        let mut s = String::new();
+        for vec in &e.buf {
+            s.push_str(&vec.iter().collect::<String>());
+        }
+        return s;
     }
 }

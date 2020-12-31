@@ -12,7 +12,7 @@ impl Editor {
                 Log::ep("                 yyyyyyyyyyyyyyy", y);
         */
         if sel_ranges.sy <= y && y <= sel_ranges.ey {
-            let (_, width) = get_row_width(&self.buf[y], 0, x, true);
+            let (_, width) = get_row_width(&self.t_buf.char_vec(y), 0, x, true);
 
             let disp_x = width + self.rnw + 1;
             // Log::ep("buf[y][cur_x]", self.buf[y][cur_x]);
@@ -82,10 +82,12 @@ impl Editor {
     }
 
     pub fn ctl_new_line_mark_color(&mut self, str_vec: &mut Vec<String>, y: usize, x: usize) {
-        if self.buf[y].len() == 0 {
+        // eprintln!("self.t_buf {:?}", self.t_buf);
+        let line_len = self.t_buf.line_len(y);
+        if line_len == 0 {
             return;
         }
-        if self.buf[y].len() - 1 == x && self.buf[y][x] == NEW_LINE_MARK {
+        if line_len - 1 == x && self.t_buf.char(y, x) == NEW_LINE {
             // Log::ep_s("NEW_LINE_MARK NEW_LINE_MARK NEW_LINE_MARK");
             Colors::set_new_line_color(str_vec);
             self.is_default_color = false;

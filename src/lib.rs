@@ -10,7 +10,12 @@ pub mod global {
 pub mod colors;
 pub mod def;
 pub mod evt_act_prom;
+
 pub mod editor {
+    pub mod rope {
+        pub mod model;
+        pub mod rope_util;
+    }
     pub mod clipboard;
     pub mod color;
     pub mod draw;
@@ -20,6 +25,7 @@ pub mod editor {
     pub mod key_ctrl;
     pub mod key_shift;
     pub mod mouse;
+    pub mod rope_util;
 }
 pub mod model;
 pub mod prompt {

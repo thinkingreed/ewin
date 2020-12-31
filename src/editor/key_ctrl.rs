@@ -79,9 +79,10 @@ impl Editor {
                                 line_str = line_str.replace(EOF, "");
                                 write!(file, "{}", line_str).unwrap();
                             } else {
+                                /*
                                 if &line_str.chars().last().unwrap_or(' ') == &NEW_LINE_MARK {
                                     line_str = line_str.chars().take(line_str.chars().count() - 1).collect::<String>();
-                                }
+                                }*/
                                 writeln!(file, "{}", line_str).unwrap();
                             }
                         }
@@ -115,7 +116,7 @@ impl Editor {
             copy_string = self.get_wsl_str(sel_vec);
         } else {
             copy_string = sel_vec.join("");
-            copy_string = copy_string.replace(NEW_LINE_MARK, NEW_LINE.to_string().as_str());
+            // copy_string = copy_string.replace(NEW_LINE_MARK, NEW_LINE.to_string().as_str());
         }
 
         Log::ep("copy_string", copy_string.clone());
@@ -135,14 +136,14 @@ impl Editor {
         for (i, s) in sel_vec.iter().enumerate() {
             let mut str = format!("'{}'", s);
             if i == sel_vec.len() - 1 {
-                if s.chars().last().unwrap_or(' ') == NEW_LINE_MARK {
+                if s.chars().last().unwrap_or(' ') == NEW_LINE {
                     str.push_str(",");
                     str.push_str("''");
                 }
             } else {
                 str.push_str(",");
             }
-            str = str.replace(NEW_LINE_MARK, "");
+            str = str.replace(NEW_LINE, "");
             copy_str.push_str(&str);
         }
 
@@ -156,7 +157,7 @@ impl Editor {
         let cur_y_org = self.cur.y;
         let rnw_org = self.rnw;
 
-        let mut contexts = self.get_clipboard(&term).unwrap_or("".to_string());
+        let contexts = self.get_clipboard(&term).unwrap_or("".to_string());
 
         if contexts.len() == 0 {
             return;
@@ -181,7 +182,7 @@ impl Editor {
         self.undo_vec.push(ep);
 
         // d_range
-        if contexts.match_indices(NEW_LINE_MARK).count() == 0 {
+        if contexts.match_indices(NEW_LINE).count() == 0 {
             self.d_range = DRnage { sy: cur_y_org, ey: self.cur.y, d_type: DType::Target };
         } else {
             if y_offset_org != self.y_offset || rnw_org != self.rnw {
@@ -196,8 +197,8 @@ impl Editor {
         Log::ep_s("        insert_str");
 
         Log::ep("contexts", str.clone());
-        let str = str.replace(NEW_LINE, NEW_LINE_MARK.to_string().as_str());
-        let insert_strs: Vec<String> = split_inclusive(&str, NEW_LINE_MARK);
+        // let str = str.replace(NEW_LINE, NEW_LINE_MARK.to_string().as_str());
+        let insert_strs: Vec<String> = split_inclusive(&str, NEW_LINE);
         let insert_s_y = self.cur.y;
 
         // rnw increase
@@ -234,7 +235,7 @@ impl Editor {
         // cursor posi adjustment
         if insert_strs.len() > 1 {
             let last_line_str = insert_strs.get(insert_strs.len() - 1).unwrap().to_string();
-            if last_line_str.chars().last().unwrap_or(' ') == NEW_LINE_MARK {
+            if last_line_str.chars().last().unwrap_or(' ') == NEW_LINE {
                 self.cur.x = self.rnw;
                 self.cur.disp_x = 1 + self.rnw;
             } else {
@@ -256,9 +257,9 @@ impl Editor {
 
     pub fn ctrl_end(&mut self) {
         Log::ep_s("　　　　　　　　ctl_end");
-        self.cur.y = self.buf.len() - 1;
-        self.cur.x = self.buf[self.buf.len() - 1].len() - 1 + self.rnw;
-        let (_, width) = get_row_width(&self.buf[self.buf.len() - 1], 0, self.buf[self.buf.len() - 1].len(), false);
+        self.cur.y = self.t_buf.len() - 1;
+        self.cur.x = self.t_buf.line_len(self.cur.y) - 1 + self.rnw;
+        let (_, width) = get_row_width(&self.t_buf.char_vec(self.cur.y), 0, self.t_buf.line_len(self.cur.y), false);
         self.cur.disp_x = width + self.rnw + 1;
         if self.updown_x == 0 {
             self.updown_x = self.cur.disp_x;
@@ -310,7 +311,8 @@ impl Editor {
     pub fn get_search_ranges(&mut self, search_str: String) -> Vec<SearchRange> {
         let mut vec = vec![];
 
-        for (i, chars) in self.buf.iter().enumerate() {
+        let iter = self.buf.iter().enumerate();
+        for (i, chars) in iter {
             let row_str = chars.iter().collect::<String>();
             let v: Vec<(usize, &str)> = row_str.match_indices(&search_str).collect();
             if v.len() == 0 {
@@ -382,7 +384,7 @@ impl Editor {
     pub fn undo(&mut self, mbar: &mut MsgBar) {
         Log::ep_s("　　　　　　　　undo");
         if let Some(ep) = self.undo_vec.pop() {
-            Log::ep("EvtProc", ep.clone());
+            // Log::ep("EvtProc", ep.clone());
             self.is_undo = true;
             if ep.str_vec.len() == 0 {
                 // 行末でDelete
@@ -443,7 +445,7 @@ impl Editor {
 
     pub fn redo(&mut self, term: &Terminal, mbar: &mut MsgBar) {
         Log::ep_s("　　　　　　　　redo");
-        if let Some(mut ep) = self.redo_vec.pop() {
+        if let Some(ep) = self.redo_vec.pop() {
             self.set_evtproc(&ep, ep.cur_s);
             self.sel = ep.sel;
 
@@ -467,7 +469,4 @@ impl Editor {
 }
 
 #[cfg(test)]
-mod tests {
-
-    use super::*;
-}
+mod tests {}

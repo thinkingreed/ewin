@@ -1,7 +1,4 @@
-use crate::{
-    def::{EOF, NEW_LINE_MARK},
-    model::*,
-};
+use crate::{def::*, model::*};
 use unicode_width::UnicodeWidthChar;
 
 pub fn get_str_width(msg: &str) -> usize {
@@ -17,8 +14,8 @@ pub fn get_row_width(vec: &Vec<char>, sx: usize, ex: usize, is_ctrlchar_include:
     for i in sx..ex {
         if let Some(c) = vec.get(i) {
             // Log::ep("ccccc", c);
-            if c == &EOF || c == &NEW_LINE_MARK {
-                if is_ctrlchar_include && c == &NEW_LINE_MARK {
+            if c == &EOF || c == &NEW_LINE || c == &NEW_LINE_CR {
+                if is_ctrlchar_include && (c == &NEW_LINE || c == &NEW_LINE_CR) {
                     width += 1;
                     cur_x += 1;
                 }
@@ -42,7 +39,7 @@ pub fn get_until_updown_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
     for i in 0..buf.len() + 1 {
         if let Some(c) = buf.get(i) {
-            if c == &EOF || c == &NEW_LINE_MARK {
+            if c == &EOF || c == &NEW_LINE {
                 width += 1;
                 // cur_x += 1;
                 break;
@@ -71,7 +68,7 @@ pub fn get_until_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
     let (mut cur_x, mut sum_width) = (0, 0);
     for i in 0..buf.len() + 1 {
         if let Some(c) = buf.get(i) {
-            if c == &NEW_LINE_MARK || c == &EOF {
+            if c == &NEW_LINE || c == &EOF {
                 break;
             }
             let width = c.width().unwrap_or(0);

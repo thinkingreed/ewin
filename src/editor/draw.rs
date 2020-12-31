@@ -1,8 +1,7 @@
-use crate::{def::*, global::*, model::*};
+use crate::{def::*, global::*, model::*, util::*};
 use permissions::*;
 use std::cmp::min;
 use std::env;
-use std::fs;
 use std::io::{ErrorKind, Write};
 use std::path;
 use termion::{clear, cursor};
@@ -29,54 +28,32 @@ impl Editor {
             }
         }
         // read
-        let result = fs::read_to_string(path);
+        let result = TextBuffer::from_path(&path.to_string_lossy().to_string());
         match result {
-            Ok(mut s) => {
-                s = s.replace(NEW_LINE_CRLF, NEW_LINE.to_string().as_str());
-                let (mut buf, mut vec) = (vec![], vec![]);
-                let (chars, chars_len) = (s.chars(), s.chars().count());
-                for (i, mut c) in chars.enumerate() {
-                    if c == NEW_LINE {
-                        c = NEW_LINE_MARK;
-                    }
-                    vec.push(c);
-
-                    if c == NEW_LINE_MARK || i == chars_len - 1 {
-                        if c == NEW_LINE_MARK && i == chars_len - 1 {
-                            buf.push(vec);
-                            buf.push(vec![EOF]);
-                            break;
-                        } else if i == chars_len - 1 {
-                            vec.push(EOF);
-                        }
-                        buf.push(vec);
-                        vec = vec![];
-                    }
-                }
-                if buf.is_empty() {
-                    self.buf[0] = vec![EOF];
-                } else {
-                    self.buf = buf;
-                }
+            Ok(t_buf) => {
+                // rope_util::search_and_replace(&mut t_buf.text, NEW_LINE_CRLF, NEW_LINE.to_string().as_str());
+                self.t_buf = t_buf;
+                self.t_buf.text.insert_char(self.t_buf.text.len_chars(), EOF);
             }
             Err(err) => match err.kind() {
                 ErrorKind::PermissionDenied => {
                     println!("{}", LANG.lock().unwrap().no_read_permission.clone());
                     std::process::exit(1);
                 }
-                ErrorKind::NotFound => self.buf[0] = vec![EOF],
+                ErrorKind::NotFound => self.t_buf.text.insert_char(self.t_buf.text.len_chars(), EOF),
                 _ => {
                     println!("{} {:?}", LANG.lock().unwrap().file_opening_problem, err);
                     std::process::exit(1);
                 }
             },
         }
+
         self.path = Some(path.into());
         self.set_cur_default();
     }
 
     pub fn set_cur_default(&mut self) {
-        self.rnw = self.buf.len().to_string().len();
+        self.rnw = self.t_buf.len().to_string().len();
         self.cur = Cur { y: 0, x: self.rnw, disp_x: self.rnw + 1 };
         self.scroll();
         self.scroll_horizontal();
@@ -86,9 +63,10 @@ impl Editor {
         let (rows, cols) = (self.disp_row_num, self.disp_col_num);
         Log::ep("rows", rows);
         Log::ep("cols", cols);
+        // eprintln!("self.t_buf {:?}", self.t_buf);
 
         let mut y_draw_s = self.y_offset;
-        let mut y_draw_e = min(self.buf.len(), self.y_offset + min(self.disp_row_num, self.buf.len()));
+        let mut y_draw_e = min(self.t_buf.lines().len(), self.y_offset + min(self.disp_row_num, self.t_buf.lines().len()));
 
         let d_range = self.d_range.get_range();
         Log::ep("d_range", d_range);
@@ -116,7 +94,7 @@ impl Editor {
         let mut y = 0;
         let mut x = 0;
         // let rowlen =
-        self.rnw = self.buf.len().to_string().len();
+        self.rnw = self.t_buf.lines().len().to_string().len();
         let sel_range = self.sel.get_range();
         let search_ranges = self.search.search_ranges.clone();
 
@@ -142,27 +120,29 @@ impl Editor {
                 x_draw_s = self.x_offset;
             }
             // 改行EOF対応
-            if i < self.buf.len() {
-                let x_draw_e = self.buf[i].len();
+            if i < self.t_buf.lines().len() {
+                let x_draw_e = self.t_buf.line_len(i);
 
                 for j in x_draw_s..x_draw_e {
                     // highlight
                     self.ctl_color(str_vec, sel_range, &search_ranges, i, j);
 
-                    if let Some(c) = self.buf[i].get(j) {
-                        let width = c.width().unwrap_or(0);
-                        let x_w_l = x + width + self.rnw;
-                        // Log::ep("x_w_l", x_w_l);
-                        if x_w_l > cols {
-                            break;
-                        }
-                        x += width;
+                    let c = self.t_buf.char(i, j);
+                    let width = c.width().unwrap_or(0);
+                    let x_w_l = x + width + self.rnw;
+                    // Log::ep("x_w_l", x_w_l);
+                    if x_w_l > cols {
+                        break;
+                    }
+                    x += width;
 
-                        if c == &EOF {
-                            self.set_eof(str_vec);
-                        } else {
-                            str_vec.push(c.to_string());
-                        }
+                    if c == EOF {
+                        self.set_eof(str_vec);
+                    } else if c == NEW_LINE_CR && j == self.t_buf.line_len(i) - 2 {
+                    } else if c == NEW_LINE {
+                        str_vec.push(NEW_LINE_MARK.to_string());
+                    } else {
+                        str_vec.push(c.to_string());
                     }
                 }
             }
@@ -172,7 +152,7 @@ impl Editor {
             if y >= rows {
                 break;
             } else {
-                str_vec.push("\r\n".to_string());
+                str_vec.push(NEW_LINE_CRLF.to_string());
             }
         }
 
