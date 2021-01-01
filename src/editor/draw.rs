@@ -1,4 +1,4 @@
-use crate::{def::*, global::*, model::*, util::*};
+use crate::{def::*, global::*, model::*};
 use permissions::*;
 use std::cmp::min;
 use std::env;
@@ -31,16 +31,16 @@ impl Editor {
         let result = TextBuffer::from_path(&path.to_string_lossy().to_string());
         match result {
             Ok(t_buf) => {
-                // rope_util::search_and_replace(&mut t_buf.text, NEW_LINE_CRLF, NEW_LINE.to_string().as_str());
+                // search_and_replace(&mut t_buf.text, NEW_LINE_CRLF, NEW_LINE_CR.to_string().as_str());
                 self.t_buf = t_buf;
-                self.t_buf.text.insert_char(self.t_buf.text.len_chars(), EOF);
+                self.t_buf.text.insert_char(self.t_buf.text.len_chars(), EOF_MARK);
             }
             Err(err) => match err.kind() {
                 ErrorKind::PermissionDenied => {
                     println!("{}", LANG.lock().unwrap().no_read_permission.clone());
                     std::process::exit(1);
                 }
-                ErrorKind::NotFound => self.t_buf.text.insert_char(self.t_buf.text.len_chars(), EOF),
+                ErrorKind::NotFound => self.t_buf.text.insert_char(self.t_buf.text.len_chars(), EOF_MARK),
                 _ => {
                     println!("{} {:?}", LANG.lock().unwrap().file_opening_problem, err);
                     std::process::exit(1);
@@ -136,9 +136,9 @@ impl Editor {
                     }
                     x += width;
 
-                    if c == EOF {
+                    if c == EOF_MARK {
                         self.set_eof(str_vec);
-                    } else if c == NEW_LINE_CR && j == self.t_buf.line_len(i) - 2 {
+                    } else if c == NEW_LINE_CR {
                     } else if c == NEW_LINE {
                         str_vec.push(NEW_LINE_MARK.to_string());
                     } else {
@@ -179,6 +179,6 @@ impl Editor {
 
     pub fn set_sel_del_d_range(&mut self) {
         let sel = self.sel.get_range();
-        self.d_range = DRnage { sy: sel.sy, ey: sel.sy, d_type: DType::After };
+        self.d_range = DRnage { sy: sel.sy, ey: sel.sy, d_type: DType::All };
     }
 }

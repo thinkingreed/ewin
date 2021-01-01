@@ -218,8 +218,10 @@ impl EvtAct {
         }
 
         // 検索後に検索対象文字の変更対応で、再検索
+        /*
         if editor.search.str.len() > 0 {
-            editor.search.search_ranges = editor.get_search_ranges(editor.search.str.clone());
+            editor.search.search_ranges = editor.get_search_ranges(&editor.search.str).clone();
         }
+        */
     }
 }

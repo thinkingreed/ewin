@@ -8,10 +8,10 @@ impl Editor {
     pub fn all_select(&mut self) {
         self.sel.clear();
         self.sel.sy = 0;
-        self.sel.ey = self.buf.len() - 1;
+        self.sel.ey = self.t_buf.len() - 1;
         self.sel.sx = 0;
         self.sel.s_disp_x = self.rnw + 1;
-        let (cur_x, width) = get_row_width(&self.buf[self.sel.ey], 0, self.buf[self.sel.ey].len(), false);
+        let (cur_x, width) = get_row_width(&self.t_buf.char_vec(self.sel.ey)[..], false);
         self.sel.ex = cur_x;
         // +1 for EOF
         self.sel.e_disp_x = width + self.rnw + 1;
@@ -76,7 +76,7 @@ impl Editor {
                         for (i, line) in self.buf.iter().enumerate() {
                             let mut line_str: String = line.iter().collect();
                             if i == self.buf.len() - 1 {
-                                line_str = line_str.replace(EOF, "");
+                                line_str = line_str.replace(EOF_MARK, "");
                                 write!(file, "{}", line_str).unwrap();
                             } else {
                                 /*
@@ -108,16 +108,12 @@ impl Editor {
             return;
         }
 
-        let mut copy_string;
         Log::ep("self.sel", self.sel);
-        let sel_vec = get_sel_range_str(&mut self.buf, &mut self.sel);
-
-        if term.env == Env::WSL {
-            copy_string = self.get_wsl_str(sel_vec);
-        } else {
-            copy_string = sel_vec.join("");
-            // copy_string = copy_string.replace(NEW_LINE_MARK, NEW_LINE.to_string().as_str());
-        }
+        let mut str = self.get_sel_range_str_ex();
+        let copy_string = match term.env {
+            Env::WSL => self.get_wsl_str_ex(&mut str),
+            _ => str,
+        };
 
         Log::ep("copy_string", copy_string.clone());
         self.set_clipboard(&copy_string, &term);
@@ -129,7 +125,26 @@ impl Editor {
         };
     }
 
-    // WSL:powershell.clipboard対応で"’"で文字列を囲み、改行は","
+    // WSL:powershell.clipboard対応で"’"で文字列を囲み、改行は","、","の連続時は空文字
+    fn get_wsl_str_ex(&mut self, str: &mut String) -> String {
+        let mut copy_str: String = String::new();
+        let mut str = str.replace(NEW_LINE_CRLF, ",").replace(NEW_LINE, ",");
+        let vec = split_inclusive(&mut str, ',');
+        for mut s in vec {
+            if s == "," {
+                s = "'',".to_string();
+            }
+            copy_str.push_str(&s);
+        }
+
+        if copy_str.chars().last().unwrap_or(' ') == ',' {
+            copy_str.push_str("''");
+        }
+
+        Log::ep("copy_str", copy_str.clone());
+        copy_str
+    }
+    /*
     fn get_wsl_str(&mut self, sel_vec: Vec<String>) -> String {
         let mut copy_str: String = String::new();
 
@@ -148,7 +163,7 @@ impl Editor {
         }
 
         return copy_str;
-    }
+    }*/
 
     pub fn paste(&mut self, term: &Terminal) {
         Log::ep_s("　　　　　　　  paste");
@@ -259,7 +274,7 @@ impl Editor {
         Log::ep_s("　　　　　　　　ctl_end");
         self.cur.y = self.t_buf.len() - 1;
         self.cur.x = self.t_buf.line_len(self.cur.y) - 1 + self.rnw;
-        let (_, width) = get_row_width(&self.t_buf.char_vec(self.cur.y), 0, self.t_buf.line_len(self.cur.y), false);
+        let (_, width) = get_row_width(&self.t_buf.char_vec(self.cur.y)[..], false);
         self.cur.disp_x = width + self.rnw + 1;
         if self.updown_x == 0 {
             self.updown_x = self.cur.disp_x;
@@ -280,8 +295,9 @@ impl Editor {
             // 初回検索
             Log::ep("search.index", self.search.index);
             if self.search.index == USIZE_UNDEFINED {
-                self.search.search_ranges = self.get_search_ranges(self.search.str.clone());
-
+                if self.search.search_ranges.len() == 0 {
+                    self.search.search_ranges = self.get_search_ranges(&self.search.str);
+                }
                 if self.search.search_ranges.len() > 0 {
                     if self.search.row_num.len() == 0 {
                         self.search.index = 0;
@@ -301,29 +317,32 @@ impl Editor {
                 let range = self.search.search_ranges[self.search.index];
                 self.cur.y = range.y;
                 self.cur.x = range.sx + self.rnw;
-                let (_, width) = get_row_width(&self.buf[self.cur.y], 0, range.sx, false);
+                let (_, width) = get_row_width(&self.t_buf.char_vec(range.y)[..range.sx], false);
                 self.cur.disp_x = width + self.rnw + 1;
             }
             self.scroll();
             self.scroll_horizontal();
         }
     }
-    pub fn get_search_ranges(&mut self, search_str: String) -> Vec<SearchRange> {
+    pub fn get_search_ranges(&self, search_str: &String) -> Vec<SearchRange> {
+        Log::ep_s("get_search_ranges get_search_ranges get_search_ranges get_search_ranges get_search_ranges");
+
         let mut vec = vec![];
 
-        let iter = self.buf.iter().enumerate();
-        for (i, chars) in iter {
-            let row_str = chars.iter().collect::<String>();
-            let v: Vec<(usize, &str)> = row_str.match_indices(&search_str).collect();
-            if v.len() == 0 {
-                continue;
-            }
-            for (index, _) in v {
-                let x = get_char_count(&chars, index);
-                vec.push(SearchRange { y: i, sx: x, ex: x + search_str.chars().count() - 1 });
-            }
+        let search_vec = self.t_buf.search(&search_str);
+        //  self.set_search_info(search_vec);
+        for (sx, ex) in search_vec {
+            vec.push(SearchRange {
+                y: self.t_buf.char_to_line(sx),
+                sx: self.t_buf.char_to_line_idx(sx),
+                ex: self.t_buf.char_to_line_idx(ex),
+            });
         }
-        return vec;
+
+        for s in &vec {
+            Log::ep("SearchRange {:?}", s);
+        }
+        vec
     }
 
     pub fn get_search_str_index(&mut self, is_asc: bool) -> usize {

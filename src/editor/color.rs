@@ -12,7 +12,7 @@ impl Editor {
                 Log::ep("                 yyyyyyyyyyyyyyy", y);
         */
         if sel_ranges.sy <= y && y <= sel_ranges.ey {
-            let (_, width) = get_row_width(&self.t_buf.char_vec(y), 0, x, true);
+            let (_, width) = get_row_width(&self.t_buf.char_vec(y)[..x], true);
 
             let disp_x = width + self.rnw + 1;
             // Log::ep("buf[y][cur_x]", self.buf[y][cur_x]);
@@ -51,31 +51,10 @@ impl Editor {
             if range.y != y {
                 continue;
             } else {
-                if range.sx <= x && x <= range.ex {
+                if range.sx <= x && x < range.ex {
                     Colors::set_search_color(str_vec);
                     self.is_default_color = false;
                     break;
-                }
-            }
-        }
-    }
-
-    /// 検索箇所のhighlight
-    pub fn ctl_searchcolor_eof(&mut self, str_vec: &mut Vec<String>, ranges: &Vec<SearchRange>, y: usize, x: usize) {
-        for range in ranges {
-            if range.y != y {
-                continue;
-            } else {
-                if range.sx <= x && x <= range.ex {
-                    Colors::set_search_color(str_vec);
-                    self.is_default_color = false;
-                    break;
-                } else {
-                    if !self.is_default_color {
-                        // Log::ep_s("textarea_color textarea_color textarea_color");
-                        Colors::set_textarea_color(str_vec);
-                        self.is_default_color = true;
-                    }
                 }
             }
         }
@@ -102,7 +81,7 @@ impl Editor {
 
     pub fn set_eof(&mut self, str_vec: &mut Vec<String>) {
         Colors::set_new_line_color(str_vec);
-        str_vec.push(EOF_MARK.to_string());
+        str_vec.push(EOF_STR.to_string());
         Colors::set_textarea_color(str_vec);
     }
 }

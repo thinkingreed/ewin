@@ -28,22 +28,25 @@ impl EvtAct {
                 }
             }
 
-            let line_str = line_str.replace(&editor.search.folder, "");
+            let mut line_str = line_str.replace(&editor.search.folder, "");
+            line_str.push_str(&NEW_LINE.to_string());
 
             let rnw_org = editor.rnw;
             let cur_y_org = editor.cur.y;
-            let v = line_str.trim_end().chars().collect();
-            if editor.buf[0].len() == 0 {
-                editor.buf[0] = v;
+            // let v = line_str.trim_end().chars().collect();
+
+            editor.t_buf.insert_end(&line_str);
+            /*  if editor.t_buf.len() == 0 {
+                editor.t_buf.insert(0, 0, &line_str);
             } else {
-                editor.buf.push(v);
-            }
-            editor.rnw = editor.buf.len().to_string().len();
-            editor.cur = Cur { y: editor.buf.len() - 1, x: editor.rnw, disp_x: 0 };
-            editor.cur.disp_x = editor.rnw + get_cur_x_width(&editor.buf[editor.cur.y], editor.cur.x - editor.rnw);
+                editor.t_buf.insert_end(&line_str);
+            }*/
+            editor.rnw = editor.t_buf.len().to_string().len();
+            editor.cur = Cur { y: editor.t_buf.len() - 1, x: editor.rnw, disp_x: 0 };
+            editor.cur.disp_x = editor.rnw + get_cur_x_width(&editor.t_buf.char_vec(editor.cur.y), editor.cur.x - editor.rnw);
             editor.scroll();
 
-            let y = editor.buf.len() - 1;
+            let y = editor.t_buf.len() - 1;
 
             if rnw_org == editor.rnw && cur_y_org == editor.cur.y {
                 editor.d_range = DRnage::new(y, y, DType::Target);
@@ -55,8 +58,8 @@ impl EvtAct {
 
             if vec.len() > 2 && vec[0] != "grep" {
                 let pre_str = format!("{}:{}:", vec[0], vec[1]);
-                let pre_str_vec = pre_str.chars().collect();
-                let (pre_str_x, _) = get_row_width(&pre_str_vec, 0, pre_str_vec.len(), false);
+                let pre_str_vec: Vec<char> = pre_str.chars().collect();
+                let (pre_str_x, _) = get_row_width(&pre_str_vec[..], false);
 
                 let search_target_str = &line_str.replace(&pre_str, "");
 
@@ -99,6 +102,7 @@ impl EvtAct {
         } else {
             prom.set_grep_result_after_no_result();
         }
+        editor.t_buf.insert_end(&EOF_MARK.to_string());
         editor.set_cur_default();
         term.draw(out, editor, mbar, prom, sbar).unwrap();
     }

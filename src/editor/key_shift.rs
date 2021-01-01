@@ -2,6 +2,7 @@ use crate::global::*;
 use crate::model::*;
 use crate::util::*;
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
+use std::cmp::min;
 use std::io::Write;
 
 impl Editor {
@@ -36,7 +37,7 @@ impl Editor {
         self.scroll_horizontal();
 
         self.d_range = DRnage {
-            sy: self.sel.sy,
+            sy: min(self.sel.sy, self.sel.ey),
             d_type: DType::After,
             ..DRnage::default()
         };
@@ -70,13 +71,17 @@ impl Editor {
         self.scroll();
         self.scroll_horizontal();
 
-        self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
+        self.d_range = DRnage {
+            sy: min(self.sel.sy, self.sel.ey),
+            d_type: DType::After,
+            ..DRnage::default()
+        };
     }
 
     pub fn shift_down(&mut self) {
         Log::ep_s("　　　　　　　　shift_down");
 
-        if self.cur.y == self.buf.len() - 1 {
+        if self.cur.y == self.t_buf.len() - 1 {
             self.d_range.d_type = DType::Not;
             return;
         }
@@ -183,7 +188,7 @@ impl Editor {
             self.sel.sx = self.cur.x - self.rnw;
             self.sel.s_disp_x = self.cur.disp_x;
         }
-        let (cur_x, width) = get_row_width(&self.buf[self.cur.y], 0, self.buf[self.cur.y].len(), false);
+        let (cur_x, width) = get_row_width(&self.t_buf.char_vec(self.cur.y)[..], false);
         self.cur.x = cur_x + self.rnw;
         self.cur.disp_x = width + self.rnw + 1;
 

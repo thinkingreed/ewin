@@ -5,7 +5,7 @@ impl Editor {
         Log::ep_s("　　　　　　　  ctrl_mouse");
         Log::ep("is_mouse_left_down", is_mouse_left_down);
         Log::ep("self.sel", self.sel);
-        if y >= self.disp_row_num || y >= self.buf.len() {
+        if y >= self.disp_row_num || y >= self.t_buf.len() {
             return;
         }
         self.cur.y = y;
@@ -14,7 +14,7 @@ impl Editor {
         if x <= self.rnw {
             x = self.rnw + 1;
         }
-        let (cur_x, width) = get_until_x(&self.buf[y], x - self.rnw - 1);
+        let (cur_x, width) = get_until_x(&self.t_buf.char_vec(y), x - self.rnw - 1);
 
         self.cur.x = cur_x + self.rnw;
         self.cur.disp_x = width + self.rnw + 1;

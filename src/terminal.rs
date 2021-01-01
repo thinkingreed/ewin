@@ -172,7 +172,7 @@ impl UT {
     pub fn init_ut() -> (Editor, MsgBar) {
         let mut e = Editor::default();
         e.buf = vec![vec![]];
-        e.buf[0] = vec![EOF];
+        e.buf[0] = vec![EOF_MARK];
         e.disp_row_num = 5;
         e.set_cur_default();
         e.d_range = DRnage::default();

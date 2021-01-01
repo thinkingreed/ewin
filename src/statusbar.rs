@@ -1,6 +1,4 @@
-use crate::_cfg::lang::cfg::LangCfg;
-use crate::model::*;
-use crate::util::*;
+use crate::{_cfg::lang::cfg::LangCfg, model::*, util::*};
 use termion::*;
 use unicode_width::UnicodeWidthChar;
 

@@ -39,7 +39,9 @@ impl EvtAct {
             mbar.draw_only(out, term, editor, prom, sbar);
             prom.draw_only(out);
             return false;
-        } else if editor.get_search_ranges(search_str.clone()).len() == 0 {
+        }
+        let search_vec = editor.get_search_ranges(&search_str.clone());
+        if search_vec.len() == 0 {
             mbar.set_err(&LANG.lock().unwrap().cannot_find_char_search_for);
             mbar.draw_only(out, term, editor, prom, sbar);
             prom.draw_only(out);
@@ -48,6 +50,7 @@ impl EvtAct {
             mbar.clear();
             prom.clear();
             editor.search.clear();
+            editor.search.search_ranges = search_vec;
             editor.search.str = search_str;
             // all redrowの為に検索処理実施
             editor.search_str(is_asc);

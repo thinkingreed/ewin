@@ -3,9 +3,7 @@ extern crate clap;
 use clap::{App, Arg};
 use crossterm::event::{Event, EventStream};
 use crossterm::ErrorKind;
-use ewin::_cfg::lang::cfg::LangCfg;
-use ewin::global::*;
-use ewin::model::*;
+use ewin::{_cfg::lang::cfg::LangCfg, global::*, model::*};
 use futures::{future::FutureExt, select, StreamExt};
 use std::ffi::OsStr;
 use std::io::{stdout, BufWriter, Write};
@@ -14,6 +12,7 @@ use termion::input::MouseTerminal;
 use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
 use tokio_util::codec::{FramedRead, LinesCodec};
+
 #[tokio::main]
 async fn main() {
     let matches = App::new("ewin").version(crate_version!()).bin_name("ewin").arg(Arg::with_name("file").required(false)).get_matches();

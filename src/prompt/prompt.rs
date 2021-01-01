@@ -128,7 +128,7 @@ impl Prompt {
                 }
                 PromptBufPosi::Third => {
                     self.cont_3.buf = self.get_tab_candidate(is_asc).chars().collect();
-                    let (cur_x, width) = get_row_width(&self.cont_3.buf, 0, self.cont_3.buf.len(), false);
+                    let (cur_x, width) = get_row_width(&self.cont_3.buf[..], false);
                     self.cont_3.cur.x = cur_x;
                     self.cont_3.cur.disp_x = width + 1;
                 }

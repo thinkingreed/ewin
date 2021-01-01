@@ -48,7 +48,7 @@ impl Editor {
         // line disp_x < disp_col_num disable extra
         let mut line_disp_x = 0;
         if self.t_buf.line_len(self.cur.y) < self.disp_col_num {
-            let (_, width) = get_row_width(&self.t_buf.char_vec(self.cur.y), 0, self.t_buf.line_len(self.cur.y), true);
+            let (_, width) = get_row_width(&self.t_buf.char_vec(self.cur.y)[..], true);
             line_disp_x = width;
         }
 
@@ -72,19 +72,19 @@ impl Editor {
             if self.cur_y_org != self.cur.y {
                 // Log::ep_s(" self.cur_y_org != self.cur.y ");
 
-                let (_, width) = get_row_width(vec, 0, self.x_offset, false);
+                let (_, width) = get_row_width(&vec[..self.x_offset], false);
                 self.x_offset_disp = width;
 
             // offsetに差分
             } else if x_offset_org != self.x_offset {
                 if self.x_offset < x_offset_org {
                     // Log::ep_s(" self.x_offset < x_offset_org  ");
-                    let (_, width) = get_row_width(vec, self.x_offset, x_offset_org, false);
+                    let (_, width) = get_row_width(&vec[self.x_offset..x_offset_org], false);
                     self.x_offset_disp -= width;
                 } else {
                     // Log::ep_s("else self.x_offset < x_offset_org  ");
 
-                    let (_, width) = get_row_width(vec, x_offset_org, self.x_offset, false);
+                    let (_, width) = get_row_width(&vec[x_offset_org..self.x_offset], false);
                     self.x_offset_disp += width;
                 }
             }
@@ -122,8 +122,6 @@ impl Editor {
         }
 
         if self.is_redraw != true {
-            // 右記の条件不明な為に一旦コメント x_offset_disp_org == self.x_offset_disp && self.x_offset_disp != 0
-            //        self.is_redraw = y_offset_org != self.y_offset || (x_offset_disp_org != self.x_offset_disp || (x_offset_disp_org == self.x_offset_disp && self.x_offset_disp != 0));
             self.is_redraw = y_offset_org != self.y_offset || x_offset_disp_org != self.x_offset_disp;
             if self.is_redraw {
                 self.d_range.d_type = DType::All;
@@ -165,48 +163,77 @@ impl Editor {
     }
 
     pub fn del_sel_range(&mut self) {
-        Log::ep_s("　　　　　　　  del_sel_range");
         let sel = self.sel.get_range();
-        let (sy, ey, sx, ex) = (sel.sy, sel.ey, sel.sx, sel.ex);
-        Log::ep("sel", sel);
+        self.t_buf.remove_range(sel);
 
-        for i in 0..self.t_buf.lines().len() {
-            if sy <= i && i <= ey {
-                // one line
-                if sy == ey {
-                    if self.buf[i][ex - 1] == NEW_LINE {
-                        self.del_end_of_line_new_line(self.cur.y);
-                    }
-                    self.buf[i].drain(sx..ex);
-                // start line
-                } else if sy == i {
-                    let (cur_x, _) = get_row_width(&self.buf[sy], sx, self.buf[sy].len(), true);
-                    self.buf[i].drain(sx..sx + cur_x);
-
-                // end line
-                } else if ey == i {
-                    self.buf[i].drain(0..ex);
-                    let mut rest: Vec<char> = self.buf[i].clone();
-                    self.buf[sy].append(&mut rest);
-                }
-            }
-        }
-        // delete row
-        for i in (0..self.buf.len()).rev() {
-            if sy == i && self.buf[sy].len() == 0 || sy < i && i <= ey {
-                self.buf.remove(i);
-            }
-        }
-        self.cur.y = sy;
+        self.cur.y = sel.sy;
         self.rnw = self.t_buf.lines().len().to_string().len();
-        let (cur_x, width) = get_row_width(&self.buf[sy], 0, sx, false);
+        let (cur_x, width) = get_row_width(&self.t_buf.char_vec(sel.sy)[..sel.sx], false);
         self.cur.x = cur_x + self.rnw;
         self.cur.disp_x = width + self.rnw + 1;
     }
 
-    pub fn del_end_of_line_new_line(&mut self, remove_y: usize) {
-        Log::ep_s("　　　　　　　  del_end_of_line_new_line");
-        let mut bottom_line: Vec<char> = self.buf.remove(remove_y);
-        self.buf[remove_y - 1].append(&mut bottom_line);
+    pub fn get_sel_range_str_ex(&mut self) -> String {
+        self.t_buf.slice(self.sel)
     }
+    pub fn get_sel_range_str(&mut self) -> Vec<String> {
+        let mut all_vec: Vec<String> = vec![];
+        let copy_ranges: Vec<CopyRange> = self.get_copy_range();
+
+        for copy_range in copy_ranges {
+            Log::ep("copy_range", copy_range);
+            let mut vec: Vec<String> = vec![];
+
+            for j in copy_range.sx..copy_range.ex {
+                let c = self.t_buf.char(copy_range.y, j);
+                Log::ep("ccc", c);
+                if c != EOF_MARK {
+                    vec.insert(vec.len(), c.to_string());
+                }
+            }
+
+            if vec.len() > 0 {
+                all_vec.push(vec.join(""));
+            }
+        }
+        return all_vec;
+    }
+    pub fn get_copy_range(&mut self) -> Vec<CopyRange> {
+        let copy_posi = self.sel.get_range();
+
+        let mut copy_ranges: Vec<CopyRange> = vec![];
+        if copy_posi.sy == 0 && copy_posi.ey == 0 && copy_posi.ex == 0 {
+            return copy_ranges;
+        }
+        Log::ep("copy_posi.sy", copy_posi.sy);
+        Log::ep("copy_posi.ey", copy_posi.ey);
+        Log::ep("copy_posi.sx", copy_posi.sx);
+        Log::ep("copy_posi.ex", copy_posi.ex);
+
+        for i in copy_posi.sy..=copy_posi.ey {
+            /* if copy_posi.sy != copy_posi.ey && copy_posi.ex == 0 {
+                continue;
+            }*/
+            Log::ep("iii", i);
+            // 開始行==終了行
+            if copy_posi.sy == copy_posi.ey {
+                copy_ranges.push(CopyRange { y: i, sx: copy_posi.sx, ex: copy_posi.ex });
+            // 開始行
+            } else if i == copy_posi.sy {
+                Log::ep("i == copy_posi.sy", i == copy_posi.sy);
+                copy_ranges.push(CopyRange { y: i, sx: copy_posi.sx, ex: self.t_buf.line_len(i) });
+            // 終了行
+            } else if i == copy_posi.ey {
+                // カーソルが行頭の対応
+                copy_ranges.push(CopyRange { y: i, sx: 0, ex: copy_posi.ex });
+            // 中間行 全て対象
+            } else {
+                copy_ranges.push(CopyRange { y: i, sx: 0, ex: self.t_buf.line_len(i) });
+            }
+        }
+
+        return copy_ranges;
+    }
+
+  
 }
