@@ -2,7 +2,7 @@ use crate::model::*;
 use crate::util::*;
 
 impl Editor {
-    pub fn save_sel_del_evtproc(&mut self, do_type: DoType) {
+    pub fn save_del_sel_evtproc(&mut self, do_type: DoType) {
         let sel = self.sel.get_range();
 
         let ep = EvtProc {
@@ -23,13 +23,13 @@ impl Editor {
     }
 
     pub fn save_del_char_evtproc(&mut self, do_type: DoType) {
-        let mut ep = EvtProc::new(do_type, self.cur, self.d_range);
-
-        let c = self.buf.char(self.cur.y, self.cur.x - self.rnw);
-        Log::ep("save_del_char_evtproc", c.to_string());
-        ep.str_vec = vec![c.to_string()];
-
         if !self.is_undo {
+            let mut ep = EvtProc::new(do_type, self.cur, self.cur, self.d_range);
+
+            let c = self.buf.char(self.cur.y, self.cur.x - self.rnw);
+            Log::ep("save_del_char_evtproc", c.to_string());
+            ep.str_vec = vec![c.to_string()];
+
             self.undo_vec.push(ep);
         }
     }

@@ -2,7 +2,7 @@ use crate::{def::*, model::*, util::*};
 
 impl Editor {
     /// 選択箇所のhighlight
-    pub fn ctl_color(&mut self, str_vec: &mut Vec<String>, sel_ranges: SelRange, search_ranges: &Vec<SearchRange>, y: usize, x: usize) {
+    pub fn ctl_color(&mut self, str_vec: &mut Vec<String>, row_vec: &Vec<char>, sel_ranges: SelRange, search_ranges: &Vec<SearchRange>, y: usize, x: usize) {
         /*
                 Log::ep("ctl_select_color.ranges.sy", sel_ranges.sy);
                 Log::ep("                 ranges.ey", sel_ranges.ey);
@@ -12,10 +12,9 @@ impl Editor {
                 Log::ep("                 yyyyyyyyyyyyyyy", y);
         */
         if sel_ranges.sy <= y && y <= sel_ranges.ey {
-            let (_, width) = get_row_width(&self.buf.char_vec(y)[..x], true);
+            let (_, width) = get_row_width(&row_vec[..x], true);
 
             let disp_x = width + self.rnw + 1;
-            // Log::ep("buf[y][cur_x]", self.buf[y][cur_x]);
 
             // 開始・終了が同じ行
             if sel_ranges.sy == sel_ranges.ey {
@@ -24,7 +23,7 @@ impl Editor {
                     self.is_default_color = false;
                 } else {
                     // new line char color Control
-                    self.ctl_new_line_mark_color(str_vec, y, x);
+                    self.ctl_new_line_mark_color(str_vec, row_vec[x]);
                 }
             // 開始行
             } else if sel_ranges.sy == y && sel_ranges.s_disp_x <= disp_x {
@@ -40,11 +39,11 @@ impl Editor {
                 self.is_default_color = false;
             } else {
                 // new line char color Control
-                self.ctl_new_line_mark_color(str_vec, y, x);
+                self.ctl_new_line_mark_color(str_vec, row_vec[x]);
             }
         } else {
             // new line char color Control
-            self.ctl_new_line_mark_color(str_vec, y, x);
+            self.ctl_new_line_mark_color(str_vec, row_vec[x]);
         }
 
         for range in search_ranges {
@@ -60,13 +59,8 @@ impl Editor {
         }
     }
 
-    pub fn ctl_new_line_mark_color(&mut self, str_vec: &mut Vec<String>, y: usize, x: usize) {
-        // eprintln!("self.t_buf {:?}", self.t_buf);
-        let line_len = self.buf.len_line(y);
-        if line_len == 0 {
-            return;
-        }
-        if line_len - 1 == x && self.buf.char(y, x) == NEW_LINE {
+    pub fn ctl_new_line_mark_color(&mut self, str_vec: &mut Vec<String>, c: char) {
+        if c == NEW_LINE {
             // Log::ep_s("NEW_LINE_MARK NEW_LINE_MARK NEW_LINE_MARK");
             Colors::set_new_line_color(str_vec);
             self.is_default_color = false;

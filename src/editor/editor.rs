@@ -184,4 +184,24 @@ impl Editor {
 
         return copy_ranges;
     }
+    pub fn set_sel_del_d_range(&mut self) {
+        let sel = self.sel.get_range();
+        self.d_range = DRnage { sy: sel.sy, ey: sel.sy, d_type: DType::All };
+    }
+
+    pub fn set_cur_default(&mut self) {
+        self.rnw = self.buf.len_lines().to_string().len();
+        self.cur = Cur { y: 0, x: self.rnw, disp_x: self.rnw + 1 };
+        self.scroll();
+        self.scroll_horizontal();
+    }
+
+    pub fn set_cur_end_x(&mut self, y: usize) {
+        self.rnw = self.buf.len_lines().to_string().len();
+        let (cur_x, width) = get_row_width(&self.buf.char_vec(y)[..], false);
+        self.cur.x = cur_x + self.rnw;
+        self.cur.disp_x = width + self.rnw + 1;
+        self.scroll();
+        self.scroll_horizontal();
+    }
 }

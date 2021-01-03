@@ -13,8 +13,9 @@ pub mod evt_act_prom;
 
 pub mod editor {
     pub mod rope {
+        pub mod buf_cache;
         pub mod rope_util;
-        pub mod text_buffer;
+        pub mod text_buf;
     }
     pub mod clipboard;
     pub mod color;

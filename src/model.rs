@@ -242,7 +242,7 @@ impl Default for StatusBar {
 /// EvtProcess
 pub struct EvtProc {
     pub do_type: DoType,
-    // lnwを含まない
+    // not include lnw
     pub cur_s: Cur,
     pub cur_e: Cur,
     pub str_vec: Vec<String>,
@@ -268,10 +268,11 @@ impl fmt::Display for EvtProc {
     }
 }
 impl EvtProc {
-    pub fn new(do_type: DoType, cur: Cur, d_range: DRnage) -> Self {
+    pub fn new(do_type: DoType, cur_s: Cur, cur_e: Cur, d_range: DRnage) -> Self {
         return EvtProc {
             do_type: do_type,
-            cur_s: Cur { y: cur.y, x: cur.x, disp_x: cur.disp_x },
+            cur_s: cur_s,
+            cur_e: cur_e,
             d_range: d_range,
             ..EvtProc::default()
         };
@@ -496,10 +497,11 @@ impl fmt::Display for Cur {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Editor {
     pub buf: TextBuffer,
-    /// 現在のカーソルの位置
+    pub buf_cache: Vec<Vec<char>>,
+    pub draw: Draw,
+    /// current cursor position
     /// self.cursor.y < self.buffer.len()
     /// self.cursor.x <= self.buffer[self.cursor.y].len() + self.lnw
-    /// を常に保証する
     pub cur: Cur,
     /// 画面の一番上はバッファの何行目か
     /// スクロール処理に使う
@@ -538,6 +540,8 @@ impl Default for Editor {
     fn default() -> Self {
         Editor {
             buf: TextBuffer::default(),
+            buf_cache: vec![],
+            draw: Draw::default(),
             cur: Cur::default(),
             offset_y: 0,
             offset_x: 0,
@@ -570,6 +574,34 @@ impl Default for Editor {
 pub struct TextBuffer {
     pub text: Rope,
 }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Draw {
+    pub y_s: usize,
+    pub y_e: usize,
+    pub x_vec: Vec<(usize, usize)>,
+    // Caching the drawing string because ropey takes a long time to access char
+    pub char_vec: Vec<Vec<char>>,
+}
+
+impl Default for Draw {
+    fn default() -> Self {
+        Draw { y_s: 0, y_e: 0, x_vec: vec![], char_vec: vec![] }
+    }
+}
+
+impl fmt::Display for Draw {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Draw y_s:{}, y_e:{}, x_vec:{:?}, char_vec:{:?}, ", self.y_s, self.y_e, self.x_vec, self.char_vec)
+    }
+}
+impl Draw {
+    pub fn clear(&mut self) {
+        self.y_s = 0;
+        self.y_e = 0;
+        self.x_vec = vec![];
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 // DrawRnage
 pub struct DRnage {

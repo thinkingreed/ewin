@@ -26,7 +26,7 @@ impl Editor {
         }
         self.copy(term, mbar);
         self.set_sel_del_d_range();
-        self.save_sel_del_evtproc(DoType::Cut);
+        self.save_del_sel_evtproc(DoType::Cut);
 
         self.del_sel_range();
         self.sel.clear();
@@ -146,7 +146,7 @@ impl Editor {
         Log::ep("clipboard str", &contexts);
 
         // EvtProcデータ設定
-        let mut ep = EvtProc::new(DoType::Paste, self.cur, self.d_range);
+        let mut ep = EvtProc::new(DoType::Paste, self.cur, self.cur, self.d_range);
         {
             ep.str_vec = vec![contexts.clone()];
             ep.sel.sy = self.cur.y;

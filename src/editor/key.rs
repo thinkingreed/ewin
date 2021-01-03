@@ -109,7 +109,8 @@ impl Editor {
         Log::ep_s("　　　　　　　  enter");
         let y_offset_org: usize = self.offset_y;
         let rnw_org = self.rnw;
-        let mut evt_proc = EvtProc::new(DoType::Enter, self.cur, self.d_range);
+
+        let cur_s = self.cur.clone();
 
         self.buf.insert_char(self.cur.y, self.cur.x - self.rnw, NEW_LINE);
         self.cur.y += 1;
@@ -129,10 +130,10 @@ impl Editor {
         } else {
             self.d_range.d_type = DType::All;
         }
-        evt_proc.d_range = self.d_range;
-        evt_proc.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
 
         if !self.is_undo {
+            let mut evt_proc = EvtProc::new(DoType::Enter, cur_s, self.cur, self.d_range);
+            evt_proc.d_range = self.d_range;
             self.undo_vec.push(evt_proc);
         }
     }
@@ -140,7 +141,7 @@ impl Editor {
         // self.buf[self.cur.y].insert(self.cur.x - self.rnw, c);
 
         self.buf.insert_char(self.cur.y, self.cur.x - self.rnw, c);
-        let mut ep = EvtProc::new(DoType::InsertChar, self.cur, self.d_range);
+        let mut ep = EvtProc::new(DoType::InsertChar, self.cur, self.cur, self.d_range);
         self.cur_right();
         ep.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
 
@@ -159,7 +160,7 @@ impl Editor {
         Log::ep_s("　　　　　　　  back_space");
         if self.sel.is_selected() {
             self.set_sel_del_d_range();
-            self.save_sel_del_evtproc(DoType::BS);
+            self.save_del_sel_evtproc(DoType::BS);
             self.del_sel_range();
             self.sel.clear();
         } else {
@@ -168,7 +169,7 @@ impl Editor {
                 self.d_range.d_type = DType::Not;
                 return;
             }
-            let mut ep = EvtProc::new(DoType::BS, self.cur, self.d_range);
+            let mut ep = EvtProc::new(DoType::BS, self.cur, self.cur, self.d_range);
 
             // beginning of the line
             if self.cur.x == self.rnw {
@@ -198,7 +199,7 @@ impl Editor {
                 self.buf.remove_type(DoType::BS, self.cur.y, self.cur.x - self.rnw);
             }
             // BS後のcurを設定
-            ep.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
+            ep.cur_e = self.cur;
 
             if !self.is_undo {
                 self.undo_vec.push(ep);
@@ -213,7 +214,7 @@ impl Editor {
 
         if self.sel.is_selected() {
             self.set_sel_del_d_range();
-            self.save_sel_del_evtproc(DoType::Del);
+            self.save_del_sel_evtproc(DoType::Del);
             self.del_sel_range();
             self.sel.clear();
         } else {

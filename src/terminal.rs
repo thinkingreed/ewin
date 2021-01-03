@@ -1,6 +1,5 @@
-use crate::{_cfg::lang::cfg::LangCfg, def::*, model::*};
+use crate::{_cfg::lang::cfg::LangCfg, model::*};
 use anyhow::Context;
-use std::cmp::min;
 use std::io::{self, Read, Write};
 use std::path::Path;
 use std::process;
@@ -25,17 +24,7 @@ impl Terminal {
 
         if d_range.d_type != DType::Not {
             Log::ep_s("editor.draw");
-            /*
-                        let y_draw_s = editor.offset_y;
-                        let y_draw_e = min(editor.buf.len_lines(), editor.offset_y + editor.disp_row_num);
-                        // ropeyの文字アクセスが遅い為にVecに入れなおす
-                        let mut draw_vec = vec![];
-                        for i in y_draw_s..y_draw_e {
-                            let vec = editor.buf.char_vec(i);
-                            draw_vec.push(vec);
-                        }
-            */
-            //     editor.draw(str_vec, draw_vec);
+            editor.draw_cache(str_vec);
             editor.draw(str_vec);
         }
 
@@ -43,7 +32,6 @@ impl Terminal {
         prom.draw(str_vec);
 
         if d_range.d_type != DType::Not {
-            Log::ep_s("sbar.draw");
             sbar.draw(str_vec, editor);
         }
         self.draw_cur(str_vec, editor, prom);
@@ -57,7 +45,7 @@ impl Terminal {
     }
 
     pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor, prom: &mut Prompt) {
-        Log::ep_s("　　　　　　　set_cur_str");
+        // Log::ep_s("　　　　　　　set_cur_str");
 
         if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep {
             prom.draw_cur(str_vec);
