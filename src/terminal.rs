@@ -1,5 +1,6 @@
 use crate::{_cfg::lang::cfg::LangCfg, def::*, model::*};
 use anyhow::Context;
+use std::cmp::min;
 use std::io::{self, Read, Write};
 use std::path::Path;
 use std::process;
@@ -19,13 +20,22 @@ impl Terminal {
         if mbar.msg_org != mbar.msg {
             editor.d_range.d_type = DType::All;
         }
-
-        let d_range = editor.d_range.get_range();
-
+        let d_range = editor.d_range;
         Log::ep("d_range", d_range);
 
         if d_range.d_type != DType::Not {
             Log::ep_s("editor.draw");
+            /*
+                        let y_draw_s = editor.offset_y;
+                        let y_draw_e = min(editor.buf.len_lines(), editor.offset_y + editor.disp_row_num);
+                        // ropeyの文字アクセスが遅い為にVecに入れなおす
+                        let mut draw_vec = vec![];
+                        for i in y_draw_s..y_draw_e {
+                            let vec = editor.buf.char_vec(i);
+                            draw_vec.push(vec);
+                        }
+            */
+            //     editor.draw(str_vec, draw_vec);
             editor.draw(str_vec);
         }
 
@@ -52,7 +62,7 @@ impl Terminal {
         if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep {
             prom.draw_cur(str_vec);
         } else {
-            str_vec.push(cursor::Goto((editor.cur.disp_x - editor.x_offset_disp) as u16, (editor.cur.y + 1 - editor.y_offset) as u16).to_string());
+            str_vec.push(cursor::Goto((editor.cur.disp_x - editor.offset_disp_x) as u16, (editor.cur.y + 1 - editor.offset_y) as u16).to_string());
         }
     }
 
@@ -105,11 +115,13 @@ impl Terminal {
         editor.disp_col_num = cols;
         editor.disp_row_num = rows - mbar.disp_readonly_row_num - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - sbar.disp_row_num;
 
-        Log::ep("editor.disp_row_num", editor.disp_row_num);
-        Log::ep("mbar.disp_keyrecord_row_posi", mbar.disp_keyrecord_row_posi);
-        Log::ep("mbar.disp_row_posi", mbar.disp_row_posi);
-        Log::ep("prom.disp_row_posi", prom.disp_row_posi);
-        Log::ep("sbar.disp_row_posi", sbar.disp_row_posi);
+        /*
+            Log::ep("editor.disp_row_num", editor.disp_row_num);
+            Log::ep("mbar.disp_keyrecord_row_posi", mbar.disp_keyrecord_row_posi);
+            Log::ep("mbar.disp_row_posi", mbar.disp_row_posi);
+            Log::ep("prom.disp_row_posi", prom.disp_row_posi);
+            Log::ep("sbar.disp_row_posi", sbar.disp_row_posi);
+        */
     }
 
     pub fn set_env(&mut self) {
@@ -169,6 +181,7 @@ impl Terminal {
     }
 }
 impl UT {
+    /*
     pub fn init_ut() -> (Editor, MsgBar) {
         let mut e = Editor::default();
         e.buf = vec![vec![]];
@@ -201,4 +214,5 @@ impl UT {
         }
         return s;
     }
+    */
 }

@@ -1,6 +1,6 @@
 use crate::{def::*, global::*, model::*, util::*};
-use std::fs::File;
 use std::io::Write;
+use std::iter::FromIterator;
 use std::path::Path;
 use termion::cursor;
 
@@ -8,10 +8,10 @@ impl Editor {
     pub fn all_select(&mut self) {
         self.sel.clear();
         self.sel.sy = 0;
-        self.sel.ey = self.t_buf.len() - 1;
+        self.sel.ey = self.buf.len_lines() - 1;
         self.sel.sx = 0;
         self.sel.s_disp_x = self.rnw + 1;
-        let (cur_x, width) = get_row_width(&self.t_buf.char_vec(self.sel.ey)[..], false);
+        let (cur_x, width) = get_row_width(&self.buf.char_vec(self.sel.ey)[..], false);
         self.sel.ex = cur_x;
         // +1 for EOF
         self.sel.e_disp_x = width + self.rnw + 1;
@@ -67,25 +67,12 @@ impl Editor {
         } else {
             if let Some(path) = self.path.as_ref() {
                 Log::ep("Some(path)", "");
-                let result = File::create(path);
+                let result = self.buf.write_to(&path.to_string_lossy().to_string());
 
                 match result {
-                    Ok(mut file) => {
+                    Ok(()) => {
                         Log::ep_s("Ok(mut file)");
 
-                        for (i, line) in self.buf.iter().enumerate() {
-                            let mut line_str: String = line.iter().collect();
-                            if i == self.buf.len() - 1 {
-                                line_str = line_str.replace(EOF_MARK, "");
-                                write!(file, "{}", line_str).unwrap();
-                            } else {
-                                /*
-                                if &line_str.chars().last().unwrap_or(' ') == &NEW_LINE_MARK {
-                                    line_str = line_str.chars().take(line_str.chars().count() - 1).collect::<String>();
-                                }*/
-                                writeln!(file, "{}", line_str).unwrap();
-                            }
-                        }
                         prom.is_change = false;
                         prom.clear();
                         mbar.clear();
@@ -107,11 +94,11 @@ impl Editor {
             mbar.set_err(&LANG.lock().unwrap().no_sel_range.to_string());
             return;
         }
-
         Log::ep("self.sel", self.sel);
-        let mut str = self.get_sel_range_str_ex();
+
+        let mut str = self.buf.slice(self.sel.get_range());
         let copy_string = match term.env {
-            Env::WSL => self.get_wsl_str_ex(&mut str),
+            Env::WSL => self.get_wsl_str(&mut str),
             _ => str,
         };
 
@@ -124,51 +111,30 @@ impl Editor {
             d_type: DType::Target,
         };
     }
-
-    // WSL:powershell.clipboard対応で"’"で文字列を囲み、改行は","、","の連続時は空文字
-    fn get_wsl_str_ex(&mut self, str: &mut String) -> String {
+    // WSL:powershell.clipboard
+    // enclose the string in "’ "
+    // new line are ","
+    // Empty line is an empty string
+    fn get_wsl_str(&mut self, str: &mut String) -> String {
         let mut copy_str: String = String::new();
-        let mut str = str.replace(NEW_LINE_CRLF, ",").replace(NEW_LINE, ",");
-        let vec = split_inclusive(&mut str, ',');
-        for mut s in vec {
-            if s == "," {
-                s = "'',".to_string();
+        let str = str.replace(NEW_LINE_CRLF, ",").replace(NEW_LINE, ",");
+        let vec = Vec::from_iter(str.split(",").map(String::from));
+
+        for (i, s) in vec.iter().enumerate() {
+            let ss = if *s == "" { "''".to_string() } else { format!("'{}'", s) };
+            copy_str.push_str(ss.as_str());
+            if i != vec.len() - 1 {
+                copy_str.push_str(",");
             }
-            copy_str.push_str(&s);
         }
-
-        if copy_str.chars().last().unwrap_or(' ') == ',' {
-            copy_str.push_str("''");
-        }
-
         Log::ep("copy_str", copy_str.clone());
         copy_str
     }
-    /*
-    fn get_wsl_str(&mut self, sel_vec: Vec<String>) -> String {
-        let mut copy_str: String = String::new();
-
-        for (i, s) in sel_vec.iter().enumerate() {
-            let mut str = format!("'{}'", s);
-            if i == sel_vec.len() - 1 {
-                if s.chars().last().unwrap_or(' ') == NEW_LINE {
-                    str.push_str(",");
-                    str.push_str("''");
-                }
-            } else {
-                str.push_str(",");
-            }
-            str = str.replace(NEW_LINE, "");
-            copy_str.push_str(&str);
-        }
-
-        return copy_str;
-    }*/
 
     pub fn paste(&mut self, term: &Terminal) {
         Log::ep_s("　　　　　　　  paste");
 
-        let y_offset_org = self.y_offset;
+        let y_offset_org = self.offset_y;
         let cur_y_org = self.cur.y;
         let rnw_org = self.rnw;
 
@@ -200,7 +166,7 @@ impl Editor {
         if contexts.match_indices(NEW_LINE).count() == 0 {
             self.d_range = DRnage { sy: cur_y_org, ey: self.cur.y, d_type: DType::Target };
         } else {
-            if y_offset_org != self.y_offset || rnw_org != self.rnw {
+            if y_offset_org != self.offset_y || rnw_org != self.rnw {
                 self.d_range.d_type = DType::All;
             } else {
                 self.d_range = DRnage { sy: cur_y_org, ey: self.cur.y, d_type: DType::After };
@@ -210,54 +176,19 @@ impl Editor {
 
     pub fn insert_str(&mut self, str: &str) {
         Log::ep_s("        insert_str");
-
         Log::ep("contexts", str.clone());
-        // let str = str.replace(NEW_LINE, NEW_LINE_MARK.to_string().as_str());
-        let insert_strs: Vec<String> = split_inclusive(&str, NEW_LINE);
-        let insert_s_y = self.cur.y;
 
-        // rnw increase
-        if insert_strs.len() > 1 {
-            let diff = (self.buf.len() + insert_strs.len() - 1).to_string().len() - self.rnw;
-            self.rnw += diff;
-            self.cur.x += diff;
-            self.cur.disp_x += diff;
-        }
+        let i = self.buf.line_to_char(self.cur.y) + self.cur.x - self.rnw;
+        self.buf.insert(i, str);
+        let insert_strs: Vec<&str> = str.split(NEW_LINE).collect();
 
-        if insert_strs.len() > 1 {
-            // rest char from the cursor to the end of the line when inserting multi line
-            let rest_char_vec: Vec<char> = self.buf[self.cur.y].drain(self.cur.x - self.rnw..).collect();
-            // add line
-            for i in 1..insert_strs.len() {
-                self.buf.insert(insert_s_y + i, vec![]);
-            }
-            self.buf[insert_s_y + insert_strs.len() - 1] = rest_char_vec;
-        }
+        let last_str_len = insert_strs.last().unwrap().chars().count();
+        self.cur.y += insert_strs.len() - 1;
+        self.rnw = self.buf.len_lines().to_string().len();
+        let (cur_x, width) = get_row_width(&self.buf.char_vec(self.cur.y)[..last_str_len], false);
+        self.cur.x = cur_x + self.rnw;
+        self.cur.disp_x = width + self.rnw + 1;
 
-        for (i, copy_str) in insert_strs.iter().enumerate() {
-            Log::ep("copy_str", copy_str);
-            if i != 0 {
-                self.cur.x = self.rnw;
-            }
-            let chars: Vec<char> = copy_str.chars().collect();
-            for c in chars {
-                // Log::ep("ccc", c);
-                self.buf[insert_s_y + i].insert(self.cur.x - self.rnw, c.clone());
-                self.cur_right();
-            }
-        }
-
-        // cursor posi adjustment
-        if insert_strs.len() > 1 {
-            let last_line_str = insert_strs.get(insert_strs.len() - 1).unwrap().to_string();
-            if last_line_str.chars().last().unwrap_or(' ') == NEW_LINE {
-                self.cur.x = self.rnw;
-                self.cur.disp_x = 1 + self.rnw;
-            } else {
-                self.cur.x = last_line_str.chars().count() + self.rnw;
-                self.cur.disp_x = get_str_width(&last_line_str) + 1 + self.rnw;
-            }
-        }
         self.scroll();
         self.scroll_horizontal();
     }
@@ -272,15 +203,11 @@ impl Editor {
 
     pub fn ctrl_end(&mut self) {
         Log::ep_s("　　　　　　　　ctl_end");
-        self.cur.y = self.t_buf.len() - 1;
-        self.cur.x = self.t_buf.line_len(self.cur.y) - 1 + self.rnw;
-        let (_, width) = get_row_width(&self.t_buf.char_vec(self.cur.y)[..], false);
-        self.cur.disp_x = width + self.rnw + 1;
+        self.cur.y = self.buf.len_lines() - 1;
+        self.set_cur_end_x(self.cur.y);
         if self.updown_x == 0 {
             self.updown_x = self.cur.disp_x;
         }
-        self.scroll();
-        self.scroll_horizontal();
     }
 
     pub fn search(&mut self, prom: &mut Prompt) {
@@ -317,7 +244,7 @@ impl Editor {
                 let range = self.search.search_ranges[self.search.index];
                 self.cur.y = range.y;
                 self.cur.x = range.sx + self.rnw;
-                let (_, width) = get_row_width(&self.t_buf.char_vec(range.y)[..range.sx], false);
+                let (_, width) = get_row_width(&self.buf.char_vec(range.y)[..range.sx], false);
                 self.cur.disp_x = width + self.rnw + 1;
             }
             self.scroll();
@@ -329,13 +256,12 @@ impl Editor {
 
         let mut vec = vec![];
 
-        let search_vec = self.t_buf.search(&search_str);
-        //  self.set_search_info(search_vec);
+        let search_vec = self.buf.search(&search_str);
         for (sx, ex) in search_vec {
             vec.push(SearchRange {
-                y: self.t_buf.char_to_line(sx),
-                sx: self.t_buf.char_to_line_idx(sx),
-                ex: self.t_buf.char_to_line_idx(ex),
+                y: self.buf.char_to_line(sx),
+                sx: self.buf.char_to_line_idx(sx),
+                ex: self.buf.char_to_line_idx(ex),
             });
         }
 
@@ -353,7 +279,7 @@ impl Editor {
                     return i;
                 }
             }
-            // 循環検索の為に0返却
+            // return 0 for circular search
             return 0;
         } else {
             let index = self.search.search_ranges.len() - 1;
@@ -364,7 +290,7 @@ impl Editor {
                     return index - i;
                 }
             }
-            // 循環検索の為にindex返却
+            // return index for circular search
             return index;
         }
     }
@@ -383,17 +309,14 @@ impl Editor {
         prom.is_replace = true;
         prom.replace();
     }
+
     pub fn replace(&mut self, prom: &mut Prompt) {
         Log::ep_s("　　　　　　　　replace");
-
-        let search_str = prom.cont_1.buf.iter().collect::<String>();
-        let replace_str = prom.cont_2.buf.iter().collect::<String>();
-        for i in 0..self.buf.len() {
-            let row_str = &self.buf[i].iter().collect::<String>();
-            let row_str = row_str.replace(&search_str, &replace_str);
-            self.buf[i] = row_str.chars().collect::<Vec<char>>();
-        }
+        let search_str: String = prom.cont_1.buf.iter().collect();
+        let replace_str: String = prom.cont_2.buf.iter().collect();
+        self.buf.search_and_replace(&search_str, &replace_str);
     }
+
     pub fn grep_prom(&mut self, prom: &mut Prompt) {
         Log::ep_s("　　　　　　　　grep_prom");
         prom.is_grep = true;

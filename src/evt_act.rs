@@ -1,5 +1,5 @@
-use crate::global::*;
 use crate::model::*;
+use crate::{editor, global::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use std::io::Write;
 use termion::clear;
@@ -19,6 +19,8 @@ impl EvtAct {
                 EvtAct::init(editor, mbar, prom);
 
                 // eprintln!("editor.evt.clone(){:?}", editor.evt.clone());
+
+                let offset_y_org = editor.offset_y;
 
                 match editor.evt {
                     Resize(_, _) => {
@@ -44,8 +46,8 @@ impl EvtAct {
                         Char('g') => editor.grep_prom(prom),
                         Char('z') => editor.undo(mbar),
                         Char('y') => editor.redo(&term, mbar),
-                        End => editor.move_cursor(out, sbar),
-                        Home => editor.move_cursor(out, sbar),
+                        Home => editor.ctrl_home(),
+                        End => editor.ctrl_end(),
                         _ => mbar.set_err(&LANG.lock().unwrap().unsupported_operation),
                     },
 
@@ -59,7 +61,7 @@ impl EvtAct {
                         Char(c) => editor.insert_char(c.to_ascii_uppercase()),
                         F(1) => editor.record_key_start(term, mbar, prom, sbar),
                         F(2) => editor.exec_record_key(out, term, mbar, prom, sbar),
-                        F(4) => editor.move_cursor(out, sbar),
+                        F(4) => editor.search_str(false),
                         _ => mbar.set_err(&LANG.lock().unwrap().unsupported_operation),
                     },
                     Key(KeyEvent { code, .. }) => match code {
@@ -69,17 +71,17 @@ impl EvtAct {
                         Delete => editor.delete(),
                         PageDown => editor.page_down(),
                         PageUp => editor.page_up(),
-                        Home => editor.move_cursor(out, sbar),
-                        End => editor.move_cursor(out, sbar),
-                        Down => editor.move_cursor(out, sbar),
-                        Up => editor.move_cursor(out, sbar),
-                        Left => editor.move_cursor(out, sbar),
-                        Right => editor.move_cursor(out, sbar),
-                        F(3) => editor.move_cursor(out, sbar),
+                        Up => editor.cur_up(),
+                        Down => editor.cur_down(),
+                        Left => editor.cur_left(),
+                        Right => editor.cur_right(),
+                        Home => editor.home(),
+                        End => editor.end(),
+                        F(3) => editor.search_str(true),
                         _ => mbar.set_err(&LANG.lock().unwrap().unsupported_operation),
                     },
-                    Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => editor.move_cursor(out, sbar),
-                    Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => editor.move_cursor(out, sbar),
+                    Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => editor.cur_up(),
+                    Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => editor.cur_down(),
                     Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, true),
                     Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: x, row: y, .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, false),
                     _ => mbar.set_err(&LANG.lock().unwrap().unsupported_operation),
@@ -90,8 +92,12 @@ impl EvtAct {
                 }
                 EvtAct::finalize(editor);
 
+                if offset_y_org != editor.offset_y {
+                    editor.d_range.d_type = DType::All;
+                }
+
                 // key_record実行時は最終時のみredraw
-                if editor.is_redraw == true && prom.is_key_record_exec == false || prom.is_key_record_exec == true && prom.is_key_record_exec_draw == true {
+                if editor.d_range.d_type != DType::Not || (prom.is_key_record_exec == false || prom.is_key_record_exec == true && prom.is_key_record_exec_draw == true) {
                     term.draw(out, editor, mbar, prom, sbar).unwrap();
                 }
             }
@@ -118,42 +124,38 @@ impl EvtAct {
             Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {}
             _ => editor.updown_x = 0,
         }
-        // all_redraw判定
-        editor.is_redraw = false;
+        // redraw判定
         match editor.evt {
-            Resize(_, _) => editor.is_redraw = true,
+            Resize(_, _) => editor.d_range.d_type = DType::All,
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                _ => editor.is_redraw = true,
+                Home | End => editor.d_range.d_type = DType::Not,
+                _ => editor.d_range.d_type = DType::All,
             },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                Down | Up | Left | Right | Home | End => editor.is_redraw = true,
-                F(4) => editor.is_redraw = false,
-                _ => editor.is_redraw = true,
+                Down | Up | Left | Right | Home | End => editor.d_range.d_type = DType::All,
+                F(4) => editor.d_range.d_type = DType::Not,
+                _ => editor.d_range.d_type = DType::All,
             },
             Key(KeyEvent { code, .. }) => match code {
                 Down | Up | Left | Right | Home | End | F(3) => {
                     if editor.sel.is_selected() {
-                        editor.is_redraw = true;
+                        editor.d_range.d_type = DType::All;
+                    } else {
+                        editor.d_range.d_type = DType::Not;
                     }
                 }
-                _ => editor.is_redraw = true,
+                _ => editor.d_range.d_type = DType::All,
             },
 
-            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => {}
-            Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {}
+            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => editor.d_range.d_type = DType::Not,
 
             // for err msg or selected
-            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) => editor.is_redraw = true,
-            Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
                 if editor.sel.is_selected() {
-                    editor.is_redraw = true;
+                    editor.d_range.d_type = DType::All;
                 }
             }
-            _ => editor.is_redraw = false,
-        }
-
-        if editor.is_redraw {
-            editor.d_range.d_type = DType::All;
+            _ => editor.d_range.d_type = DType::Not,
         }
 
         // Edit    is_change=true, Clear redo_vec,
@@ -216,12 +218,5 @@ impl EvtAct {
             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) | Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {}
             _ => editor.sel.clear(),
         }
-
-        // 検索後に検索対象文字の変更対応で、再検索
-        /*
-        if editor.search.str.len() > 0 {
-            editor.search.search_ranges = editor.get_search_ranges(&editor.search.str).clone();
-        }
-        */
     }
 }

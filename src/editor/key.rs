@@ -15,7 +15,7 @@ impl Editor {
     }
     pub fn cur_down(&mut self) {
         Log::ep_s("　　　　　　　 c_d start");
-        if self.cur.y + 1 < self.t_buf.lines().len() {
+        if self.cur.y + 1 < self.buf.len_lines() {
             self.cur.y += 1;
 
             self.cur_updown_com();
@@ -31,7 +31,7 @@ impl Editor {
         // Left,Rightの場合は設定しない
         if self.evt == Key(Left.into()) || self.evt == Key(Right.into()) {
         } else {
-            let (cur_x, disp_x) = get_until_updown_x(&self.t_buf.char_vec(self.cur.y), self.updown_x - self.rnw);
+            let (cur_x, disp_x) = get_until_updown_x(&self.buf.char_vec(self.cur.y), self.updown_x - self.rnw);
             self.cur.disp_x = disp_x + self.rnw;
             self.cur.x = cur_x + self.rnw;
         }
@@ -45,7 +45,7 @@ impl Editor {
         // 行頭の場合
         } else if self.cur.x == self.rnw {
             //   self.cur.x = rowlen + self.rnw - 1;
-            let (cur_x, width) = get_row_width(&self.t_buf.char_vec(self.cur.y - 1)[..], false);
+            let (cur_x, width) = get_row_width(&self.buf.char_vec(self.cur.y - 1)[..], false);
             self.cur.x = cur_x + self.rnw;
             self.cur.disp_x = width + self.rnw + 1;
             self.d_range = DRnage::new(self.cur.y - 1, self.cur.y, DType::Target);
@@ -53,9 +53,9 @@ impl Editor {
             self.cur_up();
         } else {
             self.cur.x = max(self.cur.x - 1, self.rnw);
-            self.cur.disp_x -= get_cur_x_width(&self.t_buf.char_vec(self.cur.y), self.cur.x - self.rnw);
+            self.cur.disp_x -= get_cur_x_width(&self.buf.char_vec(self.cur.y), self.cur.x - self.rnw);
             self.d_range = DRnage::new(self.cur.y, self.cur.y, DType::Target);
-            let c = self.t_buf.char(self.cur.y, self.cur.x - self.rnw);
+            let c = self.buf.char(self.cur.y, self.cur.x - self.rnw);
             if c == NEW_LINE_CR && (self.evt == SHIFT_LEFT || self.evt == LEFT) {
                 self.cur.disp_x -= 1;
                 self.cur.x -= 1;
@@ -69,20 +69,20 @@ impl Editor {
         Log::ep_s("　　　　　　　  c_r start");
 
         let mut is_end_of_line = false;
-        let c = self.t_buf.char(self.cur.y, self.cur.x - self.rnw);
+        let c = self.buf.char(self.cur.y, self.cur.x - self.rnw);
         if self.evt == RIGHT || self.evt == CTRL_V {
             if is_line_end(c) {
                 is_end_of_line = true;
             }
         //   } else if self.evt == SHIFT_RIGHT && self.cur.x == self.t_buf.line_len(self.cur.y)[self.t_buf.line_len(self.cur.y) - 2..] + self.rnw {
-        } else if self.evt == SHIFT_RIGHT && self.cur.x == self.t_buf.line_len(self.cur.y) + self.rnw {
+        } else if self.evt == SHIFT_RIGHT && self.cur.x == self.buf.len_line(self.cur.y) + self.rnw {
             is_end_of_line = true;
         }
 
         // 行末(行末の空白対応で)
         if is_end_of_line {
             // 最終行の行末
-            if self.cur.y == self.t_buf.len() - 1 {
+            if self.cur.y == self.buf.len_lines() - 1 {
                 return;
             // その他の行末
             } else {
@@ -95,8 +95,8 @@ impl Editor {
             if c == EOF_MARK {
                 return;
             }
-            self.cur.disp_x += get_cur_x_width(&self.t_buf.char_vec(self.cur.y), self.cur.x - self.rnw);
-            self.cur.x = min(self.cur.x + 1, self.t_buf.line_len(self.cur.y) + self.rnw);
+            self.cur.disp_x += get_cur_x_width(&self.buf.char_vec(self.cur.y), self.cur.x - self.rnw);
+            self.cur.x = min(self.cur.x + 1, self.buf.len_line(self.cur.y) + self.rnw);
             if self.evt == SHIFT_RIGHT && c == NEW_LINE_CR {
                 self.cur.disp_x += 1;
                 self.cur.x += 1;
@@ -107,13 +107,13 @@ impl Editor {
     }
     pub fn enter(&mut self) {
         Log::ep_s("　　　　　　　  enter");
-        let y_offset_org: usize = self.y_offset;
+        let y_offset_org: usize = self.offset_y;
         let rnw_org = self.rnw;
         let mut evt_proc = EvtProc::new(DoType::Enter, self.cur, self.d_range);
 
-        self.t_buf.insert_char(self.cur.y, self.cur.x - self.rnw, NEW_LINE);
+        self.buf.insert_char(self.cur.y, self.cur.x - self.rnw, NEW_LINE);
         self.cur.y += 1;
-        self.rnw = self.t_buf.len().to_string().len();
+        self.rnw = self.buf.len_lines().to_string().len();
         self.cur.x = self.rnw;
         self.cur.disp_x = self.rnw + 1;
 
@@ -121,10 +121,10 @@ impl Editor {
         self.scroll_horizontal();
 
         Log::ep("y_offset_org", y_offset_org);
-        Log::ep("y_offset", self.y_offset);
+        Log::ep("y_offset", self.offset_y);
         Log::ep("rnw_org == self.rnw", rnw_org == self.rnw);
 
-        if y_offset_org == self.y_offset && rnw_org == self.rnw && !self.sel.is_selected() {
+        if y_offset_org == self.offset_y && rnw_org == self.rnw && !self.sel.is_selected() {
             self.d_range = DRnage::new(self.cur.y - 1, self.cur.y, DType::After);
         } else {
             self.d_range.d_type = DType::All;
@@ -139,7 +139,7 @@ impl Editor {
     pub fn insert_char(&mut self, c: char) {
         // self.buf[self.cur.y].insert(self.cur.x - self.rnw, c);
 
-        self.t_buf.insert_char(self.cur.y, self.cur.x - self.rnw, c);
+        self.buf.insert_char(self.cur.y, self.cur.x - self.rnw, c);
         let mut ep = EvtProc::new(DoType::InsertChar, self.cur, self.d_range);
         self.cur_right();
         ep.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
@@ -178,10 +178,10 @@ impl Editor {
 
                 // del new line code
 
-                let (cur_x_org, width_org) = get_row_width(&self.t_buf.char_vec(self.cur.y + 1)[..], false);
-                self.t_buf.remove(DoType::BS, self.cur.y, self.t_buf.line_len(self.cur.y) - 1);
+                let (cur_x_org, width_org) = get_row_width(&self.buf.char_vec(self.cur.y + 1)[..], false);
+                self.buf.remove_type(DoType::BS, self.cur.y, self.buf.len_line(self.cur.y) - 1);
                 Log::ep("self.cur.x", self.cur.x);
-                self.rnw = self.t_buf.len().to_string().len();
+                self.rnw = self.buf.len_lines().to_string().len();
                 self.cur.x = cur_x_org + self.rnw;
                 self.cur.disp_x = width_org + self.rnw + 1;
 
@@ -193,9 +193,9 @@ impl Editor {
                 self.d_range = DRnage::new(self.cur.y, self.cur.y, DType::Target);
 
                 self.cur_left();
-                let c = self.t_buf.char(self.cur.y, self.cur.x - self.rnw);
+                let c = self.buf.char(self.cur.y, self.cur.x - self.rnw);
                 ep.str_vec = vec![c.to_string()];
-                self.t_buf.remove(DoType::BS, self.cur.y, self.cur.x - self.rnw);
+                self.buf.remove_type(DoType::BS, self.cur.y, self.cur.x - self.rnw);
             }
             // BS後のcurを設定
             ep.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
@@ -218,14 +218,14 @@ impl Editor {
             self.sel.clear();
         } else {
             // 最終行の終端
-            if self.cur.y == self.t_buf.len() - 1 && self.cur.x == self.t_buf.line_len(self.cur.y) + self.rnw - 1 {
+            if self.cur.y == self.buf.len_lines() - 1 && self.cur.x == self.buf.len_line(self.cur.y) + self.rnw - 1 {
                 self.d_range.d_type = DType::Not;
                 return;
             }
             self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
 
             // 行末
-            let c = self.t_buf.char(self.cur.y, self.cur.x - self.rnw);
+            let c = self.buf.char(self.cur.y, self.cur.x - self.rnw);
             if is_line_end(c) {
                 Log::ep_s("is_line_end");
 
@@ -235,11 +235,10 @@ impl Editor {
                 let rnw_org = self.rnw;
 
                 self.save_del_char_evtproc(DoType::Del);
-                self.t_buf.remove(DoType::Del, self.cur.y, self.cur.x - self.rnw);
+                self.buf.remove_type(DoType::Del, self.cur.y, self.cur.x - self.rnw);
                 //    self.del_end_of_line_new_line(self.cur.y + 1);
 
-                eprintln!("self.t_buf {:?}", self.t_buf);
-                self.rnw = self.t_buf.len().to_string().len();
+                self.rnw = self.buf.len_lines().to_string().len();
                 // When the number of digits in the line number decreases
                 if rnw_org != self.rnw {
                     self.cur.x -= 1;
@@ -250,7 +249,7 @@ impl Editor {
                 Log::ep_s("not is_line_end");
 
                 self.save_del_char_evtproc(DoType::Del);
-                self.t_buf.remove(DoType::Del, self.cur.y, self.cur.x - self.rnw);
+                self.buf.remove_type(DoType::Del, self.cur.y, self.cur.x - self.rnw);
             }
         }
         self.scroll();
@@ -265,7 +264,7 @@ impl Editor {
     }
 
     pub fn end(&mut self) {
-        let (cur_x, disp_x) = get_row_width(&self.t_buf.char_vec(self.cur.y)[..], false);
+        let (cur_x, disp_x) = get_row_width(&self.buf.char_vec(self.cur.y)[..], false);
         self.cur.x = cur_x + self.rnw;
         self.cur.disp_x = disp_x + self.rnw + 1;
 
@@ -273,7 +272,7 @@ impl Editor {
     }
 
     pub fn page_down(&mut self) {
-        self.cur.y = min(self.cur.y + self.disp_row_num, self.t_buf.len() - 1);
+        self.cur.y = min(self.cur.y + self.disp_row_num, self.buf.len_lines() - 1);
         self.cur_updown_com();
         self.scroll();
     }
@@ -290,7 +289,9 @@ impl Editor {
 
 #[cfg(test)]
 mod tests {
+    /*
     use super::*;
+
 
     #[test]
     pub fn test_insert_char() {
@@ -344,7 +345,6 @@ mod tests {
 
         e.enter();
         e.back_space();
-        eprintln!("e.get_buf_str() {:?}", UT::get_buf_str(&mut e));
         assert_eq!(UT::get_buf_str(&mut e), format!("{}", EOF_MARK));
         assert_eq!(e.cur, Cur { y: 0, x: e.rnw, disp_x: e.rnw + 1 });
         assert_eq!(e.d_range, DRnage::new(e.cur.y, e.cur.y, DType::After));
@@ -403,7 +403,6 @@ mod tests {
         e.enter();
         e.cur_left();
         e.delete();
-        eprintln!("e.get_buf_str() {:?}", UT::get_buf_str(&mut e));
         assert_eq!(UT::get_buf_str(&mut e), format!("{}", EOF_MARK));
         assert_eq!(e.cur, Cur { y: 0, x: e.rnw, disp_x: e.rnw + 1 });
         assert_eq!(e.d_range, DRnage::new(e.cur.y, e.cur.y, DType::After));
@@ -466,4 +465,5 @@ mod tests {
              assert_eq!(e.cur, Cur { y: 0, x: e.rnw + 1, disp_x: e.rnw + 1 + 2 });
         */
     }
+    */
 }

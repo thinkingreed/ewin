@@ -1,207 +1,68 @@
-use crate::global::*;
-use crate::model::*;
-use crate::util::*;
+use crate::{global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
-use std::cmp::min;
 use std::io::Write;
 
 impl Editor {
+    fn shift_move_com(&mut self, do_type: DoType) {
+        self.sel.set_sel_posi(true, self.cur.y, self.cur.x - self.rnw, self.cur.disp_x);
+
+        match do_type {
+            DoType::ShiftRight => self.cur_right(),
+            DoType::ShiftLeft => self.cur_left(),
+            DoType::ShiftUp => self.cur_up(),
+            DoType::ShiftDown => self.cur_down(),
+            DoType::ShiftHome => {
+                self.cur.x = self.rnw;
+                self.cur.disp_x = self.rnw + 1;
+            }
+            DoType::ShiftEnd => {
+                self.set_cur_end_x(self.cur.y);
+            }
+            _ => {}
+        }
+        self.sel.set_sel_posi(false, self.cur.y, self.cur.x - self.rnw, self.cur.disp_x);
+        self.sel.check_sel_overlap();
+
+        self.d_range.set_target(self.sel.sy, self.sel.ey);
+    }
     pub fn shift_right(&mut self) {
         Log::ep_s("　　　　　　　  shift_right");
-
-        let e_disp_x_org = self.sel.e_disp_x;
-        let disp_x_org = self.cur.disp_x;
-
-        if !self.sel.is_selected() {
-            self.sel.sy = self.cur.y;
-            self.sel.sx = self.cur.x - self.rnw;
-            self.sel.s_disp_x = self.cur.disp_x;
-        }
-        self.cur_right();
-        self.sel.ey = self.cur.y;
-        self.sel.ex = self.cur.x - self.rnw;
-        self.sel.e_disp_x = self.cur.disp_x;
-        // shift_leftからのshift_right
-        if e_disp_x_org == disp_x_org {
-            self.sel.ey = self.cur.y;
-            self.sel.ex = self.cur.x - self.rnw;
-            self.sel.e_disp_x = self.cur.disp_x;
-        }
-
-        // 選択開始位置とカーソルが重なった場合
-        if self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
-            self.sel.clear();
-        }
-
-        self.scroll();
-        self.scroll_horizontal();
-
-        self.d_range = DRnage {
-            sy: min(self.sel.sy, self.sel.ey),
-            d_type: DType::After,
-            ..DRnage::default()
-        };
+        self.shift_move_com(DoType::ShiftRight);
     }
 
     pub fn shift_left(&mut self) {
         Log::ep_s("　　　　　　　  shift_left");
-
-        let e_disp_x_org = self.sel.e_disp_x;
-        let disp_x_org = self.cur.disp_x;
-
-        if !self.sel.is_selected() {
-            self.sel.sy = self.cur.y;
-            self.sel.sx = self.cur.x - self.rnw;
-            self.sel.s_disp_x = self.cur.disp_x;
-        }
-        self.cur_left();
-
-        self.sel.ey = self.cur.y;
-        self.sel.ex = self.cur.x - self.rnw;
-        self.sel.e_disp_x = self.cur.disp_x;
-
-        // shift_rightからのshift_left
-        if e_disp_x_org != 0 && e_disp_x_org < disp_x_org {
-            self.sel.e_disp_x -= 1;
-        }
-        // 選択開始位置とカーソルが重なった場合
-        if self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
-            self.sel.clear();
-        }
-        self.scroll();
-        self.scroll_horizontal();
-
-        self.d_range = DRnage {
-            sy: min(self.sel.sy, self.sel.ey),
-            d_type: DType::After,
-            ..DRnage::default()
-        };
+        self.shift_move_com(DoType::ShiftLeft);
     }
 
     pub fn shift_down(&mut self) {
         Log::ep_s("　　　　　　　　shift_down");
-
-        if self.cur.y == self.t_buf.len() - 1 {
+        if self.cur.y == self.buf.len_lines() - 1 {
             self.d_range.d_type = DType::Not;
             return;
         }
-        let y_offset_org: usize = self.y_offset;
-
-        if !self.sel.is_selected() {
-            self.sel.sy = self.cur.y;
-            self.sel.sx = self.cur.x - self.rnw;
-            self.sel.s_disp_x = self.cur.disp_x;
-        }
-        self.cur_down();
-        self.sel.ey = self.cur.y;
-        self.sel.ex = self.cur.x - self.rnw;
-        self.sel.e_disp_x = self.cur.disp_x;
-
-        self.d_range = DRnage {
-            // ShiftUp,Down繰り返す場合の対応でcur.y - 1,
-            sy: self.cur.y - 1,
-            ey: self.cur.y,
-            d_type: DType::Target,
-        };
-
-        // 選択開始位置とカーソルが重なった場合
-        if self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
-            self.sel.clear();
-        }
-
-        self.scroll();
-        self.scroll_horizontal();
-
-        if y_offset_org != self.y_offset {
-            self.d_range.d_type = DType::All;
-        }
+        self.shift_move_com(DoType::ShiftDown);
     }
 
     pub fn shift_up(&mut self) {
         Log::ep_s("　　　　　　　　shift_up");
-
         if self.cur.y == 0 {
             self.d_range.d_type = DType::Not;
             return;
         }
-        let y_offset_org: usize = self.y_offset;
-
-        if !self.sel.is_selected() {
-            self.sel.sy = self.cur.y;
-            self.sel.sx = self.cur.x - self.rnw;
-            self.sel.s_disp_x = self.cur.disp_x;
-            // 行頭の場合に先頭文字を含めない
-            if self.cur.x == self.rnw {
-                self.sel.s_disp_x = self.cur.disp_x - 1;
-            }
-        }
-        self.cur_up();
-        self.sel.ey = self.cur.y;
-        self.sel.ex = self.cur.x - self.rnw;
-        self.sel.e_disp_x = self.cur.disp_x;
-
-        self.d_range = DRnage {
-            // ShiftUp,Down繰り返す場合の対応でcur.y + 1,
-            sy: self.cur.y + 1,
-            ey: self.cur.y,
-            d_type: DType::Target,
-        };
-
-        // 選択開始位置とカーソルが重なった場合
-        if self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
-            self.sel.clear();
-        }
-
-        self.scroll();
-        self.scroll_horizontal();
-
-        if y_offset_org != self.y_offset {
-            self.d_range.d_type = DType::All;
-        }
+        self.shift_move_com(DoType::ShiftUp);
     }
+
     pub fn shift_home(&mut self) {
         Log::ep_s("　　　　　　　　shift_home");
-        if !self.sel.is_selected() {
-            self.sel.sy = self.cur.y;
-            self.sel.sx = self.cur.x - self.rnw;
-            self.sel.s_disp_x = self.cur.disp_x;
-        }
-        self.cur.x = self.rnw;
-        self.cur.disp_x = self.rnw + 1;
 
-        self.sel.ey = self.cur.y;
-        self.sel.ex = 0;
-        self.sel.e_disp_x = self.rnw + 1;
-
-        // 選択開始位置とカーソルが重なった場合
-        if self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
-            self.sel.clear();
-        }
-
-        self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
+        self.shift_move_com(DoType::ShiftHome);
     }
+
     pub fn shift_end(&mut self) {
         Log::ep_s("　　　　　　　  shift_end");
 
-        if !self.sel.is_selected() {
-            self.sel.sy = self.cur.y;
-            self.sel.sx = self.cur.x - self.rnw;
-            self.sel.s_disp_x = self.cur.disp_x;
-        }
-        let (cur_x, width) = get_row_width(&self.t_buf.char_vec(self.cur.y)[..], false);
-        self.cur.x = cur_x + self.rnw;
-        self.cur.disp_x = width + self.rnw + 1;
-
-        self.sel.ey = self.cur.y;
-        self.sel.ex = cur_x;
-        self.sel.e_disp_x = self.cur.disp_x;
-
-        // 選択開始位置とカーソルが重なった場合
-        if self.sel.sx == self.sel.ex && self.sel.sy == self.sel.ey {
-            self.sel.clear();
-        }
-
-        self.d_range = DRnage { sy: self.cur.y, ey: self.cur.y, d_type: DType::Target };
+        self.shift_move_com(DoType::ShiftEnd);
     }
 
     pub fn record_key_start(&mut self, term: &mut Terminal, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {

@@ -1,8 +1,9 @@
-use crate::{def::*, global::*, model::*};
+use crate::{def::*, global::*, model::*, util::*};
 use permissions::*;
+use ropey::iter::Chars;
 use std::cmp::min;
 use std::env;
-use std::io::{ErrorKind, Write};
+use std::io::ErrorKind;
 use std::path;
 use termion::{clear, cursor};
 use unicode_width::UnicodeWidthChar;
@@ -32,15 +33,15 @@ impl Editor {
         match result {
             Ok(t_buf) => {
                 // search_and_replace(&mut t_buf.text, NEW_LINE_CRLF, NEW_LINE_CR.to_string().as_str());
-                self.t_buf = t_buf;
-                self.t_buf.text.insert_char(self.t_buf.text.len_chars(), EOF_MARK);
+                self.buf = t_buf;
+                self.buf.text.insert_char(self.buf.text.len_chars(), EOF_MARK);
             }
             Err(err) => match err.kind() {
                 ErrorKind::PermissionDenied => {
                     println!("{}", LANG.lock().unwrap().no_read_permission.clone());
                     std::process::exit(1);
                 }
-                ErrorKind::NotFound => self.t_buf.text.insert_char(self.t_buf.text.len_chars(), EOF_MARK),
+                ErrorKind::NotFound => self.buf.text.insert_char(self.buf.text.len_chars(), EOF_MARK),
                 _ => {
                     println!("{} {:?}", LANG.lock().unwrap().file_opening_problem, err);
                     std::process::exit(1);
@@ -53,55 +54,61 @@ impl Editor {
     }
 
     pub fn set_cur_default(&mut self) {
-        self.rnw = self.t_buf.len().to_string().len();
+        self.rnw = self.buf.len_lines().to_string().len();
         self.cur = Cur { y: 0, x: self.rnw, disp_x: self.rnw + 1 };
         self.scroll();
         self.scroll_horizontal();
     }
 
+    pub fn set_cur_end_x(&mut self, y: usize) {
+        self.rnw = self.buf.len_lines().to_string().len();
+        let (cur_x, width) = get_row_width(&self.buf.char_vec(y)[..], false);
+        self.cur.x = cur_x + self.rnw;
+        self.cur.disp_x = width + self.rnw + 1;
+        self.scroll();
+        self.scroll_horizontal();
+    }
+
+    //    pub fn draw(&mut self, str_vec: &mut Vec<String>, draw_vec: Vec<Vec<char>>) {
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         let (rows, cols) = (self.disp_row_num, self.disp_col_num);
-        Log::ep("rows", rows);
-        Log::ep("cols", cols);
-        // eprintln!("self.t_buf {:?}", self.t_buf);
+        Log::ep("rows cols", format!("{} {}", rows, cols));
 
-        let mut y_draw_s = self.y_offset;
-        let mut y_draw_e = min(self.t_buf.lines().len(), self.y_offset + min(self.disp_row_num, self.t_buf.lines().len()));
+        let mut y_draw_s = self.offset_y;
+        let mut y_draw_e = min(self.buf.len_lines(), self.offset_y + self.disp_row_num);
 
         let d_range = self.d_range.get_range();
-        Log::ep("d_range", d_range);
 
         if d_range.d_type == DType::Not {
             return;
         } else if d_range.d_type == DType::None || d_range.d_type == DType::All {
-            Colors::set_textarea_color(str_vec);
             str_vec.push(clear::All.to_string());
             str_vec.push(cursor::Goto(1, 1).to_string());
         } else {
             y_draw_s = d_range.sy;
             if d_range.d_type == DType::Target {
-                for i in d_range.sy - self.y_offset..=d_range.ey - self.y_offset {
+                for i in d_range.sy - self.offset_y..=d_range.ey - self.offset_y {
                     str_vec.push(format!("{}{}", cursor::Goto(1, (i + 1) as u16), clear::CurrentLine));
                 }
-                str_vec.push(cursor::Goto(1, (d_range.sy + 1 - self.y_offset) as u16).to_string());
+                str_vec.push(cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16).to_string());
                 y_draw_e = d_range.ey + 1;
-            } else {
-                str_vec.push(format!("{}{}", cursor::Goto(1, (d_range.sy + 1 - self.y_offset) as u16), clear::AfterCursor));
+            } else if d_range.d_type == DType::After {
+                str_vec.push(format!("{}{}", cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16), clear::AfterCursor));
             }
         }
 
         // 画面上の行、列
         let mut y = 0;
         let mut x = 0;
-        // let rowlen =
-        self.rnw = self.t_buf.lines().len().to_string().len();
+
+        self.rnw = self.buf.len_lines().to_string().len();
         let sel_range = self.sel.get_range();
         let search_ranges = self.search.search_ranges.clone();
 
         for i in y_draw_s..y_draw_e {
             Colors::set_rownum_color(str_vec);
             // 行番号の空白
-            if self.cur.y == i && self.x_offset_disp > 0 {
+            if self.cur.y == i && self.offset_disp_x > 0 {
                 for _ in 0..self.rnw {
                     str_vec.push(">".to_string());
                 }
@@ -114,36 +121,38 @@ impl Editor {
 
             Colors::set_textarea_color(str_vec);
 
-            let mut x_draw_s = 0;
+            // let line_vec = &draw_vec[i - y_draw_s];
+            let x_draw_s = if i == self.cur.y { self.offset_x } else { 0 };
+            let x_draw_e = min(x_draw_s + cols, self.buf.len_line(i));
 
-            if i == self.cur.y {
-                x_draw_s = self.x_offset;
-            }
-            // 改行EOF対応
-            if i < self.t_buf.lines().len() {
-                let x_draw_e = self.t_buf.line_len(i);
+            let line_idx = self.buf.line_to_char(i);
+            let mut line_char_idx = 0;
+            for j in x_draw_s..x_draw_e {
+                let c = &self.buf.char_idx(line_idx + line_char_idx);
 
-                for j in x_draw_s..x_draw_e {
-                    // highlight
-                    self.ctl_color(str_vec, sel_range, &search_ranges, i, j);
+                // let c = &line_vec[j];
+                // highlight
+                self.ctl_color(str_vec, sel_range, &search_ranges, i, j);
 
-                    let c = self.t_buf.char(i, j);
-                    let width = c.width().unwrap_or(0);
-                    let x_w_l = x + width + self.rnw;
-                    // Log::ep("x_w_l", x_w_l);
-                    if x_w_l > cols {
-                        break;
-                    }
-                    x += width;
+                let mut width = c.width().unwrap_or(0);
+                if c == &NEW_LINE {
+                    width = 1;
+                }
 
-                    if c == EOF_MARK {
-                        self.set_eof(str_vec);
-                    } else if c == NEW_LINE_CR {
-                    } else if c == NEW_LINE {
-                        str_vec.push(NEW_LINE_MARK.to_string());
-                    } else {
-                        str_vec.push(c.to_string());
-                    }
+                let x_w_l = x + width + self.rnw;
+                if x_w_l > cols {
+                    break;
+                }
+                x += width;
+                line_char_idx += 1;
+
+                if c == &EOF_MARK {
+                    self.set_eof(str_vec);
+                } else if c == &NEW_LINE_CR {
+                } else if c == &NEW_LINE {
+                    str_vec.push(NEW_LINE_MARK.to_string());
+                } else {
+                    str_vec.push(c.to_string());
                 }
             }
             y += 1;
@@ -157,24 +166,9 @@ impl Editor {
         }
 
         Log::ep("cur.y", self.cur.y);
-        Log::ep("y_offset", self.y_offset);
+        Log::ep("y_offset", self.offset_y);
         Log::ep("cur.x", self.cur.x);
         Log::ep("cur.disp_x", self.cur.disp_x);
-        Log::ep("x_offset", self.x_offset);
-        Log::ep("x_offset_disp", self.x_offset_disp);
-        Log::ep("sel", self.sel);
-    }
-
-    pub fn draw_cur<T: Write>(&mut self, out: &mut T, sbar: &mut StatusBar) {
-        Log::ep_s("　　　　　　　  draw_cursor");
-        Log::ep("cur.x", self.cur.x);
-        Log::ep("cur.disp_x", self.cur.disp_x);
-
-        let str_vec: &mut Vec<String> = &mut vec![];
-        sbar.draw_cur(str_vec, self);
-        str_vec.push(cursor::Goto((self.cur.disp_x - self.x_offset_disp) as u16, (self.cur.y + 1 - self.y_offset) as u16).to_string());
-        write!(out, "{}", str_vec.concat()).unwrap();
-        out.flush().unwrap();
     }
 
     pub fn set_sel_del_d_range(&mut self) {

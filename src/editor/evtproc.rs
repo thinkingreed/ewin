@@ -11,7 +11,7 @@ impl Editor {
             cur_s: Cur {
                 y: sel.sy,
                 x: sel.sx + self.rnw,
-                disp_x: get_row_width(&self.t_buf.char_vec(self.cur.y)[..sel.sx], false).1 + self.rnw + 1,
+                disp_x: get_row_width(&self.buf.char_vec(self.cur.y)[..sel.sx], false).1 + self.rnw + 1,
             },
             cur_e: Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x },
             sel: self.sel,
@@ -25,7 +25,7 @@ impl Editor {
     pub fn save_del_char_evtproc(&mut self, do_type: DoType) {
         let mut ep = EvtProc::new(do_type, self.cur, self.d_range);
 
-        let c = self.t_buf.char(self.cur.y, self.cur.x - self.rnw);
+        let c = self.buf.char(self.cur.y, self.cur.x - self.rnw);
         Log::ep("save_del_char_evtproc", c.to_string());
         ep.str_vec = vec![c.to_string()];
 

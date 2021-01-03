@@ -3,6 +3,7 @@ use crate::_cfg::lang::cfg::LangCfg;
 use crate::def::*;
 use crossterm::event::{Event, Event::Key, KeyCode::End};
 use ropey::Rope;
+use std::cmp::{max, min};
 use std::fmt;
 use std::path;
 
@@ -435,6 +436,33 @@ impl SelRange {
             e_disp_x: e_disp_x,
         }
     }
+    pub fn set_s(&mut self, y: usize, x: usize, disp_x: usize) {
+        self.sy = y;
+        self.sx = x;
+        self.s_disp_x = disp_x;
+    }
+
+    pub fn set_e(&mut self, y: usize, x: usize, disp_x: usize) {
+        self.ey = y;
+        self.ex = x;
+        self.e_disp_x = disp_x;
+    }
+
+    pub fn check_sel_overlap(&mut self) {
+        // selectio start position and cursor overlap
+        if self.sx == self.ex && self.sy == self.ey {
+            self.clear();
+        }
+    }
+    pub fn set_sel_posi(&mut self, is_s: bool, y: usize, x: usize, disp_x: usize) {
+        if is_s {
+            if !self.is_selected() {
+                self.set_s(y, x, disp_x);
+            }
+        } else {
+            self.set_e(y, x, disp_x);
+        }
+    }
 }
 impl fmt::Display for SelRange {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -467,10 +495,7 @@ impl fmt::Display for Cur {
 // エディタの内部状態
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Editor {
-    /// テキスト本体
-    /// buffer[i][j]はi行目のj列目の文字 0-indexed
-    pub buf: Vec<Vec<char>>,
-    pub t_buf: TextBuffer,
+    pub buf: TextBuffer,
     /// 現在のカーソルの位置
     /// self.cursor.y < self.buffer.len()
     /// self.cursor.x <= self.buffer[self.cursor.y].len() + self.lnw
@@ -478,10 +503,10 @@ pub struct Editor {
     pub cur: Cur,
     /// 画面の一番上はバッファの何行目か
     /// スクロール処理に使う
-    pub y_offset: usize,
-    pub x_offset: usize,
+    pub offset_y: usize,
+    pub offset_x: usize,
     // 表示幅単位
-    pub x_offset_disp: usize,
+    pub offset_disp_x: usize,
     // 元の行のx_offset_di行の算出用
     pub cur_y_org: usize,
     // x_offset対象の行
@@ -493,7 +518,6 @@ pub struct Editor {
     pub rnw: usize,
     pub sel: SelRange,
     pub evt: Event,
-    pub is_redraw: bool,
     pub is_undo: bool,
     pub clipboard: String,
     /// number displayed on the terminal
@@ -513,12 +537,11 @@ pub struct Editor {
 impl Default for Editor {
     fn default() -> Self {
         Editor {
-            buf: vec![vec![]],
-            t_buf: TextBuffer::default(),
+            buf: TextBuffer::default(),
             cur: Cur::default(),
-            y_offset: 0,
-            x_offset: 0,
-            x_offset_disp: 0,
+            offset_y: 0,
+            offset_x: 0,
+            offset_disp_x: 0,
             cur_y_org: 0,
             // x_offset_disp_org: 0,
             //    x_offset_y: 0,
@@ -527,7 +550,6 @@ impl Default for Editor {
             rnw: 0,
             sel: SelRange::default(),
             evt: Key(End.into()),
-            is_redraw: false,
             is_undo: false,
             clipboard: String::new(),
             // for UT set
@@ -577,6 +599,16 @@ impl DRnage {
         }
         return DRnage { sy: sy, ey: ey, d_type: self.d_type };
     }
+    pub fn set_target(&mut self, sy: usize, ey: usize) {
+        self.d_type = DType::Target;
+        self.sy = min(sy, ey);
+        self.ey = max(sy, ey);
+    }
+    pub fn set_after(&mut self, sy: usize) {
+        self.d_type = DType::After;
+        self.sy = sy;
+    }
+
     pub fn clear(&mut self) {
         self.sy = 0;
         self.ey = 0;
@@ -620,6 +652,12 @@ pub enum DoType {
     Cut,
     Paste,
     InsertChar,
+    ShiftDown,
+    ShiftUp,
+    ShiftRight,
+    ShiftLeft,
+    ShiftHome,
+    ShiftEnd,
     None,
 }
 impl fmt::Display for DoType {
@@ -631,6 +669,12 @@ impl fmt::Display for DoType {
             DoType::Cut => write!(f, "Cut"),
             DoType::Paste => write!(f, "Paste"),
             DoType::InsertChar => write!(f, "InsertChar"),
+            DoType::ShiftDown => write!(f, "ShiftDown"),
+            DoType::ShiftUp => write!(f, "ShiftUp"),
+            DoType::ShiftRight => write!(f, "ShiftRight"),
+            DoType::ShiftLeft => write!(f, "ShiftLeft"),
+            DoType::ShiftHome => write!(f, "ShiftHome"),
+            DoType::ShiftEnd => write!(f, "ShiftEnd"),
             DoType::None => write!(f, "None"),
         }
     }

@@ -9,7 +9,7 @@ impl PromptCont {
             let chars: Vec<char> = contexts.chars().collect();
             for c in chars {
                 self.buf.insert(self.cur.x, c);
-                self.cursor_right();
+                self.cur_right();
             }
             return false;
         } else {

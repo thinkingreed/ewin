@@ -1,9 +1,11 @@
 extern crate ropey;
 use crate::{def::*, model::*};
+use anyhow::Result;
 use ropey::iter::{Chars, Lines};
 use ropey::{Rope, RopeSlice};
 use std::fs::File;
 use std::io;
+use std::io::BufWriter;
 
 impl Default for TextBuffer {
     fn default() -> Self {
@@ -21,12 +23,20 @@ impl TextBuffer {
         self.text.line(i)
     }
 
-    pub fn line_len<'a>(&'a self, i: usize) -> usize {
+    pub fn len_line<'a>(&'a self, i: usize) -> usize {
         self.text.line(i).len_chars()
+    }
+
+    pub fn len_chars<'a>(&'a self) -> usize {
+        self.text.len_chars()
     }
 
     pub fn char_vec<'a>(&'a self, i: usize) -> Vec<char> {
         self.line(i).chars().collect()
+    }
+
+    pub fn char_vec_ex<'a>(&'a self, i: usize) -> Chars {
+        self.line(i).chars()
     }
 
     pub fn insert_char(&mut self, y: usize, x: usize, c: char) {
@@ -34,16 +44,17 @@ impl TextBuffer {
         self.text.insert_char(i, c);
     }
 
-    pub fn insert(&mut self, y: usize, x: usize, s: &str) {
-        let i = self.text.line_to_char(y) + x;
+    pub fn insert(&mut self, i: usize, s: &str) {
         self.text.insert(i, s);
     }
 
     pub fn insert_end(&mut self, s: &str) {
         self.text.insert(self.text.len_chars(), s);
     }
-
-    pub fn remove(&mut self, do_type: DoType, y: usize, x: usize) {
+    pub fn remove(&mut self, s_idx: usize, e_idx: usize) {
+        self.text.remove(s_idx..e_idx);
+    }
+    pub fn remove_type(&mut self, do_type: DoType, y: usize, x: usize) {
         // new line CR
         let mut i = self.text.line_to_char(y) + x;
 
@@ -69,12 +80,22 @@ impl TextBuffer {
         self.text.remove(i_s..i_e);
     }
 
+    pub fn write_to(&mut self, path: &str) -> Result<()> {
+        self.text.remove(self.text.len_chars() - 1..self.text.len_chars());
+        self.text.write_to(BufWriter::new(File::create(path)?))?;
+        self.insert_end(EOF_MARK.to_string().as_str());
+        Ok(())
+    }
+
     pub fn char<'a>(&'a self, y: usize, x: usize) -> char {
         let mut char = ' ';
-        if self.line_len(y) > x {
+        if self.len_line(y) > x {
             char = self.line(y).char(x);
         }
         char
+    }
+    pub fn char_idx<'a>(&'a self, i: usize) -> char {
+        self.text.char(i)
     }
 
     pub fn slice<'a>(&'a self, sel: SelRange) -> String {
@@ -88,12 +109,12 @@ impl TextBuffer {
         self.text.chars()
     }
 
-    pub fn len<'a>(&'a self) -> usize {
+    pub fn len_lines<'a>(&'a self) -> usize {
         self.text.len_lines()
     }
 
-    pub fn lines<'a>(&'a self) -> Lines<'a> {
-        self.text.lines()
+    pub fn line_to_char<'a>(&'a self, i: usize) -> usize {
+        self.text.line_to_char(i)
     }
 
     pub fn char_to_line<'a>(&'a self, i: usize) -> usize {

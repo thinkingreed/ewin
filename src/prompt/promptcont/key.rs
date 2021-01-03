@@ -11,13 +11,13 @@ impl PromptCont {
         self.cur.x += 1;
     }
 
-    pub fn cursor_left(&mut self) {
+    pub fn cur_left(&mut self) {
         if self.cur.x != 0 {
             self.cur.x = max(self.cur.x - 1, 0);
             self.cur.disp_x -= get_cur_x_width(&self.buf, self.cur.x);
         }
     }
-    pub fn cursor_right(&mut self) {
+    pub fn cur_right(&mut self) {
         if self.cur.x < self.buf.len() {
             self.cur.disp_x += get_cur_x_width(&self.buf, self.cur.x);
             self.cur.x = min(self.cur.x + 1, self.buf.len());
@@ -59,8 +59,8 @@ impl PromptCont {
 
     pub fn edit(&mut self, key: KeyCode) {
         match key {
-            KeyCode::Left => self.cursor_left(),
-            KeyCode::Right => self.cursor_right(),
+            KeyCode::Left => self.cur_left(),
+            KeyCode::Right => self.cur_right(),
             KeyCode::Delete => self.delete(),
             KeyCode::Backspace => self.backspace(),
             KeyCode::Home => self.home(),
