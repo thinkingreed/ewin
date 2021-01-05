@@ -3,7 +3,9 @@ use permissions::*;
 use std::cmp::min;
 use std::env;
 use std::io::ErrorKind;
+use std::iter::FromIterator;
 use std::path;
+use termion::{clear, cursor};
 use unicode_width::UnicodeWidthChar;
 
 impl Editor {
@@ -53,20 +55,37 @@ impl Editor {
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         let (rows, cols) = (self.disp_row_num, self.disp_col_num);
-
         // Rows and columns on the terminal
         let (mut y, mut x) = (0, 0);
 
-        self.rnw = self.buf.len_lines().to_string().len();
-        let sel_range = self.sel.get_range();
-        let search_ranges = self.search.search_ranges.clone();
+        let d_range = self.d_range.get_range();
+        if d_range.d_type == DrawType::Not {
+            return;
+        } else if d_range.d_type == DrawType::None || d_range.d_type == DrawType::All {
+            str_vec.push(clear::All.to_string());
+            str_vec.push(cursor::Goto(1, 1).to_string());
+        // DrawType::Target or DrawType::After
+        } else {
+            if d_range.d_type == DrawType::Target {
+                for i in d_range.sy - self.offset_y..=d_range.ey - self.offset_y {
+                    str_vec.push(format!("{}{}", cursor::Goto(1, (i + 1) as u16), clear::CurrentLine));
+                }
+                str_vec.push(cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16).to_string());
+            } else if d_range.d_type == DrawType::After {
+                str_vec.push(format!("{}{}", cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16), clear::AfterCursor));
+            }
+        }
 
-        for i in self.draw.y_s..self.draw.y_e {
+        let sel_range = self.sel.get_range();
+        let search_ranges = self.search.ranges.clone();
+
+        for i in self.draw.sy..=self.draw.ey {
             self.set_row_num(i, str_vec);
 
             let row_vec = self.draw.char_vec[i].clone();
+
             let x_s = if i == self.cur.y { self.offset_x } else { 0 };
-            let x_e = min(x_s + cols, row_vec.len().clone());
+            let x_e = min(x_s + cols, self.buf.len_line(i));
 
             for j in x_s..x_e {
                 let c = row_vec[j];
@@ -108,6 +127,7 @@ impl Editor {
         Log::ep("y_offset", self.offset_y);
         Log::ep("cur.x", self.cur.x);
         Log::ep("cur.disp_x", self.cur.disp_x);
+        Log::ep("self.sel", self.sel);
     }
 
     fn set_row_num(&mut self, i: usize, str_vec: &mut Vec<String>) {

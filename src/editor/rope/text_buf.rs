@@ -31,12 +31,12 @@ impl TextBuffer {
         self.text.len_chars()
     }
 
-    pub fn char_vec<'a>(&'a self, i: usize) -> Vec<char> {
+    pub fn char_vec_line<'a>(&'a self, i: usize) -> Vec<char> {
         self.line(i).chars().collect()
     }
 
-    pub fn char_vec_ex<'a>(&'a self, i: usize) -> Chars {
-        self.line(i).chars()
+    pub fn char_vec_range<'a>(&'a self, y: usize, x: usize) -> Vec<char> {
+        self.line(y).slice(..x).chars().collect()
     }
 
     pub fn insert_char(&mut self, y: usize, x: usize, c: char) {
@@ -54,17 +54,19 @@ impl TextBuffer {
     pub fn remove(&mut self, s_idx: usize, e_idx: usize) {
         self.text.remove(s_idx..e_idx);
     }
-    pub fn remove_type(&mut self, do_type: DoType, y: usize, x: usize) {
+    pub fn remove_type(&mut self, do_type: EvtType, y: usize, x: usize) {
         // new line CR
         let mut i = self.text.line_to_char(y) + x;
 
+        Log::ep("ccc", self.char(y, x));
+
         let mut del_num = 1;
         // not select del
-        if do_type == DoType::Del {
+        if do_type == EvtType::Del {
             if NEW_LINE_CR == self.char(y, x) && NEW_LINE == self.char(y, x + 1) {
                 del_num = 2;
             }
-        } else if do_type == DoType::BS {
+        } else if do_type == EvtType::BS {
             if NEW_LINE == self.char(y, x) && NEW_LINE_CR == self.char(y, x - 1) {
                 i -= 1;
                 del_num = 2;

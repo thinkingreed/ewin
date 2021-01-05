@@ -92,9 +92,9 @@ impl EvtAct {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                     Char('v') => {
                         let is_all_redrow = match prom.buf_posi {
-                            First => prom.cont_1.paste(&term, editor, mbar),
-                            Second => prom.cont_2.paste(&term, editor, mbar),
-                            Third => prom.cont_3.paste(&term, editor, mbar),
+                            First => prom.cont_1.paste(editor, mbar),
+                            Second => prom.cont_2.paste(editor, mbar),
+                            Third => prom.cont_3.paste(editor, mbar),
                         };
                         if is_all_redrow {
                             term.draw(out, editor, mbar, prom, sbar).unwrap();

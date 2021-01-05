@@ -17,21 +17,21 @@ impl Terminal {
         // mbar.msg変更の場合は全再描画
 
         if mbar.msg_org != mbar.msg {
-            editor.d_range.d_type = DType::All;
+            editor.d_range.d_type = DrawType::All;
         }
         let d_range = editor.d_range;
         Log::ep("d_range", d_range);
 
-        if d_range.d_type != DType::Not {
+        if d_range.d_type != DrawType::Not {
             Log::ep_s("editor.draw");
-            editor.draw_cache(str_vec);
+            editor.draw_cache();
             editor.draw(str_vec);
         }
 
         mbar.draw(str_vec);
         prom.draw(str_vec);
 
-        if d_range.d_type != DType::Not {
+        if d_range.d_type != DrawType::Not {
             sbar.draw(str_vec, editor);
         }
         self.draw_cur(str_vec, editor, prom);
@@ -112,20 +112,6 @@ impl Terminal {
         */
     }
 
-    pub fn set_env(&mut self) {
-        // WSL環境を判定出来ない為にpowershell試行
-        let child_1 = Command::new("uname").arg("-r").stdout(process::Stdio::piped()).spawn().unwrap();
-        let mut stdout = child_1.stdout.context("take stdout").unwrap();
-        let mut buf = String::new();
-        stdout.read_to_string(&mut buf).unwrap();
-        //   buf = buf.clone().trim().to_string();
-
-        if buf.to_ascii_lowercase().contains("microsoft") {
-            self.env = Env::WSL;
-        } else {
-            self.env = Env::Linux;
-        }
-    }
     pub fn show_cur<T: Write>(&mut self, out: &mut T) {
         write!(out, "{}", cursor::Show).unwrap();
         out.flush().unwrap();

@@ -1,4 +1,8 @@
-use crate::{def::*};
+use crate::{def::*, model::*};
+use anyhow::Context;
+use std::io::Read;
+use std::process;
+use std::process::Command;
 use unicode_width::UnicodeWidthChar;
 
 pub fn get_str_width(msg: &str) -> usize {
@@ -35,7 +39,6 @@ pub fn get_until_updown_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
         if let Some(c) = buf.get(i) {
             if c == &EOF_MARK || c == &NEW_LINE {
                 width += 1;
-                // cur_x += 1;
                 break;
             }
             let mut c_len = c.width().unwrap_or(0);
@@ -49,9 +52,6 @@ pub fn get_until_updown_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
                 width += c_len;
             }
             cur_x += 1;
-        // 最終端の空白の場合
-        } else {
-            width += 1;
         }
     }
     return (cur_x, width);
@@ -101,6 +101,13 @@ pub fn get_cur_x_width(buf: &Vec<char>, x: usize) -> usize {
     return 1;
 }
 
+pub fn get_char_width(c: char) -> usize {
+    if c == NEW_LINE {
+        return 1;
+    }
+    return c.width().unwrap_or(0);
+}
+
 pub fn split_inclusive(target: &str, split_char: char) -> Vec<String> {
     let mut vec: Vec<String> = vec![];
     let mut string = String::new();
@@ -117,4 +124,18 @@ pub fn split_inclusive(target: &str, split_char: char) -> Vec<String> {
         }
     }
     return vec;
+}
+pub fn get_env() -> Env {
+    // WSL環境を判定出来ない為にpowershell試行
+    let child_1 = Command::new("uname").arg("-r").stdout(process::Stdio::piped()).spawn().unwrap();
+    let mut stdout = child_1.stdout.context("take stdout").unwrap();
+    let mut buf = String::new();
+    stdout.read_to_string(&mut buf).unwrap();
+    //   buf = buf.clone().trim().to_string();
+
+    if buf.to_ascii_lowercase().contains("microsoft") {
+        return Env::WSL;
+    } else {
+        return Env::Linux;
+    }
 }

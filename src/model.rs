@@ -43,6 +43,7 @@ impl Default for MsgBar {
 /// Event後のEditor以外の操作
 #[derive(Debug, Clone)]
 pub struct EvtAct {}
+
 #[derive(Debug, PartialEq)]
 pub enum EvtActType {
     Hold,
@@ -241,11 +242,11 @@ impl Default for StatusBar {
 /// undo,redo範囲
 /// EvtProcess
 pub struct EvtProc {
-    pub do_type: DoType,
+    pub evt_type: EvtType,
     // not include lnw
     pub cur_s: Cur,
     pub cur_e: Cur,
-    pub str_vec: Vec<String>,
+    pub str: String,
     pub sel: SelRange,
     pub d_range: DRnage,
 }
@@ -255,8 +256,8 @@ impl Default for EvtProc {
         EvtProc {
             cur_s: Cur::default(),
             cur_e: Cur::default(),
-            str_vec: vec![],
-            do_type: DoType::None,
+            str: String::new(),
+            evt_type: EvtType::None,
             sel: SelRange::default(),
             d_range: DRnage::default(),
         }
@@ -264,13 +265,13 @@ impl Default for EvtProc {
 }
 impl fmt::Display for EvtProc {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "EvtProc cur_s:{}, cur_e:{}, str_vec:{}, do_type:{}, sel:{}, d_range:{}", self.cur_s, self.cur_e, self.str_vec.join(" "), self.do_type, self.sel, self.d_range)
+        write!(f, "EvtProc cur_s:{}, cur_e:{}, str_vec:{}, do_type:{}, sel:{}, d_range:{}", self.cur_s, self.cur_e, self.str, self.evt_type, self.sel, self.d_range)
     }
 }
 impl EvtProc {
-    pub fn new(do_type: DoType, cur_s: Cur, cur_e: Cur, d_range: DRnage) -> Self {
+    pub fn new(do_type: EvtType, cur_s: Cur, cur_e: Cur, d_range: DRnage) -> Self {
         return EvtProc {
-            do_type: do_type,
+            evt_type: do_type,
             cur_s: cur_s,
             cur_e: cur_e,
             d_range: d_range,
@@ -278,17 +279,42 @@ impl EvtProc {
         };
     }
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// コピー範囲
-pub struct CopyRange {
-    pub y: usize,
-    pub sx: usize,
-    pub ex: usize,
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+/// All edit history including undo and redo
+/// History
+pub struct History {
+    pub history_vec: Vec<HistoryInfo>,
+    pub undo_vec: Vec<EvtProc>,
+    pub redo_vec: Vec<EvtProc>,
 }
-impl fmt::Display for CopyRange {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "CopyRange y:{}, sx:{}, ex:{},", self.y, self.sx, self.ex,)
+
+impl Default for History {
+    fn default() -> Self {
+        History {
+            history_vec: vec![],
+            undo_vec: vec![],
+            redo_vec: vec![],
+        }
     }
+}
+impl fmt::Display for History {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "History history_vec:{:?}, undo_vec:{:?}, redo_vec:{:?}, ", self.history_vec, self.undo_vec, self.redo_vec,)
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HistoryInfo {
+    pub ope_type: Opetype,
+    pub evt_proc: EvtProc,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Operation Type
+pub enum Opetype {
+    Normal,
+    Undo,
+    Redo,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// 検索範囲
@@ -312,7 +338,7 @@ impl fmt::Display for GrepResult {
 pub struct Search {
     pub str: String,
     pub index: usize,
-    pub search_ranges: Vec<SearchRange>,
+    pub ranges: Vec<SearchRange>,
     pub file: String,
     pub filenm: String,
     pub folder: String,
@@ -323,7 +349,7 @@ impl Search {
     pub fn clear(&mut self) {
         self.str = String::new();
         self.index = USIZE_UNDEFINED;
-        self.search_ranges = vec![];
+        self.ranges = vec![];
         // file full path
         self.file = String::new();
         self.filenm = String::new();
@@ -335,7 +361,7 @@ impl Default for Search {
         Search {
             str: String::new(),
             index: USIZE_UNDEFINED,
-            search_ranges: vec![],
+            ranges: vec![],
             file: String::new(),
             filenm: String::new(),
             folder: String::new(),
@@ -482,6 +508,7 @@ pub struct Cur {
     // カis_redraw文字対応) line_num_width + 1以上
     pub disp_x: usize,
 }
+
 impl Default for Cur {
     fn default() -> Self {
         Cur { y: 0, x: 0, disp_x: 1 }
@@ -493,12 +520,12 @@ impl fmt::Display for Cur {
         write!(f, "Cur y:{}, x:{}, disp_x:{}, ", self.y, self.x, self.disp_x)
     }
 }
+
 // エディタの内部状態
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Editor {
     pub buf: TextBuffer,
     pub buf_cache: Vec<Vec<char>>,
-    pub draw: Draw,
     /// current cursor position
     /// self.cursor.y < self.buffer.len()
     /// self.cursor.x <= self.buffer[self.cursor.y].len() + self.lnw
@@ -520,16 +547,15 @@ pub struct Editor {
     pub rnw: usize,
     pub sel: SelRange,
     pub evt: Event,
-    pub is_undo: bool,
     pub clipboard: String,
     /// number displayed on the terminal
     pub disp_row_num: usize,
     pub disp_col_num: usize,
     pub search: Search,
+    pub draw: Draw,
     // draw_ranges
     pub d_range: DRnage,
-    pub undo_vec: Vec<EvtProc>,
-    pub redo_vec: Vec<EvtProc>,
+    pub history: History,
     pub grep_result_vec: Vec<GrepResult>,
     pub key_record_vec: Vec<KeyRecord>,
     // Corresponding to unexpected display by changing the background color multiple times
@@ -541,7 +567,6 @@ impl Default for Editor {
         Editor {
             buf: TextBuffer::default(),
             buf_cache: vec![],
-            draw: Draw::default(),
             cur: Cur::default(),
             offset_y: 0,
             offset_x: 0,
@@ -554,16 +579,14 @@ impl Default for Editor {
             rnw: 0,
             sel: SelRange::default(),
             evt: Key(End.into()),
-            is_undo: false,
             clipboard: String::new(),
             // for UT set
             disp_row_num: 5,
             disp_col_num: 5,
             search: Search::default(),
-            // str_vec: vec![],
+            draw: Draw::default(),
             d_range: DRnage::default(),
-            undo_vec: vec![],
-            redo_vec: vec![],
+            history: History::default(),
             grep_result_vec: vec![],
             key_record_vec: vec![],
             is_default_color: true,
@@ -576,29 +599,27 @@ pub struct TextBuffer {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Draw {
-    pub y_s: usize,
-    pub y_e: usize,
-    pub x_vec: Vec<(usize, usize)>,
+    pub sy: usize,
+    pub ey: usize,
+    // pub x_vec: Vec<(usize, usize)>,
     // Caching the drawing string because ropey takes a long time to access char
     pub char_vec: Vec<Vec<char>>,
 }
 
 impl Default for Draw {
     fn default() -> Self {
-        Draw { y_s: 0, y_e: 0, x_vec: vec![], char_vec: vec![] }
+        Draw { sy: 0, ey: 0, char_vec: vec![] }
     }
 }
 
 impl fmt::Display for Draw {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Draw y_s:{}, y_e:{}, x_vec:{:?}, char_vec:{:?}, ", self.y_s, self.y_e, self.x_vec, self.char_vec)
+        write!(f, "Draw y_s:{}, y_e:{}, char_vec:{:?}, ", self.sy, self.ey, self.char_vec)
     }
 }
 impl Draw {
-    pub fn clear(&mut self) {
-        self.y_s = 0;
-        self.y_e = 0;
-        self.x_vec = vec![];
+    pub fn new(sy: usize, ey: usize) -> Self {
+        return Draw { sy: sy, ey: ey, ..Draw::default() };
     }
 }
 
@@ -607,17 +628,17 @@ impl Draw {
 pub struct DRnage {
     pub sy: usize,
     pub ey: usize,
-    pub d_type: DType,
+    pub d_type: DrawType,
 }
 
 impl Default for DRnage {
     fn default() -> Self {
-        DRnage { sy: 0, ey: 0, d_type: DType::All }
+        DRnage { sy: 0, ey: 0, d_type: DrawType::All }
     }
 }
 
 impl DRnage {
-    pub fn new(sy: usize, ey: usize, d_type: DType) -> Self {
+    pub fn new(sy: usize, ey: usize, d_type: DrawType) -> Self {
         return DRnage { sy: sy, ey: ey, d_type: d_type };
     }
 
@@ -632,19 +653,19 @@ impl DRnage {
         return DRnage { sy: sy, ey: ey, d_type: self.d_type };
     }
     pub fn set_target(&mut self, sy: usize, ey: usize) {
-        self.d_type = DType::Target;
+        self.d_type = DrawType::Target;
         self.sy = min(sy, ey);
         self.ey = max(sy, ey);
     }
     pub fn set_after(&mut self, sy: usize) {
-        self.d_type = DType::After;
+        self.d_type = DrawType::After;
         self.sy = sy;
     }
 
     pub fn clear(&mut self) {
         self.sy = 0;
         self.ey = 0;
-        self.d_type = DType::None;
+        self.d_type = DrawType::None;
     }
 }
 impl fmt::Display for DRnage {
@@ -655,7 +676,7 @@ impl fmt::Display for DRnage {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// DrawType
-pub enum DType {
+pub enum DrawType {
     Target, // Target row only redraw
     After,  // Redraw after the specified line
     None,
@@ -663,21 +684,21 @@ pub enum DType {
     Not,
 }
 
-impl fmt::Display for DType {
+impl fmt::Display for DrawType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            DType::Target => write!(f, "Target"),
-            DType::After => write!(f, "After"),
-            DType::None => write!(f, "None"),
-            DType::All => write!(f, "All"),
-            DType::Not => write!(f, "Not"),
+            DrawType::Target => write!(f, "Target"),
+            DrawType::After => write!(f, "After"),
+            DrawType::None => write!(f, "None"),
+            DrawType::All => write!(f, "All"),
+            DrawType::Not => write!(f, "Not"),
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// UnDo ReDo Type
-pub enum DoType {
+pub enum EvtType {
     Del,
     Enter,
     BS,
@@ -692,22 +713,22 @@ pub enum DoType {
     ShiftEnd,
     None,
 }
-impl fmt::Display for DoType {
+impl fmt::Display for EvtType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            DoType::Del => write!(f, "Del"),
-            DoType::Enter => write!(f, "Enter"),
-            DoType::BS => write!(f, "BS"),
-            DoType::Cut => write!(f, "Cut"),
-            DoType::Paste => write!(f, "Paste"),
-            DoType::InsertChar => write!(f, "InsertChar"),
-            DoType::ShiftDown => write!(f, "ShiftDown"),
-            DoType::ShiftUp => write!(f, "ShiftUp"),
-            DoType::ShiftRight => write!(f, "ShiftRight"),
-            DoType::ShiftLeft => write!(f, "ShiftLeft"),
-            DoType::ShiftHome => write!(f, "ShiftHome"),
-            DoType::ShiftEnd => write!(f, "ShiftEnd"),
-            DoType::None => write!(f, "None"),
+            EvtType::Del => write!(f, "Del"),
+            EvtType::Enter => write!(f, "Enter"),
+            EvtType::BS => write!(f, "BS"),
+            EvtType::Cut => write!(f, "Cut"),
+            EvtType::Paste => write!(f, "Paste"),
+            EvtType::InsertChar => write!(f, "InsertChar"),
+            EvtType::ShiftDown => write!(f, "ShiftDown"),
+            EvtType::ShiftUp => write!(f, "ShiftUp"),
+            EvtType::ShiftRight => write!(f, "ShiftRight"),
+            EvtType::ShiftLeft => write!(f, "ShiftLeft"),
+            EvtType::ShiftHome => write!(f, "ShiftHome"),
+            EvtType::ShiftEnd => write!(f, "ShiftEnd"),
+            EvtType::None => write!(f, "None"),
         }
     }
 }

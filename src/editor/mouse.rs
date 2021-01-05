@@ -17,7 +17,7 @@ impl Editor {
 
         Log::ep("y + self.offset_y", y + self.offset_y);
 
-        let (cur_x, width) = get_until_x(&self.buf.char_vec(y + self.offset_y), x + self.offset_x - self.rnw - 1);
+        let (cur_x, width) = get_until_x(&self.buf.char_vec_line(y + self.offset_y), x + self.offset_x - self.rnw - 1);
 
         self.cur.y = y + self.offset_y;
         self.cur.x = cur_x + self.rnw;

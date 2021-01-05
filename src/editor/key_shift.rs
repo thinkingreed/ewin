@@ -3,20 +3,20 @@ use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 
 impl Editor {
-    fn shift_move_com(&mut self, do_type: DoType) {
+    fn shift_move_com(&mut self, do_type: EvtType) {
         self.sel.set_sel_posi(true, self.cur.y, self.cur.x - self.rnw, self.cur.disp_x);
 
         match do_type {
-            DoType::ShiftRight => self.cur_right(),
-            DoType::ShiftLeft => self.cur_left(),
-            DoType::ShiftUp => self.cur_up(),
-            DoType::ShiftDown => self.cur_down(),
-            DoType::ShiftHome => {
+            EvtType::ShiftRight => self.cur_right(),
+            EvtType::ShiftLeft => self.cur_left(),
+            EvtType::ShiftUp => self.cur_up(),
+            EvtType::ShiftDown => self.cur_down(),
+            EvtType::ShiftHome => {
                 self.cur.x = self.rnw;
                 self.cur.disp_x = self.rnw + 1;
             }
-            DoType::ShiftEnd => {
-                self.set_cur_end_x(self.cur.y);
+            EvtType::ShiftEnd => {
+                self.set_cur_target_x(self.cur.y, self.buf.len_line(self.cur.y));
             }
             _ => {}
         }
@@ -27,42 +27,42 @@ impl Editor {
     }
     pub fn shift_right(&mut self) {
         Log::ep_s("　　　　　　　  shift_right");
-        self.shift_move_com(DoType::ShiftRight);
+        self.shift_move_com(EvtType::ShiftRight);
     }
 
     pub fn shift_left(&mut self) {
         Log::ep_s("　　　　　　　  shift_left");
-        self.shift_move_com(DoType::ShiftLeft);
+        self.shift_move_com(EvtType::ShiftLeft);
     }
 
     pub fn shift_down(&mut self) {
         Log::ep_s("　　　　　　　　shift_down");
         if self.cur.y == self.buf.len_lines() - 1 {
-            self.d_range.d_type = DType::Not;
+            self.d_range.d_type = DrawType::Not;
             return;
         }
-        self.shift_move_com(DoType::ShiftDown);
+        self.shift_move_com(EvtType::ShiftDown);
     }
 
     pub fn shift_up(&mut self) {
         Log::ep_s("　　　　　　　　shift_up");
         if self.cur.y == 0 {
-            self.d_range.d_type = DType::Not;
+            self.d_range.d_type = DrawType::Not;
             return;
         }
-        self.shift_move_com(DoType::ShiftUp);
+        self.shift_move_com(EvtType::ShiftUp);
     }
 
     pub fn shift_home(&mut self) {
         Log::ep_s("　　　　　　　　shift_home");
 
-        self.shift_move_com(DoType::ShiftHome);
+        self.shift_move_com(EvtType::ShiftHome);
     }
 
     pub fn shift_end(&mut self) {
         Log::ep_s("　　　　　　　  shift_end");
 
-        self.shift_move_com(DoType::ShiftEnd);
+        self.shift_move_com(EvtType::ShiftEnd);
     }
 
     pub fn record_key_start(&mut self, term: &mut Terminal, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
@@ -75,7 +75,7 @@ impl Editor {
                 term.set_disp_size(self, mbar, prom, sbar);
                 self.scroll();
             }
-            self.d_range.d_type = DType::All;
+            self.d_range.d_type = DrawType::All;
         } else {
             prom.is_key_record = true;
             mbar.set_keyrecord(&LANG.lock().unwrap().key_recording);

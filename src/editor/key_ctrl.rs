@@ -7,29 +7,17 @@ use termion::cursor;
 impl Editor {
     pub fn all_select(&mut self) {
         self.sel.clear();
-        self.sel.sy = 0;
-        self.sel.ey = self.buf.len_lines() - 1;
-        self.sel.sx = 0;
-        self.sel.s_disp_x = self.rnw + 1;
-        let (cur_x, width) = get_row_width(&self.buf.char_vec(self.sel.ey)[..], false);
-        self.sel.ex = cur_x;
-        // +1 for EOF
-        self.sel.e_disp_x = width + self.rnw + 1;
-        self.d_range.d_type = DType::All;
+        self.sel.set_s(0, 0, self.rnw + 1);
+        let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.sel.ey)[..], false);
+        // e_disp_x +1 for EOF
+        self.sel.set_e(self.buf.len_lines() - 1, cur_x, width + self.rnw + 1);
+        self.d_range.d_type = DrawType::All;
     }
 
-    pub fn cut(&mut self, term: &Terminal, mbar: &mut MsgBar) {
+    pub fn cut(&mut self) {
         Log::ep_s("　　　　　　　  cut");
-        if !self.sel.is_selected() {
-            mbar.set_err(&LANG.lock().unwrap().no_sel_range.to_string());
-            return;
-        }
-        self.copy(term, mbar);
-        self.set_sel_del_d_range();
-        self.save_del_sel_evtproc(DoType::Cut);
-
-        self.del_sel_range();
-        self.sel.clear();
+        self.copy();
+        self.d_range.d_type = DrawType::All;
     }
 
     pub fn close<T: Write>(&mut self, out: &mut T, prompt: &mut Prompt) -> bool {
@@ -48,15 +36,11 @@ impl Editor {
     }
     pub fn save(&mut self, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> bool {
         Log::ep_s("　　　　　　　  save");
-        Log::ep("prom.cont_1.buf.len()", prom.cont_1.buf.len());
 
         if prom.cont_1.buf.len() > 0 {
             let s = prom.cont_1.buf.iter().collect::<String>();
             self.path = Some(Path::new(&s).into());
         }
-
-        Log::ep("sbar.filenm", &sbar.filenm);
-        Log::ep("prom.cont_1.buf", prom.cont_1.buf.iter().collect::<String>());
 
         if !Path::new(&sbar.filenm).exists() && prom.cont_1.buf.len() == 0 {
             Log::ep_s("!Path::new(&sbar.filenm).exists()");
@@ -71,8 +55,6 @@ impl Editor {
 
                 match result {
                     Ok(()) => {
-                        Log::ep_s("Ok(mut file)");
-
                         prom.is_change = false;
                         prom.clear();
                         mbar.clear();
@@ -87,30 +69,27 @@ impl Editor {
         return false;
     }
 
-    pub fn copy(&mut self, term: &Terminal, mbar: &mut MsgBar) {
+    pub fn copy(&mut self) {
         Log::ep_s("　　　　　　　  copy");
 
-        if !self.sel.is_selected() {
-            mbar.set_err(&LANG.lock().unwrap().no_sel_range.to_string());
-            return;
-        }
         Log::ep("self.sel", self.sel);
 
         let mut str = self.buf.slice(self.sel.get_range());
-        let copy_string = match term.env {
+        let copy_string = match *ENV {
             Env::WSL => self.get_wsl_str(&mut str),
             _ => str,
         };
 
         Log::ep("copy_string", copy_string.clone());
-        self.set_clipboard(&copy_string, &term);
+        self.set_clipboard(&copy_string);
 
         self.d_range = DRnage {
             sy: self.sel.sy,
             ey: self.sel.ey,
-            d_type: DType::Target,
+            d_type: DrawType::Target,
         };
     }
+
     // WSL:powershell.clipboard
     // enclose the string in "’ "
     // new line are ","
@@ -131,47 +110,31 @@ impl Editor {
         copy_str
     }
 
-    pub fn paste(&mut self, term: &Terminal) {
+    pub fn paste(&mut self) {
         Log::ep_s("　　　　　　　  paste");
 
-        let y_offset_org = self.offset_y;
         let cur_y_org = self.cur.y;
-        let rnw_org = self.rnw;
 
-        let contexts = self.get_clipboard(&term).unwrap_or("".to_string());
-
+        let contexts = self.get_clipboard().unwrap_or("".to_string());
         if contexts.len() == 0 {
             return;
         }
         Log::ep("clipboard str", &contexts);
 
         // EvtProcデータ設定
-        let mut ep = EvtProc::new(DoType::Paste, self.cur, self.cur, self.d_range);
-        {
-            ep.str_vec = vec![contexts.clone()];
-            ep.sel.sy = self.cur.y;
-            ep.sel.sx = self.cur.x - self.rnw;
-            ep.sel.s_disp_x = self.cur.disp_x;
-        }
-        self.insert_str(&contexts);
-        {
-            ep.cur_e = Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
-            ep.sel.ey = self.cur.y;
-            ep.sel.ex = self.cur.x - self.rnw;
-            ep.sel.e_disp_x = self.cur.disp_x;
-        }
-        self.undo_vec.push(ep);
+        let mut ep = EvtProc::new(EvtType::Paste, self.cur, self.cur, self.d_range);
 
-        // d_range
-        if contexts.match_indices(NEW_LINE).count() == 0 {
-            self.d_range = DRnage { sy: cur_y_org, ey: self.cur.y, d_type: DType::Target };
-        } else {
-            if y_offset_org != self.offset_y || rnw_org != self.rnw {
-                self.d_range.d_type = DType::All;
-            } else {
-                self.d_range = DRnage { sy: cur_y_org, ey: self.cur.y, d_type: DType::After };
-            }
-        }
+        ep.sel.set_s(self.cur.y, self.cur.x - self.rnw, self.cur.disp_x);
+        ep.str = contexts.clone();
+
+        self.insert_str(&contexts);
+
+        ep.cur_e = self.cur; // Cur { y: self.cur.y, x: self.cur.x, disp_x: self.cur.disp_x };
+        ep.sel.set_e(self.cur.y, self.cur.x - self.rnw, self.cur.disp_x);
+
+        self.history.regist(self.evt, ep);
+
+        self.d_range = DRnage { sy: cur_y_org, ey: self.cur.y, d_type: DrawType::After };
     }
 
     pub fn insert_str(&mut self, str: &str) {
@@ -184,10 +147,8 @@ impl Editor {
 
         let last_str_len = insert_strs.last().unwrap().chars().count();
         self.cur.y += insert_strs.len() - 1;
-        self.rnw = self.buf.len_lines().to_string().len();
-        let (cur_x, width) = get_row_width(&self.buf.char_vec(self.cur.y)[..last_str_len], false);
-        self.cur.x = cur_x + self.rnw;
-        self.cur.disp_x = width + self.rnw + 1;
+
+        self.set_cur_target_x(self.cur.y, last_str_len);
 
         self.scroll();
         self.scroll_horizontal();
@@ -203,8 +164,8 @@ impl Editor {
 
     pub fn ctrl_end(&mut self) {
         Log::ep_s("　　　　　　　　ctl_end");
-        self.cur.y = self.buf.len_lines() - 1;
-        self.set_cur_end_x(self.cur.y);
+        let y = self.buf.len_lines() - 1;
+        self.set_cur_target_x(y, self.buf.len_line(y));
         if self.updown_x == 0 {
             self.updown_x = self.cur.disp_x;
         }
@@ -222,10 +183,10 @@ impl Editor {
             // 初回検索
             Log::ep("search.index", self.search.index);
             if self.search.index == USIZE_UNDEFINED {
-                if self.search.search_ranges.len() == 0 {
-                    self.search.search_ranges = self.get_search_ranges(&self.search.str);
+                if self.search.ranges.len() == 0 {
+                    self.search.ranges = self.get_search_ranges(&self.search.str);
                 }
-                if self.search.search_ranges.len() > 0 {
+                if self.search.ranges.len() > 0 {
                     if self.search.row_num.len() == 0 {
                         self.search.index = 0;
                     } else {
@@ -237,23 +198,19 @@ impl Editor {
                 Log::ep("search.index", self.search.index);
             }
 
-            if self.search.search_ranges.len() == 0 {
+            if self.search.ranges.len() == 0 {
                 return;
             }
             if self.search.index != USIZE_UNDEFINED {
-                let range = self.search.search_ranges[self.search.index];
-                self.cur.y = range.y;
-                self.cur.x = range.sx + self.rnw;
-                let (_, width) = get_row_width(&self.buf.char_vec(range.y)[..range.sx], false);
-                self.cur.disp_x = width + self.rnw + 1;
+                let range = self.search.ranges[self.search.index];
+
+                self.set_cur_target_x(range.y, range.sx);
             }
             self.scroll();
             self.scroll_horizontal();
         }
     }
     pub fn get_search_ranges(&self, search_str: &String) -> Vec<SearchRange> {
-        Log::ep_s("get_search_ranges get_search_ranges get_search_ranges get_search_ranges get_search_ranges");
-
         let mut vec = vec![];
 
         let search_vec = self.buf.search(&search_str);
@@ -274,7 +231,7 @@ impl Editor {
     pub fn get_search_str_index(&mut self, is_asc: bool) -> usize {
         let cur_x = self.cur.x - self.rnw;
         if is_asc {
-            for (i, range) in self.search.search_ranges.iter().enumerate() {
+            for (i, range) in self.search.ranges.iter().enumerate() {
                 if self.cur.y < range.y || (self.cur.y == range.y && cur_x < range.sx) {
                     return i;
                 }
@@ -282,8 +239,8 @@ impl Editor {
             // return 0 for circular search
             return 0;
         } else {
-            let index = self.search.search_ranges.len() - 1;
-            let mut ranges = self.search.search_ranges.clone();
+            let index = self.search.ranges.len() - 1;
+            let mut ranges = self.search.ranges.clone();
             ranges.reverse();
             for (i, range) in ranges.iter().enumerate() {
                 if self.cur.y > range.y || (self.cur.y == range.y && cur_x > range.sx) {
@@ -297,7 +254,7 @@ impl Editor {
     pub fn get_search_row_no_index(&self, row_num: &String) -> usize {
         let row_num: usize = row_num.parse().unwrap();
         let index = 0;
-        for (i, range) in self.search.search_ranges.iter().enumerate() {
+        for (i, range) in self.search.ranges.iter().enumerate() {
             if row_num == range.y + 1 {
                 return i;
             }
@@ -325,87 +282,71 @@ impl Editor {
 
     pub fn undo(&mut self, mbar: &mut MsgBar) {
         Log::ep_s("　　　　　　　　undo");
-        if let Some(ep) = self.undo_vec.pop() {
-            // Log::ep("EvtProc", ep.clone());
-            self.is_undo = true;
-            if ep.str_vec.len() == 0 {
-                // 行末でDelete
-                if ep.do_type == DoType::Del {
-                    self.set_evtproc(&ep, ep.cur_s);
-                    self.enter();
-                    self.set_evtproc(&ep, ep.cur_s);
-                // 行頭でBS
-                } else if ep.do_type == DoType::BS {
-                    self.set_evtproc(&ep, ep.cur_e);
-                    self.enter();
-                } else if ep.do_type == DoType::Enter {
-                    self.set_evtproc(&ep, ep.cur_e);
-                    self.back_space();
-                }
-            // 行中
-            } else {
-                // initial cursor posi set
-                if ep.do_type == DoType::Cut || ep.do_type == DoType::Del || ep.do_type == DoType::InsertChar || ep.do_type == DoType::Paste {
-                    self.set_evtproc(&ep, ep.cur_s);
-                } else if ep.do_type == DoType::BS {
-                    if ep.sel.is_selected() {
-                        self.set_evtproc(&ep, ep.cur_s);
-                    } else {
-                        self.set_evtproc(&ep, ep.cur_e);
-                    }
-                }
-                if ep.do_type == DoType::InsertChar {
-                    self.delete();
-                } else if ep.do_type == DoType::Paste {
-                    self.sel.clear();
-                    // paste対象をselで設定
-                    self.sel = ep.sel;
-                    self.set_sel_del_d_range();
-                    self.del_sel_range();
-                    self.sel.clear();
-                } else {
-                    self.insert_str(&ep.str_vec.join(""));
-                }
+        if let Some(ep) = self.history.pop_undo() {
+            eprintln!("ep {:?}", ep);
 
-                // last cursor posi set
-                if ep.sel.is_selected() && ep.do_type != DoType::Paste {
-                    self.set_evtproc(&ep, ep.cur_e);
+            // initial cursor posi set
+            if ep.evt_type == EvtType::Cut || ep.evt_type == EvtType::Del || ep.evt_type == EvtType::InsertChar || ep.evt_type == EvtType::Paste {
+                self.set_evtproc(&ep, &ep.cur_s);
+            } else if ep.evt_type == EvtType::BS {
+                if ep.sel.is_selected() {
+                    self.set_evtproc(&ep, &ep.cur_s);
                 } else {
-                    self.set_evtproc(&ep, ep.cur_s);
+                    self.set_evtproc(&ep, &ep.cur_e);
                 }
+            } else if ep.evt_type == EvtType::Enter {
+                self.set_evtproc(&ep, &ep.cur_e);
             }
+
+            // exec
+            if ep.evt_type == EvtType::InsertChar {
+                self.exec_edit_proc(EvtType::Del);
+            } else if ep.evt_type == EvtType::Paste {
+                self.sel.clear();
+                // paste対象をselで設定
+                self.sel = ep.sel;
+                self.exec_edit_proc(EvtType::Del);
+            } else if ep.evt_type == EvtType::Enter {
+                self.exec_edit_proc(EvtType::BS);
+            } else if ep.evt_type == EvtType::Del || ep.evt_type == EvtType::BS || ep.evt_type == EvtType::Cut {
+                self.insert_str(&ep.str);
+            }
+
+            // last cursor posi set
+            if ep.sel.is_selected() && ep.evt_type != EvtType::Paste {
+                self.set_evtproc(&ep, &ep.cur_e);
+            } else {
+                self.set_evtproc(&ep, &ep.cur_s);
+            }
+
             self.scroll();
             self.scroll_horizontal();
 
-            self.redo_vec.push(ep);
-            self.is_undo = false;
+            self.history.regist(self.evt, ep);
         } else {
-            Log::ep("undo_vec.len", self.undo_vec.len());
             mbar.set_err(&LANG.lock().unwrap().no_undo_operation.to_string());
         }
     }
 
-    pub fn redo(&mut self, term: &Terminal, mbar: &mut MsgBar) {
+    pub fn redo(&mut self) {
         Log::ep_s("　　　　　　　　redo");
-        if let Some(ep) = self.redo_vec.pop() {
-            self.set_evtproc(&ep, ep.cur_s);
+        if let Some(ep) = self.history.pop_redo() {
+            self.set_evtproc(&ep, &ep.cur_s);
             self.sel = ep.sel;
 
-            match ep.do_type {
-                DoType::Del => self.delete(),
-                DoType::BS => self.back_space(),
-                DoType::Cut => self.cut(term, mbar),
-                DoType::Enter => self.enter(),
-                DoType::InsertChar => self.insert_char(ep.str_vec[0].chars().nth(0).unwrap_or(' ')),
-                DoType::Paste => {
-                    self.insert_str(&ep.str_vec[0]);
-                    self.undo_vec.push(ep);
+            match ep.evt_type {
+                EvtType::Del => self.exec_edit_proc(EvtType::Del),
+                EvtType::BS => self.exec_edit_proc(EvtType::BS),
+                EvtType::Cut => self.exec_edit_proc(EvtType::Cut),
+                EvtType::Enter => self.exec_edit_proc(EvtType::Enter),
+                EvtType::InsertChar => self.insert_char(ep.str.chars().nth(0).unwrap_or(' ')),
+                EvtType::Paste => {
+                    self.insert_str(&ep.str);
+                    self.history.regist(self.evt, ep);
                     self.sel.clear();
                 }
                 _ => {}
             }
-        } else {
-            mbar.set_err(&LANG.lock().unwrap().no_operation_re_exec.to_string());
         }
     }
 }

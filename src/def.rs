@@ -21,3 +21,5 @@ pub const SHIFT_RIGHT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, co
 pub const SHIFT_LEFT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Left });
 // CTRL
 pub const CTRL_V: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('v') });
+pub const UNDO: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('z') });
+pub const REDO: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('y') });

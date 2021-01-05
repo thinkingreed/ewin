@@ -2,17 +2,17 @@ use crate::model::*;
 use crate::util::*;
 
 impl PromptCont {
-    fn shift_move_com(&mut self, do_type: DoType) {
+    fn shift_move_com(&mut self, do_type: EvtType) {
         self.sel.set_sel_posi(true, self.cur.y, self.cur.x, self.cur.disp_x);
 
         match do_type {
-            DoType::ShiftRight => self.cur_right(),
-            DoType::ShiftLeft => self.cur_left(),
-            DoType::ShiftHome => {
+            EvtType::ShiftRight => self.cur_right(),
+            EvtType::ShiftLeft => self.cur_left(),
+            EvtType::ShiftHome => {
                 self.cur.x = 0;
                 self.cur.disp_x = 1;
             }
-            DoType::ShiftEnd => {
+            EvtType::ShiftEnd => {
                 let (cur_x, width) = get_row_width(&self.buf[..], false);
                 self.cur.x = cur_x;
                 self.cur.disp_x = width + 1;
@@ -26,21 +26,21 @@ impl PromptCont {
     pub fn shift_home(&mut self) {
         Log::ep_s("　　　　　　　　shift_home");
 
-        self.shift_move_com(DoType::ShiftHome);
+        self.shift_move_com(EvtType::ShiftHome);
     }
     pub fn shift_end(&mut self) {
         Log::ep_s("　　　　　　　  shift_end");
 
-        self.shift_move_com(DoType::ShiftEnd);
+        self.shift_move_com(EvtType::ShiftEnd);
     }
 
     pub fn shift_right(&mut self) {
         Log::ep_s("　　　　　　　  shift_right");
-        self.shift_move_com(DoType::ShiftRight);
+        self.shift_move_com(EvtType::ShiftRight);
     }
 
     pub fn shift_left(&mut self) {
         Log::ep_s("　　　　　　　  shift_left");
-        self.shift_move_com(DoType::ShiftLeft);
+        self.shift_move_com(EvtType::ShiftLeft);
     }
 }

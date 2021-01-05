@@ -1,4 +1,4 @@
-use crate::{def::*, model::*};
+use crate::{def::*, global::*, model::*};
 use anyhow::Context;
 use clipboard::{ClipboardContext, ClipboardProvider};
 use std::io::Read;
@@ -7,8 +7,8 @@ use std::process;
 use std::process::Command;
 
 impl Editor {
-    pub fn set_clipboard(&mut self, copy_string: &str, term: &Terminal) {
-        if term.env == Env::WSL {
+    pub fn set_clipboard(&mut self, copy_string: &str) {
+        if *ENV == Env::WSL {
             Log::ep_s("try_set_clipboard ");
             if let Err(err) = self.try_set_clipboard(&copy_string) {
                 Log::ep("try_set_clipboard err", err.to_string());
@@ -36,8 +36,8 @@ impl Editor {
         Ok(())
     }
 
-    pub fn get_clipboard(&mut self, term: &Terminal) -> anyhow::Result<String> {
-        if term.env == Env::WSL {
+    pub fn get_clipboard(&mut self) -> anyhow::Result<String> {
+        if *ENV == Env::WSL {
             Log::ep_s("try_get_clipboard");
             return self.try_get_clipboard();
         } else {

@@ -26,7 +26,6 @@ async fn main() {
     if !term.check_displayable(&lang_cfg) {
         return;
     }
-    term.set_env();
 
     let mut sbar = StatusBar::new(lang_cfg.clone());
     let mut mbar = MsgBar::new();

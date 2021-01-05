@@ -42,16 +42,20 @@ impl EvtAct {
                 editor.t_buf.insert_end(&line_str);
             }*/
             editor.rnw = editor.buf.len_lines().to_string().len();
-            editor.cur = Cur { y: editor.buf.len_lines() - 1, x: editor.rnw, disp_x: 0 };
-            editor.cur.disp_x = editor.rnw + get_cur_x_width(&editor.buf.char_vec(editor.cur.y), editor.cur.x - editor.rnw);
+            editor.cur = Cur {
+                y: editor.buf.len_lines() - 1,
+                x: editor.rnw,
+                disp_x: 0,
+            };
+            editor.cur.disp_x = editor.rnw + get_char_width(editor.buf.char(editor.cur.y, editor.cur.x - editor.rnw));
             editor.scroll();
 
             let y = editor.buf.len_lines() - 1;
 
             if rnw_org == editor.rnw && cur_y_org == editor.cur.y {
-                editor.d_range = DRnage::new(y, y, DType::Target);
+                editor.d_range = DRnage::new(y, y, DrawType::Target);
             } else {
-                editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
+                editor.d_range = DRnage { d_type: DrawType::All, ..DRnage::default() };
             }
 
             let vec: Vec<&str> = line_str.split(":").collect();
@@ -66,7 +70,7 @@ impl EvtAct {
                 let match_vec: Vec<(usize, &str)> = search_target_str.match_indices(&editor.search.str).collect();
                 for (index, _) in match_vec {
                     let x = get_char_count(&line_str.chars().collect(), pre_str_x + index);
-                    editor.search.search_ranges.push(SearchRange {
+                    editor.search.ranges.push(SearchRange {
                         y: y,
                         sx: x,
                         ex: x + &editor.search.str.chars().count() - 1,
