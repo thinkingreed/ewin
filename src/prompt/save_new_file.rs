@@ -9,11 +9,11 @@ impl EvtAct {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {
                     if prom.cont_1.buf.len() == 0 {
-                        mbar.set_err(&LANG.lock().unwrap().not_entered_filenm);
+                        mbar.set_err(&LANG.not_entered_filenm);
                     } else {
                         let filenm = prom.cont_1.buf.iter().collect::<String>();
                         if Path::new(&filenm).exists() {
-                            mbar.set_err(&LANG.lock().unwrap().file_already_exists);
+                            mbar.set_err(&LANG.file_already_exists);
                             return EvtActType::Hold;
                         }
                         sbar.filenm = filenm;

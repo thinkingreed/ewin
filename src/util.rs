@@ -52,6 +52,9 @@ pub fn get_until_updown_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
                 width += c_len;
             }
             cur_x += 1;
+        // White space at the end of Prompt
+        } else {
+            width += 1;
         }
     }
     return (cur_x, width);
@@ -60,7 +63,7 @@ pub fn get_until_updown_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
 /// xまでのwidthを加算してdisp_xとcursorx算出
 pub fn get_until_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
     let (mut cur_x, mut sum_width) = (0, 0);
-    for i in 0..buf.len() + 1 {
+    for i in 0..=buf.len() {
         if let Some(c) = buf.get(i) {
             if c == &NEW_LINE || c == &EOF_MARK {
                 break;
@@ -127,15 +130,24 @@ pub fn split_inclusive(target: &str, split_char: char) -> Vec<String> {
 }
 pub fn get_env() -> Env {
     // WSL環境を判定出来ない為にpowershell試行
-    let child_1 = Command::new("uname").arg("-r").stdout(process::Stdio::piped()).spawn().unwrap();
-    let mut stdout = child_1.stdout.context("take stdout").unwrap();
+    let child = Command::new("uname").arg("-r").stdout(process::Stdio::piped()).spawn().unwrap();
+    let mut stdout = child.stdout.context("take stdout").unwrap();
     let mut buf = String::new();
     stdout.read_to_string(&mut buf).unwrap();
-    //   buf = buf.clone().trim().to_string();
 
     if buf.to_ascii_lowercase().contains("microsoft") {
         return Env::WSL;
     } else {
         return Env::Linux;
     }
+}
+pub fn get_env_str() -> String {
+    // WSL環境を判定出来ない為にpowershell試行
+    let child = Command::new("uname").arg("-r").stdout(process::Stdio::piped()).spawn().unwrap();
+    let mut stdout = child.stdout.context("take stdout").unwrap();
+    let mut buf = String::new();
+    stdout.read_to_string(&mut buf).unwrap();
+    //   buf = buf.clone().trim().to_string();
+
+    return buf;
 }

@@ -16,7 +16,7 @@ impl Editor {
                 self.cur.disp_x = self.rnw + 1;
             }
             EvtType::ShiftEnd => {
-                self.set_cur_target_x(self.cur.y, self.buf.len_line(self.cur.y));
+                self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y));
             }
             _ => {}
         }
@@ -55,13 +55,11 @@ impl Editor {
 
     pub fn shift_home(&mut self) {
         Log::ep_s("　　　　　　　　shift_home");
-
         self.shift_move_com(EvtType::ShiftHome);
     }
 
     pub fn shift_end(&mut self) {
         Log::ep_s("　　　　　　　  shift_end");
-
         self.shift_move_com(EvtType::ShiftEnd);
     }
 
@@ -78,7 +76,7 @@ impl Editor {
             self.d_range.d_type = DrawType::All;
         } else {
             prom.is_key_record = true;
-            mbar.set_keyrecord(&LANG.lock().unwrap().key_recording);
+            mbar.set_keyrecord(&LANG.key_recording);
             self.key_record_vec = vec![];
         }
     }
@@ -132,7 +130,7 @@ impl Editor {
             prom.is_key_record_exec = false;
             prom.is_key_record_exec_draw = false;
         } else {
-            mbar.set_err(&LANG.lock().unwrap().no_key_record_exec.to_string());
+            mbar.set_err(&LANG.no_key_record_exec.to_string());
         }
     }
 }

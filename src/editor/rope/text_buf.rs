@@ -1,7 +1,7 @@
 extern crate ropey;
 use crate::{def::*, model::*};
 use anyhow::Result;
-use ropey::iter::{Chars, Lines};
+use ropey::iter::Chars;
 use ropey::{Rope, RopeSlice};
 use std::fs::File;
 use std::io;
@@ -23,7 +23,7 @@ impl TextBuffer {
         self.text.line(i)
     }
 
-    pub fn len_line<'a>(&'a self, i: usize) -> usize {
+    pub fn len_line_chars<'a>(&'a self, i: usize) -> usize {
         self.text.line(i).len_chars()
     }
 
@@ -67,15 +67,19 @@ impl TextBuffer {
                 del_num = 2;
             }
         } else if do_type == EvtType::BS {
-            if NEW_LINE == self.char(y, x) && NEW_LINE_CR == self.char(y, x - 1) {
-                i -= 1;
-                del_num = 2;
+            if x > 0 {
+                if NEW_LINE == self.char(y, x) && NEW_LINE_CR == self.char(y, x - 1) {
+                    i -= 1;
+                    del_num = 2;
+                }
             }
         }
         self.text.remove(i..i + del_num);
     }
 
     pub fn remove_range(&mut self, sel: SelRange) {
+        Log::ep("remove_range sel", sel);
+
         let i_s = self.text.line_to_char(sel.sy) + sel.sx;
         let i_e = self.text.line_to_char(sel.ey) + sel.ex;
 
@@ -91,7 +95,7 @@ impl TextBuffer {
 
     pub fn char<'a>(&'a self, y: usize, x: usize) -> char {
         let mut char = ' ';
-        if self.len_line(y) > x {
+        if self.len_line_chars(y) > x {
             char = self.line(y).char(x);
         }
         char

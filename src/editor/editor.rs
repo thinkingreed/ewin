@@ -1,4 +1,5 @@
 use crate::{def::*, model::*, util::*};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::cmp::{max, min};
 use unicode_width::UnicodeWidthChar;
 
@@ -26,7 +27,6 @@ impl Editor {
     // adjusting horizontal posi of cursor
     pub fn scroll_horizontal(&mut self) {
         // Log::ep_s("　　　　　　　 scroll_horizontal");
-
         // offset_x切替余分文字数(残文字数時にoffset切替)
         let offset_x_extra_num = 3;
         // 上記offset切替時のoffset増減数
@@ -45,7 +45,7 @@ impl Editor {
 
         // line disp_x < disp_col_num disable extra
         let mut line_disp_x = 0;
-        if self.buf.len_line(self.cur.y) < self.disp_col_num {
+        if self.buf.len_line_chars(self.cur.y) < self.disp_col_num {
             let (_, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], true);
             line_disp_x = width;
         }
@@ -90,9 +90,7 @@ impl Editor {
     }
 
     pub fn get_char_width(&mut self, y: usize, x: usize) -> usize {
-        Log::ep("xxx", x);
-
-        if self.buf.len_line(y) >= x {
+        if self.buf.len_line_chars(y) >= x {
             let c = self.buf.char(y, x - self.rnw);
             return c.width().unwrap_or(0);
         }
@@ -118,7 +116,7 @@ impl Editor {
     pub fn del_sel_range(&mut self) {
         let sel = self.sel.get_range();
         self.buf.remove_range(sel);
-        self.set_cur_target_x(sel.sy, sel.sx);
+        self.set_cur_target(sel.sy, sel.sx);
     }
 
     pub fn set_cur_default(&mut self) {
@@ -128,7 +126,7 @@ impl Editor {
         self.scroll_horizontal();
     }
 
-    pub fn set_cur_target_x(&mut self, y: usize, x: usize) {
+    pub fn set_cur_target(&mut self, y: usize, x: usize) {
         self.cur.y = y;
         self.rnw = self.buf.len_lines().to_string().len();
         let (cur_x, width) = get_row_width(&self.buf.char_vec_range(y, x), false);
@@ -136,5 +134,19 @@ impl Editor {
         self.cur.disp_x = width + self.rnw + 1;
         self.scroll();
         self.scroll_horizontal();
+    }
+
+    pub fn is_edit_evt(&mut self, is_incl_unredo: bool) -> bool {
+        if is_incl_unredo {
+            match self.evt {
+                PASTE | UNDO | REDO | DEL | BS | CUT | ENTER | Key(KeyEvent { code: Char(_), modifiers: KeyModifiers::NONE }) | Key(KeyEvent { code: Char(_), modifiers: KeyModifiers::SHIFT }) => return true,
+                _ => return false,
+            }
+        } else {
+            match self.evt {
+                PASTE | DEL | BS | CUT | ENTER | Key(KeyEvent { code: Char(_), modifiers: KeyModifiers::NONE }) | Key(KeyEvent { code: Char(_), modifiers: KeyModifiers::SHIFT }) => return true,
+                _ => return false,
+            }
+        }
     }
 }

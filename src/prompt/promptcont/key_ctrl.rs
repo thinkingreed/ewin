@@ -13,7 +13,7 @@ impl PromptCont {
             }
             return false;
         } else {
-            mbar.set_err(&LANG.lock().unwrap().cannot_paste_multi_lines.clone());
+            mbar.set_err(&LANG.cannot_paste_multi_lines.clone());
             return true;
         }
     }

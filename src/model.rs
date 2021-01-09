@@ -200,11 +200,11 @@ pub enum Env {
 
 #[derive(Debug)]
 pub struct Terminal {
-    pub env: Env,
+    // pub env: Env,
 }
 impl Default for Terminal {
     fn default() -> Self {
-        Terminal { env: Env::Linux }
+        Terminal {}
     }
 }
 #[derive(Debug, Clone)]
@@ -248,7 +248,7 @@ pub struct EvtProc {
     pub cur_e: Cur,
     pub str: String,
     pub sel: SelRange,
-    pub d_range: DRnage,
+    pub d_range: DRange,
 }
 
 impl Default for EvtProc {
@@ -259,17 +259,17 @@ impl Default for EvtProc {
             str: String::new(),
             evt_type: EvtType::None,
             sel: SelRange::default(),
-            d_range: DRnage::default(),
+            d_range: DRange::default(),
         }
     }
 }
 impl fmt::Display for EvtProc {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "EvtProc cur_s:{}, cur_e:{}, str_vec:{}, do_type:{}, sel:{}, d_range:{}", self.cur_s, self.cur_e, self.str, self.evt_type, self.sel, self.d_range)
+        write!(f, "EvtProc cur_s:{}, cur_e:{}, str:{}, do_type:{}, sel:{}, d_range:{}", self.cur_s, self.cur_e, self.str, self.evt_type, self.sel, self.d_range)
     }
 }
 impl EvtProc {
-    pub fn new(do_type: EvtType, cur_s: Cur, cur_e: Cur, d_range: DRnage) -> Self {
+    pub fn new(do_type: EvtType, cur_s: Cur, cur_e: Cur, d_range: DRange) -> Self {
         return EvtProc {
             evt_type: do_type,
             cur_s: cur_s,
@@ -505,7 +505,7 @@ pub struct Cur {
     pub y: usize,
     // Editor.bufferの[y][x] + line_num_width
     pub x: usize,
-    // カis_redraw文字対応) line_num_width + 1以上
+    // 2文字分文字対応 line_num_width + 1以上
     pub disp_x: usize,
 }
 
@@ -554,7 +554,7 @@ pub struct Editor {
     pub search: Search,
     pub draw: Draw,
     // draw_ranges
-    pub d_range: DRnage,
+    pub d_range: DRange,
     pub history: History,
     pub grep_result_vec: Vec<GrepResult>,
     pub key_record_vec: Vec<KeyRecord>,
@@ -585,7 +585,7 @@ impl Default for Editor {
             disp_col_num: 5,
             search: Search::default(),
             draw: Draw::default(),
-            d_range: DRnage::default(),
+            d_range: DRange::default(),
             history: History::default(),
             grep_result_vec: vec![],
             key_record_vec: vec![],
@@ -624,22 +624,22 @@ impl Draw {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-// DrawRnage
-pub struct DRnage {
+// DrawRange
+pub struct DRange {
     pub sy: usize,
     pub ey: usize,
     pub d_type: DrawType,
 }
 
-impl Default for DRnage {
+impl Default for DRange {
     fn default() -> Self {
-        DRnage { sy: 0, ey: 0, d_type: DrawType::All }
+        DRange { sy: 0, ey: 0, d_type: DrawType::All }
     }
 }
 
-impl DRnage {
+impl DRange {
     pub fn new(sy: usize, ey: usize, d_type: DrawType) -> Self {
-        return DRnage { sy: sy, ey: ey, d_type: d_type };
+        return DRange { sy: sy, ey: ey, d_type: d_type };
     }
 
     pub fn get_range(&mut self) -> Self {
@@ -650,7 +650,7 @@ impl DRnage {
             sy = self.ey;
             ey = self.sy;
         }
-        return DRnage { sy: sy, ey: ey, d_type: self.d_type };
+        return DRange { sy: sy, ey: ey, d_type: self.d_type };
     }
     pub fn set_target(&mut self, sy: usize, ey: usize) {
         self.d_type = DrawType::Target;
@@ -668,7 +668,7 @@ impl DRnage {
         self.d_type = DrawType::None;
     }
 }
-impl fmt::Display for DRnage {
+impl fmt::Display for DRange {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "DRnage sy:{}, ey:{}, d_type:{}, ", self.sy, self.ey, self.d_type)
     }

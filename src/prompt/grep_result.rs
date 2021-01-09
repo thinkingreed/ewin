@@ -36,11 +36,7 @@ impl EvtAct {
             // let v = line_str.trim_end().chars().collect();
 
             editor.buf.insert_end(&line_str);
-            /*  if editor.t_buf.len() == 0 {
-                editor.t_buf.insert(0, 0, &line_str);
-            } else {
-                editor.t_buf.insert_end(&line_str);
-            }*/
+
             editor.rnw = editor.buf.len_lines().to_string().len();
             editor.cur = Cur {
                 y: editor.buf.len_lines() - 1,
@@ -52,11 +48,7 @@ impl EvtAct {
 
             let y = editor.buf.len_lines() - 1;
 
-            if rnw_org == editor.rnw && cur_y_org == editor.cur.y {
-                editor.d_range = DRnage::new(y, y, DrawType::Target);
-            } else {
-                editor.d_range = DRnage { d_type: DrawType::All, ..DRnage::default() };
-            }
+            editor.d_range = DRange::new(y, y, DrawType::Target);
 
             let vec: Vec<&str> = line_str.split(":").collect();
 
@@ -67,6 +59,9 @@ impl EvtAct {
 
                 let search_target_str = &line_str.replace(&pre_str, "");
 
+                editor.search.ranges = editor.get_search_ranges(&editor.search.str);
+
+                /*
                 let match_vec: Vec<(usize, &str)> = search_target_str.match_indices(&editor.search.str).collect();
                 for (index, _) in match_vec {
                     let x = get_char_count(&line_str.chars().collect(), pre_str_x + index);
@@ -75,7 +70,7 @@ impl EvtAct {
                         sx: x,
                         ex: x + &editor.search.str.chars().count() - 1,
                     });
-                }
+                }*/
             }
             term.draw(out, editor, mbar, prom, sbar).unwrap();
 
@@ -100,7 +95,7 @@ impl EvtAct {
         child.kill();
         prom.clear();
         mbar.msg = String::new();
-        mbar.set_readonly(&LANG.lock().unwrap().unable_to_edit);
+        mbar.set_readonly(&LANG.unable_to_edit);
         if editor.grep_result_vec.len() > 0 {
             prom.grep_result_after();
         } else {

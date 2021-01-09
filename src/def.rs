@@ -16,10 +16,15 @@ pub const EOF_STR: &str = "EOF";
 pub const RIGHT: Event = Key(KeyEvent { code: Right, modifiers: KeyModifiers::NONE });
 pub const LEFT: Event = Key(KeyEvent { code: Left, modifiers: KeyModifiers::NONE });
 pub const PAGE_DOWN: Event = Key(KeyEvent { code: PageDown, modifiers: KeyModifiers::NONE });
+pub const DEL: Event = Key(KeyEvent { code: Delete, modifiers: KeyModifiers::NONE });
+pub const BS: Event = Key(KeyEvent { code: Backspace, modifiers: KeyModifiers::NONE });
+// pub const INSERT_CHAR: Event = Key(KeyEvent { code: Char(), modifiers: KeyModifiers::NONE });
+pub const ENTER: Event = Key(KeyEvent { code: Enter, modifiers: KeyModifiers::NONE });
 // SHIFT
 pub const SHIFT_RIGHT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Right });
 pub const SHIFT_LEFT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Left });
 // CTRL
-pub const CTRL_V: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('v') });
+pub const PASTE: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('v') });
+pub const CUT: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('x') });
 pub const UNDO: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('z') });
 pub const REDO: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('y') });

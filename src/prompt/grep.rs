@@ -16,11 +16,11 @@ impl EvtAct {
                     let mut search_folder = prom.cont_3.buf.iter().collect::<String>();
 
                     if search_str.len() == 0 {
-                        mbar.set_err(&LANG.lock().unwrap().not_entered_search_str);
+                        mbar.set_err(&LANG.not_entered_search_str);
                     } else if search_filenm.len() == 0 {
-                        mbar.set_err(&LANG.lock().unwrap().not_entered_search_file);
+                        mbar.set_err(&LANG.not_entered_search_file);
                     } else if search_folder.len() == 0 {
-                        mbar.set_err(&LANG.lock().unwrap().not_entered_search_folder);
+                        mbar.set_err(&LANG.not_entered_search_folder);
                     } else {
                         mbar.clear();
                         prom.clear();

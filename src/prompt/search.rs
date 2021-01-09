@@ -35,14 +35,14 @@ impl EvtAct {
     fn exec_search<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, is_asc: bool) -> bool {
         let search_str = prom.cont_1.buf.iter().collect::<String>();
         if search_str.len() == 0 {
-            mbar.set_err(&LANG.lock().unwrap().not_entered_search_str);
+            mbar.set_err(&LANG.not_entered_search_str);
             mbar.draw_only(out, term, editor, prom, sbar);
             prom.draw_only(out);
             return false;
         }
         let search_vec = editor.get_search_ranges(&search_str.clone());
         if search_vec.len() == 0 {
-            mbar.set_err(&LANG.lock().unwrap().cannot_find_char_search_for);
+            mbar.set_err(&LANG.cannot_find_char_search_for);
             mbar.draw_only(out, term, editor, prom, sbar);
             prom.draw_only(out);
             return false;
@@ -73,7 +73,7 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_search(&mut self) {
-        self.guide = format!("{}{}", Colors::get_msg_fg(), LANG.lock().unwrap().set_search);
+        self.guide = format!("{}{}", Colors::get_msg_fg(), LANG.set_search);
         self.key_desc = format!(
             "{}{}:{}F3  {}{}:{}Shift + F4  {}{}:{}Ctrl + c{}",
             Colors::get_default_fg(),

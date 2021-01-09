@@ -51,6 +51,7 @@ file_already_exists="既に存在するファイル名です"
 # Not sel range
 no_sel_range="範囲を指定して下さい"
 # paste
+no_value_in_clipboard="クリップボードに値はありません"
 cannot_paste_multi_lines="複数行を貼り付けることは出来ません"
 
 # undo・redo
@@ -112,6 +113,7 @@ file_already_exists="file already exists"
 # Not sel range
 no_sel_range="Please specify the copy range"
 # paste
+no_value_in_clipboard="There is no value in the clipboard"
 cannot_paste_multi_lines="Can not paste multilines"
 # undo・redo
 no_undo_operation="There is no undo operation"

@@ -74,7 +74,7 @@ impl StatusBar {
         col_vec.push(&self.lang.col);
         col_vec.push("(");
 
-        let (cols, col) = (editor.buf.len_line(editor.cur.y).to_string(), (editor.cur.x + 1 - editor.rnw).to_string());
+        let (cols, col) = (editor.buf.len_line_chars(editor.cur.y).to_string(), (editor.cur.x + 1 - editor.rnw).to_string());
         col_vec.push(&col);
         col_vec.push("/");
         col_vec.push(&cols);

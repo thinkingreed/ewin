@@ -1,6 +1,5 @@
-use crate::{_cfg::lang::cfg::LangCfg, model::*};
-use anyhow::Context;
-use std::io::{self, Read, Write};
+use crate::{_cfg::lang::cfg::LangCfg, global::ENV, model::*, util::*};
+use std::io::{self, Write};
 use std::path::Path;
 use std::process;
 use std::process::Command;
@@ -14,8 +13,7 @@ impl Terminal {
 
         let str_vec: &mut Vec<String> = &mut vec![];
 
-        // mbar.msg変更の場合は全再描画
-
+        // Redraw in case of msg change
         if mbar.msg_org != mbar.msg {
             editor.d_range.d_type = DrawType::All;
         }
@@ -132,7 +130,7 @@ impl Terminal {
             }
         }
 
-        if self.env == Env::WSL {
+        if *ENV == Env::WSL {
             if let Err(err) = Command::new("/mnt/c/windows/system32/cmd.exe")
                 .arg("/c")
                 .arg("start")
@@ -144,11 +142,13 @@ impl Terminal {
                 .stderr(process::Stdio::null())
                 .spawn()
             {
+                Log::ep_s("WSL");
                 Log::ep("startup_terminal err", err.to_string());
             }
         } else {
             // gnome-terminal
             if let Err(err) = Command::new("gnome-terminal").arg("--").arg(exe_path).arg(search_strs).spawn() {
+                Log::ep_s("gnome");
                 Log::ep("startup_terminal err", err.to_string());
             }
         };

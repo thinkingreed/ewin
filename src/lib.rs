@@ -1,18 +1,9 @@
 pub mod global {
     use crate::{_cfg::lang::cfg::LangCfg, model::*, util::*};
     use once_cell::sync::Lazy;
-    use std::sync::Mutex;
-
-    pub static LANG: Lazy<Mutex<LangCfg>> = Lazy::new(|| {
-        let lang_cfg = LangCfg::read_lang_cfg();
-        return Mutex::new(lang_cfg);
-    });
-
-    // static LARGE_TEXT: Lazy<String> = Lazy::new(|| load_large_text());
-
+    pub static LANG: Lazy<LangCfg> = Lazy::new(|| LangCfg::read_lang_cfg());
     pub static ENV: Lazy<Env> = Lazy::new(|| get_env());
-
-    //  pub static EVENT: OnceCell<Event> = OnceCell::new();
+    pub static ENV_STR: Lazy<String> = Lazy::new(|| get_env_str());
 }
 pub mod colors;
 pub mod def;

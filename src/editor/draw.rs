@@ -13,18 +13,18 @@ impl Editor {
         if path.to_string_lossy().to_string().len() > 0 {
             if path.exists() {
                 if !is_writable(path).unwrap() {
-                    let msg_1 = &LANG.lock().unwrap().unable_to_edit.clone();
-                    let msg_2 = &LANG.lock().unwrap().no_write_permission.clone();
+                    let msg_1 = &LANG.unable_to_edit.clone();
+                    let msg_2 = &LANG.no_write_permission.clone();
                     mbar.set_readonly(&format!("{}({})", msg_1, msg_2));
                 }
             } else {
-                println!("{}", LANG.lock().unwrap().file_not_found.clone());
+                println!("{}", LANG.file_not_found.clone());
                 std::process::exit(1);
             }
         } else {
             let current = env::current_dir().unwrap();
             if !is_writable(current).unwrap() {
-                println!("{}", LANG.lock().unwrap().no_write_permission.clone());
+                println!("{}", LANG.no_write_permission.clone());
                 std::process::exit(1);
             }
         }
@@ -38,12 +38,12 @@ impl Editor {
             }
             Err(err) => match err.kind() {
                 ErrorKind::PermissionDenied => {
-                    println!("{}", LANG.lock().unwrap().no_read_permission.clone());
+                    println!("{}", LANG.no_read_permission.clone());
                     std::process::exit(1);
                 }
                 ErrorKind::NotFound => self.buf.text.insert_char(self.buf.text.len_chars(), EOF_MARK),
                 _ => {
-                    println!("{} {:?}", LANG.lock().unwrap().file_opening_problem, err);
+                    println!("{} {:?}", LANG.file_opening_problem, err);
                     std::process::exit(1);
                 }
             },
@@ -85,7 +85,7 @@ impl Editor {
             let row_vec = self.draw.char_vec[i].clone();
 
             let x_s = if i == self.cur.y { self.offset_x } else { 0 };
-            let x_e = min(x_s + cols, self.buf.len_line(i));
+            let x_e = min(x_s + cols, self.buf.len_line_chars(i));
 
             for j in x_s..x_e {
                 let c = row_vec[j];

@@ -50,9 +50,11 @@ impl Prompt {
         if self.is_replace || self.is_grep {
             if self.buf_posi == PromptBufPosi::First {
                 Log::ep("prom.cont_1.cur.disp_x", self.cont_1.cur.disp_x);
+                Log::ep("prom.cont_1.cur.x", self.cont_1.cur.x);
                 str_vec.push(cursor::Goto(self.cont_1.cur.disp_x as u16, (self.disp_row_posi + 3) as u16).to_string());
             } else if self.buf_posi == PromptBufPosi::Second {
                 Log::ep("prom.cont_2.cur.disp_x", self.cont_2.cur.disp_x);
+                Log::ep("prom.cont_2.cur.x", self.cont_2.cur.x);
                 str_vec.push(cursor::Goto(self.cont_2.cur.disp_x as u16, (self.disp_row_posi + 5) as u16).to_string());
             } else if self.buf_posi == PromptBufPosi::Third {
                 str_vec.push(cursor::Goto(self.cont_3.cur.disp_x as u16, (self.disp_row_posi + 7) as u16).to_string());
@@ -209,7 +211,10 @@ impl Prompt {
 
     fn set_cur(cont_org: &PromptCont, cont: &mut PromptCont) {
         cont.updown_x = cont_org.cur.disp_x;
+        Log::ep("cont.updown_x", cont.updown_x);
         let (cur_x, width) = get_until_updown_x(&cont.buf, cont.updown_x);
+        Log::ep("cur_x", cur_x);
+        Log::ep("width", width);
         cont.cur.x = cur_x;
         cont.cur.disp_x = width;
     }

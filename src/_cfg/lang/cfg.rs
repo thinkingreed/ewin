@@ -54,6 +54,7 @@ pub struct LangCfg {
     // Not sel range
     pub no_sel_range: String,
     // Paste
+    pub no_value_in_clipboard: String,
     pub cannot_paste_multi_lines: String,
     // key record
     pub no_key_record_exec: String,
@@ -116,6 +117,7 @@ impl LangCfg {
             file_already_exists: String::new(),
             no_sel_range: String::new(),
             cannot_paste_multi_lines: String::new(),
+            no_value_in_clipboard: String::new(),
             no_key_record_exec: String::new(),
             unsupported_operation: String::new(),
         }
