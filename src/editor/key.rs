@@ -1,4 +1,4 @@
-use crate::{def::*, editor::rope::rope_util::*, model::*, util::*};
+use crate::{def::*, model::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*};
 use std::cmp::{max, min};
 

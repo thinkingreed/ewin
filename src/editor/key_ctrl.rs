@@ -34,6 +34,7 @@ impl Editor {
         if prom.cont_1.buf.len() > 0 {
             let s = prom.cont_1.buf.iter().collect::<String>();
             self.path = Some(Path::new(&s).into());
+            self.path_str = s;
         }
 
         if !Path::new(&sbar.filenm).exists() && prom.cont_1.buf.len() == 0 {

@@ -10,16 +10,17 @@ pub mod def;
 pub mod evt_act_prom;
 pub mod history;
 pub mod editor {
-    pub mod rope {
+    pub mod draw {
         pub mod buf_cache;
-        pub mod rope_util;
+        pub mod char_style;
+        pub mod draw;
+        pub mod syntax;
         pub mod text_buf;
     }
     pub mod clipboard;
     pub mod color;
-    pub mod draw;
     pub mod editor;
-    pub mod evtproc;
+    pub mod evt_proc;
     pub mod key;
     pub mod key_ctrl;
     pub mod key_shift;

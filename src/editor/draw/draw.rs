@@ -2,9 +2,12 @@ use crate::{def::*, global::*, model::*};
 use permissions::*;
 use std::cmp::min;
 use std::env;
+use std::ffi::OsStr;
 use std::io::ErrorKind;
-use std::iter::FromIterator;
 use std::path;
+use std::path::Path;
+use syntect::easy::HighlightLines;
+use syntect::parsing::SyntaxSet;
 use termion::{clear, cursor};
 use unicode_width::UnicodeWidthChar;
 
@@ -49,7 +52,12 @@ impl Editor {
             },
         }
 
+        self.path_str = path.to_string_lossy().to_string();
         self.path = Some(path.into());
+
+        self.syntax.syntax_set = SyntaxSet::load_defaults_newlines();
+        self.syntax.syntax = self.syntax.syntax_set.find_syntax_by_extension(&Path::new(&self.path_str).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string()).unwrap().clone();
+
         self.set_cur_default();
     }
 
@@ -76,22 +84,23 @@ impl Editor {
             }
         }
 
-        let sel_range = self.sel.get_range();
-        let search_ranges = self.search.ranges.clone();
-
         for i in self.draw.sy..=self.draw.ey {
             self.set_row_num(i, str_vec);
 
-            let row_vec = self.draw.char_vec[i].clone();
+            let row_region = self.draw.regions[i].clone();
 
             let x_s = if i == self.cur.y { self.offset_x } else { 0 };
             let x_e = min(x_s + cols, self.buf.len_line_chars(i));
 
             for j in x_s..x_e {
-                let c = row_vec[j];
+                let region = &row_region[j];
+                // eprintln!("region {:?}", region);
+
+                region.draw(str_vec);
+                let c = region.c;
 
                 // highlight
-                self.ctl_color(str_vec, &row_vec, sel_range, &search_ranges, i, j);
+                //self.ctl_color(str_vec, &row_char, sel_ranges, &search_ranges, i, j);
 
                 let mut width = c.width().unwrap_or(0);
                 if c == NEW_LINE {

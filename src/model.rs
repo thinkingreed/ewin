@@ -1,11 +1,20 @@
 extern crate ropey;
-use crate::_cfg::lang::cfg::LangCfg;
-use crate::def::*;
+use crate::{_cfg::lang::cfg::LangCfg, def::*, editor::draw::syntax::*};
 use crossterm::event::{Event, Event::Key, KeyCode::End};
 use ropey::Rope;
 use std::cmp::{max, min};
+use std::ffi::OsStr;
 use std::fmt;
 use std::path;
+use std::path::Path;
+use syntect;
+use syntect::easy::HighlightFile;
+use syntect::easy::HighlightLines;
+use syntect::highlighting::{Style, Theme, ThemeSet};
+use syntect::parsing::{SyntaxReference, SyntaxSet};
+use termion;
+use termion::color;
+use termion::color::{Bg, Fg};
 
 #[derive(Debug, Clone)]
 pub struct MsgBar {
@@ -522,7 +531,7 @@ impl fmt::Display for Cur {
 }
 
 // エディタの内部状態
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct Editor {
     pub buf: TextBuffer,
     pub buf_cache: Vec<Vec<char>>,
@@ -543,6 +552,7 @@ pub struct Editor {
     // 連続でカーソル上下時の基本x位置(２バイト文字対応)  line_num_width + 1以上 初期値:0
     pub updown_x: usize,
     pub path: Option<path::PathBuf>,
+    pub path_str: String,
     /// 行番号の列数 row_num_width
     pub rnw: usize,
     pub sel: SelRange,
@@ -560,10 +570,11 @@ pub struct Editor {
     pub key_record_vec: Vec<KeyRecord>,
     // Corresponding to unexpected display by changing the background color multiple times
     pub is_default_color: bool,
+    pub syntax: Syntax,
 }
 
-impl Default for Editor {
-    fn default() -> Self {
+impl Editor {
+    pub fn new() -> Self {
         Editor {
             buf: TextBuffer::default(),
             buf_cache: vec![],
@@ -576,6 +587,7 @@ impl Default for Editor {
             //    x_offset_y: 0,
             updown_x: 0,
             path: None,
+            path_str: String::new(),
             rnw: 0,
             sel: SelRange::default(),
             evt: Key(End.into()),
@@ -590,13 +602,83 @@ impl Default for Editor {
             grep_result_vec: vec![],
             key_record_vec: vec![],
             is_default_color: true,
+            syntax: Syntax::default(),
         }
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TextBuffer {
     pub text: Rope,
 }
+
+#[derive(Debug)]
+pub struct Syntax {
+    pub syntax_set: syntect::parsing::SyntaxSet,
+    pub syntax: syntect::parsing::SyntaxReference,
+    pub theme: syntect::highlighting::Theme,
+    pub theme_set: syntect::highlighting::ThemeSet,
+}
+
+impl Default for Syntax {
+    fn default() -> Self {
+        Syntax {
+            syntax_set: SyntaxSet::load_defaults_newlines(),
+            syntax: SyntaxSet::load_defaults_newlines().find_syntax_by_extension(&Path::new("").extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string()).unwrap().clone(),
+            theme_set: ThemeSet::load_defaults(),
+            theme: Theme::default(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Region {
+    pub from: CharStyle,
+    pub to: Option<CharStyle>,
+    pub c: char,
+}
+
+impl fmt::Display for Region {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Region from:{:?}, to:{:?}, c:{:?},", self.from, self.to, self.c)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Color {
+    Rgb { r: u8, g: u8, b: u8 },
+    Reset,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CharStyleType {
+    None,
+    Select,
+    CtrlChar,
+}
+
+impl Default for Color {
+    fn default() -> Self {
+        Self::Reset
+    }
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CharStyle {
+    pub fg: Color,
+    pub bg: Color,
+}
+
+impl fmt::Display for CharStyle {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "CharStyle fg:{:?}, bg:{:?},", self.fg, self.bg,)
+    }
+}
+
+impl From<syntect::highlighting::Style> for CharStyle {
+    fn from(s: syntect::highlighting::Style) -> Self {
+        Self { bg: s.background.into(), fg: s.foreground.into() }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Draw {
     pub sy: usize,
@@ -604,11 +686,12 @@ pub struct Draw {
     // pub x_vec: Vec<(usize, usize)>,
     // Caching the drawing string because ropey takes a long time to access char
     pub char_vec: Vec<Vec<char>>,
+    pub regions: Vec<Vec<Region>>,
 }
 
 impl Default for Draw {
     fn default() -> Self {
-        Draw { sy: 0, ey: 0, char_vec: vec![] }
+        Draw { sy: 0, ey: 0, char_vec: vec![], regions: vec![] }
     }
 }
 

@@ -18,7 +18,9 @@ async fn main() {
     let matches = App::new("ewin").version(crate_version!()).bin_name("ewin").arg(Arg::with_name("file").required(false)).get_matches();
     let file_path: String = matches.value_of_os("file").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
 
-    let mut editor = Editor::default();
+    //  let syntax_parent = SyntaxParent::default();
+
+    let mut editor = Editor::new();
     let lang_cfg = LangCfg::read_lang_cfg();
 
     let mut term = Terminal::default();
