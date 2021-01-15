@@ -1,5 +1,5 @@
 extern crate ropey;
-use crate::{_cfg::lang::cfg::LangCfg, def::*, editor::draw::syntax::*};
+use crate::{_cfg::lang::cfg::LangCfg, def::*};
 use crossterm::event::{Event, Event::Key, KeyCode::End};
 use ropey::Rope;
 use std::cmp::{max, min};
@@ -8,13 +8,8 @@ use std::fmt;
 use std::path;
 use std::path::Path;
 use syntect;
-use syntect::easy::HighlightFile;
-use syntect::easy::HighlightLines;
-use syntect::highlighting::{Style, Theme, ThemeSet};
-use syntect::parsing::{SyntaxReference, SyntaxSet};
-use termion;
-use termion::color;
-use termion::color::{Bg, Fg};
+use syntect::highlighting::{HighlightState, Theme, ThemeSet};
+use syntect::parsing::{ParseState, ScopeStackOp, SyntaxSet};
 
 #[derive(Debug, Clone)]
 pub struct MsgBar {
@@ -447,7 +442,7 @@ impl SelRange {
     }
 
     /// 開始位置 < 終了位置に変換
-    pub fn get_range(&mut self) -> Self {
+    pub fn get_range(&self) -> Self {
         let mut sy = self.sy;
         let mut ey = self.ey;
         let mut sx = self.sx;
@@ -679,7 +674,7 @@ impl From<syntect::highlighting::Style> for CharStyle {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct Draw {
     pub sy: usize,
     pub ey: usize,
@@ -687,11 +682,39 @@ pub struct Draw {
     // Caching the drawing string because ropey takes a long time to access char
     pub char_vec: Vec<Vec<char>>,
     pub regions: Vec<Vec<Region>>,
+    pub syntax_state_vec: Vec<SyntaxState>,
 }
+
+#[derive(Debug, Clone)]
+pub struct SyntaxState {
+    pub highlight_state: HighlightState,
+    pub ops: Vec<(usize, ScopeStackOp)>,
+    pub parse_state: ParseState,
+}
+
+/*
+impl Default for ParseState {
+    fn default() -> Self {
+        ParseState {
+            sy: 0,
+            ey: 0,
+            char_vec: vec![],
+            regions: vec![],
+            syntax_state_vec: vec![],
+        }
+    }
+}
+*/
 
 impl Default for Draw {
     fn default() -> Self {
-        Draw { sy: 0, ey: 0, char_vec: vec![], regions: vec![] }
+        Draw {
+            sy: 0,
+            ey: 0,
+            char_vec: vec![],
+            regions: vec![],
+            syntax_state_vec: vec![],
+        }
     }
 }
 

@@ -16,10 +16,12 @@ pub fn get_str_width(msg: &str) -> usize {
 
 pub fn get_row_width(vec: &[char], is_ctrlchar_incl: bool) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
+    Log::ep("vec", vec.iter().collect::<String>());
+
     for c in vec {
-        // Log::ep("ccccc", c);
-        if c == &EOF_MARK || c == &NEW_LINE {
-            if is_ctrlchar_incl && c == &NEW_LINE {
+        Log::ep("ccccc", c);
+        if c == &EOF_MARK || c == &NEW_LINE || c == &NEW_LINE_CR {
+            if is_ctrlchar_incl && (c == &NEW_LINE || c == &NEW_LINE_CR) {
                 width += 1;
                 cur_x += 1;
             }
@@ -37,7 +39,7 @@ pub fn get_until_updown_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
     for i in 0..buf.len() + 1 {
         if let Some(c) = buf.get(i) {
-            if c == &EOF_MARK || c == &NEW_LINE {
+            if c == &EOF_MARK || c == &NEW_LINE || c == &NEW_LINE_CR {
                 width += 1;
                 break;
             }
@@ -65,7 +67,7 @@ pub fn get_until_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
     let (mut cur_x, mut sum_width) = (0, 0);
     for i in 0..=buf.len() {
         if let Some(c) = buf.get(i) {
-            if c == &NEW_LINE || c == &EOF_MARK {
+            if c == &NEW_LINE || c == &EOF_MARK || c == &NEW_LINE_CR {
                 break;
             }
             let width = c.width().unwrap_or(0);

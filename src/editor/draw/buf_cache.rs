@@ -2,8 +2,8 @@ extern crate ropey;
 use crate::{editor::draw::char_style::*, model::*};
 use rayon::prelude::*;
 use std::cmp::min;
-use syntect::easy::HighlightFile;
-use syntect::easy::HighlightLines;
+use syntect::highlighting::{HighlightIterator, HighlightState, Highlighter, Style};
+use syntect::parsing::{ParseState, ScopeStack};
 
 impl Editor {
     pub fn draw_cache(&mut self) {
@@ -27,80 +27,87 @@ impl Editor {
             self.draw.sy = d_range.sy;
         }
 
+        Log::ep("self.draw.sy", self.draw.sy);
+        Log::ep("self.draw.ey", self.draw.ey);
+
+        for y in self.draw.sy..=self.draw.ey {
+            if self.draw.char_vec[y].len() == 0 {
+                self.set_regions(y);
+            }
+        }
+
         if self.history.len_history() > 0 {
             let hist: &HistoryInfo = self.history.get_history_last();
             let ep = hist.evt_proc.clone();
             match ep.d_range.d_type {
                 DrawType::Target | DrawType::After | DrawType::All | DrawType::None => {
                     if self.is_edit_evt(true) {
-                        Log::ep_s("refresh refresh refresh refresh refresh");
-                        for i in self.draw.sy..=self.draw.ey {
-                            self.draw.char_vec[i] = self.buf.char_vec_line(i);
+                        for y in self.draw.sy..=self.draw.ey {
+                            self.set_regions(y);
                         }
                     }
                 }
                 DrawType::Not => {}
             }
         }
+    }
 
-        Log::ep("self.draw.sy", self.draw.sy);
-        Log::ep("self.draw.ey", self.draw.ey);
-        // Initial display line
-        let mut h = HighlightLines::new(&self.syntax.syntax, &self.syntax.theme_set.themes["base16-ocean.dark"]);
+    pub fn set_regions(&mut self, y: usize) {
+        Log::ep_s("set_regions");
 
         let sel_ranges = self.sel.get_range();
         let search_ranges = self.search.ranges.clone();
 
-        for y in self.draw.sy..=self.draw.ey {
-            if self.draw.char_vec[y].len() == 0 {
-                let mut regions: Vec<Region> = vec![];
-                let row_vec = self.buf.char_vec_line(y);
-                let row = row_vec.par_iter().collect::<String>();
-                let mut i = 0;
-                for (style, string) in h.highlight(&row, &self.syntax.syntax_set) {
-                    Log::ep("style", CharStyle::from(style));
-                    Log::ep("string", string);
-                    let mut style_type_org = CharStyleType::None;
-                    for (xx, c) in string.chars().enumerate() {
-                        Log::ep("i", i);
-                        //      Log::ep("x", x);
-                        //      Log::ep("xx", xx);
-                        //      Log::ep("x + xx", x + xx);
-                        //      Log::ep("ccc", c);
+        let row_vec = self.buf.char_vec_line(y);
+        let row = row_vec.iter().collect::<String>();
 
-                        let style_type = self.ctrl_charstyletype(&row_vec, &sel_ranges, &search_ranges, y, i);
-                        let mut char_style = None;
-                        match style_type {
-                            CharStyleType::Select => {
-                                if style_type != style_type_org {
-                                    char_style = Some(styles::SELECTED);
-                                }
-                                regions.push(Region { c, to: char_style, from: styles::DEFAULT });
-                            }
-                            CharStyleType::None => {
-                                if xx == 0 {
-                                    char_style = Some(CharStyle::from(style));
-                                }
-                                regions.push(Region { c, to: char_style, from: styles::DEFAULT });
-                            }
-                            CharStyleType::CtrlChar => regions.push(Region { c, to: Some(styles::CTRL_CHAR), from: styles::DEFAULT }),
+        let highlighter = &Highlighter::new(&self.syntax.theme_set.themes["base16-ocean.dark"]);
+
+        let mut scope_stack;
+        let mut parse_state;
+
+        if self.draw.syntax_state_vec.len() == 0 || y == 0 {
+            scope_stack = ScopeStack::new();
+            parse_state = ParseState::new(&self.syntax.syntax);
+        } else {
+            let syntax_state = self.draw.syntax_state_vec[y - 1].clone();
+            scope_stack = syntax_state.highlight_state.path.clone();
+            parse_state = syntax_state.parse_state.clone();
+        }
+        let mut highlight_state = HighlightState::new(highlighter, scope_stack);
+        let ops = parse_state.parse_line(&row, &self.syntax.syntax_set);
+        let iter = HighlightIterator::new(&mut highlight_state, &ops[..], &row, &highlighter);
+        let style_vec: Vec<(Style, &str)> = iter.collect();
+
+        let mut i = 0;
+        let mut regions: Vec<Region> = vec![];
+
+        for (style, string) in style_vec {
+            let mut style_type_org = CharStyleType::None;
+            for (xx, c) in string.chars().enumerate() {
+                let style_type = self.ctrl_charstyletype(&row_vec, &sel_ranges, &search_ranges, y, i);
+                let mut char_style = None;
+                match style_type {
+                    CharStyleType::Select => {
+                        if style_type == CharStyleType::Select && style_type != style_type_org {
+                            char_style = Some(styles::SELECTED);
                         }
-                        style_type_org = style_type;
-                        i += 1;
+                        regions.push(Region { c, to: char_style, from: styles::DEFAULT });
                     }
+                    CharStyleType::None => {
+                        if xx == 0 {
+                            char_style = Some(CharStyle::from(style));
+                        }
+                        regions.push(Region { c, to: char_style, from: styles::DEFAULT });
+                    }
+                    CharStyleType::CtrlChar => regions.push(Region { c, to: Some(styles::CTRL_CHAR), from: styles::DEFAULT }),
                 }
-                self.draw.char_vec[y] = row_vec;
-                self.draw.regions[y] = regions;
-                //     eprintln!("self.draw.regions[y] {:?}", self.draw.regions[y]);
+                style_type_org = style_type;
+                i += 1;
             }
         }
-
-        for i in self.draw.sy..=self.draw.ey {
-            if self.draw.char_vec[i].len() == 0 {
-                self.draw.char_vec[i] = self.buf.char_vec_line(i);
-            }
-        }
-        //  eprintln!("self.draw.char_vec {:?}", self.draw.char_vec);
-        //  eprintln!("self.draw.regions {:?}", self.draw.regions);
+        self.draw.char_vec[y] = row_vec;
+        self.draw.regions[y] = regions;
+        self.draw.syntax_state_vec.insert(y, SyntaxState { highlight_state, parse_state, ops });
     }
 }

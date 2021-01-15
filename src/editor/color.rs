@@ -62,7 +62,7 @@ impl Editor {
     /// 選択箇所のhighlight
     pub fn ctrl_charstyletype(&self, row_char: &Vec<char>, sel_ranges: &SelRange, search_ranges: &Vec<SearchRange>, y: usize, x: usize) -> CharStyleType {
         let c = row_char[x];
-      
+
         if sel_ranges.sy <= y && y <= sel_ranges.ey {
             let (_, width) = get_row_width(&row_char[..x], true);
             let disp_x = width + self.rnw + 1;

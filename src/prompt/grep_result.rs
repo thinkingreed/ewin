@@ -31,10 +31,6 @@ impl EvtAct {
             let mut line_str = line_str.replace(&editor.search.folder, "");
             line_str.push_str(&NEW_LINE.to_string());
 
-            let rnw_org = editor.rnw;
-            let cur_y_org = editor.cur.y;
-            // let v = line_str.trim_end().chars().collect();
-
             editor.buf.insert_end(&line_str);
 
             editor.rnw = editor.buf.len_lines().to_string().len();
@@ -54,10 +50,6 @@ impl EvtAct {
 
             if vec.len() > 2 && vec[0] != "grep" {
                 let pre_str = format!("{}:{}:", vec[0], vec[1]);
-                let pre_str_vec: Vec<char> = pre_str.chars().collect();
-                let (pre_str_x, _) = get_row_width(&pre_str_vec[..], false);
-
-                let search_target_str = &line_str.replace(&pre_str, "");
 
                 editor.search.ranges = editor.get_search_ranges(&editor.search.str);
 

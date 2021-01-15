@@ -83,11 +83,10 @@ impl Region {
         //  if self.from.fg != self.to.fg {
         if let Some(char_style) = self.to {
             str_vec.push(Fg(Into::<Box<dyn termion::color::Color>>::into(char_style.fg).as_ref()).to_string());
+            //    str_vec.push(Bg(Into::<Box<dyn termion::color::Color>>::into(char_style.bg).as_ref()).to_string());
         }
         //  }
-        //  if self.from.bg != self.to.bg {
-        //   str_vec.push(Bg(Into::<Box<dyn termion::color::Color>>::into(self.to.bg).as_ref()).to_string());
-        //  }
+        //  if let Some(char_style) = self.to {}
     }
 }
 

@@ -136,7 +136,7 @@ impl Editor {
         self.scroll_horizontal();
     }
 
-    pub fn is_edit_evt(&mut self, is_incl_unredo: bool) -> bool {
+    pub fn is_edit_evt(&self, is_incl_unredo: bool) -> bool {
         if is_incl_unredo {
             match self.evt {
                 PASTE | UNDO | REDO | DEL | BS | CUT | ENTER | Key(KeyEvent { code: Char(_), modifiers: KeyModifiers::NONE }) | Key(KeyEvent { code: Char(_), modifiers: KeyModifiers::SHIFT }) => return true,

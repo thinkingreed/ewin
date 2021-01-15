@@ -6,7 +6,6 @@ use std::ffi::OsStr;
 use std::io::ErrorKind;
 use std::path;
 use std::path::Path;
-use syntect::easy::HighlightLines;
 use syntect::parsing::SyntaxSet;
 use termion::{clear, cursor};
 use unicode_width::UnicodeWidthChar;
@@ -35,7 +34,6 @@ impl Editor {
         let result = TextBuffer::from_path(&path.to_string_lossy().to_string());
         match result {
             Ok(t_buf) => {
-                // search_and_replace(&mut t_buf.text, NEW_LINE_CRLF, NEW_LINE_CR.to_string().as_str());
                 self.buf = t_buf;
                 self.buf.text.insert_char(self.buf.text.len_chars(), EOF_MARK);
             }
@@ -51,28 +49,35 @@ impl Editor {
                 }
             },
         }
-
         self.path_str = path.to_string_lossy().to_string();
         self.path = Some(path.into());
 
         self.syntax.syntax_set = SyntaxSet::load_defaults_newlines();
-        self.syntax.syntax = self.syntax.syntax_set.find_syntax_by_extension(&Path::new(&self.path_str).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string()).unwrap().clone();
-
+        let extension = &Path::new(&self.path_str).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string();
+        let tmp = self.syntax.syntax_set.find_syntax_by_extension(extension);
+        if let Some(sr) = tmp {
+            self.syntax.syntax = sr.clone();
+        } else {
+            self.syntax.syntax = self.syntax.syntax_set.find_syntax_by_extension("txt").unwrap().clone();
+        }
         self.set_cur_default();
     }
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
+        Log::ep_s("draw");
+
         let (rows, cols) = (self.disp_row_num, self.disp_col_num);
         // Rows and columns on the terminal
         let (mut y, mut x) = (0, 0);
 
         let d_range = self.d_range.get_range();
+        Log::ep("d_range", d_range);
+
         if d_range.d_type == DrawType::Not {
             return;
         } else if d_range.d_type == DrawType::None || d_range.d_type == DrawType::All {
             str_vec.push(clear::All.to_string());
             str_vec.push(cursor::Goto(1, 1).to_string());
-        // DrawType::Target or DrawType::After
         } else {
             if d_range.d_type == DrawType::Target {
                 for i in d_range.sy - self.offset_y..=d_range.ey - self.offset_y {
@@ -80,11 +85,19 @@ impl Editor {
                 }
                 str_vec.push(cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16).to_string());
             } else if d_range.d_type == DrawType::After {
-                str_vec.push(format!("{}{}", cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16), clear::AfterCursor));
+                Log::ep_s(" DrawType::After DrawType::After DrawType::After");
+
+                //     str_vec.push(format!("{}{}", cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16), clear::AfterCursor));
+                for i in d_range.sy - self.offset_y..=rows {
+                    str_vec.push(format!("{}{}", cursor::Goto(1, (i + 1) as u16), clear::CurrentLine));
+                }
+                str_vec.push(cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16).to_string());
             }
         }
 
         for i in self.draw.sy..=self.draw.ey {
+            Log::ep("iii", i);
+
             self.set_row_num(i, str_vec);
 
             let row_region = self.draw.regions[i].clone();
@@ -94,13 +107,9 @@ impl Editor {
 
             for j in x_s..x_e {
                 let region = &row_region[j];
-                // eprintln!("region {:?}", region);
 
                 region.draw(str_vec);
                 let c = region.c;
-
-                // highlight
-                //self.ctl_color(str_vec, &row_char, sel_ranges, &search_ranges, i, j);
 
                 let mut width = c.width().unwrap_or(0);
                 if c == NEW_LINE {
