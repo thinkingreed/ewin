@@ -86,17 +86,23 @@ impl Editor {
                 str_vec.push(cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16).to_string());
             } else if d_range.d_type == DrawType::After {
                 Log::ep_s(" DrawType::After DrawType::After DrawType::After");
+                Log::ep("d_range.sy", d_range.sy);
+                Log::ep("self.offset_y", self.offset_y);
+                Log::ep("d_range.sy + 1 - self.offset_y", d_range.sy + 1 - self.offset_y);
 
-                //     str_vec.push(format!("{}{}", cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16), clear::AfterCursor));
-                for i in d_range.sy - self.offset_y..=rows {
-                    str_vec.push(format!("{}{}", cursor::Goto(1, (i + 1) as u16), clear::CurrentLine));
-                }
-                str_vec.push(cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16).to_string());
+                str_vec.push(format!("{}{}", cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16), clear::AfterCursor));
+
+                /*
+                    for i in d_range.sy - self.offset_y..=rows {
+                        str_vec.push(format!("{}{}", cursor::Goto(1, (i + 1) as u16), clear::CurrentLine));
+                    }
+                    str_vec.push(cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16).to_string());
+                */
             }
         }
 
         for i in self.draw.sy..=self.draw.ey {
-            Log::ep("iii", i);
+            Log::ep("draw idx", i);
 
             self.set_row_num(i, str_vec);
 
@@ -110,6 +116,7 @@ impl Editor {
 
                 region.draw(str_vec);
                 let c = region.c;
+                // Log::ep("ccc", c);
 
                 let mut width = c.width().unwrap_or(0);
                 if c == NEW_LINE {

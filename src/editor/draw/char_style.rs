@@ -44,6 +44,10 @@ impl CharStyle {
 pub mod styles {
     use super::{CharStyle, Color};
 
+    pub const NONE: CharStyle = CharStyle {
+        fg: Color::Rgb { r: 0, g: 0, b: 0 },
+        bg: Color::Rgb { r: 0, g: 0, b: 0 },
+    };
     pub const DEFAULT: CharStyle = CharStyle {
         fg: Color::Rgb { r: 255, g: 255, b: 255 },
         bg: Color::Rgb { r: 0, g: 0, b: 0 },
@@ -81,12 +85,9 @@ impl fmt::Display for StyleWithColorType {
 impl Region {
     pub fn draw(&self, str_vec: &mut Vec<String>) {
         //  if self.from.fg != self.to.fg {
-        if let Some(char_style) = self.to {
-            str_vec.push(Fg(Into::<Box<dyn termion::color::Color>>::into(char_style.fg).as_ref()).to_string());
-            //    str_vec.push(Bg(Into::<Box<dyn termion::color::Color>>::into(char_style.bg).as_ref()).to_string());
+        if self.to != self.from {
+            str_vec.push(Fg(Into::<Box<dyn termion::color::Color>>::into(self.to.fg).as_ref()).to_string());
         }
-        //  }
-        //  if let Some(char_style) = self.to {}
     }
 }
 

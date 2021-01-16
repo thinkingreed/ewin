@@ -116,7 +116,7 @@ impl Editor {
         // beginning of the line
         if self.cur.x == self.rnw {
             self.cur.y -= 1;
-            self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::After);
+            self.d_range = DRange::new(self.cur.y, 0, DrawType::After);
             let (cur_x, _) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], false);
             Log::ep("cur_x", cur_x);
 

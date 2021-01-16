@@ -1,6 +1,5 @@
 extern crate ropey;
 use crate::{editor::draw::char_style::*, model::*};
-use rayon::prelude::*;
 use std::cmp::min;
 use syntect::highlighting::{HighlightIterator, HighlightState, Highlighter, Style};
 use syntect::parsing::{ParseState, ScopeStack};
@@ -53,7 +52,7 @@ impl Editor {
     }
 
     pub fn set_regions(&mut self, y: usize) {
-        Log::ep_s("set_regions");
+        // Log::ep_s("set_regions");
 
         let sel_ranges = self.sel.get_range();
         let search_ranges = self.search.ranges.clone();
@@ -82,28 +81,34 @@ impl Editor {
         let mut i = 0;
         let mut regions: Vec<Region> = vec![];
 
+        let mut char_style_org = styles::DEFAULT;
         for (style, string) in style_vec {
             let mut style_type_org = CharStyleType::None;
-            for (xx, c) in string.chars().enumerate() {
+            let mut char_style = CharStyle::from(style);
+
+            for c in string.chars() {
+                let mut from_style = char_style;
+                if i == 0 {
+                    from_style = styles::NONE;
+                } else if char_style == char_style_org {
+                    from_style = char_style;
+                } else if char_style != char_style_org {
+                    from_style = char_style_org;
+                }
                 let style_type = self.ctrl_charstyletype(&row_vec, &sel_ranges, &search_ranges, y, i);
-                let mut char_style = None;
                 match style_type {
                     CharStyleType::Select => {
                         if style_type == CharStyleType::Select && style_type != style_type_org {
-                            char_style = Some(styles::SELECTED);
+                            char_style = styles::SELECTED;
+                            regions.push(Region { c, to: char_style, from: styles::NONE });
                         }
-                        regions.push(Region { c, to: char_style, from: styles::DEFAULT });
                     }
-                    CharStyleType::None => {
-                        if xx == 0 {
-                            char_style = Some(CharStyle::from(style));
-                        }
-                        regions.push(Region { c, to: char_style, from: styles::DEFAULT });
-                    }
-                    CharStyleType::CtrlChar => regions.push(Region { c, to: Some(styles::CTRL_CHAR), from: styles::DEFAULT }),
+                    CharStyleType::None => regions.push(Region { c, to: char_style, from: from_style }),
+                    CharStyleType::CtrlChar => regions.push(Region { c, to: styles::CTRL_CHAR, from: styles::NONE }),
                 }
-                style_type_org = style_type;
                 i += 1;
+                style_type_org = style_type;
+                char_style_org = char_style;
             }
         }
         self.draw.char_vec[y] = row_vec;

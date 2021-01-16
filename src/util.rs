@@ -16,10 +16,10 @@ pub fn get_str_width(msg: &str) -> usize {
 
 pub fn get_row_width(vec: &[char], is_ctrlchar_incl: bool) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
-    Log::ep("vec", vec.iter().collect::<String>());
+    //  Log::ep("vec", vec.iter().collect::<String>());
 
     for c in vec {
-        Log::ep("ccccc", c);
+        // Log::ep("ccccc", c);
         if c == &EOF_MARK || c == &NEW_LINE || c == &NEW_LINE_CR {
             if is_ctrlchar_incl && (c == &NEW_LINE || c == &NEW_LINE_CR) {
                 width += 1;

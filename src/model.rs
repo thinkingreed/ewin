@@ -629,7 +629,7 @@ impl Default for Syntax {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Region {
     pub from: CharStyle,
-    pub to: Option<CharStyle>,
+    pub to: CharStyle,
     pub c: char,
 }
 
@@ -752,10 +752,11 @@ impl DRange {
         let mut sy = self.sy;
         let mut ey = self.ey;
 
+        /*
         if self.sy > self.ey {
             sy = self.ey;
             ey = self.sy;
-        }
+        }*/
         return DRange { sy: sy, ey: ey, d_type: self.d_type };
     }
     pub fn set_target(&mut self, sy: usize, ey: usize) {
