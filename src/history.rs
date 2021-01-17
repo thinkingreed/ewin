@@ -1,7 +1,7 @@
 use crate::{def::*, model::*};
 use crossterm::event::Event;
 
-impl History {
+impl EditHistory {
     pub fn regist(&mut self, evt: Event, ep: EvtProc) {
         Log::ep_s("　　　　　　　History.regist ");
         Log::ep("ep ", ep.clone());

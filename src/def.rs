@@ -15,6 +15,8 @@ pub const EOF_STR: &str = "EOF";
 /// Event
 pub const RIGHT: Event = Key(KeyEvent { code: Right, modifiers: KeyModifiers::NONE });
 pub const LEFT: Event = Key(KeyEvent { code: Left, modifiers: KeyModifiers::NONE });
+pub const DOWN: Event = Key(KeyEvent { code: Down, modifiers: KeyModifiers::NONE });
+pub const UP: Event = Key(KeyEvent { code: Up, modifiers: KeyModifiers::NONE });
 pub const PAGE_DOWN: Event = Key(KeyEvent { code: PageDown, modifiers: KeyModifiers::NONE });
 pub const DEL: Event = Key(KeyEvent { code: Delete, modifiers: KeyModifiers::NONE });
 pub const BS: Event = Key(KeyEvent { code: Backspace, modifiers: KeyModifiers::NONE });
@@ -23,8 +25,12 @@ pub const ENTER: Event = Key(KeyEvent { code: Enter, modifiers: KeyModifiers::NO
 // SHIFT
 pub const SHIFT_RIGHT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Right });
 pub const SHIFT_LEFT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Left });
+pub const SHIFT_DOWN: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Down });
+pub const SHIFT_UP: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Up });
 // CTRL
 pub const PASTE: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('v') });
 pub const CUT: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('x') });
 pub const UNDO: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('z') });
 pub const REDO: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('y') });
+pub const ALL_SELECT: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('a') });
+// MOUSE

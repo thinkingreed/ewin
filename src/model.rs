@@ -1,5 +1,5 @@
 extern crate ropey;
-use crate::{_cfg::lang::cfg::LangCfg, def::*};
+use crate::{_cfg::lang::lang_cfg::*, def::*};
 use crossterm::event::{Event, Event::Key, KeyCode::End};
 use ropey::Rope;
 use std::cmp::{max, min};
@@ -9,7 +9,7 @@ use std::path;
 use std::path::Path;
 use syntect;
 use syntect::highlighting::{HighlightState, Theme, ThemeSet};
-use syntect::parsing::{ParseState, ScopeStackOp, SyntaxSet};
+use syntect::parsing::{ParseState, ScopeStackOp, SyntaxReference, SyntaxSet};
 
 #[derive(Debug, Clone)]
 pub struct MsgBar {
@@ -287,22 +287,22 @@ impl EvtProc {
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// All edit history including undo and redo
 /// History
-pub struct History {
+pub struct EditHistory {
     pub history_vec: Vec<HistoryInfo>,
     pub undo_vec: Vec<EvtProc>,
     pub redo_vec: Vec<EvtProc>,
 }
 
-impl Default for History {
+impl Default for EditHistory {
     fn default() -> Self {
-        History {
+        EditHistory {
             history_vec: vec![],
             undo_vec: vec![],
             redo_vec: vec![],
         }
     }
 }
-impl fmt::Display for History {
+impl fmt::Display for EditHistory {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "History history_vec:{:?}, undo_vec:{:?}, redo_vec:{:?}, ", self.history_vec, self.undo_vec, self.redo_vec,)
     }
@@ -479,9 +479,9 @@ impl SelRange {
         self.e_disp_x = disp_x;
     }
 
-    pub fn check_sel_overlap(&mut self) {
+    pub fn check_overlap(&mut self) {
         // selectio start position and cursor overlap
-        if self.sx == self.ex && self.sy == self.ey {
+        if self.sy == self.ey && self.s_disp_x == self.e_disp_x {
             self.clear();
         }
     }
@@ -548,6 +548,7 @@ pub struct Editor {
     pub updown_x: usize,
     pub path: Option<path::PathBuf>,
     pub path_str: String,
+    pub extension: String,
     /// 行番号の列数 row_num_width
     pub rnw: usize,
     pub sel: SelRange,
@@ -560,7 +561,7 @@ pub struct Editor {
     pub draw: Draw,
     // draw_ranges
     pub d_range: DRange,
-    pub history: History,
+    pub history: EditHistory,
     pub grep_result_vec: Vec<GrepResult>,
     pub key_record_vec: Vec<KeyRecord>,
     // Corresponding to unexpected display by changing the background color multiple times
@@ -583,6 +584,7 @@ impl Editor {
             updown_x: 0,
             path: None,
             path_str: String::new(),
+            extension: String::new(),
             rnw: 0,
             sel: SelRange::default(),
             evt: Key(End.into()),
@@ -593,7 +595,7 @@ impl Editor {
             search: Search::default(),
             draw: Draw::default(),
             d_range: DRange::default(),
-            history: History::default(),
+            history: EditHistory::default(),
             grep_result_vec: vec![],
             key_record_vec: vec![],
             is_default_color: true,
@@ -609,10 +611,10 @@ pub struct TextBuffer {
 
 #[derive(Debug)]
 pub struct Syntax {
-    pub syntax_set: syntect::parsing::SyntaxSet,
-    pub syntax: syntect::parsing::SyntaxReference,
-    pub theme: syntect::highlighting::Theme,
-    pub theme_set: syntect::highlighting::ThemeSet,
+    pub syntax_set: SyntaxSet,
+    pub syntax: SyntaxReference,
+    pub theme: Theme,
+    pub theme_set: ThemeSet,
 }
 
 impl Default for Syntax {
@@ -646,7 +648,7 @@ pub enum Color {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CharStyleType {
-    None,
+    Nomal,
     Select,
     CtrlChar,
 }
@@ -670,7 +672,7 @@ impl fmt::Display for CharStyle {
 
 impl From<syntect::highlighting::Style> for CharStyle {
     fn from(s: syntect::highlighting::Style) -> Self {
-        Self { bg: s.background.into(), fg: s.foreground.into() }
+        Self { bg: CharStyle::DEFAULT_BG, fg: s.foreground.into() }
     }
 }
 
@@ -691,20 +693,6 @@ pub struct SyntaxState {
     pub ops: Vec<(usize, ScopeStackOp)>,
     pub parse_state: ParseState,
 }
-
-/*
-impl Default for ParseState {
-    fn default() -> Self {
-        ParseState {
-            sy: 0,
-            ey: 0,
-            char_vec: vec![],
-            regions: vec![],
-            syntax_state_vec: vec![],
-        }
-    }
-}
-*/
 
 impl Default for Draw {
     fn default() -> Self {
@@ -739,7 +727,7 @@ pub struct DRange {
 
 impl Default for DRange {
     fn default() -> Self {
-        DRange { sy: 0, ey: 0, d_type: DrawType::All }
+        DRange { sy: 0, ey: 0, d_type: DrawType::None }
     }
 }
 
@@ -749,15 +737,7 @@ impl DRange {
     }
 
     pub fn get_range(&mut self) -> Self {
-        let mut sy = self.sy;
-        let mut ey = self.ey;
-
-        /*
-        if self.sy > self.ey {
-            sy = self.ey;
-            ey = self.sy;
-        }*/
-        return DRange { sy: sy, ey: ey, d_type: self.d_type };
+        return DRange { sy: self.sy, ey: self.ey, d_type: self.d_type };
     }
     pub fn set_target(&mut self, sy: usize, ey: usize) {
         self.d_type = DrawType::Target;
@@ -772,7 +752,7 @@ impl DRange {
     pub fn clear(&mut self) {
         self.sy = 0;
         self.ey = 0;
-        self.d_type = DrawType::None;
+        self.d_type = DrawType::Not;
     }
 }
 impl fmt::Display for DRange {
@@ -786,7 +766,7 @@ impl fmt::Display for DRange {
 pub enum DrawType {
     Target, // Target row only redraw
     After,  // Redraw after the specified line
-    None,
+    None,   // First time
     All,
     Not,
 }

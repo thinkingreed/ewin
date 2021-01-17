@@ -1,4 +1,4 @@
-use crate::_cfg::lang::cfg::LangCfg;
+use crate::_cfg::lang::lang_cfg::*;
 use crate::model::*;
 use std::cmp::min;
 

@@ -21,7 +21,7 @@ impl Editor {
             _ => {}
         }
         self.sel.set_sel_posi(false, self.cur.y, self.cur.x - self.rnw, self.cur.disp_x);
-        self.sel.check_sel_overlap();
+        self.sel.check_overlap();
 
         self.d_range.set_target(self.sel.sy, self.sel.ey);
     }

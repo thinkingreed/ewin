@@ -1,4 +1,4 @@
-use crate::{_cfg::lang::cfg::LangCfg, global::ENV, model::*, util::*};
+use crate::{_cfg::lang::lang_cfg::*, global::ENV, model::*};
 use std::io::{self, Write};
 use std::path::Path;
 use std::process;
@@ -36,8 +36,6 @@ impl Terminal {
 
         let _ = out.write(&str_vec.concat().as_bytes());
         out.flush()?;
-
-        editor.d_range.clear();
 
         return Ok(());
     }

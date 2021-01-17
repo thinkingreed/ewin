@@ -23,6 +23,8 @@ impl Editor {
 
         self.sel.set_e(y + self.offset_y, self.cur.x - self.rnw, self.cur.disp_x);
 
+        self.sel.check_overlap();
+
         self.scroll_horizontal();
     }
 }

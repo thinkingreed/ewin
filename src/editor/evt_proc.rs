@@ -25,7 +25,7 @@ impl Editor {
         // not selected Del, BS, Cut or InsertChar, Paste, Enter
         if (evt == EvtType::InsertChar || evt == EvtType::Paste || evt == EvtType::Enter) || (!is_selected && (evt == EvtType::Del || evt == EvtType::BS || evt == EvtType::Cut)) {
             let mut ep = EvtProc { evt_type: evt, ..EvtProc::default() };
-            self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::After);
+            self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
 
             ep.cur_s = self.cur;
             ep.str = str.to_string();

@@ -3,7 +3,7 @@ extern crate clap;
 use clap::{App, Arg};
 use crossterm::event::{Event, EventStream};
 use crossterm::ErrorKind;
-use ewin::{_cfg::lang::cfg::LangCfg, global::*, model::*};
+use ewin::{_cfg::lang::lang_cfg::*, global::*, model::*};
 use futures::{future::FutureExt, select, StreamExt};
 use std::ffi::OsStr;
 use std::io::{stdout, BufWriter, Write};
@@ -82,7 +82,6 @@ async fn main() {
     if let Err(err) = exec_events(&mut out, &mut term, &mut editor, &mut mbar, &mut prom, &mut sbar).await {
         Log::ep("err", err.to_string());
     }
-    term.show_cur(&mut out);
 }
 
 async fn exec_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> anyhow::Result<()> {
@@ -120,6 +119,9 @@ async fn exec_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Ed
                 }
             }
         }
+
+        // TODO 60fps
+        // sleep(Duration::from_millis(17)).await;
         if is_exit {
             break;
         }

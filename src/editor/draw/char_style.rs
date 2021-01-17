@@ -39,14 +39,12 @@ impl CharStyle {
     pub fn fg_bg(fg: Color, bg: Color) -> Self {
         Self { fg, bg }
     }
-}
 
-pub mod styles {
-    use super::{CharStyle, Color};
+    pub const DEFAULT_BG: Color = Color::Rgb { r: 0, g: 0, b: 0 };
 
     pub const NONE: CharStyle = CharStyle {
-        fg: Color::Rgb { r: 0, g: 0, b: 0 },
-        bg: Color::Rgb { r: 0, g: 0, b: 0 },
+        fg: Color::Rgb { r: 99, g: 99, b: 99 },
+        bg: Color::Rgb { r: 99, g: 99, b: 99 },
     };
     pub const DEFAULT: CharStyle = CharStyle {
         fg: Color::Rgb { r: 255, g: 255, b: 255 },
@@ -66,7 +64,6 @@ pub mod styles {
         bg: Color::Rgb { r: 221, g: 72, b: 20 },
     };
 }
-
 pub struct StyleWithColorType {
     pub is_ansi_color: bool,
     pub style: CharStyle,
@@ -83,35 +80,13 @@ impl fmt::Display for StyleWithColorType {
 }
 
 impl Region {
-    pub fn draw(&self, str_vec: &mut Vec<String>) {
-        //  if self.from.fg != self.to.fg {
-        if self.to != self.from {
+    pub fn draw_style(&self, str_vec: &mut Vec<String>, forced_change: bool) {
+        // TODO ansi_color
+        if self.from.fg != self.to.fg || forced_change {
             str_vec.push(Fg(Into::<Box<dyn termion::color::Color>>::into(self.to.fg).as_ref()).to_string());
         }
+        if self.from.bg != self.to.bg || forced_change {
+            str_vec.push(Bg(Into::<Box<dyn termion::color::Color>>::into(self.to.bg).as_ref()).to_string());
+        }
     }
 }
-
-/*
-impl fmt::Display for Region {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.from.fg != self.to.fg {
-            // TODO ansi_color
-            if false {
-                write!(f, "{}", Fg(self.to.fg.to_ansi().as_ref()))?
-            } else {
-                write!(f, "{}", Fg(Into::<Box<dyn termion::color::Color>>::into(self.to.fg).as_ref()))?
-            }
-        }
-        if self.from.bg != self.to.bg {
-            // TODO ansi_color
-            if false {
-                write!(f, "{}", Bg(self.to.bg.to_ansi().as_ref()))?
-            } else {
-                write!(f, "{}", Bg(Into::<Box<dyn termion::color::Color>>::into(self.to.bg).as_ref()))?
-            }
-        }
-
-        Ok(())
-    }
-}
-*/

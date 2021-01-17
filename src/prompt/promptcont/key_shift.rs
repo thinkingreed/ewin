@@ -20,7 +20,7 @@ impl PromptCont {
             _ => {}
         }
         self.sel.set_sel_posi(false, self.cur.y, self.cur.x, self.cur.disp_x);
-        self.sel.check_sel_overlap();
+        self.sel.check_overlap();
     }
 
     pub fn shift_home(&mut self) {

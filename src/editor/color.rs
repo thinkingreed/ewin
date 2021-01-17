@@ -1,113 +1,8 @@
-use crate::{def::*, model::*, util::*};
+use crate::{def::*, model::*};
 
 impl Editor {
-    /// 選択箇所のhighlight
-    pub fn ctl_color(&mut self, str_vec: &mut Vec<String>, row_char: &Vec<char>, sel_ranges: SelRange, search_ranges: &Vec<SearchRange>, y: usize, x: usize) {
-        /*
-                Log::ep("ctl_select_color.ranges.sy", sel_ranges.sy);
-                Log::ep("                 ranges.ey", sel_ranges.ey);
-                Log::ep("                 ranges.s_disp_x", sel_ranges.s_disp_x);
-                Log::ep("                 ranges.e_disp_x", sel_ranges.e_disp_x);
-                Log::ep("                 xxxxxxxxxxxxxxx", x);
-                Log::ep("                 yyyyyyyyyyyyyyy", y);
-        */
-        if sel_ranges.sy <= y && y <= sel_ranges.ey {
-            let (_, width) = get_row_width(&row_char[..x], true);
-
-            let disp_x = width + self.rnw + 1;
-
-            // 開始・終了が同じ行
-            if sel_ranges.sy == sel_ranges.ey {
-                if sel_ranges.s_disp_x <= disp_x && disp_x < sel_ranges.e_disp_x {
-                    Colors::set_select_color(str_vec);
-                    self.is_default_color = false;
-                } else {
-                    // new line char color Control
-                    self.ctl_new_line_mark_color(str_vec, row_char[x]);
-                }
-            // 開始行
-            } else if sel_ranges.sy == y && sel_ranges.s_disp_x <= disp_x {
-                Colors::set_select_color(str_vec);
-                self.is_default_color = false;
-            // 終了行
-            } else if sel_ranges.ey == y && disp_x < sel_ranges.e_disp_x {
-                Colors::set_select_color(str_vec);
-                self.is_default_color = false;
-            // 中間行
-            } else if sel_ranges.sy < y && y < sel_ranges.ey {
-                Colors::set_select_color(str_vec);
-                self.is_default_color = false;
-            } else {
-                // new line char color Control
-                self.ctl_new_line_mark_color(str_vec, row_char[x]);
-            }
-        } else {
-            // new line char color Control
-            self.ctl_new_line_mark_color(str_vec, row_char[x]);
-        }
-
-        for range in search_ranges {
-            if range.y != y {
-                continue;
-            } else {
-                if range.sx <= x && x < range.ex {
-                    Colors::set_search_color(str_vec);
-                    self.is_default_color = false;
-                    break;
-                }
-            }
-        }
-    }
-
-    /// 選択箇所のhighlight
-    pub fn ctrl_charstyletype(&self, row_char: &Vec<char>, sel_ranges: &SelRange, search_ranges: &Vec<SearchRange>, y: usize, x: usize) -> CharStyleType {
-        let c = row_char[x];
-
-        if sel_ranges.sy <= y && y <= sel_ranges.ey {
-            let (_, width) = get_row_width(&row_char[..x], true);
-            let disp_x = width + self.rnw + 1;
-
-            // 開始・終了が同じ行
-            if sel_ranges.sy == sel_ranges.ey {
-                if sel_ranges.s_disp_x <= disp_x && disp_x < sel_ranges.e_disp_x {
-                    return CharStyleType::Select;
-                } else {
-                    if c == NEW_LINE {
-                        return CharStyleType::CtrlChar;
-                    } else {
-                        return CharStyleType::None;
-                    }
-                }
-            // 開始行
-            } else if sel_ranges.sy == y && sel_ranges.s_disp_x <= disp_x {
-                return CharStyleType::Select;
-            // 終了行
-            } else if sel_ranges.ey == y && disp_x < sel_ranges.e_disp_x {
-                return CharStyleType::Select;
-            // 中間行
-            } else if sel_ranges.sy < y && y < sel_ranges.ey {
-                return CharStyleType::Select;
-            }
-        }
-        /*else {
-            return CharStyleType::None;
-        }*/
-
-        for range in search_ranges {
-            if range.y != y {
-                continue;
-            } else {
-                if range.sx <= x && x < range.ex {
-                    return CharStyleType::Select;
-                }
-            }
-        }
-        return if c == NEW_LINE { CharStyleType::CtrlChar } else { CharStyleType::None };
-    }
-
     pub fn ctl_new_line_mark_color(&mut self, str_vec: &mut Vec<String>, c: char) {
         if c == NEW_LINE {
-            // Log::ep_s("NEW_LINE_MARK NEW_LINE_MARK NEW_LINE_MARK");
             Colors::set_new_line_color(str_vec);
             self.is_default_color = false;
         } else {
@@ -122,7 +17,7 @@ impl Editor {
         if c == NEW_LINE {
             CharStyleType::CtrlChar
         } else {
-            CharStyleType::None
+            CharStyleType::Nomal
         }
     }
 

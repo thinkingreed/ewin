@@ -128,6 +128,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 ## Future Works
 
+- Making various settings into a configuration file
 - Grep-Replace function
 
 ## License

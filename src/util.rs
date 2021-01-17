@@ -143,17 +143,15 @@ pub fn get_env() -> Env {
         return Env::Linux;
     }
 }
-pub fn get_env_str() -> String {
-    // WSL環境を判定出来ない為にpowershell試行
-    let child = Command::new("uname").arg("-r").stdout(process::Stdio::piped()).spawn().unwrap();
-    let mut stdout = child.stdout.context("take stdout").unwrap();
-    let mut buf = String::new();
-    stdout.read_to_string(&mut buf).unwrap();
-    //   buf = buf.clone().trim().to_string();
-
-    return buf;
-}
 
 pub fn is_line_end(c: char) -> bool {
     ['\u{000a}', '\u{000d}'].contains(&c)
+}
+
+pub fn is_enable_syntax(ext: &str) -> bool {
+    if ext.len() == 0 || ext == "txt" || ext == "log" || ext == "ini" {
+        return false;
+    } else {
+        return true;
+    }
 }

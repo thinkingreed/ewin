@@ -1,5 +1,4 @@
-use crate::global::*;
-use crate::model::*;
+use crate::{global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use std::io::Write;
 use termion::clear;
@@ -22,6 +21,7 @@ impl EvtAct {
                 // eprintln!("editor.evt.clone(){:?}", editor.evt.clone());
 
                 if !is_err {
+                    let curt_y_org = editor.cur.y;
                     let offset_y_org = editor.offset_y;
                     let rnw_org = editor.rnw;
 
@@ -95,6 +95,9 @@ impl EvtAct {
                     }
                     EvtAct::finalize(editor);
 
+                    if editor.offset_x > 0 && curt_y_org != editor.cur.y {
+                        editor.d_range.d_type = DrawType::All;
+                    }
                     if offset_y_org != editor.offset_y || rnw_org != editor.rnw {
                         editor.d_range.d_type = DrawType::All;
                     }
@@ -105,6 +108,12 @@ impl EvtAct {
                 }
             }
         }
+
+        Log::ep("y_offset", editor.offset_y);
+        Log::ep("cur.y", editor.cur.y);
+        Log::ep("cur.x", editor.cur.x);
+        Log::ep("cur.disp_x", editor.cur.disp_x);
+
         term.show_cur(out);
         return false;
     }
@@ -128,10 +137,11 @@ impl EvtAct {
             _ => editor.updown_x = 0,
         }
         // redraw判定
+        editor.d_range.d_type = DrawType::Not;
         match editor.evt {
             Resize(_, _) => editor.d_range.d_type = DrawType::All,
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                Home | End => editor.d_range.d_type = DrawType::Not,
+                Home | End | Char('c') => editor.d_range.d_type = DrawType::Not,
                 _ => editor.d_range.d_type = DrawType::All,
             },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
@@ -143,18 +153,15 @@ impl EvtAct {
                 Down | Up | Left | Right | Home | End | F(3) => {
                     if editor.sel.is_selected() {
                         editor.d_range.d_type = DrawType::All;
-                    } else {
-                        editor.d_range.d_type = DrawType::Not;
                     }
                 }
                 _ => editor.d_range.d_type = DrawType::All,
             },
-            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => editor.d_range.d_type = DrawType::Not,
 
             // for err msg or selected
             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
                 if editor.sel.is_selected() {
-                    editor.d_range.d_type = DrawType::All;
+                    editor.d_range.d_type = DrawType::Target;
                 }
             }
             _ => editor.d_range.d_type = DrawType::Not,

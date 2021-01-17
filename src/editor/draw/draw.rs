@@ -1,4 +1,4 @@
-use crate::{def::*, global::*, model::*};
+use crate::{def::*, global, global::*, model::*};
 use permissions::*;
 use std::cmp::min;
 use std::env;
@@ -53,21 +53,20 @@ impl Editor {
         self.path = Some(path.into());
 
         self.syntax.syntax_set = SyntaxSet::load_defaults_newlines();
-        let extension = &Path::new(&self.path_str).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string();
-        let tmp = self.syntax.syntax_set.find_syntax_by_extension(extension);
+        self.extension = Path::new(&self.path_str).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string();
+        let tmp = self.syntax.syntax_set.find_syntax_by_extension(&self.extension);
         if let Some(sr) = tmp {
             self.syntax.syntax = sr.clone();
         } else {
             self.syntax.syntax = self.syntax.syntax_set.find_syntax_by_extension("txt").unwrap().clone();
         }
+        self.syntax.theme = self.syntax.theme_set.themes[global::CFG.lock().unwrap()["THEME"]].clone();
         self.set_cur_default();
     }
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         Log::ep_s("draw");
 
-        let (rows, cols) = (self.disp_row_num, self.disp_col_num);
-        // Rows and columns on the terminal
         let (mut y, mut x) = (0, 0);
 
         let d_range = self.d_range.get_range();
@@ -78,53 +77,35 @@ impl Editor {
         } else if d_range.d_type == DrawType::None || d_range.d_type == DrawType::All {
             str_vec.push(clear::All.to_string());
             str_vec.push(cursor::Goto(1, 1).to_string());
-        } else {
-            if d_range.d_type == DrawType::Target {
-                for i in d_range.sy - self.offset_y..=d_range.ey - self.offset_y {
-                    str_vec.push(format!("{}{}", cursor::Goto(1, (i + 1) as u16), clear::CurrentLine));
-                }
-                str_vec.push(cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16).to_string());
-            } else if d_range.d_type == DrawType::After {
-                Log::ep_s(" DrawType::After DrawType::After DrawType::After");
-                Log::ep("d_range.sy", d_range.sy);
-                Log::ep("self.offset_y", self.offset_y);
-                Log::ep("d_range.sy + 1 - self.offset_y", d_range.sy + 1 - self.offset_y);
-
-                str_vec.push(format!("{}{}", cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16), clear::AfterCursor));
-
-                /*
-                    for i in d_range.sy - self.offset_y..=rows {
-                        str_vec.push(format!("{}{}", cursor::Goto(1, (i + 1) as u16), clear::CurrentLine));
-                    }
-                    str_vec.push(cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16).to_string());
-                */
+        } else if d_range.d_type == DrawType::Target {
+            for i in d_range.sy - self.offset_y..=d_range.ey - self.offset_y {
+                str_vec.push(format!("{}{}", cursor::Goto(1, (i + 1) as u16), clear::CurrentLine));
             }
+            str_vec.push(cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16).to_string());
+        } else if d_range.d_type == DrawType::After {
+            str_vec.push(format!("{}{}", cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16), clear::AfterCursor));
         }
 
         for i in self.draw.sy..=self.draw.ey {
-            Log::ep("draw idx", i);
+            // Log::ep("iii", i);
 
             self.set_row_num(i, str_vec);
 
             let row_region = self.draw.regions[i].clone();
-
             let x_s = if i == self.cur.y { self.offset_x } else { 0 };
-            let x_e = min(x_s + cols, self.buf.len_line_chars(i));
+            let x_e = min(x_s + self.disp_col_num, self.buf.len_line_chars(i));
 
-            for j in x_s..x_e {
+            for (x_idx, j) in (0_usize..).zip(x_s..x_e) {
                 let region = &row_region[j];
-
-                region.draw(str_vec);
+                region.draw_style(str_vec, x_idx == 0 && self.offset_x > 0);
                 let c = region.c;
-                // Log::ep("ccc", c);
-
                 let mut width = c.width().unwrap_or(0);
                 if c == NEW_LINE {
                     width = 1;
                 }
 
                 let x_w_l = x + width + self.rnw;
-                if x_w_l > cols {
+                if x_w_l > self.disp_col_num {
                     break;
                 }
                 x += width;
@@ -141,18 +122,21 @@ impl Editor {
             y += 1;
             x = 0;
 
-            if y >= rows {
+            if y >= self.disp_row_num {
                 break;
             } else {
                 str_vec.push(NEW_LINE_CRLF.to_string());
             }
         }
+        self.d_range.clear();
 
         Log::ep("cur.y", self.cur.y);
-        Log::ep("y_offset", self.offset_y);
+        Log::ep("offset_y", self.offset_y);
+        Log::ep("offset_x", self.offset_x);
         Log::ep("cur.x", self.cur.x);
         Log::ep("cur.disp_x", self.cur.disp_x);
         Log::ep("self.sel", self.sel);
+        // eprintln!("str_vec {:?}", str_vec);
     }
 
     fn set_row_num(&mut self, i: usize, str_vec: &mut Vec<String>) {
