@@ -1,4 +1,5 @@
-use crate::{_cfg::lang::lang_cfg::*, global::ENV, model::*};
+use crate::{_cfg::lang::lang_cfg::*, def::USIZE_INITIAL, editor, global::ENV, model::*};
+use std::collections::BTreeMap;
 use std::io::{self, Write};
 use std::path::Path;
 use std::process;
@@ -11,7 +12,7 @@ impl Terminal {
 
         self.set_disp_size(editor, mbar, prom, sbar);
 
-        let str_vec: &mut Vec<String> = &mut vec![];
+        let mut str_vec: Vec<String> = vec![];
 
         // Redraw in case of msg change
         if mbar.msg_org != mbar.msg {
@@ -23,16 +24,17 @@ impl Terminal {
         if d_range.d_type != DrawType::Not {
             Log::ep_s("editor.draw");
             editor.draw_cache();
-            editor.draw(str_vec);
+            editor.draw(&mut str_vec);
         }
 
-        mbar.draw(str_vec);
-        prom.draw(str_vec);
+        mbar.draw(&mut str_vec);
+        prom.draw(&mut str_vec);
 
         if d_range.d_type != DrawType::Not {
-            sbar.draw(str_vec, editor);
+            sbar.draw(&mut str_vec, editor);
         }
-        self.draw_cur(str_vec, editor, prom);
+
+        self.draw_cur(&mut str_vec, editor, prom);
 
         let _ = out.write(&str_vec.concat().as_bytes());
         out.flush()?;

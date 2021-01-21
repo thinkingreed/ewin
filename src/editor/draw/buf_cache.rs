@@ -27,22 +27,31 @@ impl Editor {
             self.draw.ey = d_range.ey;
         } else if d_range.d_type == DrawType::After {
             self.draw.sy = d_range.sy;
+        } else if d_range.d_type == DrawType::ScrollDown || d_range.d_type == DrawType::ScrollUp {
+            self.draw.sy = d_range.sy;
+            self.draw.ey = d_range.sy;
         }
+
         for y in self.draw.sy..=self.draw.ey {
             if self.draw.char_vec[y].len() == 0 {
                 self.set_regions(y, &highlighter);
             }
         }
+
+        Log::ep("self.draw.sy", self.draw.sy);
+        Log::ep("self.draw.ey", self.draw.ey);
+
         match self.d_range.d_type {
-            DrawType::Target | DrawType::After | DrawType::All => {
+            DrawType::Target | DrawType::After | DrawType::All | DrawType::ScrollDown => {
                 for y in self.draw.sy..=self.draw.ey {
-                    if self.draw.char_vec[y].len() > 0 && (self.evt == DOWN || self.evt == UP) && !(self.offset_x == 0 && y == self.cur.y) {
-                        continue;
-                    }
+                    /*  if self.draw.char_vec[y].len() > 0 && (self.evt == DOWN || self.evt == UP) && !(self.offset_x == 0 && y == self.cur.y) {
+                                            continue;
+                                        }
+                    */
                     self.set_regions(y, &highlighter);
                 }
             }
-            DrawType::Not | DrawType::None => {}
+            DrawType::Not | DrawType::None | DrawType::ScrollUp => {}
         }
     }
 

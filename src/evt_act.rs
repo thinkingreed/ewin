@@ -1,4 +1,4 @@
-use crate::{global::*, model::*};
+use crate::{def::*, global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use std::io::Write;
 use termion::clear;
@@ -95,11 +95,17 @@ impl EvtAct {
                     }
                     EvtAct::finalize(editor);
 
-                    if editor.offset_x > 0 && curt_y_org != editor.cur.y {
+                    if editor.offset_x > 0 && curt_y_org != editor.cur.y || rnw_org != editor.rnw {
                         editor.d_range.d_type = DrawType::All;
                     }
-                    if offset_y_org != editor.offset_y || rnw_org != editor.rnw {
-                        editor.d_range.d_type = DrawType::All;
+                    if offset_y_org != editor.offset_y {
+                        if editor.evt == DOWN {
+                            editor.d_range = DRange::new(editor.offset_y + editor.disp_row_num - 1, 0, DrawType::ScrollDown);
+                        } else if editor.evt == UP {
+                            editor.d_range = DRange::new(editor.offset_y, 0, DrawType::ScrollUp);
+                        } else {
+                            editor.d_range.d_type = DrawType::All;
+                        }
                     }
                 }
                 // key_record実行時は最終時のみredraw

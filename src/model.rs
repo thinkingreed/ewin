@@ -3,6 +3,7 @@ use crate::{_cfg::lang::lang_cfg::*, def::*};
 use crossterm::event::{Event, Event::Key, KeyCode::End};
 use ropey::Rope;
 use std::cmp::{max, min};
+use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::fmt;
 use std::path;
@@ -768,6 +769,8 @@ pub enum DrawType {
     After,  // Redraw after the specified line
     None,   // First time
     All,
+    ScrollDown,
+    ScrollUp,
     Not,
 }
 
@@ -778,6 +781,8 @@ impl fmt::Display for DrawType {
             DrawType::After => write!(f, "After"),
             DrawType::None => write!(f, "None"),
             DrawType::All => write!(f, "All"),
+            DrawType::ScrollDown => write!(f, "ScrollDown"),
+            DrawType::ScrollUp => write!(f, "ScrollUp"),
             DrawType::Not => write!(f, "Not"),
         }
     }
