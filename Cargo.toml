@@ -48,8 +48,6 @@ permissions = "0.2.0"
 ropey="1.2.0"
 
 syntect = "4.5"
-shellexpand= "2.1"
-rayon="1.5"
 ansi_colours = "1"
 
 

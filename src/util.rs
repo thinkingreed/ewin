@@ -16,7 +16,6 @@ pub fn get_str_width(msg: &str) -> usize {
 
 pub fn get_row_width(vec: &[char], is_ctrlchar_incl: bool) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
-    //  Log::ep("vec", vec.iter().collect::<String>());
 
     for c in vec {
         // Log::ep("ccccc", c);
@@ -34,7 +33,7 @@ pub fn get_row_width(vec: &[char], is_ctrlchar_incl: bool) -> (usize, usize) {
     return (cur_x, width);
 }
 
-/// updown_xまでのwidthを加算してdisp_xとcursorx算出
+/// Calculate disp_x and cursor_x by adding the width up to updown_x.
 pub fn get_until_updown_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
     for i in 0..buf.len() + 1 {
@@ -62,7 +61,7 @@ pub fn get_until_updown_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
     return (cur_x, width);
 }
 
-/// xまでのwidthを加算してdisp_xとcursorx算出
+/// Calculate disp_x and cursor_x by adding the widths up to x.
 pub fn get_until_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
     let (mut cur_x, mut sum_width) = (0, 0);
     for i in 0..=buf.len() {
@@ -82,11 +81,11 @@ pub fn get_until_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
     return (cur_x, sum_width);
 }
 
-// 特定の文字列の先頭から指定バイト数となる文字数取得
-pub fn get_char_count(vec: &Vec<char>, byte_nm: usize) -> usize {
+// Get the number of characters from the beginning of the string to the specified width.
+pub fn get_char_count(vec: &Vec<char>, width: usize) -> usize {
     let (mut x, mut sum_width) = (0, 0);
     for c in vec {
-        if byte_nm > sum_width {
+        if width > sum_width {
             sum_width += c.to_string().len();
             x += 1;
         } else {
@@ -131,7 +130,6 @@ pub fn split_inclusive(target: &str, split_char: char) -> Vec<String> {
     return vec;
 }
 pub fn get_env() -> Env {
-    // WSL環境を判定出来ない為にpowershell試行
     let child = Command::new("uname").arg("-r").stdout(process::Stdio::piped()).spawn().unwrap();
     let mut stdout = child.stdout.context("take stdout").unwrap();
     let mut buf = String::new();

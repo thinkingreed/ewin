@@ -4,7 +4,6 @@ use termion::color::*;
 impl Colors {
     pub fn set_rownum_color(str_vec: &mut Vec<String>) {
         str_vec.push(Fg(Rgb(110, 110, 110)).to_string());
-
         str_vec.push(Bg(Rgb(0, 0, 0)).to_string());
     }
 

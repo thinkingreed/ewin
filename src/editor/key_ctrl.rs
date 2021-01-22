@@ -171,6 +171,7 @@ impl Editor {
             }
             if self.search.index != USIZE_UNDEFINED {
                 let range = self.search.ranges[self.search.index];
+                Log::ep("search.range", range);
 
                 self.set_cur_target(range.y, range.sx);
             }

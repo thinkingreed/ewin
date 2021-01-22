@@ -28,14 +28,4 @@ impl Editor {
         str_vec.push(EOF_STR.to_string());
         Colors::set_textarea_color(str_vec);
     }
-    /*
-
-        pub fn set_eof(&mut self, i: usize) {
-            self.draw_cache.entry(i).and_modify(|s| s.push_str(&Fg(Rgb(110, 110, 110)).to_string()));
-            self.draw_cache.entry(i).and_modify(|s| s.push_str(&Bg(Rgb(0, 0, 0)).to_string()));
-            self.draw_cache.entry(i).and_modify(|s| s.push_str(&EOF_STR.to_string()));
-            self.draw_cache.entry(i).and_modify(|s| s.push_str(&Fg(Rgb(110, 110, 110)).to_string()));
-            self.draw_cache.entry(i).or_insert("".to_string()).push_str(&Bg(Rgb(255, 255, 255)).to_string());
-        }
-    */
 }

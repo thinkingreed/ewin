@@ -33,6 +33,7 @@ impl EvtAct {
     }
 
     fn exec_search<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, is_asc: bool) -> bool {
+        Log::ep_s("exec_search");
         let search_str = prom.cont_1.buf.iter().collect::<String>();
         if search_str.len() == 0 {
             mbar.set_err(&LANG.not_entered_search_str);
@@ -47,6 +48,8 @@ impl EvtAct {
             prom.draw_only(out);
             return false;
         } else {
+            Log::ep_s("exec_search    !!!");
+
             mbar.clear();
             prom.clear();
             editor.search.clear();

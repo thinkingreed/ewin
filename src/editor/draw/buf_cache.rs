@@ -22,15 +22,22 @@ impl Editor {
         self.draw.ey = min(self.buf.len_lines() - 1, self.offset_y + self.disp_row_num - 1);
 
         let d_range = self.d_range.get_range();
-        if d_range.d_type == DrawType::Target {
-            self.draw.sy = d_range.sy;
-            self.draw.ey = d_range.ey;
-        } else if d_range.d_type == DrawType::After {
-            self.draw.sy = d_range.sy;
-        } else if d_range.d_type == DrawType::ScrollDown || d_range.d_type == DrawType::ScrollUp {
-            self.draw.sy = d_range.sy;
-            self.draw.ey = d_range.sy;
+
+        match d_range.d_type {
+            DrawType::Target => {
+                self.draw.sy = d_range.sy;
+                self.draw.ey = d_range.ey;
+            },
+            DrawType::After => {
+                self.draw.sy = d_range.sy;
+            },
+            DrawType::ScrollDown | DrawType::ScrollUp =>{
+                self.draw.sy = d_range.sy;
+                self.draw.ey = d_range.sy;
+            },
+            _=>{}
         }
+
 
         for y in self.draw.sy..=self.draw.ey {
             if self.draw.char_vec[y].len() == 0 {
@@ -44,10 +51,6 @@ impl Editor {
         match self.d_range.d_type {
             DrawType::Target | DrawType::After | DrawType::All | DrawType::ScrollDown => {
                 for y in self.draw.sy..=self.draw.ey {
-                    /*  if self.draw.char_vec[y].len() > 0 && (self.evt == DOWN || self.evt == UP) && !(self.offset_x == 0 && y == self.cur.y) {
-                                            continue;
-                                        }
-                    */
                     self.set_regions(y, &highlighter);
                 }
             }
@@ -62,6 +65,8 @@ impl Editor {
 
         let sel_ranges = self.sel.get_range();
         let search_ranges = self.search.ranges.clone();
+
+        Log::ep("sel_ranges", sel_ranges);
 
         let row_vec = self.buf.char_vec_line(y);
         let row = row_vec.iter().collect::<String>();
@@ -95,9 +100,9 @@ impl Editor {
 
             for c in string.chars() {
                 let from_style = self.draw.get_from_style(i, char_style, char_style_org, style_type_org);
-                let char_style_type = self.draw.ctrl_charstyletype(&row_vec, &sel_ranges, &search_ranges, self.rnw, y, i);
+                let style_type = self.draw.ctrl_style_type(&row_vec, &sel_ranges, &search_ranges, self.rnw, y, i);
 
-                let to_style = match char_style_type {
+                let to_style = match style_type {
                     CharStyleType::Select => CharStyle::SELECTED,
                     CharStyleType::Nomal => {
                         if is_enable_syntax {
@@ -111,10 +116,10 @@ impl Editor {
                 regions.push(Region { c, to: to_style, from: from_style });
                 i += 1;
                 char_style_org = char_style;
-                style_type_org = char_style_type;
+                style_type_org = style_type;
             }
         }
-        // eprintln!("regions {:?}", regions);
+        // Log::ep("regions", regions.clone());
 
         self.draw.char_vec[y] = row_vec;
         self.draw.regions[y] = regions;
@@ -123,44 +128,29 @@ impl Editor {
 }
 
 impl Draw {
-    /// 選択箇所のhighlight
-    pub fn ctrl_charstyletype(&self, row_char: &Vec<char>, sel_ranges: &SelRange, search_ranges: &Vec<SearchRange>, rnw: usize, y: usize, x: usize) -> CharStyleType {
+      pub fn ctrl_style_type(&self, row_char: &Vec<char>, sel_ranges: &SelRange, search_ranges: &Vec<SearchRange>, rnw: usize, y: usize, x: usize) -> CharStyleType {
         let c = row_char[x];
 
-        if sel_ranges.sy <= y && y <= sel_ranges.ey {
+        if  sel_ranges.is_selected() && sel_ranges.sy <= y && y <= sel_ranges.ey {   
             let (_, width) = get_row_width(&row_char[..x], true);
             let disp_x = width + rnw + 1;
-
-            // 開始・終了が同じ行
-            if sel_ranges.sy == sel_ranges.ey {
-                if sel_ranges.s_disp_x <= disp_x && disp_x < sel_ranges.e_disp_x {
-                    return CharStyleType::Select;
-                } else {
-                    if c == NEW_LINE {
-                        return CharStyleType::CtrlChar;
-                    } else {
-                        return CharStyleType::Nomal;
-                    }
-                }
-            // 開始行
-            } else if sel_ranges.sy == y && sel_ranges.s_disp_x <= disp_x {
+            // Lines with the same start and end
+            if (sel_ranges.sy == sel_ranges.ey && sel_ranges.s_disp_x <= disp_x && disp_x < sel_ranges.e_disp_x) 
+            // Start line
+            || (sel_ranges.sy == y && sel_ranges.ey != y && sel_ranges.s_disp_x <= disp_x )
+            // End line
+            || (sel_ranges.ey == y && sel_ranges.sy != y && disp_x < sel_ranges.e_disp_x )
+            // Intermediate line
+            || (sel_ranges.sy < y && y < sel_ranges.ey) {
                 return CharStyleType::Select;
-            // 終了行
-            } else if sel_ranges.ey == y && disp_x < sel_ranges.e_disp_x {
-                return CharStyleType::Select;
-            // 中間行
-            } else if sel_ranges.sy < y && y < sel_ranges.ey {
-                return CharStyleType::Select;
-            }
+            } 
         }
 
         for range in search_ranges {
             if range.y != y {
                 continue;
-            } else {
-                if range.sx <= x && x < range.ex {
-                    return CharStyleType::Select;
-                }
+            } else if range.sx <= x && x < range.ex {
+                return CharStyleType::Select;
             }
         }
         return if c == NEW_LINE { CharStyleType::CtrlChar } else { CharStyleType::Nomal };

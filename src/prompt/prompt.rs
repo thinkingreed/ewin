@@ -142,7 +142,7 @@ impl Prompt {
         Log::ep_s("set_path");
         let mut target_path = self.cont_3.buf.iter().collect::<String>();
 
-        // 検索対象folder
+        // Search target dir
         let mut base_dir = ".".to_string();
         // cur.xまでの文字列対象
         let _ = target_path.split_off(self.cont_3.cur.x);

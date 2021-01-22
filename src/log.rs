@@ -1,11 +1,10 @@
 use crate::model::*;
-use std::fmt::Display;
+use std::fmt::Debug;
 
 impl Log {
-    pub fn ep<T: Display>(m: &str, v: T) {
-        // eprintln!("{}{} {}", Colors::get_default_fg(), format!("{:?}", m), v);
+    pub fn ep<T: Debug>(m: &str, v: T) {
         if cfg!(debug_assertions) {
-            eprintln!("{}{} {}", Colors::get_default_fg(), format!("{:?}", m), v);
+            eprintln!("{}{} {:?}", Colors::get_default_fg(), format!("{:?}", m), v);
         } else {
 
             /*
@@ -16,7 +15,6 @@ impl Log {
         }
     }
     pub fn ep_s(m: &str) {
-        // eprintln!("{}{}", Colors::get_default_fg(), m);
         if cfg!(debug_assertions) {
             eprintln!("{}{}", Colors::get_default_fg(), m);
         } else {

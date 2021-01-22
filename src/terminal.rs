@@ -1,5 +1,4 @@
-use crate::{_cfg::lang::lang_cfg::*, def::USIZE_INITIAL, editor, global::ENV, model::*};
-use std::collections::BTreeMap;
+use crate::{_cfg::lang::lang_cfg::*, global::ENV, model::*};
 use std::io::{self, Write};
 use std::path::Path;
 use std::process;

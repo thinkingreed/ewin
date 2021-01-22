@@ -151,12 +151,11 @@ impl EvtAct {
                 _ => editor.d_range.d_type = DrawType::All,
             },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                Down | Up | Left | Right | Home | End => editor.d_range.d_type = DrawType::All,
-                F(4) => editor.d_range.d_type = DrawType::Not,
+                Down | Up | Left | Right | Home | End | F(4) => {}
                 _ => editor.d_range.d_type = DrawType::All,
             },
             Key(KeyEvent { code, .. }) => match code {
-                Down | Up | Left | Right | Home | End | F(3) => {
+                Down | Up | Left | Right | Home | End => {
                     if editor.sel.is_selected() {
                         editor.d_range.d_type = DrawType::All;
                     }
@@ -221,10 +220,14 @@ impl EvtAct {
     pub fn finalize(editor: &mut Editor) {
         Log::ep_s("finalize");
 
-        // Clear sel range
+        // set sel draw range, Clear sel range
         match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                Down | Up | Left | Right | Home | End | F(4) => {}
+                Down | Up | Left | Right | Home | End => {
+                    let sel = editor.sel.get_range();
+                    editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
+                }
+                F(4) => {}
                 _ => editor.sel.clear(),
             },
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
@@ -235,7 +238,13 @@ impl EvtAct {
                 F(3) => {}
                 _ => editor.sel.clear(),
             },
-            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) | Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {}
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) => {
+                editor.d_range.d_type = DrawType::All;
+            }
+            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) | Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
+                let sel = editor.sel.get_range();
+                editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
+            }
             _ => editor.sel.clear(),
         }
 

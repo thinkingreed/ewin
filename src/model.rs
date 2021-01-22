@@ -468,6 +468,7 @@ impl SelRange {
             e_disp_x: e_disp_x,
         }
     }
+
     pub fn set_s(&mut self, y: usize, x: usize, disp_x: usize) {
         self.sy = y;
         self.sx = x;
@@ -496,6 +497,7 @@ impl SelRange {
         }
     }
 }
+
 impl fmt::Display for SelRange {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SelRange sy:{}, ey:{}, sx:{}, ex:{}, s_disp_x:{}, e_disp_x:{},", self.sy, self.ey, self.sx, self.ex, self.s_disp_x, self.e_disp_x)
