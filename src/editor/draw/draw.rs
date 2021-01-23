@@ -1,4 +1,5 @@
 use crate::{def::*, global, global::*, model::*};
+use crossterm::{cursor::*, terminal::*};
 use permissions::*;
 use std::cmp::min;
 use std::env;
@@ -7,7 +8,6 @@ use std::io::ErrorKind;
 use std::path;
 use std::path::Path;
 use syntect::parsing::SyntaxSet;
-use termion::{clear, cursor, scroll};
 use unicode_width::UnicodeWidthChar;
 
 impl Editor {
@@ -75,18 +75,17 @@ impl Editor {
         match d_range.d_type {
             DrawType::Not => {}
             DrawType::None | DrawType::All => {
-                Colors::set_textarea_color(str_vec);
-                str_vec.push(format!("{}{}", clear::All.to_string(), cursor::Goto(1, 1).to_string()));
+                str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, 0).to_string()));
             }
             DrawType::Target => {
                 for i in d_range.sy - self.offset_y..=d_range.ey - self.offset_y {
-                    str_vec.push(format!("{}{}", cursor::Goto(1, (i + 1) as u16), clear::CurrentLine));
+                    str_vec.push(format!("{}{}", MoveTo(0, i as u16), Clear(ClearType::CurrentLine)));
                 }
-                str_vec.push(format!("{}", cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16)));
+                str_vec.push(format!("{}", MoveTo(0, (d_range.sy - self.offset_y) as u16)));
             }
-            DrawType::After => str_vec.push(format!("{}{}", cursor::Goto(1, (d_range.sy + 1 - self.offset_y) as u16), clear::AfterCursor)),
-            DrawType::ScrollDown => str_vec.push(format!("{}{}{}", scroll::Up(1), clear::CurrentLine, cursor::Goto(1, self.disp_row_num as u16))),
-            DrawType::ScrollUp => str_vec.push(format!("{}{}", scroll::Down(1), cursor::Goto(1, 1))),
+            DrawType::After => str_vec.push(format!("{}{}", MoveTo(0, (d_range.sy - self.offset_y) as u16), Clear(ClearType::FromCursorDown))),
+            DrawType::ScrollDown => str_vec.push(format!("{}{}{}", MoveUp(1), MoveTo(0, self.disp_row_num as u16), Clear(ClearType::CurrentLine))),
+            DrawType::ScrollUp => str_vec.push(format!("{}{}", MoveDown(1), MoveTo(0, 0))),
         }
 
         for i in self.draw.sy..=self.draw.ey {
@@ -113,7 +112,7 @@ impl Editor {
                 x += width;
 
                 match c {
-                    EOF_MARK => self.set_eof(str_vec),
+                    EOF_MARK => Colors::set_eof(str_vec),
                     NEW_LINE => str_vec.push(NEW_LINE_MARK.to_string()),
                     NEW_LINE_CR => {}
                     _ => str_vec.push(c.to_string()),
@@ -134,18 +133,12 @@ impl Editor {
 
     fn set_row_num(&mut self, i: usize, str_vec: &mut Vec<String>) {
         Colors::set_rownum_color(str_vec);
-        // 行番号の空白
         if self.cur.y == i && self.offset_disp_x > 0 {
-            for _ in 0..self.rnw {
-                str_vec.push(">".to_string());
-            }
+            str_vec.push(">".repeat(self.rnw).to_string());
         } else {
-            for _ in (i + 1).to_string().len()..self.rnw {
-                str_vec.push(" ".to_string());
-            }
+            str_vec.push(" ".repeat(self.rnw - (i + 1).to_string().len()).to_string());
             str_vec.push((i + 1).to_string());
         }
-
         Colors::set_textarea_color(str_vec);
     }
 }

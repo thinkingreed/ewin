@@ -1,7 +1,9 @@
 use crate::{def::*, global::*, model::*};
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
+use crossterm::{
+    event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind},
+    terminal::*,
+};
 use std::io::Write;
-use termion::clear;
 
 impl EvtAct {
     pub fn match_event<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> bool {
@@ -18,7 +20,7 @@ impl EvtAct {
                 EvtAct::init(editor, mbar, prom);
                 let is_err = EvtAct::check_err(editor, mbar);
 
-                // eprintln!("editor.evt.clone(){:?}", editor.evt.clone());
+                Log::ep("editor.evt.clone()", editor.evt.clone());
 
                 if !is_err {
                     let curt_y_org = editor.cur.y;
@@ -27,7 +29,7 @@ impl EvtAct {
 
                     match editor.evt {
                         Resize(_, _) => {
-                            write!(out, "{}", clear::All.to_string()).unwrap();
+                            write!(out, "{}", Clear(ClearType::All)).unwrap();
                             term.set_disp_size(editor, mbar, prom, sbar);
                         }
 
@@ -87,6 +89,7 @@ impl EvtAct {
                         Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => editor.cur_down(),
                         Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, true),
                         Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: x, row: y, .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, false),
+                        Mouse(M_Event { kind: M_Kind::Moved, .. }) => {}
                         _ => mbar.set_err(&LANG.unsupported_operation),
                     }
 

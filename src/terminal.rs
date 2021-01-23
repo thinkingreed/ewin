@@ -1,9 +1,9 @@
 use crate::{_cfg::lang::lang_cfg::*, global::ENV, model::*};
+use crossterm::{cursor::*, terminal::*};
 use std::io::{self, Write};
 use std::path::Path;
 use std::process;
 use std::process::Command;
-use termion::cursor;
 
 impl Terminal {
     pub fn draw<T: Write>(&mut self, out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> Result<(), io::Error> {
@@ -47,12 +47,12 @@ impl Terminal {
         if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep {
             prom.draw_cur(str_vec);
         } else {
-            str_vec.push(cursor::Goto((editor.cur.disp_x - editor.offset_disp_x) as u16, (editor.cur.y + 1 - editor.offset_y) as u16).to_string());
+            str_vec.push(MoveTo((editor.cur.disp_x - 1 - editor.offset_disp_x) as u16, (editor.cur.y - editor.offset_y) as u16).to_string());
         }
     }
 
     pub fn check_displayable(&mut self, lang_cfg: &LangCfg) -> bool {
-        let (cols, rows) = termion::terminal_size().unwrap();
+        let (cols, rows) = size().unwrap();
         if cols < 20 || rows < 8 {
             println!("{:?}", lang_cfg.terminal_size_small);
             return false;
@@ -61,7 +61,7 @@ impl Terminal {
     }
 
     pub fn set_disp_size(&mut self, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
-        let (cols, rows) = termion::terminal_size().unwrap();
+        let (cols, rows) = size().unwrap();
         let (cols, rows) = (cols as usize, rows as usize);
 
         Log::ep("rows", rows);
@@ -100,21 +100,19 @@ impl Terminal {
         editor.disp_col_num = cols;
         editor.disp_row_num = rows - mbar.disp_readonly_row_num - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - sbar.disp_row_num;
 
-        /*
-            Log::ep("editor.disp_row_num", editor.disp_row_num);
-            Log::ep("mbar.disp_keyrecord_row_posi", mbar.disp_keyrecord_row_posi);
-            Log::ep("mbar.disp_row_posi", mbar.disp_row_posi);
-            Log::ep("prom.disp_row_posi", prom.disp_row_posi);
-            Log::ep("sbar.disp_row_posi", sbar.disp_row_posi);
-        */
+        Log::ep("editor.disp_row_num", editor.disp_row_num);
+        Log::ep("mbar.disp_keyrecord_row_posi", mbar.disp_keyrecord_row_posi);
+        Log::ep("mbar.disp_row_posi", mbar.disp_row_posi);
+        Log::ep("prom.disp_row_posi", prom.disp_row_posi);
+        Log::ep("sbar.disp_row_posi", sbar.disp_row_posi);
     }
 
     pub fn show_cur<T: Write>(&mut self, out: &mut T) {
-        write!(out, "{}", cursor::Show).unwrap();
+        write!(out, "{}", Show).unwrap();
         out.flush().unwrap();
     }
     pub fn hide_cur<T: Write>(&mut self, out: &mut T) {
-        write!(out, "{}", cursor::Hide.to_string()).unwrap();
+        write!(out, "{}", Hide).unwrap();
         out.flush().unwrap();
     }
     pub fn startup_terminal(&mut self, search_strs: String) {

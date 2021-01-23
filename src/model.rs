@@ -3,7 +3,6 @@ use crate::{_cfg::lang::lang_cfg::*, def::*};
 use crossterm::event::{Event, Event::Key, KeyCode::End};
 use ropey::Rope;
 use std::cmp::{max, min};
-use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::fmt;
 use std::path;
@@ -127,7 +126,6 @@ impl Prompt {
 
     pub fn clear(&mut self) {
         //  self = &mut Prompt { disp_row_num: 0, ..Prompt::default() };
-
         Log::ep_s("　　　　　　　　Prompt clear");
         self.disp_row_num = 0;
         self.disp_row_posi = 0;
@@ -644,10 +642,16 @@ impl fmt::Display for Region {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Color {
+/*#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct  Color {
     Rgb { r: u8, g: u8, b: u8 },
-    Reset,
+}
+*/
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Color {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CharStyleType {
@@ -656,11 +660,13 @@ pub enum CharStyleType {
     CtrlChar,
 }
 
+/*
 impl Default for Color {
     fn default() -> Self {
-        Self::Reset
+        //    Self::Reset
     }
-}
+}*/
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CharStyle {
     pub fg: Color,

@@ -1,7 +1,6 @@
-use crate::model::*;
-use crate::util::*;
+use crate::{model::*, util::*};
+use crossterm::{cursor::*, terminal::*};
 use std::io::Write;
-use termion::{clear, cursor};
 
 impl MsgBar {
     pub fn new() -> Self {
@@ -59,14 +58,14 @@ impl MsgBar {
     }
 
     pub fn get_disp_readonly_msg(&mut self) -> String {
-        return format!("{}{}{}", cursor::Goto(1, (self.disp_readonly_row_posi) as u16), clear::CurrentLine, self.msg_readonly.clone());
+        return format!("{}{}{}", MoveTo(0, (self.disp_readonly_row_posi - 1) as u16), Clear(ClearType::CurrentLine), self.msg_readonly.clone());
     }
     pub fn get_disp_macro_msg(&mut self) -> String {
-        return format!("{}{}{}", cursor::Goto(1, (self.disp_keyrecord_row_posi) as u16), clear::CurrentLine, self.msg_keyrecord.clone());
+        return format!("{}{}{}", MoveTo(0, (self.disp_keyrecord_row_posi - 1) as u16), Clear(ClearType::CurrentLine), self.msg_keyrecord.clone());
     }
 
     pub fn get_disp_msg(&mut self) -> String {
-        return format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi) as u16), clear::CurrentLine, self.msg.clone());
+        return format!("{}{}{}", MoveTo(0, (self.disp_row_posi - 1) as u16), Clear(ClearType::CurrentLine), self.msg.clone());
     }
 
     pub fn set_info(&mut self, msg: &str) {

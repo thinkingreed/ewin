@@ -1,5 +1,5 @@
 use crate::{_cfg::lang::lang_cfg::*, model::*, util::*};
-use termion::*;
+use crossterm::{cursor::*, terminal::*};
 use unicode_width::UnicodeWidthChar;
 
 impl StatusBar {
@@ -30,8 +30,8 @@ impl StatusBar {
 
         let sber_str = format!(
             "{}{}{}{}{}{}",
-            cursor::Goto(1, self.disp_row_posi as u16),
-            clear::CurrentLine,
+            MoveTo(0, (self.disp_row_posi - 1) as u16),
+            Clear(ClearType::CurrentLine),
             Colors::get_sber_bg(),
             Colors::get_sber_fg(),
             format!("{}{}", filenm_disp, cur_str),
@@ -55,7 +55,7 @@ impl StatusBar {
         }
         let cur_str = format!("{cur:>w$}", cur = self.get_cur_str(editor), w = self.cur_str.chars().count());
         let all_str = format!("{}{}{}{}", Colors::get_sber_bg(), Colors::get_sber_fg(), self.filenm_disp, cur_str);
-        let sber_str = format!("{}{}{}{}", termion::cursor::Goto(1, rows as u16), termion::clear::CurrentLine, all_str, Colors::get_default_fg());
+        let sber_str = format!("{}{}{}{}", MoveTo(0, (rows - 1) as u16), Clear(ClearType::CurrentLine), all_str, Colors::get_default_fg());
 
         str_vec.push(sber_str);
     }

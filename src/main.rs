@@ -1,16 +1,18 @@
 #[macro_use]
 extern crate clap;
 use clap::{App, Arg};
-use crossterm::event::{Event, EventStream};
-use crossterm::ErrorKind;
+use crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture},
+    event::{Event, EventStream},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    ErrorKind,
+};
 use ewin::{_cfg::lang::lang_cfg::*, global::*, model::*};
 use futures::{future::FutureExt, select, StreamExt};
 use std::ffi::OsStr;
 use std::io::{stdout, BufWriter, Write};
 use std::path::{Path, PathBuf};
-use termion::input::MouseTerminal;
-use termion::raw::IntoRawMode;
-use termion::screen::AlternateScreen;
 use tokio_util::codec::{FramedRead, LinesCodec};
 
 #[tokio::main]
@@ -74,8 +76,14 @@ async fn main() {
         editor.open(Path::new(&file_path), &mut mbar);
     }
 
-    let stdout = MouseTerminal::from(AlternateScreen::from(stdout()).into_raw_mode().unwrap());
-    let mut out = BufWriter::new(stdout.lock());
+    // let stdout = MouseTerminal::from(AlternateScreen::from(stdout()).into_raw_mode().unwrap());
+    //let mut out = BufWriter::new(stdout.lock());
+
+    enable_raw_mode().unwrap();
+    let out = stdout();
+    let mut out = BufWriter::new(out.lock());
+    execute!(out, EnableMouseCapture).unwrap();
+    execute!(out, EnterAlternateScreen).unwrap();
 
     term.draw(&mut out, &mut editor, &mut mbar, &mut prom, &mut sbar).unwrap();
 
@@ -120,8 +128,6 @@ async fn exec_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Ed
             }
         }
 
-        // TODO 60fps
-        // sleep(Duration::from_millis(17)).await;
         if is_exit {
             break;
         }
@@ -136,6 +142,11 @@ fn run_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, m
         editor.evt = event.clone();
 
         is_exit = EvtAct::match_event(out, term, editor, mbar, prom, sbar);
+        if is_exit {
+            execute!(out, DisableMouseCapture).unwrap();
+            execute!(out, LeaveAlternateScreen).unwrap();
+            disable_raw_mode().unwrap();
+        }
     }
     return is_exit;
 }

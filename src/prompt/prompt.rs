@@ -1,37 +1,37 @@
 use crate::{def::*, model::*, util::*};
+use crossterm::{cursor::*, terminal::*};
 use std::fs;
 use std::io::Write;
-use termion::{clear, cursor};
 
 impl Prompt {
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         // Log::ep_s("　　　　　　　　Prompt draw");
         if self.cont_1.guide.len() > 0 {
-            let cont_desc = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi) as u16), clear::CurrentLine, self.cont_1.guide.clone());
+            let cont_desc = format!("{}{}{}", MoveTo(0, (self.disp_row_posi - 1) as u16), Clear(ClearType::CurrentLine), self.cont_1.guide.clone());
             str_vec.push(cont_desc);
 
-            let key_desc = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 1) as u16), clear::CurrentLine, self.cont_1.key_desc.clone());
+            let key_desc = format!("{}{}{}", MoveTo(0, (self.disp_row_posi) as u16), Clear(ClearType::CurrentLine), self.cont_1.key_desc.clone());
             str_vec.push(key_desc);
 
             if self.is_save_new_file || self.is_search {
-                let buf = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 2) as u16), clear::CurrentLine, self.cont_1.ctl_select_color());
+                let buf = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 1) as u16), Clear(ClearType::CurrentLine), self.cont_1.ctl_select_color());
                 str_vec.push(buf);
             }
 
             if self.is_replace || self.is_grep {
-                let buf_desc_1 = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 2) as u16), clear::CurrentLine, self.cont_1.buf_desc.clone());
+                let buf_desc_1 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 1) as u16), Clear(ClearType::CurrentLine), self.cont_1.buf_desc.clone());
                 str_vec.push(buf_desc_1);
-                let buf_1 = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 3) as u16), clear::CurrentLine, self.cont_1.ctl_select_color());
+                let buf_1 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 2) as u16), Clear(ClearType::CurrentLine), self.cont_1.ctl_select_color());
                 str_vec.push(buf_1);
-                let buf_desc_2 = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 4) as u16), clear::CurrentLine, self.cont_2.buf_desc.clone());
+                let buf_desc_2 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 3) as u16), Clear(ClearType::CurrentLine), self.cont_2.buf_desc.clone());
                 str_vec.push(buf_desc_2);
-                let buf_2 = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 5) as u16), clear::CurrentLine, self.cont_2.ctl_select_color());
+                let buf_2 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 4) as u16), Clear(ClearType::CurrentLine), self.cont_2.ctl_select_color());
                 str_vec.push(buf_2);
             }
             if self.is_grep {
-                let buf_desc_3 = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 6) as u16), clear::CurrentLine, self.cont_3.buf_desc.clone());
+                let buf_desc_3 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 5) as u16), Clear(ClearType::CurrentLine), self.cont_3.buf_desc.clone());
                 str_vec.push(buf_desc_3);
-                let buf_3 = format!("{}{}{}", cursor::Goto(1, (self.disp_row_posi + 7) as u16), clear::CurrentLine, self.cont_3.ctl_select_color());
+                let buf_3 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 6) as u16), Clear(ClearType::CurrentLine), self.cont_3.ctl_select_color());
                 str_vec.push(buf_3);
             }
         }
@@ -49,18 +49,14 @@ impl Prompt {
     pub fn draw_cur(&mut self, str_vec: &mut Vec<String>) {
         if self.is_replace || self.is_grep {
             if self.buf_posi == PromptBufPosi::First {
-                Log::ep("prom.cont_1.cur.disp_x", self.cont_1.cur.disp_x);
-                Log::ep("prom.cont_1.cur.x", self.cont_1.cur.x);
-                str_vec.push(cursor::Goto(self.cont_1.cur.disp_x as u16, (self.disp_row_posi + 3) as u16).to_string());
+                str_vec.push(MoveTo((self.cont_1.cur.disp_x - 1) as u16, (self.disp_row_posi + 2) as u16).to_string());
             } else if self.buf_posi == PromptBufPosi::Second {
-                Log::ep("prom.cont_2.cur.disp_x", self.cont_2.cur.disp_x);
-                Log::ep("prom.cont_2.cur.x", self.cont_2.cur.x);
-                str_vec.push(cursor::Goto(self.cont_2.cur.disp_x as u16, (self.disp_row_posi + 5) as u16).to_string());
+                str_vec.push(MoveTo((self.cont_2.cur.disp_x - 1) as u16, (self.disp_row_posi + 4) as u16).to_string());
             } else if self.buf_posi == PromptBufPosi::Third {
-                str_vec.push(cursor::Goto(self.cont_3.cur.disp_x as u16, (self.disp_row_posi + 7) as u16).to_string());
+                str_vec.push(MoveTo((self.cont_3.cur.disp_x - 1) as u16, (self.disp_row_posi + 6) as u16).to_string());
             }
         } else {
-            str_vec.push(cursor::Goto(self.cont_1.cur.disp_x as u16, (self.disp_row_posi + self.disp_row_num - 1) as u16).to_string());
+            str_vec.push(MoveTo((self.cont_1.cur.disp_x - 1) as u16, (self.disp_row_posi + self.disp_row_num - 2) as u16).to_string());
         }
     }
 

@@ -23,7 +23,6 @@ pub mod editor {
         pub mod text_buf;
     }
     pub mod clipboard;
-    pub mod color;
     pub mod editor;
     pub mod evt_proc;
     pub mod key;
