@@ -39,6 +39,7 @@ impl EvtAct {
 
                         term.startup_terminal(format!(r#"search_str={} search_file={}"#, search_str, path.to_string_lossy().to_string()));
                     }
+                    editor.d_range.draw_type = DrawType::All;
                     term.draw(out, editor, mbar, prom, sbar).unwrap();
                     return EvtActType::Hold;
                 }

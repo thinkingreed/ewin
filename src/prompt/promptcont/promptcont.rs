@@ -30,7 +30,7 @@ impl PromptCont {
     pub fn del_sel_range(&mut self) {
         Log::ep_s("　　　　　　　  del_sel_range");
         let sel = self.sel.get_range();
-        Log::ep("sel", sel);
+        Log::ep("sel", &sel);
         self.buf.drain(sel.sx..sel.ex);
         self.cur.disp_x = min(sel.s_disp_x, sel.e_disp_x);
         self.cur.x = min(sel.sx, sel.ex);

@@ -6,7 +6,7 @@ impl Editor {
         if y >= self.disp_row_num || y >= self.buf.len_lines() {
             return;
         }
-        Log::ep("yyy", y);
+        Log::ep("yyy", &y);
 
         let mut x = x;
         if x <= self.rnw {

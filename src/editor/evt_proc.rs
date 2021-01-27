@@ -11,7 +11,7 @@ impl Editor {
         if is_selected {
             Log::ep_s("exec_edit_proc is_selected_org");
             let mut ep = EvtProc { evt_type: EvtType::Del, ..EvtProc::default() };
-            self.d_range.d_type = DrawType::All;
+            self.d_range.draw_type = DrawType::All;
             ep.cur_s = Cur { y: sel.sy, x: sel.sx + self.rnw, disp_x: sel.s_disp_x };
             ep.cur_e = self.cur;
             ep.str = self.buf.slice(self.sel.get_range());
@@ -59,7 +59,7 @@ impl Editor {
             // End of last line
             if !self.sel.is_selected() {
                 if self.cur.y == self.buf.len_lines() - 1 && self.cur.x == self.buf.len_line_chars(self.cur.y) + self.rnw - 1 {
-                    self.d_range.d_type = DrawType::Not;
+                    self.d_range.draw_type = DrawType::Not;
                     return true;
                 }
             }
@@ -67,7 +67,7 @@ impl Editor {
             // For the starting point
             if !self.sel.is_selected() {
                 if self.cur.y == 0 && self.cur.x == self.rnw {
-                    self.d_range.d_type = DrawType::Not;
+                    self.d_range.draw_type = DrawType::Not;
                     return true;
                 }
             }

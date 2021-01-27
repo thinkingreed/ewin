@@ -17,7 +17,6 @@ impl Prompt {
                 let buf = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 1) as u16), Clear(ClearType::CurrentLine), self.cont_1.ctl_select_color());
                 str_vec.push(buf);
             }
-
             if self.is_replace || self.is_grep {
                 let buf_desc_1 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 1) as u16), Clear(ClearType::CurrentLine), self.cont_1.buf_desc.clone());
                 str_vec.push(buf_desc_1);
@@ -99,7 +98,7 @@ impl Prompt {
 
     pub fn tab(&mut self, is_asc: bool) {
         Log::ep_s("tab");
-        Log::ep("is_asc ", is_asc);
+        Log::ep("is_asc ", &is_asc);
 
         if self.is_replace {
             match self.buf_posi {
@@ -169,7 +168,7 @@ impl Prompt {
             self.tab_comp.dirs.sort();
         }
 
-        Log::ep("read_dir", self.tab_comp.dirs.clone().join(" "));
+        Log::ep("read_dir", &self.tab_comp.dirs.clone().join(" "));
 
         let mut cont_3_str: String = self.cont_3.buf.iter().collect::<String>();
         for candidate in &self.tab_comp.dirs {
@@ -183,7 +182,7 @@ impl Prompt {
             // Multiple candidates
             } else if self.tab_comp.dirs.len() > 1 {
                 Log::ep_s("  Multi candidates");
-                Log::ep("self.tab_comp.index", self.tab_comp.index);
+                Log::ep("self.tab_comp.index", &self.tab_comp.index);
                 if is_asc && self.tab_comp.index >= self.tab_comp.dirs.len() - 1 || self.tab_comp.index == USIZE_UNDEFINED {
                     self.tab_comp.index = 0;
                 } else if !is_asc && self.tab_comp.index == 0 {
@@ -207,10 +206,10 @@ impl Prompt {
 
     fn set_cur(cont_org: &PromptCont, cont: &mut PromptCont) {
         cont.updown_x = cont_org.cur.disp_x;
-        Log::ep("cont.updown_x", cont.updown_x);
+        Log::ep("cont.updown_x", &cont.updown_x);
         let (cur_x, width) = get_until_updown_x(&cont.buf, cont.updown_x);
-        Log::ep("cur_x", cur_x);
-        Log::ep("width", width);
+        Log::ep("cur_x", &cur_x);
+        Log::ep("width", &width);
         cont.cur.x = cur_x;
         cont.cur.disp_x = width;
     }

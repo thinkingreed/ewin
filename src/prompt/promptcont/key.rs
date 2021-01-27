@@ -6,6 +6,10 @@ use unicode_width::UnicodeWidthChar;
 
 impl PromptCont {
     pub fn insert_char(&mut self, c: char) {
+        if self.sel.is_selected() {
+            self.del_sel_range();
+            self.sel.clear();
+        }
         self.buf.insert(self.cur.x, c);
         self.cur.disp_x += c.width().unwrap_or(0);
         self.cur.x += 1;

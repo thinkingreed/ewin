@@ -4,7 +4,7 @@ use crossterm::event::Event;
 impl EditHistory {
     pub fn regist(&mut self, evt: Event, ep: EvtProc) {
         Log::ep_s("　　　　　　　History.regist ");
-        Log::ep("ep ", ep.clone());
+        Log::ep("ep ", &ep);
         // eprintln!("evt {:?}", evt);
 
         if evt == UNDO {

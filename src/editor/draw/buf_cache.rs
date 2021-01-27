@@ -3,6 +3,7 @@ use crate::{def::*, model::*, util::*};
 use std::cmp::min;
 use syntect::highlighting::{HighlightIterator, HighlightState, Highlighter, Style};
 use syntect::parsing::{ParseState, ScopeStack};
+use unicode_width::UnicodeWidthChar;
 
 impl Editor {
     pub fn draw_cache(&mut self) {
@@ -23,52 +24,55 @@ impl Editor {
 
         let d_range = self.d_range.get_range();
 
-        match d_range.d_type {
+        match d_range.draw_type {
             DrawType::Target => {
                 self.draw.sy = d_range.sy;
                 self.draw.ey = d_range.ey;
-            },
+            }
             DrawType::After => {
                 self.draw.sy = d_range.sy;
-            },
-            DrawType::ScrollDown | DrawType::ScrollUp =>{
+            }
+            DrawType::ScrollDown | DrawType::ScrollUp => {
                 self.draw.sy = d_range.sy;
                 self.draw.ey = d_range.sy;
-            },
-            _=>{}
-        }
-
-
-        for y in self.draw.sy..=self.draw.ey {
-            if self.draw.char_vec[y].len() == 0 {
-                self.set_regions(y, &highlighter);
             }
+            _ => {}
         }
 
-        Log::ep("self.draw.sy", self.draw.sy);
-        Log::ep("self.draw.ey", self.draw.ey);
+        Log::ep("self.draw.sy", &self.draw.sy);
+        Log::ep("self.draw.ey", &self.draw.ey);
 
-        match self.d_range.d_type {
-            DrawType::Target | DrawType::After | DrawType::All | DrawType::ScrollDown => {
-                for y in self.draw.sy..=self.draw.ey {
-                    self.set_regions(y, &highlighter);
+        match self.d_range.draw_type {
+            DrawType::None => {
+                // If highlight is enabled, read the full text first
+                if is_enable_highlight(&self.extension) && self.draw.syntax_state_vec.len() == 0 {
+                    self.draw.sy = 0;
+                    self.draw.ey = self.buf.len_lines() - 1;
+                    self.set_draw_regions(&highlighter);
+                } else {
+                    self.set_draw_regions(&highlighter);
                 }
             }
-            DrawType::Not | DrawType::None | DrawType::ScrollUp => {}
+            DrawType::Target | DrawType::After | DrawType::All | DrawType::ScrollDown => self.set_draw_regions(&highlighter),
+            DrawType::Not | DrawType::ScrollUp => {}
+        }
+    }
+    pub fn set_draw_regions(&mut self, highlighter: &Highlighter) {
+        let sel_ranges = self.sel.get_range();
+        for y in self.draw.sy..=self.draw.ey {
+            let row_vec = self.buf.char_vec_line(y);
+            if is_enable_highlight(&self.extension) {
+                self.set_regions_highlight(y, row_vec, sel_ranges, &highlighter);
+            } else {
+                self.set_regions(y, row_vec, sel_ranges);
+            }
         }
     }
 
-    pub fn set_regions(&mut self, y: usize, highlighter: &Highlighter) {
-        Log::ep_s("set_regions");
+    pub fn set_regions_highlight(&mut self, y: usize, row_vec: Vec<char>, sel_ranges: SelRange, highlighter: &Highlighter) {
+        // Log::ep_s("                  set_regions");
 
-        let is_enable_syntax = is_enable_syntax(&self.extension);
-
-        let sel_ranges = self.sel.get_range();
-        let search_ranges = self.search.ranges.clone();
-
-        Log::ep("sel_ranges", sel_ranges);
-
-        let row_vec = self.buf.char_vec_line(y);
+        let mut regions: Vec<Region> = vec![];
         let row = row_vec.iter().collect::<String>();
 
         let mut scope;
@@ -87,65 +91,88 @@ impl Editor {
         let iter = HighlightIterator::new(&mut highlight_state, &ops[..], &row, &highlighter);
         let style_vec: Vec<(Style, &str)> = iter.collect();
 
-        let mut i = 0;
-        let mut regions: Vec<Region> = vec![];
+        let (mut style_org, mut style_type_org) = (CharStyle::NONE, CharStyleType::Nomal);
+        let (mut x, mut width) = (0, 0);
 
-        let mut char_style_org = CharStyle::NONE;
-        let mut style_type_org = CharStyleType::Nomal;
         for (style, string) in style_vec {
             //eprintln!("style {:?}", style);
             //eprintln!("string {:?}", string);
 
-            let char_style = CharStyle::from(style);
+            let mut style = CharStyle::from(style);
 
             for c in string.chars() {
-                let from_style = self.draw.get_from_style(i, char_style, char_style_org, style_type_org);
-                let style_type = self.draw.ctrl_style_type(&row_vec, &sel_ranges, &search_ranges, self.rnw, y, i);
+                width += if c == NEW_LINE || c == NEW_LINE_CR { 1 } else { c.width().unwrap_or(0) };
+                self.set_style(c, width, y, x, &mut style, &mut style_org, &mut style_type_org, sel_ranges, &mut regions);
 
-                let to_style = match style_type {
-                    CharStyleType::Select => CharStyle::SELECTED,
-                    CharStyleType::Nomal => {
-                        if is_enable_syntax {
-                            char_style
-                        } else {
-                            CharStyle::DEFAULT
-                        }
-                    }
-                    CharStyleType::CtrlChar => CharStyle::CTRL_CHAR,
-                };
-                regions.push(Region { c, to: to_style, from: from_style });
-                i += 1;
-                char_style_org = char_style;
-                style_type_org = style_type;
+                x += 1;
             }
         }
-        // Log::ep("regions", regions.clone());
-
+        self.draw.syntax_state_vec.insert(y, SyntaxState { highlight_state, parse_state: parse, ops });
         self.draw.char_vec[y] = row_vec;
         self.draw.regions[y] = regions;
-        self.draw.syntax_state_vec.insert(y, SyntaxState { highlight_state, parse_state: parse, ops });
+        // Log::ep("regions", regions.clone());
+    }
+
+    pub fn set_regions(&mut self, y: usize, row_vec: Vec<char>, sel_ranges: SelRange) {
+        // Log::ep_s("                  set_regions");
+
+        let mut regions: Vec<Region> = vec![];
+        let (mut x, mut width) = (0, 0);
+        let (mut style_org, mut style_type_org) = (CharStyle::NONE, CharStyleType::Nomal);
+
+        let sx = if y == self.cur.y { self.offset_x } else { 0 };
+        let ex = min(sx + self.disp_col_num, self.buf.len_line_chars(y));
+
+        let mut row: Vec<char> = vec![];
+        row.resize(ex - sx, ' ');
+        row.copy_from_slice(&row_vec[sx..ex]);
+
+        for c in row {
+            width += if c == NEW_LINE || c == NEW_LINE_CR { 1 } else { c.width().unwrap_or(0) };
+            self.set_style(c, width, y, x, &CharStyle::DEFAULT, &mut style_org, &mut style_type_org, sel_ranges, &mut regions);
+            x += 1;
+        }
+        self.draw.char_vec[y] = row_vec;
+        self.draw.regions[y] = regions;
+    }
+
+    fn set_style(&mut self, c: char, width: usize, y: usize, x: usize, style: &CharStyle, style_org: &mut CharStyle, style_type_org: &mut CharStyleType, sel_ranges: SelRange, regions: &mut Vec<Region>) {
+        let from_style = self.draw.get_from_style(x, &style, &style_org, style_type_org);
+        let style_type = self.draw.ctrl_style_type(c, width, &sel_ranges, &self.search.ranges, self.rnw, y, x);
+
+        let to_style = match style_type {
+            CharStyleType::Select => CharStyle::SELECTED,
+            CharStyleType::Nomal => {
+                if is_enable_highlight(&self.extension) {
+                    *style
+                } else {
+                    CharStyle::DEFAULT
+                }
+            }
+            CharStyleType::CtrlChar => CharStyle::CTRL_CHAR,
+        };
+        regions.push(Region { c, to: to_style, from: from_style });
+        *style_org = to_style;
+        *style_type_org = style_type;
     }
 }
 
 impl Draw {
-      pub fn ctrl_style_type(&self, row_char: &Vec<char>, sel_ranges: &SelRange, search_ranges: &Vec<SearchRange>, rnw: usize, y: usize, x: usize) -> CharStyleType {
-        let c = row_char[x];
-
-        if  sel_ranges.is_selected() && sel_ranges.sy <= y && y <= sel_ranges.ey {   
-            let (_, width) = get_row_width(&row_char[..x], true);
+    pub fn ctrl_style_type(&self, c: char, width: usize, sel_ranges: &SelRange, search_ranges: &Vec<SearchRange>, rnw: usize, y: usize, x: usize) -> CharStyleType {
+        if sel_ranges.is_selected() && sel_ranges.sy <= y && y <= sel_ranges.ey {
             let disp_x = width + rnw + 1;
             // Lines with the same start and end
-            if (sel_ranges.sy == sel_ranges.ey && sel_ranges.s_disp_x <= disp_x && disp_x < sel_ranges.e_disp_x) 
             // Start line
-            || (sel_ranges.sy == y && sel_ranges.ey != y && sel_ranges.s_disp_x <= disp_x )
             // End line
-            || (sel_ranges.ey == y && sel_ranges.sy != y && disp_x < sel_ranges.e_disp_x )
             // Intermediate line
-            || (sel_ranges.sy < y && y < sel_ranges.ey) {
+            if (sel_ranges.sy == sel_ranges.ey && sel_ranges.s_disp_x <= disp_x && disp_x < sel_ranges.e_disp_x)
+                || (sel_ranges.sy == y && sel_ranges.ey != y && sel_ranges.s_disp_x <= disp_x)
+                || (sel_ranges.ey == y && sel_ranges.sy != y && disp_x < sel_ranges.e_disp_x)
+                || (sel_ranges.sy < y && y < sel_ranges.ey)
+            {
                 return CharStyleType::Select;
-            } 
+            }
         }
-
         for range in search_ranges {
             if range.y != y {
                 continue;
@@ -156,17 +183,13 @@ impl Draw {
         return if c == NEW_LINE { CharStyleType::CtrlChar } else { CharStyleType::Nomal };
     }
 
-    pub fn get_from_style(&mut self, i: usize, char_style: CharStyle, char_style_org: CharStyle, style_type_org: CharStyleType) -> CharStyle {
-        let mut from_style = char_style;
-        if i == 0 || char_style.fg != char_style_org.fg {
-            from_style = CharStyle::NONE;
-        } else if char_style.fg == char_style_org.fg && char_style.bg == char_style_org.bg {
-            if style_type_org == CharStyleType::Select {
-                from_style = CharStyle::SELECTED;
-            } else {
-                from_style = char_style;
-            }
+    pub fn get_from_style(&mut self, i: usize, style: &CharStyle, style_org: &CharStyle, style_type_org: &CharStyleType) -> CharStyle {
+        let mut from_style = style;
+        if i == 0 || style.fg != style_org.fg {
+            from_style = &CharStyle::NONE;
+        } else if style.fg == style_org.fg && style.bg == style_org.bg {
+            from_style = if style_type_org == &CharStyleType::Select { &CharStyle::SELECTED } else { style }
         }
-        return from_style;
+        return *from_style;
     }
 }

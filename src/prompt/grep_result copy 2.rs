@@ -1,4 +1,4 @@
-use crate::{def::*, global::*, model::*};
+use crate::{def::*, global::*, model::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 use std::path::Path;
@@ -27,17 +27,9 @@ impl EvtAct {
                     return;
                 }
             }
+
             let line_str = line_str.replace(&editor.search.folder, "");
             editor.buf.insert_end(&format!("{}{}", line_str, NEW_LINE));
-
-            editor.set_grep_result();
-            if editor.buf.len_lines() > editor.disp_row_num {
-                editor.d_range = DRange::new(editor.offset_y + editor.disp_row_num - 2, 0, DrawType::ScrollDown);
-            } else {
-                editor.d_range.draw_type = DrawType::All;
-            }
-
-            term.draw(out, editor, mbar, prom, sbar).unwrap();
         } else {
             Log::ep_s("grep is canceled");
             EvtAct::exit_grep_result(out, term, editor, mbar, prom, sbar, child);
@@ -48,7 +40,9 @@ impl EvtAct {
         child.kill();
         prom.clear();
         mbar.msg = String::new();
-        //   mbar.set_readonly(&LANG.unable_to_edit);
+        mbar.set_readonly(&LANG.unable_to_edit);
+
+        editor.set_grep_result();
 
         if editor.grep_result_vec.len() > 0 {
             prom.grep_result_after();

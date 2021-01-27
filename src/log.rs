@@ -2,7 +2,7 @@ use crate::model::*;
 use std::fmt::Debug;
 
 impl Log {
-    pub fn ep<T: Debug>(m: &str, v: T) {
+    pub fn ep<T: Debug>(m: &str, v: &T) {
         if cfg!(debug_assertions) {
             eprintln!("{}{} {:?}", Colors::get_default_fg(), format!("{:?}", m), v);
         } else {

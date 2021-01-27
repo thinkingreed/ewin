@@ -118,7 +118,7 @@ impl Editor {
             self.cur.y -= 1;
             self.d_range = DRange::new(self.cur.y, 0, DrawType::After);
             let (cur_x, _) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], false);
-            Log::ep("cur_x", cur_x);
+            Log::ep("cur_x", &cur_x);
 
             self.buf.remove_type(EvtType::BS, self.cur.y, self.buf.len_line_chars(self.cur.y) - 1);
             self.set_cur_target(self.cur.y, cur_x);

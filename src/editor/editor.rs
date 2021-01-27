@@ -26,12 +26,12 @@ impl Editor {
 
     // adjusting horizontal posi of cursor
     pub fn scroll_horizontal(&mut self) {
-        // Log::ep_s("　　　　　　　 scroll_horizontal");
+        Log::ep_s("　　　　　　　 scroll_horizontal");
         // offset_x切替余分文字数(残文字数時にoffset切替)
         let offset_x_extra_num = 3;
         // 上記offset切替時のoffset増減数
         let offset_x_change_num = 10;
-        let x_offset_org = self.offset_x;
+        let offset_x_org = self.offset_x;
 
         // Up・Down
         if self.rnw == self.cur.x {
@@ -43,17 +43,18 @@ impl Editor {
             }
         }
 
-        // line disp_x < disp_col_num disable extra
-        let mut line_disp_x = 0;
-        if self.buf.len_line_chars(self.cur.y) < self.disp_col_num {
-            let (_, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], true);
-            line_disp_x = width;
-        }
-
         // Right移動
-        if line_disp_x > self.disp_col_num && self.offset_disp_x + self.disp_col_num < self.cur.disp_x + offset_x_extra_num {
-            // Log::ep_s(" self.cur.x - self.x_offset + extra > self.disp_col_num ");
-            self.offset_x += offset_x_change_num;
+        //   if width > self.disp_col_num && self.offset_disp_x + self.disp_col_num < self.cur.disp_x + offset_x_extra_num {
+        if self.offset_disp_x + self.disp_col_num < self.cur.disp_x + offset_x_extra_num {
+            let (_, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], true);
+            // Disable extra  case width < disp_col_num
+
+            Log::ep("width", &width);
+            Log::ep("width > self.disp_col_num- self.rnw", &(width > self.disp_col_num - self.rnw));
+            // +1 for EOF
+            if width + 1 > self.disp_col_num - self.rnw {
+                self.offset_x += offset_x_change_num;
+            }
         //  }
         // Left移動
         } else if self.cur.disp_x - 1 >= self.rnw + offset_x_extra_num && self.offset_disp_x >= self.cur.disp_x - 1 - self.rnw - offset_x_extra_num {
@@ -74,15 +75,15 @@ impl Editor {
                 self.offset_disp_x = width;
 
             // offsetに差分
-            } else if x_offset_org != self.offset_x {
-                if self.offset_x < x_offset_org {
+            } else if offset_x_org != self.offset_x {
+                if self.offset_x < offset_x_org {
                     // Log::ep_s(" self.x_offset < x_offset_org  ");
-                    let (_, width) = get_row_width(&vec[self.offset_x..x_offset_org], false);
+                    let (_, width) = get_row_width(&vec[self.offset_x..offset_x_org], false);
                     self.offset_disp_x -= width;
                 } else {
                     // Log::ep_s("else self.x_offset < x_offset_org  ");
 
-                    let (_, width) = get_row_width(&vec[x_offset_org..self.offset_x], false);
+                    let (_, width) = get_row_width(&vec[offset_x_org..self.offset_x], false);
                     self.offset_disp_x += width;
                 }
             }
@@ -146,6 +147,25 @@ impl Editor {
             match self.evt {
                 PASTE | DEL | BS | CUT | ENTER | Key(KeyEvent { code: Char(_), modifiers: KeyModifiers::NONE }) | Key(KeyEvent { code: Char(_), modifiers: KeyModifiers::SHIFT }) => return true,
                 _ => return false,
+            }
+        }
+    }
+    pub fn set_draw_range(&mut self, curt_y_org: usize, offset_y_org: usize, offset_x_org: usize, rnw_org: usize) {
+        Log::ep_s("set_draw_range");
+
+        if (self.offset_x > 0 && curt_y_org != self.cur.y) || offset_x_org != self.offset_x {
+            self.d_range.draw_type = DrawType::All;
+        }
+        if rnw_org != self.rnw {
+            self.d_range.draw_type = DrawType::All;
+        }
+        if offset_y_org != self.offset_y {
+            if self.evt == DOWN {
+                self.d_range = DRange::new(self.offset_y + self.disp_row_num - 1, 0, DrawType::ScrollDown);
+            } else if self.evt == UP {
+                self.d_range = DRange::new(self.offset_y, 0, DrawType::ScrollUp);
+            } else {
+                self.d_range.draw_type = DrawType::All;
             }
         }
     }

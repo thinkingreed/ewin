@@ -41,7 +41,7 @@ impl EvtAct {
             prom.draw_only(out);
             return false;
         }
-        let search_vec = editor.get_search_ranges(&search_str.clone());
+        let search_vec = editor.get_search_ranges(&search_str.clone(), "");
         if search_vec.len() == 0 {
             mbar.set_err(&LANG.cannot_find_char_search_for);
             mbar.draw_only(out, term, editor, prom, sbar);

@@ -7,8 +7,12 @@ use std::io::Write;
 
 impl EvtAct {
     pub fn match_event<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> bool {
-        term.hide_cur(out);
+        match editor.evt {
+            Mouse(M_Event { kind: M_Kind::Moved, .. }) => return false,
+            _ => {}
+        }
 
+        term.hide_cur(out);
         mbar.msg_org = mbar.msg.clone();
 
         let evt_next_process = EvtAct::check_next_process(out, term, editor, mbar, prom, sbar);
@@ -19,12 +23,12 @@ impl EvtAct {
             EvtActType::Next => {
                 EvtAct::init(editor, mbar, prom);
                 let is_err = EvtAct::check_err(editor, mbar);
-
-                Log::ep("editor.evt.clone()", editor.evt.clone());
+                Log::ep("editor.evt.clone()", &editor.evt);
 
                 if !is_err {
                     let curt_y_org = editor.cur.y;
                     let offset_y_org = editor.offset_y;
+                    let offset_x_org = editor.offset_x;
                     let rnw_org = editor.rnw;
 
                     match editor.evt {
@@ -89,7 +93,6 @@ impl EvtAct {
                         Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => editor.cur_down(),
                         Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, true),
                         Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: x, row: y, .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, false),
-                        Mouse(M_Event { kind: M_Kind::Moved, .. }) => {}
                         _ => mbar.set_err(&LANG.unsupported_operation),
                     }
 
@@ -98,30 +101,26 @@ impl EvtAct {
                     }
                     EvtAct::finalize(editor);
 
-                    if editor.offset_x > 0 && curt_y_org != editor.cur.y || rnw_org != editor.rnw {
-                        editor.d_range.d_type = DrawType::All;
-                    }
-                    if offset_y_org != editor.offset_y {
-                        if editor.evt == DOWN {
-                            editor.d_range = DRange::new(editor.offset_y + editor.disp_row_num - 1, 0, DrawType::ScrollDown);
-                        } else if editor.evt == UP {
-                            editor.d_range = DRange::new(editor.offset_y, 0, DrawType::ScrollUp);
-                        } else {
-                            editor.d_range.d_type = DrawType::All;
-                        }
-                    }
+                    editor.set_draw_range(curt_y_org, offset_y_org, offset_x_org, rnw_org);
+                }
+
+                Log::ep("offset_y", &editor.offset_y);
+                Log::ep("offset_x", &editor.offset_x);
+                Log::ep("cur.y", &editor.cur.y);
+                Log::ep("cur.x", &editor.cur.x);
+                Log::ep("cur.disp_x", &editor.cur.disp_x);
+                // Log::ep("search.ranges", &editor.search.ranges);
+
+                // Redraw in case of msg change
+                if mbar.msg_org != mbar.msg {
+                    editor.d_range.draw_type = DrawType::All;
                 }
                 // key_record実行時は最終時のみredraw
-                if editor.d_range.d_type != DrawType::Not || (prom.is_key_record_exec == false || prom.is_key_record_exec == true && prom.is_key_record_exec_draw == true) {
+                if editor.d_range.draw_type != DrawType::Not || (prom.is_key_record_exec == false || prom.is_key_record_exec == true && prom.is_key_record_exec_draw == true) {
                     term.draw(out, editor, mbar, prom, sbar).unwrap();
                 }
             }
         }
-
-        Log::ep("y_offset", editor.offset_y);
-        Log::ep("cur.y", editor.cur.y);
-        Log::ep("cur.x", editor.cur.x);
-        Log::ep("cur.disp_x", editor.cur.disp_x);
 
         term.show_cur(out);
         return false;
@@ -146,33 +145,33 @@ impl EvtAct {
             _ => editor.updown_x = 0,
         }
         // redraw判定
-        editor.d_range.d_type = DrawType::Not;
+        editor.d_range.draw_type = DrawType::Not;
         match editor.evt {
-            Resize(_, _) => editor.d_range.d_type = DrawType::All,
+            Resize(_, _) => editor.d_range.draw_type = DrawType::All,
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                Home | End | Char('c') => editor.d_range.d_type = DrawType::Not,
-                _ => editor.d_range.d_type = DrawType::All,
+                Home | End | Char('c') => editor.d_range.draw_type = DrawType::Not,
+                _ => editor.d_range.draw_type = DrawType::All,
             },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 Down | Up | Left | Right | Home | End | F(4) => {}
-                _ => editor.d_range.d_type = DrawType::All,
+                _ => editor.d_range.draw_type = DrawType::All,
             },
             Key(KeyEvent { code, .. }) => match code {
                 Down | Up | Left | Right | Home | End => {
                     if editor.sel.is_selected() {
-                        editor.d_range.d_type = DrawType::All;
+                        editor.d_range.draw_type = DrawType::All;
                     }
                 }
-                _ => editor.d_range.d_type = DrawType::All,
+                _ => editor.d_range.draw_type = DrawType::All,
             },
 
             // for err msg or selected
             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
                 if editor.sel.is_selected() {
-                    editor.d_range.d_type = DrawType::Target;
+                    editor.d_range.draw_type = DrawType::Target;
                 }
             }
-            _ => editor.d_range.d_type = DrawType::Not,
+            _ => editor.d_range.draw_type = DrawType::Not,
         }
 
         // Edit    is_change=true, Clear redo_vec,
@@ -242,7 +241,7 @@ impl EvtAct {
                 _ => editor.sel.clear(),
             },
             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) => {
-                editor.d_range.d_type = DrawType::All;
+                editor.d_range.draw_type = DrawType::All;
             }
             Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) | Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
                 let sel = editor.sel.get_range();
@@ -253,7 +252,7 @@ impl EvtAct {
 
         // Refresh search results
         if editor.is_edit_evt(true) && editor.search.ranges.len() > 0 {
-            editor.search.ranges = editor.get_search_ranges(&editor.search.str);
+            editor.search.ranges = editor.get_search_ranges(&editor.search.str, "");
         }
     }
     pub fn check_err(editor: &mut Editor, mbar: &mut MsgBar) -> bool {

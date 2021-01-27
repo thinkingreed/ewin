@@ -15,7 +15,7 @@ impl EvtAct {
                         mbar.set_err(&LANG.not_entered_search_str);
                     } else if prom.cont_2.buf.len() == 0 {
                         mbar.set_err(&LANG.not_entered_replace_str);
-                    } else if editor.get_search_ranges(&search_str.clone()).len() == 0 {
+                    } else if editor.get_search_ranges(&search_str.clone(), "").len() == 0 {
                         mbar.set_err(&LANG.cannot_find_char_search_for);
                     } else {
                         editor.replace(prom);

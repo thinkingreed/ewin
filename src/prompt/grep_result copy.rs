@@ -1,4 +1,4 @@
-use crate::{def::*, global::*, model::*};
+use crate::{def::*, global::*, model::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 use std::path::Path;
@@ -27,17 +27,49 @@ impl EvtAct {
                     return;
                 }
             }
-            let line_str = line_str.replace(&editor.search.folder, "");
-            editor.buf.insert_end(&format!("{}{}", line_str, NEW_LINE));
 
-            editor.set_grep_result();
-            if editor.buf.len_lines() > editor.disp_row_num {
-                editor.d_range = DRange::new(editor.offset_y + editor.disp_row_num - 2, 0, DrawType::ScrollDown);
-            } else {
-                editor.d_range.draw_type = DrawType::All;
+            let mut line_str = line_str.replace(&editor.search.folder, "");
+            line_str.push_str(&NEW_LINE.to_string());
+
+            editor.buf.insert_end(&line_str);
+
+            editor.rnw = editor.buf.len_lines().to_string().len();
+            editor.cur = Cur {
+                y: editor.buf.len_lines() - 1,
+                x: editor.rnw,
+                disp_x: 0,
+            };
+            editor.cur.disp_x = editor.rnw + get_char_width(editor.buf.char(editor.cur.y, editor.cur.x - editor.rnw));
+            editor.scroll();
+
+            let y = editor.buf.len_lines() - 1;
+
+            editor.d_range = DRange::new(y, y, DrawType::Target);
+
+            // Pattern
+            //   text.txt:100:string
+            //   grep:text.txt:No permission
+            let vec: Vec<&str> = line_str.splitn(3, ":").collect();
+
+            if vec.len() > 2 && vec[0] != "grep" {
+                let pre_str = format!("{}:{}:", vec[0], vec[1]);
+
+                editor.search.ranges = editor.get_search_ranges(&editor.search.str, &pre_str);
             }
 
-            term.draw(out, editor, mbar, prom, sbar).unwrap();
+            if vec.len() > 1 {
+                let result: Result<usize, _> = vec[1].parse();
+
+                let grep_result = match result {
+                    // text.txt:100:検索文字列 等
+                    Ok(row_num) => GrepResult::new(vec[0].to_string(), row_num),
+                    // grep: text.txt: 許可がありません
+                    Err(_) => GrepResult::new(vec[1].to_string().as_str().trim().to_string(), USIZE_UNDEFINED),
+                };
+                editor.grep_result_vec.push(grep_result);
+            }
+        // editor.d_range.draw_type = DrawType::All;
+        // term.draw(out, editor, mbar, prom, sbar).unwrap();
         } else {
             Log::ep_s("grep is canceled");
             EvtAct::exit_grep_result(out, term, editor, mbar, prom, sbar, child);
@@ -48,8 +80,7 @@ impl EvtAct {
         child.kill();
         prom.clear();
         mbar.msg = String::new();
-        //   mbar.set_readonly(&LANG.unable_to_edit);
-
+        mbar.set_readonly(&LANG.unable_to_edit);
         if editor.grep_result_vec.len() > 0 {
             prom.grep_result_after();
         } else {

@@ -13,14 +13,10 @@ impl Terminal {
 
         let mut str_vec: Vec<String> = vec![];
 
-        // Redraw in case of msg change
-        if mbar.msg_org != mbar.msg {
-            editor.d_range.d_type = DrawType::All;
-        }
         let d_range = editor.d_range;
-        Log::ep("d_range", d_range);
+        Log::ep("d_range", &d_range);
 
-        if d_range.d_type != DrawType::Not {
+        if d_range.draw_type != DrawType::Not {
             Log::ep_s("editor.draw");
             editor.draw_cache();
             editor.draw(&mut str_vec);
@@ -28,10 +24,7 @@ impl Terminal {
 
         mbar.draw(&mut str_vec);
         prom.draw(&mut str_vec);
-
-        if d_range.d_type != DrawType::Not {
-            sbar.draw(&mut str_vec, editor);
-        }
+        sbar.draw(&mut str_vec, editor);
 
         self.draw_cur(&mut str_vec, editor, prom);
 
@@ -64,8 +57,8 @@ impl Terminal {
         let (cols, rows) = size().unwrap();
         let (cols, rows) = (cols as usize, rows as usize);
 
-        Log::ep("rows", rows);
-        Log::ep("cols", cols);
+        Log::ep("rows", &rows);
+        Log::ep("cols", &cols);
 
         if rows <= 10 {
             sbar.disp_row_num = 0;
@@ -100,11 +93,13 @@ impl Terminal {
         editor.disp_col_num = cols;
         editor.disp_row_num = rows - mbar.disp_readonly_row_num - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - sbar.disp_row_num;
 
-        Log::ep("editor.disp_row_num", editor.disp_row_num);
-        Log::ep("mbar.disp_keyrecord_row_posi", mbar.disp_keyrecord_row_posi);
-        Log::ep("mbar.disp_row_posi", mbar.disp_row_posi);
-        Log::ep("prom.disp_row_posi", prom.disp_row_posi);
-        Log::ep("sbar.disp_row_posi", sbar.disp_row_posi);
+        /*
+            Log::ep("editor.disp_row_num", editor.disp_row_num);
+            Log::ep("mbar.disp_keyrecord_row_posi", mbar.disp_keyrecord_row_posi);
+            Log::ep("mbar.disp_row_posi", mbar.disp_row_posi);
+            Log::ep("prom.disp_row_posi", prom.disp_row_posi);
+            Log::ep("sbar.disp_row_posi", sbar.disp_row_posi);
+        */
     }
 
     pub fn show_cur<T: Write>(&mut self, out: &mut T) {
@@ -116,7 +111,7 @@ impl Terminal {
         out.flush().unwrap();
     }
     pub fn startup_terminal(&mut self, search_strs: String) {
-        Log::ep("search_strs", search_strs.clone());
+        Log::ep("search_strs", &search_strs);
 
         let mut exe_path = "/home/hi/rust/ewin/target/release/ewin";
         if !cfg!(debug_assertions) {
@@ -140,13 +135,13 @@ impl Terminal {
                 .spawn()
             {
                 Log::ep_s("WSL");
-                Log::ep("startup_terminal err", err.to_string());
+                Log::ep("startup_terminal err", &err.to_string());
             }
         } else {
             // gnome-terminal
             if let Err(err) = Command::new("gnome-terminal").arg("--").arg(exe_path).arg(search_strs).spawn() {
                 Log::ep_s("gnome");
-                Log::ep("startup_terminal err", err.to_string());
+                Log::ep("startup_terminal err", &err.to_string());
             }
         };
     }

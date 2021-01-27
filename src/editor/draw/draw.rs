@@ -1,9 +1,9 @@
-use crate::{def::*, global, global::*, model::*};
+use crate::{def::*, global, global::*, model::*, util::*};
 use crossterm::{cursor::*, terminal::*};
-use permissions::*;
 use std::cmp::min;
 use std::env;
 use std::ffi::OsStr;
+use std::fs::metadata;
 use std::io::ErrorKind;
 use std::path;
 use std::path::Path;
@@ -12,9 +12,12 @@ use unicode_width::UnicodeWidthChar;
 
 impl Editor {
     pub fn open(&mut self, path: &path::Path, mbar: &mut MsgBar) {
+        Log::ep_s("           open");
+
         if path.to_string_lossy().to_string().len() > 0 {
             if path.exists() {
-                if !is_writable(path).unwrap() {
+                let file_meta = metadata(path).unwrap();
+                if file_meta.permissions().readonly() {
                     let msg_1 = &LANG.unable_to_edit.clone();
                     let msg_2 = &LANG.no_write_permission.clone();
                     mbar.set_readonly(&format!("{}({})", msg_1, msg_2));
@@ -24,8 +27,9 @@ impl Editor {
                 std::process::exit(1);
             }
         } else {
-            let current = env::current_dir().unwrap();
-            if !is_writable(current).unwrap() {
+            let curt_dir = env::current_dir().unwrap();
+            let curt_dir = metadata(curt_dir).unwrap();
+            if curt_dir.permissions().readonly() {
                 println!("{}", LANG.no_write_permission.clone());
                 std::process::exit(1);
             }
@@ -66,13 +70,14 @@ impl Editor {
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         Log::ep_s("draw");
+        Log::ep("self.disp_row_num", &self.disp_row_num);
 
         let (mut y, mut x) = (0, 0);
 
         let d_range = self.d_range.get_range();
-        Log::ep("d_range", d_range);
+        Log::ep("d_range", &d_range);
 
-        match d_range.d_type {
+        match d_range.draw_type {
             DrawType::Not => {}
             DrawType::None | DrawType::All => {
                 str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, 0).to_string()));
@@ -84,23 +89,28 @@ impl Editor {
                 str_vec.push(format!("{}", MoveTo(0, (d_range.sy - self.offset_y) as u16)));
             }
             DrawType::After => str_vec.push(format!("{}{}", MoveTo(0, (d_range.sy - self.offset_y) as u16), Clear(ClearType::FromCursorDown))),
-            DrawType::ScrollDown => str_vec.push(format!("{}{}{}", MoveUp(1), MoveTo(0, self.disp_row_num as u16), Clear(ClearType::CurrentLine))),
-            DrawType::ScrollUp => str_vec.push(format!("{}{}", MoveDown(1), MoveTo(0, 0))),
+            DrawType::ScrollDown => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.disp_row_num - 1) as u16), Clear(ClearType::CurrentLine))),
+            DrawType::ScrollUp => str_vec.push(format!("{}{}", ScrollDown(1), MoveTo(0, 0))),
         }
 
         for i in self.draw.sy..=self.draw.ey {
-            Log::ep("iii", i);
+            // Log::ep("iii", &i);
 
             self.set_row_num(i, str_vec);
 
             let row_region = self.draw.regions[i].clone();
-            let x_s = if i == self.cur.y { self.offset_x } else { 0 };
-            let x_e = min(x_s + self.disp_col_num, self.buf.len_line_chars(i));
-
-            for (x_idx, j) in (0_usize..).zip(x_s..x_e) {
+            let mut sx = 0;
+            let mut ex = row_region.len();
+            if is_enable_highlight(&self.extension) {
+                sx = if i == self.cur.y { self.offset_x } else { 0 };
+                ex = min(sx + self.disp_col_num, self.buf.len_line_chars(i));
+            }
+            for (x_idx, j) in (0_usize..).zip(sx..ex) {
                 let region = &row_region[j];
                 region.draw_style(str_vec, x_idx == 0 && self.offset_x > 0);
                 let c = region.c;
+                // Log::ep("ccccc", &c);
+
                 let mut width = c.width().unwrap_or(0);
                 if c == NEW_LINE {
                     width = 1;

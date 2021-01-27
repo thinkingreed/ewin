@@ -199,6 +199,7 @@ pub enum PromptBufPosi {
 pub enum Env {
     WSL,
     Linux,
+    Windows,
 }
 
 #[derive(Debug)]
@@ -731,42 +732,42 @@ impl Draw {
 pub struct DRange {
     pub sy: usize,
     pub ey: usize,
-    pub d_type: DrawType,
+    pub draw_type: DrawType,
 }
 
 impl Default for DRange {
     fn default() -> Self {
-        DRange { sy: 0, ey: 0, d_type: DrawType::None }
+        DRange { sy: 0, ey: 0, draw_type: DrawType::None }
     }
 }
 
 impl DRange {
     pub fn new(sy: usize, ey: usize, d_type: DrawType) -> Self {
-        return DRange { sy: sy, ey: ey, d_type: d_type };
+        return DRange { sy: sy, ey: ey, draw_type: d_type };
     }
 
     pub fn get_range(&mut self) -> Self {
-        return DRange { sy: self.sy, ey: self.ey, d_type: self.d_type };
+        return DRange { sy: self.sy, ey: self.ey, draw_type: self.draw_type };
     }
     pub fn set_target(&mut self, sy: usize, ey: usize) {
-        self.d_type = DrawType::Target;
+        self.draw_type = DrawType::Target;
         self.sy = min(sy, ey);
         self.ey = max(sy, ey);
     }
     pub fn set_after(&mut self, sy: usize) {
-        self.d_type = DrawType::After;
+        self.draw_type = DrawType::After;
         self.sy = sy;
     }
 
     pub fn clear(&mut self) {
         self.sy = 0;
         self.ey = 0;
-        self.d_type = DrawType::Not;
+        self.draw_type = DrawType::Not;
     }
 }
 impl fmt::Display for DRange {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "DRnage sy:{}, ey:{}, d_type:{}, ", self.sy, self.ey, self.d_type)
+        write!(f, "DRnage sy:{}, ey:{}, d_type:{}, ", self.sy, self.ey, self.draw_type)
     }
 }
 

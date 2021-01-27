@@ -38,7 +38,7 @@ impl Editor {
     pub fn shift_down(&mut self) {
         Log::ep_s("　　　　　　　　shift_down");
         if self.cur.y == self.buf.len_lines() - 1 {
-            self.d_range.d_type = DrawType::Not;
+            self.d_range.draw_type = DrawType::Not;
             return;
         }
         self.shift_move_com(EvtType::ShiftDown);
@@ -47,7 +47,7 @@ impl Editor {
     pub fn shift_up(&mut self) {
         Log::ep_s("　　　　　　　　shift_up");
         if self.cur.y == 0 {
-            self.d_range.d_type = DrawType::Not;
+            self.d_range.draw_type = DrawType::Not;
             return;
         }
         self.shift_move_com(EvtType::ShiftUp);
@@ -73,7 +73,7 @@ impl Editor {
                 term.set_disp_size(self, mbar, prom, sbar);
                 self.scroll();
             }
-            self.d_range.d_type = DrawType::All;
+            self.d_range.draw_type = DrawType::All;
         } else {
             prom.is_key_record = true;
             mbar.set_keyrecord(&LANG.key_recording);

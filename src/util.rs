@@ -129,6 +129,7 @@ pub fn split_inclusive(target: &str, split_char: char) -> Vec<String> {
     }
     return vec;
 }
+#[cfg(target_os = "linux")]
 pub fn get_env() -> Env {
     let child = Command::new("uname").arg("-r").stdout(process::Stdio::piped()).spawn().unwrap();
     let mut stdout = child.stdout.context("take stdout").unwrap();
@@ -141,12 +142,16 @@ pub fn get_env() -> Env {
         return Env::Linux;
     }
 }
+#[cfg(target_os = "windows")]
+pub fn get_env() -> Env {
+    return Env::Windows;
+}
 
 pub fn is_line_end(c: char) -> bool {
     ['\u{000a}', '\u{000d}'].contains(&c)
 }
 
-pub fn is_enable_syntax(ext: &str) -> bool {
+pub fn is_enable_highlight(ext: &str) -> bool {
     if ext.len() == 0 || ext == "txt" || ext == "log" || ext == "ini" {
         return false;
     } else {

@@ -58,8 +58,6 @@ impl TextBuffer {
         // new line CR
         let mut i = self.text.line_to_char(y) + x;
 
-        Log::ep("ccc", self.char(y, x));
-
         let mut del_num = 1;
         // not select del
         if do_type == EvtType::Del {
@@ -78,7 +76,7 @@ impl TextBuffer {
     }
 
     pub fn remove_range(&mut self, sel: SelRange) {
-        Log::ep("remove_range sel", sel);
+        Log::ep("remove_range sel", &sel);
 
         let i_s = self.text.line_to_char(sel.sy) + sel.sx;
         let i_e = self.text.line_to_char(sel.ey) + sel.ex;
@@ -131,7 +129,38 @@ impl TextBuffer {
         i - self.text.line_to_char(self.text.char_to_line(i))
     }
 
-    pub fn search(&self, search_pattern: &str) -> Vec<(usize, usize)> {
+    pub fn search(&self, search_pattern: &str, s_idx: usize) -> Vec<(usize, usize)> {
+        const BATCH_SIZE: usize = 256;
+
+        let mut head = s_idx; // Keep track of where we are between searches
+        let mut matches = Vec::with_capacity(BATCH_SIZE);
+        let mut tmp_vec: Vec<Vec<(usize, usize)>> = vec![];
+        let mut rtn_vec: Vec<(usize, usize)> = vec![];
+
+        loop {
+            // Collect the next batch of matches.  Note that we don't use
+            // `Iterator::collect()` to collect the batch because we want to
+            // re-use the same Vec to avoid unnecessary allocations.
+            matches.clear();
+            for m in SearchIter::from_rope_slice(&self.text.slice(head..), &search_pattern).take(BATCH_SIZE) {
+                matches.push(m);
+            }
+            if matches.is_empty() {
+                break;
+            }
+            tmp_vec.push(matches.clone());
+
+            // Update head for next iteration.
+            head = (head as isize + matches.last().unwrap().1 as isize) as usize;
+        }
+        for vec in tmp_vec {
+            for t in vec {
+                rtn_vec.push(t);
+            }
+        }
+        rtn_vec
+    }
+    pub fn search_ex(&self, search_pattern: &str) -> Vec<(usize, usize)> {
         const BATCH_SIZE: usize = 256;
 
         let mut head = 0; // Keep track of where we are between searches

@@ -11,7 +11,7 @@ impl Editor {
         if *ENV == Env::WSL {
             Log::ep_s("try_set_clipboard ");
             if let Err(err) = self.try_set_clipboard(&copy_string) {
-                Log::ep("try_set_clipboard err", err.to_string());
+                Log::ep("try_set_clipboard err", &err.to_string());
             }
         } else {
             Log::ep_s("ClipboardProvider::new() ");
@@ -19,7 +19,7 @@ impl Editor {
             match result {
                 Ok(mut ctx) => ctx.set_contents(copy_string.to_string()).unwrap(),
                 Err(err) => {
-                    Log::ep("ClipboardProvider err", err.to_string());
+                    Log::ep("ClipboardProvider err", &err);
                     self.clipboard = copy_string.to_string();
                 }
             }
@@ -61,7 +61,7 @@ impl Editor {
 
         // Windowsからのpasteで\r\n対応
         let mut buf = buf.replace(NEW_LINE_CRLF, NEW_LINE.to_string().as_str());
-        Log::ep("buf ", buf.clone());
+        Log::ep("buf ", &buf);
         // 末尾の自動挿入の改行の削除
         buf = buf.chars().take(buf.chars().count() - 1).collect::<String>();
 

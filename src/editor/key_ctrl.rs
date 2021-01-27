@@ -1,5 +1,7 @@
 use crate::{def::*, global::*, model::*, util::*};
 use std::iter::FromIterator;
+use std::time::{Duration, Instant};
+
 use std::path::Path;
 
 impl Editor {
@@ -9,17 +11,17 @@ impl Editor {
         let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.buf.len_lines() - 1)[..], false);
         // e_disp_x +1 for EOF
         self.sel.set_e(self.buf.len_lines() - 1, cur_x, width + self.rnw + 1);
-        self.d_range.d_type = DrawType::All;
+        self.d_range.draw_type = DrawType::All;
     }
 
     pub fn cut(&mut self) {
         Log::ep_s("　　　　　　　  cut");
         self.copy();
-        self.d_range.d_type = DrawType::All;
+        self.d_range.draw_type = DrawType::All;
     }
 
     pub fn close(&mut self, prom: &mut Prompt) -> bool {
-        Log::ep("is_change", prom.is_change);
+        Log::ep("is_change", &prom.is_change);
 
         if prom.is_change == true {
             prom.save_confirm_str();
@@ -53,7 +55,7 @@ impl Editor {
                         return true;
                     }
                     Err(err) => {
-                        Log::ep("err", err.to_string());
+                        Log::ep("err", &err.to_string());
                     }
                 }
             }
@@ -88,7 +90,7 @@ impl Editor {
                 copy_str.push_str(",");
             }
         }
-        Log::ep("copy_str", copy_str.clone());
+        Log::ep("copy_str", &copy_str);
         copy_str
     }
 
@@ -149,10 +151,10 @@ impl Editor {
 
         if self.search.str.len() > 0 {
             // 初回検索
-            Log::ep("search.index", self.search.index);
+            Log::ep("search.index", &self.search.index);
             if self.search.index == USIZE_UNDEFINED {
                 if self.search.ranges.len() == 0 {
-                    self.search.ranges = self.get_search_ranges(&self.search.str);
+                    self.search.ranges = self.get_search_ranges(&self.search.str, "");
                 }
                 if self.search.ranges.len() > 0 {
                     if self.search.row_num.len() == 0 {
@@ -163,7 +165,7 @@ impl Editor {
                 }
             } else {
                 self.search.index = self.get_search_str_index(is_asc);
-                Log::ep("search.index", self.search.index);
+                Log::ep("search.index", &self.search.index);
             }
 
             if self.search.ranges.len() == 0 {
@@ -171,7 +173,7 @@ impl Editor {
             }
             if self.search.index != USIZE_UNDEFINED {
                 let range = self.search.ranges[self.search.index];
-                Log::ep("search.range", range);
+                Log::ep("search.range", &range);
 
                 self.set_cur_target(range.y, range.sx);
             }
@@ -179,22 +181,39 @@ impl Editor {
             self.scroll_horizontal();
         }
     }
-    pub fn get_search_ranges(&self, search_str: &String) -> Vec<SearchRange> {
-        let mut vec = vec![];
 
-        let search_vec = self.buf.search(&search_str);
-        for (sx, ex) in search_vec {
-            vec.push(SearchRange {
+    pub fn get_search_ranges(&self, search_str: &String, prefix_str: &str) -> Vec<SearchRange> {
+        Log::ep_s("              get_search_ranges");
+
+        let mut rtn_vec = vec![];
+        let mut search_vec = vec![];
+        let mut row_start_idx = 0;
+        // In case of grep_result, search by line, usually all search
+        // grep_result
+        if prefix_str.len() > 0 {
+            row_start_idx = self.buf.line_to_char(self.buf.len_lines() - 2);
+            search_vec = self.buf.search(&search_str, row_start_idx);
+        } else {
+            search_vec = self.buf.search(&search_str, 0);
+        }
+        let pre_str_len = prefix_str.chars().count();
+
+        for (mut sx, mut ex) in search_vec {
+            sx += row_start_idx;
+            ex += row_start_idx;
+
+            let line_idx = self.buf.char_to_line_idx(sx);
+            if line_idx < pre_str_len {
+                continue;
+            }
+            rtn_vec.push(SearchRange {
                 y: self.buf.char_to_line(sx),
                 sx: self.buf.char_to_line_idx(sx),
                 ex: self.buf.char_to_line_idx(ex),
             });
         }
 
-        for s in &vec {
-            Log::ep("SearchRange {:?}", s);
-        }
-        vec
+        return rtn_vec;
     }
 
     pub fn get_search_str_index(&mut self, is_asc: bool) -> usize {
@@ -249,10 +268,47 @@ impl Editor {
         prom.grep();
     }
 
+    pub fn set_grep_result(&mut self) {
+        Log::ep_s("set_grep_result");
+
+        self.rnw = self.buf.len_lines().to_string().len();
+        self.cur = Cur { y: self.buf.len_lines() - 1, x: self.rnw, disp_x: 0 };
+        self.cur.disp_x = self.rnw + get_char_width(self.buf.char(self.cur.y, self.cur.x - self.rnw));
+        self.scroll();
+
+        // -2 is a line break for each line
+        let line_str = self.buf.char_vec_line(self.buf.len_lines() - 2).iter().collect::<String>();
+
+        // Pattern
+        //   text.txt:100:string
+        //   grep:text.txt:No permission
+        let vec: Vec<&str> = line_str.splitn(3, ":").collect();
+
+        if vec.len() > 2 && vec[0] != "grep" {
+            let pre_str = format!("{}:{}:", vec[0], vec[1]);
+
+            let mut ranges = self.get_search_ranges(&self.search.str, &pre_str);
+            self.search.ranges.append(&mut ranges);
+            Log::ep("self.search.ranges.len", &self.search.ranges.len());
+        }
+
+        if vec.len() > 1 {
+            let result: Result<usize, _> = vec[1].parse();
+
+            let grep_result = match result {
+                // text.txt:100:string
+                Ok(row_num) => GrepResult::new(vec[0].to_string(), row_num),
+                // grep:text.txt:No permission
+                Err(_) => GrepResult::new(vec[1].to_string().as_str().trim().to_string(), USIZE_UNDEFINED),
+            };
+            self.grep_result_vec.push(grep_result);
+        }
+    }
+
     pub fn undo(&mut self, mbar: &mut MsgBar) {
         Log::ep_s("　　　　　　　　undo");
         if let Some(ep) = self.history.get_undo_last() {
-            Log::ep("EvtProc", ep.clone());
+            Log::ep("EvtProc", &ep);
             // initial cursor posi set
             match ep.evt_type {
                 EvtType::Cut | EvtType::Del | EvtType::InsertChar | EvtType::Paste => self.set_evtproc(&ep, &ep.cur_s),
@@ -289,7 +345,7 @@ impl Editor {
     pub fn redo(&mut self) {
         Log::ep_s("　　　　　　　　redo");
         if let Some(ep) = self.history.get_redo_last() {
-            Log::ep("EvtProc", ep.clone());
+            Log::ep("EvtProc", &ep);
             self.set_evtproc(&ep, &ep.cur_s);
             self.sel = ep.sel;
             match ep.evt_type {

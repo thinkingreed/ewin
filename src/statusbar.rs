@@ -26,7 +26,7 @@ impl StatusBar {
         // 文字横幅と文字数の差分で調整
         let cur_s = self.get_cur_str(editor);
         let cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
-        Log::ep("self.disp_row_posi", self.disp_row_posi);
+        Log::ep("self.disp_row_posi", &self.disp_row_posi);
 
         let sber_str = format!(
             "{}{}{}{}{}{}",

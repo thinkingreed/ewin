@@ -34,7 +34,7 @@ impl EvtAct {
                         } else {
                             prom.clear();
                             mbar.clear();
-                            editor.d_range.d_type = DrawType::All;
+                            editor.d_range.draw_type = DrawType::All;
                             term.draw(out, editor, mbar, prom, sbar).unwrap();
                         }
                         return EvtActType::Hold;
