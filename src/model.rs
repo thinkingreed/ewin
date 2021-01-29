@@ -1,8 +1,11 @@
 extern crate ropey;
 use crate::{_cfg::lang::lang_cfg::*, def::*};
+use chrono::NaiveDateTime;
 use crossterm::event::{Event, Event::Key, KeyCode::End};
 use ropey::Rope;
 use std::cmp::{max, min};
+use std::collections::BTreeMap;
+use std::collections::VecDeque;
 use std::ffi::OsStr;
 use std::fmt;
 use std::path;
@@ -287,24 +290,24 @@ impl EvtProc {
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// All edit history including undo and redo
 /// History
-pub struct EditHistory {
-    pub history_vec: Vec<HistoryInfo>,
+pub struct History {
+    pub mouse_click_vec: VecDeque<(NaiveDateTime, Event)>,
     pub undo_vec: Vec<EvtProc>,
     pub redo_vec: Vec<EvtProc>,
 }
 
-impl Default for EditHistory {
+impl Default for History {
     fn default() -> Self {
-        EditHistory {
-            history_vec: vec![],
+        History {
+            mouse_click_vec: VecDeque::new(),
             undo_vec: vec![],
             redo_vec: vec![],
         }
     }
 }
-impl fmt::Display for EditHistory {
+impl fmt::Display for History {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "History history_vec:{:?}, undo_vec:{:?}, redo_vec:{:?}, ", self.history_vec, self.undo_vec, self.redo_vec,)
+        write!(f, "History mouse_click_vec:{:?}, undo_vec:{:?}, redo_vec:{:?}, ", self.mouse_click_vec, self.undo_vec, self.redo_vec,)
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -563,11 +566,9 @@ pub struct Editor {
     pub draw: Draw,
     // draw_ranges
     pub d_range: DRange,
-    pub history: EditHistory,
+    pub history: History,
     pub grep_result_vec: Vec<GrepResult>,
     pub key_record_vec: Vec<KeyRecord>,
-    // Corresponding to unexpected display by changing the background color multiple times
-    pub is_default_color: bool,
     pub syntax: Syntax,
 }
 
@@ -597,10 +598,9 @@ impl Editor {
             search: Search::default(),
             draw: Draw::default(),
             d_range: DRange::default(),
-            history: EditHistory::default(),
+            history: History::default(),
             grep_result_vec: vec![],
             key_record_vec: vec![],
-            is_default_color: true,
             syntax: Syntax::default(),
         }
     }

@@ -161,7 +161,6 @@ fn run_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, m
 
     if let Some(Ok(event)) = maybe_event {
         editor.evt = event.clone();
-
         is_exit = EvtAct::match_event(out, term, editor, mbar, prom, sbar);
         if is_exit {
             execute!(out, DisableMouseCapture).unwrap();

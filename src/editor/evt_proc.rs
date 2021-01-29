@@ -19,7 +19,7 @@ impl Editor {
             self.del_sel_range();
             self.sel.clear();
             ep.d_range = self.d_range;
-            self.history.regist(self.evt, ep);
+            self.history.regist_edit(self.evt, ep);
         }
 
         // not selected Del, BS, Cut or InsertChar, Paste, Enter
@@ -41,7 +41,7 @@ impl Editor {
             }
             ep.cur_e = self.cur;
             ep.d_range = self.d_range;
-            self.history.regist(self.evt, ep);
+            self.history.regist_edit(self.evt, ep);
         }
         self.scroll();
         self.scroll_horizontal();

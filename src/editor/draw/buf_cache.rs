@@ -19,22 +19,15 @@ impl Editor {
             self.draw.regions.resize_with(self.buf.len_lines() as usize, || vec![]);
         }
 
-        self.draw.sy = self.offset_y;
-        self.draw.ey = min(self.buf.len_lines() - 1, self.offset_y + self.disp_row_num - 1);
-
         let d_range = self.d_range.get_range();
-
         match d_range.draw_type {
-            DrawType::Target => {
+            DrawType::Target | DrawType::After | DrawType::ScrollDown | DrawType::ScrollUp => {
                 self.draw.sy = d_range.sy;
                 self.draw.ey = d_range.ey;
             }
-            DrawType::After => {
-                self.draw.sy = d_range.sy;
-            }
-            DrawType::ScrollDown | DrawType::ScrollUp => {
-                self.draw.sy = d_range.sy;
-                self.draw.ey = d_range.sy;
+            DrawType::All | DrawType::None => {
+                self.draw.sy = self.offset_y;
+                self.draw.ey = min(self.buf.len_lines() - 1, self.offset_y + self.disp_row_num - 1);
             }
             _ => {}
         }
@@ -57,8 +50,9 @@ impl Editor {
             DrawType::Not | DrawType::ScrollUp => {}
         }
     }
-    pub fn set_draw_regions(&mut self, highlighter: &Highlighter) {
+    fn set_draw_regions(&mut self, highlighter: &Highlighter) {
         let sel_ranges = self.sel.get_range();
+
         for y in self.draw.sy..=self.draw.ey {
             let row_vec = self.buf.char_vec_line(y);
             if is_enable_highlight(&self.extension) {
@@ -69,7 +63,7 @@ impl Editor {
         }
     }
 
-    pub fn set_regions_highlight(&mut self, y: usize, row_vec: Vec<char>, sel_ranges: SelRange, highlighter: &Highlighter) {
+    fn set_regions_highlight(&mut self, y: usize, row_vec: Vec<char>, sel_ranges: SelRange, highlighter: &Highlighter) {
         // Log::ep_s("                  set_regions");
 
         let mut regions: Vec<Region> = vec![];
@@ -113,7 +107,7 @@ impl Editor {
         // Log::ep("regions", regions.clone());
     }
 
-    pub fn set_regions(&mut self, y: usize, row_vec: Vec<char>, sel_ranges: SelRange) {
+    fn set_regions(&mut self, y: usize, row_vec: Vec<char>, sel_ranges: SelRange) {
         // Log::ep_s("                  set_regions");
 
         let mut regions: Vec<Region> = vec![];

@@ -161,9 +161,10 @@ impl Editor {
         }
         if offset_y_org != self.offset_y {
             if self.evt == DOWN {
-                self.d_range = DRange::new(self.offset_y + self.disp_row_num - 1, 0, DrawType::ScrollDown);
+                let y = self.offset_y + self.disp_row_num - 1;
+                self.d_range = DRange::new(y, y, DrawType::ScrollDown);
             } else if self.evt == UP {
-                self.d_range = DRange::new(self.offset_y, 0, DrawType::ScrollUp);
+                self.d_range = DRange::new(self.offset_y, self.offset_y, DrawType::ScrollUp);
             } else {
                 self.d_range.draw_type = DrawType::All;
             }
