@@ -5,7 +5,7 @@ use std::io::Write;
 use std::path::Path;
 
 impl EvtAct {
-    pub fn grep<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn grep<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         Log::ep_s("Process.replace");
 
         match editor.evt {
@@ -37,10 +37,10 @@ impl EvtAct {
                         prom.cache_search_filenm = search_filenm.clone();
                         prom.cache_search_folder = search_folder.clone();
 
-                        term.startup_terminal(format!(r#"search_str={} search_file={}"#, search_str, path.to_string_lossy().to_string()));
+                        Terminal::startup_terminal(format!(r#"search_str={} search_file={}"#, search_str, path.to_string_lossy().to_string()));
                     }
                     editor.d_range.draw_type = DrawType::All;
-                    term.draw(out, editor, mbar, prom, sbar).unwrap();
+                    Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
                     return EvtActType::Hold;
                 }
                 _ => return EvtActType::Hold,
@@ -53,9 +53,9 @@ impl EvtAct {
 impl Prompt {
     pub fn grep(&mut self) {
         self.disp_row_num = 8;
-        let mut cont_1 = PromptCont::new(self.lang.clone());
-        let mut cont_2 = PromptCont::new(self.lang.clone());
-        let mut cont_3 = PromptCont::new(self.lang.clone());
+        let mut cont_1 = PromptCont::new();
+        let mut cont_2 = PromptCont::new();
+        let mut cont_3 = PromptCont::new();
         cont_1.set_grep(self, PromptBufPosi::First);
         cont_2.set_grep(self, PromptBufPosi::Second);
         cont_3.set_grep(self, PromptBufPosi::Third);
@@ -68,27 +68,27 @@ impl Prompt {
 impl PromptCont {
     pub fn set_grep(&mut self, prom: &Prompt, cont_type: PromptBufPosi) {
         if cont_type == PromptBufPosi::First {
-            self.guide = format!("{}{}", Colors::get_msg_fg(), self.lang.set_grep.clone());
+            self.guide = format!("{}{}", Colors::get_msg_fg(), &LANG.set_grep);
             self.key_desc = format!(
                 "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Ctrl + c  {}{}:{}Tab {}({})",
                 Colors::get_default_fg(),
-                self.lang.search.clone(),
+                &LANG.search,
                 Colors::get_msg_fg(),
                 Colors::get_default_fg(),
-                self.lang.move_input_field.clone(),
+                &LANG.move_input_field,
                 Colors::get_msg_fg(),
                 Colors::get_default_fg(),
-                self.lang.close.clone(),
+                &LANG.close,
                 Colors::get_msg_fg(),
                 Colors::get_default_fg(),
-                self.lang.complement.clone(),
+                &LANG.complement,
                 Colors::get_msg_fg(),
                 Colors::get_default_fg(),
-                self.lang.search_folder.clone(),
+                &LANG.search_folder,
             );
-            self.buf_desc = format!("{}{}{}", Colors::get_msg_fg(), self.lang.search_str.clone(), Colors::get_default_fg());
+            self.buf_desc = format!("{}{}{}", Colors::get_msg_fg(), &LANG.search_str, Colors::get_default_fg());
         } else if cont_type == PromptBufPosi::Second {
-            self.buf_desc = format!("{}{}{}", Colors::get_msg_fg(), self.lang.search_file.clone(), Colors::get_default_fg());
+            self.buf_desc = format!("{}{}{}", Colors::get_msg_fg(), &LANG.search_file, Colors::get_default_fg());
 
             if prom.cache_search_filenm.len() > 0 {
                 self.buf = prom.cache_search_filenm.chars().collect();
@@ -96,7 +96,7 @@ impl PromptCont {
                 self.buf = "*.*".chars().collect();
             }
         } else {
-            self.buf_desc = format!("{}{}{}", Colors::get_msg_fg(), self.lang.search_folder.clone(), Colors::get_default_fg());
+            self.buf_desc = format!("{}{}{}", Colors::get_msg_fg(), &LANG.search_folder, Colors::get_default_fg());
             if prom.cache_search_folder.len() > 0 {
                 self.buf = prom.cache_search_folder.chars().collect();
             } else {

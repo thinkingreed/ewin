@@ -3,7 +3,7 @@ use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::cmp::{max, min};
 use unicode_width::UnicodeWidthChar;
 
-impl Editor {
+impl Core {
     // adjusting vertical posi of cursor
     pub fn scroll(&mut self) {
         // Log::ep_s("　　　　　　　 scroll");

@@ -2,17 +2,14 @@
 extern crate clap;
 use clap::{App, Arg};
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture},
     event::{Event, EventStream},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ErrorKind,
 };
-use ewin::{_cfg::lang::lang_cfg::*, global::*, model::*};
+use ewin::model::*;
 use futures::{future::FutureExt, select, StreamExt};
 use std::ffi::OsStr;
 use std::io::{stdout, BufWriter, Write};
-use std::path::{Path, PathBuf};
+use std::panic;
 use tokio_util::codec::{FramedRead, LinesCodec};
 
 #[tokio::main]
@@ -20,88 +17,44 @@ async fn main() {
     let matches = App::new("ewin").version(crate_version!()).bin_name("ewin").arg(Arg::with_name("file").required(false)).get_matches();
     let file_path: String = matches.value_of_os("file").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
 
-    //  let syntax_parent = SyntaxParent::default();
-
-    let mut editor = Editor::new();
-    let lang_cfg = LangCfg::read_lang_cfg();
-
-    let mut term = Terminal::default();
-    // ターミナルサイズが小さい場合に処理終了
-    if !term.check_displayable(&lang_cfg) {
+    // Processing ends when the terminal size is small
+    if !Terminal::check_displayable() {
         return;
     }
+    let default_hook = panic::take_hook();
+    panic::set_hook(Box::new(move |e| {
+        eprintln!("{}", e);
+        Terminal::exit();
+        // Set hook to log crash reason
+        default_hook(e);
+    }));
 
-    let mut sbar = StatusBar::new(lang_cfg.clone());
+    let mut editor = Core::new();
     let mut mbar = MsgBar::new();
-    let mut prom = Prompt::new(lang_cfg.clone());
+    let mut prom = Prompt::new();
+    let mut sbar = StatusBar::new();
 
-    term.set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
+    Terminal::set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
+    Terminal::init();
+    Terminal::activate(&mut editor, &mut mbar, &mut prom, &mut sbar, file_path);
 
-    // grep_result
-    if file_path.match_indices("search_str").count() > 0 && file_path.match_indices("search_file").count() > 0 {
-        let v: Vec<&str> = file_path.split_ascii_whitespace().collect();
-        let search_strs: Vec<&str> = v[0].split("=").collect();
-        editor.search.str = search_strs[1].to_string();
-        let search_files: Vec<&str> = v[1].split("=").collect();
-        editor.search.file = search_files[1].to_string();
-
-        let path = PathBuf::from(&editor.search.file);
-        let filenm = path.file_name().unwrap_or(OsStr::new("")).to_string_lossy().to_string();
-        let path_str = path.to_string_lossy().to_string();
-        editor.search.folder = path_str.replace(&filenm, "");
-        editor.search.filenm = path.file_name().unwrap_or(OsStr::new("")).to_string_lossy().to_string();
-
-        if file_path.match_indices("search_row_num").count() == 0 {
-            sbar.filenm = format!("grep \"{}\" {}", &editor.search.str, &editor.search.file);
-            prom.is_grep_result = true;
-            prom.is_grep_stdout = true;
-            prom.is_grep_stderr = true;
-            prom.grep_result();
-            editor.set_cur_default();
-            mbar.set_info(&LANG.searching);
-        } else {
-            sbar.filenm = editor.search.file.clone();
-            let search_row_nums: Vec<&str> = v[2].split("=").collect();
-            editor.search.row_num = search_row_nums[1].to_string();
-            Log::ep("search_row_num", &editor.search.row_num.clone());
-            editor.open(Path::new(&sbar.filenm), &mut mbar);
-            editor.search_str(true);
-            //   editor.d_range = DRnage { d_type: DType::All, ..DRnage::default() };
-        }
-
-    // Normal
-    } else {
-        if file_path.len() == 0 {
-            sbar.filenm_tmp = lang_cfg.new_file.clone();
-        } else {
-            sbar.filenm = file_path.to_string();
-        }
-        editor.open(Path::new(&file_path), &mut mbar);
-    }
-
-    // let stdout = MouseTerminal::from(AlternateScreen::from(stdout()).into_raw_mode().unwrap());
-    //let mut out = BufWriter::new(stdout.lock());
-
-    enable_raw_mode().unwrap();
     let out = stdout();
     let mut out = BufWriter::new(out.lock());
-    execute!(out, EnableMouseCapture).unwrap();
-    execute!(out, EnterAlternateScreen).unwrap();
 
-    term.draw(&mut out, &mut editor, &mut mbar, &mut prom, &mut sbar).unwrap();
+    Terminal::draw(&mut out, &mut editor, &mut mbar, &mut prom, &mut sbar).unwrap();
 
     if prom.is_grep_result {
-        if let Err(err) = exec_events_grep_result(&mut out, &mut term, &mut editor, &mut mbar, &mut prom, &mut sbar).await {
+        if let Err(err) = exec_events_grep_result(&mut out, &mut editor, &mut mbar, &mut prom, &mut sbar).await {
             Log::ep("err", &err.to_string());
         }
     } else {
-        if let Err(err) = exec_events(&mut out, &mut term, &mut editor, &mut mbar, &mut prom, &mut sbar).await {
+        if let Err(err) = exec_events(&mut out, &mut editor, &mut mbar, &mut prom, &mut sbar).await {
             Log::ep("err", &err.to_string());
         }
     }
 }
 
-async fn exec_events_grep_result<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> anyhow::Result<()> {
+async fn exec_events_grep_result<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> anyhow::Result<()> {
     // It also reads a normal Event to support cancellation.
     let mut reader = EventStream::new();
     let mut child = EvtAct::exec_grep(editor);
@@ -117,19 +70,19 @@ async fn exec_events_grep_result<T: Write>(out: &mut T, term: &mut Terminal, edi
             let mut std_err_str = reader_stderr.next().fuse();
             select! {
                 std_out_event = std_out_str => {
-                    EvtAct::draw_grep_result(out, term, editor, mbar, prom, sbar, std_out_event, true,&mut child);
+                    EvtAct::draw_grep_result(out, editor, mbar, prom, sbar, std_out_event, true,&mut child);
                 },
                 std_err_event = std_err_str => {
-                    EvtAct::draw_grep_result(out, term, editor, mbar, prom, sbar, std_err_event, false, &mut child);
+                    EvtAct::draw_grep_result(out, editor, mbar, prom, sbar, std_err_event, false, &mut child);
                 },
                 maybe_event = event_next => {
-                    is_exit =  run_events(out,  term,  editor, mbar, prom,  sbar, maybe_event);
+                    is_exit =  run_events(out, editor, mbar, prom,  sbar, maybe_event);
                 }
             }
         } else {
             select! {
             maybe_event = event_next => {
-                is_exit =  run_events(out,  term,  editor, mbar, prom,  sbar, maybe_event);
+                is_exit =  run_events(out,  editor, mbar, prom,  sbar, maybe_event);
             }}
         }
         if is_exit {
@@ -139,14 +92,14 @@ async fn exec_events_grep_result<T: Write>(out: &mut T, term: &mut Terminal, edi
     Ok(())
 }
 
-async fn exec_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> anyhow::Result<()> {
+async fn exec_events<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> anyhow::Result<()> {
     let mut reader = EventStream::new();
     let mut is_exit = false;
     loop {
         let mut event_next = reader.next().fuse();
         select! {
             maybe_event = event_next => {
-                is_exit =  run_events(out,  term,  editor, mbar, prom,  sbar, maybe_event);
+                is_exit =  run_events(out, editor, mbar, prom,  sbar, maybe_event);
             }
         }
         if is_exit {
@@ -156,16 +109,14 @@ async fn exec_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Ed
     Ok(())
 }
 
-fn run_events<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, maybe_event: Option<Result<Event, ErrorKind>>) -> bool {
+fn run_events<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, maybe_event: Option<Result<Event, ErrorKind>>) -> bool {
     let mut is_exit = false;
 
     if let Some(Ok(event)) = maybe_event {
         editor.evt = event.clone();
-        is_exit = EvtAct::match_event(out, term, editor, mbar, prom, sbar);
+        is_exit = EvtAct::match_event(out, editor, mbar, prom, sbar);
         if is_exit {
-            execute!(out, DisableMouseCapture).unwrap();
-            execute!(out, LeaveAlternateScreen).unwrap();
-            disable_raw_mode().unwrap();
+            Terminal::exit();
         }
     }
     return is_exit;

@@ -158,3 +158,15 @@ pub fn is_enable_highlight(ext: &str) -> bool {
         return true;
     }
 }
+
+pub fn get_char_type(c: char) -> CharType {
+    if DELIM_STR.contains(c) {
+        return CharType::Delim;
+    } else if HALF_SPACE.contains(c) {
+        return CharType::HalfSpace;
+    } else if FULL_SPACE.contains(c) {
+        return CharType::FullSpace;
+    } else {
+        return CharType::Nomal;
+    }
+}

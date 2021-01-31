@@ -1,10 +1,9 @@
 use crate::{def::*, global::*, model::*, util::*};
 use std::iter::FromIterator;
-use std::time::{Duration, Instant};
 
 use std::path::Path;
 
-impl Editor {
+impl Core {
     pub fn all_select(&mut self) {
         self.sel.clear();
         self.sel.set_s(0, 0, self.rnw + 1);
@@ -186,7 +185,7 @@ impl Editor {
         Log::ep_s("              get_search_ranges");
 
         let mut rtn_vec = vec![];
-        let mut search_vec = vec![];
+        let search_vec;
         let mut row_start_idx = 0;
         // In case of grep_result, search by line, usually all search
         // grep_result

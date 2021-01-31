@@ -1,10 +1,9 @@
-use crate::_cfg::lang::lang_cfg::*;
 use crate::model::*;
 use std::cmp::min;
 
 impl PromptCont {
-    pub fn new(lang_cfg: LangCfg) -> Self {
-        PromptCont { lang: lang_cfg, ..PromptCont::default() }
+    pub fn new() -> Self {
+        PromptCont { ..PromptCont::default() }
     }
 
     /// 選択箇所のhighlight

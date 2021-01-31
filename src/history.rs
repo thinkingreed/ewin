@@ -1,6 +1,5 @@
 use crate::{def::*, model::*};
 use chrono::prelude::Local;
-use chrono::NaiveDateTime;
 use crossterm::event::Event;
 
 impl History {

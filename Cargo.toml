@@ -36,6 +36,7 @@ unicode-width = "0"
 clipboard = "0.5.0"
 crossterm  = {version ="0.19.0", features = ["event-stream"]} 
 serde = { version = "1.0.118", features = ["derive"] }
+serde_json = "1.0"
 toml = "0.5.8"
 cargo-deb = "1.28.2"
 tokio = { version = "1.0.1", features = ["full"] }

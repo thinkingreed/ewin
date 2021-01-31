@@ -10,7 +10,7 @@ use std::path::Path;
 use syntect::parsing::SyntaxSet;
 use unicode_width::UnicodeWidthChar;
 
-impl Editor {
+impl Core {
     pub fn open(&mut self, path: &path::Path, mbar: &mut MsgBar) {
         Log::ep_s("           open");
 
@@ -64,7 +64,7 @@ impl Editor {
         } else {
             self.syntax.syntax = self.syntax.syntax_set.find_syntax_by_extension("txt").unwrap().clone();
         }
-        self.syntax.theme = self.syntax.theme_set.themes[global::CFG.lock().unwrap()["THEME"]].clone();
+        self.syntax.theme = self.syntax.theme_set.themes["base16-ocean.dark"].clone();
         self.set_cur_default();
     }
 

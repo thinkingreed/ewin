@@ -39,9 +39,9 @@ impl MsgBar {
         }
     }
 
-    pub fn draw_only<T: Write>(&mut self, out: &mut T, term: &mut Terminal, editor: &mut Editor, prom: &mut Prompt, sbar: &mut StatusBar) {
+    pub fn draw_only<T: Write>(&mut self, out: &mut T, editor: &mut Core, prom: &mut Prompt, sbar: &mut StatusBar) {
         // Log::ep_s("　　　　　　　　MsgBar.draw");
-        term.set_disp_size(editor, self, prom, sbar);
+        Terminal::set_disp_size(editor, self, prom, sbar);
 
         if self.msg_readonly.len() > 0 {
             write!(out, "{}", self.get_disp_readonly_msg()).unwrap();

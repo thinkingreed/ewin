@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::Path;
 
 impl EvtAct {
-    pub fn save_new_filenm<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn save_new_filenm<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         match editor.evt {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {
@@ -19,7 +19,7 @@ impl EvtAct {
                         sbar.filenm = filenm;
                         editor.save(mbar, prom, sbar);
                     }
-                    term.draw(out, editor, mbar, prom, sbar).unwrap();
+                    Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
                     return EvtActType::Hold;
                 }
                 _ => return EvtActType::Hold,
@@ -32,7 +32,7 @@ impl EvtAct {
 impl Prompt {
     pub fn save_new_file(&mut self) {
         self.disp_row_num = 3;
-        let mut cont = PromptCont::new(self.lang.clone());
+        let mut cont = PromptCont::new();
         cont.set_new_file_name();
         self.cont_1 = cont;
     }
@@ -40,14 +40,14 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_new_file_name(&mut self) {
-        self.guide = format!("{}{}", Colors::get_msg_fg(), self.lang.set_new_filenm.clone());
+        self.guide = format!("{}{}", Colors::get_msg_fg(), &LANG.set_new_filenm);
         self.key_desc = format!(
             "{}{}:{}Enter  {}{}:{}Ctrl + c{}",
             Colors::get_default_fg(),
-            self.lang.fixed.clone(),
+            &LANG.fixed,
             Colors::get_msg_fg(),
             Colors::get_default_fg(),
-            self.lang.cancel.clone(),
+            &LANG.cancel,
             Colors::get_msg_fg(),
             Colors::get_default_fg(),
         );

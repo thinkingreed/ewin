@@ -1,10 +1,9 @@
 extern crate ropey;
-use crate::{_cfg::lang::lang_cfg::*, def::*};
+use crate::def::*;
 use chrono::NaiveDateTime;
 use crossterm::event::{Event, Event::Key, KeyCode::End};
 use ropey::Rope;
 use std::cmp::{max, min};
-use std::collections::BTreeMap;
 use std::collections::VecDeque;
 use std::ffi::OsStr;
 use std::fmt;
@@ -58,8 +57,6 @@ pub enum EvtActType {
     Exit,
 }
 pub struct Prompt {
-    pub lang: LangCfg,
-    /// ターミナル上の表示関連
     pub disp_row_num: usize,
     pub disp_row_posi: usize,
     pub disp_col_num: usize,
@@ -94,7 +91,6 @@ pub struct Prompt {
 impl Default for Prompt {
     fn default() -> Self {
         Prompt {
-            lang: LangCfg::default(),
             disp_row_num: 0,
             disp_row_posi: 0,
             disp_col_num: 0,
@@ -123,8 +119,8 @@ impl Default for Prompt {
 }
 
 impl Prompt {
-    pub fn new(lang_cfg: LangCfg) -> Self {
-        Prompt { lang: lang_cfg, ..Prompt::default() }
+    pub fn new() -> Self {
+        Prompt { ..Prompt::default() }
     }
 
     pub fn clear(&mut self) {
@@ -168,7 +164,6 @@ impl fmt::Display for TabComp {
 
 #[derive(Debug, Clone)]
 pub struct PromptCont {
-    pub lang: LangCfg,
     pub guide: String,
     pub key_desc: String,
     pub buf_desc: String,
@@ -181,7 +176,6 @@ pub struct PromptCont {
 impl Default for PromptCont {
     fn default() -> Self {
         PromptCont {
-            lang: LangCfg::default(),
             guide: String::new(),
             key_desc: String::new(),
             buf_desc: String::new(),
@@ -209,14 +203,8 @@ pub enum Env {
 pub struct Terminal {
     // pub env: Env,
 }
-impl Default for Terminal {
-    fn default() -> Self {
-        Terminal {}
-    }
-}
 #[derive(Debug, Clone)]
 pub struct StatusBar {
-    pub lang: LangCfg,
     pub filenm: String,
     // 起動時ファイル未指定の場合の仮ファイル名
     pub filenm_tmp: String,
@@ -232,7 +220,6 @@ pub struct StatusBar {
 impl Default for StatusBar {
     fn default() -> Self {
         StatusBar {
-            lang: LangCfg::default(),
             filenm: String::new(),
             filenm_tmp: String::new(),
             filenm_disp: String::new(),
@@ -532,7 +519,7 @@ impl fmt::Display for Cur {
 
 // エディタの内部状態
 #[derive(Debug)]
-pub struct Editor {
+pub struct Core {
     pub buf: TextBuffer,
     pub buf_cache: Vec<Vec<char>>,
     /// current cursor position
@@ -554,7 +541,7 @@ pub struct Editor {
     pub path: Option<path::PathBuf>,
     pub path_str: String,
     pub extension: String,
-    /// 行番号の列数 row_num_width
+    // row_number_width
     pub rnw: usize,
     pub sel: SelRange,
     pub evt: Event,
@@ -572,9 +559,9 @@ pub struct Editor {
     pub syntax: Syntax,
 }
 
-impl Editor {
+impl Core {
     pub fn new() -> Self {
-        Editor {
+        Core {
             buf: TextBuffer::default(),
             buf_cache: vec![],
             cur: Cur::default(),
@@ -605,7 +592,6 @@ impl Editor {
         }
     }
 }
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TextBuffer {
     pub text: Rope,
@@ -661,12 +647,13 @@ pub enum CharStyleType {
     CtrlChar,
 }
 
-/*
-impl Default for Color {
-    fn default() -> Self {
-        //    Self::Reset
-    }
-}*/
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CharType {
+    Nomal,
+    Delim,
+    HalfSpace,
+    FullSpace,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CharStyle {

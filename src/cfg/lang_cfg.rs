@@ -1,4 +1,4 @@
-use crate::_cfg::lang::lang::LANG_CONFIG;
+use crate::cfg::lang::LANG_CONFIG;
 use serde::Deserialize;
 use std::env;
 

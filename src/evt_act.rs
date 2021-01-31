@@ -1,4 +1,4 @@
-use crate::{def::*, global::*, model::*};
+use crate::{global::*, model::*};
 use crossterm::{
     event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind},
     terminal::*,
@@ -6,16 +6,16 @@ use crossterm::{
 use std::io::Write;
 
 impl EvtAct {
-    pub fn match_event<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> bool {
+    pub fn match_event<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> bool {
         match editor.evt {
             Mouse(M_Event { kind: M_Kind::Moved, .. }) => return false,
             _ => {}
         }
 
-        term.hide_cur(out);
+        Terminal::hide_cur();
         mbar.msg_org = mbar.msg.clone();
 
-        let evt_next_process = EvtAct::check_next_process(out, term, editor, mbar, prom, sbar);
+        let evt_next_process = EvtAct::check_next_process(out, editor, mbar, prom, sbar);
 
         match evt_next_process {
             EvtActType::Exit => return true,
@@ -34,7 +34,7 @@ impl EvtAct {
                     match editor.evt {
                         Resize(_, _) => {
                             write!(out, "{}", Clear(ClearType::All)).unwrap();
-                            term.set_disp_size(editor, mbar, prom, sbar);
+                            Terminal::set_disp_size(editor, mbar, prom, sbar);
                         }
 
                         Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
@@ -68,8 +68,8 @@ impl EvtAct {
                             Home => editor.shift_home(),
                             End => editor.shift_end(),
                             Char(c) => editor.exec_edit_proc(EvtType::InsertChar, &c.to_ascii_uppercase().to_string()),
-                            F(1) => editor.record_key_start(term, mbar, prom, sbar),
-                            F(2) => editor.exec_record_key(out, term, mbar, prom, sbar),
+                            F(1) => editor.record_key_start(mbar, prom, sbar),
+                            F(2) => editor.exec_record_key(out, mbar, prom, sbar),
                             F(4) => editor.search_str(false),
                             _ => mbar.set_err(&LANG.unsupported_operation),
                         },
@@ -92,7 +92,7 @@ impl EvtAct {
                         Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => editor.cur_up(),
                         Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => editor.cur_down(),
                         Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, true),
-                        Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: x, row: y, .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => {} // editor.ctrl_mouse((x + 1) as usize, y as usize, false),
+                        Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: x, row: y, .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, false),
                         _ => mbar.set_err(&LANG.unsupported_operation),
                     }
 
@@ -118,16 +118,16 @@ impl EvtAct {
                 }
                 // key_record実行時は最終時のみredraw
                 if editor.d_range.draw_type != DrawType::Not || (prom.is_key_record_exec == false || prom.is_key_record_exec == true && prom.is_key_record_exec_draw == true) {
-                    term.draw(out, editor, mbar, prom, sbar).unwrap();
+                    Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
                 }
             }
         }
 
-        term.show_cur(out);
+        Terminal::show_cur();
         return false;
     }
 
-    pub fn init(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) {
+    pub fn init(editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt) {
         Log::ep_s("init");
 
         // updown_xの初期化
@@ -213,7 +213,7 @@ impl EvtAct {
         }
     }
 
-    pub fn finalize(editor: &mut Editor) {
+    pub fn finalize(editor: &mut Core) {
         Log::ep_s("finalize");
 
         // set sel draw range, Clear sel range
@@ -249,7 +249,7 @@ impl EvtAct {
             editor.search.ranges = editor.get_search_ranges(&editor.search.str, "");
         }
     }
-    pub fn check_err(editor: &mut Editor, mbar: &mut MsgBar) -> bool {
+    pub fn check_err(editor: &mut Core, mbar: &mut MsgBar) -> bool {
         let is_return = false;
         Log::ep_s("check_err");
 

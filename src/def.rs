@@ -12,7 +12,9 @@ pub const NEW_LINE_MARK: char = '↲';
 pub const EOF_MARK: char = '▚';
 pub const EOF_STR: &str = "EOF";
 pub const MULTI_CLICK_MILLISECONDS: i64 = 500;
-pub const DELIM_STR: &'static str = r#" 　!"\#$%&()*+-',./:;<=>?@[]^`{|}~"#;
+pub const DELIM_STR: &'static str = r#"!"\#$%&()*+-',./:;<=>?@[]^`{|}~"#;
+pub const HALF_SPACE: &'static str = " ";
+pub const FULL_SPACE: &'static str = "　";
 /// Event
 pub const RIGHT: Event = Key(KeyEvent { code: Right, modifiers: KeyModifiers::NONE });
 pub const LEFT: Event = Key(KeyEvent { code: Left, modifiers: KeyModifiers::NONE });

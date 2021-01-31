@@ -1,15 +1,15 @@
 pub mod global {
-    use crate::{_cfg::lang::lang_cfg::*, model::*, util::*};
+    use crate::{
+        cfg::{cfg::*, lang_cfg::*},
+        model::*,
+        util::*,
+    };
     use once_cell::sync::Lazy;
-    use std::{collections::HashMap, sync::Mutex};
+    use std::sync::Mutex;
 
     pub static LANG: Lazy<LangCfg> = Lazy::new(|| LangCfg::read_lang_cfg());
     pub static ENV: Lazy<Env> = Lazy::new(|| get_env());
-    pub static CFG: Lazy<Mutex<HashMap<&str, &str>>> = Lazy::new(|| {
-        let mut m = HashMap::new();
-        m.insert("THEME", "base16-ocean.dark");
-        Mutex::new(m)
-    });
+    pub static CFG: Lazy<Mutex<Cfg>> = Lazy::new(|| Mutex::new(Cfg::read_cfg()));
 }
 pub mod colors;
 pub mod def;
@@ -52,9 +52,8 @@ pub mod msgbar;
 pub mod statusbar;
 pub mod terminal;
 pub mod util;
-pub mod _cfg {
-    pub mod lang {
-        pub mod lang;
-        pub mod lang_cfg;
-    }
+pub mod cfg {
+    pub mod cfg;
+    pub mod lang;
+    pub mod lang_cfg;
 }

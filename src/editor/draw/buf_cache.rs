@@ -5,7 +5,7 @@ use syntect::highlighting::{HighlightIterator, HighlightState, Highlighter, Styl
 use syntect::parsing::{ParseState, ScopeStack};
 use unicode_width::UnicodeWidthChar;
 
-impl Editor {
+impl Core {
     pub fn draw_cache(&mut self) {
         Log::ep_s("　　　　　　　draw_cache");
 
@@ -69,7 +69,7 @@ impl Editor {
         let mut regions: Vec<Region> = vec![];
         let row = row_vec.iter().collect::<String>();
 
-        let mut scope;
+        let scope;
         let mut parse;
 
         if self.draw.syntax_state_vec.len() == 0 || y == 0 {
@@ -152,18 +152,25 @@ impl Editor {
 }
 
 impl Draw {
-    pub fn ctrl_style_type(&self, c: char, width: usize, sel_ranges: &SelRange, search_ranges: &Vec<SearchRange>, rnw: usize, y: usize, x: usize) -> CharStyleType {
-        if sel_ranges.is_selected() && sel_ranges.sy <= y && y <= sel_ranges.ey {
-            let disp_x = width + rnw + 1;
+    pub fn ctrl_style_type(&self, c: char, width: usize, sel_range: &SelRange, search_ranges: &Vec<SearchRange>, rnw: usize, y: usize, x: usize) -> CharStyleType {
+        if sel_range.is_selected() && sel_range.sy <= y && y <= sel_range.ey {
+            Log::ep("ccc", &c);
+            Log::ep("xxx", &x);
+            Log::ep("width", &width);
+
+            let disp_x = width + rnw;
+            Log::ep("disp_x", &disp_x);
+
             // Lines with the same start and end
             // Start line
             // End line
             // Intermediate line
-            if (sel_ranges.sy == sel_ranges.ey && sel_ranges.s_disp_x <= disp_x && disp_x < sel_ranges.e_disp_x)
-                || (sel_ranges.sy == y && sel_ranges.ey != y && sel_ranges.s_disp_x <= disp_x)
-                || (sel_ranges.ey == y && sel_ranges.sy != y && disp_x < sel_ranges.e_disp_x)
-                || (sel_ranges.sy < y && y < sel_ranges.ey)
+            if (sel_range.sy == sel_range.ey && sel_range.s_disp_x <= disp_x && disp_x < sel_range.e_disp_x)
+                || (sel_range.sy == y && sel_range.ey != y && sel_range.s_disp_x <= disp_x)
+                || (sel_range.ey == y && sel_range.sy != y && disp_x < sel_range.e_disp_x)
+                || (sel_range.sy < y && y < sel_range.ey)
             {
+                Log::ep_s("Select Select Select Select Select Select Select");
                 return CharStyleType::Select;
             }
         }

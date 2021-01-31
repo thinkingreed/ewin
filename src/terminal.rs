@@ -1,16 +1,22 @@
-use crate::{_cfg::lang::lang_cfg::*, global::ENV, model::*};
+use crate::{global::*, model::*};
 use crossterm::{cursor::*, terminal::*};
-use std::io::{self, Write};
+use crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
+use std::ffi::OsStr;
+use std::io::{self, stdout, Write};
 use std::path::Path;
+use std::path::PathBuf;
 use std::process;
 use std::process::Command;
 
 impl Terminal {
-    pub fn draw<T: Write>(&mut self, out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> Result<(), io::Error> {
+    pub fn draw<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> Result<(), io::Error> {
         Log::ep_s("　　　　　　　　All draw");
 
-        self.set_disp_size(editor, mbar, prom, sbar);
-
+        Terminal::set_disp_size(editor, mbar, prom, sbar);
         let mut str_vec: Vec<String> = vec![];
 
         let d_range = editor.d_range;
@@ -26,7 +32,7 @@ impl Terminal {
         prom.draw(&mut str_vec);
         sbar.draw(&mut str_vec, editor);
 
-        self.draw_cur(&mut str_vec, editor, prom);
+        Terminal::draw_cur(&mut str_vec, editor, prom);
 
         let _ = out.write(&str_vec.concat().as_bytes());
         out.flush()?;
@@ -34,7 +40,7 @@ impl Terminal {
         return Ok(());
     }
 
-    pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor, prom: &mut Prompt) {
+    pub fn draw_cur(str_vec: &mut Vec<String>, editor: &mut Core, prom: &mut Prompt) {
         // Log::ep_s("　　　　　　　set_cur_str");
 
         if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep {
@@ -44,16 +50,16 @@ impl Terminal {
         }
     }
 
-    pub fn check_displayable(&mut self, lang_cfg: &LangCfg) -> bool {
+    pub fn check_displayable() -> bool {
         let (cols, rows) = size().unwrap();
         if cols < 20 || rows < 8 {
-            println!("{:?}", lang_cfg.terminal_size_small);
+            println!("{:?}", &LANG.terminal_size_small);
             return false;
         }
         return true;
     }
 
-    pub fn set_disp_size(&mut self, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
+    pub fn set_disp_size(editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
         let (cols, rows) = size().unwrap();
         let (cols, rows) = (cols as usize, rows as usize);
 
@@ -102,15 +108,13 @@ impl Terminal {
         */
     }
 
-    pub fn show_cur<T: Write>(&mut self, out: &mut T) {
-        write!(out, "{}", Show).unwrap();
-        out.flush().unwrap();
+    pub fn show_cur() {
+        execute!(stdout(), Show).unwrap();
     }
-    pub fn hide_cur<T: Write>(&mut self, out: &mut T) {
-        write!(out, "{}", Hide).unwrap();
-        out.flush().unwrap();
+    pub fn hide_cur() {
+        execute!(stdout(), Hide).unwrap();
     }
-    pub fn startup_terminal(&mut self, search_strs: String) {
+    pub fn startup_terminal(search_strs: String) {
         Log::ep("search_strs", &search_strs);
 
         let mut exe_path = "/home/hi/rust/ewin/target/release/ewin";
@@ -144,6 +148,58 @@ impl Terminal {
                 Log::ep("startup_terminal err", &err.to_string());
             }
         };
+    }
+    pub fn init() {
+        enable_raw_mode().unwrap();
+        execute!(stdout(), EnableMouseCapture).unwrap();
+        execute!(stdout(), EnterAlternateScreen).unwrap();
+    }
+    pub fn exit() {
+        disable_raw_mode().unwrap();
+        execute!(stdout(), DisableMouseCapture).unwrap();
+        execute!(stdout(), LeaveAlternateScreen).unwrap();
+    }
+
+    pub fn activate(editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, file_path: String) {
+        // grep_result
+        if file_path.match_indices("search_str").count() > 0 && file_path.match_indices("search_file").count() > 0 {
+            let v: Vec<&str> = file_path.split_ascii_whitespace().collect();
+            let search_strs: Vec<&str> = v[0].split("=").collect();
+            editor.search.str = search_strs[1].to_string();
+            let search_files: Vec<&str> = v[1].split("=").collect();
+            editor.search.file = search_files[1].to_string();
+
+            let path = PathBuf::from(&editor.search.file);
+            let filenm = path.file_name().unwrap_or(OsStr::new("")).to_string_lossy().to_string();
+            let path_str = path.to_string_lossy().to_string();
+            editor.search.folder = path_str.replace(&filenm, "");
+            editor.search.filenm = path.file_name().unwrap_or(OsStr::new("")).to_string_lossy().to_string();
+
+            if file_path.match_indices("search_row_num").count() == 0 {
+                sbar.filenm = format!("grep \"{}\" {}", &editor.search.str, &editor.search.file);
+                prom.is_grep_result = true;
+                prom.is_grep_stdout = true;
+                prom.is_grep_stderr = true;
+                prom.grep_result();
+                editor.set_cur_default();
+                mbar.set_info(&LANG.searching);
+            } else {
+                sbar.filenm = editor.search.file.clone();
+                let search_row_nums: Vec<&str> = v[2].split("=").collect();
+                editor.search.row_num = search_row_nums[1].to_string();
+                Log::ep("search_row_num", &editor.search.row_num.clone());
+                editor.open(Path::new(&sbar.filenm), mbar);
+                editor.search_str(true);
+            }
+        // Normal
+        } else {
+            if file_path.len() == 0 {
+                sbar.filenm_tmp = LANG.new_file.clone();
+            } else {
+                sbar.filenm = file_path.to_string();
+            }
+            editor.open(Path::new(&file_path), mbar);
+        }
     }
 }
 impl UT {

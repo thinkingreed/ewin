@@ -4,27 +4,27 @@ use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent 
 use std::io::Write;
 
 impl EvtAct {
-    pub fn check_next_process<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn check_next_process<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         match editor.evt {
             Resize(_, _) => return EvtActType::Next,
             _ => {}
         }
-        term.set_disp_size(editor, mbar, prom, sbar);
+        Terminal::set_disp_size(editor, mbar, prom, sbar);
 
         EvtAct::init_check_prom(editor, mbar);
 
-        let evt_act = EvtAct::check_prom(out, term, editor, mbar, prom, sbar);
+        let evt_act = EvtAct::check_prom(out, editor, mbar, prom, sbar);
 
         EvtAct::finalize_check_prom(editor, prom);
 
         if evt_act == EvtActType::Hold && mbar.msg_org != mbar.msg {
-            term.draw(out, editor, mbar, prom, sbar).unwrap();
+            Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
         }
 
         return evt_act;
     }
 
-    pub fn check_prom<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn check_prom<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         if prom.is_save_new_file == true || prom.is_search == true || prom.is_close_confirm == true || prom.is_replace == true || prom.is_grep == true || prom.is_grep_result == true {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
@@ -35,7 +35,7 @@ impl EvtAct {
                             prom.clear();
                             mbar.clear();
                             editor.d_range.draw_type = DrawType::All;
-                            term.draw(out, editor, mbar, prom, sbar).unwrap();
+                            Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
                         }
                         return EvtActType::Hold;
                     }
@@ -98,7 +98,7 @@ impl EvtAct {
                             Third => prom.cont_3.paste(editor, mbar),
                         };
                         if is_all_redrow {
-                            term.draw(out, editor, mbar, prom, sbar).unwrap();
+                            Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
                         } else {
                             prom.clear_sels();
                             prom.draw_only(out);
@@ -174,24 +174,24 @@ impl EvtAct {
         }
 
         if prom.is_save_new_file == true {
-            return EvtAct::save_new_filenm(out, term, editor, mbar, prom, sbar);
+            return EvtAct::save_new_filenm(out, editor, mbar, prom, sbar);
         } else if prom.is_close_confirm == true {
-            return EvtAct::close(out, term, editor, mbar, prom, sbar);
+            return EvtAct::close(out, editor, mbar, prom, sbar);
         } else if prom.is_search == true {
-            return EvtAct::search(out, term, editor, mbar, prom, sbar);
+            return EvtAct::search(out, editor, mbar, prom, sbar);
         } else if prom.is_replace == true {
-            return EvtAct::replace(out, term, editor, mbar, prom, sbar);
+            return EvtAct::replace(out, editor, mbar, prom, sbar);
         } else if prom.is_grep == true {
-            return EvtAct::grep(out, term, editor, mbar, prom, sbar);
+            return EvtAct::grep(out, editor, mbar, prom, sbar);
         } else if prom.is_grep_result == true {
-            return EvtAct::grep_result(term, editor);
+            return EvtAct::grep_result(editor);
         } else {
             Log::ep_s("EvtProcess::NextEvtProcess");
             return EvtActType::Next;
         }
     }
 
-    pub fn init_check_prom(editor: &mut Editor, mbar: &mut MsgBar) {
+    pub fn init_check_prom(editor: &mut Core, mbar: &mut MsgBar) {
         Log::ep_s("init_check_prom");
 
         match editor.evt {
@@ -208,7 +208,7 @@ impl EvtAct {
         }
     }
 
-    pub fn finalize_check_prom(editor: &mut Editor, prom: &mut Prompt) {
+    pub fn finalize_check_prom(editor: &mut Core, prom: &mut Prompt) {
         Log::ep_s("finalize_check_prom");
 
         if prom.is_grep {

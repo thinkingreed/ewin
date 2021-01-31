@@ -1,13 +1,13 @@
-use crate::{_cfg::lang::lang_cfg::*, model::*, util::*};
+use crate::{global::*, model::*, util::*};
 use crossterm::{cursor::*, terminal::*};
 use unicode_width::UnicodeWidthChar;
 
 impl StatusBar {
-    pub fn new(lang_cfg: LangCfg) -> Self {
-        StatusBar { lang: lang_cfg, ..StatusBar::default() }
+    pub fn new() -> Self {
+        StatusBar { ..StatusBar::default() }
     }
 
-    pub fn draw(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>, editor: &mut Core) {
         Log::ep_s("　　　　　　　　StatusBar.draw");
 
         if self.disp_row_num == 0 {
@@ -45,7 +45,7 @@ impl StatusBar {
         self.cur_str = cur_str;
     }
 
-    pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
+    pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Core) {
         Log::ep_s("StatusBar.draw_cur");
         let rows = self.disp_row_posi;
 
@@ -59,9 +59,9 @@ impl StatusBar {
 
         str_vec.push(sber_str);
     }
-    pub fn get_cur_str(&mut self, editor: &mut Editor) -> String {
+    pub fn get_cur_str(&mut self, editor: &mut Core) -> String {
         let mut row_vec: Vec<&str> = vec![];
-        row_vec.push(&self.lang.row);
+        row_vec.push(&LANG.row);
         row_vec.push("(");
         let row = (editor.cur.y + 1).to_string();
         row_vec.push(&row);
@@ -71,7 +71,7 @@ impl StatusBar {
         row_vec.push(")");
 
         let mut col_vec: Vec<&str> = vec![];
-        col_vec.push(&self.lang.col);
+        col_vec.push(&LANG.col);
         col_vec.push("(");
 
         let (cols, col) = (editor.buf.len_line_chars(editor.cur.y).to_string(), (editor.cur.x + 1 - editor.rnw).to_string());

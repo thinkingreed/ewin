@@ -7,7 +7,7 @@ use tokio::process::{Child, Command};
 use tokio_util::codec::LinesCodecError;
 
 impl EvtAct {
-    pub fn draw_grep_result<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, std_event: Option<Result<String, LinesCodecError>>, is_stdout: bool, child: &mut Child) {
+    pub fn draw_grep_result<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, std_event: Option<Result<String, LinesCodecError>>, is_stdout: bool, child: &mut Child) {
         Log::ep_s("　　　　　　　draw_grep_result");
 
         if (prom.is_grep_stdout || prom.is_grep_stderr) && !prom.is_grep_result_cancel {
@@ -19,7 +19,7 @@ impl EvtAct {
                     //
                     if is_stdout {
                         Log::ep_s("prom.is_grep_stdout    false");
-                        EvtAct::exit_grep_result(out, term, editor, mbar, prom, sbar, child);
+                        EvtAct::exit_grep_result(out, editor, mbar, prom, sbar, child);
                     } else {
                         Log::ep_s("prom.is_grep_stderr    false");
                         prom.is_grep_stderr = false;
@@ -37,14 +37,14 @@ impl EvtAct {
                 editor.d_range.draw_type = DrawType::All;
             }
 
-            term.draw(out, editor, mbar, prom, sbar).unwrap();
+            Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
         } else {
             Log::ep_s("grep is canceled");
-            EvtAct::exit_grep_result(out, term, editor, mbar, prom, sbar, child);
+            EvtAct::exit_grep_result(out, editor, mbar, prom, sbar, child);
         }
     }
 
-    pub fn exit_grep_result<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, child: &mut Child) {
+    pub fn exit_grep_result<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, child: &mut Child) {
         child.kill();
         prom.clear();
         mbar.msg = String::new();
@@ -58,10 +58,10 @@ impl EvtAct {
         editor.buf.insert_end(&EOF_MARK.to_string());
         editor.set_cur_default();
         editor.d_range.draw_type = DrawType::All;
-        term.draw(out, editor, mbar, prom, sbar).unwrap();
+        Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
     }
 
-    pub fn exec_grep(editor: &Editor) -> Child {
+    pub fn exec_grep(editor: &Core) -> Child {
         Log::ep_s("　　　　　　　　exec_cmd");
 
         return Command::new("grep")
@@ -77,7 +77,7 @@ impl EvtAct {
             .unwrap();
     }
 
-    pub fn grep_result(term: &mut Terminal, editor: &mut Editor) -> EvtActType {
+    pub fn grep_result(editor: &mut Core) -> EvtActType {
         match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 F(4) | Right | Left | Down | Up | Home | End => {
@@ -102,7 +102,7 @@ impl EvtAct {
                         let path = Path::new(&editor.search.folder).join(&grep_result.filenm);
 
                         Log::ep_s("startup_terminal");
-                        term.startup_terminal(format!("search_str={} search_file={} search_row_num={}", search_str, path.to_string_lossy().to_string(), grep_result.row_num.to_string()));
+                        Terminal::startup_terminal(format!("search_str={} search_file={} search_row_num={}", search_str, path.to_string_lossy().to_string(), grep_result.row_num.to_string()));
                     }
                     return EvtActType::Hold;
                 }
@@ -116,20 +116,20 @@ impl EvtAct {
 impl Prompt {
     pub fn grep_result(&mut self) {
         self.disp_row_num = 2;
-        let mut cont = PromptCont::new(self.lang.clone());
+        let mut cont = PromptCont::new();
         cont.set_grep_result();
         self.cont_1 = cont;
     }
 
     pub fn grep_result_after(&mut self) {
         self.disp_row_num = 2;
-        let mut cont = PromptCont::new(self.lang.clone());
+        let mut cont = PromptCont::new();
         cont.set_grep_result_after();
         self.cont_1 = cont;
     }
     pub fn set_grep_result_after_no_result(&mut self) {
         self.disp_row_num = 2;
-        let mut cont = PromptCont::new(self.lang.clone());
+        let mut cont = PromptCont::new();
         cont.set_grep_result_after_no_result();
         self.cont_1 = cont;
     }
@@ -137,15 +137,15 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_grep_result(&mut self) {
-        self.guide = format!("{}{}", Colors::get_msg_fg(), self.lang.long_time_to_search.clone());
-        self.key_desc = format!("{}{}:{}Ctrl + c", Colors::get_default_fg(), self.lang.cancel.clone(), Colors::get_msg_fg(),);
+        self.guide = format!("{}{}", Colors::get_msg_fg(), &LANG.long_time_to_search);
+        self.key_desc = format!("{}{}:{}Ctrl + c", Colors::get_default_fg(), &LANG.cancel, Colors::get_msg_fg(),);
     }
     pub fn set_grep_result_after(&mut self) {
-        self.guide = format!("{}{}", Colors::get_msg_fg(), self.lang.show_search_result.clone());
-        self.key_desc = format!("{}{}:{}Enter", Colors::get_default_fg(), self.lang.open_target_file_in_another_terminal.clone(), Colors::get_msg_fg(),);
+        self.guide = format!("{}{}", Colors::get_msg_fg(), &LANG.show_search_result);
+        self.key_desc = format!("{}{}:{}Enter", Colors::get_default_fg(), &LANG.open_target_file_in_another_terminal, Colors::get_msg_fg(),);
     }
     pub fn set_grep_result_after_no_result(&mut self) {
-        self.guide = format!("{}{}", Colors::get_msg_fg(), self.lang.show_search_no_result.clone());
-        self.key_desc = format!("{}{}:{}Ctrl + w", Colors::get_default_fg(), self.lang.close.clone(), Colors::get_msg_fg(),);
+        self.guide = format!("{}{}", Colors::get_msg_fg(), &LANG.show_search_no_result);
+        self.key_desc = format!("{}{}:{}Ctrl + w", Colors::get_default_fg(), &LANG.close, Colors::get_msg_fg(),);
     }
 }

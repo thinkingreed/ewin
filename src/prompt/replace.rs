@@ -3,7 +3,7 @@ use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 
 impl EvtAct {
-    pub fn replace<T: Write>(out: &mut T, term: &mut Terminal, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn replace<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         Log::ep_s("Process.replace");
 
         match editor.evt {
@@ -23,7 +23,7 @@ impl EvtAct {
                         prom.clear();
                         prom.is_change = true;
                     }
-                    term.draw(out, editor, mbar, prom, sbar).unwrap();
+                    Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
                     return EvtActType::Hold;
                 }
 
@@ -37,8 +37,8 @@ impl EvtAct {
 impl Prompt {
     pub fn replace(&mut self) {
         self.disp_row_num = 6;
-        let mut cont_1 = PromptCont::new(self.lang.clone());
-        let mut cont_2 = PromptCont::new(self.lang.clone());
+        let mut cont_1 = PromptCont::new();
+        let mut cont_2 = PromptCont::new();
         cont_1.set_replace(PromptBufPosi::First);
         cont_2.set_replace(PromptBufPosi::Second);
         self.cont_1 = cont_1;
@@ -49,22 +49,22 @@ impl Prompt {
 impl PromptCont {
     pub fn set_replace(&mut self, cont_type: PromptBufPosi) {
         if cont_type == PromptBufPosi::First {
-            self.guide = format!("{}{}", Colors::get_msg_fg(), self.lang.set_replace.clone());
+            self.guide = format!("{}{}", Colors::get_msg_fg(), &LANG.set_replace);
             self.key_desc = format!(
                 "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Ctrl + c",
                 Colors::get_default_fg(),
-                self.lang.all_replace.clone(),
+                &LANG.all_replace,
                 Colors::get_msg_fg(),
                 Colors::get_default_fg(),
-                self.lang.move_input_field.clone(),
+                &LANG.move_input_field,
                 Colors::get_msg_fg(),
                 Colors::get_default_fg(),
-                self.lang.close.clone(),
+                &LANG.close,
                 Colors::get_msg_fg(),
             );
-            self.buf_desc = format!("{}{}", Colors::get_default_fg(), self.lang.search_str.clone(),);
+            self.buf_desc = format!("{}{}", Colors::get_default_fg(), &LANG.search_str,);
         } else {
-            self.buf_desc = format!("{}{}", Colors::get_default_fg(), self.lang.replace_char.clone(),);
+            self.buf_desc = format!("{}{}", Colors::get_default_fg(), &LANG.replace_char,);
         }
     }
 }
