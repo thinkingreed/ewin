@@ -1,16 +1,10 @@
-use crate::{def::*, global, global::*, model::*, util::*};
+use crate::{cfg::cfg::*, colors::*, def::*, global::*, model::*, util::*};
+use crossterm::style::{Color as CrosstermColor, SetBackgroundColor};
 use crossterm::{cursor::*, terminal::*};
-use std::cmp::min;
-use std::env;
-use std::ffi::OsStr;
-use std::fs::metadata;
-use std::io::ErrorKind;
-use std::path;
-use std::path::Path;
-use syntect::parsing::SyntaxSet;
+use std::{cmp::min, env, fs::metadata, io::ErrorKind, path};
 use unicode_width::UnicodeWidthChar;
 
-impl Core {
+impl Editor {
     pub fn open(&mut self, path: &path::Path, mbar: &mut MsgBar) {
         Log::ep_s("           open");
 
@@ -56,15 +50,6 @@ impl Core {
         self.path_str = path.to_string_lossy().to_string();
         self.path = Some(path.into());
 
-        self.syntax.syntax_set = SyntaxSet::load_defaults_newlines();
-        self.extension = Path::new(&self.path_str).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string();
-        let tmp = self.syntax.syntax_set.find_syntax_by_extension(&self.extension);
-        if let Some(sr) = tmp {
-            self.syntax.syntax = sr.clone();
-        } else {
-            self.syntax.syntax = self.syntax.syntax_set.find_syntax_by_extension("txt").unwrap().clone();
-        }
-        self.syntax.theme = self.syntax.theme_set.themes["base16-ocean.dark"].clone();
         self.set_cur_default();
     }
 
@@ -80,6 +65,9 @@ impl Core {
         match d_range.draw_type {
             DrawType::Not => {}
             DrawType::None | DrawType::All => {
+                if let Some(c) = CFG.get().unwrap().syntax.theme.settings.background {
+                    str_vec.push(SetBackgroundColor(CrosstermColor::from(Color::from(c))).to_string());
+                }
                 str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, 0).to_string()));
             }
             DrawType::Target => {
@@ -101,7 +89,7 @@ impl Core {
             let row_region = self.draw.regions[i].clone();
             let mut sx = 0;
             let mut ex = row_region.len();
-            if is_enable_highlight(&self.extension) {
+            if is_enable_highlight(&self.ext) {
                 sx = if i == self.cur.y { self.offset_x } else { 0 };
                 ex = min(sx + self.disp_col_num, self.buf.len_line_chars(i));
             }
@@ -149,6 +137,6 @@ impl Core {
             str_vec.push(" ".repeat(self.rnw - (i + 1).to_string().len()).to_string());
             str_vec.push((i + 1).to_string());
         }
-        Colors::set_textarea_color(str_vec);
+        Colors::set_text_color(str_vec);
     }
 }

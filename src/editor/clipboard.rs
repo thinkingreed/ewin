@@ -6,7 +6,7 @@ use std::io::Write;
 use std::process;
 use std::process::Command;
 
-impl Core {
+impl Editor {
     pub fn set_clipboard(&mut self, copy_string: &str) {
         if *ENV == Env::WSL {
             Log::ep_s("try_set_clipboard ");

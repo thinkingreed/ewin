@@ -2,7 +2,7 @@ use crate::{def::*, model::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*};
 use std::cmp::{max, min};
 
-impl Core {
+impl Editor {
     pub fn cur_up(&mut self) {
         Log::ep_s("　　　　　　　 c_u start");
         if self.cur.y > 0 {

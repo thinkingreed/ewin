@@ -3,7 +3,7 @@ use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::cmp::{max, min};
 use unicode_width::UnicodeWidthChar;
 
-impl Core {
+impl Editor {
     // adjusting vertical posi of cursor
     pub fn scroll(&mut self) {
         // Log::ep_s("　　　　　　　 scroll");
@@ -153,6 +153,8 @@ impl Core {
     pub fn set_draw_range(&mut self, curt_y_org: usize, offset_y_org: usize, offset_x_org: usize, rnw_org: usize) {
         Log::ep_s("set_draw_range");
 
+        Log::ep("self.d_range.draw_type", &self.d_range.draw_type);
+
         if (self.offset_x > 0 && curt_y_org != self.cur.y) || offset_x_org != self.offset_x {
             self.d_range.draw_type = DrawType::All;
         }
@@ -169,5 +171,6 @@ impl Core {
                 self.d_range.draw_type = DrawType::All;
             }
         }
+        Log::ep("self.d_range.draw_type", &self.d_range.draw_type);
     }
 }

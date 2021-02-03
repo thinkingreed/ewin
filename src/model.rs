@@ -1,17 +1,14 @@
 extern crate ropey;
-use crate::def::*;
+use crate::{def::*, editor::draw::char_style::*};
 use chrono::NaiveDateTime;
 use crossterm::event::{Event, Event::Key, KeyCode::End};
 use ropey::Rope;
 use std::cmp::{max, min};
 use std::collections::VecDeque;
-use std::ffi::OsStr;
 use std::fmt;
 use std::path;
-use std::path::Path;
-use syntect;
-use syntect::highlighting::{HighlightState, Theme, ThemeSet};
-use syntect::parsing::{ParseState, ScopeStackOp, SyntaxReference, SyntaxSet};
+use syntect::highlighting::HighlightState;
+use syntect::parsing::{ParseState, ScopeStackOp};
 
 #[derive(Debug, Clone)]
 pub struct MsgBar {
@@ -198,7 +195,6 @@ pub enum Env {
     Linux,
     Windows,
 }
-
 #[derive(Debug)]
 pub struct Terminal {
     // pub env: Env,
@@ -244,7 +240,6 @@ pub struct EvtProc {
     pub sel: SelRange,
     pub d_range: DRange,
 }
-
 impl Default for EvtProc {
     fn default() -> Self {
         EvtProc {
@@ -273,7 +268,6 @@ impl EvtProc {
         };
     }
 }
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// All edit history including undo and redo
 /// History
@@ -519,7 +513,7 @@ impl fmt::Display for Cur {
 
 // エディタの内部状態
 #[derive(Debug)]
-pub struct Core {
+pub struct Editor {
     pub buf: TextBuffer,
     pub buf_cache: Vec<Vec<char>>,
     /// current cursor position
@@ -540,7 +534,7 @@ pub struct Core {
     pub updown_x: usize,
     pub path: Option<path::PathBuf>,
     pub path_str: String,
-    pub extension: String,
+    pub ext: String,
     // row_number_width
     pub rnw: usize,
     pub sel: SelRange,
@@ -556,12 +550,11 @@ pub struct Core {
     pub history: History,
     pub grep_result_vec: Vec<GrepResult>,
     pub key_record_vec: Vec<KeyRecord>,
-    pub syntax: Syntax,
 }
 
-impl Core {
+impl Editor {
     pub fn new() -> Self {
-        Core {
+        Editor {
             buf: TextBuffer::default(),
             buf_cache: vec![],
             cur: Cur::default(),
@@ -574,7 +567,7 @@ impl Core {
             updown_x: 0,
             path: None,
             path_str: String::new(),
-            extension: String::new(),
+            ext: String::new(),
             rnw: 0,
             sel: SelRange::default(),
             evt: Key(End.into()),
@@ -588,32 +581,12 @@ impl Core {
             history: History::default(),
             grep_result_vec: vec![],
             key_record_vec: vec![],
-            syntax: Syntax::default(),
         }
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TextBuffer {
     pub text: Rope,
-}
-
-#[derive(Debug)]
-pub struct Syntax {
-    pub syntax_set: SyntaxSet,
-    pub syntax: SyntaxReference,
-    pub theme: Theme,
-    pub theme_set: ThemeSet,
-}
-
-impl Default for Syntax {
-    fn default() -> Self {
-        Syntax {
-            syntax_set: SyntaxSet::load_defaults_newlines(),
-            syntax: SyntaxSet::load_defaults_newlines().find_syntax_by_extension(&Path::new("").extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string()).unwrap().clone(),
-            theme_set: ThemeSet::load_defaults(),
-            theme: Theme::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -629,17 +602,6 @@ impl fmt::Display for Region {
     }
 }
 
-/*#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct  Color {
-    Rgb { r: u8, g: u8, b: u8 },
-}
-*/
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Color {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
-}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CharStyleType {
     Nomal,
@@ -653,24 +615,6 @@ pub enum CharType {
     Delim,
     HalfSpace,
     FullSpace,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct CharStyle {
-    pub fg: Color,
-    pub bg: Color,
-}
-
-impl fmt::Display for CharStyle {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "CharStyle fg:{:?}, bg:{:?},", self.fg, self.bg,)
-    }
-}
-
-impl From<syntect::highlighting::Style> for CharStyle {
-    fn from(s: syntect::highlighting::Style) -> Self {
-        Self { bg: CharStyle::DEFAULT_BG, fg: s.foreground.into() }
-    }
 }
 
 #[derive(Debug)]
@@ -824,9 +768,5 @@ impl fmt::Display for EvtType {
 pub struct Log {
     pub log_path: String,
 }
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Colors {}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UT {}

@@ -3,7 +3,7 @@ use std::iter::FromIterator;
 
 use std::path::Path;
 
-impl Core {
+impl Editor {
     pub fn all_select(&mut self) {
         self.sel.clear();
         self.sel.set_s(0, 0, self.rnw + 1);
@@ -147,6 +147,7 @@ impl Core {
 
     pub fn search_str(&mut self, is_asc: bool) {
         Log::ep_s("　　　　　　　　search_str");
+        // Log::ep("self.d_range.draw_type", &self.d_range.draw_type);
 
         if self.search.str.len() > 0 {
             // 初回検索

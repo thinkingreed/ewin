@@ -4,7 +4,7 @@ use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent 
 use std::io::Write;
 
 impl EvtAct {
-    pub fn check_next_process<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn check_next_process<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         match editor.evt {
             Resize(_, _) => return EvtActType::Next,
             _ => {}
@@ -24,7 +24,7 @@ impl EvtAct {
         return evt_act;
     }
 
-    pub fn check_prom<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn check_prom<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         if prom.is_save_new_file == true || prom.is_search == true || prom.is_close_confirm == true || prom.is_replace == true || prom.is_grep == true || prom.is_grep_result == true {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
@@ -191,7 +191,7 @@ impl EvtAct {
         }
     }
 
-    pub fn init_check_prom(editor: &mut Core, mbar: &mut MsgBar) {
+    pub fn init_check_prom(editor: &mut Editor, mbar: &mut MsgBar) {
         Log::ep_s("init_check_prom");
 
         match editor.evt {
@@ -208,7 +208,7 @@ impl EvtAct {
         }
     }
 
-    pub fn finalize_check_prom(editor: &mut Core, prom: &mut Prompt) {
+    pub fn finalize_check_prom(editor: &mut Editor, prom: &mut Prompt) {
         Log::ep_s("finalize_check_prom");
 
         if prom.is_grep {

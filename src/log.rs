@@ -1,4 +1,4 @@
-use crate::model::*;
+use crate::{cfg::cfg::*, model::*};
 use std::fmt::Debug;
 
 impl Log {

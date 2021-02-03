@@ -1,10 +1,10 @@
-use crate::{global::*, model::*};
+use crate::{cfg::cfg::*, global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 use std::path::Path;
 
 impl EvtAct {
-    pub fn save_new_filenm<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn save_new_filenm<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         match editor.evt {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {

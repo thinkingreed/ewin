@@ -1,4 +1,4 @@
-use crate::{def::*, global::*, model::*};
+use crate::{cfg::cfg::*, def::*, global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 use std::path::Path;
@@ -7,7 +7,7 @@ use tokio::process::{Child, Command};
 use tokio_util::codec::LinesCodecError;
 
 impl EvtAct {
-    pub fn draw_grep_result<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, std_event: Option<Result<String, LinesCodecError>>, is_stdout: bool, child: &mut Child) {
+    pub fn draw_grep_result<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, std_event: Option<Result<String, LinesCodecError>>, is_stdout: bool, child: &mut Child) {
         Log::ep_s("　　　　　　　draw_grep_result");
 
         if (prom.is_grep_stdout || prom.is_grep_stderr) && !prom.is_grep_result_cancel {
@@ -44,7 +44,7 @@ impl EvtAct {
         }
     }
 
-    pub fn exit_grep_result<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, child: &mut Child) {
+    pub fn exit_grep_result<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, child: &mut Child) {
         child.kill();
         prom.clear();
         mbar.msg = String::new();
@@ -61,7 +61,7 @@ impl EvtAct {
         Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
     }
 
-    pub fn exec_grep(editor: &Core) -> Child {
+    pub fn exec_grep(editor: &Editor) -> Child {
         Log::ep_s("　　　　　　　　exec_cmd");
 
         return Command::new("grep")
@@ -77,7 +77,7 @@ impl EvtAct {
             .unwrap();
     }
 
-    pub fn grep_result(editor: &mut Core) -> EvtActType {
+    pub fn grep_result(editor: &mut Editor) -> EvtActType {
         match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 F(4) | Right | Left | Down | Up | Home | End => {

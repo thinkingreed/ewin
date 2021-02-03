@@ -1,11 +1,9 @@
-use crate::def::*;
-use crate::global::*;
-use crate::model::*;
+use crate::{cfg::cfg::*, def::*, global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 
 impl EvtAct {
-    pub fn search<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn search<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         Log::ep_s("Process.search");
 
         match editor.evt {
@@ -32,7 +30,7 @@ impl EvtAct {
         }
     }
 
-    fn exec_search<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, is_asc: bool) -> bool {
+    fn exec_search<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, is_asc: bool) -> bool {
         Log::ep_s("exec_search");
         let search_str = prom.cont_1.buf.iter().collect::<String>();
         if search_str.len() == 0 {

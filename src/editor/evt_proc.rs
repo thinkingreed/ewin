@@ -1,6 +1,6 @@
 use crate::model::*;
 
-impl Core {
+impl Editor {
     pub fn exec_edit_proc(&mut self, evt: EvtType, str: &str) {
         if self.check_evtproc_return(evt) {
             return;

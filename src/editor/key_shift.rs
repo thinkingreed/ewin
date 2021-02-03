@@ -2,7 +2,7 @@ use crate::{global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 
-impl Core {
+impl Editor {
     fn shift_move_com(&mut self, do_type: EvtType) {
         self.sel.set_sel_posi(true, self.cur.y, self.cur.x - self.rnw, self.cur.disp_x);
 

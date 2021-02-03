@@ -1,4 +1,4 @@
-use crate::{model::*, util::*};
+use crate::{cfg::cfg::*, model::*, util::*};
 use crossterm::{cursor::*, terminal::*};
 use std::io::Write;
 
@@ -39,7 +39,7 @@ impl MsgBar {
         }
     }
 
-    pub fn draw_only<T: Write>(&mut self, out: &mut T, editor: &mut Core, prom: &mut Prompt, sbar: &mut StatusBar) {
+    pub fn draw_only<T: Write>(&mut self, out: &mut T, editor: &mut Editor, prom: &mut Prompt, sbar: &mut StatusBar) {
         // Log::ep_s("　　　　　　　　MsgBar.draw");
         Terminal::set_disp_size(editor, self, prom, sbar);
 

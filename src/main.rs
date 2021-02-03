@@ -5,11 +5,10 @@ use crossterm::{
     event::{Event, EventStream},
     ErrorKind,
 };
-use ewin::model::*;
+use ewin::{cfg::cfg::*, model::*};
 use futures::{future::FutureExt, select, StreamExt};
-use std::ffi::OsStr;
 use std::io::{stdout, BufWriter, Write};
-use std::panic;
+use std::{ffi::OsStr, panic, path::Path};
 use tokio_util::codec::{FramedRead, LinesCodec};
 
 #[tokio::main]
@@ -29,10 +28,13 @@ async fn main() {
         default_hook(e);
     }));
 
-    let mut editor = Core::new();
+    let mut editor = Editor::new();
     let mut mbar = MsgBar::new();
     let mut prom = Prompt::new();
     let mut sbar = StatusBar::new();
+
+    editor.ext = Path::new(&file_path).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string();
+    Cfg::init(&editor.ext);
 
     Terminal::set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
     Terminal::init();
@@ -54,7 +56,7 @@ async fn main() {
     }
 }
 
-async fn exec_events_grep_result<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> anyhow::Result<()> {
+async fn exec_events_grep_result<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> anyhow::Result<()> {
     // It also reads a normal Event to support cancellation.
     let mut reader = EventStream::new();
     let mut child = EvtAct::exec_grep(editor);
@@ -92,7 +94,7 @@ async fn exec_events_grep_result<T: Write>(out: &mut T, editor: &mut Core, mbar:
     Ok(())
 }
 
-async fn exec_events<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> anyhow::Result<()> {
+async fn exec_events<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> anyhow::Result<()> {
     let mut reader = EventStream::new();
     let mut is_exit = false;
     loop {
@@ -109,7 +111,7 @@ async fn exec_events<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar
     Ok(())
 }
 
-fn run_events<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, maybe_event: Option<Result<Event, ErrorKind>>) -> bool {
+fn run_events<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, maybe_event: Option<Result<Event, ErrorKind>>) -> bool {
     let mut is_exit = false;
 
     if let Some(Ok(event)) = maybe_event {

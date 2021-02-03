@@ -1,4 +1,4 @@
-use crate::model::*;
+use crate::{cfg::cfg::*, model::*};
 use std::cmp::min;
 
 impl PromptCont {
@@ -17,11 +17,11 @@ impl PromptCont {
                 Colors::set_select_color(&mut str_vec);
                 str_vec.push(c.to_string())
             } else {
-                Colors::set_textarea_color(&mut str_vec);
+                Colors::set_text_color(&mut str_vec);
                 str_vec.push(c.to_string())
             }
         }
-        Colors::set_textarea_color(&mut str_vec);
+        Colors::set_text_color(&mut str_vec);
 
         return str_vec.join("");
     }

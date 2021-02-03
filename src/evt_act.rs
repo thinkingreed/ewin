@@ -1,4 +1,4 @@
-use crate::{global::*, model::*};
+use crate::{def::*, global::*, model::*};
 use crossterm::{
     event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind},
     terminal::*,
@@ -6,7 +6,7 @@ use crossterm::{
 use std::io::Write;
 
 impl EvtAct {
-    pub fn match_event<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> bool {
+    pub fn match_event<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> bool {
         match editor.evt {
             Mouse(M_Event { kind: M_Kind::Moved, .. }) => return false,
             _ => {}
@@ -21,11 +21,11 @@ impl EvtAct {
             EvtActType::Exit => return true,
             EvtActType::Hold => {}
             EvtActType::Next => {
-                EvtAct::init(editor, mbar, prom);
                 let is_err = EvtAct::check_err(editor, mbar);
                 // Log::ep("editor.evt", &editor.evt);
 
                 if !is_err {
+                    EvtAct::init(editor, mbar, prom);
                     let curt_y_org = editor.cur.y;
                     let offset_y_org = editor.offset_y;
                     let offset_x_org = editor.offset_x;
@@ -110,7 +110,7 @@ impl EvtAct {
                 Log::ep("cur.x", &editor.cur.x);
                 Log::ep("cur.disp_x", &editor.cur.disp_x);
                 Log::ep("", &editor.sel);
-                // Log::ep("search.ranges", &editor.search.ranges);
+                // Log::ep("", &editor.search);
 
                 // Redraw in case of msg change
                 if mbar.msg_org != mbar.msg {
@@ -127,7 +127,7 @@ impl EvtAct {
         return false;
     }
 
-    pub fn init(editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt) {
+    pub fn init(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) {
         Log::ep_s("init");
 
         // updown_xの初期化
@@ -160,6 +160,11 @@ impl EvtAct {
             Key(KeyEvent { code, .. }) => match code {
                 Down | Up | Left | Right | Home | End => {
                     if editor.sel.is_selected() {
+                        editor.d_range.draw_type = DrawType::All;
+                    }
+                }
+                F(3) => {
+                    if editor.search.index == USIZE_UNDEFINED {
                         editor.d_range.draw_type = DrawType::All;
                     }
                 }
@@ -213,7 +218,7 @@ impl EvtAct {
         }
     }
 
-    pub fn finalize(editor: &mut Core) {
+    pub fn finalize(editor: &mut Editor) {
         Log::ep_s("finalize");
 
         // set sel draw range, Clear sel range
@@ -249,7 +254,7 @@ impl EvtAct {
             editor.search.ranges = editor.get_search_ranges(&editor.search.str, "");
         }
     }
-    pub fn check_err(editor: &mut Core, mbar: &mut MsgBar) -> bool {
+    pub fn check_err(editor: &mut Editor, mbar: &mut MsgBar) -> bool {
         let is_return = false;
         Log::ep_s("check_err");
 

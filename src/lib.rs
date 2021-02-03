@@ -5,16 +5,16 @@ pub mod global {
         util::*,
     };
     use once_cell::sync::Lazy;
-    use std::sync::Mutex;
+    use once_cell::sync::OnceCell;
 
     pub static LANG: Lazy<LangCfg> = Lazy::new(|| LangCfg::read_lang_cfg());
     pub static ENV: Lazy<Env> = Lazy::new(|| get_env());
-    pub static CFG: Lazy<Mutex<Cfg>> = Lazy::new(|| Mutex::new(Cfg::read_cfg()));
+    // pub static CFG: Lazy<Cfg> = Lazy::new(|| Cfg::read_cfg());
+    pub static CFG: OnceCell<Cfg> = OnceCell::new();
 }
 pub mod colors;
 pub mod def;
 pub mod evt_act_prom;
-pub mod history;
 pub mod editor {
     pub mod draw {
         pub mod buf_cache;
@@ -25,6 +25,7 @@ pub mod editor {
     pub mod clipboard;
     pub mod editor;
     pub mod evt_proc;
+    pub mod history;
     pub mod key;
     pub mod key_ctrl;
     pub mod key_shift;

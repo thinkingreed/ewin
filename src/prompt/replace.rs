@@ -1,9 +1,9 @@
-use crate::{global::*, model::*};
+use crate::{cfg::cfg::*, global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 
 impl EvtAct {
-    pub fn replace<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn replace<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         Log::ep_s("Process.replace");
 
         match editor.evt {

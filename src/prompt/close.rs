@@ -1,9 +1,9 @@
-use crate::{global::*, model::*};
+use crate::{cfg::cfg::*, global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 
 impl EvtAct {
-    pub fn close<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prompt: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn close<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prompt: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         match editor.evt {
             Key(KeyEvent { code: Char(c), .. }) => {
                 if c == 'y' {

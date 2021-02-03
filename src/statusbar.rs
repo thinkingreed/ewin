@@ -1,4 +1,4 @@
-use crate::{global::*, model::*, util::*};
+use crate::{cfg::cfg::*, global::*, model::*, util::*};
 use crossterm::{cursor::*, terminal::*};
 use unicode_width::UnicodeWidthChar;
 
@@ -7,7 +7,7 @@ impl StatusBar {
         StatusBar { ..StatusBar::default() }
     }
 
-    pub fn draw(&mut self, str_vec: &mut Vec<String>, editor: &mut Core) {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
         Log::ep_s("　　　　　　　　StatusBar.draw");
 
         if self.disp_row_num == 0 {
@@ -40,12 +40,12 @@ impl StatusBar {
 
         // self.set_color(str_vec);
         str_vec.push(sber_str);
-        Colors::set_textarea_color(str_vec);
+        Colors::set_text_color(str_vec);
         self.filenm_disp = filenm_disp;
         self.cur_str = cur_str;
     }
 
-    pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Core) {
+    pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
         Log::ep_s("StatusBar.draw_cur");
         let rows = self.disp_row_posi;
 
@@ -59,7 +59,7 @@ impl StatusBar {
 
         str_vec.push(sber_str);
     }
-    pub fn get_cur_str(&mut self, editor: &mut Core) -> String {
+    pub fn get_cur_str(&mut self, editor: &mut Editor) -> String {
         let mut row_vec: Vec<&str> = vec![];
         row_vec.push(&LANG.row);
         row_vec.push("(");

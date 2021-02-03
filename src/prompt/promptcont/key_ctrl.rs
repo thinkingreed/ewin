@@ -1,7 +1,7 @@
 use crate::{def::*, global::*, model::*};
 
 impl PromptCont {
-    pub fn paste(&mut self, editor: &mut Core, mbar: &mut MsgBar) -> bool {
+    pub fn paste(&mut self, editor: &mut Editor, mbar: &mut MsgBar) -> bool {
         Log::ep_s("　　　　　　　PromptCont.paste");
         if self.sel.is_selected() {
             self.del_sel_range();

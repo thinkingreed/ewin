@@ -13,7 +13,7 @@ use std::process;
 use std::process::Command;
 
 impl Terminal {
-    pub fn draw<T: Write>(out: &mut T, editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> Result<(), io::Error> {
+    pub fn draw<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> Result<(), io::Error> {
         Log::ep_s("　　　　　　　　All draw");
 
         Terminal::set_disp_size(editor, mbar, prom, sbar);
@@ -40,7 +40,7 @@ impl Terminal {
         return Ok(());
     }
 
-    pub fn draw_cur(str_vec: &mut Vec<String>, editor: &mut Core, prom: &mut Prompt) {
+    pub fn draw_cur(str_vec: &mut Vec<String>, editor: &mut Editor, prom: &mut Prompt) {
         // Log::ep_s("　　　　　　　set_cur_str");
 
         if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep {
@@ -59,7 +59,7 @@ impl Terminal {
         return true;
     }
 
-    pub fn set_disp_size(editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
+    pub fn set_disp_size(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
         let (cols, rows) = size().unwrap();
         let (cols, rows) = (cols as usize, rows as usize);
 
@@ -160,7 +160,7 @@ impl Terminal {
         execute!(stdout(), LeaveAlternateScreen).unwrap();
     }
 
-    pub fn activate(editor: &mut Core, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, file_path: String) {
+    pub fn activate(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, file_path: String) {
         // grep_result
         if file_path.match_indices("search_str").count() > 0 && file_path.match_indices("search_file").count() > 0 {
             let v: Vec<&str> = file_path.split_ascii_whitespace().collect();
