@@ -1,4 +1,4 @@
-use crate::{cfg::cfg::*, global::*, model::*};
+use crate::{colors::*, global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::env;
 use std::io::Write;
@@ -68,27 +68,27 @@ impl Prompt {
 impl PromptCont {
     pub fn set_grep(&mut self, prom: &Prompt, cont_type: PromptBufPosi) {
         if cont_type == PromptBufPosi::First {
-            self.guide = format!("{}{}", Colors::get_msg_fg(), &LANG.set_grep);
+            self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.set_grep);
             self.key_desc = format!(
                 "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Ctrl + c  {}{}:{}Tab {}({})",
                 Colors::get_default_fg(),
                 &LANG.search,
-                Colors::get_msg_fg(),
+                Colors::get_msg_highlight_fg(),
                 Colors::get_default_fg(),
                 &LANG.move_input_field,
-                Colors::get_msg_fg(),
+                Colors::get_msg_highlight_fg(),
                 Colors::get_default_fg(),
                 &LANG.close,
-                Colors::get_msg_fg(),
+                Colors::get_msg_highlight_fg(),
                 Colors::get_default_fg(),
                 &LANG.complement,
-                Colors::get_msg_fg(),
+                Colors::get_msg_highlight_fg(),
                 Colors::get_default_fg(),
                 &LANG.search_folder,
             );
-            self.buf_desc = format!("{}{}{}", Colors::get_msg_fg(), &LANG.search_str, Colors::get_default_fg());
+            self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.search_str, Colors::get_default_fg());
         } else if cont_type == PromptBufPosi::Second {
-            self.buf_desc = format!("{}{}{}", Colors::get_msg_fg(), &LANG.search_file, Colors::get_default_fg());
+            self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.search_file, Colors::get_default_fg());
 
             if prom.cache_search_filenm.len() > 0 {
                 self.buf = prom.cache_search_filenm.chars().collect();
@@ -96,7 +96,7 @@ impl PromptCont {
                 self.buf = "*.*".chars().collect();
             }
         } else {
-            self.buf_desc = format!("{}{}{}", Colors::get_msg_fg(), &LANG.search_folder, Colors::get_default_fg());
+            self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.search_folder, Colors::get_default_fg());
             if prom.cache_search_folder.len() > 0 {
                 self.buf = prom.cache_search_folder.chars().collect();
             } else {

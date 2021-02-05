@@ -151,8 +151,8 @@ pub fn is_line_end(c: char) -> bool {
     ['\u{000a}', '\u{000d}'].contains(&c)
 }
 
-pub fn is_enable_highlight(ext: &str) -> bool {
-    if ext.len() == 0 || ext == "txt" || ext == "log" || ext == "ini" {
+pub fn is_enable_syntax_highlight(ext: &str) -> bool {
+    if ext.len() == 0 || ext == "txt" || ext == "log" {
         return false;
     } else {
         return true;

@@ -1,4 +1,4 @@
-use crate::{cfg::cfg::*, global::*, model::*, util::*};
+use crate::{colors::*, global::*, model::*, util::*};
 use crossterm::{cursor::*, terminal::*};
 use unicode_width::UnicodeWidthChar;
 

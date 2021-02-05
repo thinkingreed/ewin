@@ -1,38 +1,71 @@
-use crate::{colors::*, global::*, model::*};
+use crate::{colors::*, global::*, util::*};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
-use std::io::BufReader;
 use std::io::Write;
 use std::{ffi::OsStr, path::Path};
 use syntect::highlighting::{Theme, ThemeSet};
 use syntect::parsing::SyntaxSet;
 use syntect::{self, parsing::SyntaxReference};
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Cfg {
-    pub colors: Colors,
+    pub general: CfgGeneral,
+    pub colors: CfgColors,
     #[serde(skip_deserializing, skip_serializing)]
     pub syntax: Syntax,
 }
+
 impl Cfg {
     pub fn default() -> Self {
-        Cfg { colors: Colors::default(), syntax: Syntax::default() }
+        Cfg {
+            general: CfgGeneral::default(),
+            colors: CfgColors::default(),
+            syntax: Syntax::default(),
+        }
     }
 }
+
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Colors {
-    pub editor: CfgEditor,
-    pub status_bar: CfgStatusBar,
-}
-impl Colors {
+pub struct CfgGeneral {}
+impl CfgGeneral {
     pub fn default() -> Self {
-        Colors {
-            editor: CfgEditor::default(),
-            status_bar: CfgStatusBar::default(),
+        CfgGeneral {}
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CfgColors {
+    pub theme: CfgColorTheme,
+    pub editor: CfgColorEditor,
+    pub status_bar: CfgColorStatusBar,
+    pub msg: CfgColorMsg,
+}
+impl CfgColors {
+    pub fn default() -> Self {
+        CfgColors {
+            theme: CfgColorTheme::default(),
+            editor: CfgColorEditor::default(),
+            msg: CfgColorMsg::default(),
+            status_bar: CfgColorStatusBar::default(),
         }
     }
 }
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CfgEditor {
+pub struct CfgColorTheme {
+    pub theme: String,
+    pub theme_background_enable: bool,
+}
+
+impl CfgColorTheme {
+    pub fn default() -> Self {
+        CfgColorTheme {
+            theme: "base16-eighties.dark".to_string(),
+            theme_background_enable: false,
+        }
+    }
+}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CfgColorEditor {
     background: String,
     foreground: String,
     #[serde(skip_deserializing, skip_serializing)]
@@ -45,9 +78,9 @@ pub struct CfgEditor {
     pub control_char: ControlChar,
 }
 
-impl CfgEditor {
+impl CfgColorEditor {
     pub fn default() -> Self {
-        CfgEditor {
+        CfgColorEditor {
             background: "#000000".to_string(),
             foreground: "#ffffff".to_string(),
             bg: Color::default(),
@@ -119,41 +152,64 @@ impl Search {
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ControlChar {
-    background: String,
     foreground: String,
-    #[serde(skip_deserializing, skip_serializing)]
-    pub bg: Color,
     #[serde(skip_deserializing, skip_serializing)]
     pub fg: Color,
 }
 impl ControlChar {
     pub fn default() -> Self {
         ControlChar {
-            background: "#000000".to_string(),
             foreground: "#6e6e6e".to_string(),
-            bg: Color::default(),
             fg: Color::default(),
         }
     }
 }
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename = "StatusBar")]
-pub struct CfgStatusBar {
-    background: String,
+pub struct CfgColorStatusBar {
     foreground: String,
-    #[serde(skip_deserializing, skip_serializing)]
-    pub bg: Color,
     #[serde(skip_deserializing, skip_serializing)]
     pub fg: Color,
 }
 
-impl CfgStatusBar {
+impl CfgColorStatusBar {
     pub fn default() -> Self {
-        CfgStatusBar {
-            background: "#000000".to_string(),
+        CfgColorStatusBar {
             foreground: "#87411f".to_string(),
-            bg: Color::default(),
             fg: Color::default(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename = "Msg")]
+pub struct CfgColorMsg {
+    normal_foreground: String,
+    highlight_foreground: String,
+    warning_foreground: String,
+    err_foreground: String,
+
+    #[serde(skip_deserializing, skip_serializing)]
+    pub normal_fg: Color,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub highlight_fg: Color,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub warning_fg: Color,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub err_fg: Color,
+}
+
+impl CfgColorMsg {
+    pub fn default() -> Self {
+        CfgColorMsg {
+            normal_foreground: "#ffffff".to_string(),
+            highlight_foreground: "#00ff00".to_string(),
+            warning_foreground: "#ffa500".to_string(),
+            err_foreground: "#ff0000".to_string(),
+            normal_fg: Color::default(),
+            highlight_fg: Color::default(),
+            warning_fg: Color::default(),
+            err_fg: Color::default(),
         }
     }
 }
@@ -179,7 +235,6 @@ impl Default for Syntax {
         }
     }
 }
-
 impl Cfg {
     pub fn init(ext: &String) {
         let mut cfg = Cfg::default();
@@ -192,30 +247,43 @@ impl Cfg {
         cfg.colors.editor.selection.fg = Colors::hex2rgb(&cfg.colors.editor.selection.foreground);
         cfg.colors.editor.search.bg = Colors::hex2rgb(&cfg.colors.editor.search.background);
         cfg.colors.editor.search.fg = Colors::hex2rgb(&cfg.colors.editor.search.foreground);
-        cfg.colors.editor.control_char.bg = Colors::hex2rgb(&cfg.colors.editor.control_char.background);
         cfg.colors.editor.control_char.fg = Colors::hex2rgb(&cfg.colors.editor.control_char.foreground);
 
-        cfg.colors.status_bar.bg = Colors::hex2rgb(&cfg.colors.status_bar.background);
+        cfg.colors.msg.normal_fg = Colors::hex2rgb(&cfg.colors.msg.normal_foreground);
+        cfg.colors.msg.highlight_fg = Colors::hex2rgb(&cfg.colors.msg.highlight_foreground);
+        cfg.colors.msg.warning_fg = Colors::hex2rgb(&cfg.colors.msg.warning_foreground);
+        cfg.colors.msg.err_fg = Colors::hex2rgb(&cfg.colors.msg.err_foreground);
+
         cfg.colors.status_bar.fg = Colors::hex2rgb(&cfg.colors.status_bar.foreground);
 
         cfg.syntax.syntax_set = SyntaxSet::load_defaults_newlines();
-        cfg.syntax.theme = cfg.syntax.theme_set.themes["base16-eighties.dark"].clone();
+        cfg.syntax.theme = cfg.syntax.theme_set.themes[&cfg.colors.theme.theme].clone();
 
         if let Some(sr) = cfg.syntax.syntax_set.find_syntax_by_extension(&ext) {
-            cfg.syntax.syntax_reference = sr.clone();
-            if let Some(c) = cfg.syntax.theme.settings.background {
-                cfg.colors.editor.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
-                cfg.colors.editor.line_number.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
-                cfg.colors.editor.control_char.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
-                cfg.colors.status_bar.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
+            if is_enable_syntax_highlight(ext) {
+                cfg.syntax.syntax_reference = sr.clone();
+                if let Some(c) = cfg.syntax.theme.settings.background {
+                    if cfg.colors.theme.theme_background_enable {
+                        cfg.colors.editor.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
+                        cfg.colors.editor.line_number.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
+                    }
+                }
             }
         } else {
             cfg.syntax.syntax_reference = cfg.syntax.syntax_set.find_syntax_by_extension("txt").unwrap().clone();
         }
 
+        //  let mut f = File::open("lang.yaml").expect("file not found");
+
+        /*
+                let mut f = File::open("lang.yaml").expect("file not found");
+                let mut contents = String::new();
+                f.read_to_string(&mut contents);
+        */
+
         let mut file = File::create("yml.yml").unwrap();
         let s = serde_yaml::to_string(&cfg).unwrap();
-        /*
+        /* read
                 let file = File::open("yml.yml").unwrap();
                 let reader = BufReader::new(file);
                 let deserialized: Cfg = serde_yaml::from_reader(reader).unwrap();

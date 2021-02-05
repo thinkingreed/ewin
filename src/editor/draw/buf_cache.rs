@@ -37,7 +37,7 @@ impl Editor {
         match self.d_range.draw_type {
             DrawType::None => {
                 // If highlight is enabled, read the full text first
-                if is_enable_highlight(&self.ext) && self.draw.syntax_state_vec.len() == 0 {
+                if is_enable_syntax_highlight(&self.ext) && self.draw.syntax_state_vec.len() == 0 {
                     self.draw.sy = 0;
                     self.draw.ey = self.buf.len_lines() - 1;
                     self.set_draw_regions(&highlighter);
@@ -54,7 +54,7 @@ impl Editor {
 
         for y in self.draw.sy..=self.draw.ey {
             let row_vec = self.buf.char_vec_line(y);
-            if is_enable_highlight(&self.ext) {
+            if is_enable_syntax_highlight(&self.ext) {
                 self.set_regions_highlight(y, row_vec, sel_ranges, &highlighter);
             } else {
                 self.set_regions(y, row_vec, sel_ranges);
@@ -64,7 +64,6 @@ impl Editor {
 
     fn set_regions_highlight(&mut self, y: usize, row_vec: Vec<char>, sel_ranges: SelRange, highlighter: &Highlighter) {
         // Log::ep_s("                  set_regions");
-
         let mut regions: Vec<Region> = vec![];
         let row = row_vec.iter().collect::<String>();
 
@@ -89,7 +88,6 @@ impl Editor {
         let (mut x, mut width) = (0, 0);
 
         // If the target is highlight at the first display, all lines are read for highlight_state, but Style is only the display line.
-        // if self.d_range.draw_type != DrawType::None || self.d_range.draw_type == DrawType::None && self.offset_y <= y && y <= self.offset_y + self.disp_row_num {
         for (style, string) in style_vec {
             //Log::ep("style ", &style);
             //Log::ep("string ", &string);
@@ -101,7 +99,6 @@ impl Editor {
                 x += 1;
             }
         }
-        // }
         self.draw.syntax_state_vec.insert(y, SyntaxState { highlight_state, parse_state: parse, ops });
         self.draw.char_vec[y] = row_vec;
         self.draw.regions[y] = regions;
@@ -135,10 +132,12 @@ impl Editor {
         let from_style = self.draw.get_from_style(x, &style, &style_org, style_type_org);
         let style_type = self.draw.ctrl_style_type(c, width, &sel_ranges, &self.search.ranges, self.rnw, y, x);
 
+        ダブルクリックの不具合から
+
         let to_style = match style_type {
             CharStyleType::Select => CharStyle::selected(),
             CharStyleType::Nomal => {
-                if is_enable_highlight(&self.ext) {
+                if is_enable_syntax_highlight(&self.ext) {
                     *style
                 } else {
                     CharStyle::normal()

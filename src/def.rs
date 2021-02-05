@@ -23,6 +23,7 @@ pub const UP: Event = Key(KeyEvent { code: Up, modifiers: KeyModifiers::NONE });
 pub const PAGE_DOWN: Event = Key(KeyEvent { code: PageDown, modifiers: KeyModifiers::NONE });
 pub const DEL: Event = Key(KeyEvent { code: Delete, modifiers: KeyModifiers::NONE });
 pub const BS: Event = Key(KeyEvent { code: Backspace, modifiers: KeyModifiers::NONE });
+pub const END: Event = Key(KeyEvent { code: End, modifiers: KeyModifiers::NONE });
 // pub const INSERT_CHAR: Event = Key(KeyEvent { code: Char(), modifiers: KeyModifiers::NONE });
 pub const ENTER: Event = Key(KeyEvent { code: Enter, modifiers: KeyModifiers::NONE });
 // SHIFT

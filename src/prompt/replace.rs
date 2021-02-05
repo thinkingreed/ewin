@@ -1,4 +1,4 @@
-use crate::{cfg::cfg::*, global::*, model::*};
+use crate::{colors::*, global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 
@@ -49,18 +49,18 @@ impl Prompt {
 impl PromptCont {
     pub fn set_replace(&mut self, cont_type: PromptBufPosi) {
         if cont_type == PromptBufPosi::First {
-            self.guide = format!("{}{}", Colors::get_msg_fg(), &LANG.set_replace);
+            self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.set_replace);
             self.key_desc = format!(
                 "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Ctrl + c",
                 Colors::get_default_fg(),
                 &LANG.all_replace,
-                Colors::get_msg_fg(),
+                Colors::get_msg_highlight_fg(),
                 Colors::get_default_fg(),
                 &LANG.move_input_field,
-                Colors::get_msg_fg(),
+                Colors::get_msg_highlight_fg(),
                 Colors::get_default_fg(),
                 &LANG.close,
-                Colors::get_msg_fg(),
+                Colors::get_msg_highlight_fg(),
             );
             self.buf_desc = format!("{}{}", Colors::get_default_fg(), &LANG.search_str,);
         } else {

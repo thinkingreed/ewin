@@ -1,8 +1,9 @@
-use crate::cfg::lang::LANG_CONFIG;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::env;
 
-#[derive(Debug, Clone, Deserialize)]
+use super::lang::LANG_CONFIG;
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct LangCfg {
     pub row: String,
     pub col: String,
@@ -61,7 +62,7 @@ pub struct LangCfg {
     // other
     pub unsupported_operation: String,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct LangMulti {
     en: LangCfg,
     ja: LangCfg,
@@ -123,8 +124,8 @@ impl LangCfg {
         }
     }
     pub fn read_lang_cfg() -> LangCfg {
-        let lang_multi: LangMulti = toml::from_str(&LANG_CONFIG.to_string()).unwrap();
-
+        //let lang_multi: LangMulti = toml::from_str(&LANG_CONFIG.to_string()).unwrap();
+        let lang_multi: LangMulti = serde_yaml::from_str(&LANG_CONFIG.to_string()).unwrap();
         let lang = env::var("LANG").unwrap_or("en_US".to_string());
         if lang.starts_with("ja_JP") {
             return lang_multi.ja;

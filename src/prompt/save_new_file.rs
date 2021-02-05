@@ -1,4 +1,4 @@
-use crate::{cfg::cfg::*, global::*, model::*};
+use crate::{colors::*, global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 use std::path::Path;
@@ -40,15 +40,15 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_new_file_name(&mut self) {
-        self.guide = format!("{}{}", Colors::get_msg_fg(), &LANG.set_new_filenm);
+        self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.set_new_filenm);
         self.key_desc = format!(
             "{}{}:{}Enter  {}{}:{}Ctrl + c{}",
             Colors::get_default_fg(),
             &LANG.fixed,
-            Colors::get_msg_fg(),
+            Colors::get_msg_highlight_fg(),
             Colors::get_default_fg(),
             &LANG.cancel,
-            Colors::get_msg_fg(),
+            Colors::get_msg_highlight_fg(),
             Colors::get_default_fg(),
         );
     }

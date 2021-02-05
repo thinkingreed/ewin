@@ -1,10 +1,13 @@
 use crate::{global::*, model::*};
-use crossterm::{cursor::*, terminal::*};
 use crossterm::{
+    cursor::*,
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
+    style::{Color, ResetColor, SetBackgroundColor},
+    terminal::*,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+
 use std::ffi::OsStr;
 use std::io::{self, stdout, Write};
 use std::path::Path;
@@ -151,13 +154,11 @@ impl Terminal {
     }
     pub fn init() {
         enable_raw_mode().unwrap();
-        execute!(stdout(), EnableMouseCapture).unwrap();
-        execute!(stdout(), EnterAlternateScreen).unwrap();
+        execute!(stdout(), EnterAlternateScreen, EnableMouseCapture).unwrap();
     }
     pub fn exit() {
         disable_raw_mode().unwrap();
-        execute!(stdout(), DisableMouseCapture).unwrap();
-        execute!(stdout(), LeaveAlternateScreen).unwrap();
+        execute!(stdout(), LeaveAlternateScreen, DisableMouseCapture, ResetColor).unwrap();
     }
 
     pub fn activate(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, file_path: String) {

@@ -27,65 +27,45 @@ impl Editor {
     // adjusting horizontal posi of cursor
     pub fn scroll_horizontal(&mut self) {
         Log::ep_s("　　　　　　　 scroll_horizontal");
+
         // offset_x切替余分文字数(残文字数時にoffset切替)
         let offset_x_extra_num = 3;
         // 上記offset切替時のoffset増減数
         let offset_x_change_num = 10;
         let offset_x_org = self.offset_x;
+        let vec = &self.buf.char_vec_line(self.cur.y);
+        Log::ep("offset_x_org", &offset_x_org);
 
-        // Up・Down
+        // Calc offset_x
+        // Up・Down・Home
         if self.rnw == self.cur.x {
             self.offset_x = 0;
-            self.offset_disp_x = 0;
-        } else {
-            if self.offset_x == 0 || self.cur_y_org != self.cur.y {
-                self.offset_x = self.get_x_offset(self.cur.y, self.cur.x - self.rnw);
-            }
-        }
-
-        // Right移動
-        //   if width > self.disp_col_num && self.offset_disp_x + self.disp_col_num < self.cur.disp_x + offset_x_extra_num {
-        if self.offset_disp_x + self.disp_col_num < self.cur.disp_x + offset_x_extra_num {
-            let (_, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], true);
-            // Disable extra  case width < disp_col_num
-
-            Log::ep("width", &width);
-            Log::ep("width > self.disp_col_num- self.rnw", &(width > self.disp_col_num - self.rnw));
+        } else if self.cur_y_org != self.cur.y || self.evt == END {
+            self.offset_x = self.get_x_offset(self.cur.y, self.cur.x - self.rnw);
+        // cur_right
+        } else if self.evt == RIGHT && self.offset_disp_x + self.disp_col_num < self.cur.disp_x + offset_x_extra_num {
+            let width = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], true).1;
             // +1 for EOF
             if width + 1 > self.disp_col_num - self.rnw {
                 self.offset_x += offset_x_change_num;
             }
-        //  }
-        // Left移動
-        } else if self.cur.disp_x - 1 >= self.rnw + offset_x_extra_num && self.offset_disp_x >= self.cur.disp_x - 1 - self.rnw - offset_x_extra_num {
-            // Log::ep_s(" self.x_offset + self.rnw + extra > self.cur.x ");
-            if self.offset_x >= offset_x_change_num {
-                self.offset_x -= offset_x_change_num;
-            } else {
-                self.offset_x = 0;
-            }
+        // cur_left
+        } else if self.evt == LEFT && self.cur.disp_x - 1 >= self.rnw + offset_x_extra_num && self.offset_disp_x >= self.cur.disp_x - 1 - self.rnw - offset_x_extra_num {
+            Log::ep_s(" self.x_offset + self.rnw + extra > self.cur.x ");
+            self.offset_x = if self.offset_x >= offset_x_change_num { self.offset_x - offset_x_change_num } else { 0 };
         }
 
-        if self.rnw != self.cur.x {
-            let vec = &self.buf.char_vec_line(self.cur.y);
-            if self.cur_y_org != self.cur.y {
-                // Log::ep_s(" self.cur_y_org != self.cur.y ");
-
-                let (_, width) = get_row_width(&vec[..self.offset_x], false);
-                self.offset_disp_x = width;
-
-            // offsetに差分
-            } else if offset_x_org != self.offset_x {
-                if self.offset_x < offset_x_org {
-                    // Log::ep_s(" self.x_offset < x_offset_org  ");
-                    let (_, width) = get_row_width(&vec[self.offset_x..offset_x_org], false);
-                    self.offset_disp_x -= width;
-                } else {
-                    // Log::ep_s("else self.x_offset < x_offset_org  ");
-
-                    let (_, width) = get_row_width(&vec[offset_x_org..self.offset_x], false);
-                    self.offset_disp_x += width;
-                }
+        // Calc offset_disp_x
+        if self.cur_y_org != self.cur.y {
+            Log::ep_s(" self.cur_y_org != self.cur.y ");
+            self.offset_disp_x = get_row_width(&vec[..self.offset_x], false).1;
+        } else if offset_x_org != self.offset_x {
+            if self.offset_x < offset_x_org {
+                // Log::ep_s(" self.x_offset < x_offset_org  ");
+                self.offset_disp_x -= get_row_width(&vec[self.offset_x..offset_x_org], false).1;
+            } else {
+                // Log::ep_s("else self.x_offset < x_offset_org  ");
+                self.offset_disp_x += get_row_width(&vec[offset_x_org..self.offset_x], false).1;
             }
         }
     }
@@ -152,7 +132,6 @@ impl Editor {
     }
     pub fn set_draw_range(&mut self, curt_y_org: usize, offset_y_org: usize, offset_x_org: usize, rnw_org: usize) {
         Log::ep_s("set_draw_range");
-
         Log::ep("self.d_range.draw_type", &self.d_range.draw_type);
 
         if (self.offset_x > 0 && curt_y_org != self.cur.y) || offset_x_org != self.offset_x {

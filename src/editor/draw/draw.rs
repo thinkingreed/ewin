@@ -1,4 +1,4 @@
-use crate::{cfg::cfg::*, colors::*, def::*, global::*, model::*, util::*};
+use crate::{colors::*, def::*, global::*, model::*, util::*};
 use crossterm::style::{Color as CrosstermColor, SetBackgroundColor};
 use crossterm::{cursor::*, terminal::*};
 use std::{cmp::min, env, fs::metadata, io::ErrorKind, path};
@@ -55,7 +55,6 @@ impl Editor {
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         Log::ep_s("draw");
-        Log::ep("self.disp_row_num", &self.disp_row_num);
 
         let (mut y, mut x) = (0, 0);
 
@@ -66,7 +65,11 @@ impl Editor {
             DrawType::Not => {}
             DrawType::None | DrawType::All => {
                 if let Some(c) = CFG.get().unwrap().syntax.theme.settings.background {
-                    str_vec.push(SetBackgroundColor(CrosstermColor::from(Color::from(c))).to_string());
+                    if is_enable_syntax_highlight(&self.ext) && CFG.get().unwrap().colors.theme.theme_background_enable {
+                        str_vec.push(SetBackgroundColor(CrosstermColor::from(Color::from(c))).to_string());
+                    } else {
+                        str_vec.push(SetBackgroundColor(CrosstermColor::from(CFG.get().unwrap().colors.editor.bg)).to_string());
+                    }
                 }
                 str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, 0).to_string()));
             }
@@ -82,17 +85,16 @@ impl Editor {
         }
 
         for i in self.draw.sy..=self.draw.ey {
-            // Log::ep("iii", &i);
-
             self.set_row_num(i, str_vec);
 
             let row_region = self.draw.regions[i].clone();
-            let mut sx = 0;
-            let mut ex = row_region.len();
-            if is_enable_highlight(&self.ext) {
+            let (mut sx, mut ex) = (0, row_region.len());
+
+            if is_enable_syntax_highlight(&self.ext) {
                 sx = if i == self.cur.y { self.offset_x } else { 0 };
                 ex = min(sx + self.disp_col_num, self.buf.len_line_chars(i));
             }
+
             for (x_idx, j) in (0_usize..).zip(sx..ex) {
                 let region = &row_region[j];
                 region.draw_style(str_vec, x_idx == 0 && self.offset_x > 0);
@@ -125,7 +127,6 @@ impl Editor {
                 str_vec.push(NEW_LINE_CRLF.to_string());
             }
         }
-
         self.d_range.clear();
     }
 

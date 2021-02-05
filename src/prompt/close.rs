@@ -1,4 +1,4 @@
-use crate::{cfg::cfg::*, global::*, model::*};
+use crate::{colors::*, global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 
@@ -36,18 +36,18 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_save_confirm(&mut self) {
-        self.guide = format!("{}{}", Colors::get_msg_fg(), &LANG.save_confirmation_to_close);
+        self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.save_confirmation_to_close);
         self.key_desc = format!(
             "{}{}:{}Y  {}{}:{}N  {}{}:{}Ctrl + c{}",
             Colors::get_default_fg(),
             &LANG.yes,
-            Colors::get_msg_fg(),
+            Colors::get_msg_highlight_fg(),
             Colors::get_default_fg(),
             &LANG.no,
-            Colors::get_msg_fg(),
+            Colors::get_msg_highlight_fg(),
             Colors::get_default_fg(),
             &LANG.cancel,
-            Colors::get_msg_fg(),
+            Colors::get_msg_highlight_fg(),
             Colors::get_default_fg(),
         );
     }

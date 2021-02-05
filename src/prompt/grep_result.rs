@@ -1,4 +1,4 @@
-use crate::{cfg::cfg::*, def::*, global::*, model::*};
+use crate::{colors::*, def::*, global::*, model::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 use std::path::Path;
@@ -137,15 +137,15 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_grep_result(&mut self) {
-        self.guide = format!("{}{}", Colors::get_msg_fg(), &LANG.long_time_to_search);
-        self.key_desc = format!("{}{}:{}Ctrl + c", Colors::get_default_fg(), &LANG.cancel, Colors::get_msg_fg(),);
+        self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.long_time_to_search);
+        self.key_desc = format!("{}{}:{}Ctrl + c", Colors::get_default_fg(), &LANG.cancel, Colors::get_msg_highlight_fg(),);
     }
     pub fn set_grep_result_after(&mut self) {
-        self.guide = format!("{}{}", Colors::get_msg_fg(), &LANG.show_search_result);
-        self.key_desc = format!("{}{}:{}Enter", Colors::get_default_fg(), &LANG.open_target_file_in_another_terminal, Colors::get_msg_fg(),);
+        self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.show_search_result);
+        self.key_desc = format!("{}{}:{}Enter", Colors::get_default_fg(), &LANG.open_target_file_in_another_terminal, Colors::get_msg_highlight_fg(),);
     }
     pub fn set_grep_result_after_no_result(&mut self) {
-        self.guide = format!("{}{}", Colors::get_msg_fg(), &LANG.show_search_no_result);
-        self.key_desc = format!("{}{}:{}Ctrl + w", Colors::get_default_fg(), &LANG.close, Colors::get_msg_fg(),);
+        self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.show_search_no_result);
+        self.key_desc = format!("{}{}:{}Ctrl + w", Colors::get_default_fg(), &LANG.close, Colors::get_msg_highlight_fg(),);
     }
 }

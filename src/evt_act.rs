@@ -22,11 +22,11 @@ impl EvtAct {
             EvtActType::Hold => {}
             EvtActType::Next => {
                 let is_err = EvtAct::check_err(editor, mbar);
-                // Log::ep("editor.evt", &editor.evt);
+                Log::ep("editor.evt", &editor.evt);
 
                 if !is_err {
                     EvtAct::init(editor, mbar, prom);
-                    let curt_y_org = editor.cur.y;
+                    editor.cur_y_org = editor.cur.y;
                     let offset_y_org = editor.offset_y;
                     let offset_x_org = editor.offset_x;
                     let rnw_org = editor.rnw;
@@ -92,7 +92,8 @@ impl EvtAct {
                         Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => editor.cur_up(),
                         Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => editor.cur_down(),
                         Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, true),
-                        Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: x, row: y, .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, false),
+                        Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: x, row: y, .. }) => {}
+                        Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, false),
                         _ => mbar.set_err(&LANG.unsupported_operation),
                     }
 
@@ -101,7 +102,7 @@ impl EvtAct {
                     }
                     EvtAct::finalize(editor);
 
-                    editor.set_draw_range(curt_y_org, offset_y_org, offset_x_org, rnw_org);
+                    editor.set_draw_range(editor.cur_y_org, offset_y_org, offset_x_org, rnw_org);
                 }
 
                 Log::ep("offset_y", &editor.offset_y);

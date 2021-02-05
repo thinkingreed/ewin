@@ -113,7 +113,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `F3`                      | Search for characters below.     　　　　　                                 |target       |
 | `Shift` + `F4`            | Search for above characters below.　　　　　                                |target       |
 | `Mouse Left.Down` + `Drag`| Select a range.                                                            |―            |
-| `Mouse Double click`      | Select a range.Delimiter is ```! 　"\#$%&()*+-',./:;<=>?@[]^`{|}~```           |―            |
+| `Mouse Double click`      | Select a range.Delimiter is ```! 　"\#$%&()*+-',./:;<=>?@[]^`{|}~```       |―            |
 | `Mouse Triple click`      | Select a line.                                                             |―            |
 
 

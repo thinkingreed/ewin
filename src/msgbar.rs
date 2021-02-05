@@ -1,4 +1,4 @@
-use crate::{cfg::cfg::*, model::*, util::*};
+use crate::{colors::*, model::*, util::*};
 use crossterm::{cursor::*, terminal::*};
 use std::io::Write;
 
@@ -70,21 +70,21 @@ impl MsgBar {
 
     pub fn set_info(&mut self, msg: &str) {
         let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num - (get_str_width(&msg) - msg.chars().count()));
-        self.msg = format!("{}{}{}", Colors::get_msg_fg(), Colors::get_default_bg(), msg_str,);
+        self.msg = format!("{}{}", Colors::get_msg_highlight_fg(), msg_str,);
     }
 
     pub fn set_err(&mut self, msg: &str) {
         let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num - (get_str_width(&msg) - msg.chars().count()));
-        self.msg = format!("{}{}{}{}", Colors::get_msg_err_fg(), Colors::get_default_bg(), msg_str, Colors::get_default_fg());
+        self.msg = format!("{}{}{}", Colors::get_msg_err_fg(), msg_str, Colors::get_default_fg());
     }
 
     pub fn set_keyrecord(&mut self, msg: &str) {
         let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num - (get_str_width(&msg) - msg.chars().count()));
-        self.msg_keyrecord = format!("{}{}{}", Colors::get_msg_warning_fg(), Colors::get_default_bg(), msg_str,);
+        self.msg_keyrecord = format!("{}{}", Colors::get_msg_warning_fg(), msg_str,);
     }
 
     pub fn set_readonly(&mut self, msg: &str) {
         let msg_str = format!("{msg:^width$}", msg = msg, width = self.disp_col_num - (get_str_width(&msg) - msg.chars().count()));
-        self.msg_readonly = format!("{}{}{}", Colors::get_msg_err_fg(), Colors::get_default_bg(), msg_str,);
+        self.msg_readonly = format!("{}{}", Colors::get_msg_err_fg(), msg_str,);
     }
 }

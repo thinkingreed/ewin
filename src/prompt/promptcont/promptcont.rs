@@ -1,4 +1,4 @@
-use crate::{cfg::cfg::*, model::*};
+use crate::{colors::*, model::*};
 use std::cmp::min;
 
 impl PromptCont {
@@ -6,7 +6,6 @@ impl PromptCont {
         PromptCont { ..PromptCont::default() }
     }
 
-    /// 選択箇所のhighlight
     pub fn ctl_select_color(&mut self) -> String {
         // Log::ep_s("                          Prompt.ctl_select_color");
         let ranges = self.sel.get_range();

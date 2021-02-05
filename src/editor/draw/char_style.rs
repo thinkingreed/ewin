@@ -32,7 +32,14 @@ impl From<Color> for CrosstermColor {
 
 impl From<syntect::highlighting::Style> for CharStyle {
     fn from(s: syntect::highlighting::Style) -> Self {
-        Self { bg: s.background.into(), fg: s.foreground.into() }
+        if CFG.get().unwrap().colors.theme.theme_background_enable {
+            Self { bg: s.background.into(), fg: s.foreground.into() }
+        } else {
+            Self {
+                bg: CFG.get().unwrap().colors.editor.bg,
+                fg: s.foreground.into(),
+            }
+        }
     }
 }
 
@@ -66,6 +73,7 @@ impl CharStyle {
 
     pub fn control_char() -> CharStyle {
         let control_char = &CFG.get().unwrap().colors.editor.control_char;
+        let editor = &CFG.get().unwrap().colors.editor;
         CharStyle {
             fg: Color {
                 rgb: Rgb {
@@ -76,9 +84,9 @@ impl CharStyle {
             },
             bg: Color {
                 rgb: Rgb {
-                    r: control_char.bg.rgb.r,
-                    g: control_char.bg.rgb.g,
-                    b: control_char.bg.rgb.b,
+                    r: editor.bg.rgb.r,
+                    g: editor.bg.rgb.g,
+                    b: editor.bg.rgb.b,
                 },
             },
         }
