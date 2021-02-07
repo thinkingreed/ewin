@@ -1,5 +1,5 @@
 use crate::{def::*, model::*, util::*};
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use std::cmp::{max, min};
 use unicode_width::UnicodeWidthChar;
 
@@ -16,7 +16,7 @@ impl Editor {
                 }
             } else {
                 self.offset_y = max(self.offset_y, self.cur.y + 1 - self.disp_row_num);
-                // y_offsetが減少
+                // offset_y decreases
                 if self.offset_y + self.disp_row_num > self.buf.len_lines() {
                     self.offset_y = self.buf.len_lines() - self.disp_row_num;
                 }
@@ -28,13 +28,13 @@ impl Editor {
     pub fn scroll_horizontal(&mut self) {
         Log::ep_s("　　　　　　　 scroll_horizontal");
 
-        // offset_x切替余分文字数(残文字数時にoffset切替)
+        // offset_x Number of characters for switching judgment
         let offset_x_extra_num = 3;
-        // 上記offset切替時のoffset増減数
+        // Number of offset increase / decrease when switching the above offset
         let offset_x_change_num = 10;
+
         let offset_x_org = self.offset_x;
         let vec = &self.buf.char_vec_line(self.cur.y);
-        Log::ep("offset_x_org", &offset_x_org);
 
         // Calc offset_x
         // Up・Down・Home
@@ -78,14 +78,14 @@ impl Editor {
         return 0;
     }
 
-    /// 指定のy・xからx_offsetを取得
+    /// Get x_offset from the specified y・x
     pub fn get_x_offset(&mut self, y: usize, x: usize) -> usize {
         let (mut count, mut width) = (0, 0);
         for i in (0..x).rev() {
             let c = self.buf.char(y, i);
             // Log::ep("ccccc", c);
             width += c.width().unwrap_or(0);
-            //Log::ep("width", width);
+            // Log::ep("width", width);
             if width + self.rnw + 1 > self.disp_col_num {
                 break;
             }
@@ -141,15 +141,21 @@ impl Editor {
             self.d_range.draw_type = DrawType::All;
         }
         if offset_y_org != self.offset_y {
-            if self.evt == DOWN {
-                let y = self.offset_y + self.disp_row_num - 1;
-                self.d_range = DRange::new(y, y, DrawType::ScrollDown);
-            } else if self.evt == UP {
-                self.d_range = DRange::new(self.offset_y, self.offset_y, DrawType::ScrollUp);
-            } else {
-                self.d_range.draw_type = DrawType::All;
+            match self.evt {
+                Key(KeyEvent { code, .. }) => match code {
+                    Down => self.set_draw_range_scroll(self.offset_y + self.disp_row_num - 1, DrawType::ScrollDown),
+                    Up => self.set_draw_range_scroll(self.offset_y, DrawType::ScrollUp),
+                    _ => self.d_range.draw_type = DrawType::All,
+                },
+                Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => self.set_draw_range_scroll(self.offset_y + self.disp_row_num - 1, DrawType::ScrollDown),
+                Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => self.set_draw_range_scroll(self.offset_y, DrawType::ScrollUp),
+                _ => self.d_range.draw_type = DrawType::All,
             }
         }
         Log::ep("self.d_range.draw_type", &self.d_range.draw_type);
+    }
+
+    pub fn set_draw_range_scroll(&mut self, y: usize, draw_type: DrawType) {
+        self.d_range = DRange::new(y, y, draw_type);
     }
 }

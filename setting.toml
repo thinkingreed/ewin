@@ -1,0 +1,32 @@
+[general]
+[colors.theme]
+theme = "base16-eighties.dark"
+theme_background_enable = false
+
+[colors.editor]
+background = "#000000"
+foreground = "#ffffff"
+
+[colors.editor.line_number]
+background = "#000000"
+foreground = "#6e6e6e"
+
+[colors.editor.selection]
+background = "#dd4814"
+foreground = "#000000"
+
+[colors.editor.search]
+background = "#dd4814"
+foreground = "#000000"
+
+[colors.editor.control_char]
+foreground = "#6e6e6e"
+
+[colors.status_bar]
+foreground = "#87411f"
+
+[colors.msg]
+normal_foreground = "#ffffff"
+highlight_foreground = "#00ff00"
+warning_foreground = "#ffa500"
+err_foreground = "#ff0000"

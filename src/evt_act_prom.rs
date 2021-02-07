@@ -11,7 +11,7 @@ impl EvtAct {
         }
         Terminal::set_disp_size(editor, mbar, prom, sbar);
 
-        EvtAct::init_check_prom(editor, mbar);
+        EvtAct::check_clear_mag(editor, mbar);
 
         let evt_act = EvtAct::check_prom(out, editor, mbar, prom, sbar);
 
@@ -25,19 +25,20 @@ impl EvtAct {
     }
 
     pub fn check_prom<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
-        if prom.is_save_new_file == true || prom.is_search == true || prom.is_close_confirm == true || prom.is_replace == true || prom.is_grep == true || prom.is_grep_result == true {
+        if prom.is_save_new_file || prom.is_search || prom.is_close_confirm || prom.is_replace || prom.is_grep || prom.is_grep_result {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                     Char('c') => {
                         if prom.is_grep_result && prom.is_grep_result_cancel == false {
                             prom.is_grep_result_cancel = true;
                         } else {
-                            prom.clear();
-                            mbar.clear();
-                            editor.d_range.draw_type = DrawType::All;
-                            Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
+                            Terminal::init_draw(out, editor, mbar, prom, sbar);
                         }
                         return EvtActType::Hold;
+                    }
+                    Char('w') => {
+                        Terminal::init_draw(out, editor, mbar, prom, sbar);
+                        return EvtActType::Next;
                     }
                     _ => {}
                 },
@@ -45,8 +46,10 @@ impl EvtAct {
             }
         }
 
+        let mut evt_act_type = None;
+
         // edit
-        if prom.is_save_new_file == true || prom.is_search == true || prom.is_replace == true || prom.is_grep == true {
+        if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                     Left | Right | BackTab | Home | End | Char(_) => {
@@ -86,7 +89,7 @@ impl EvtAct {
                             _ => {}
                         }
                         prom.draw_only(out);
-                        return EvtActType::Hold;
+                        evt_act_type = Some(EvtActType::Hold);
                     }
                     _ => {}
                 },
@@ -103,7 +106,7 @@ impl EvtAct {
                             prom.clear_sels();
                             prom.draw_only(out);
                         }
-                        return EvtActType::Hold;
+                        evt_act_type = Some(EvtActType::Hold);
                     }
                     _ => {}
                 },
@@ -127,12 +130,34 @@ impl EvtAct {
                         }
                         prom.clear_sels();
                         prom.draw_only(out);
-                        return EvtActType::Hold;
+                        evt_act_type = Some(EvtActType::Hold);
                     }
                     _ => {}
                 },
                 _ => {}
             }
+        }
+        // incremental search
+        if prom.is_search {
+            match editor.evt {
+                Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
+                    Char(_) => EvtAct::exec_search_incremental(out, editor, mbar, prom, sbar),
+                    _ => {}
+                },
+                Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
+                    Char('v') => EvtAct::exec_search_incremental(out, editor, mbar, prom, sbar),
+                    _ => {}
+                },
+                Key(KeyEvent { code, .. }) => match code {
+                    Char(_) | Delete | Backspace => EvtAct::exec_search_incremental(out, editor, mbar, prom, sbar),
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
+
+        if let Some(act_type) = evt_act_type {
+            return act_type;
         }
 
         // unable to edit
@@ -191,9 +216,7 @@ impl EvtAct {
         }
     }
 
-    pub fn init_check_prom(editor: &mut Editor, mbar: &mut MsgBar) {
-        Log::ep_s("init_check_prom");
-
+    pub fn check_clear_mag(editor: &mut Editor, mbar: &mut MsgBar) {
         match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, .. }) => mbar.clear_mag(),
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, .. }) => mbar.clear_mag(),
@@ -212,7 +235,7 @@ impl EvtAct {
         Log::ep_s("finalize_check_prom");
 
         if prom.is_grep {
-            // 選択範囲クリア判定
+            // Check clear tab candidate
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                     Left | Right | Home | End => prom.clear_tab_comp(),

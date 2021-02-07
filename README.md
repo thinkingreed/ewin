@@ -1,8 +1,9 @@
 ewin
 ====
 
-[ewin]h Simple editor for Windows(GUI) users.
-  There is no need to learn new operation commands.
+***Simple editor for Window(GUI) users.***
+
+***No need to remember commands***
 
 It provides basic features as a minimal text editor:
 
@@ -61,7 +62,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 |----------------|--------------------------------------------------------------------------------------|-------------|
 | `Ctrl` + `w`   | Quit.                                                                                |―            |
 | `Ctrl` + `s`   | Save current buffer to file.                                                         |―            |
-| `Ctrl` + `f`   | Enter the characters to search.Search target is open file.                           |―            |
+| `Ctrl` + `f`   | Enter the characters to incremental search.Search target is open file.               |―            |
 | `Ctrl` + `g`   | Grep.Enter the characters to search.The search target is the entered file pattern    |―            |
 |                | Command to use : grep -rHnI search_str --include=search_filenm search_folder         |             |
 |                | -r:Subfolder search,-H:File name display,-n:Line number display,-I: Binary file not applicable|             |

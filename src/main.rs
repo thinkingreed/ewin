@@ -33,8 +33,8 @@ async fn main() {
     let mut prom = Prompt::new();
     let mut sbar = StatusBar::new();
 
-    editor.ext = Path::new(&file_path).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string();
-    Cfg::init(&editor.ext);
+    editor.file.ext = Path::new(&file_path).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string();
+    Cfg::init(&editor.file.ext);
 
     Terminal::set_disp_size(&mut editor, &mut mbar, &mut prom, &mut sbar);
     Terminal::init();

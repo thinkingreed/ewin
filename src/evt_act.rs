@@ -92,7 +92,7 @@ impl EvtAct {
                         Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => editor.cur_up(),
                         Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => editor.cur_down(),
                         Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, true),
-                        Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: x, row: y, .. }) => {}
+                        Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: _, row: _, .. }) => {}
                         Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, false),
                         _ => mbar.set_err(&LANG.unsupported_operation),
                     }
@@ -173,7 +173,7 @@ impl EvtAct {
             },
 
             // for err msg or selected
-            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
                 if editor.sel.is_selected() {
                     editor.d_range.draw_type = DrawType::Target;
                 }
@@ -244,15 +244,17 @@ impl EvtAct {
                 editor.d_range.draw_type = DrawType::All;
             }
             Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) | Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
-                let sel = editor.sel.get_range();
-                editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
+                if editor.sel.is_selected() {
+                    let sel = editor.sel.get_range();
+                    editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
+                }
             }
             _ => editor.sel.clear(),
         }
 
         // Refresh search results
         if editor.is_edit_evt(true) && editor.search.ranges.len() > 0 {
-            editor.search.ranges = editor.get_search_ranges(&editor.search.str, "");
+            editor.search.ranges = editor.get_search_ranges(&editor.search.str, 0, editor.buf.len_chars());
         }
     }
     pub fn check_err(editor: &mut Editor, mbar: &mut MsgBar) -> bool {

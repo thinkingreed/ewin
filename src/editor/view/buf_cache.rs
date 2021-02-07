@@ -1,5 +1,5 @@
 extern crate ropey;
-use crate::{def::*, editor::draw::char_style::*, global::*, model::*, util::*};
+use crate::{def::*, editor::view::char_style::*, global::*, model::*};
 use std::cmp::min;
 use syntect::highlighting::{HighlightIterator, HighlightState, Highlighter, Style};
 use syntect::parsing::{ParseState, ScopeStack};
@@ -20,9 +20,9 @@ impl Editor {
 
         let d_range = self.d_range.get_range();
         match d_range.draw_type {
-            DrawType::Target | DrawType::After | DrawType::ScrollDown | DrawType::ScrollUp => {
+            DrawType::Target | DrawType::ScrollDown | DrawType::ScrollUp => {
                 self.draw.sy = d_range.sy;
-                self.draw.ey = d_range.ey;
+                self.draw.ey = if d_range.draw_type == DrawType::After { self.disp_row_num } else { d_range.ey };
             }
             DrawType::All | DrawType::None => {
                 self.draw.sy = self.offset_y;
@@ -37,16 +37,14 @@ impl Editor {
         match self.d_range.draw_type {
             DrawType::None => {
                 // If highlight is enabled, read the full text first
-                if is_enable_syntax_highlight(&self.ext) && self.draw.syntax_state_vec.len() == 0 {
+                if self.file.is_enable_syntax_highlight && self.draw.syntax_state_vec.len() == 0 {
                     self.draw.sy = 0;
                     self.draw.ey = self.buf.len_lines() - 1;
-                    self.set_draw_regions(&highlighter);
-                } else {
-                    self.set_draw_regions(&highlighter);
                 }
+                self.set_draw_regions(&highlighter);
             }
-            DrawType::Target | DrawType::After | DrawType::All | DrawType::ScrollDown => self.set_draw_regions(&highlighter),
-            DrawType::Not | DrawType::ScrollUp => {}
+            DrawType::Target | DrawType::After | DrawType::All | DrawType::ScrollDown | DrawType::ScrollUp => self.set_draw_regions(&highlighter),
+            DrawType::Not => {}
         }
     }
     fn set_draw_regions(&mut self, highlighter: &Highlighter) {
@@ -54,7 +52,7 @@ impl Editor {
 
         for y in self.draw.sy..=self.draw.ey {
             let row_vec = self.buf.char_vec_line(y);
-            if is_enable_syntax_highlight(&self.ext) {
+            if self.file.is_enable_syntax_highlight {
                 self.set_regions_highlight(y, row_vec, sel_ranges, &highlighter);
             } else {
                 self.set_regions(y, row_vec, sel_ranges);
@@ -63,7 +61,7 @@ impl Editor {
     }
 
     fn set_regions_highlight(&mut self, y: usize, row_vec: Vec<char>, sel_ranges: SelRange, highlighter: &Highlighter) {
-        // Log::ep_s("                  set_regions");
+        Log::ep_s("                  set_regions_highlight");
         let mut regions: Vec<Region> = vec![];
         let row = row_vec.iter().collect::<String>();
 
@@ -72,7 +70,7 @@ impl Editor {
 
         if self.draw.syntax_state_vec.len() == 0 {
             scope = ScopeStack::new();
-            parse = ParseState::new(&CFG.get().unwrap().syntax.syntax_reference);
+            parse = ParseState::new(&CFG.get().unwrap().syntax.syntax_reference.clone().unwrap());
         } else {
             let y = if y == 0 { 1 } else { y };
             let syntax_state = self.draw.syntax_state_vec[y - 1].clone();
@@ -89,8 +87,8 @@ impl Editor {
 
         // If the target is highlight at the first display, all lines are read for highlight_state, but Style is only the display line.
         for (style, string) in style_vec {
-            //Log::ep("style ", &style);
-            //Log::ep("string ", &string);
+            // Log::ep("style ", &style);
+            // Log::ep("string ", &string);
 
             let mut style = CharStyle::from(style);
             for c in string.chars() {
@@ -106,7 +104,7 @@ impl Editor {
     }
 
     fn set_regions(&mut self, y: usize, row_vec: Vec<char>, sel_ranges: SelRange) {
-        // Log::ep_s("                  set_regions");
+        Log::ep_s("                  set_regions");
 
         let mut regions: Vec<Region> = vec![];
         let (mut x, mut width) = (0, 0);
@@ -132,12 +130,10 @@ impl Editor {
         let from_style = self.draw.get_from_style(x, &style, &style_org, style_type_org);
         let style_type = self.draw.ctrl_style_type(c, width, &sel_ranges, &self.search.ranges, self.rnw, y, x);
 
-        ダブルクリックの不具合から
-
         let to_style = match style_type {
             CharStyleType::Select => CharStyle::selected(),
             CharStyleType::Nomal => {
-                if is_enable_syntax_highlight(&self.ext) {
+                if self.file.is_enable_syntax_highlight {
                     *style
                 } else {
                     CharStyle::normal()
@@ -154,12 +150,7 @@ impl Editor {
 impl Draw {
     pub fn ctrl_style_type(&self, c: char, width: usize, sel_range: &SelRange, search_ranges: &Vec<SearchRange>, rnw: usize, y: usize, x: usize) -> CharStyleType {
         if sel_range.is_selected() && sel_range.sy <= y && y <= sel_range.ey {
-            Log::ep("ccc", &c);
-            Log::ep("xxx", &x);
-            Log::ep("width", &width);
-
             let disp_x = width + rnw;
-            Log::ep("disp_x", &disp_x);
 
             // Lines with the same start and end
             // Start line
@@ -170,7 +161,7 @@ impl Draw {
                 || (sel_range.ey == y && sel_range.sy != y && disp_x < sel_range.e_disp_x)
                 || (sel_range.sy < y && y < sel_range.ey)
             {
-                Log::ep_s("Select Select Select Select Select Select Select");
+                Log::ep_s("Select Select Select");
                 return CharStyleType::Select;
             }
         }

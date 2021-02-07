@@ -29,10 +29,10 @@ impl EvtAct {
             }
             let line_str = line_str.replace(&editor.search.folder, "");
             editor.buf.insert_end(&format!("{}{}", line_str, NEW_LINE));
-
             editor.set_grep_result();
             if editor.buf.len_lines() > editor.disp_row_num {
-                editor.d_range = DRange::new(editor.offset_y + editor.disp_row_num - 2, 0, DrawType::ScrollDown);
+                let y = editor.offset_y + editor.disp_row_num - 1;
+                editor.d_range = DRange::new(y, y, DrawType::ScrollDown);
             } else {
                 editor.d_range.draw_type = DrawType::All;
             }

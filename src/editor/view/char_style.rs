@@ -65,9 +65,10 @@ impl CharStyle {
     }
 
     pub fn none() -> CharStyle {
+        // The set value has no meaning and is used as the initial value.
         CharStyle {
-            fg: Color { rgb: Rgb { r: 0, g: 0, b: 0 } },
-            bg: Color { rgb: Rgb { r: 0, g: 0, b: 0 } },
+            fg: Color { rgb: Rgb { r: 99, g: 99, b: 99 } },
+            bg: Color { rgb: Rgb { r: 99, g: 99, b: 99 } },
         }
     }
 

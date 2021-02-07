@@ -1,5 +1,5 @@
 extern crate ropey;
-use crate::{def::*, editor::draw::char_style::*};
+use crate::{def::*, editor::view::char_style::*};
 use chrono::NaiveDateTime;
 use crossterm::event::{Event, Event::Key, KeyCode::End};
 use ropey::Rope;
@@ -517,24 +517,14 @@ pub struct Editor {
     pub buf: TextBuffer,
     pub buf_cache: Vec<Vec<char>>,
     /// current cursor position
-    /// self.cursor.y < self.buffer.len()
-    /// self.cursor.x <= self.buffer[self.cursor.y].len() + self.lnw
     pub cur: Cur,
-    /// 画面の一番上はバッファの何行目か
-    /// スクロール処理に使う
     pub offset_y: usize,
     pub offset_x: usize,
-    // 表示幅単位
     pub offset_disp_x: usize,
-    // 元の行のx_offset_di行の算出用
     pub cur_y_org: usize,
-    // x_offset対象の行
-    // pub x_offset_y: usize,
-    // 連続でカーソル上下時の基本x位置(２バイト文字対応)  line_num_width + 1以上 初期値:0
+    // Basic x position when moving the cursor up and down  line_num_width + 1 over initial:0
     pub updown_x: usize,
-    pub path: Option<path::PathBuf>,
-    pub path_str: String,
-    pub ext: String,
+    pub file: File,
     // row_number_width
     pub rnw: usize,
     pub sel: SelRange,
@@ -562,12 +552,8 @@ impl Editor {
             offset_x: 0,
             offset_disp_x: 0,
             cur_y_org: 0,
-            // x_offset_disp_org: 0,
-            //    x_offset_y: 0,
             updown_x: 0,
-            path: None,
-            path_str: String::new(),
-            ext: String::new(),
+            file: File::default(),
             rnw: 0,
             sel: SelRange::default(),
             evt: Key(End.into()),
@@ -587,6 +573,22 @@ impl Editor {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TextBuffer {
     pub text: Rope,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct File {
+    pub ext: String,
+    pub path: Option<path::PathBuf>,
+    pub is_enable_syntax_highlight: bool,
+}
+
+impl Default for File {
+    fn default() -> Self {
+        File {
+            ext: String::new(),
+            path: None,
+            is_enable_syntax_highlight: false,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

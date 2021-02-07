@@ -3,11 +3,10 @@ use crossterm::{
     cursor::*,
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
-    style::{Color, ResetColor, SetBackgroundColor},
+    style::ResetColor,
     terminal::*,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-
 use std::ffi::OsStr;
 use std::io::{self, stdout, Write};
 use std::path::Path;
@@ -26,7 +25,6 @@ impl Terminal {
         Log::ep("d_range", &d_range);
 
         if d_range.draw_type != DrawType::Not {
-            Log::ep_s("editor.draw");
             editor.draw_cache();
             editor.draw(&mut str_vec);
         }
@@ -109,6 +107,13 @@ impl Terminal {
             Log::ep("prom.disp_row_posi", prom.disp_row_posi);
             Log::ep("sbar.disp_row_posi", sbar.disp_row_posi);
         */
+    }
+
+    pub fn init_draw<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
+        prom.clear();
+        mbar.clear();
+        editor.d_range.draw_type = DrawType::All;
+        Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
     }
 
     pub fn show_cur() {

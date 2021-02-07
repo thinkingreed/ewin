@@ -15,6 +15,7 @@ pub const MULTI_CLICK_MILLISECONDS: i64 = 500;
 pub const DELIM_STR: &'static str = r#"!"\#$%&()*+-',./:;<=>?@[]^`{|}~"#;
 pub const HALF_SPACE: &'static str = " ";
 pub const FULL_SPACE: &'static str = "　";
+pub const ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE: u64 = 1048576;
 /// Event
 pub const RIGHT: Event = Key(KeyEvent { code: Right, modifiers: KeyModifiers::NONE });
 pub const LEFT: Event = Key(KeyEvent { code: Left, modifiers: KeyModifiers::NONE });
@@ -37,4 +38,3 @@ pub const CUT: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Ch
 pub const UNDO: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('z') });
 pub const REDO: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('y') });
 pub const ALL_SELECT: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('a') });
-// MOUSE

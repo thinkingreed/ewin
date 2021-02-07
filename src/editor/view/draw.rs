@@ -16,6 +16,15 @@ impl Editor {
                     let msg_2 = &LANG.no_write_permission.clone();
                     mbar.set_readonly(&format!("{}({})", msg_1, msg_2));
                 }
+
+                // Judge enable syntax_highlight
+                if CFG.get().unwrap().syntax.syntax_reference.is_some() && file_meta.len() < ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE && is_enable_syntax_highlight(&self.file.ext) {
+                    self.file.is_enable_syntax_highlight = true;
+                }
+
+                Log::ep("self.file.is_enable_syntax_highlight", &self.file.is_enable_syntax_highlight);
+
+                self.file.path = Some(path.into());
             } else {
                 println!("{}", LANG.file_not_found.clone());
                 std::process::exit(1);
@@ -40,15 +49,16 @@ impl Editor {
                     println!("{}", LANG.no_read_permission.clone());
                     std::process::exit(1);
                 }
-                ErrorKind::NotFound => self.buf.text.insert_char(self.buf.text.len_chars(), EOF_MARK),
+                ErrorKind::NotFound => {
+                    self.buf.text.insert_char(self.buf.text.len_chars(), EOF_MARK);
+                    self.file.path = None;
+                }
                 _ => {
                     println!("{} {:?}", LANG.file_opening_problem, err);
                     std::process::exit(1);
                 }
             },
         }
-        self.path_str = path.to_string_lossy().to_string();
-        self.path = Some(path.into());
 
         self.set_cur_default();
     }
@@ -65,7 +75,7 @@ impl Editor {
             DrawType::Not => {}
             DrawType::None | DrawType::All => {
                 if let Some(c) = CFG.get().unwrap().syntax.theme.settings.background {
-                    if is_enable_syntax_highlight(&self.ext) && CFG.get().unwrap().colors.theme.theme_background_enable {
+                    if is_enable_syntax_highlight(&self.file.ext) && CFG.get().unwrap().colors.theme.theme_background_enable {
                         str_vec.push(SetBackgroundColor(CrosstermColor::from(Color::from(c))).to_string());
                     } else {
                         str_vec.push(SetBackgroundColor(CrosstermColor::from(CFG.get().unwrap().colors.editor.bg)).to_string());
@@ -85,12 +95,13 @@ impl Editor {
         }
 
         for i in self.draw.sy..=self.draw.ey {
-            self.set_row_num(i, str_vec);
+            // Log::ep("iii", &i);
 
+            self.set_row_num(i, str_vec);
             let row_region = self.draw.regions[i].clone();
             let (mut sx, mut ex) = (0, row_region.len());
 
-            if is_enable_syntax_highlight(&self.ext) {
+            if self.file.is_enable_syntax_highlight {
                 sx = if i == self.cur.y { self.offset_x } else { 0 };
                 ex = min(sx + self.disp_col_num, self.buf.len_line_chars(i));
             }

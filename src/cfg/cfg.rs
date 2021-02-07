@@ -1,11 +1,12 @@
-use crate::{colors::*, global::*, util::*};
+use crate::{cfg::*, colors::*, global::*, util::*};
+use anyhow::Context;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Write;
-use std::{ffi::OsStr, path::Path};
 use syntect::highlighting::{Theme, ThemeSet};
 use syntect::parsing::SyntaxSet;
 use syntect::{self, parsing::SyntaxReference};
+use theme_loader::ThemeLoader;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Cfg {
@@ -52,15 +53,15 @@ impl CfgColors {
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgColorTheme {
-    pub theme: String,
+    pub theme_path: String,
     pub theme_background_enable: bool,
 }
 
 impl CfgColorTheme {
     pub fn default() -> Self {
         CfgColorTheme {
-            theme: "base16-eighties.dark".to_string(),
-            theme_background_enable: false,
+            theme_path: "/home/hi/rust/ewin/target/debug/Dracula.tmTheme".to_string(),
+            theme_background_enable: true,
         }
     }
 }
@@ -216,7 +217,7 @@ impl CfgColorMsg {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Syntax {
     pub syntax_set: SyntaxSet,
-    pub syntax_reference: SyntaxReference,
+    pub syntax_reference: Option<SyntaxReference>,
     pub theme: Theme,
     pub theme_set: ThemeSet,
     pub fg: Color,
@@ -227,7 +228,7 @@ impl Default for Syntax {
     fn default() -> Self {
         Syntax {
             syntax_set: SyntaxSet::load_defaults_newlines(),
-            syntax_reference: SyntaxSet::load_defaults_newlines().find_syntax_by_extension(&Path::new("").extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string()).unwrap().clone(),
+            syntax_reference: None,
             theme_set: ThemeSet::load_defaults(),
             theme: Theme::default(),
             fg: Color::default(),
@@ -257,11 +258,16 @@ impl Cfg {
         cfg.colors.status_bar.fg = Colors::hex2rgb(&cfg.colors.status_bar.foreground);
 
         cfg.syntax.syntax_set = SyntaxSet::load_defaults_newlines();
-        cfg.syntax.theme = cfg.syntax.theme_set.themes[&cfg.colors.theme.theme].clone();
+        // cfg.syntax.theme = cfg.syntax.theme_set.themes[&cfg.colors.theme.theme_path].clone();
+
+        cfg.syntax.theme = ThemeLoader::new(&cfg.colors.theme.theme_path, &cfg.syntax.theme_set.themes)
+            .load()
+            .with_context(|| format!("Failed to read instrs from {:?}", &cfg.syntax.theme_set.themes))
+            .unwrap();
 
         if let Some(sr) = cfg.syntax.syntax_set.find_syntax_by_extension(&ext) {
+            cfg.syntax.syntax_reference = Some(sr.clone());
             if is_enable_syntax_highlight(ext) {
-                cfg.syntax.syntax_reference = sr.clone();
                 if let Some(c) = cfg.syntax.theme.settings.background {
                     if cfg.colors.theme.theme_background_enable {
                         cfg.colors.editor.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
@@ -270,29 +276,23 @@ impl Cfg {
                 }
             }
         } else {
-            cfg.syntax.syntax_reference = cfg.syntax.syntax_set.find_syntax_by_extension("txt").unwrap().clone();
+            cfg.syntax.syntax_reference = None;
         }
 
-        //  let mut f = File::open("lang.yaml").expect("file not found");
-
-        /*
-                let mut f = File::open("lang.yaml").expect("file not found");
-                let mut contents = String::new();
-                f.read_to_string(&mut contents);
-        */
-
-        let mut file = File::create("yml.yml").unwrap();
-        let s = serde_yaml::to_string(&cfg).unwrap();
-        /* read
-                let file = File::open("yml.yml").unwrap();
-                let reader = BufReader::new(file);
-                let deserialized: Cfg = serde_yaml::from_reader(reader).unwrap();
-                let mut file = File::create("yml_2.yml").unwrap();
-                let s = serde_yaml::to_string(&deserialized).unwrap();
-        */
-        write!(file, "{}", s).unwrap();
-        file.flush().unwrap();
-
+        if cfg!(debug_assertions) {
+            // TODO Read configuration file
+            let mut file = File::create("setting.toml").unwrap();
+            let s = toml::to_string(&cfg).unwrap();
+            /* read
+                    let file = File::open("yml.yml").unwrap();
+                    let reader = BufReader::new(file);
+                    let deserialized: Cfg = serde_yaml::from_reader(reader).unwrap();
+                    let mut file = File::create("yml_2.yml").unwrap();
+                    let s = serde_yaml::to_string(&deserialized).unwrap();
+            */
+            write!(file, "{}", s).unwrap();
+            file.flush().unwrap();
+        }
         let _ = CFG.set(cfg);
     }
 }

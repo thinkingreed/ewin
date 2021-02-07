@@ -13,7 +13,8 @@ categories = ["command-line-utilities"]
 [package.metadata.deb]
 extended-description = """\
 Simple editor for Window(GUI) users.\ 
-There is no need to learn new operation commands.\
+No need to remember commands.\
+
 It provides basic features as a minimal text editor.\
 depends = "$auto"\
 """
@@ -35,14 +36,14 @@ clap = "2"
 unicode-width = "0"
 clipboard = "0.5.0"
 crossterm  = {version ="0.19.0", features = ["event-stream"]} 
-serde = { version = "1.0.118", features = ["derive"] }
+serde = { version = "1.0.123", features = ["derive"] }
 serde_yaml = "0.8"
 toml = "0.5.8"
-cargo-deb = "1.28.2"
-tokio = { version = "1.0.1", features = ["full"] }
-tokio-util = { version = "0.6.0", features = ["codec"] }
+cargo-deb = "1.28.3"
+tokio = { version = "1.2.0", features = ["full"] }
+tokio-util = { version = "0.6.3", features = ["codec"] }
 futures = "0.3"
-futures-util = "0.3.8"
+futures-util = "0.3.12"
 once_cell = "1.5.2"
 ropey="1.2.0"
 syntect = "4.5"

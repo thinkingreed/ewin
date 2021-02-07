@@ -16,7 +16,7 @@ pub mod colors;
 pub mod def;
 pub mod evt_act_prom;
 pub mod editor {
-    pub mod draw {
+    pub mod view {
         pub mod buf_cache;
         pub mod char_style;
         pub mod draw;
@@ -57,4 +57,5 @@ pub mod cfg {
     pub mod cfg;
     pub mod lang;
     pub mod lang_cfg;
+    pub mod theme_loader;
 }
