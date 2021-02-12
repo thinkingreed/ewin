@@ -1,30 +1,29 @@
 use crate::model::PromptBufPosi::*;
-use crate::model::*;
+use crate::{help::*, model::*, statusbar::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent as M_Event, MouseEventKind as M_EventKind};
 use std::io::Write;
 
 impl EvtAct {
-    pub fn check_next_process<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn check_next_process<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
         match editor.evt {
             Resize(_, _) => return EvtActType::Next,
             _ => {}
         }
-        Terminal::set_disp_size(editor, mbar, prom, sbar);
 
         EvtAct::check_clear_mag(editor, mbar);
 
-        let evt_act = EvtAct::check_prom(out, editor, mbar, prom, sbar);
+        let evt_act = EvtAct::check_prom(out, editor, mbar, prom, help, sbar);
 
         EvtAct::finalize_check_prom(editor, prom);
 
         if evt_act == EvtActType::Hold && mbar.msg_org != mbar.msg {
-            Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
+            Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
         }
 
         return evt_act;
     }
 
-    pub fn check_prom<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn check_prom<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
         if prom.is_save_new_file || prom.is_search || prom.is_close_confirm || prom.is_replace || prom.is_grep || prom.is_grep_result {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
@@ -32,12 +31,12 @@ impl EvtAct {
                         if prom.is_grep_result && prom.is_grep_result_cancel == false {
                             prom.is_grep_result_cancel = true;
                         } else {
-                            Terminal::init_draw(out, editor, mbar, prom, sbar);
+                            Terminal::init_draw(out, editor, mbar, prom, help, sbar);
                         }
                         return EvtActType::Hold;
                     }
                     Char('w') => {
-                        Terminal::init_draw(out, editor, mbar, prom, sbar);
+                        Terminal::init_draw(out, editor, mbar, prom, help, sbar);
                         return EvtActType::Next;
                     }
                     _ => {}
@@ -101,7 +100,7 @@ impl EvtAct {
                             Third => prom.cont_3.paste(editor, mbar),
                         };
                         if is_all_redrow {
-                            Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
+                            Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
                         } else {
                             prom.clear_sels();
                             prom.draw_only(out);
@@ -141,15 +140,15 @@ impl EvtAct {
         if prom.is_search {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                    Char(_) => EvtAct::exec_search_incremental(out, editor, mbar, prom, sbar),
+                    Char(_) => EvtAct::exec_search_incremental(out, editor, mbar, prom, help, sbar),
                     _ => {}
                 },
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                    Char('v') => EvtAct::exec_search_incremental(out, editor, mbar, prom, sbar),
+                    Char('v') => EvtAct::exec_search_incremental(out, editor, mbar, prom, help, sbar),
                     _ => {}
                 },
                 Key(KeyEvent { code, .. }) => match code {
-                    Char(_) | Delete | Backspace => EvtAct::exec_search_incremental(out, editor, mbar, prom, sbar),
+                    Char(_) | Delete | Backspace => EvtAct::exec_search_incremental(out, editor, mbar, prom, help, sbar),
                     _ => {}
                 },
                 _ => {}
@@ -199,15 +198,15 @@ impl EvtAct {
         }
 
         if prom.is_save_new_file == true {
-            return EvtAct::save_new_filenm(out, editor, mbar, prom, sbar);
+            return EvtAct::save_new_filenm(out, editor, mbar, prom, help, sbar);
         } else if prom.is_close_confirm == true {
-            return EvtAct::close(out, editor, mbar, prom, sbar);
+            return EvtAct::close(out, editor, mbar, prom, help, sbar);
         } else if prom.is_search == true {
-            return EvtAct::search(out, editor, mbar, prom, sbar);
+            return EvtAct::search(out, editor, mbar, prom, help, sbar);
         } else if prom.is_replace == true {
-            return EvtAct::replace(out, editor, mbar, prom, sbar);
+            return EvtAct::replace(out, editor, mbar, prom, help, sbar);
         } else if prom.is_grep == true {
-            return EvtAct::grep(out, editor, mbar, prom, sbar);
+            return EvtAct::grep(out, editor, mbar, prom, help, sbar);
         } else if prom.is_grep_result == true {
             return EvtAct::grep_result(editor);
         } else {

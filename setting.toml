@@ -1,7 +1,9 @@
 [general]
+
+# If theme is set, theme color has the highest priority
 [colors.theme]
-theme = "base16-eighties.dark"
-theme_background_enable = false
+# theme_path = "tmTheme.tmTheme"
+# theme_background_enable = true
 
 [colors.editor]
 background = "#000000"
@@ -27,6 +29,6 @@ foreground = "#87411f"
 
 [colors.msg]
 normal_foreground = "#ffffff"
-highlight_foreground = "#00ff00"
+highlight_foreground = "#00c800"
 warning_foreground = "#ffa500"
 err_foreground = "#ff0000"

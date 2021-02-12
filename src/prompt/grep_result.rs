@@ -1,4 +1,4 @@
-use crate::{colors::*, def::*, global::*, model::*};
+use crate::{colors::*, def::*, global::*, help::*, model::*, statusbar::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 use std::path::Path;
@@ -7,7 +7,7 @@ use tokio::process::{Child, Command};
 use tokio_util::codec::LinesCodecError;
 
 impl EvtAct {
-    pub fn draw_grep_result<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, std_event: Option<Result<String, LinesCodecError>>, is_stdout: bool, child: &mut Child) {
+    pub fn draw_grep_result<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar, std_event: Option<Result<String, LinesCodecError>>, is_stdout: bool, child: &mut Child) {
         Log::ep_s("　　　　　　　draw_grep_result");
 
         if (prom.is_grep_stdout || prom.is_grep_stderr) && !prom.is_grep_result_cancel {
@@ -19,7 +19,7 @@ impl EvtAct {
                     //
                     if is_stdout {
                         Log::ep_s("prom.is_grep_stdout    false");
-                        EvtAct::exit_grep_result(out, editor, mbar, prom, sbar, child);
+                        EvtAct::exit_grep_result(out, editor, mbar, prom, help, sbar, child);
                     } else {
                         Log::ep_s("prom.is_grep_stderr    false");
                         prom.is_grep_stderr = false;
@@ -31,20 +31,20 @@ impl EvtAct {
             editor.buf.insert_end(&format!("{}{}", line_str, NEW_LINE));
             editor.set_grep_result();
             if editor.buf.len_lines() > editor.disp_row_num {
-                let y = editor.offset_y + editor.disp_row_num - 1;
+                let y = editor.offset_y + editor.disp_row_num - 2;
                 editor.d_range = DRange::new(y, y, DrawType::ScrollDown);
             } else {
                 editor.d_range.draw_type = DrawType::All;
             }
 
-            Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
+            Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
         } else {
             Log::ep_s("grep is canceled");
-            EvtAct::exit_grep_result(out, editor, mbar, prom, sbar, child);
+            EvtAct::exit_grep_result(out, editor, mbar, prom, help, sbar, child);
         }
     }
 
-    pub fn exit_grep_result<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, child: &mut Child) {
+    pub fn exit_grep_result<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar, child: &mut Child) {
         child.kill();
         prom.clear();
         mbar.msg = String::new();
@@ -58,7 +58,7 @@ impl EvtAct {
         editor.buf.insert_end(&EOF_MARK.to_string());
         editor.set_cur_default();
         editor.d_range.draw_type = DrawType::All;
-        Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
+        Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
     }
 
     pub fn exec_grep(editor: &Editor) -> Child {

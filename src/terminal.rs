@@ -1,4 +1,9 @@
-use crate::{global::*, model::*};
+use crate::{
+    global::*,
+    help::{self, Help},
+    model::*,
+    statusbar::*,
+};
 use crossterm::{
     cursor::*,
     event::{DisableMouseCapture, EnableMouseCapture},
@@ -7,18 +12,21 @@ use crossterm::{
     terminal::*,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use std::ffi::OsStr;
-use std::io::{self, stdout, Write};
-use std::path::Path;
-use std::path::PathBuf;
-use std::process;
-use std::process::Command;
+use help::HelpMode;
+use std::{
+    ffi::OsStr,
+    io::{self, stdout, Write},
+    path::Path,
+    path::PathBuf,
+    process,
+    process::Command,
+};
 
 impl Terminal {
-    pub fn draw<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> Result<(), io::Error> {
+    pub fn draw<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> Result<(), io::Error> {
         Log::ep_s("　　　　　　　　All draw");
 
-        Terminal::set_disp_size(editor, mbar, prom, sbar);
+        Terminal::set_disp_size(editor, mbar, prom, help, sbar);
         let mut str_vec: Vec<String> = vec![];
 
         let d_range = editor.d_range;
@@ -29,12 +37,12 @@ impl Terminal {
             editor.draw(&mut str_vec);
         }
 
+        help.draw(&mut str_vec);
         mbar.draw(&mut str_vec);
         prom.draw(&mut str_vec);
         sbar.draw(&mut str_vec, editor);
 
         Terminal::draw_cur(&mut str_vec, editor, prom);
-
         let _ = out.write(&str_vec.concat().as_bytes());
         out.flush()?;
 
@@ -53,67 +61,59 @@ impl Terminal {
 
     pub fn check_displayable() -> bool {
         let (cols, rows) = size().unwrap();
-        if cols < 20 || rows < 8 {
+        if cols <= 20 || rows <= 10 {
             println!("{:?}", &LANG.terminal_size_small);
             return false;
         }
         return true;
     }
 
-    pub fn set_disp_size(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
+    pub fn set_disp_size(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
         let (cols, rows) = size().unwrap();
         let (cols, rows) = (cols as usize, rows as usize);
 
         Log::ep("rows", &rows);
         Log::ep("cols", &cols);
 
-        if rows <= 10 {
-            sbar.disp_row_num = 0;
-        } else {
-            sbar.disp_row_num = 1;
-            sbar.disp_row_posi = rows;
-            sbar.disp_col_num = cols;
-        }
-        prom.disp_row_posi = rows - prom.disp_row_num + 1 - sbar.disp_row_num;
+        sbar.disp_row_num = 1;
+        sbar.disp_row_posi = rows;
+        sbar.disp_col_num = cols;
+
+        Log::ep("help.mode", &help.mode);
+
+        help.disp_row_num = if help.mode == HelpMode::Show { Help::DISP_ROW_NUM } else { 0 };
+        help.disp_row_posi = if help.mode == HelpMode::Show { rows - sbar.disp_row_num - help.disp_row_num + 1 } else { 0 };
+
+        prom.disp_col_num = cols;
+        prom.disp_row_posi = rows - prom.disp_row_num + 1 - help.disp_row_num - sbar.disp_row_num;
 
         mbar.disp_col_num = cols;
-        if mbar.msg_readonly.len() > 0 {
-            mbar.disp_readonly_row_num = 1;
-        } else {
-            mbar.disp_readonly_row_num = 0;
-        }
-        if mbar.msg_keyrecord.len() > 0 {
-            mbar.disp_keyrecord_row_num = 1;
-        } else {
-            mbar.disp_keyrecord_row_num = 0;
-        }
-        if mbar.msg.len() > 0 {
-            mbar.disp_row_num = 1;
-        } else {
-            mbar.disp_row_num = 0;
-        }
+        mbar.disp_readonly_row_num = if mbar.msg_readonly.is_empty() { 0 } else { 1 };
+        mbar.disp_keyrecord_row_num = if mbar.msg_keyrecord.is_empty() { 0 } else { 1 };
+        mbar.disp_row_num = if mbar.msg.is_empty() { 0 } else { 1 };
 
-        mbar.disp_row_posi = rows - prom.disp_row_num - sbar.disp_row_num;
-        mbar.disp_keyrecord_row_posi = rows - mbar.disp_row_num - prom.disp_row_num - sbar.disp_row_num;
-        mbar.disp_readonly_row_posi = rows - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - sbar.disp_row_num;
+        mbar.disp_row_posi = rows - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
+        mbar.disp_keyrecord_row_posi = rows - mbar.disp_row_num - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
+        mbar.disp_readonly_row_posi = rows - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
 
         editor.disp_col_num = cols;
-        editor.disp_row_num = rows - mbar.disp_readonly_row_num - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - sbar.disp_row_num;
+        editor.disp_row_num = rows - mbar.disp_readonly_row_num - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
 
-        /*
-            Log::ep("editor.disp_row_num", editor.disp_row_num);
-            Log::ep("mbar.disp_keyrecord_row_posi", mbar.disp_keyrecord_row_posi);
-            Log::ep("mbar.disp_row_posi", mbar.disp_row_posi);
-            Log::ep("prom.disp_row_posi", prom.disp_row_posi);
-            Log::ep("sbar.disp_row_posi", sbar.disp_row_posi);
-        */
+        Log::ep("editor.disp_row_num", &editor.disp_row_num);
+        Log::ep("mbar.disp_keyrecord_row_num", &mbar.disp_keyrecord_row_num);
+        Log::ep("mbar.disp_readonly_row_num", &mbar.disp_readonly_row_num);
+        Log::ep("mbar.disp_row_num", &mbar.disp_row_num);
+        Log::ep("prom.disp_row_num", &prom.disp_row_num);
+        Log::ep("help.disp_row_num", &help.disp_row_num);
+        Log::ep("help.disp_row_posi", &help.disp_row_posi);
+        Log::ep("sbar.disp_row_num", &sbar.disp_row_num);
     }
 
-    pub fn init_draw<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
+    pub fn init_draw<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
         prom.clear();
         mbar.clear();
         editor.d_range.draw_type = DrawType::All;
-        Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
+        Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
     }
 
     pub fn show_cur() {

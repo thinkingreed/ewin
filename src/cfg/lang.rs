@@ -8,6 +8,16 @@ ja:
   cancel: キャンセル
   close: 閉じる
   fixed: 確定
+  end: 終了
+  save: 保存
+  copy: コピー
+  paste: ペースト
+  undo: 元に戻す
+  redo: 再実行
+  cut: 切取
+  grep: grep
+  range_select: 範囲選択
+  all_select: 全選択
   search: 検索
   search_bottom: 下部検索
   search_top: 上部検索
@@ -16,12 +26,16 @@ ja:
   search_folder: 検索フォルダ
   searching: 検索中...
   new_file: 新規ファイル
-  all_replace: 全置換
   move_input_field: 入力箇所移動
+  replace: 置換
+  all_replace: 全置換
   replace_char: 置換文字
   complement: 補完
   unable_to_edit: 編集不可
+  key_record_start: 記録開始
+  key_record_stop: 記録終了
   key_recording: 操作記録中...
+  help_end: ヘルプ終了
   ## Msg ##
   save_confirmation_to_close: 保存して終了しますか？
   terminal_size_small: ターミナルサイズが小さい為に終了します。サイズを大きくして再実行して下さい
@@ -45,6 +59,8 @@ ja:
   no_write_permission: 書込権限無し
   file_opening_problem: ファイルを開く際に問題が発生しました
   file_not_found: ファイルが存在しません
+  file_loading_failed: ファイルの読込に失敗しました
+  file_parsing_failed: ファイルの解析に失敗しました
   file_already_exists: 既に存在するファイル名です
   no_sel_range: 範囲を指定して下さい
   no_value_in_clipboard: クリップボードに値はありません
@@ -59,6 +75,16 @@ en:
   cancel: cancel
   close: close
   fixed: fixed
+  end: end
+  save: save
+  copy: copy
+  paste: paste
+  undo: undo
+  redo: redo
+  cut: cut
+  grep: grep
+  range_select: range select
+  all_select: all select
   search: search
   search_bottom: bottom search
   search_top: top search
@@ -67,12 +93,16 @@ en:
   search_folder: search folder
   searching: searching...
   new_file: new_file
-  all_replace: all replace
   move_input_field: move input field
+  replace: replace
+  all_replace: all replace
   replace_char: replace character
   complement: complement
   unable_to_edit: unable to edit
+  key_record_start: record start
+  key_record_stop: record stop
   key_recording: operation recording...
+  help_end: help end
   ## Msg ##
   save_confirmation_to_close: Do you want to save and exit?
   terminal_size_small: It will end because the terminal size is small. Please increase the size and try again
@@ -96,6 +126,8 @@ en:
   no_write_permission: No write permission
   file_opening_problem: There was a problem in opening the file
   file_not_found: File not found
+  file_loading_failed: file loading failed
+  file_parsing_failed: file parsing failed
   file_already_exists: file already exists
   no_sel_range: Please specify the copy range
   no_value_in_clipboard: There is no value in the clipboard

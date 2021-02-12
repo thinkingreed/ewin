@@ -1,7 +1,6 @@
+use super::lang::LANG_CONFIG;
 use serde::{Deserialize, Serialize};
 use std::env;
-
-use super::lang::LANG_CONFIG;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct LangCfg {
@@ -12,6 +11,16 @@ pub struct LangCfg {
     pub cancel: String,
     pub close: String,
     pub fixed: String,
+    pub end: String,
+    pub copy: String,
+    pub paste: String,
+    pub save: String,
+    pub undo: String,
+    pub redo: String,
+    pub cut: String,
+    pub grep: String,
+    pub range_select: String,
+    pub all_select: String,
     pub search: String,
     pub search_bottom: String,
     pub search_top: String,
@@ -20,6 +29,7 @@ pub struct LangCfg {
     pub search_folder: String,
     pub searching: String,
     pub new_file: String,
+    pub replace: String,
     pub all_replace: String,
     pub move_input_field: String,
     pub replace_char: String,
@@ -30,9 +40,12 @@ pub struct LangCfg {
     pub set_replace: String,
     pub set_grep: String,
     pub unable_to_edit: String,
-    pub open_target_file_in_another_terminal: String,
-    pub key_recording: String,
     pub complement: String,
+    pub open_target_file_in_another_terminal: String,
+    pub key_record_start: String,
+    pub key_record_stop: String,
+    pub key_recording: String,
+    pub help_end: String,
     /// Long msg
     pub not_entered_filenm: String,
     pub not_entered_search_str: String,
@@ -45,11 +58,13 @@ pub struct LangCfg {
     pub show_search_no_result: String,
     pub no_undo_operation: String,
     pub no_operation_re_exec: String,
-    // File open
+    // File
     pub no_read_permission: String,
     pub no_write_permission: String,
     pub file_opening_problem: String,
     pub file_not_found: String,
+    pub file_loading_failed: String,
+    pub file_parsing_failed: String,
     // Save
     pub file_already_exists: String,
     // Not sel range
@@ -69,62 +84,7 @@ pub struct LangMulti {
 }
 
 impl LangCfg {
-    pub fn default() -> Self {
-        LangCfg {
-            row: String::new(),
-            col: String::new(),
-            yes: String::new(),
-            no: String::new(),
-            cancel: String::new(),
-            close: String::new(),
-            fixed: String::new(),
-            search: String::new(),
-            search_bottom: String::new(),
-            search_top: String::new(),
-            search_str: String::new(),
-            search_file: String::new(),
-            search_folder: String::new(),
-            searching: String::new(),
-            all_replace: String::new(),
-            move_input_field: String::new(),
-            new_file: String::new(),
-            replace_char: String::new(),
-            unable_to_edit: String::new(),
-            open_target_file_in_another_terminal: String::new(),
-            key_recording: String::new(),
-            complement: String::new(),
-            // Long msg
-            save_confirmation_to_close: String::new(),
-            terminal_size_small: String::new(),
-            set_new_filenm: String::new(),
-            set_search: String::new(),
-            set_replace: String::new(),
-            set_grep: String::new(),
-            not_entered_filenm: String::new(),
-            not_entered_search_str: String::new(),
-            not_entered_search_file: String::new(),
-            not_entered_search_folder: String::new(),
-            not_entered_replace_str: String::new(),
-            cannot_find_char_search_for: String::new(),
-            long_time_to_search: String::new(),
-            show_search_result: String::new(),
-            show_search_no_result: String::new(),
-            no_undo_operation: String::new(),
-            no_operation_re_exec: String::new(),
-            no_read_permission: String::new(),
-            no_write_permission: String::new(),
-            file_opening_problem: String::new(),
-            file_not_found: String::new(),
-            file_already_exists: String::new(),
-            no_sel_range: String::new(),
-            cannot_paste_multi_lines: String::new(),
-            no_value_in_clipboard: String::new(),
-            no_key_record_exec: String::new(),
-            unsupported_operation: String::new(),
-        }
-    }
     pub fn read_lang_cfg() -> LangCfg {
-        //let lang_multi: LangMulti = toml::from_str(&LANG_CONFIG.to_string()).unwrap();
         let lang_multi: LangMulti = serde_yaml::from_str(&LANG_CONFIG.to_string()).unwrap();
         let lang = env::var("LANG").unwrap_or("en_US".to_string());
         if lang.starts_with("ja_JP") {

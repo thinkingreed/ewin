@@ -135,7 +135,7 @@ impl Editor {
         Log::ep("self.d_range.draw_type", &self.d_range.draw_type);
 
         if (self.offset_x > 0 && curt_y_org != self.cur.y) || offset_x_org != self.offset_x {
-            self.d_range.draw_type = DrawType::All;
+            self.d_range = DRange::new(min(curt_y_org, self.cur.y), max(curt_y_org, self.cur.y), DrawType::Target);
         }
         if rnw_org != self.rnw {
             self.d_range.draw_type = DrawType::All;

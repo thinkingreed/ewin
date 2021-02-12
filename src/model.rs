@@ -199,34 +199,6 @@ pub enum Env {
 pub struct Terminal {
     // pub env: Env,
 }
-#[derive(Debug, Clone)]
-pub struct StatusBar {
-    pub filenm: String,
-    // 起動時ファイル未指定の場合の仮ファイル名
-    pub filenm_tmp: String,
-    pub filenm_disp: String,
-    pub filenm_disp_flg: bool,
-    pub cur_str: String,
-    /// ターミナル上の表示数
-    pub disp_row_num: usize,
-    pub disp_row_posi: usize,
-    pub disp_col_num: usize,
-}
-
-impl Default for StatusBar {
-    fn default() -> Self {
-        StatusBar {
-            filenm: String::new(),
-            filenm_tmp: String::new(),
-            filenm_disp: String::new(),
-            filenm_disp_flg: false,
-            cur_str: String::new(),
-            disp_row_num: 1,
-            disp_row_posi: 0,
-            disp_col_num: 0,
-        }
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// undo,redo範囲
@@ -479,6 +451,12 @@ impl SelRange {
             self.set_e(y, x, disp_x);
         }
     }
+    pub fn is_another_select(&mut self, sel_org: SelRange) -> bool {
+        if self.sy == sel_org.sy && self.s_disp_x == sel_org.s_disp_x {
+            return false;
+        }
+        return true;
+    }
 }
 
 impl fmt::Display for SelRange {
@@ -528,6 +506,7 @@ pub struct Editor {
     // row_number_width
     pub rnw: usize,
     pub sel: SelRange,
+    pub sel_org: SelRange,
     pub evt: Event,
     pub clipboard: String,
     /// number displayed on the terminal
@@ -556,6 +535,7 @@ impl Editor {
             file: File::default(),
             rnw: 0,
             sel: SelRange::default(),
+            sel_org: SelRange::default(),
             evt: Key(End.into()),
             clipboard: String::new(),
             // for UT set
@@ -592,13 +572,13 @@ impl Default for File {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Region {
+pub struct Cell {
     pub from: CharStyle,
     pub to: CharStyle,
     pub c: char,
 }
 
-impl fmt::Display for Region {
+impl fmt::Display for Cell {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Region from:{:?}, to:{:?}, c:{:?},", self.from, self.to, self.c)
     }
@@ -626,7 +606,7 @@ pub struct Draw {
     // pub x_vec: Vec<(usize, usize)>,
     // Caching the drawing string because ropey takes a long time to access char
     pub char_vec: Vec<Vec<char>>,
-    pub regions: Vec<Vec<Region>>,
+    pub cells: Vec<Vec<Cell>>,
     pub syntax_state_vec: Vec<SyntaxState>,
 }
 
@@ -643,7 +623,7 @@ impl Default for Draw {
             sy: 0,
             ey: 0,
             char_vec: vec![],
-            regions: vec![],
+            cells: vec![],
             syntax_state_vec: vec![],
         }
     }

@@ -1,4 +1,4 @@
-use crate::{def::*, global::*, model::*, util::*};
+use crate::{def::*, global::*, model::*, statusbar::*, util::*};
 use std::iter::FromIterator;
 
 use std::path::Path;
@@ -138,12 +138,6 @@ impl Editor {
         }
     }
 
-    pub fn search(&mut self, prom: &mut Prompt) {
-        Log::ep_s("　　　　　　　　search_prom");
-        prom.is_search = true;
-        prom.search();
-    }
-
     pub fn search_str(&mut self, is_asc: bool) {
         Log::ep_s("　　　　　　　　search_str");
         // Log::ep("self.d_range.draw_type", &self.d_range.draw_type);
@@ -232,23 +226,12 @@ impl Editor {
         }
         return index;
     }
-    pub fn replace_prom(&mut self, prom: &mut Prompt) {
-        Log::ep_s("　　　　　　　　replace_prom");
-        prom.is_replace = true;
-        prom.replace();
-    }
 
     pub fn replace(&mut self, prom: &mut Prompt) {
         Log::ep_s("　　　　　　　　replace");
         let search_str: String = prom.cont_1.buf.iter().collect();
         let replace_str: String = prom.cont_2.buf.iter().collect();
         self.buf.search_and_replace(&search_str, &replace_str);
-    }
-
-    pub fn grep_prom(&mut self, prom: &mut Prompt) {
-        Log::ep_s("　　　　　　　　grep_prom");
-        prom.is_grep = true;
-        prom.grep();
     }
 
     pub fn set_grep_result(&mut self) {

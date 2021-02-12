@@ -32,7 +32,7 @@ impl From<Color> for CrosstermColor {
 
 impl From<syntect::highlighting::Style> for CharStyle {
     fn from(s: syntect::highlighting::Style) -> Self {
-        if CFG.get().unwrap().colors.theme.theme_background_enable {
+        if CFG.get().unwrap().colors.theme.theme_bg_enable {
             Self { bg: s.background.into(), fg: s.foreground.into() }
         } else {
             Self {
@@ -114,7 +114,7 @@ impl CharStyle {
     }
 }
 
-impl Region {
+impl Cell {
     pub fn draw_style(&self, str_vec: &mut Vec<String>, forced_change: bool) {
         // TODO ansi_color
         if self.from.fg != self.to.fg || forced_change {

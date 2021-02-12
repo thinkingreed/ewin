@@ -15,14 +15,14 @@ impl Editor {
         let diff: isize = self.buf.len_lines() as isize - self.draw.char_vec.len() as isize;
         if diff > 0 {
             self.draw.char_vec.resize_with(self.buf.len_lines() as usize, || vec![]);
-            self.draw.regions.resize_with(self.buf.len_lines() as usize, || vec![]);
+            self.draw.cells.resize_with(self.buf.len_lines() as usize, || vec![]);
         }
 
         let d_range = self.d_range.get_range();
         match d_range.draw_type {
-            DrawType::Target | DrawType::ScrollDown | DrawType::ScrollUp => {
+            DrawType::Target | DrawType::After | DrawType::ScrollDown | DrawType::ScrollUp => {
                 self.draw.sy = d_range.sy;
-                self.draw.ey = if d_range.draw_type == DrawType::After { self.disp_row_num } else { d_range.ey };
+                self.draw.ey = if d_range.draw_type == DrawType::After { self.offset_y + self.disp_row_num - 1 } else { d_range.ey };
             }
             DrawType::All | DrawType::None => {
                 self.draw.sy = self.offset_y;
@@ -61,8 +61,8 @@ impl Editor {
     }
 
     fn set_regions_highlight(&mut self, y: usize, row_vec: Vec<char>, sel_ranges: SelRange, highlighter: &Highlighter) {
-        Log::ep_s("                  set_regions_highlight");
-        let mut regions: Vec<Region> = vec![];
+        // Log::ep_s("                  set_regions_highlight");
+        let mut cells: Vec<Cell> = vec![];
         let row = row_vec.iter().collect::<String>();
 
         let scope;
@@ -93,20 +93,20 @@ impl Editor {
             let mut style = CharStyle::from(style);
             for c in string.chars() {
                 width += if c == NEW_LINE || c == NEW_LINE_CR { 1 } else { c.width().unwrap_or(0) };
-                self.set_style(c, width, y, x, &mut style, &mut style_org, &mut style_type_org, sel_ranges, &mut regions);
+                self.set_style(c, width, y, x, &mut style, &mut style_org, &mut style_type_org, sel_ranges, &mut cells);
                 x += 1;
             }
         }
         self.draw.syntax_state_vec.insert(y, SyntaxState { highlight_state, parse_state: parse, ops });
         self.draw.char_vec[y] = row_vec;
-        self.draw.regions[y] = regions;
+        self.draw.cells[y] = cells;
         // Log::ep("regions", regions.clone());
     }
 
     fn set_regions(&mut self, y: usize, row_vec: Vec<char>, sel_ranges: SelRange) {
-        Log::ep_s("                  set_regions");
+        // Log::ep_s("                  set_regions");
 
-        let mut regions: Vec<Region> = vec![];
+        let mut cells: Vec<Cell> = vec![];
         let (mut x, mut width) = (0, 0);
         let (mut style_org, mut style_type_org) = (CharStyle::none(), CharStyleType::Nomal);
 
@@ -119,14 +119,14 @@ impl Editor {
 
         for c in row {
             width += if c == NEW_LINE || c == NEW_LINE_CR { 1 } else { c.width().unwrap_or(0) };
-            self.set_style(c, width, y, x, &CharStyle::normal(), &mut style_org, &mut style_type_org, sel_ranges, &mut regions);
+            self.set_style(c, width, y, x, &CharStyle::normal(), &mut style_org, &mut style_type_org, sel_ranges, &mut cells);
             x += 1;
         }
         self.draw.char_vec[y] = row_vec;
-        self.draw.regions[y] = regions;
+        self.draw.cells[y] = cells;
     }
 
-    fn set_style(&mut self, c: char, width: usize, y: usize, x: usize, style: &CharStyle, style_org: &mut CharStyle, style_type_org: &mut CharStyleType, sel_ranges: SelRange, regions: &mut Vec<Region>) {
+    fn set_style(&mut self, c: char, width: usize, y: usize, x: usize, style: &CharStyle, style_org: &mut CharStyle, style_type_org: &mut CharStyleType, sel_ranges: SelRange, regions: &mut Vec<Cell>) {
         let from_style = self.draw.get_from_style(x, &style, &style_org, style_type_org);
         let style_type = self.draw.ctrl_style_type(c, width, &sel_ranges, &self.search.ranges, self.rnw, y, x);
 
@@ -141,7 +141,7 @@ impl Editor {
             }
             CharStyleType::CtrlChar => CharStyle::control_char(),
         };
-        regions.push(Region { c, to: to_style, from: from_style });
+        regions.push(Cell { c, to: to_style, from: from_style });
         *style_org = to_style;
         *style_type_org = style_type;
     }

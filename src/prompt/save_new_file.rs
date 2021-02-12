@@ -1,10 +1,10 @@
-use crate::{colors::*, global::*, model::*};
+use crate::{colors::*, global::*, help::*, model::*, statusbar::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 use std::path::Path;
 
 impl EvtAct {
-    pub fn save_new_filenm<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn save_new_filenm<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
         match editor.evt {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {
@@ -19,7 +19,7 @@ impl EvtAct {
                         sbar.filenm = filenm;
                         editor.save(mbar, prom, sbar);
                     }
-                    Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
+                    Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
                     return EvtActType::Hold;
                 }
                 _ => return EvtActType::Hold,

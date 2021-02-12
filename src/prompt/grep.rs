@@ -1,11 +1,11 @@
-use crate::{colors::*, global::*, model::*};
+use crate::{colors::*, global::*, help::*, model::*, statusbar::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::env;
 use std::io::Write;
 use std::path::Path;
 
 impl EvtAct {
-    pub fn grep<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn grep<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
         Log::ep_s("Process.replace");
 
         match editor.evt {
@@ -42,7 +42,7 @@ impl EvtAct {
                         Terminal::startup_terminal(format!(r#"search_str={} search_file={}"#, search_str, path.to_string_lossy().to_string()));
                     }
                     editor.d_range.draw_type = DrawType::All;
-                    Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
+                    Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
                     return EvtActType::Hold;
                 }
                 _ => return EvtActType::Hold,
@@ -54,6 +54,7 @@ impl EvtAct {
 
 impl Prompt {
     pub fn grep(&mut self) {
+        self.is_grep = true;
         self.disp_row_num = 8;
         let mut cont_1 = PromptCont::new();
         let mut cont_2 = PromptCont::new();

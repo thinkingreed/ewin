@@ -1,42 +1,41 @@
-use crate::{def::*, global::*, model::*};
+use crate::{def::*, global::*, help::*, model::*, msgbar, statusbar::*};
 use crossterm::{
     event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind},
     terminal::*,
 };
-use std::io::Write;
+use std::{cmp::max, cmp::min, io::Write};
 
 impl EvtAct {
-    pub fn match_event<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> bool {
+    pub fn match_event<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> bool {
         match editor.evt {
             Mouse(M_Event { kind: M_Kind::Moved, .. }) => return false,
             _ => {}
         }
-
         Terminal::hide_cur();
         mbar.msg_org = mbar.msg.clone();
 
-        let evt_next_process = EvtAct::check_next_process(out, editor, mbar, prom, sbar);
+        let evt_next_process = EvtAct::check_next_process(out, editor, mbar, prom, help, sbar);
 
         match evt_next_process {
             EvtActType::Exit => return true,
             EvtActType::Hold => {}
             EvtActType::Next => {
-                let is_err = EvtAct::check_err(editor, mbar);
+                let is_check_err = EvtAct::check_err(editor, mbar);
                 Log::ep("editor.evt", &editor.evt);
 
-                if !is_err {
+                if !is_check_err {
                     EvtAct::init(editor, mbar, prom);
                     editor.cur_y_org = editor.cur.y;
                     let offset_y_org = editor.offset_y;
                     let offset_x_org = editor.offset_x;
                     let rnw_org = editor.rnw;
+                    editor.sel_org = editor.sel;
 
                     match editor.evt {
                         Resize(_, _) => {
                             write!(out, "{}", Clear(ClearType::All)).unwrap();
-                            Terminal::set_disp_size(editor, mbar, prom, sbar);
+                            Terminal::set_disp_size(editor, mbar, prom, help, sbar);
                         }
-
                         Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                             Char('w') => {
                                 if editor.close(prom) == true {
@@ -50,9 +49,9 @@ impl EvtAct {
                             Char('x') => editor.exec_edit_proc(EvtType::Cut, ""),
                             Char('v') => editor.exec_edit_proc(EvtType::Paste, ""),
                             Char('a') => editor.all_select(),
-                            Char('f') => editor.search(prom),
-                            Char('r') => editor.replace_prom(prom),
-                            Char('g') => editor.grep_prom(prom),
+                            Char('f') => prom.search(),
+                            Char('r') => prom.replace(),
+                            Char('g') => prom.grep(),
                             Char('z') => editor.undo(mbar),
                             Char('y') => editor.redo(),
                             Home => editor.ctrl_home(),
@@ -68,8 +67,8 @@ impl EvtAct {
                             Home => editor.shift_home(),
                             End => editor.shift_end(),
                             Char(c) => editor.exec_edit_proc(EvtType::InsertChar, &c.to_ascii_uppercase().to_string()),
-                            F(1) => editor.record_key_start(mbar, prom, sbar),
-                            F(2) => editor.exec_record_key(out, mbar, prom, sbar),
+                            F(1) => editor.record_key_start(mbar, prom),
+                            F(2) => editor.exec_record_key(out, mbar, prom, help, sbar),
                             F(4) => editor.search_str(false),
                             _ => mbar.set_err(&LANG.unsupported_operation),
                         },
@@ -86,6 +85,7 @@ impl EvtAct {
                             Right => editor.cur_right(),
                             Home => editor.home(),
                             End => editor.end(),
+                            F(1) => help.disp_toggle(editor, mbar, prom, sbar),
                             F(3) => editor.search_str(true),
                             _ => mbar.set_err(&LANG.unsupported_operation),
                         },
@@ -101,10 +101,8 @@ impl EvtAct {
                         editor.record_key();
                     }
                     EvtAct::finalize(editor);
-
                     editor.set_draw_range(editor.cur_y_org, offset_y_org, offset_x_org, rnw_org);
                 }
-
                 Log::ep("offset_y", &editor.offset_y);
                 Log::ep("offset_x", &editor.offset_x);
                 Log::ep("cur.y", &editor.cur.y);
@@ -119,11 +117,10 @@ impl EvtAct {
                 }
                 // key_record実行時は最終時のみredraw
                 if editor.d_range.draw_type != DrawType::Not || (prom.is_key_record_exec == false || prom.is_key_record_exec == true && prom.is_key_record_exec_draw == true) {
-                    Terminal::draw(out, editor, mbar, prom, sbar).unwrap();
+                    Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
                 }
             }
         }
-
         Terminal::show_cur();
         return false;
     }
@@ -164,6 +161,7 @@ impl EvtAct {
                         editor.d_range.draw_type = DrawType::All;
                     }
                 }
+                F(1) => editor.d_range.draw_type = DrawType::All,
                 F(3) => {
                     if editor.search.index == USIZE_UNDEFINED {
                         editor.d_range.draw_type = DrawType::All;
@@ -214,7 +212,6 @@ impl EvtAct {
             },
             Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => {}
             Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {}
-
             _ => mbar.clear_mag(),
         }
     }
@@ -240,9 +237,7 @@ impl EvtAct {
                 F(3) => {}
                 _ => editor.sel.clear(),
             },
-            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) => {
-                editor.d_range.draw_type = DrawType::All;
-            }
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) => editor.d_range = DRange::new(min(editor.cur.y, editor.sel_org.sy), max(editor.cur.y, editor.sel_org.ey), DrawType::Target),
             Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) | Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
                 if editor.sel.is_selected() {
                     let sel = editor.sel.get_range();

@@ -1,10 +1,11 @@
-use crate::{colors::*, model::*};
+use crate::model::*;
+use crossterm::style::ResetColor;
 use std::fmt::Debug;
 
 impl Log {
     pub fn ep<T: Debug>(m: &str, v: &T) {
         if cfg!(debug_assertions) {
-            eprintln!("{}{} {:?}", Colors::get_default_fg(), format!("{:?}", m), v);
+            eprintln!("{}{} {:?}", ResetColor, format!("{:?}", m), v);
         } else {
 
             /*
@@ -16,7 +17,7 @@ impl Log {
     }
     pub fn ep_s(m: &str) {
         if cfg!(debug_assertions) {
-            eprintln!("{}{}", Colors::get_default_fg(), m);
+            eprintln!("{}{}", ResetColor, m);
         } else {
 
             /*

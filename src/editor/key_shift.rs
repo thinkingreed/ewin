@@ -1,4 +1,4 @@
-use crate::{global::*, model::*};
+use crate::{global::*, help::*, model::*, statusbar::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 
@@ -63,16 +63,11 @@ impl Editor {
         self.shift_move_com(EvtType::ShiftEnd);
     }
 
-    pub fn record_key_start(&mut self, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
+    pub fn record_key_start(&mut self, mbar: &mut MsgBar, prom: &mut Prompt) {
         Log::ep_s("　　　　　　　　macro_record_start");
         if prom.is_key_record {
             prom.is_key_record = false;
             mbar.clear_macro();
-            {
-                // disp_row_num変更の可能性がある為にoffset_y再計算
-                Terminal::set_disp_size(self, mbar, prom, sbar);
-                self.scroll();
-            }
             self.d_range.draw_type = DrawType::All;
         } else {
             prom.is_key_record = true;
@@ -116,7 +111,7 @@ impl Editor {
         }
     }
 
-    pub fn exec_record_key<T: Write>(&mut self, out: &mut T, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
+    pub fn exec_record_key<T: Write>(&mut self, out: &mut T, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
         if self.key_record_vec.len() > 0 {
             prom.is_key_record_exec = true;
             let macro_vec = self.key_record_vec.clone();
@@ -125,7 +120,7 @@ impl Editor {
                 if i == macro_vec.len() - 1 {
                     prom.is_key_record_exec_draw = true;
                 }
-                EvtAct::match_event(out, self, mbar, prom, sbar);
+                EvtAct::match_event(out, self, mbar, prom, help, sbar);
             }
             prom.is_key_record_exec = false;
             prom.is_key_record_exec_draw = false;

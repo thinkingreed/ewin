@@ -1,6 +1,34 @@
 use crate::{colors::*, global::*, model::*, util::*};
 use crossterm::{cursor::*, terminal::*};
-use unicode_width::UnicodeWidthChar;
+
+#[derive(Debug, Clone)]
+pub struct StatusBar {
+    pub filenm: String,
+    // Temporary file name when no file is specified
+    pub filenm_tmp: String,
+    pub filenm_disp: String,
+    pub filenm_disp_flg: bool,
+    pub cur_str: String,
+    // Number displayed on the terminal
+    pub disp_row_num: usize,
+    pub disp_row_posi: usize,
+    pub disp_col_num: usize,
+}
+
+impl Default for StatusBar {
+    fn default() -> Self {
+        StatusBar {
+            filenm: String::new(),
+            filenm_tmp: String::new(),
+            filenm_disp: String::new(),
+            filenm_disp_flg: false,
+            cur_str: String::new(),
+            disp_row_num: 1,
+            disp_row_posi: 0,
+            disp_col_num: 0,
+        }
+    }
+}
 
 impl StatusBar {
     pub fn new() -> Self {
@@ -20,10 +48,10 @@ impl StatusBar {
             file_str = self.filenm_tmp.clone();
         }
 
-        let filenm = self.cut_str(file_str.clone(), filenm_w);
+        let filenm = cut_str(file_str.clone(), filenm_w);
         let filenm_disp = format!("{fnm:^width$}", fnm = filenm, width = filenm_w - (get_str_width(&filenm) - filenm.chars().count()));
 
-        // 文字横幅と文字数の差分で調整
+        // Adjusted by the difference between the character width and the number of characters
         let cur_s = self.get_cur_str(editor);
         let cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
         Log::ep("self.disp_row_posi", &self.disp_row_posi);
@@ -97,19 +125,5 @@ impl StatusBar {
             let (filenm_w, cur_w) = (area_w * 5, (area_w * 3) + rest);
             return (filenm_w, cur_w);
         }
-    }
-    fn cut_str(&mut self, string: String, limit_width: usize) -> String {
-        let mut chars: Vec<char> = string.chars().collect();
-        let mut width = 0;
-        for i in 0..chars.len() {
-            if let Some(c) = chars.get(i) {
-                let w = c.width().unwrap_or(0);
-                if width + w > limit_width {
-                    return chars.drain(0..i).collect();
-                }
-                width += w;
-            }
-        }
-        return string;
     }
 }

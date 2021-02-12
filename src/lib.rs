@@ -9,7 +9,6 @@ pub mod global {
 
     pub static LANG: Lazy<LangCfg> = Lazy::new(|| LangCfg::read_lang_cfg());
     pub static ENV: Lazy<Env> = Lazy::new(|| get_env());
-    // pub static CFG: Lazy<Cfg> = Lazy::new(|| Cfg::read_cfg());
     pub static CFG: OnceCell<Cfg> = OnceCell::new();
 }
 pub mod colors;
@@ -48,6 +47,7 @@ pub mod prompt {
     pub mod search;
 }
 pub mod evt_act;
+pub mod help;
 pub mod log;
 pub mod msgbar;
 pub mod statusbar;

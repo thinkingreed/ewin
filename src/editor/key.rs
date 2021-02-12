@@ -126,6 +126,7 @@ impl Editor {
             self.cur_left();
             ep.str = self.buf.char(self.cur.y, self.cur.x - self.rnw).to_string();
             self.buf.remove_type(EvtType::BS, self.cur.y, self.cur.x - self.rnw);
+            self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
         }
     }
 
@@ -134,6 +135,8 @@ impl Editor {
         let c = self.buf.char(self.cur.y, self.cur.x - self.rnw);
         ep.str = if c == NEW_LINE_CR { format!("{}{}", c.to_string(), NEW_LINE) } else { c.to_string() };
         self.buf.remove_type(EvtType::Del, self.cur.y, self.cur.x - self.rnw);
+        self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
+
         if is_line_end(c) {
             self.set_cur_target(self.cur.y, self.cur.x - self.rnw);
         }

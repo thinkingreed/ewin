@@ -27,7 +27,6 @@ impl Editor {
     }
     fn try_set_clipboard(&mut self, copy_string: &str) -> anyhow::Result<()> {
         let mut p = Command::new("powershell.exe").arg("set-clipboard").arg("-Value").arg(copy_string).stdin(process::Stdio::piped()).spawn()?;
-        // let mut p = Command::new("echo").arg("off").arg(copy_string).arg("|").arg("clip.exe").stdin(process::Stdio::piped()).spawn()?;
         {
             let mut stdin = p.stdin.take().context("take stdin")?;
             write!(stdin, "{}", copy_string)?;
@@ -62,7 +61,7 @@ impl Editor {
         // Windowsからのpasteで\r\n対応
         let mut buf = buf.replace(NEW_LINE_CRLF, NEW_LINE.to_string().as_str());
         Log::ep("buf ", &buf);
-        // 末尾の自動挿入の改行の削除
+        // Remove new line for automatic insertion at the end
         buf = buf.chars().take(buf.chars().count() - 1).collect::<String>();
 
         Ok(buf)

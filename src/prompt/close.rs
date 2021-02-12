@@ -1,9 +1,9 @@
-use crate::{colors::*, global::*, model::*};
+use crate::{colors::*, global::*, help::*, model::*, statusbar::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 
 impl EvtAct {
-    pub fn close<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prompt: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
+    pub fn close<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prompt: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
         match editor.evt {
             Key(KeyEvent { code: Char(c), .. }) => {
                 if c == 'y' {
@@ -11,7 +11,7 @@ impl EvtAct {
                     if editor.save(mbar, prompt, sbar) {
                         return EvtActType::Exit;
                     } else {
-                        Terminal::draw(out, editor, mbar, prompt, sbar).unwrap();
+                        Terminal::draw(out, editor, mbar, prompt, help, sbar).unwrap();
                         return EvtActType::Hold;
                     }
                 } else if c == 'n' {

@@ -1,8 +1,8 @@
 use crossterm::event::{Event, Event::*, KeyCode::*, KeyEvent, KeyModifiers};
-pub const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
+pub const SETTING_FILE: &str = "setting.toml";
 pub const STR_UNDEFINED: &str = "STR_UNDEFINED";
 pub const USIZE_UNDEFINED: usize = usize::MAX;
-// コピー複数行の最後が空文字の場合の代替文字　WSLで改行を最後に設定出来ない対応
+// Corresponding alternative character that cannot set a newline at the end in WSL
 pub const COPY_END: &str = "COPY_END";
 pub const NEW_LINE: char = '\n';
 pub const NEW_LINE_CR: char = '\r';
@@ -38,3 +38,20 @@ pub const CUT: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Ch
 pub const UNDO: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('z') });
 pub const REDO: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('y') });
 pub const ALL_SELECT: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('a') });
+// Key
+pub const KEY_CLOSE: &'static str = "Ctrl + w";
+pub const KEY_COPY: &'static str = "Ctrl + c";
+pub const KEY_SAVE: &'static str = "Ctrl + s";
+pub const KEY_PASTE: &'static str = "Ctrl + v";
+pub const KEY_UNDO: &'static str = "Ctrl + z";
+pub const KEY_REDO: &'static str = "Ctrl + y";
+pub const KEY_SEARCH: &'static str = "Ctrl + f";
+pub const KEY_REPLACE: &'static str = "Ctrl + r";
+pub const KEY_CUT: &'static str = "Ctrl + x";
+pub const KEY_GREP: &'static str = "Ctrl + g";
+pub const KEY_ALL_SELECT: &'static str = "Ctrl + a";
+pub const KEY_SELECT: &'static str = "Shift + ↑↓←→ or Mouse";
+pub const KEY_RECORD_START: &'static str = "Shift + F1";
+pub const KEY_RECORD_STOP: &'static str = "Shift + F2";
+pub const KEY_HELP: &'static str = "F1";
+pub const HELP_DETAIL: &'static str = "help detail";

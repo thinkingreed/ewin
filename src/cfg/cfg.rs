@@ -1,11 +1,13 @@
-use crate::{cfg::*, colors::*, global::*, util::*};
-use anyhow::Context;
+use crate::{cfg::*, colors::*, def::*, global::*, model::*, util::*};
+use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::fs::File;
-use std::io::Write;
-use syntect::highlighting::{Theme, ThemeSet};
-use syntect::parsing::SyntaxSet;
-use syntect::{self, parsing::SyntaxReference};
+use std::{fs, fs::File, io::Write};
+use syntect::{
+    self,
+    highlighting::{Theme, ThemeSet},
+    parsing::SyntaxReference,
+    parsing::SyntaxSet,
+};
 use theme_loader::ThemeLoader;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -53,15 +55,18 @@ impl CfgColors {
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgColorTheme {
-    pub theme_path: String,
-    pub theme_background_enable: bool,
+    pub theme_path: Option<String>,
+    pub theme_background_enable: Option<bool>,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub theme_bg_enable: bool,
 }
 
 impl CfgColorTheme {
     pub fn default() -> Self {
         CfgColorTheme {
-            theme_path: "/home/hi/rust/ewin/target/debug/Dracula.tmTheme".to_string(),
-            theme_background_enable: true,
+            theme_path: None,
+            theme_background_enable: None,
+            theme_bg_enable: false,
         }
     }
 }
@@ -204,7 +209,7 @@ impl CfgColorMsg {
     pub fn default() -> Self {
         CfgColorMsg {
             normal_foreground: "#ffffff".to_string(),
-            highlight_foreground: "#00ff00".to_string(),
+            highlight_foreground: "#006400".to_string(),
             warning_foreground: "#ffa500".to_string(),
             err_foreground: "#ff0000".to_string(),
             normal_fg: Color::default(),
@@ -214,6 +219,7 @@ impl CfgColorMsg {
         }
     }
 }
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Syntax {
     pub syntax_set: SyntaxSet,
@@ -237,8 +243,34 @@ impl Default for Syntax {
     }
 }
 impl Cfg {
-    pub fn init(ext: &String) {
+    pub fn init(ext: &String) -> String {
         let mut cfg = Cfg::default();
+
+        let mut err_str = "".to_string();
+        if let Some(base_dirs) = BaseDirs::new() {
+            let config_dir = base_dirs.config_dir();
+            let config_file = &config_dir.join(env!("CARGO_PKG_NAME")).join(SETTING_FILE);
+
+            if config_file.exists() {
+                let mut read_str = String::new();
+                match fs::read_to_string(config_file) {
+                    Ok(str) => read_str = str,
+                    Err(e) => {
+                        err_str = format!("{} {}", LANG.file_loading_failed, config_file.to_string_lossy().to_string());
+                        Log::ep("SETTING_FILE read_to_string", &e);
+                    }
+                }
+                if err_str.is_empty() {
+                    match toml::from_str(&read_str) {
+                        Ok(c) => cfg = c,
+                        Err(e) => {
+                            err_str = format!("{} {}", LANG.file_parsing_failed, config_file.to_string_lossy().to_string());
+                            Log::ep("SETTING_FILE parsing", &e);
+                        }
+                    };
+                }
+            }
+        }
 
         cfg.colors.editor.fg = Colors::hex2rgb(&cfg.colors.editor.foreground);
         cfg.colors.editor.bg = Colors::hex2rgb(&cfg.colors.editor.background);
@@ -254,45 +286,42 @@ impl Cfg {
         cfg.colors.msg.highlight_fg = Colors::hex2rgb(&cfg.colors.msg.highlight_foreground);
         cfg.colors.msg.warning_fg = Colors::hex2rgb(&cfg.colors.msg.warning_foreground);
         cfg.colors.msg.err_fg = Colors::hex2rgb(&cfg.colors.msg.err_foreground);
-
         cfg.colors.status_bar.fg = Colors::hex2rgb(&cfg.colors.status_bar.foreground);
 
-        cfg.syntax.syntax_set = SyntaxSet::load_defaults_newlines();
-        // cfg.syntax.theme = cfg.syntax.theme_set.themes[&cfg.colors.theme.theme_path].clone();
-
-        cfg.syntax.theme = ThemeLoader::new(&cfg.colors.theme.theme_path, &cfg.syntax.theme_set.themes)
-            .load()
-            .with_context(|| format!("Failed to read instrs from {:?}", &cfg.syntax.theme_set.themes))
-            .unwrap();
-
-        if let Some(sr) = cfg.syntax.syntax_set.find_syntax_by_extension(&ext) {
-            cfg.syntax.syntax_reference = Some(sr.clone());
-            if is_enable_syntax_highlight(ext) {
-                if let Some(c) = cfg.syntax.theme.settings.background {
-                    if cfg.colors.theme.theme_background_enable {
-                        cfg.colors.editor.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
-                        cfg.colors.editor.line_number.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
+        if is_enable_syntax_highlight(ext) {
+            match ThemeLoader::new(&cfg.colors.theme.theme_path, &cfg.syntax.theme_set.themes).load() {
+                Ok((theme, err_string)) => {
+                    if !err_string.is_empty() {
+                        err_str = err_string;
+                    }
+                    cfg.syntax.theme = theme;
+                    if let Some(c) = cfg.syntax.theme.settings.background {
+                        if let Some(theme_bg_enable) = cfg.colors.theme.theme_background_enable {
+                            cfg.colors.editor.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
+                            cfg.colors.editor.line_number.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
+                            cfg.colors.theme.theme_bg_enable = theme_bg_enable;
+                        } else {
+                            cfg.colors.theme.theme_bg_enable = false;
+                        }
                     }
                 }
+                // Even if the set theme fails to read, the internal theme is read, so the theme is surely read.
+                Err(_) => {}
             }
+        }
+        if let Some(sr) = cfg.syntax.syntax_set.find_syntax_by_extension(&ext) {
+            cfg.syntax.syntax_reference = Some(sr.clone());
         } else {
             cfg.syntax.syntax_reference = None;
         }
 
         if cfg!(debug_assertions) {
-            // TODO Read configuration file
-            let mut file = File::create("setting.toml").unwrap();
+            let mut file = File::create(SETTING_FILE).unwrap();
             let s = toml::to_string(&cfg).unwrap();
-            /* read
-                    let file = File::open("yml.yml").unwrap();
-                    let reader = BufReader::new(file);
-                    let deserialized: Cfg = serde_yaml::from_reader(reader).unwrap();
-                    let mut file = File::create("yml_2.yml").unwrap();
-                    let s = serde_yaml::to_string(&deserialized).unwrap();
-            */
             write!(file, "{}", s).unwrap();
             file.flush().unwrap();
         }
         let _ = CFG.set(cfg);
+        return err_str;
     }
 }

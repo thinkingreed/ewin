@@ -170,3 +170,18 @@ pub fn get_char_type(c: char) -> CharType {
         return CharType::Nomal;
     }
 }
+
+pub fn cut_str(string: String, limit_width: usize) -> String {
+    let mut chars: Vec<char> = string.chars().collect();
+    let mut width = 0;
+    for i in 0..chars.len() {
+        if let Some(c) = chars.get(i) {
+            let w = c.width().unwrap_or(0);
+            if width + w > limit_width {
+                return chars.drain(0..i).collect();
+            }
+            width += w;
+        }
+    }
+    return string;
+}
