@@ -1,11 +1,9 @@
-use crate::{colors::*, global::*, model::*, util::*};
+use crate::{colors::*, def::*, global::*, model::*, util::*};
 use crossterm::{cursor::*, terminal::*};
 
 #[derive(Debug, Clone)]
 pub struct StatusBar {
     pub filenm: String,
-    // Temporary file name when no file is specified
-    pub filenm_tmp: String,
     pub filenm_disp: String,
     pub filenm_disp_flg: bool,
     pub cur_str: String,
@@ -19,7 +17,6 @@ impl Default for StatusBar {
     fn default() -> Self {
         StatusBar {
             filenm: String::new(),
-            filenm_tmp: String::new(),
             filenm_disp: String::new(),
             filenm_disp_flg: false,
             cur_str: String::new(),
@@ -41,20 +38,29 @@ impl StatusBar {
         if self.disp_row_num == 0 {
             return;
         }
-        let (filenm_w, cur_w) = self.get_areas_width(self.disp_col_num);
+        let cur_s = self.get_cur_str(editor);
+        Log::ep("cur_s", &cur_s);
+        Log::ep("cur_s.width", &get_str_width(&cur_s));
+
+        let (help_w, filenm_w, cur_w) = self.get_areas_width(self.disp_col_num, &get_str_width(&cur_s) + 1);
+
+        Log::ep("help_w", &help_w);
+        Log::ep("filenm_w", &filenm_w);
+        Log::ep("cur_w", &cur_w);
 
         let mut file_str = self.filenm.clone();
         if file_str.len() == 0 {
-            file_str = self.filenm_tmp.clone();
+            file_str = LANG.new_file.clone();
         }
 
-        let filenm = cut_str(file_str.clone(), filenm_w);
+        let help = format!("{}:{}", KEY_HELP, LANG.help);
+        let help_disp = format!("{h:^width$}", h = help, width = help_w);
+
+        let filenm = cut_str(file_str.clone(), filenm_w, true);
         let filenm_disp = format!("{fnm:^width$}", fnm = filenm, width = filenm_w - (get_str_width(&filenm) - filenm.chars().count()));
 
         // Adjusted by the difference between the character width and the number of characters
-        let cur_s = self.get_cur_str(editor);
         let cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
-        Log::ep("self.disp_row_posi", &self.disp_row_posi);
 
         let sber_str = format!(
             "{}{}{}{}{}{}",
@@ -62,7 +68,7 @@ impl StatusBar {
             Clear(ClearType::CurrentLine),
             Colors::get_sber_bg(),
             Colors::get_sber_fg(),
-            format!("{}{}", filenm_disp, cur_str),
+            format!("{}{}{}", help_disp, filenm_disp, cur_str),
             Colors::get_default_fg(),
         );
 
@@ -112,18 +118,15 @@ impl StatusBar {
         return cur_posi;
     }
 
-    fn get_areas_width(&self, cols: usize) -> (usize, usize) {
-        let filenm_w_max = 16;
-        let cur_w_max = 28;
-
-        if cols < cur_w_max {
-            return (0, cols);
-        } else if cols < cur_w_max + filenm_w_max {
-            return (cols - cur_w_max, cur_w_max);
+    fn get_areas_width(&self, cols_w: usize, cur_str_w: usize) -> (usize, usize, usize) {
+        // "f1:help "
+        let help_w_max = 8;
+        if cur_str_w > cols_w {
+            return (0, 0, cols_w);
+        } else if cur_str_w + help_w_max > cols_w {
+            return (cols_w - cur_str_w, 0, cur_str_w);
         } else {
-            let (area_w, rest) = (cols / 8, cols % 8);
-            let (filenm_w, cur_w) = (area_w * 5, (area_w * 3) + rest);
-            return (filenm_w, cur_w);
+            return (help_w_max, cols_w - help_w_max - cur_str_w, cur_str_w);
         }
     }
 }

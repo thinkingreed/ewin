@@ -1,4 +1,4 @@
-use crate::{def::*, global::*, help::*, model::*, msgbar, statusbar::*};
+use crate::{def::*, global::*, help::*, model::*, statusbar::*};
 use crossterm::{
     event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind},
     terminal::*,

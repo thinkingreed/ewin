@@ -62,6 +62,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 |----------------|--------------------------------------------------------------------------------------|-------------|
 | `Ctrl` + `w`   | Quit.                                                                                |―            |
 | `Ctrl` + `s`   | Save current buffer to file.                                                         |―            |
+| `F1`           | Key binding display at the bottom of the screen.                                     |―            |
 | `Ctrl` + `f`   | Enter the characters to incremental search.Search target is open file.               |―            |
 | `Ctrl` + `g`   | Grep.Enter the characters to search.The search target is the entered file pattern    |―            |
 |                | Command to use : grep -rHnI search_str --include=search_filenm search_folder         |             |
@@ -127,7 +128,9 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 |`Save`    　   | `Ctrl` + `s`     | All             | Forcibly convert CR + LF of line feed code to LF  |
 |`Copy`・`Paste`| `Ctrl` + `c`・`v`| WSL             | Need path to powershell.exe. Try $PSHOME at PowerShell terminal|
 
-
+## Sample imsage
+- **Help**
+![help](assets/img/help.png "hero")
 
 ## Future Works
 

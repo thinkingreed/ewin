@@ -13,7 +13,7 @@ categories = ["command-line-utilities"]
 [package.metadata.deb]
 extended-description = """\
 Simple editor for Window(GUI) users.\ 
-No need to remember commands.\
+No need to learn new commands.\
 
 It provides basic features as a minimal text editor.\
 depends = "$auto"\
@@ -33,7 +33,7 @@ ewin = { path = "/usr/bin/ewin" }
 [dependencies]
 anyhow = "1"
 clap = "2"
-unicode-width = "0"
+unicode-width = "0.1.8"
 clipboard = "0.5.0"
 crossterm  = {version ="0.19.0", features = ["event-stream"]} 
 serde = { version = "1.0.123", features = ["derive"] }

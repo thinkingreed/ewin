@@ -125,13 +125,11 @@ impl Terminal {
     pub fn startup_terminal(search_strs: String) {
         Log::ep("search_strs", &search_strs);
 
-        let mut exe_path = "/home/hi/rust/ewin/target/release/ewin";
-        if !cfg!(debug_assertions) {
-            if Path::new("/usr/bin/ewin").exists() {
-                exe_path = "/usr/bin/ewin";
-            } else {
-                exe_path = "/home/hi/rust/ewin/target/release/ewin";
-            }
+        let mut exe_path = "";
+        if !cfg!(debug_assertions) && Path::new("/usr/bin/ewin").exists() {
+            exe_path = "/usr/bin/ewin";
+        } else {
+            exe_path = "/home/hi/ewin/target/release/ewin"
         }
 
         if *ENV == Env::WSL {
@@ -199,9 +197,7 @@ impl Terminal {
             }
         // Normal
         } else {
-            if file_path.len() == 0 {
-                sbar.filenm_tmp = LANG.new_file.clone();
-            } else {
+            if !file_path.is_empty() {
                 sbar.filenm = file_path.to_string();
             }
             editor.open(Path::new(&file_path), mbar);

@@ -1,6 +1,9 @@
 use crate::{colors::*, def::*, global::*, model::*, util::*};
-use crossterm::style::{Color as CrosstermColor, SetBackgroundColor};
-use crossterm::{cursor::*, terminal::*};
+use crossterm::{
+    cursor::*,
+    style::{Color as CrosstermColor, SetBackgroundColor},
+    terminal::*,
+};
 use std::{cmp::min, env, fs::metadata, io::ErrorKind, path};
 use unicode_width::UnicodeWidthChar;
 
@@ -24,15 +27,15 @@ impl Editor {
 
                 self.file.path = Some(path.into());
             } else {
+                Terminal::exit();
                 println!("{}", LANG.file_not_found.clone());
-                std::process::exit(1);
             }
         } else {
             let curt_dir = env::current_dir().unwrap();
             let curt_dir = metadata(curt_dir).unwrap();
             if curt_dir.permissions().readonly() {
+                Terminal::exit();
                 println!("{}", LANG.no_write_permission.clone());
-                std::process::exit(1);
             }
         }
         // read
@@ -44,20 +47,19 @@ impl Editor {
             }
             Err(err) => match err.kind() {
                 ErrorKind::PermissionDenied => {
+                    Terminal::exit();
                     println!("{}", LANG.no_read_permission.clone());
-                    std::process::exit(1);
                 }
                 ErrorKind::NotFound => {
                     self.buf.text.insert_char(self.buf.text.len_chars(), EOF_MARK);
                     self.file.path = None;
                 }
                 _ => {
+                    Terminal::exit();
                     println!("{} {:?}", LANG.file_opening_problem, err);
-                    std::process::exit(1);
                 }
             },
         }
-
         self.set_cur_default();
     }
 

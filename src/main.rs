@@ -5,8 +5,12 @@ use crossterm::{
 };
 use ewin::{cfg::cfg::*, help::*, model::*, statusbar::*};
 use futures::{future::FutureExt, select, StreamExt};
-use std::io::{stdout, BufWriter, Write};
-use std::{ffi::OsStr, panic, path::Path};
+use std::{
+    ffi::OsStr,
+    io::{stdout, BufWriter, Write},
+    panic,
+    path::Path,
+};
 use tokio_util::codec::{FramedRead, LinesCodec};
 
 #[tokio::main]

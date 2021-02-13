@@ -95,7 +95,7 @@ impl Help {
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 5th line
-            self.set_key_bind_ex(&mut vec, KEY_HELP, &LANG.help_end, 8, 11);
+            self.set_key_bind_ex(&mut vec, KEY_HELP, &format!("{}{}", &LANG.help, &LANG.end), 8, 11);
             self.set_key_bind_ex(&mut vec, HELP_DETAIL, &env!("CARGO_PKG_REPOSITORY").to_string(), 12, 36);
             self.key_bind_vec.push(vec.clone());
             vec.clear();

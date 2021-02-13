@@ -45,7 +45,7 @@ pub struct LangCfg {
     pub key_record_start: String,
     pub key_record_stop: String,
     pub key_recording: String,
-    pub help_end: String,
+    pub help: String,
     /// Long msg
     pub not_entered_filenm: String,
     pub not_entered_search_str: String,
@@ -87,6 +87,9 @@ impl LangCfg {
     pub fn read_lang_cfg() -> LangCfg {
         let lang_multi: LangMulti = serde_yaml::from_str(&LANG_CONFIG.to_string()).unwrap();
         let lang = env::var("LANG").unwrap_or("en_US".to_string());
+
+        return lang_multi.en;
+
         if lang.starts_with("ja_JP") {
             return lang_multi.ja;
         } else {

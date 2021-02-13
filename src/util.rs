@@ -171,17 +171,21 @@ pub fn get_char_type(c: char) -> CharType {
     }
 }
 
-pub fn cut_str(string: String, limit_width: usize) -> String {
-    let mut chars: Vec<char> = string.chars().collect();
+pub fn cut_str(str: String, limit_width: usize, is_from_before: bool) -> String {
+    let mut chars: Vec<char> = if is_from_before { str.chars().rev().collect() } else { str.chars().collect() };
     let mut width = 0;
     for i in 0..chars.len() {
         if let Some(c) = chars.get(i) {
             let w = c.width().unwrap_or(0);
             if width + w > limit_width {
-                return chars.drain(0..i).collect();
+                if is_from_before {
+                    return chars.drain(0..i).rev().collect();
+                } else {
+                    return chars.drain(0..i).collect();
+                }
             }
             width += w;
         }
     }
-    return string;
+    return str;
 }

@@ -35,7 +35,7 @@ ja:
   key_record_start: 記録開始
   key_record_stop: 記録終了
   key_recording: 操作記録中...
-  help_end: ヘルプ終了
+  help: help
   ## Msg ##
   save_confirmation_to_close: 保存して終了しますか？
   terminal_size_small: ターミナルサイズが小さい為に終了します。サイズを大きくして再実行して下さい
@@ -102,7 +102,7 @@ en:
   key_record_start: record start
   key_record_stop: record stop
   key_recording: operation recording...
-  help_end: help end
+  help: help
   ## Msg ##
   save_confirmation_to_close: Do you want to save and exit?
   terminal_size_small: It will end because the terminal size is small. Please increase the size and try again
