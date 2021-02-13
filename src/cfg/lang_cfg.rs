@@ -39,6 +39,8 @@ pub struct LangCfg {
     pub set_search: String,
     pub set_replace: String,
     pub set_grep: String,
+    pub set_move_row: String,
+    pub move_to_specified_row: String,
     pub unable_to_edit: String,
     pub complement: String,
     pub open_target_file_in_another_terminal: String,
@@ -52,12 +54,14 @@ pub struct LangCfg {
     pub not_entered_search_file: String,
     pub not_entered_search_folder: String,
     pub not_entered_replace_str: String,
+    pub not_entered_row_number_to_move: String,
     pub cannot_find_char_search_for: String,
     pub long_time_to_search: String,
     pub show_search_result: String,
     pub show_search_no_result: String,
     pub no_undo_operation: String,
     pub no_operation_re_exec: String,
+    pub number_within_current_number_of_rows: String,
     // File
     pub no_read_permission: String,
     pub no_write_permission: String,
@@ -71,7 +75,7 @@ pub struct LangCfg {
     pub no_sel_range: String,
     // Paste
     pub no_value_in_clipboard: String,
-    pub cannot_paste_multi_lines: String,
+    pub cannot_paste_multi_rows: String,
     // key record
     pub no_key_record_exec: String,
     // other
@@ -89,7 +93,6 @@ impl LangCfg {
         let lang = env::var("LANG").unwrap_or("en_US".to_string());
 
         return lang_multi.en;
-
         if lang.starts_with("ja_JP") {
             return lang_multi.ja;
         } else {

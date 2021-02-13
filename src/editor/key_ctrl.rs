@@ -65,6 +65,9 @@ impl Editor {
         Log::ep_s("　　　　　　　  copy");
 
         let mut str = self.buf.slice(self.sel.get_range());
+
+        Log::ep("str", &str);
+
         let copy_string = match *ENV {
             Env::WSL => self.get_wsl_str(&mut str),
             _ => str,
@@ -78,9 +81,8 @@ impl Editor {
     // Empty line is an empty string
     fn get_wsl_str(&mut self, str: &mut String) -> String {
         let mut copy_str: String = String::new();
-        let str = str.replace(NEW_LINE_CRLF, ",").replace(NEW_LINE, ",");
-        let vec = Vec::from_iter(str.split(",").map(String::from));
-
+        let str = str.replace(NEW_LINE_CRLF, &NEW_LINE.to_string());
+        let vec = Vec::from_iter(str.split(NEW_LINE).map(String::from));
         for (i, s) in vec.iter().enumerate() {
             let ss = if *s == "" { "''".to_string() } else { format!("'{}'", s) };
             copy_str.push_str(ss.as_str());
@@ -133,6 +135,8 @@ impl Editor {
         Log::ep_s("　　　　　　　　ctl_end");
         let y = self.buf.len_lines() - 1;
         self.set_cur_target(y, self.buf.len_line_chars(y));
+        self.scroll();
+        self.scroll_horizontal();
         if self.updown_x == 0 {
             self.updown_x = self.cur.disp_x;
         }
@@ -167,7 +171,6 @@ impl Editor {
             if self.search.index != USIZE_UNDEFINED {
                 let range = self.search.ranges[self.search.index];
                 Log::ep("search.range", &range);
-
                 self.set_cur_target(range.y, range.sx);
             }
             self.scroll();

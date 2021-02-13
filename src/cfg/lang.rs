@@ -43,18 +43,22 @@ ja:
   set_search: 検索する文字を入力してください
   set_replace: 検索する文字と置換する文字を入力して下さい
   set_grep: 検索する文字と検索するファイル、検索するフォルダを入力して下さい
+  set_move_row: 移動する行番号を半角数字で入力して下さい
+  move_to_specified_row: 指定行に移動
   open_target_file_in_another_terminal: 対象のファイルを別のターミナルで開く
   not_entered_filenm: ファイル名が入力されていません
   not_entered_search_str: 検索する文字が入力されていません
   not_entered_search_file: 検索するファイルが入力されていません
   not_entered_search_folder: 検索するフォルダが入力されていません
   not_entered_replace_str: 置換する文字が入力されていません
+  not_entered_row_number_to_move: 移動する行番号が入力されていません
   cannot_find_char_search_for: 検索する文字が見つかりません
   long_time_to_search: 検索対象ファイル多い場合に非常に時間がかかる場合があります
   show_search_result: 検索結果を表示しています
   show_search_no_result: 検索対象は1件も存在しませんでした
   no_undo_operation: 元に戻す操作はありません
   no_operation_re_exec: 再実行する操作はありません
+  number_within_current_number_of_rows: 現在の行数内の数字を入力して下さい
   no_read_permission: 読み込み権限がありません
   no_write_permission: 書込権限無し
   file_opening_problem: ファイルを開く際に問題が発生しました
@@ -64,7 +68,7 @@ ja:
   file_already_exists: 既に存在するファイル名です
   no_sel_range: 範囲を指定して下さい
   no_value_in_clipboard: クリップボードに値はありません
-  cannot_paste_multi_lines: 複数行を貼り付けることは出来ません
+  cannot_paste_multi_rows: 複数行を貼り付けることは出来ません
   no_key_record_exec: 実行する操作記録はありません
   unsupported_operation: サポートされていない操作です
 en:
@@ -110,18 +114,22 @@ en:
   set_search: Enter the characters you want to search for
   set_replace: Enter the character to search for and the character to replace
   set_grep: "Enter the characters to search, the files to search, and the folder to search"
+  set_move_row: Enter the line number to move in half width numbers
+  move_to_specified_row: move to specified line
   open_target_file_in_another_terminal: open target file in another terminal
   not_entered_filenm: File name is not entered
   not_entered_search_str: Search charctor is not entered
   not_entered_search_file: Search file is not entered
   not_entered_search_folder: Search folder is not entered
   not_entered_replace_str: Replace charctor is not entered
+  not_entered_row_number_to_move: Line number to move is not entered 
   cannot_find_char_search_for: Cannot find the character to search for
   long_time_to_search: It may take a long time if there are many files to be searched
   show_search_result: show search result
   show_search_no_result: There was no search target
   no_undo_operation: There is no undo operation
   no_operation_re_exec: There is no operation re-execute
+  number_within_current_number_of_rows: Enter a number within the current number of lines
   no_read_permission: No read permission
   no_write_permission: No write permission
   file_opening_problem: There was a problem in opening the file
@@ -131,7 +139,7 @@ en:
   file_already_exists: file already exists
   no_sel_range: Please specify the copy range
   no_value_in_clipboard: There is no value in the clipboard
-  cannot_paste_multi_lines: Can not paste multilines
+  cannot_paste_multi_rows: Can not paste multilines
   no_key_record_exec: There is no operation record to be executed
   unsupported_operation: This is an unsupported operation
 

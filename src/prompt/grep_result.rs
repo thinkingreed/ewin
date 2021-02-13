@@ -57,6 +57,8 @@ impl EvtAct {
         }
         editor.buf.insert_end(&EOF_MARK.to_string());
         editor.set_cur_default();
+        editor.scroll();
+        editor.scroll_horizontal();
         editor.d_range.draw_type = DrawType::All;
         Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
     }

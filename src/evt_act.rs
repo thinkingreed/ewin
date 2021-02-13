@@ -54,6 +54,7 @@ impl EvtAct {
                             Char('g') => prom.grep(),
                             Char('z') => editor.undo(mbar),
                             Char('y') => editor.redo(),
+                            Char('l') => prom.move_row(),
                             Home => editor.ctrl_home(),
                             End => editor.ctrl_end(),
                             _ => mbar.set_err(&LANG.unsupported_operation),

@@ -107,7 +107,7 @@ impl MsgBar {
 
     pub fn get_disp_readonly_msg(&mut self) -> String {
         let msg_str = format!("{msg:^width$}", msg = self.msg_readonly, width = self.disp_col_num - (get_str_width(&self.msg_readonly) - self.msg_readonly.chars().count()));
-        return format!("{}{}{}", MoveTo(0, (self.disp_readonly_row_posi - 1) as u16), Clear(ClearType::CurrentLine), msg_str);
+        return format!("{}{}{}{}", MoveTo(0, (self.disp_readonly_row_posi - 1) as u16), Clear(ClearType::CurrentLine), Colors::get_msg_err_fg(), msg_str);
     }
     pub fn get_disp_keyrecord_msg(&mut self) -> String {
         let msg_str = format!("{msg:^width$}", msg = self.msg_keyrecord, width = self.disp_col_num - (get_str_width(&self.msg_keyrecord) - self.msg_keyrecord.chars().count()));

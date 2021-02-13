@@ -39,7 +39,6 @@ crossterm  = {version ="0.19.0", features = ["event-stream"]}
 serde = { version = "1.0.123", features = ["derive"] }
 serde_yaml = "0.8"
 toml = "0.5.8"
-json5= "0.3.0"
 cargo-deb = "1.28.3"
 tokio = { version = "1.2.0", features = ["full"] }
 tokio-util = { version = "0.6.3", features = ["codec"] }

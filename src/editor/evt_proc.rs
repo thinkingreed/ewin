@@ -1,4 +1,4 @@
-use crate::{log::*, model::*, prompt::prompt::*};
+use crate::{log::*, model::*};
 
 impl Editor {
     pub fn exec_edit_proc(&mut self, evt: EvtType, str: &str) {

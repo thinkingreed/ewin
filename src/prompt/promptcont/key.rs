@@ -1,11 +1,14 @@
-use crate::model::*;
-use crate::util::*;
+use crate::{global::*, model::*, msgbar::*, prompt::prompt::Prompt, util::*};
 use crossterm::event::KeyCode;
 use std::cmp::{max, min};
 use unicode_width::UnicodeWidthChar;
 
 impl PromptCont {
-    pub fn insert_char(&mut self, c: char) {
+    pub fn insert_char(&mut self, c: char, is_move_line: bool, mbar: &mut MsgBar) {
+        if is_move_line && !c.is_ascii_digit() {
+            return;
+        }
+
         if self.sel.is_selected() {
             self.del_sel_range();
             self.sel.clear();

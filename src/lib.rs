@@ -41,6 +41,7 @@ pub mod prompt {
     pub mod close;
     pub mod grep;
     pub mod grep_result;
+    pub mod move_row;
     pub mod prompt;
     pub mod replace;
     pub mod save_new_file;

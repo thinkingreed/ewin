@@ -142,6 +142,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 2. Display screen of grep result.
 ![grep_result](assets/img/grep_result.png "grep_result")
 3. Enter the Enter key on the 5th line of the grep result screen to open the target file in a new terminal.
+   The cursor moves to the character in the search result.
 ![grep_result_move_file](assets/img/grep_result_move_file.png "grep_result_move_file")
 
 ## Future Works

@@ -1,6 +1,5 @@
 use crate::{colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, util::*};
 use crossterm::{cursor::*, terminal::*};
-
 #[derive(Debug, Clone)]
 pub struct StatusBar {
     pub filenm: String,
@@ -82,7 +81,6 @@ impl StatusBar {
     pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
         Log::ep_s("StatusBar.draw_cur");
         let rows = self.disp_row_posi;
-
         // statusber表示領域がない場合
         if rows == 0 {
             return;

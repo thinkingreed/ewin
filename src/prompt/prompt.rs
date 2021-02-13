@@ -28,10 +28,10 @@ pub struct Prompt {
     // grep result stdout/stderr output complete flg
     pub is_grep_stdout: bool,
     pub is_grep_stderr: bool,
-
     pub is_key_record: bool,
     pub is_key_record_exec: bool,
     pub is_key_record_exec_draw: bool,
+    pub is_move_line: bool,
 }
 
 impl Default for Prompt {
@@ -60,6 +60,7 @@ impl Default for Prompt {
             is_key_record: false,
             is_key_record_exec: false,
             is_key_record_exec_draw: false,
+            is_move_line: false,
         }
     }
 }
@@ -86,6 +87,7 @@ impl Prompt {
         self.is_grep = false;
         self.is_grep_stdout = false;
         self.is_grep_stderr = false;
+        self.is_move_line = false;
     }
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
@@ -97,7 +99,7 @@ impl Prompt {
             let key_desc = format!("{}{}{}", MoveTo(0, (self.disp_row_posi) as u16), Clear(ClearType::CurrentLine), self.cont_1.key_desc.clone());
             str_vec.push(key_desc);
 
-            if self.is_save_new_file || self.is_search {
+            if self.is_save_new_file || self.is_search || self.is_move_line {
                 let buf = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 1) as u16), Clear(ClearType::CurrentLine), self.cont_1.ctl_select_color());
                 str_vec.push(buf);
             }

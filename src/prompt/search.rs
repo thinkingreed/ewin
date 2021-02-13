@@ -51,9 +51,7 @@ impl EvtAct {
             editor.search.clear();
             editor.search.ranges = search_vec;
             editor.search.str = search_str;
-            // all redrowの為に検索処理実施
-            editor.search_str(is_asc);
-            // indexを初期値に戻す
+            // Set index to initial value
             editor.search.index = USIZE_UNDEFINED;
             Terminal::init_draw(out, editor, mbar, prom, help, sbar);
             return true;

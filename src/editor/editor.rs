@@ -1,4 +1,4 @@
-use crate::{def::*, log::*, model::*, prompt::prompt::*, util::*};
+use crate::{def::*, log::*, model::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use std::cmp::{max, min};
 use unicode_width::UnicodeWidthChar;
@@ -6,7 +6,7 @@ use unicode_width::UnicodeWidthChar;
 impl Editor {
     // adjusting vertical posi of cursor
     pub fn scroll(&mut self) {
-        // Log::ep_s("　　　　　　　 scroll");
+        Log::ep_s("　　　　　　　 scroll");
         self.offset_y = min(self.offset_y, self.cur.y);
 
         if self.cur.y + 1 >= self.disp_row_num {
@@ -20,6 +20,24 @@ impl Editor {
                 if self.offset_y + self.disp_row_num > self.buf.len_lines() {
                     self.offset_y = self.buf.len_lines() - self.disp_row_num;
                 }
+            }
+        }
+    }
+    // move to row
+    pub fn scroll_move_row(&mut self) {
+        let reserve_row_num = 3;
+        if self.cur.y > self.offset_y + self.disp_row_num {
+            // last page
+            if self.buf.len_lines() - 1 - self.cur.y < self.disp_row_num {
+                self.offset_y = self.buf.len_lines() - self.disp_row_num;
+            } else {
+                self.offset_y = self.cur.y - reserve_row_num;
+            }
+        } else if self.cur.y < self.offset_y {
+            if self.cur.y > reserve_row_num {
+                self.offset_y = self.cur.y - reserve_row_num;
+            } else {
+                self.offset_y = 0;
             }
         }
     }
@@ -40,8 +58,15 @@ impl Editor {
         // Up・Down・Home
         if self.rnw == self.cur.x {
             self.offset_x = 0;
-        } else if self.cur_y_org != self.cur.y || self.evt == END {
+        } else if self.cur_y_org != self.cur.y || self.evt == END || self.evt == SEARCH {
             self.offset_x = self.get_x_offset(self.cur.y, self.cur.x - self.rnw);
+            if self.evt == SEARCH {
+                // Offset setting to display a few characters to the right of the search character for easier viewing
+                let str_width = get_str_width(&self.search.str);
+                if self.cur.disp_x + str_width + 5 > self.offset_disp_x + self.disp_col_num {
+                    self.offset_x += str_width + 5;
+                }
+            }
         // cur_right
         } else if self.evt == RIGHT && self.offset_disp_x + self.disp_col_num < self.cur.disp_x + offset_x_extra_num {
             let width = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], true).1;
@@ -49,6 +74,7 @@ impl Editor {
             if width + 1 > self.disp_col_num - self.rnw {
                 self.offset_x += offset_x_change_num;
             }
+
         // cur_left
         } else if self.evt == LEFT && self.cur.disp_x - 1 >= self.rnw + offset_x_extra_num && self.offset_disp_x >= self.cur.disp_x - 1 - self.rnw - offset_x_extra_num {
             Log::ep_s(" self.x_offset + self.rnw + extra > self.cur.x ");
@@ -68,6 +94,8 @@ impl Editor {
                 self.offset_disp_x += get_row_width(&vec[offset_x_org..self.offset_x], false).1;
             }
         }
+        Log::ep("offset_x", &self.offset_x);
+        Log::ep("self.offset_disp_x", &self.offset_disp_x);
     }
 
     pub fn get_char_width(&mut self, y: usize, x: usize) -> usize {
@@ -98,13 +126,13 @@ impl Editor {
         let sel = self.sel.get_range();
         self.buf.remove_range(sel);
         self.set_cur_target(sel.sy, sel.sx);
+        self.scroll();
+        self.scroll_horizontal();
     }
 
     pub fn set_cur_default(&mut self) {
         self.rnw = self.buf.len_lines().to_string().len();
         self.cur = Cur { y: 0, x: self.rnw, disp_x: self.rnw + 1 };
-        self.scroll();
-        self.scroll_horizontal();
     }
 
     pub fn set_cur_target(&mut self, y: usize, x: usize) {
@@ -113,8 +141,6 @@ impl Editor {
         let (cur_x, width) = get_row_width(&self.buf.char_vec_range(y, x), false);
         self.cur.x = cur_x + self.rnw;
         self.cur.disp_x = width + self.rnw + 1;
-        self.scroll();
-        self.scroll_horizontal();
     }
 
     pub fn is_edit_evt(&self, is_incl_unredo: bool) -> bool {

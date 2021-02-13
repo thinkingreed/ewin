@@ -102,6 +102,8 @@ impl Editor {
         self.buf.insert_char(self.cur.y, self.cur.x - self.rnw, NEW_LINE);
         self.set_cur_target(self.cur.y + 1, 0);
         self.d_range = DRange::new(self.cur.y - 1, 0, DrawType::After);
+        self.scroll();
+        self.scroll_horizontal();
     }
 
     pub fn insert_char(&mut self, c: char) {
@@ -122,6 +124,8 @@ impl Editor {
 
             self.buf.remove_type(EvtType::BS, self.cur.y, self.buf.len_line_chars(self.cur.y) - 1);
             self.set_cur_target(self.cur.y, cur_x);
+            self.scroll();
+            self.scroll_horizontal();
         } else {
             self.cur_left();
             ep.str = self.buf.char(self.cur.y, self.cur.x - self.rnw).to_string();
@@ -139,6 +143,8 @@ impl Editor {
 
         if is_line_end(c) {
             self.set_cur_target(self.cur.y, self.cur.x - self.rnw);
+            self.scroll();
+            self.scroll_horizontal();
         }
     }
 
@@ -152,6 +158,7 @@ impl Editor {
 
     pub fn end(&mut self) {
         self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y));
+        self.scroll();
         self.scroll_horizontal();
         self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
     }

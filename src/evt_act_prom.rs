@@ -24,7 +24,7 @@ impl EvtAct {
     }
 
     pub fn check_prom<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
-        if prom.is_save_new_file || prom.is_search || prom.is_close_confirm || prom.is_replace || prom.is_grep || prom.is_grep_result {
+        if prom.is_save_new_file || prom.is_search || prom.is_close_confirm || prom.is_replace || prom.is_grep || prom.is_grep_result || prom.is_move_line {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                     Char('c') => {
@@ -48,7 +48,7 @@ impl EvtAct {
         let mut evt_act_type = None;
 
         // edit
-        if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep {
+        if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep || prom.is_move_line {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                     Left | Right | BackTab | Home | End | Char(_) => {
@@ -79,9 +79,9 @@ impl EvtAct {
                             },
                             Char(c) => {
                                 match prom.buf_posi {
-                                    First => prom.cont_1.insert_char(c.to_ascii_uppercase()),
-                                    Second => prom.cont_2.insert_char(c.to_ascii_uppercase()),
-                                    Third => prom.cont_3.insert_char(c.to_ascii_uppercase()),
+                                    First => prom.cont_1.insert_char(c.to_ascii_uppercase(), prom.is_move_line, mbar),
+                                    Second => prom.cont_2.insert_char(c.to_ascii_uppercase(), prom.is_move_line, mbar),
+                                    Third => prom.cont_3.insert_char(c.to_ascii_uppercase(), prom.is_move_line, mbar),
                                 }
                                 prom.clear_sels();
                             }
@@ -121,9 +121,9 @@ impl EvtAct {
                             Down => prom.cursor_down(),
                             Tab => prom.tab(true),
                             Char(c) => match prom.buf_posi {
-                                First => prom.cont_1.insert_char(c),
-                                Second => prom.cont_2.insert_char(c),
-                                Third => prom.cont_3.insert_char(c),
+                                First => prom.cont_1.insert_char(c, prom.is_move_line, mbar),
+                                Second => prom.cont_2.insert_char(c, prom.is_move_line, mbar),
+                                Third => prom.cont_3.insert_char(c, prom.is_move_line, mbar),
                             },
                             _ => {}
                         }
@@ -163,21 +163,15 @@ impl EvtAct {
         if prom.is_grep_result == true || mbar.msg_readonly.len() > 0 {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                    F(4) | Right | Left | Down | Up | Home | End => {
-                        return EvtActType::Next;
-                    }
+                    F(4) | Right | Left | Down | Up | Home | End => return EvtActType::Next,
                     _ => return EvtActType::Hold,
                 },
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                    Char('w') | Home | End => {
-                        return EvtActType::Next;
-                    }
+                    Char('w') | Home | End => return EvtActType::Next,
                     _ => return EvtActType::Hold,
                 },
                 Key(KeyEvent { code, .. }) => match code {
-                    PageDown | PageUp | Home | End | Down | Up | Left | Right => {
-                        return EvtActType::Next;
-                    }
+                    PageDown | PageUp | Home | End | Down | Up | Left | Right => return EvtActType::Next,
                     Enter => {
                         if !prom.is_grep_result {
                             return EvtActType::Hold;
@@ -192,7 +186,6 @@ impl EvtAct {
                 },
                 Mouse(M_Event { kind: M_EventKind::ScrollUp, .. }) => return EvtActType::Next,
                 Mouse(M_Event { kind: M_EventKind::ScrollDown, .. }) => return EvtActType::Next,
-
                 _ => return EvtActType::Hold,
             }
         }
@@ -209,6 +202,8 @@ impl EvtAct {
             return EvtAct::grep(out, editor, mbar, prom, help, sbar);
         } else if prom.is_grep_result == true {
             return EvtAct::grep_result(editor);
+        } else if prom.is_move_line == true {
+            return EvtAct::move_row(out, editor, mbar, prom, help, sbar);
         } else {
             Log::ep_s("EvtProcess::NextEvtProcess");
             return EvtActType::Next;

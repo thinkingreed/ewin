@@ -55,7 +55,7 @@ impl Terminal {
     pub fn draw_cur(str_vec: &mut Vec<String>, editor: &mut Editor, prom: &mut Prompt) {
         // Log::ep_s("　　　　　　　set_cur_str");
 
-        if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep {
+        if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep || prom.is_move_line {
             prom.draw_cur(str_vec);
         } else {
             str_vec.push(MoveTo((editor.cur.disp_x - 1 - editor.offset_disp_x) as u16, (editor.cur.y - editor.offset_y) as u16).to_string());
@@ -186,6 +186,8 @@ impl Terminal {
                 prom.is_grep_stderr = true;
                 prom.grep_result();
                 editor.set_cur_default();
+                editor.scroll();
+                editor.scroll_horizontal();
                 mbar.set_info(&LANG.searching);
             } else {
                 sbar.filenm = editor.search.file.clone();

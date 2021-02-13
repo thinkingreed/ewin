@@ -17,6 +17,8 @@ impl Editor {
             }
             EvtType::ShiftEnd => {
                 self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y));
+                self.scroll();
+                self.scroll_horizontal();
             }
             _ => {}
         }

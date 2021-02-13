@@ -25,8 +25,8 @@ pub const PAGE_DOWN: Event = Key(KeyEvent { code: PageDown, modifiers: KeyModifi
 pub const DEL: Event = Key(KeyEvent { code: Delete, modifiers: KeyModifiers::NONE });
 pub const BS: Event = Key(KeyEvent { code: Backspace, modifiers: KeyModifiers::NONE });
 pub const END: Event = Key(KeyEvent { code: End, modifiers: KeyModifiers::NONE });
-// pub const INSERT_CHAR: Event = Key(KeyEvent { code: Char(), modifiers: KeyModifiers::NONE });
 pub const ENTER: Event = Key(KeyEvent { code: Enter, modifiers: KeyModifiers::NONE });
+pub const SEARCH: Event = Key(KeyEvent { code: F(3), modifiers: KeyModifiers::NONE });
 // SHIFT
 pub const SHIFT_RIGHT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Right });
 pub const SHIFT_LEFT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Left });
