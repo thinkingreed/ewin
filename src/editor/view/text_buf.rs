@@ -1,5 +1,5 @@
 extern crate ropey;
-use crate::{def::*, model::*};
+use crate::{def::*, log::*, model::*, prompt::prompt::*};
 use anyhow::Result;
 use ropey::iter::Chars;
 use ropey::{Rope, RopeSlice};

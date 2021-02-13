@@ -1,5 +1,5 @@
 extern crate ropey;
-use crate::{def::*, editor::view::char_style::*, global::*, model::*};
+use crate::{def::*, editor::view::char_style::*, global::*, log::*, model::*, prompt::prompt::*};
 use std::cmp::min;
 use syntect::highlighting::{HighlightIterator, HighlightState, Highlighter, Style};
 use syntect::parsing::{ParseState, ScopeStack};

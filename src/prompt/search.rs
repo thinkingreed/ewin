@@ -1,6 +1,5 @@
-use crate::{colors::*, def::*, global::*, help::*, model::*, statusbar::*};
+use crate::{colors::*, def::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
-use std::cmp::min;
 use std::io::Write;
 
 impl EvtAct {

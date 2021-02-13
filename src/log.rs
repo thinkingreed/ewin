@@ -1,7 +1,8 @@
-use crate::model::*;
 use crossterm::style::ResetColor;
 use std::fmt::Debug;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Log {}
 impl Log {
     pub fn ep<T: Debug>(m: &str, v: &T) {
         if cfg!(debug_assertions) {

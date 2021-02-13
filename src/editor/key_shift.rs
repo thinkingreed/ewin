@@ -1,4 +1,4 @@
-use crate::{global::*, help::*, model::*, statusbar::*};
+use crate::{global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 
@@ -67,7 +67,7 @@ impl Editor {
         Log::ep_s("　　　　　　　　macro_record_start");
         if prom.is_key_record {
             prom.is_key_record = false;
-            mbar.clear_macro();
+            mbar.clear_keyrecord();
             self.d_range.draw_type = DrawType::All;
         } else {
             prom.is_key_record = true;

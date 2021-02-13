@@ -1,4 +1,4 @@
-use crate::{model::*, util::*};
+use crate::{log::*, model::*, prompt::prompt::*, util::*};
 
 impl Editor {
     pub fn ctrl_mouse(&mut self, x: usize, y: usize, is_mouse_left_down: bool) {

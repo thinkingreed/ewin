@@ -1,4 +1,4 @@
-use crate::{def::*, model::*};
+use crate::{def::*, log::*, model::*, prompt::prompt::*};
 use chrono::prelude::Local;
 use crossterm::event::Event;
 

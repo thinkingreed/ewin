@@ -1,4 +1,4 @@
-use crate::{def::*, global::*, model::*};
+use crate::{def::*, global::*, log::*, model::*, msgbar::*};
 
 impl PromptCont {
     pub fn paste(&mut self, editor: &mut Editor, mbar: &mut MsgBar) -> bool {

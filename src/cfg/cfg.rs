@@ -1,4 +1,4 @@
-use crate::{cfg::*, colors::*, def::*, global::*, model::*, util::*};
+use crate::{cfg::*, colors::*, def::*, global::*, log::*, util::*};
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
 use std::{fs, fs::File, io::Write};

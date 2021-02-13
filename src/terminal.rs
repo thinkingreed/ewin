@@ -1,7 +1,10 @@
 use crate::{
     global::*,
     help::{self, Help},
+    log::*,
     model::*,
+    msgbar::*,
+    prompt::prompt::*,
     statusbar::*,
 };
 use crossterm::{
@@ -90,7 +93,7 @@ impl Terminal {
         mbar.disp_col_num = cols;
         mbar.disp_readonly_row_num = if mbar.msg_readonly.is_empty() { 0 } else { 1 };
         mbar.disp_keyrecord_row_num = if mbar.msg_keyrecord.is_empty() { 0 } else { 1 };
-        mbar.disp_row_num = if mbar.msg.is_empty() { 0 } else { 1 };
+        mbar.disp_row_num = if mbar.msg.str.is_empty() { 0 } else { 1 };
 
         mbar.disp_row_posi = rows - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
         mbar.disp_keyrecord_row_posi = rows - mbar.disp_row_num - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
@@ -99,14 +102,16 @@ impl Terminal {
         editor.disp_col_num = cols;
         editor.disp_row_num = rows - mbar.disp_readonly_row_num - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
 
-        Log::ep("editor.disp_row_num", &editor.disp_row_num);
-        Log::ep("mbar.disp_keyrecord_row_num", &mbar.disp_keyrecord_row_num);
-        Log::ep("mbar.disp_readonly_row_num", &mbar.disp_readonly_row_num);
-        Log::ep("mbar.disp_row_num", &mbar.disp_row_num);
-        Log::ep("prom.disp_row_num", &prom.disp_row_num);
-        Log::ep("help.disp_row_num", &help.disp_row_num);
-        Log::ep("help.disp_row_posi", &help.disp_row_posi);
-        Log::ep("sbar.disp_row_num", &sbar.disp_row_num);
+        /*
+           Log::ep("editor.disp_row_num", &editor.disp_row_num);
+           Log::ep("mbar.disp_keyrecord_row_num", &mbar.disp_keyrecord_row_num);
+           Log::ep("mbar.disp_readonly_row_num", &mbar.disp_readonly_row_num);
+           Log::ep("mbar.disp_row_num", &mbar.disp_row_num);
+           Log::ep("prom.disp_row_num", &prom.disp_row_num);
+           Log::ep("help.disp_row_num", &help.disp_row_num);
+           Log::ep("help.disp_row_posi", &help.disp_row_posi);
+           Log::ep("sbar.disp_row_num", &sbar.disp_row_num);
+        */
     }
 
     pub fn init_draw<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
@@ -125,12 +130,7 @@ impl Terminal {
     pub fn startup_terminal(search_strs: String) {
         Log::ep("search_strs", &search_strs);
 
-        let mut exe_path = "";
-        if !cfg!(debug_assertions) && Path::new("/usr/bin/ewin").exists() {
-            exe_path = "/usr/bin/ewin";
-        } else {
-            exe_path = "/home/hi/ewin/target/release/ewin"
-        }
+        let exe_path = if !cfg!(debug_assertions) && Path::new("/usr/bin/ewin").exists() { "/usr/bin/ewin" } else { "/home/hi/rust/ewin/target/release/ewin" };
 
         if *ENV == Env::WSL {
             if let Err(err) = Command::new("/mnt/c/windows/system32/cmd.exe")

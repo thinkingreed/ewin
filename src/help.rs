@@ -1,4 +1,4 @@
-use crate::{colors::*, def::*, global::*, model::*, statusbar::StatusBar, util::*};
+use crate::{colors::*, def::*, global::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::StatusBar, util::*};
 use crossterm::{cursor::*, terminal::*};
 #[derive(Debug, Clone)]
 pub struct Help {

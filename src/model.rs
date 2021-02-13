@@ -10,39 +10,6 @@ use std::path;
 use syntect::highlighting::HighlightState;
 use syntect::parsing::{ParseState, ScopeStackOp};
 
-#[derive(Debug, Clone)]
-pub struct MsgBar {
-    pub msg_readonly: String,
-    pub msg_keyrecord: String,
-    pub msg: String,
-    pub msg_org: String,
-    /// ターミナル上の表示数
-    pub disp_readonly_row_posi: usize,
-    pub disp_keyrecord_row_posi: usize,
-    pub disp_row_posi: usize,
-    pub disp_readonly_row_num: usize,
-    pub disp_keyrecord_row_num: usize,
-    pub disp_row_num: usize,
-    pub disp_col_num: usize,
-}
-
-impl Default for MsgBar {
-    fn default() -> Self {
-        MsgBar {
-            msg_readonly: String::new(),
-            msg_keyrecord: String::new(),
-            msg: String::new(),
-            msg_org: String::new(),
-            disp_readonly_row_posi: 0,
-            disp_keyrecord_row_posi: 0,
-            disp_row_posi: 0,
-            disp_readonly_row_num: 0,
-            disp_keyrecord_row_num: 0,
-            disp_row_num: 0,
-            disp_col_num: 0,
-        }
-    }
-}
 /// Event後のEditor以外の操作
 #[derive(Debug, Clone)]
 pub struct EvtAct {}
@@ -52,92 +19,6 @@ pub enum EvtActType {
     Hold,
     Next,
     Exit,
-}
-pub struct Prompt {
-    pub disp_row_num: usize,
-    pub disp_row_posi: usize,
-    pub disp_col_num: usize,
-    // Prompt Content_Sequence number
-    pub cont_1: PromptCont,
-    pub cont_2: PromptCont,
-    pub cont_3: PromptCont,
-    pub buf_posi: PromptBufPosi,
-    pub tab_comp: TabComp,
-    // cache
-    pub cache_search_filenm: String,
-    pub cache_search_folder: String,
-    // fn clear not clear
-    pub is_change: bool,
-    pub is_grep_result: bool,
-    pub is_grep_result_cancel: bool,
-    // *************
-    pub is_close_confirm: bool,
-    pub is_save_new_file: bool,
-    pub is_search: bool,
-    pub is_replace: bool,
-    pub is_grep: bool,
-    // grep result stdout/stderr output complete flg
-    pub is_grep_stdout: bool,
-    pub is_grep_stderr: bool,
-
-    pub is_key_record: bool,
-    pub is_key_record_exec: bool,
-    pub is_key_record_exec_draw: bool,
-}
-
-impl Default for Prompt {
-    fn default() -> Self {
-        Prompt {
-            disp_row_num: 0,
-            disp_row_posi: 0,
-            disp_col_num: 0,
-            is_change: false,
-            is_grep_result: false,
-            is_grep_result_cancel: false,
-            cont_1: PromptCont::default(),
-            cont_2: PromptCont::default(),
-            cont_3: PromptCont::default(),
-            buf_posi: PromptBufPosi::First,
-            tab_comp: TabComp::default(),
-            cache_search_filenm: String::new(),
-            cache_search_folder: String::new(),
-            is_close_confirm: false,
-            is_save_new_file: false,
-            is_search: false,
-            is_replace: false,
-            is_grep: false,
-            is_grep_stdout: false,
-            is_grep_stderr: false,
-            is_key_record: false,
-            is_key_record_exec: false,
-            is_key_record_exec_draw: false,
-        }
-    }
-}
-
-impl Prompt {
-    pub fn new() -> Self {
-        Prompt { ..Prompt::default() }
-    }
-
-    pub fn clear(&mut self) {
-        //  self = &mut Prompt { disp_row_num: 0, ..Prompt::default() };
-        Log::ep_s("　　　　　　　　Prompt clear");
-        self.disp_row_num = 0;
-        self.disp_row_posi = 0;
-        self.disp_col_num = 0;
-        self.cont_1 = PromptCont::default();
-        self.cont_2 = PromptCont::default();
-        self.cont_3 = PromptCont::default();
-        self.buf_posi = PromptBufPosi::First;
-        self.is_close_confirm = false;
-        self.is_save_new_file = false;
-        self.is_search = false;
-        self.is_replace = false;
-        self.is_grep = false;
-        self.is_grep_stdout = false;
-        self.is_grep_stderr = false;
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -745,10 +626,6 @@ impl fmt::Display for EvtType {
             EvtType::None => write!(f, "None"),
         }
     }
-}
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Log {
-    pub log_path: String,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UT {}

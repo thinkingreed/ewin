@@ -1,4 +1,4 @@
-use crate::{colors::*, def::*, global::*, model::*, util::*};
+use crate::{colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, util::*};
 use crossterm::{cursor::*, terminal::*};
 
 #[derive(Debug, Clone)]

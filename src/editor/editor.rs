@@ -1,4 +1,4 @@
-use crate::{def::*, model::*, util::*};
+use crate::{def::*, log::*, model::*, prompt::prompt::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use std::cmp::{max, min};
 use unicode_width::UnicodeWidthChar;

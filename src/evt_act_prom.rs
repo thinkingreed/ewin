@@ -1,5 +1,5 @@
 use crate::model::PromptBufPosi::*;
-use crate::{help::*, model::*, statusbar::*};
+use crate::{help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent as M_Event, MouseEventKind as M_EventKind};
 use std::io::Write;
 

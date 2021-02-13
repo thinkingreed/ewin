@@ -1,4 +1,4 @@
-use crate::{def::*, global::*, model::*};
+use crate::{def::*, global::*, log::*, model::*, prompt::prompt::*};
 use anyhow::Context;
 use clipboard::{ClipboardContext, ClipboardProvider};
 use std::io::Read;

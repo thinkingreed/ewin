@@ -1,4 +1,4 @@
-use crate::{colors::*, def::*, global::*, help::*, model::*, statusbar::*};
+use crate::{colors::*, def::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 use std::path::Path;
@@ -47,8 +47,8 @@ impl EvtAct {
     pub fn exit_grep_result<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar, child: &mut Child) {
         child.kill();
         prom.clear();
-        mbar.msg = String::new();
-        //   mbar.set_readonly(&LANG.unable_to_edit);
+        mbar.msg = Msg::default();
+        mbar.set_readonly(&LANG.unable_to_edit);
 
         if editor.grep_result_vec.len() > 0 {
             prom.grep_result_after();

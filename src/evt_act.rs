@@ -1,4 +1,4 @@
-use crate::{def::*, global::*, help::*, model::*, statusbar::*};
+use crate::{def::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*};
 use crossterm::{
     event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind},
     terminal::*,
@@ -185,6 +185,7 @@ impl EvtAct {
             editor.history.clear_redo_vec();
         }
 
+        // clear_redo_vec
         match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                 Char('x') | Char('v') => {
@@ -204,6 +205,7 @@ impl EvtAct {
         }
         // Msg clear  Other than cursor move
         match editor.evt {
+            Resize(_, _) => {}
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, .. }) => mbar.clear_mag(),
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, .. }) => mbar.clear_mag(),
             Key(KeyEvent { code, .. }) => match code {

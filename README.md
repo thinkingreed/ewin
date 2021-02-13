@@ -129,8 +129,15 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 |`Copy`・`Paste`| `Ctrl` + `c`・`v`| WSL             | Need path to powershell.exe. Try $PSHOME at PowerShell terminal|
 
 ## Sample imsage
-- **Help**
-![help](assets/img/help.png "hero")
+- **help**
+![help](assets/img/help.png "help")
+- **grep**
+- 1. Search character, search folder, file pattern input screen.
+![grep](assets/img/grep.png "grep")
+- 2. Display screen of grep result.
+![grep_result](assets/img/grep_result.png "grep_result")
+- 3. Enter the Enter key on the 5th line of the grep result screen to open the target file in a new terminal.
+![grep_result_move_file](assets/img/grep_result_move_file.png "grep_result_move_file")
 
 ## Future Works
 

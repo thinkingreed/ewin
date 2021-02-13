@@ -1,4 +1,4 @@
-use crate::{colors::*, model::*};
+use crate::{colors::*, log::*, model::*};
 use std::cmp::min;
 
 impl PromptCont {

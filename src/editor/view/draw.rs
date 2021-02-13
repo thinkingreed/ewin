@@ -1,4 +1,4 @@
-use crate::{colors::*, def::*, global::*, model::*, util::*};
+use crate::{colors::*, def::*, global::*, log::*, model::*, msgbar::*, prompt::prompt::*, util::*};
 use crossterm::{
     cursor::*,
     style::{Color as CrosstermColor, SetBackgroundColor},
@@ -15,9 +15,7 @@ impl Editor {
             if path.exists() {
                 let file_meta = metadata(path).unwrap();
                 if file_meta.permissions().readonly() {
-                    let msg_1 = &LANG.unable_to_edit.clone();
-                    let msg_2 = &LANG.no_write_permission.clone();
-                    mbar.set_readonly(&format!("{}({})", msg_1, msg_2));
+                    mbar.set_readonly(&format!("{}({})", &LANG.unable_to_edit, &LANG.no_write_permission));
                 }
                 // Judge enable syntax_highlight
                 if CFG.get().unwrap().syntax.syntax_reference.is_some() && file_meta.len() < ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE && is_enable_syntax_highlight(&self.file.ext) {
