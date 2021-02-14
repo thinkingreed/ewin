@@ -137,12 +137,9 @@ impl TextBuffer {
         let mut rtn_vec: Vec<(usize, usize)> = vec![];
 
         loop {
-            // Collect the next batch of matches.  Note that we don't use
-            // `Iterator::collect()` to collect the batch because we want to
-            // re-use the same Vec to avoid unnecessary allocations.
             matches.clear();
-            for m in SearchIter::from_rope_slice(&self.text.slice(head..end_idx), &search_str).take(BATCH_SIZE) {
-                matches.push(m);
+            for (sx, ex) in SearchIter::from_rope_slice(&self.text.slice(head..end_idx), &search_str).take(BATCH_SIZE) {
+                matches.push((sx + head, ex + head));
             }
             if matches.is_empty() {
                 break;
@@ -150,7 +147,8 @@ impl TextBuffer {
             tmp_vec.push(matches.clone());
 
             // Update head for next iteration.
-            head = (head as isize + matches.last().unwrap().1 as isize) as usize;
+            head = matches.last().unwrap().1;
+            matches.clear();
         }
         for vec in tmp_vec {
             for t in vec {

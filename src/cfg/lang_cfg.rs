@@ -21,6 +21,7 @@ pub struct LangCfg {
     pub grep: String,
     pub range_select: String,
     pub all_select: String,
+    pub move_row: String,
     pub search: String,
     pub search_bottom: String,
     pub search_top: String,
@@ -92,7 +93,6 @@ impl LangCfg {
         let lang_multi: LangMulti = serde_yaml::from_str(&LANG_CONFIG.to_string()).unwrap();
         let lang = env::var("LANG").unwrap_or("en_US".to_string());
 
-        return lang_multi.en;
         if lang.starts_with("ja_JP") {
             return lang_multi.ja;
         } else {

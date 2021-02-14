@@ -195,7 +195,7 @@ impl Terminal {
                 editor.search.row_num = search_row_nums[1].to_string();
                 Log::ep("search_row_num", &editor.search.row_num.clone());
                 editor.open(Path::new(&sbar.filenm), mbar);
-                editor.search_str(true);
+                editor.search_str(true, false);
             }
         // Normal
         } else {

@@ -91,15 +91,15 @@ impl MsgBar {
     }
 
     pub fn draw_only<T: Write>(&mut self, out: &mut T) {
-        if self.msg_readonly.len() > 0 {
+        if !self.msg_readonly.is_empty() {
             write!(out, "{}", self.get_disp_readonly_msg()).unwrap();
             out.flush().unwrap();
         }
-        if self.msg_keyrecord.len() > 0 {
+        if !self.msg_keyrecord.is_empty() {
             write!(out, "{}", self.get_disp_keyrecord_msg()).unwrap();
             out.flush().unwrap();
         }
-        if !self.msg.str.is_empty() {
+        if self.msg.str != self.msg_org.str {
             write!(out, "{}", self.get_disp_msg()).unwrap();
             out.flush().unwrap();
         }

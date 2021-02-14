@@ -11,13 +11,15 @@ impl EvtAct {
         }
 
         EvtAct::check_clear_mag(editor, mbar);
-
         let evt_act = EvtAct::check_prom(out, editor, mbar, prom, help, sbar);
-
         EvtAct::finalize_check_prom(editor, prom);
 
-        if evt_act == EvtActType::Hold && mbar.msg_org != mbar.msg {
-            Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
+        if evt_act == EvtActType::Hold {
+            Log::ep_s("evt_act == EvtActType::Hold");
+            if mbar.msg_org != mbar.msg {
+                mbar.draw_only(out);
+                prom.draw_cur_only(out);
+            }
         }
 
         return evt_act;
@@ -79,9 +81,9 @@ impl EvtAct {
                             },
                             Char(c) => {
                                 match prom.buf_posi {
-                                    First => prom.cont_1.insert_char(c.to_ascii_uppercase(), prom.is_move_line, mbar),
-                                    Second => prom.cont_2.insert_char(c.to_ascii_uppercase(), prom.is_move_line, mbar),
-                                    Third => prom.cont_3.insert_char(c.to_ascii_uppercase(), prom.is_move_line, mbar),
+                                    First => prom.cont_1.insert_char(c.to_ascii_uppercase(), prom.is_move_line, editor),
+                                    Second => prom.cont_2.insert_char(c.to_ascii_uppercase(), prom.is_move_line, editor),
+                                    Third => prom.cont_3.insert_char(c.to_ascii_uppercase(), prom.is_move_line, editor),
                                 }
                                 prom.clear_sels();
                             }
@@ -121,9 +123,9 @@ impl EvtAct {
                             Down => prom.cursor_down(),
                             Tab => prom.tab(true),
                             Char(c) => match prom.buf_posi {
-                                First => prom.cont_1.insert_char(c, prom.is_move_line, mbar),
-                                Second => prom.cont_2.insert_char(c, prom.is_move_line, mbar),
-                                Third => prom.cont_3.insert_char(c, prom.is_move_line, mbar),
+                                First => prom.cont_1.insert_char(c, prom.is_move_line, editor),
+                                Second => prom.cont_2.insert_char(c, prom.is_move_line, editor),
+                                Third => prom.cont_3.insert_char(c, prom.is_move_line, editor),
                             },
                             _ => {}
                         }

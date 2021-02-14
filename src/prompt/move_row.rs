@@ -22,8 +22,6 @@ impl EvtAct {
                         return EvtActType::Hold;
                     }
 
-                    enter2回押下不具合
-
                     editor.cur.y = row_num - 1;
                     editor.cur.x = editor.rnw;
                     editor.cur.disp_x = editor.rnw + 1;

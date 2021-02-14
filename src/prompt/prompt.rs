@@ -131,6 +131,13 @@ impl Prompt {
         out.flush().unwrap();
     }
 
+    pub fn draw_cur_only<T: Write>(&mut self, out: &mut T) {
+        let mut v: Vec<String> = vec![];
+        self.draw_cur(&mut v);
+        write!(out, "{}", v.concat()).unwrap();
+        out.flush().unwrap();
+    }
+
     pub fn draw_cur(&mut self, str_vec: &mut Vec<String>) {
         if self.is_replace || self.is_grep {
             if self.buf_posi == PromptBufPosi::First {

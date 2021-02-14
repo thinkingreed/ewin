@@ -70,7 +70,7 @@ impl EvtAct {
                             Char(c) => editor.exec_edit_proc(EvtType::InsertChar, &c.to_ascii_uppercase().to_string()),
                             F(1) => editor.record_key_start(mbar, prom),
                             F(2) => editor.exec_record_key(out, mbar, prom, help, sbar),
-                            F(4) => editor.search_str(false),
+                            F(4) => editor.search_str(false, false),
                             _ => mbar.set_err(&LANG.unsupported_operation),
                         },
                         Key(KeyEvent { code, .. }) => match code {
@@ -87,7 +87,7 @@ impl EvtAct {
                             Home => editor.home(),
                             End => editor.end(),
                             F(1) => help.disp_toggle(editor, mbar, prom, sbar),
-                            F(3) => editor.search_str(true),
+                            F(3) => editor.search_str(true, false),
                             _ => mbar.set_err(&LANG.unsupported_operation),
                         },
                         Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => editor.cur_up(),
@@ -164,7 +164,7 @@ impl EvtAct {
                 }
                 F(1) => editor.d_range.draw_type = DrawType::All,
                 F(3) => {
-                    if editor.search.index == USIZE_UNDEFINED {
+                    if editor.search.idx == USIZE_UNDEFINED {
                         editor.d_range.draw_type = DrawType::All;
                     }
                 }

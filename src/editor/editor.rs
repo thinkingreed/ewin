@@ -55,16 +55,25 @@ impl Editor {
         let vec = &self.buf.char_vec_line(self.cur.y);
 
         // Calc offset_x
-        // Up・Down・Home
+        // Up・Down・Home ...
         if self.rnw == self.cur.x {
             self.offset_x = 0;
-        } else if self.cur_y_org != self.cur.y || self.evt == END || self.evt == SEARCH {
+        } else if self.cur_y_org != self.cur.y || self.evt == END || self.evt == SEARCH || self.evt == SEARCH_DESC {
             self.offset_x = self.get_x_offset(self.cur.y, self.cur.x - self.rnw);
-            if self.evt == SEARCH {
-                // Offset setting to display a few characters to the right of the search character for easier viewing
+
+            if self.evt == SEARCH || self.evt == SEARCH_DESC {
                 let str_width = get_str_width(&self.search.str);
-                if self.cur.disp_x + str_width + 5 > self.offset_disp_x + self.disp_col_num {
-                    self.offset_x += str_width + 5;
+                if self.evt == SEARCH {
+                    // Offset setting to display a few characters to the right of the search character for easier viewing
+                    if self.cur.disp_x + str_width + 5 > self.offset_disp_x + self.disp_col_num {
+                        self.offset_x += str_width + 5;
+                    }
+                } else if self.evt == SEARCH_DESC {
+                    // Calc offset_disp_x once to judge the display position
+                    let offset_disp_x = get_row_width(&vec[..self.offset_x], false).1;
+                    if self.cur.disp_x + str_width + 5 > offset_disp_x + self.disp_col_num {
+                        self.offset_x += str_width + 5;
+                    }
                 }
             }
         // cur_right
@@ -88,14 +97,15 @@ impl Editor {
         } else if offset_x_org != self.offset_x {
             if self.offset_x < offset_x_org {
                 // Log::ep_s(" self.x_offset < x_offset_org  ");
+
+                let ttt = get_row_width(&vec[self.offset_x..offset_x_org], false).1;
+                Log::ep(" ttt", &ttt);
                 self.offset_disp_x -= get_row_width(&vec[self.offset_x..offset_x_org], false).1;
             } else {
                 // Log::ep_s("else self.x_offset < x_offset_org  ");
                 self.offset_disp_x += get_row_width(&vec[offset_x_org..self.offset_x], false).1;
             }
         }
-        Log::ep("offset_x", &self.offset_x);
-        Log::ep("self.offset_disp_x", &self.offset_disp_x);
     }
 
     pub fn get_char_width(&mut self, y: usize, x: usize) -> usize {

@@ -178,7 +178,7 @@ impl fmt::Display for GrepResult {
 /// 検索範囲
 pub struct Search {
     pub str: String,
-    pub index: usize,
+    pub idx: usize,
     pub ranges: Vec<SearchRange>,
     pub file: String,
     pub filenm: String,
@@ -189,7 +189,7 @@ pub struct Search {
 impl Search {
     pub fn clear(&mut self) {
         self.str = String::new();
-        self.index = USIZE_UNDEFINED;
+        self.idx = USIZE_UNDEFINED;
         self.ranges = vec![];
         // file full path
         self.file = String::new();
@@ -201,7 +201,7 @@ impl Default for Search {
     fn default() -> Self {
         Search {
             str: String::new(),
-            index: USIZE_UNDEFINED,
+            idx: USIZE_UNDEFINED,
             ranges: vec![],
             file: String::new(),
             filenm: String::new(),

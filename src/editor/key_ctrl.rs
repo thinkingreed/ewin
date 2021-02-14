@@ -142,34 +142,26 @@ impl Editor {
         }
     }
 
-    pub fn search_str(&mut self, is_asc: bool) {
+    pub fn search_str(&mut self, is_asc: bool, is_incremental: bool) {
         Log::ep_s("　　　　　　　　search_str");
-        // Log::ep("self.d_range.draw_type", &self.d_range.draw_type);
 
         if self.search.str.len() > 0 {
-            // 初回検索
-            Log::ep("search.index", &self.search.index);
-            if self.search.index == USIZE_UNDEFINED {
-                if self.search.ranges.len() == 0 {
-                    self.search.ranges = self.get_search_ranges(&self.search.str, 0, self.buf.len_chars());
-                }
-                if self.search.ranges.len() > 0 {
-                    if self.search.row_num.len() == 0 {
-                        self.search.index = 0;
-                    } else {
-                        self.search.index = self.get_search_row_no_index(&self.search.row_num);
-                    }
-                }
-            } else {
-                self.search.index = self.get_search_str_index(is_asc);
-                Log::ep("search.index", &self.search.index);
+            Log::ep("search.index 111", &self.search.idx);
+            if self.search.ranges.len() == 0 {
+                self.search.ranges = self.get_search_ranges(&self.search.str, 0, self.buf.len_chars());
             }
-
             if self.search.ranges.len() == 0 {
                 return;
             }
-            if self.search.index != USIZE_UNDEFINED {
-                let range = self.search.ranges[self.search.index];
+            if self.search.row_num.len() == 0 {
+                self.search.idx = self.get_search_str_index(is_asc);
+                Log::ep("search.index 222", &self.search.idx);
+            } else {
+                self.search.idx = self.get_search_row_no_index(&self.search.row_num);
+            }
+
+            if !is_incremental {
+                let range = self.search.ranges[self.search.idx];
                 Log::ep("search.range", &range);
                 self.set_cur_target(range.y, range.sx);
             }
@@ -193,12 +185,17 @@ impl Editor {
                 ex: self.buf.char_to_line_idx(ex),
             });
         }
+
         return rtn_vec;
     }
 
     pub fn get_search_str_index(&mut self, is_asc: bool) -> usize {
         let cur_x = self.cur.x - self.rnw;
+
         if is_asc {
+            if self.search.idx == USIZE_UNDEFINED {
+                return 0;
+            }
             for (i, range) in self.search.ranges.iter().enumerate() {
                 if self.cur.y < range.y || (self.cur.y == range.y && cur_x < range.sx) {
                     return i;
@@ -207,16 +204,18 @@ impl Editor {
             // return 0 for circular search
             return 0;
         } else {
-            let index = self.search.ranges.len() - 1;
+            let max_index = self.search.ranges.len() - 1;
+
             let mut ranges = self.search.ranges.clone();
             ranges.reverse();
             for (i, range) in ranges.iter().enumerate() {
+                // Log::ep("iii ", &i);
                 if self.cur.y > range.y || (self.cur.y == range.y && cur_x > range.sx) {
-                    return index - i;
+                    return max_index - i;
                 }
             }
             // return index for circular search
-            return index;
+            return max_index;
         }
     }
     pub fn get_search_row_no_index(&self, row_num: &String) -> usize {

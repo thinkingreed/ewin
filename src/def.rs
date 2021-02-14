@@ -32,6 +32,7 @@ pub const SHIFT_RIGHT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, co
 pub const SHIFT_LEFT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Left });
 pub const SHIFT_DOWN: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Down });
 pub const SHIFT_UP: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Up });
+pub const SEARCH_DESC: Event = Key(KeyEvent { code: F(4), modifiers: KeyModifiers::SHIFT });
 // CTRL
 pub const PASTE: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('v') });
 pub const CUT: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('x') });
@@ -50,7 +51,8 @@ pub const KEY_REPLACE: &'static str = "Ctrl + r";
 pub const KEY_CUT: &'static str = "Ctrl + x";
 pub const KEY_GREP: &'static str = "Ctrl + g";
 pub const KEY_ALL_SELECT: &'static str = "Ctrl + a";
-pub const KEY_SELECT: &'static str = "Shift + ↑↓←→ or Mouse";
+pub const KEY_MOVE_ROW: &'static str = "Ctrl + l";
+pub const KEY_SELECT: &'static str = "Shift + ↑↓←→ / Mouse";
 pub const KEY_RECORD_START: &'static str = "Shift + F1";
 pub const KEY_RECORD_STOP: &'static str = "Shift + F2";
 pub const KEY_HELP: &'static str = "F1";

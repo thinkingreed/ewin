@@ -4,11 +4,15 @@ use std::cmp::{max, min};
 use unicode_width::UnicodeWidthChar;
 
 impl PromptCont {
-    pub fn insert_char(&mut self, c: char, is_move_line: bool, mbar: &mut MsgBar) {
+    pub fn insert_char(&mut self, c: char, is_move_line: bool, editor: &mut Editor) {
         if is_move_line && !c.is_ascii_digit() {
             return;
         }
+        let str: String = self.buf.iter().collect::<String>();
 
+        if str.chars().count() == editor.rnw {
+            return;
+        }
         if self.sel.is_selected() {
             self.del_sel_range();
             self.sel.clear();

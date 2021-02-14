@@ -18,6 +18,7 @@ ja:
   grep: grep
   range_select: 範囲選択
   all_select: 全選択
+  move_row: 行移動
   search: 検索
   search_bottom: 下部検索
   search_top: 上部検索
@@ -89,6 +90,7 @@ en:
   grep: grep
   range_select: range select
   all_select: all select
+  move_row: move row
   search: search
   search_bottom: bottom search
   search_top: top search
