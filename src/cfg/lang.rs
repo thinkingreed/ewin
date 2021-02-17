@@ -1,5 +1,4 @@
 pub const LANG_CONFIG: &'static str = r#"
-
 ja:
   row: 行
   col: 列
@@ -26,6 +25,7 @@ ja:
   search_file: 検索ファイル
   search_folder: 検索フォルダ
   searching: 検索中...
+  case_sens: 大/小文字区別
   new_file: 新規ファイル
   move_input_field: 入力箇所移動
   replace: 置換
@@ -98,6 +98,7 @@ en:
   search_file: search file
   search_folder: search folder
   searching: searching...
+  case_sens: case sens
   new_file: new_file
   move_input_field: move input field
   replace: replace

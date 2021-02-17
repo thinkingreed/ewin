@@ -29,6 +29,7 @@ pub struct LangCfg {
     pub search_file: String,
     pub search_folder: String,
     pub searching: String,
+    pub case_sens: String,
     pub new_file: String,
     pub replace: String,
     pub all_replace: String,

@@ -50,7 +50,3 @@ syntect = "4.5"
 chrono="0.4.19"
 colors-transform = "0.2.11"
 directories = "3.0.1"
-
-
-
-

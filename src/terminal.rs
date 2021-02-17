@@ -1,6 +1,6 @@
 use crate::{
     global::*,
-    help::{self, Help},
+    help::{Help, HelpMode},
     log::*,
     model::*,
     msgbar::*,
@@ -15,7 +15,6 @@ use crossterm::{
     terminal::*,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use help::HelpMode;
 use std::{
     ffi::OsStr,
     io::{self, stdout, Write},
@@ -24,7 +23,8 @@ use std::{
     process,
     process::Command,
 };
-
+#[derive(Debug)]
+pub struct Terminal {}
 impl Terminal {
     pub fn draw<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> Result<(), io::Error> {
         Log::ep_s("　　　　　　　　All draw");
@@ -43,9 +43,12 @@ impl Terminal {
         help.draw(&mut str_vec);
         mbar.draw(&mut str_vec);
         prom.draw(&mut str_vec);
-        sbar.draw(&mut str_vec, editor);
+        if d_range.draw_type != DrawType::Not {
+            sbar.draw(&mut str_vec, editor);
+        }
 
         Terminal::draw_cur(&mut str_vec, editor, prom);
+
         let _ = out.write(&str_vec.concat().as_bytes());
         out.flush()?;
 
@@ -53,12 +56,19 @@ impl Terminal {
     }
 
     pub fn draw_cur(str_vec: &mut Vec<String>, editor: &mut Editor, prom: &mut Prompt) {
-        // Log::ep_s("　　　　　　　set_cur_str");
+        Log::ep_s("　　　　　　　set_cur_str");
 
         if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep || prom.is_move_line {
             prom.draw_cur(str_vec);
         } else {
+            Log::ep("editor.cur.disp_x - 1 - editor.offset_disp_x", &(editor.cur.disp_x - 1 - editor.offset_disp_x));
+            Log::ep("editor.cur.disp_x ", &editor.cur.disp_x);
+            Log::ep(" editor.offset_disp_x", &editor.offset_disp_x);
+            Log::ep("editor.cur.y", &editor.cur.y);
+            Log::ep("editor.offset_y", &editor.offset_y);
+
             str_vec.push(MoveTo((editor.cur.disp_x - 1 - editor.offset_disp_x) as u16, (editor.cur.y - editor.offset_y) as u16).to_string());
+            // str_vec.push(MoveTo(5, 1).to_string());
         }
     }
 

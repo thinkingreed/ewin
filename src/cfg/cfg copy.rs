@@ -18,19 +18,31 @@ pub struct Cfg {
     #[serde(skip_deserializing, skip_serializing)]
     pub syntax: Syntax,
 }
-
+impl Cfg {
+    pub fn default() -> Self {
+        Cfg {
+            general: CfgGeneral::default(),
+            colors: CfgColors::default(),
+            syntax: Syntax::default(),
+        }
+    }
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgGeneral {
     pub editor: CfgEditor,
 }
-
+impl CfgGeneral {
+    pub fn default() -> Self {
+        CfgGeneral { editor: CfgEditor::default() }
+    }
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgEditor {
-    pub search: CfgSearch,
+    pub serach: CfgSerach,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CfgSearch {
+pub struct CfgSerach {
     pub case_sens: bool,
 }
 
@@ -41,7 +53,16 @@ pub struct CfgColors {
     pub status_bar: CfgColorStatusBar,
     pub msg: CfgColorMsg,
 }
-
+impl CfgColors {
+    pub fn default() -> Self {
+        CfgColors {
+            theme: CfgColorTheme::default(),
+            editor: CfgColorEditor::default(),
+            msg: CfgColorMsg::default(),
+            status_bar: CfgColorStatusBar::default(),
+        }
+    }
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgColorTheme {
     pub theme_path: Option<String>,
@@ -50,6 +71,15 @@ pub struct CfgColorTheme {
     pub theme_bg_enable: bool,
 }
 
+impl CfgColorTheme {
+    pub fn default() -> Self {
+        CfgColorTheme {
+            theme_path: None,
+            theme_background_enable: None,
+            theme_bg_enable: false,
+        }
+    }
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgColorEditor {
     background: String,
@@ -64,6 +94,20 @@ pub struct CfgColorEditor {
     pub control_char: ControlChar,
 }
 
+impl CfgColorEditor {
+    pub fn default() -> Self {
+        CfgColorEditor {
+            background: String::new(),
+            foreground: String::new(),
+            bg: Color::default(),
+            fg: Color::default(),
+            line_number: LineNumber::default(),
+            selection: Selection::default(),
+            search: Search::default(),
+            control_char: ControlChar::default(),
+        }
+    }
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LineNumber {
     background: String,
@@ -74,6 +118,16 @@ pub struct LineNumber {
     pub fg: Color,
 }
 
+impl LineNumber {
+    pub fn default() -> Self {
+        LineNumber {
+            background: String::new(),
+            foreground: String::new(),
+            bg: Color::default(),
+            fg: Color::default(),
+        }
+    }
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Selection {
     background: String,
@@ -82,6 +136,16 @@ pub struct Selection {
     pub bg: Color,
     #[serde(skip_deserializing, skip_serializing)]
     pub fg: Color,
+}
+impl Selection {
+    pub fn default() -> Self {
+        Selection {
+            background: String::new(),
+            foreground: String::new(),
+            bg: Color::default(),
+            fg: Color::default(),
+        }
+    }
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Search {
@@ -92,11 +156,26 @@ pub struct Search {
     #[serde(skip_deserializing, skip_serializing)]
     pub fg: Color,
 }
+impl Search {
+    pub fn default() -> Self {
+        Search {
+            background: String::new(),
+            foreground: String::new(),
+            bg: Color::default(),
+            fg: Color::default(),
+        }
+    }
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ControlChar {
     foreground: String,
     #[serde(skip_deserializing, skip_serializing)]
     pub fg: Color,
+}
+impl ControlChar {
+    pub fn default() -> Self {
+        ControlChar { foreground: String::new(), fg: Color::default() }
+    }
 }
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename = "StatusBar")]
@@ -104,6 +183,12 @@ pub struct CfgColorStatusBar {
     foreground: String,
     #[serde(skip_deserializing, skip_serializing)]
     pub fg: Color,
+}
+
+impl CfgColorStatusBar {
+    pub fn default() -> Self {
+        CfgColorStatusBar { foreground: String::new(), fg: Color::default() }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -122,6 +207,21 @@ pub struct CfgColorMsg {
     pub warning_fg: Color,
     #[serde(skip_deserializing, skip_serializing)]
     pub err_fg: Color,
+}
+
+impl CfgColorMsg {
+    pub fn default() -> Self {
+        CfgColorMsg {
+            normal_foreground: String::new(),
+            highlight_foreground: String::new(),
+            warning_foreground: String::new(),
+            err_foreground: String::new(),
+            normal_fg: Color::default(),
+            highlight_fg: Color::default(),
+            warning_fg: Color::default(),
+            err_fg: Color::default(),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

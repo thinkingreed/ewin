@@ -233,6 +233,7 @@ impl<'a> Iterator for SearchIter<'a> {
             let mut i = 0;
             while i < self.possible_matches.len() {
                 let pattern_char = self.possible_matches[i].next().unwrap();
+                // if next_char == pattern_char || next_char == pattern_char.to_ascii_lowercase() {
                 if next_char == pattern_char {
                     if self.possible_matches[i].clone().next() == None {
                         // We have a match!  Reset possible matches and

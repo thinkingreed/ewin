@@ -1,4 +1,4 @@
-use crate::{colors::*, global::*, help::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*};
+use crate::{colors::*, global::*, help::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*, statusbar::*, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 

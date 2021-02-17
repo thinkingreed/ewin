@@ -38,15 +38,12 @@ impl StatusBar {
             return;
         }
         let cur_s = self.get_cur_str(editor);
-        Log::ep("cur_s", &cur_s);
-        Log::ep("cur_s.width", &get_str_width(&cur_s));
-
         let (help_w, filenm_w, cur_w) = self.get_areas_width(self.disp_col_num, &get_str_width(&cur_s) + 1);
-
-        Log::ep("help_w", &help_w);
-        Log::ep("filenm_w", &filenm_w);
-        Log::ep("cur_w", &cur_w);
-
+        /*
+               Log::ep("help_w", &help_w);
+               Log::ep("filenm_w", &filenm_w);
+               Log::ep("cur_w", &cur_w);
+        */
         let mut file_str = self.filenm.clone();
         if file_str.len() == 0 {
             file_str = LANG.new_file.clone();
@@ -56,10 +53,10 @@ impl StatusBar {
         let help_disp = format!("{h:^width$}", h = help, width = help_w);
 
         let filenm = cut_str(file_str.clone(), filenm_w, true);
-        let filenm_disp = format!("{fnm:^width$}", fnm = filenm, width = filenm_w - (get_str_width(&filenm) - filenm.chars().count()));
+        self.filenm_disp = format!("{fnm:^width$}", fnm = filenm, width = filenm_w - (get_str_width(&filenm) - filenm.chars().count()));
 
         // Adjusted by the difference between the character width and the number of characters
-        let cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
+        self.cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
 
         let sber_str = format!(
             "{}{}{}{}{}{}",
@@ -67,21 +64,18 @@ impl StatusBar {
             Clear(ClearType::CurrentLine),
             Colors::get_sber_bg(),
             Colors::get_sber_fg(),
-            format!("{}{}{}", help_disp, filenm_disp, cur_str),
+            format!("{}{}{}", help_disp, self.filenm_disp, self.cur_str),
             Colors::get_default_fg(),
         );
-
         // self.set_color(str_vec);
         str_vec.push(sber_str);
         Colors::set_text_color(str_vec);
-        self.filenm_disp = filenm_disp;
-        self.cur_str = cur_str;
     }
-
+    /*
     pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
-        Log::ep_s("StatusBar.draw_cur");
+        Log::ep_s("               StatusBar.draw_cur");
         let rows = self.disp_row_posi;
-        // statusber表示領域がない場合
+        // no display area
         if rows == 0 {
             return;
         }
@@ -91,6 +85,7 @@ impl StatusBar {
 
         str_vec.push(sber_str);
     }
+    */
     pub fn get_cur_str(&mut self, editor: &mut Editor) -> String {
         let mut row_vec: Vec<&str> = vec![];
         row_vec.push(&LANG.row);

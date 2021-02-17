@@ -1,4 +1,4 @@
-use crate::{global::*, model::*, msgbar::*, prompt::prompt::Prompt, util::*};
+use crate::{model::*, prompt::promptcont::promptcont::*, util::*};
 use crossterm::event::KeyCode;
 use std::cmp::{max, min};
 use unicode_width::UnicodeWidthChar;
@@ -9,8 +9,7 @@ impl PromptCont {
             return;
         }
         let str: String = self.buf.iter().collect::<String>();
-
-        if str.chars().count() == editor.rnw {
+        if is_move_line && str.chars().count() == editor.rnw {
             return;
         }
         if self.sel.is_selected() {

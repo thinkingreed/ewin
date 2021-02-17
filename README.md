@@ -85,6 +85,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `PAGE UP`                           | Previous page.                     |target       |
 | `Ctrl` + `HOME`                     | Move cursor to first of line.      |target       |
 | `Ctrl` + `END`                      | Move cursor to last of line.       |target       |
+| `Ctrl` + `l`                        | Move cursor to specified line.     |―            |
 
 - **Edit text**
 
@@ -127,6 +128,56 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 |`Key record`   | `Ctrl` + `F1`    | WSL             | keybindings.command."copy" and "paste" needs to be changed to something other than Ctrl+c, Ctrl+v. Ex)Ctrl+Shift+c, Ctrl+Shift+v                                 |
 |`Save`    　   | `Ctrl` + `s`     | All             | Forcibly convert CR + LF of line feed code to LF  |
 |`Copy`・`Paste`| `Ctrl` + `c`・`v`| WSL             | Need path to powershell.exe. Try $PSHOME at PowerShell terminal|
+
+## Setting file
+
+Please edit the contents of setting.toml(initial setting) below and put it in this location.
+
+### On Linux
+$HOME/.config/ewin/setting.toml
+
+
+
+```
+#################################################################
+[general.editor.search]
+case_sens = false
+
+# If theme is set, theme color has the highest priority
+[colors.theme]
+# theme_path = "tmTheme.tmTheme"
+# theme_background_enable = true
+
+[colors.editor]
+background = "#000000"
+foreground = "#ffffff"
+
+[colors.editor.line_number]
+background = "#000000"
+foreground = "#6e6e6e"
+
+[colors.editor.selection]
+background = "#dd4814"
+foreground = "#000000"
+
+[colors.editor.search]
+background = "#dd4814"
+foreground = "#000000"
+
+[colors.editor.control_char]
+foreground = "#6e6e6e"
+
+[colors.status_bar]
+foreground = "#87411f"
+
+[colors.msg]
+normal_foreground = "#ffffff"
+highlight_foreground = "#00c800"
+warning_foreground = "#ffa500"
+err_foreground = "#ff0000"
+#################################################################
+```
+
 
 ## Sample imsage
   

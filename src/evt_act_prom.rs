@@ -1,5 +1,5 @@
-use crate::model::PromptBufPosi::*;
-use crate::{help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*};
+use crate::prompt::promptcont::promptcont::PromptBufPosi::*;
+use crate::{help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent as M_Event, MouseEventKind as M_EventKind};
 use std::io::Write;
 
@@ -15,11 +15,11 @@ impl EvtAct {
         EvtAct::finalize_check_prom(editor, prom);
 
         if evt_act == EvtActType::Hold {
-            Log::ep_s("evt_act == EvtActType::Hold");
             if mbar.msg_org != mbar.msg {
                 mbar.draw_only(out);
                 prom.draw_cur_only(out);
             }
+            prom.draw_only(out);
         }
 
         return evt_act;
@@ -33,9 +33,11 @@ impl EvtAct {
                         if prom.is_grep_result && prom.is_grep_result_cancel == false {
                             prom.is_grep_result_cancel = true;
                         } else {
-                            Terminal::init_draw(out, editor, mbar, prom, help, sbar);
+                            prom.clear();
+                            mbar.clear();
+                            editor.d_range.draw_type = DrawType::All;
                         }
-                        return EvtActType::Hold;
+                        return EvtActType::DrawOnly;
                     }
                     Char('w') => {
                         Terminal::init_draw(out, editor, mbar, prom, help, sbar);
@@ -111,6 +113,9 @@ impl EvtAct {
                     }
                     _ => {}
                 },
+                Key(KeyEvent { modifiers: KeyModifiers::ALT, code }) => match code {
+                    _ => {}
+                },
                 Key(KeyEvent { code, .. }) => match code {
                     Left | Right | Char(_) | Delete | Backspace | Home | End | Up | Down | Tab => {
                         match code {
@@ -141,6 +146,9 @@ impl EvtAct {
         // incremental search
         if prom.is_search {
             match editor.evt {
+                Key(KeyEvent { modifiers: KeyModifiers::ALT, code }) => match code {
+                    _ => {}
+                },
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                     Char(_) => EvtAct::exec_search_incremental(out, editor, mbar, prom, help, sbar),
                     _ => {}

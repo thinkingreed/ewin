@@ -1,4 +1,4 @@
-use crate::{def::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*};
+use crate::{def::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, terminal::*};
 use crossterm::{
     event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind},
     terminal::*,
@@ -11,19 +11,18 @@ impl EvtAct {
             Mouse(M_Event { kind: M_Kind::Moved, .. }) => return false,
             _ => {}
         }
+
         Terminal::hide_cur();
         mbar.msg_org = mbar.msg.clone();
-
         let evt_next_process = EvtAct::check_next_process(out, editor, mbar, prom, help, sbar);
 
         match evt_next_process {
             EvtActType::Exit => return true,
             EvtActType::Hold => {}
-            EvtActType::Next => {
-                let is_check_err = EvtAct::check_err(editor, mbar);
+            EvtActType::DrawOnly | EvtActType::Next => {
                 Log::ep("editor.evt", &editor.evt);
 
-                if !is_check_err {
+                if evt_next_process == EvtActType::Next && !EvtAct::check_err(editor, mbar) {
                     EvtAct::init(editor, mbar, prom);
                     editor.cur_y_org = editor.cur.y;
                     let offset_y_org = editor.offset_y;
@@ -259,9 +258,9 @@ impl EvtAct {
         let is_return = false;
         Log::ep_s("check_err");
 
-        // Check if sel range is set
         match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
+                // Check if sel range is set
                 Char('x') | Char('c') => {
                     if !editor.sel.is_selected() {
                         mbar.set_err(&LANG.no_sel_range.to_string());

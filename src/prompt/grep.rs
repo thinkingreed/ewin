@@ -1,8 +1,6 @@
-use crate::{colors::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*};
+use crate::{colors::*, def::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*, statusbar::*, terminal::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
-use std::env;
-use std::io::Write;
-use std::path::Path;
+use std::{env, fs, io::Write, path::Path};
 
 impl EvtAct {
     pub fn grep<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
@@ -65,6 +63,113 @@ impl Prompt {
         self.cont_1 = cont_1;
         self.cont_2 = cont_2;
         self.cont_3 = cont_3;
+    }
+    pub fn tab(&mut self, is_asc: bool) {
+        Log::ep_s("tab");
+        Log::ep("is_asc ", &is_asc);
+
+        if self.is_replace {
+            match self.buf_posi {
+                PromptBufPosi::First => self.cursor_down(),
+                PromptBufPosi::Second => self.cursor_up(),
+                _ => {}
+            }
+        } else if self.is_grep {
+            match self.buf_posi {
+                PromptBufPosi::First => {
+                    if is_asc {
+                        self.cursor_down();
+                    } else {
+                        self.buf_posi = PromptBufPosi::Third;
+                        Prompt::set_cur(&self.cont_1, &mut self.cont_3);
+                    }
+                }
+                PromptBufPosi::Second => {
+                    if is_asc {
+                        self.cursor_down();
+                    } else {
+                        self.cursor_up();
+                    }
+                }
+                PromptBufPosi::Third => {
+                    self.cont_3.buf = self.get_tab_candidate(is_asc).chars().collect();
+                    let (cur_x, width) = get_row_width(&self.cont_3.buf[..], false);
+                    self.cont_3.cur.x = cur_x;
+                    self.cont_3.cur.disp_x = width + 1;
+                }
+            }
+        }
+    }
+
+    fn get_tab_candidate(&mut self, is_asc: bool) -> String {
+        Log::ep_s("set_path");
+        let mut target_path = self.cont_3.buf.iter().collect::<String>();
+
+        // Search target dir
+        let mut base_dir = ".".to_string();
+        // cur.xまでの文字列対象
+        let _ = target_path.split_off(self.cont_3.cur.x);
+        let vec: Vec<(usize, &str)> = target_path.match_indices("/").collect();
+        // "/"有り
+        if vec.len() > 0 {
+            let (base, _) = target_path.split_at(vec[vec.len() - 1].0 + 1);
+            base_dir = base.to_string();
+        }
+
+        if self.tab_comp.dirs.len() == 0 {
+            if let Ok(mut read_dir) = fs::read_dir(&base_dir) {
+                while let Some(Ok(path)) = read_dir.next() {
+                    if path.path().is_dir() {
+                        let mut dir_str = path.path().display().to_string();
+                        // Log::ep("dir_str", dir_str.clone());
+                        let v: Vec<(usize, &str)> = dir_str.match_indices(target_path.as_str()).collect();
+                        if v.len() > 0 {
+                            // 表示用に"./"置換
+                            if &base_dir == "." {
+                                dir_str = dir_str.replace("./", "");
+                            }
+                            self.tab_comp.dirs.push(dir_str);
+                        }
+                    }
+                }
+            }
+            self.tab_comp.dirs.sort();
+        }
+
+        Log::ep("read_dir", &self.tab_comp.dirs.clone().join(" "));
+
+        let mut cont_3_str: String = self.cont_3.buf.iter().collect::<String>();
+        for candidate in &self.tab_comp.dirs {
+            // One candidate
+            if self.tab_comp.dirs.len() == 1 {
+                Log::ep_s("　　One candidate");
+                cont_3_str = format!("{}{}", candidate.to_string(), "/");
+                self.clear_tab_comp();
+                break;
+
+            // Multiple candidates
+            } else if self.tab_comp.dirs.len() > 1 {
+                Log::ep_s("  Multi candidates");
+                Log::ep("self.tab_comp.index", &self.tab_comp.index);
+                if is_asc && self.tab_comp.index >= self.tab_comp.dirs.len() - 1 || self.tab_comp.index == USIZE_UNDEFINED {
+                    self.tab_comp.index = 0;
+                } else if !is_asc && self.tab_comp.index == 0 {
+                    self.tab_comp.index = self.tab_comp.dirs.len() - 1;
+                } else {
+                    self.tab_comp.index = if is_asc { self.tab_comp.index + 1 } else { self.tab_comp.index - 1 };
+                }
+                cont_3_str = self.tab_comp.dirs[self.tab_comp.index].clone();
+                break;
+            }
+        }
+
+        return cont_3_str;
+    }
+
+    pub fn clear_tab_comp(&mut self) {
+        Log::ep_s("                  clear_tab_comp ");
+        self.tab_comp.index = USIZE_UNDEFINED;
+        self.tab_comp.dirs.clear();
     }
 }
 

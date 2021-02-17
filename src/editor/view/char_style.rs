@@ -1,7 +1,12 @@
-use crate::{colors::*, global::*, model::*};
+use crate::{
+    cfg::cfg::{Cfg, Selection},
+    colors::*,
+    global::*,
+    model::*,
+};
 use crossterm::style::{Color as CrosstermColor, SetBackgroundColor, SetForegroundColor};
 use std::fmt;
-use syntect;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CharStyle {
     pub fg: Color,
@@ -30,22 +35,33 @@ impl From<Color> for CrosstermColor {
     }
 }
 
+/*
 impl From<syntect::highlighting::Style> for CharStyle {
     fn from(s: syntect::highlighting::Style) -> Self {
-        if CFG.get().unwrap().colors.theme.theme_bg_enable {
+         let cfg = CFG.get().unwrap().try_lock().unwrap();
+
+        if cfg.colors.theme.theme_bg_enable {
             Self { bg: s.background.into(), fg: s.foreground.into() }
         } else {
-            Self {
-                bg: CFG.get().unwrap().colors.editor.bg,
-                fg: s.foreground.into(),
-            }
+            Self { bg: cfg.colors.editor.bg, fg: s.foreground.into() }
         }
     }
-}
+} */
 
 impl CharStyle {
+    pub fn from_syntect_style(style: syntect::highlighting::Style, cfg: &Cfg) -> CharStyle {
+        return if cfg.colors.theme.theme_bg_enable {
+            CharStyle {
+                bg: style.background.into(),
+                fg: style.foreground.into(),
+            }
+        } else {
+            CharStyle { bg: cfg.colors.editor.bg, fg: style.foreground.into() }
+        };
+    }
+
     pub fn normal() -> CharStyle {
-        let editor = &CFG.get().unwrap().colors.editor;
+        let editor = &CFG.get().unwrap().try_lock().unwrap().colors.editor;
         CharStyle {
             fg: Color {
                 rgb: Rgb {
@@ -72,9 +88,9 @@ impl CharStyle {
         }
     }
 
-    pub fn control_char() -> CharStyle {
-        let control_char = &CFG.get().unwrap().colors.editor.control_char;
-        let editor = &CFG.get().unwrap().colors.editor;
+    pub fn control_char(cfg: &Cfg) -> CharStyle {
+        let control_char = &cfg.colors.editor.control_char;
+        let editor = &cfg.colors.editor;
         CharStyle {
             fg: Color {
                 rgb: Rgb {
@@ -93,8 +109,8 @@ impl CharStyle {
         }
     }
 
-    pub fn selected() -> CharStyle {
-        let selection = &CFG.get().unwrap().colors.editor.selection;
+    pub fn selected(cfg: &Cfg) -> CharStyle {
+        let selection = &cfg.colors.editor.selection;
         CharStyle {
             fg: Color {
                 rgb: Rgb {

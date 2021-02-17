@@ -1,4 +1,4 @@
-use crate::{colors::*, def::*, global::*, log::*, model::*, msgbar::*, prompt::prompt::*, util::*};
+use crate::{colors::*, def::*, global::*, log::*, model::*, msgbar::*, prompt::prompt::*, terminal::*, util::*};
 use crossterm::{
     cursor::*,
     style::{Color as CrosstermColor, SetBackgroundColor},
@@ -18,7 +18,7 @@ impl Editor {
                     mbar.set_readonly(&format!("{}({})", &LANG.unable_to_edit, &LANG.no_write_permission));
                 }
                 // Judge enable syntax_highlight
-                if CFG.get().unwrap().syntax.syntax_reference.is_some() && file_meta.len() < ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE && is_enable_syntax_highlight(&self.file.ext) {
+                if CFG.get().unwrap().try_lock().unwrap().syntax.syntax_reference.is_some() && file_meta.len() < ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE && is_enable_syntax_highlight(&self.file.ext) {
                     self.file.is_enable_syntax_highlight = true;
                 }
                 Log::ep("self.file.is_enable_syntax_highlight", &self.file.is_enable_syntax_highlight);
@@ -72,11 +72,13 @@ impl Editor {
         match d_range.draw_type {
             DrawType::Not => {}
             DrawType::None | DrawType::All => {
-                if let Some(c) = CFG.get().unwrap().syntax.theme.settings.background {
-                    if is_enable_syntax_highlight(&self.file.ext) && CFG.get().unwrap().colors.theme.theme_bg_enable {
+                let cfg = CFG.get().unwrap().try_lock().unwrap();
+
+                if let Some(c) = cfg.syntax.theme.settings.background {
+                    if is_enable_syntax_highlight(&self.file.ext) && cfg.colors.theme.theme_bg_enable {
                         str_vec.push(SetBackgroundColor(CrosstermColor::from(Color::from(c))).to_string());
                     } else {
-                        str_vec.push(SetBackgroundColor(CrosstermColor::from(CFG.get().unwrap().colors.editor.bg)).to_string());
+                        str_vec.push(SetBackgroundColor(CrosstermColor::from(cfg.colors.editor.bg)).to_string());
                     }
                 }
                 str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, 0).to_string()));

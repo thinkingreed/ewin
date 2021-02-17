@@ -5,8 +5,7 @@ use crossterm::event::{Event, Event::Key, KeyCode::End};
 use ropey::Rope;
 use std::cmp::{max, min};
 use std::collections::VecDeque;
-use std::fmt;
-use std::path;
+use std::{fmt, path};
 use syntect::highlighting::HighlightState;
 use syntect::parsing::{ParseState, ScopeStackOp};
 
@@ -16,69 +15,20 @@ pub struct EvtAct {}
 
 #[derive(Debug, PartialEq)]
 pub enum EvtActType {
+    // Promt Process only
     Hold,
-    Next,
     Exit,
+    // Editor key Process
+    Next,
+    // Do not Editor key Process
+    DrawOnly,
 }
 
-#[derive(Debug, Clone)]
-pub struct TabComp {
-    // 補完候補一覧
-    pub dirs: Vec<String>,
-    // 補完候補一覧index
-    pub index: usize,
-}
-impl TabComp {}
-impl Default for TabComp {
-    fn default() -> Self {
-        TabComp { index: USIZE_UNDEFINED, dirs: vec![] }
-    }
-}
-impl fmt::Display for TabComp {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "TabComp index:{}, dirs:{},", self.index, self.dirs.join(" "),)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct PromptCont {
-    pub guide: String,
-    pub key_desc: String,
-    pub buf_desc: String,
-    pub buf: Vec<char>,
-    pub cur: Cur,
-    pub updown_x: usize,
-    pub sel: SelRange,
-}
-
-impl Default for PromptCont {
-    fn default() -> Self {
-        PromptCont {
-            guide: String::new(),
-            key_desc: String::new(),
-            buf_desc: String::new(),
-            buf: vec![],
-            cur: Cur::default(),
-            updown_x: 0,
-            sel: SelRange::default(),
-        }
-    }
-}
-#[derive(PartialEq)]
-pub enum PromptBufPosi {
-    First,
-    Second,
-    Third,
-}
 #[derive(Debug, PartialEq)]
 pub enum Env {
     WSL,
     Linux,
     Windows,
-}
-#[derive(Debug)]
-pub struct Terminal {
-    // pub env: Env,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -347,7 +297,7 @@ impl fmt::Display for SelRange {
 }
 
 /// Cursor 　0-indexed
-/// Editor,Prompt
+/// Editor, Prompt
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Cur {
     // Editor.bufferの[y]

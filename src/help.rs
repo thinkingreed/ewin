@@ -1,4 +1,4 @@
-use crate::{colors::*, def::*, global::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::StatusBar, util::*};
+use crate::{colors::*, def::*, global::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::StatusBar, terminal::*, util::*};
 use crossterm::{cursor::*, terminal::*};
 use std::env;
 
@@ -33,18 +33,8 @@ pub struct KeyBind {
     pub func: String,
 }
 
-/*
-const fn const_locale() -> usize {
-    let lang: String = env::var("LANG").unwrap_or("en_US".to_string());
-    if lang.starts_with("ja_JP") {
-        return 8;
-    } else {
-        return 11;
-    }
-} */
-
 impl Help {
-    pub const DISP_ROW_NUM: usize = 6;
+    pub const DISP_ROW_NUM: usize = 5;
 
     const KEY_WIDTH: usize = 9;
     const KEY_WIDTH_WIDE: usize = 11;
@@ -108,14 +98,16 @@ impl Help {
             // 4th line
             self.set_key_bind_ex(&mut vec, KEY_SELECT, &LANG.range_select, KEY_SELECT.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (KEY_SELECT.chars().count() + 1));
             self.set_key_bind_wide(&mut vec, KEY_ALL_SELECT, &LANG.all_select);
-            self.set_key_bind_wide(&mut vec, KEY_MOVE_ROW, &LANG.move_row);
+            // self.set_key_bind_wide(&mut vec, KEY_MOVE_ROW, &LANG.move_row);
+            self.set_key_bind_wide(&mut vec, KEY_HELP, &format!("{} {}", &LANG.help, &LANG.end));
             self.key_bind_vec.push(vec.clone());
             vec.clear();
-            // 5th line
-            self.set_key_bind_ex(&mut vec, KEY_HELP, &format!("{} {}", &LANG.help, &LANG.end), Help::KEY_FUNC_WIDTH, Help::KEY_WIDTH);
-            self.set_key_bind_ex(&mut vec, HELP_DETAIL, &env!("CARGO_PKG_REPOSITORY").to_string(), HELP_DETAIL.chars().count() + 1, Help::KEY_FUNC_WIDTH_WIDE - HELP_DETAIL.chars().count() + 1);
-            self.key_bind_vec.push(vec.clone());
-            vec.clear();
+            /* // 5th line
+               self.set_key_bind_ex(&mut vec, KEY_HELP, &format!("{} {}", &LANG.help, &LANG.end), Help::KEY_FUNC_WIDTH, Help::KEY_WIDTH);
+               self.set_key_bind_ex(&mut vec, HELP_DETAIL, &env!("CARGO_PKG_REPOSITORY").to_string(), HELP_DETAIL.chars().count() + 1, Help::KEY_FUNC_WIDTH_WIDE - HELP_DETAIL.chars().count() + 1);
+               self.key_bind_vec.push(vec.clone());
+               vec.clear();
+            */
         }
 
         for (i, sy) in (0_usize..).zip(self.disp_row_posi - 1..self.disp_row_posi - 1 + self.disp_row_num) {

@@ -56,4 +56,4 @@ pub const KEY_SELECT: &'static str = "Shift + ↑↓←→ / Mouse";
 pub const KEY_RECORD_START: &'static str = "Shift + F1";
 pub const KEY_RECORD_STOP: &'static str = "Shift + F2";
 pub const KEY_HELP: &'static str = "F1";
-pub const HELP_DETAIL: &'static str = "help detail";
+pub const HELP_DETAIL: &'static str = "detail";

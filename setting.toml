@@ -1,4 +1,5 @@
-[general]
+[general.editor.search]
+case_sens = false
 
 # If theme is set, theme color has the highest priority
 [colors.theme]
