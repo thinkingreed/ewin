@@ -32,6 +32,7 @@ pub struct CfgEditor {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgSearch {
     pub case_sens: bool,
+    pub regex: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

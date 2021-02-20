@@ -1,4 +1,4 @@
-use crate::{colors::*, def::*, global::*, log::*, model::*, msgbar::*, prompt::prompt::*, terminal::*, util::*};
+use crate::{colors::*, def::*, global::*, log::*, model::*, msgbar::*, terminal::*, util::*};
 use crossterm::{
     cursor::*,
     style::{Color as CrosstermColor, SetBackgroundColor},
@@ -94,61 +94,51 @@ impl Editor {
             DrawType::ScrollUp => str_vec.push(format!("{}{}", ScrollDown(1), MoveTo(0, 0))),
         }
 
-        let mut draw_execs: Vec<(usize, usize)> = vec![];
-        draw_execs.push((self.draw.sy, self.draw.ey));
-        /*
-               if self.sel_org.is_selected() && self.sel.is_another_select(self.sel_org) {
-                   draw_execs.push((self.sel_org.sy, self.sel_org.ey));
-                   Log::ep("self.sel_org.sy", &self.sel_org.sy);
-                   Log::ep("self.sel_org.ey", &self.sel_org.ey);
-               }
-        */
-        for (sy, ey) in draw_execs {
-            for i in sy..=ey {
-                // Log::ep("iii", &i);
+        for i in self.draw.sy..=self.draw.ey {
+            // Log::ep("iii", &i);
 
-                self.set_row_num(i, str_vec);
-                let row_cell = self.draw.cells[i].clone();
-                let (mut sx, mut ex) = (0, row_cell.len());
+            self.set_row_num(i, str_vec);
+            let row_cell = self.draw.cells[i].clone();
+            let (mut sx, mut ex) = (0, row_cell.len());
 
-                if self.file.is_enable_syntax_highlight {
-                    sx = if i == self.cur.y { self.offset_x } else { 0 };
-                    ex = min(sx + self.disp_col_num, self.buf.len_line_chars(i));
+            if self.file.is_enable_syntax_highlight {
+                sx = if i == self.cur.y { self.offset_x } else { 0 };
+                ex = min(sx + self.disp_col_num, self.buf.len_line_chars(i));
+            }
+
+            for (x_idx, j) in (0_usize..).zip(sx..ex) {
+                let cell = &row_cell[j];
+                cell.draw_style(str_vec, x_idx == 0 && self.offset_x > 0);
+                let c = cell.c;
+                // Log::ep("ccccc", &c);
+
+                let mut width = c.width().unwrap_or(0);
+                if c == NEW_LINE {
+                    width = 1;
                 }
-
-                for (x_idx, j) in (0_usize..).zip(sx..ex) {
-                    let cell = &row_cell[j];
-                    cell.draw_style(str_vec, x_idx == 0 && self.offset_x > 0);
-                    let c = cell.c;
-                    // Log::ep("ccccc", &c);
-
-                    let mut width = c.width().unwrap_or(0);
-                    if c == NEW_LINE {
-                        width = 1;
-                    }
-                    let x_w_l = x + width + self.rnw;
-                    if x_w_l > self.disp_col_num {
-                        break;
-                    }
-                    x += width;
-
-                    match c {
-                        EOF_MARK => Colors::set_eof(str_vec),
-                        NEW_LINE => str_vec.push(NEW_LINE_MARK.to_string()),
-                        NEW_LINE_CR => {}
-                        _ => str_vec.push(c.to_string()),
-                    }
-                }
-                y += 1;
-                x = 0;
-
-                if y >= self.disp_row_num {
+                let x_w_l = x + width + self.rnw;
+                if x_w_l > self.disp_col_num {
                     break;
-                } else {
-                    str_vec.push(NEW_LINE_CRLF.to_string());
+                }
+                x += width;
+
+                match c {
+                    EOF_MARK => Colors::set_eof(str_vec),
+                    NEW_LINE => str_vec.push(NEW_LINE_MARK.to_string()),
+                    NEW_LINE_CR => {}
+                    _ => str_vec.push(c.to_string()),
                 }
             }
+            y += 1;
+            x = 0;
+
+            if y >= self.disp_row_num {
+                break;
+            } else {
+                str_vec.push(NEW_LINE_CRLF.to_string());
+            }
         }
+
         self.d_range.clear();
         self.sel_org.clear();
     }

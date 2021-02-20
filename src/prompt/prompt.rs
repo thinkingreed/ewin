@@ -116,33 +116,53 @@ impl Prompt {
             let key_desc = format!("{}{}{}", MoveTo(0, (self.disp_row_posi) as u16), Clear(ClearType::CurrentLine), self.cont_1.key_desc.clone());
             str_vec.push(key_desc);
 
+            let mut idx = 0;
             if self.is_search {
-                let cont_opt = &self.cont_1.opt_1;
-                let str = format!("{}{}{}{}", MoveTo(0, (self.disp_row_posi + 1) as u16), Clear(ClearType::CurrentLine), cont_opt.key, cont_opt.get_check_str());
+                let opt_1 = &self.cont_1.opt_1;
+                let opt_2 = &self.cont_1.opt_2;
+                let opt_str = format!("{}{}  {}{}", opt_1.key, opt_1.get_check_str(), opt_2.key, opt_2.get_check_str());
+                idx += 1;
+                let str = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), opt_str);
                 str_vec.push(str);
-                let buf = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 2) as u16), Clear(ClearType::CurrentLine), self.cont_1.ctl_select_color());
+                idx += 1;
+                let buf = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_1.ctl_select_color());
                 str_vec.push(buf);
             }
 
             if self.is_save_new_file || self.is_move_line {
-                let buf = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 1) as u16), Clear(ClearType::CurrentLine), self.cont_1.ctl_select_color());
+                idx += 1;
+                let buf = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_1.ctl_select_color());
                 str_vec.push(buf);
             }
             if self.is_replace || self.is_grep {
-                let buf_desc_1 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 1) as u16), Clear(ClearType::CurrentLine), self.cont_1.buf_desc.clone());
+                if self.is_replace {
+                    let opt_1 = &self.cont_1.opt_1;
+                    let opt_2 = &self.cont_1.opt_2;
+                    let opt_str = format!("{}{}  {}{}", opt_1.key, opt_1.get_check_str(), opt_2.key, opt_2.get_check_str());
+                    idx += 1;
+                    let str = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), opt_str);
+                    str_vec.push(str);
+                }
+                idx += 1;
+                let buf_desc_1 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_1.buf_desc.clone());
                 str_vec.push(buf_desc_1);
-                let buf_1 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 2) as u16), Clear(ClearType::CurrentLine), self.cont_1.ctl_select_color());
+                idx += 1;
+                let buf_1 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_1.ctl_select_color());
                 str_vec.push(buf_1);
-                let buf_desc_2 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 3) as u16), Clear(ClearType::CurrentLine), self.cont_2.buf_desc.clone());
+                idx += 1;
+                let buf_desc_2 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_2.buf_desc.clone());
                 str_vec.push(buf_desc_2);
-                let buf_2 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 4) as u16), Clear(ClearType::CurrentLine), self.cont_2.ctl_select_color());
+                idx += 1;
+                let buf_2 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_2.ctl_select_color());
                 str_vec.push(buf_2);
-            }
-            if self.is_grep {
-                let buf_desc_3 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 5) as u16), Clear(ClearType::CurrentLine), self.cont_3.buf_desc.clone());
-                str_vec.push(buf_desc_3);
-                let buf_3 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + 6) as u16), Clear(ClearType::CurrentLine), self.cont_3.ctl_select_color());
-                str_vec.push(buf_3);
+                if self.is_grep {
+                    idx += 1;
+                    let buf_desc_3 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_3.buf_desc.clone());
+                    str_vec.push(buf_desc_3);
+                    idx += 1;
+                    let buf_3 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_3.ctl_select_color());
+                    str_vec.push(buf_3);
+                }
             }
         }
     }
@@ -166,11 +186,11 @@ impl Prompt {
     pub fn draw_cur(&mut self, str_vec: &mut Vec<String>) {
         if self.is_replace || self.is_grep {
             if self.buf_posi == PromptBufPosi::First {
-                str_vec.push(MoveTo((self.cont_1.cur.disp_x - 1) as u16, (self.disp_row_posi + 2) as u16).to_string());
+                str_vec.push(MoveTo((self.cont_1.cur.disp_x - 1) as u16, (self.disp_row_posi + 3) as u16).to_string());
             } else if self.buf_posi == PromptBufPosi::Second {
-                str_vec.push(MoveTo((self.cont_2.cur.disp_x - 1) as u16, (self.disp_row_posi + 4) as u16).to_string());
+                str_vec.push(MoveTo((self.cont_2.cur.disp_x - 1) as u16, (self.disp_row_posi + 5) as u16).to_string());
             } else if self.buf_posi == PromptBufPosi::Third {
-                str_vec.push(MoveTo((self.cont_3.cur.disp_x - 1) as u16, (self.disp_row_posi + 6) as u16).to_string());
+                str_vec.push(MoveTo((self.cont_3.cur.disp_x - 1) as u16, (self.disp_row_posi + 7) as u16).to_string());
             }
         } else {
             str_vec.push(MoveTo((self.cont_1.cur.disp_x - 1) as u16, (self.disp_row_posi + self.disp_row_num - 2) as u16).to_string());

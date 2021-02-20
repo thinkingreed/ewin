@@ -18,15 +18,20 @@ impl EvtAct {
                     } else if editor.get_search_ranges(&search_str.clone(), 0, editor.buf.len_chars()).len() == 0 {
                         mbar.set_err(&LANG.cannot_find_char_search_for);
                     } else {
-                        editor.replace(prom);
+                        let search_set = editor.buf.search(&search_str.clone(), 0, editor.buf.len_chars());
+                        if search_set.len() == 0 {
+                            mbar.set_err(&LANG.cannot_find_char_search_for);
+                            return EvtActType::DrawOnly;
+                        }
+                        editor.replace(prom, search_set);
                         mbar.clear();
                         prom.clear();
                         prom.is_change = true;
                     }
+                    editor.d_range.draw_type = DrawType::All;
                     Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
-                    return EvtActType::Hold;
+                    return EvtActType::DrawOnly;
                 }
-
                 _ => return EvtActType::Hold,
             },
             _ => return EvtActType::Hold,
@@ -37,7 +42,7 @@ impl EvtAct {
 impl Prompt {
     pub fn replace(&mut self) {
         self.is_replace = true;
-        self.disp_row_num = 6;
+        self.disp_row_num = 7;
         let mut cont_1 = PromptCont::new();
         let mut cont_2 = PromptCont::new();
         cont_1.set_replace(PromptBufPosi::First);
@@ -67,5 +72,7 @@ impl PromptCont {
         } else {
             self.buf_desc = format!("{}{}", Colors::get_default_fg(), &LANG.replace_char,);
         }
+        self.set_opt_case_sens();
+        self.set_opt_regex();
     }
 }

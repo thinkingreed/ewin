@@ -1,5 +1,5 @@
 use crate::prompt::promptcont::promptcont::PromptBufPosi::*;
-use crate::{help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, terminal::*};
+use crate::{global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent as M_Event, MouseEventKind as M_EventKind};
 use std::io::Write;
 
@@ -26,6 +26,7 @@ impl EvtAct {
     }
 
     pub fn check_prom<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
+        // Close・End
         if prom.is_save_new_file || prom.is_search || prom.is_close_confirm || prom.is_replace || prom.is_grep || prom.is_grep_result || prom.is_move_line {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
@@ -51,7 +52,7 @@ impl EvtAct {
 
         let mut evt_act_type = None;
 
-        // edit
+        // contents operation
         if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep || prom.is_move_line {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
@@ -146,20 +147,33 @@ impl EvtAct {
         // incremental search
         if prom.is_search {
             match editor.evt {
-                Key(KeyEvent { modifiers: KeyModifiers::ALT, code }) => match code {
-                    _ => {}
-                },
-                Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                    Char(_) => EvtAct::exec_search_incremental(out, editor, mbar, prom, help, sbar),
-                    _ => {}
-                },
+                Key(KeyEvent { modifiers: KeyModifiers::ALT, .. }) => {}
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                     Char('v') => EvtAct::exec_search_incremental(out, editor, mbar, prom, help, sbar),
                     _ => {}
                 },
-                Key(KeyEvent { code, .. }) => match code {
+                Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) | Key(KeyEvent { code, .. }) => match code {
                     Char(_) | Delete | Backspace => EvtAct::exec_search_incremental(out, editor, mbar, prom, help, sbar),
                     _ => {}
+                },
+                _ => {}
+            }
+        }
+        // Search・replace option
+        if prom.is_search || prom.is_replace {
+            match editor.evt {
+                Key(KeyEvent { modifiers: KeyModifiers::ALT, code }) => match code {
+                    Char('c') => {
+                        prom.cont_1.opt_1.toggle_check();
+                        CFG.get().unwrap().lock().map(|mut cfg| cfg.general.editor.search.case_sens = prom.cont_1.opt_1.is_check).unwrap();
+                        return EvtActType::Hold;
+                    }
+                    Char('r') => {
+                        prom.cont_1.opt_2.toggle_check();
+                        CFG.get().unwrap().lock().map(|mut cfg| cfg.general.editor.search.regex = prom.cont_1.opt_2.is_check).unwrap();
+                        return EvtActType::Hold;
+                    }
+                    _ => return EvtActType::Hold,
                 },
                 _ => {}
             }
@@ -205,7 +219,7 @@ impl EvtAct {
         } else if prom.is_close_confirm == true {
             return EvtAct::close(out, editor, mbar, prom, help, sbar);
         } else if prom.is_search == true {
-            return EvtAct::search(out, editor, mbar, prom, help, sbar);
+            return EvtAct::search(editor, mbar, prom);
         } else if prom.is_replace == true {
             return EvtAct::replace(out, editor, mbar, prom, help, sbar);
         } else if prom.is_grep == true {

@@ -1,9 +1,4 @@
-use crate::{
-    cfg::cfg::{Cfg, Selection},
-    colors::*,
-    global::*,
-    model::*,
-};
+use crate::{cfg::cfg::Cfg, colors::*, model::*};
 use crossterm::style::{Color as CrosstermColor, SetBackgroundColor, SetForegroundColor};
 use std::fmt;
 
@@ -35,21 +30,8 @@ impl From<Color> for CrosstermColor {
     }
 }
 
-/*
-impl From<syntect::highlighting::Style> for CharStyle {
-    fn from(s: syntect::highlighting::Style) -> Self {
-         let cfg = CFG.get().unwrap().try_lock().unwrap();
-
-        if cfg.colors.theme.theme_bg_enable {
-            Self { bg: s.background.into(), fg: s.foreground.into() }
-        } else {
-            Self { bg: cfg.colors.editor.bg, fg: s.foreground.into() }
-        }
-    }
-} */
-
 impl CharStyle {
-    pub fn from_syntect_style(style: syntect::highlighting::Style, cfg: &Cfg) -> CharStyle {
+    pub fn from_syntect_style(cfg: &Cfg, style: syntect::highlighting::Style) -> CharStyle {
         return if cfg.colors.theme.theme_bg_enable {
             CharStyle {
                 bg: style.background.into(),
@@ -60,8 +42,8 @@ impl CharStyle {
         };
     }
 
-    pub fn normal() -> CharStyle {
-        let editor = &CFG.get().unwrap().try_lock().unwrap().colors.editor;
+    pub fn normal(cfg: &Cfg) -> CharStyle {
+        let editor = &cfg.colors.editor;
         CharStyle {
             fg: Color {
                 rgb: Rgb {

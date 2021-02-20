@@ -1,4 +1,4 @@
-use crate::{colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, util::*};
+use crate::{colors::*, def::*, global::*, log::*, model::*, util::*};
 use crossterm::{cursor::*, terminal::*};
 #[derive(Debug, Clone)]
 pub struct StatusBar {
@@ -39,11 +39,7 @@ impl StatusBar {
         }
         let cur_s = self.get_cur_str(editor);
         let (help_w, filenm_w, cur_w) = self.get_areas_width(self.disp_col_num, &get_str_width(&cur_s) + 1);
-        /*
-               Log::ep("help_w", &help_w);
-               Log::ep("filenm_w", &filenm_w);
-               Log::ep("cur_w", &cur_w);
-        */
+
         let mut file_str = self.filenm.clone();
         if file_str.len() == 0 {
             file_str = LANG.new_file.clone();
@@ -67,7 +63,7 @@ impl StatusBar {
             format!("{}{}{}", help_disp, self.filenm_disp, self.cur_str),
             Colors::get_default_fg(),
         );
-        // self.set_color(str_vec);
+
         str_vec.push(sber_str);
         Colors::set_text_color(str_vec);
     }

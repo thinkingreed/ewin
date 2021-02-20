@@ -1,18 +1,14 @@
-extern crate ropey;
-use crate::{def::*, log::*, model::*, prompt::prompt::*};
+use crate::{cfg::cfg::CfgSearch, def::*, global::*, log::*, model::*};
 use anyhow::Result;
-use ropey::iter::Chars;
-use ropey::{Rope, RopeSlice};
-use std::fs::File;
-use std::io;
-use std::io::BufWriter;
+use regex::RegexBuilder;
+use ropey::{iter::Chars, Rope, RopeSlice};
+use std::{collections::BTreeSet, fs::File, io, io::BufWriter};
 
 impl Default for TextBuffer {
     fn default() -> Self {
         TextBuffer { text: Rope::default() }
     }
 }
-
 impl TextBuffer {
     pub fn from_path(path: &str) -> io::Result<TextBuffer> {
         let text = Rope::from_reader(&mut io::BufReader::new(File::open(&path)?))?;
@@ -54,23 +50,26 @@ impl TextBuffer {
     pub fn remove(&mut self, s_idx: usize, e_idx: usize) {
         self.text.remove(s_idx..e_idx);
     }
-    pub fn remove_type(&mut self, do_type: EvtType, y: usize, x: usize) {
+    pub fn remove_del_bs(&mut self, do_type: EvtType, y: usize, x: usize) {
         let mut i = self.text.line_to_char(y) + x;
 
         let mut del_num = 1;
+        let c = self.char(y, x);
         // not select del
         if do_type == EvtType::Del {
-            if NEW_LINE_CR == self.char(y, x) && NEW_LINE == self.char(y, x + 1) {
+            if NEW_LINE_CR == c && NEW_LINE == self.char(y, x + 1) {
                 del_num = 2;
             }
         } else if do_type == EvtType::BS {
             if x > 0 {
-                if NEW_LINE == self.char(y, x) && NEW_LINE_CR == self.char(y, x - 1) {
+                if NEW_LINE == c && NEW_LINE_CR == self.char(y, x - 1) {
                     i -= 1;
                     del_num = 2;
                 }
             }
         }
+        Log::ep("remove_del_bs i", &i);
+        Log::ep("remove_del_bs i + del_num", &(i + del_num));
         self.text.remove(i..i + del_num);
     }
 
@@ -128,81 +127,83 @@ impl TextBuffer {
         i - self.text.line_to_char(self.text.char_to_line(i))
     }
 
-    pub fn search(&self, search_str: &str, start_idx: usize, end_idx: usize) -> Vec<(usize, usize)> {
-        const BATCH_SIZE: usize = 256;
+    pub fn search(&self, search_pattern: &str, start_idx: usize, end_idx: usize) -> BTreeSet<(usize, usize)> {
+        const BATCH_SIZE: usize = 2560;
 
         let mut head = start_idx; // Keep track of where we are between searches
-        let mut matches = Vec::with_capacity(BATCH_SIZE);
-        let mut tmp_vec: Vec<Vec<(usize, usize)>> = vec![];
-        let mut rtn_vec: Vec<(usize, usize)> = vec![];
+        let mut rtn_set: BTreeSet<(usize, usize)> = BTreeSet::new();
 
-        loop {
-            matches.clear();
-            for (sx, ex) in SearchIter::from_rope_slice(&self.text.slice(head..end_idx), &search_str).take(BATCH_SIZE) {
-                matches.push((sx + head, ex + head));
-            }
-            if matches.is_empty() {
-                break;
-            }
-            tmp_vec.push(matches.clone());
+        let cfg_search = &CFG.get().unwrap().lock().unwrap().general.editor.search;
 
-            // Update head for next iteration.
-            head = matches.last().unwrap().1;
-            matches.clear();
-        }
-        for vec in tmp_vec {
-            for t in vec {
-                rtn_vec.push(t);
+        Log::ep("cfg_search", cfg_search);
+
+        if !cfg_search.regex {
+            // normal
+            loop {
+                let mut is_end = true;
+                for (sx, ex) in SearchIter::from_rope_slice(&self.text.slice(head..end_idx), &search_pattern, &cfg_search).take(BATCH_SIZE) {
+                    rtn_set.insert((sx + head, ex + head));
+                    is_end = false;
+                }
+                if is_end {
+                    break;
+                }
+                head = rtn_set.iter().last().unwrap().1;
+            }
+        } else {
+            // regex
+            Log::ep_s("　　　　　　　　regex search");
+            let result = RegexBuilder::new(&search_pattern).case_insensitive(!cfg_search.case_sens).build();
+            let re = match result {
+                Ok(re) => re,
+                Err(_) => return rtn_set,
+            };
+            let s_line_idx = self.text.char_to_line(start_idx);
+            let e_line_idx = self.text.char_to_line(end_idx);
+            let lines = self.text.lines_at(s_line_idx);
+            let mut len_chars_sum = start_idx;
+
+            for (i, line) in lines.enumerate() {
+                let str = String::from(line);
+                for m in re.find_iter(&str) {
+                    rtn_set.insert((len_chars_sum + m.start(), len_chars_sum + m.end()));
+                }
+                len_chars_sum += line.len_chars();
+                if i + s_line_idx == e_line_idx {
+                    break;
+                }
             }
         }
-        rtn_vec
+        rtn_set
     }
 
-    pub fn search_and_replace(&mut self, search_pattern: &str, replacement_text: &str) {
-        const BATCH_SIZE: usize = 256;
-        let replacement_text_len = replacement_text.chars().count();
+    pub fn replace(&mut self, replace_str: &str, search_set: BTreeSet<(usize, usize)>) -> usize {
+        let replace_str_len = replace_str.chars().count();
+        // let search_set = self.search(search_pattern, 0, self.text.len_chars());
 
-        let mut head = 0; // Keep track of where we are between searches
-        let mut matches = Vec::with_capacity(BATCH_SIZE);
+        let mut idx_diff: isize = 0;
+        let mut end_char_idx: usize = 0;
+        for (i, &(start, end)) in search_set.iter().enumerate() {
+            let start = (start as isize + idx_diff) as usize;
+            let end = (end as isize + idx_diff) as usize;
 
-        loop {
-            // Collect the next batch of matches.  Note that we don't use
-            // `Iterator::collect()` to collect the batch because we want to
-            // re-use the same Vec to avoid unnecessary allocations.
-            matches.clear();
-            for m in SearchIter::from_rope_slice(&self.text.slice(head..), &search_pattern).take(BATCH_SIZE) {
-                matches.push(m);
+            self.text.remove(start..end);
+            self.text.insert(start, &replace_str);
+
+            // Update the index offset.
+            let match_len = (end - start) as isize;
+            idx_diff = idx_diff - match_len + replace_str_len as isize;
+
+            if i == search_set.len() - 1 {
+                end_char_idx = start + replace_str_len - 1;
             }
-
-            // If there are no matches, we're done!
-            if matches.is_empty() {
-                break;
-            }
-
-            // Replace the collected matches.
-            let mut index_diff: isize = 0;
-            for &(start, end) in matches.iter() {
-                // Get the properly offset indices.
-                let start_d = (head as isize + start as isize + index_diff) as usize;
-                let end_d = (head as isize + end as isize + index_diff) as usize;
-
-                // Do the replacement.
-                self.text.remove(start_d..end_d);
-                self.text.insert(start_d, &replacement_text);
-
-                // Update the index offset.
-                let match_len = (end - start) as isize;
-                index_diff = index_diff - match_len + replacement_text_len as isize;
-            }
-
-            // Update head for next iteration.
-            head = (head as isize + index_diff + matches.last().unwrap().1 as isize) as usize;
         }
+        return end_char_idx;
     }
 }
 
 impl<'a> SearchIter<'a> {
-    fn from_rope_slice<'b>(slice: &'b RopeSlice, search_pattern: &'b str) -> SearchIter<'b> {
+    fn from_rope_slice<'b>(slice: &'b RopeSlice, search_pattern: &'b str, cfg_search: &'b CfgSearch) -> SearchIter<'b> {
         assert!(!search_pattern.is_empty(), "Can't search using an empty search pattern.");
         SearchIter {
             char_iter: slice.chars(),
@@ -210,6 +211,7 @@ impl<'a> SearchIter<'a> {
             search_pattern_char_len: search_pattern.chars().count(),
             cur_index: 0,
             possible_matches: Vec::new(),
+            cfg_search: cfg_search,
         }
     }
 }
@@ -226,15 +228,12 @@ impl<'a> Iterator for SearchIter<'a> {
             // current char.
             self.possible_matches.push(self.search_pattern.chars());
 
-            // Check the rope's char against the next character in each of
-            // the potential matches, removing the potential matches that
-            // don't match.  We're using indexing instead of iteration here
-            // so that we can remove the possible matches as we go.
             let mut i = 0;
             while i < self.possible_matches.len() {
                 let pattern_char = self.possible_matches[i].next().unwrap();
-                // if next_char == pattern_char || next_char == pattern_char.to_ascii_lowercase() {
-                if next_char == pattern_char {
+
+                let equal = if self.cfg_search.case_sens { next_char == pattern_char } else { next_char.to_ascii_lowercase() == pattern_char.to_ascii_lowercase() };
+                if equal {
                     if self.possible_matches[i].clone().next() == None {
                         // We have a match!  Reset possible matches and
                         // return the successful match's char indices.
@@ -251,7 +250,6 @@ impl<'a> Iterator for SearchIter<'a> {
                 }
             }
         }
-
         None
     }
 }
@@ -272,4 +270,5 @@ struct SearchIter<'a> {
     search_pattern_char_len: usize,
     cur_index: usize,                           // The current char index of the search head.
     possible_matches: Vec<std::str::Chars<'a>>, // Tracks where we are in the search pattern for the current possible matches.
+    cfg_search: &'a CfgSearch,
 }

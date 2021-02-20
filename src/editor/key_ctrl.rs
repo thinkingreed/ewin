@@ -1,7 +1,5 @@
 use crate::{def::*, global::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, util::*};
-use std::iter::FromIterator;
-
-use std::path::Path;
+use std::{collections::BTreeSet, iter::FromIterator, path::Path};
 
 impl Editor {
     pub fn all_select(&mut self) {
@@ -174,9 +172,9 @@ impl Editor {
         Log::ep_s("              get_search_ranges");
 
         let mut rtn_vec = vec![];
-        let search_vec = self.buf.search(&search_str, start_idx, end_idx);
+        let search_set = self.buf.search(&search_str, start_idx, end_idx);
 
-        for (mut sx, mut ex) in search_vec {
+        for (mut sx, mut ex) in search_set {
             sx += start_idx;
             ex += start_idx;
             rtn_vec.push(SearchRange {
@@ -229,11 +227,16 @@ impl Editor {
         return index;
     }
 
-    pub fn replace(&mut self, prom: &mut Prompt) {
+    pub fn replace(&mut self, prom: &mut Prompt, search_set: BTreeSet<(usize, usize)>) {
         Log::ep_s("　　　　　　　　replace");
-        let search_str: String = prom.cont_1.buf.iter().collect();
         let replace_str: String = prom.cont_2.buf.iter().collect();
-        self.buf.search_and_replace(&search_str, &replace_str);
+        let end_char_idx = self.buf.replace(&replace_str, search_set);
+
+        let y = self.buf.char_to_line(end_char_idx);
+        let x = end_char_idx - self.buf.line_to_char(y) + 1;
+        self.set_cur_target(y, x);
+        self.scroll();
+        self.scroll_horizontal();
     }
 
     pub fn set_grep_result(&mut self) {
@@ -258,25 +261,6 @@ impl Editor {
             let row_start_idx = self.buf.line_to_char(self.buf.len_lines() - 2);
             let mut search_vec: Vec<SearchRange> = self.get_search_ranges(&self.search.str, row_start_idx + ignore_prefix_str.chars().count(), self.buf.len_chars());
 
-            /*
-                       let pre_str_len = ignore_prefix_str.chars().count();
-                       let ranges = vec![];
-
-                       for search_range in search_vec {
-                           let sx = search_range.sx + row_start_idx;
-                           let ex = search_range.ex + row_start_idx;
-
-                           let line_idx = self.buf.char_to_line_idx(sx);
-                           if line_idx < pre_str_len {
-                               continue;
-                           }
-                           ranges.push(SearchRange {
-                               y: self.buf.char_to_line(sx),
-                               sx: self.buf.char_to_line_idx(sx),
-                               ex: self.buf.char_to_line_idx(ex),
-                           });
-                       }
-            */
             self.search.ranges.append(&mut search_vec);
             Log::ep("self.search.ranges.len", &self.search.ranges.len());
         }

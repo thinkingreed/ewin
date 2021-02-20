@@ -26,6 +26,7 @@ ja:
   search_folder: 検索フォルダ
   searching: 検索中...
   case_sens: 大/小文字区別
+  regex: 正規表現
   new_file: 新規ファイル
   move_input_field: 入力箇所移動
   replace: 置換
@@ -99,6 +100,7 @@ en:
   search_folder: search folder
   searching: searching...
   case_sens: case sens
+  regex: regex
   new_file: new_file
   move_input_field: move input field
   replace: replace

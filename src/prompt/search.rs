@@ -1,37 +1,28 @@
 use crate::{colors::*, def::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*, statusbar::*, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
-use std::io::Write;
+use std::{
+    cmp::{max, min},
+    io::Write,
+};
 
 impl EvtAct {
-    pub fn search<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
+    pub fn search(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) -> EvtActType {
         Log::ep_s("Process.search");
 
         match editor.evt {
-            Key(KeyEvent { modifiers: KeyModifiers::ALT, code }) => match code {
-                Char('c') => {
-                    prom.cont_1.opt_1.toggle_check();
-
-                    // let cfg = CFG.get().unwrap().lock();
-                    CFG.get().unwrap().lock().map(|mut cfg| cfg.colors.editor.fg = Color { rgb: Rgb { r: 55 as u8, g: 55 as u8, b: 55 as u8 } }).unwrap();
-                    Log::ep("cfg.colors.editor.fg", &CFG.get().unwrap().lock().unwrap().colors.editor.fg);
-
-                    return EvtActType::Hold;
-                }
-                _ => return EvtActType::Hold,
-            },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                F(4) => return EvtAct::exec_search_confirm(out, editor, mbar, prom, help, sbar),
+                F(4) => return EvtAct::exec_search_confirm(editor, mbar, prom),
                 _ => return EvtActType::Hold,
             },
             Key(KeyEvent { code, .. }) => match code {
-                F(3) => return EvtAct::exec_search_confirm(out, editor, mbar, prom, help, sbar),
+                F(3) => return EvtAct::exec_search_confirm(editor, mbar, prom),
                 _ => return EvtActType::Hold,
             },
             _ => return EvtActType::Hold,
         }
     }
 
-    fn exec_search_confirm<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
+    fn exec_search_confirm(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) -> EvtActType {
         Log::ep_s("exec_search_confirm");
         let search_str = prom.cont_1.buf.iter().collect::<String>();
         if search_str.len() == 0 {
@@ -63,14 +54,23 @@ impl EvtAct {
 
         let s_idx = editor.buf.line_to_char(editor.offset_y);
         let ey = editor.offset_y + editor.disp_row_num;
-        let ranges = editor.search.ranges.clone();
+        let search_org = editor.search.clone();
+
+        Log::ep("s_idx", &s_idx);
+        Log::ep("e_idx", &editor.buf.line_to_char(ey));
+
         editor.search.ranges = if editor.search.str.len() == 0 { vec![] } else { editor.get_search_ranges(&editor.search.str, s_idx, editor.buf.line_to_char(ey)) };
 
-        if !ranges.is_empty() || !editor.search.ranges.is_empty() {
+        if !search_org.ranges.is_empty() || !editor.search.ranges.is_empty() {
             // Search in advance for drawing
-            editor.search_str(true, true);
-
-            editor.d_range.draw_type = DrawType::All;
+            if !editor.search.ranges.is_empty() {
+                editor.search_str(true, true);
+            }
+            editor.d_range.draw_type = DrawType::Target;
+            let (sy, ey) = editor.search.get_y_range();
+            let (sy_org, ey_org) = search_org.get_y_range();
+            editor.d_range.sy = min(sy, sy_org);
+            editor.d_range.ey = max(ey, ey_org);
             Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
         }
     }
@@ -102,11 +102,8 @@ impl PromptCont {
             Colors::get_msg_highlight_fg(),
             Colors::get_default_fg(),
         );
-        let key = format!("{}{}:{}Alt + c{}", Colors::get_default_fg(), &LANG.case_sens, Colors::get_msg_warning_fg(), Colors::get_default_fg(),);
-        let opt = PromptContOpt {
-            key: key,
-            is_check: CFG.get().unwrap().lock().unwrap().general.editor.search.case_sens,
-        };
-        self.opt_1 = opt;
+
+        self.set_opt_case_sens();
+        self.set_opt_regex();
     }
 }

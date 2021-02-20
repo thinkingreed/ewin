@@ -20,7 +20,7 @@ impl Editor {
         match d_range.draw_type {
             DrawType::Target | DrawType::After | DrawType::ScrollDown | DrawType::ScrollUp => {
                 self.draw.sy = d_range.sy;
-                self.draw.ey = if d_range.draw_type == DrawType::After { self.offset_y + self.disp_row_num - 1 } else { d_range.ey };
+                self.draw.ey = if d_range.draw_type == DrawType::After { min(self.offset_y + self.disp_row_num - 1, self.buf.len_lines() - 1) } else { d_range.ey };
             }
             DrawType::All | DrawType::None => {
                 self.draw.sy = self.offset_y;
@@ -90,7 +90,7 @@ impl Editor {
             // Log::ep("style ", &style);
             // Log::ep("string ", &string);
 
-            let mut style = CharStyle::from_syntect_style(style, cfg);
+            let mut style = CharStyle::from_syntect_style(cfg, style);
 
             for c in string.chars() {
                 width += if c == NEW_LINE || c == NEW_LINE_CR { 1 } else { c.width().unwrap_or(0) };
@@ -120,7 +120,7 @@ impl Editor {
 
         for c in row {
             width += if c == NEW_LINE || c == NEW_LINE_CR { 1 } else { c.width().unwrap_or(0) };
-            self.set_style(cfg, c, width, y, x, &CharStyle::normal(), &mut style_org, &mut style_type_org, sel_ranges, &mut cells);
+            self.set_style(cfg, c, width, y, x, &CharStyle::normal(cfg), &mut style_org, &mut style_type_org, sel_ranges, &mut cells);
             x += 1;
         }
         self.draw.char_vec[y] = row_vec;
@@ -137,7 +137,7 @@ impl Editor {
                 if self.file.is_enable_syntax_highlight {
                     *style
                 } else {
-                    CharStyle::normal()
+                    CharStyle::normal(cfg)
                 }
             }
             CharStyleType::CtrlChar => CharStyle::control_char(&cfg),

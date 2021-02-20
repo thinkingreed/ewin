@@ -1,10 +1,11 @@
-use crate::{colors::*, log::*, model::*};
+use crate::{colors::*, global::*, log::*, model::*};
 use std::cmp::min;
 
 #[derive(Debug, Clone)]
 pub struct PromptCont {
     pub guide: String,
     pub opt_1: PromptContOpt,
+    pub opt_2: PromptContOpt,
     pub key_desc: String,
     pub buf_desc: String,
     pub buf: Vec<char>,
@@ -18,6 +19,7 @@ impl Default for PromptCont {
             guide: String::new(),
             key_desc: String::new(),
             opt_1: PromptContOpt::default(),
+            opt_2: PromptContOpt::default(),
             buf_desc: String::new(),
             buf: vec![],
             cur: Cur::default(),
@@ -86,5 +88,23 @@ impl PromptCont {
         self.buf.drain(sel.sx..sel.ex);
         self.cur.disp_x = min(sel.s_disp_x, sel.e_disp_x);
         self.cur.x = min(sel.sx, sel.ex);
+    }
+
+    pub fn set_opt_case_sens(&mut self) {
+        let key_case_sens = format!("{}{}:{}Alt + c{}", Colors::get_default_fg(), &LANG.case_sens, Colors::get_msg_warning_fg(), Colors::get_default_fg(),);
+        let opt_case_sens = PromptContOpt {
+            key: key_case_sens,
+            is_check: CFG.get().unwrap().lock().unwrap().general.editor.search.case_sens,
+        };
+        self.opt_1 = opt_case_sens;
+    }
+
+    pub fn set_opt_regex(&mut self) {
+        let key_regex = format!("{}{}:{}Alt + r{}", Colors::get_default_fg(), &LANG.regex, Colors::get_msg_warning_fg(), Colors::get_default_fg(),);
+        let opt_regex = PromptContOpt {
+            key: key_regex,
+            is_check: CFG.get().unwrap().lock().unwrap().general.editor.search.regex,
+        };
+        self.opt_2 = opt_regex;
     }
 }

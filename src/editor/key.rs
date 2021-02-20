@@ -1,4 +1,4 @@
-use crate::{def::*, log::*, model::*, prompt::prompt::*, util::*};
+use crate::{def::*, log::*, model::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*};
 use std::cmp::{max, min};
 
@@ -119,17 +119,22 @@ impl Editor {
         if self.cur.x == self.rnw {
             self.cur.y -= 1;
             self.d_range = DRange::new(self.cur.y, 0, DrawType::After);
-            let (cur_x, _) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], false);
-            Log::ep("cur_x", &cur_x);
+            let (mut cur_x, _) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], true);
 
-            self.buf.remove_type(EvtType::BS, self.cur.y, self.buf.len_line_chars(self.cur.y) - 1);
+            // ' ' is meaningless value
+            let c = if cur_x > 0 { self.buf.char(self.cur.y, cur_x - 1) } else { ' ' };
+            ep.str = if c == NEW_LINE_CR { NEW_LINE_CRLF.to_string() } else { NEW_LINE.to_string() };
+            // Minus for newline code
+            cur_x -= 1;
+
+            self.buf.remove_del_bs(EvtType::BS, self.cur.y, self.buf.len_line_chars(self.cur.y) - 1);
             self.set_cur_target(self.cur.y, cur_x);
             self.scroll();
             self.scroll_horizontal();
         } else {
             self.cur_left();
             ep.str = self.buf.char(self.cur.y, self.cur.x - self.rnw).to_string();
-            self.buf.remove_type(EvtType::BS, self.cur.y, self.cur.x - self.rnw);
+            self.buf.remove_del_bs(EvtType::BS, self.cur.y, self.cur.x - self.rnw);
             self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
         }
     }
@@ -138,11 +143,12 @@ impl Editor {
         Log::ep_s("　　　　　　　  delete");
         let c = self.buf.char(self.cur.y, self.cur.x - self.rnw);
         ep.str = if c == NEW_LINE_CR { format!("{}{}", c.to_string(), NEW_LINE) } else { c.to_string() };
-        self.buf.remove_type(EvtType::Del, self.cur.y, self.cur.x - self.rnw);
+        self.buf.remove_del_bs(EvtType::Del, self.cur.y, self.cur.x - self.rnw);
         self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
 
         if is_line_end(c) {
             self.set_cur_target(self.cur.y, self.cur.x - self.rnw);
+            self.d_range.draw_type = DrawType::After;
             self.scroll();
             self.scroll_horizontal();
         }

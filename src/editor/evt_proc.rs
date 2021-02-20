@@ -5,13 +5,17 @@ impl Editor {
         if self.check_evtproc_return(evt) {
             return;
         }
-        let sel = self.sel.get_range();
+        let is_selected_org = self.sel.is_selected();
         // selected range delete
         if self.sel.is_selected() {
             Log::ep_s("exec_edit_proc is_selected_org");
             let mut ep = EvtProc { evt_type: EvtType::Del, ..EvtProc::default() };
             //.d_range.draw_type = DrawType::All;
-            ep.cur_s = Cur { y: sel.sy, x: sel.sx + self.rnw, disp_x: sel.s_disp_x };
+            ep.cur_s = Cur {
+                y: self.sel.sy,
+                x: self.sel.sx + self.rnw,
+                disp_x: self.sel.s_disp_x,
+            };
             ep.cur_e = self.cur;
             ep.str = self.buf.slice(self.sel.get_range());
             ep.sel = self.sel;
@@ -22,9 +26,8 @@ impl Editor {
         }
 
         // not selected Del, BS, Cut or InsertChar, Paste, Enter
-        if (evt == EvtType::InsertChar || evt == EvtType::Paste || evt == EvtType::Enter) || (!self.sel.is_selected() && (evt == EvtType::Del || evt == EvtType::BS || evt == EvtType::Cut)) {
+        if (evt == EvtType::InsertChar || evt == EvtType::Paste || evt == EvtType::Enter) || (!is_selected_org && (evt == EvtType::Del || evt == EvtType::BS || evt == EvtType::Cut)) {
             let mut ep = EvtProc { evt_type: evt, ..EvtProc::default() };
-            // self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
 
             ep.cur_s = self.cur;
             ep.str = str.to_string();

@@ -4,6 +4,7 @@ use chrono::NaiveDateTime;
 use crossterm::event::{Event, Event::Key, KeyCode::End};
 use ropey::Rope;
 use std::cmp::{max, min};
+use std::collections::BTreeSet;
 use std::collections::VecDeque;
 use std::{fmt, path};
 use syntect::highlighting::HighlightState;
@@ -145,6 +146,14 @@ impl Search {
         self.file = String::new();
         self.filenm = String::new();
         self.folder = String::new();
+    }
+
+    pub fn get_y_range(&self) -> (usize, usize) {
+        if !self.ranges.is_empty() {
+            let (sy, ey) = (self.ranges.first().unwrap().y, self.ranges.last().unwrap().y);
+            return (sy, ey);
+        }
+        return (0, 0);
     }
 }
 impl Default for Search {
