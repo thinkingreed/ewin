@@ -27,6 +27,7 @@ pub const BS: Event = Key(KeyEvent { code: Backspace, modifiers: KeyModifiers::N
 pub const END: Event = Key(KeyEvent { code: End, modifiers: KeyModifiers::NONE });
 pub const ENTER: Event = Key(KeyEvent { code: Enter, modifiers: KeyModifiers::NONE });
 pub const SEARCH: Event = Key(KeyEvent { code: F(3), modifiers: KeyModifiers::NONE });
+pub const KEY_NULL: Event = Key(KeyEvent { code: Null, modifiers: KeyModifiers::NONE });
 // SHIFT
 pub const SHIFT_RIGHT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Right });
 pub const SHIFT_LEFT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Left });

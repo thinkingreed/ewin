@@ -1,4 +1,4 @@
-use crate::{cfg::*, colors::*, def::*, global::*, log::*, util::*};
+use crate::{cfg::*, colors::*, def::*, global::*, log::*, terminal::*, util::*};
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
@@ -148,7 +148,7 @@ impl Default for Syntax {
     }
 }
 impl Cfg {
-    pub fn init(ext: &String) -> String {
+    pub fn init(args: &Args) -> String {
         let mut cfg: Cfg = toml::from_str(include_str!("../../setting.toml")).unwrap();
         let mut err_str = "".to_string();
 
@@ -193,7 +193,7 @@ impl Cfg {
         cfg.colors.msg.err_fg = Colors::hex2rgb(&cfg.colors.msg.err_foreground);
         cfg.colors.status_bar.fg = Colors::hex2rgb(&cfg.colors.status_bar.foreground);
 
-        if is_enable_syntax_highlight(ext) {
+        if is_enable_syntax_highlight(&args.ext) {
             match ThemeLoader::new(&cfg.colors.theme.theme_path, &cfg.syntax.theme_set.themes).load() {
                 Ok((theme, err_string)) => {
                     if !err_string.is_empty() {
@@ -214,7 +214,8 @@ impl Cfg {
                 Err(_) => {}
             }
         }
-        if let Some(sr) = cfg.syntax.syntax_set.find_syntax_by_extension(&ext) {
+
+        if let Some(sr) = cfg.syntax.syntax_set.find_syntax_by_extension(&args.ext) {
             cfg.syntax.syntax_reference = Some(sr.clone());
         } else {
             cfg.syntax.syntax_reference = None;

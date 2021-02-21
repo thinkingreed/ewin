@@ -115,7 +115,7 @@ impl EvtAct {
                 if mbar.msg_org != mbar.msg {
                     editor.d_range.draw_type = DrawType::All;
                 }
-                // key_record実行時は最終時のみredraw
+                // When key_record is executed, redraw only at the end
                 if editor.d_range.draw_type != DrawType::Not || (prom.is_key_record_exec == false || prom.is_key_record_exec == true && prom.is_key_record_exec_draw == true) {
                     Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
                 }
@@ -251,12 +251,11 @@ impl EvtAct {
 
         // Refresh search results
         if editor.is_edit_evt(true) && editor.search.ranges.len() > 0 {
-            editor.search.ranges = editor.get_search_ranges(&editor.search.str, 0, editor.buf.len_chars());
+            editor.search.ranges = editor.get_search_ranges(&editor.search.str, 0, editor.buf.len_chars(), 0);
         }
     }
     pub fn check_err(editor: &mut Editor, mbar: &mut MsgBar) -> bool {
         let is_return = false;
-        Log::ep_s("check_err");
 
         match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {

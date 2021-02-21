@@ -25,20 +25,59 @@ use std::{
 };
 #[derive(Debug)]
 pub struct Terminal {}
+
+pub struct Args {
+    pub mode: ActivatMode,
+    pub filenm: String,
+    pub ext: String,
+    pub search_str: String,
+    // full path
+    pub search_file: String,
+    pub search_folder: String,
+    pub search_filenm: String,
+    pub search_case_sens: bool,
+    pub search_regex: bool,
+    pub search_row_num: String,
+}
+impl Default for Args {
+    fn default() -> Self {
+        Args {
+            mode: ActivatMode::Nomal,
+            filenm: String::new(),
+            ext: String::new(),
+            search_str: String::new(),
+            search_file: String::new(),
+            search_folder: String::new(),
+            search_filenm: String::new(),
+            search_case_sens: true,
+            search_regex: false,
+            search_row_num: String::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ActivatMode {
+    Nomal,
+    Grep,
+    GrepResult,
+}
+
 impl Terminal {
     pub fn draw<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> Result<(), io::Error> {
         Log::ep_s("　　　　　　　　All draw");
 
         Terminal::set_disp_size(editor, mbar, prom, help, sbar);
-        let mut str_vec: Vec<String> = vec![];
 
         let d_range = editor.d_range;
         Log::ep("d_range", &d_range);
 
         if d_range.draw_type != DrawType::Not {
             editor.draw_cache();
-            editor.draw(&mut str_vec);
+            editor.draw();
         }
+
+        let mut str_vec: Vec<String> = vec![];
 
         help.draw(&mut str_vec);
         mbar.draw(&mut str_vec);
@@ -46,7 +85,6 @@ impl Terminal {
         if d_range.draw_type != DrawType::Not {
             sbar.draw(&mut str_vec, editor);
         }
-
         Terminal::draw_cur(&mut str_vec, editor, prom);
 
         let _ = out.write(&str_vec.concat().as_bytes());
@@ -61,14 +99,14 @@ impl Terminal {
         if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep || prom.is_move_line {
             prom.draw_cur(str_vec);
         } else {
-            Log::ep("editor.cur.disp_x - 1 - editor.offset_disp_x", &(editor.cur.disp_x - 1 - editor.offset_disp_x));
-            Log::ep("editor.cur.disp_x ", &editor.cur.disp_x);
-            Log::ep(" editor.offset_disp_x", &editor.offset_disp_x);
-            Log::ep("editor.cur.y", &editor.cur.y);
-            Log::ep("editor.offset_y", &editor.offset_y);
-
+            /*
+            Log::ep("cur.disp_x - 1 - editor.offset_disp_x", &(editor.cur.disp_x - 1 - editor.offset_disp_x));
+            Log::ep("cur.disp_x ", &editor.cur.disp_x);
+            Log::ep("offset_disp_x", &editor.offset_disp_x);
+            Log::ep("cur.y", &editor.cur.y);
+            Log::ep("offset_y", &editor.offset_y);
+            */
             str_vec.push(MoveTo((editor.cur.disp_x - 1 - editor.offset_disp_x) as u16, (editor.cur.y - editor.offset_y) as u16).to_string());
-            // str_vec.push(MoveTo(5, 1).to_string());
         }
     }
 
@@ -137,8 +175,8 @@ impl Terminal {
     pub fn hide_cur() {
         execute!(stdout(), Hide).unwrap();
     }
-    pub fn startup_terminal(search_strs: String) {
-        Log::ep("search_strs", &search_strs);
+    pub fn startup_terminal(args: String) {
+        Log::ep("args", &args);
 
         let exe_path = if !cfg!(debug_assertions) && Path::new("/usr/bin/ewin").exists() { "/usr/bin/ewin" } else { "/home/hi/rust/ewin/target/release/ewin" };
 
@@ -149,7 +187,7 @@ impl Terminal {
                 .arg("wsl")
                 .arg("-e")
                 .arg(exe_path)
-                .arg(search_strs)
+                .arg(args)
                 .stdout(process::Stdio::null())
                 .stderr(process::Stdio::null())
                 .spawn()
@@ -159,7 +197,7 @@ impl Terminal {
             }
         } else {
             // gnome-terminal
-            if let Err(err) = Command::new("gnome-terminal").arg("--").arg(exe_path).arg(search_strs).spawn() {
+            if let Err(err) = Command::new("gnome-terminal").arg("--").arg(exe_path).arg(args).spawn() {
                 Log::ep_s("gnome");
                 Log::ep("startup_terminal err", &err.to_string());
             }
@@ -174,45 +212,89 @@ impl Terminal {
         execute!(stdout(), LeaveAlternateScreen, DisableMouseCapture, ResetColor).unwrap();
     }
 
-    pub fn activate(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar, file_path: String) {
-        // grep_result
-        if file_path.match_indices("search_str").count() > 0 && file_path.match_indices("search_file").count() > 0 {
-            let v: Vec<&str> = file_path.split_ascii_whitespace().collect();
-            let search_strs: Vec<&str> = v[0].split("=").collect();
-            editor.search.str = search_strs[1].to_string();
-            let search_files: Vec<&str> = v[1].split("=").collect();
-            editor.search.file = search_files[1].to_string();
+    pub fn init_args(file_path: &String) -> Args {
+        let activate_mode = Terminal::check_activate_mode(&file_path);
+        let mut args = Args::default();
+        args.mode = activate_mode;
 
-            let path = PathBuf::from(&editor.search.file);
+        if activate_mode == ActivatMode::GrepResult || activate_mode == ActivatMode::Grep {
+            let v: Vec<&str> = file_path.split_ascii_whitespace().collect();
+            args.search_str = v[0].split("=").nth(1).unwrap().to_string();
+            args.search_file = v[1].split("=").nth(1).unwrap().to_string();
+            args.search_case_sens = if v[2].split("=").nth(1).unwrap() == "true" { true } else { false };
+            args.search_regex = if v[3].split("=").nth(1).unwrap() == "true" { true } else { false };
+
+            let path = PathBuf::from(&args.search_file);
             let filenm = path.file_name().unwrap_or(OsStr::new("")).to_string_lossy().to_string();
             let path_str = path.to_string_lossy().to_string();
-            editor.search.folder = path_str.replace(&filenm, "");
-            editor.search.filenm = path.file_name().unwrap_or(OsStr::new("")).to_string_lossy().to_string();
+            args.search_folder = path_str.replace(&filenm, "");
+            args.ext = Path::new(&filenm).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string();
+            args.search_filenm = filenm;
 
-            if file_path.match_indices("search_row_num").count() == 0 {
+            if activate_mode == ActivatMode::GrepResult {
+                let search_row_nums: Vec<&str> = v[4].split("=").collect();
+                args.search_row_num = search_row_nums[1].to_string();
+            }
+        // Normal
+        } else {
+            if !file_path.is_empty() {
+                args.filenm = file_path.to_string();
+                args.ext = Path::new(&args.filenm).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string();
+            }
+        }
+        return args;
+    }
+
+    pub fn activate(args: &Args, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
+        // grep_result
+
+        editor.file.ext = args.ext.clone();
+
+        if args.mode == ActivatMode::GrepResult || args.mode == ActivatMode::Grep {
+            editor.search.str = args.search_str.clone();
+            editor.search.file = args.search_file.clone();
+            CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.case_sens = args.search_case_sens).unwrap();
+            CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.regex = args.search_regex).unwrap();
+            editor.search.folder = args.search_folder.clone();
+            editor.search.filenm = args.search_filenm.clone();
+
+            if args.mode == ActivatMode::Grep {
                 sbar.filenm = format!("grep \"{}\" {}", &editor.search.str, &editor.search.file);
                 prom.is_grep_result = true;
                 prom.is_grep_stdout = true;
                 prom.is_grep_stderr = true;
+
                 prom.grep_result();
                 editor.set_cur_default();
                 editor.scroll();
                 editor.scroll_horizontal();
                 mbar.set_info(&LANG.searching);
             } else {
-                sbar.filenm = editor.search.file.clone();
-                let search_row_nums: Vec<&str> = v[2].split("=").collect();
-                editor.search.row_num = search_row_nums[1].to_string();
-                Log::ep("search_row_num", &editor.search.row_num.clone());
+                sbar.filenm = args.search_file.clone();
+                editor.search.row_num = args.search_row_num.clone();
+
+                Log::ep("editor.search", &editor.search);
+
                 editor.open(Path::new(&sbar.filenm), mbar);
                 editor.search_str(true, false);
             }
+
         // Normal
         } else {
-            if !file_path.is_empty() {
-                sbar.filenm = file_path.to_string();
+            sbar.filenm = args.filenm.clone();
+            editor.open(Path::new(&args.filenm), mbar);
+        }
+    }
+
+    pub fn check_activate_mode(file_path: &String) -> ActivatMode {
+        if file_path.match_indices("search_str").count() > 0 {
+            if file_path.match_indices("search_row_num").count() == 0 {
+                return ActivatMode::Grep;
+            } else {
+                return ActivatMode::GrepResult;
             }
-            editor.open(Path::new(&file_path), mbar);
+        } else {
+            return ActivatMode::Nomal;
         }
     }
 }

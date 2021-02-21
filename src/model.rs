@@ -1,10 +1,9 @@
 extern crate ropey;
 use crate::{def::*, editor::view::char_style::*};
 use chrono::NaiveDateTime;
-use crossterm::event::{Event, Event::Key, KeyCode::End};
+use crossterm::event::{Event, Event::Key, KeyCode::Null};
 use ropey::Rope;
 use std::cmp::{max, min};
-use std::collections::BTreeSet;
 use std::collections::VecDeque;
 use std::{fmt, path};
 use syntect::highlighting::HighlightState;
@@ -126,7 +125,6 @@ impl fmt::Display for GrepResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// 検索範囲
 pub struct Search {
     pub str: String,
     pub idx: usize,
@@ -376,7 +374,7 @@ impl Editor {
             rnw: 0,
             sel: SelRange::default(),
             sel_org: SelRange::default(),
-            evt: Key(End.into()),
+            evt: Key(Null.into()),
             clipboard: String::new(),
             // for UT set
             disp_row_num: 5,

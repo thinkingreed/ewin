@@ -31,7 +31,7 @@ impl Editor {
         Log::ep("self.draw.sy", &self.draw.sy);
         Log::ep("self.draw.ey", &self.draw.ey);
 
-        let cfg = CFG.get().unwrap().lock().unwrap();
+        let cfg = CFG.get().unwrap().try_lock().unwrap();
         let highlighter = Highlighter::new(&cfg.syntax.theme);
 
         match self.d_range.draw_type {

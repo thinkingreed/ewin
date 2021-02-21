@@ -1,3 +1,5 @@
+use std::io::{stdout, BufWriter, Write};
+
 use crate::{colors::*, def::*, global::*, log::*, model::*, util::*};
 use crossterm::{cursor::*, terminal::*};
 #[derive(Debug, Clone)]
@@ -66,6 +68,14 @@ impl StatusBar {
 
         str_vec.push(sber_str);
         Colors::set_text_color(str_vec);
+
+        let out = stdout();
+        let mut out = BufWriter::new(out.lock());
+
+        let _ = out.write(&str_vec.concat().as_bytes());
+        out.flush().unwrap();
+
+        str_vec.clear();
     }
     /*
     pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {

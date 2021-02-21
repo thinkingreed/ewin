@@ -1,6 +1,9 @@
 use crate::{def::*, log::*, prompt::promptcont::promptcont::*, util::*};
 use crossterm::{cursor::*, terminal::*};
-use std::{fmt, io::Write};
+use std::{
+    fmt,
+    io::{stdout, BufWriter, Write},
+};
 pub struct Prompt {
     pub disp_row_num: usize,
     pub disp_row_posi: usize,
@@ -135,14 +138,12 @@ impl Prompt {
                 str_vec.push(buf);
             }
             if self.is_replace || self.is_grep {
-                if self.is_replace {
-                    let opt_1 = &self.cont_1.opt_1;
-                    let opt_2 = &self.cont_1.opt_2;
-                    let opt_str = format!("{}{}  {}{}", opt_1.key, opt_1.get_check_str(), opt_2.key, opt_2.get_check_str());
-                    idx += 1;
-                    let str = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), opt_str);
-                    str_vec.push(str);
-                }
+                let opt_1 = &self.cont_1.opt_1;
+                let opt_2 = &self.cont_1.opt_2;
+                let opt_str = format!("{}{}  {}{}", opt_1.key, opt_1.get_check_str(), opt_2.key, opt_2.get_check_str());
+                idx += 1;
+                let str = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), opt_str);
+                str_vec.push(str);
                 idx += 1;
                 let buf_desc_1 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_1.buf_desc.clone());
                 str_vec.push(buf_desc_1);
@@ -164,6 +165,13 @@ impl Prompt {
                     str_vec.push(buf_3);
                 }
             }
+
+            let out = stdout();
+            let mut out = BufWriter::new(out.lock());
+
+            let _ = out.write(&str_vec.concat().as_bytes());
+            out.flush().unwrap();
+            str_vec.clear();
         }
     }
 

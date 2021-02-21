@@ -8,7 +8,7 @@ impl Log {
         if cfg!(debug_assertions) {
             eprintln!("{}{} {:?}", ResetColor, format!("{:?}", m), v);
         } else {
-            eprintln!("{}{} {:?}", ResetColor, format!("{:?}", m), v);
+            // eprintln!("{}{} {:?}", ResetColor, format!("{:?}", m), v);
 
             /*
             let debug_mode: &str = ARGS.get("debug_mode").unwrap();
@@ -21,8 +21,8 @@ impl Log {
         if cfg!(debug_assertions) {
             eprintln!("{}{}", ResetColor, m);
         } else {
-            eprintln!("{}{}", ResetColor, m);
-       
+            // eprintln!("{}{}", ResetColor, m);
+
             /*
              let debug_mode: &str = ARGS.get("debug_mode").unwrap();
              if debug_mode == "true" {

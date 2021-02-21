@@ -46,6 +46,8 @@ impl Editor {
     pub fn scroll_horizontal(&mut self) {
         Log::ep_s("　　　　　　　 scroll_horizontal");
 
+        Log::ep("self.evt", &self.evt);
+
         // offset_x Number of characters for switching judgment
         let offset_x_extra_num = 3;
         // Number of offset increase / decrease when switching the above offset
@@ -58,12 +60,13 @@ impl Editor {
         // Up・Down・Home ...
         if self.rnw == self.cur.x {
             self.offset_x = 0;
-        } else if self.cur_y_org != self.cur.y || self.evt == END || self.evt == SEARCH || self.evt == SEARCH_DESC {
+        // KEY_NULL:grep_result initial display
+        } else if self.cur_y_org != self.cur.y || self.evt == END || self.evt == SEARCH || self.evt == SEARCH_DESC || self.evt == KEY_NULL {
             self.offset_x = self.get_x_offset(self.cur.y, self.cur.x - self.rnw);
 
-            if self.evt == SEARCH || self.evt == SEARCH_DESC {
+            if self.evt == SEARCH || self.evt == SEARCH_DESC || self.evt == KEY_NULL {
                 let str_width = get_str_width(&self.search.str);
-                if self.evt == SEARCH {
+                if self.evt == SEARCH || self.evt == KEY_NULL {
                     // Offset setting to display a few characters to the right of the search character for easier viewing
                     if self.cur.disp_x + str_width + 5 > self.offset_disp_x + self.disp_col_num {
                         self.offset_x += str_width + 5;

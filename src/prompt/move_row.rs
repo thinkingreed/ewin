@@ -29,11 +29,10 @@ impl EvtAct {
                     prom.clear();
                     mbar.clear();
                     Terminal::set_disp_size(editor, mbar, prom, help, sbar);
-
                     editor.scroll_move_row();
                     editor.scroll_horizontal();
-                    Terminal::init_draw(out, editor, mbar, prom, help, sbar);
-                    return EvtActType::Hold;
+                    editor.d_range.draw_type = DrawType::All;
+                    return EvtActType::DrawOnly;
                 }
                 _ => return EvtActType::Hold,
             },

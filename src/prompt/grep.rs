@@ -1,10 +1,10 @@
-use crate::{colors::*, def::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*, statusbar::*, terminal::*, util::*};
+use crate::{colors::*, def::*, global::*, log::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
-use std::{env, fs, io::Write, path::Path};
+use std::{env, fs, path::Path};
 
 impl EvtAct {
-    pub fn grep<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
-        Log::ep_s("Process.replace");
+    pub fn grep(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) -> EvtActType {
+        Log::ep_s("Process.grep");
 
         match editor.evt {
             Key(KeyEvent { code, .. }) => match code {
@@ -35,13 +35,20 @@ impl EvtAct {
                         prom.cache_search_filenm = search_filenm.clone();
                         prom.cache_search_folder = search_folder.clone();
 
-                        Log::ep_s(&format!(r#"search_str={} search_file={}"#, search_str, path.to_string_lossy().to_string()));
+                        let cfg = CFG.get().unwrap().try_lock().unwrap();
+                        let args = format!(
+                            "search_str={} search_file={} search_case_sens={} search_regex={}",
+                            search_str,
+                            path.to_string_lossy().to_string(),
+                            cfg.general.editor.search.case_sens.to_string(),
+                            cfg.general.editor.search.regex.to_string()
+                        );
+                        Log::ep_s(&args);
 
-                        Terminal::startup_terminal(format!(r#"search_str={} search_file={}"#, search_str, path.to_string_lossy().to_string()));
+                        Terminal::startup_terminal(args);
                     }
                     editor.d_range.draw_type = DrawType::All;
-                    Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
-                    return EvtActType::Hold;
+                    return EvtActType::DrawOnly;
                 }
                 _ => return EvtActType::Hold,
             },
@@ -53,7 +60,7 @@ impl EvtAct {
 impl Prompt {
     pub fn grep(&mut self) {
         self.is_grep = true;
-        self.disp_row_num = 8;
+        self.disp_row_num = 9;
         let mut cont_1 = PromptCont::new();
         let mut cont_2 = PromptCont::new();
         let mut cont_3 = PromptCont::new();
@@ -107,10 +114,10 @@ impl Prompt {
 
         // Search target dir
         let mut base_dir = ".".to_string();
-        // cur.xまでの文字列対象
+        // Character string target up to cur.x
         let _ = target_path.split_off(self.cont_3.cur.x);
         let vec: Vec<(usize, &str)> = target_path.match_indices("/").collect();
-        // "/"有り
+        // "/" exist
         if vec.len() > 0 {
             let (base, _) = target_path.split_at(vec[vec.len() - 1].0 + 1);
             base_dir = base.to_string();
@@ -121,10 +128,9 @@ impl Prompt {
                 while let Some(Ok(path)) = read_dir.next() {
                     if path.path().is_dir() {
                         let mut dir_str = path.path().display().to_string();
-                        // Log::ep("dir_str", dir_str.clone());
                         let v: Vec<(usize, &str)> = dir_str.match_indices(target_path.as_str()).collect();
                         if v.len() > 0 {
-                            // 表示用に"./"置換
+                            // Replace "./" for display
                             if &base_dir == "." {
                                 dir_str = dir_str.replace("./", "");
                             }
@@ -194,6 +200,9 @@ impl PromptCont {
                 Colors::get_default_fg(),
                 &LANG.search_folder,
             );
+            self.set_opt_case_sens();
+            self.set_opt_regex();
+
             self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.search_str, Colors::get_default_fg());
         } else if cont_type == PromptBufPosi::Second {
             self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.search_file, Colors::get_default_fg());

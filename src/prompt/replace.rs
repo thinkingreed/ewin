@@ -1,9 +1,8 @@
-use crate::{colors::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*, statusbar::*, terminal::*};
+use crate::{colors::*, global::*, log::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
-use std::io::Write;
 
 impl EvtAct {
-    pub fn replace<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
+    pub fn replace(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) -> EvtActType {
         Log::ep_s("Process.replace");
 
         match editor.evt {
@@ -15,8 +14,6 @@ impl EvtAct {
                         mbar.set_err(&LANG.not_entered_search_str);
                     } else if prom.cont_2.buf.len() == 0 {
                         mbar.set_err(&LANG.not_entered_replace_str);
-                    } else if editor.get_search_ranges(&search_str.clone(), 0, editor.buf.len_chars()).len() == 0 {
-                        mbar.set_err(&LANG.cannot_find_char_search_for);
                     } else {
                         let search_set = editor.buf.search(&search_str.clone(), 0, editor.buf.len_chars());
                         if search_set.len() == 0 {
@@ -29,7 +26,6 @@ impl EvtAct {
                         prom.is_change = true;
                     }
                     editor.d_range.draw_type = DrawType::All;
-                    Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
                     return EvtActType::DrawOnly;
                 }
                 _ => return EvtActType::Hold,

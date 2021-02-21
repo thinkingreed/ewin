@@ -4,7 +4,13 @@ use crossterm::{
     style::{Color as CrosstermColor, SetBackgroundColor},
     terminal::*,
 };
-use std::{cmp::min, env, fs::metadata, io::ErrorKind, path};
+use std::{
+    cmp::min,
+    env,
+    fs::metadata,
+    io::{stdout, BufWriter, ErrorKind, Write},
+    path,
+};
 use unicode_width::UnicodeWidthChar;
 
 impl Editor {
@@ -61,9 +67,10 @@ impl Editor {
         self.set_cur_default();
     }
 
-    pub fn draw(&mut self, str_vec: &mut Vec<String>) {
+    pub fn draw(&mut self) {
         Log::ep_s("draw");
 
+        let mut str_vec: Vec<String> = vec![];
         let (mut y, mut x) = (0, 0);
 
         let d_range = self.d_range.get_range();
@@ -97,8 +104,8 @@ impl Editor {
         for i in self.draw.sy..=self.draw.ey {
             // Log::ep("iii", &i);
 
-            self.set_row_num(i, str_vec);
-            let row_cell = self.draw.cells[i].clone();
+            self.set_row_num(i, &mut str_vec);
+            let row_cell = &self.draw.cells[i];
             let (mut sx, mut ex) = (0, row_cell.len());
 
             if self.file.is_enable_syntax_highlight {
@@ -108,7 +115,7 @@ impl Editor {
 
             for (x_idx, j) in (0_usize..).zip(sx..ex) {
                 let cell = &row_cell[j];
-                cell.draw_style(str_vec, x_idx == 0 && self.offset_x > 0);
+                cell.draw_style(&mut str_vec, x_idx == 0 && self.offset_x > 0);
                 let c = cell.c;
                 // Log::ep("ccccc", &c);
 
@@ -123,7 +130,7 @@ impl Editor {
                 x += width;
 
                 match c {
-                    EOF_MARK => Colors::set_eof(str_vec),
+                    EOF_MARK => Colors::set_eof(&mut str_vec),
                     NEW_LINE => str_vec.push(NEW_LINE_MARK.to_string()),
                     NEW_LINE_CR => {}
                     _ => str_vec.push(c.to_string()),
@@ -138,6 +145,14 @@ impl Editor {
                 str_vec.push(NEW_LINE_CRLF.to_string());
             }
         }
+
+        let out = stdout();
+        let mut out = BufWriter::new(out.lock());
+
+        let _ = out.write(&str_vec.concat().as_bytes());
+        out.flush().unwrap();
+
+        str_vec.clear();
 
         self.d_range.clear();
         self.sel_org.clear();

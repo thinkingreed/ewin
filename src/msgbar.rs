@@ -1,6 +1,6 @@
 use crate::{colors::*, log::*, util::*};
 use crossterm::{cursor::*, terminal::*};
-use std::io::Write;
+use std::io::{stdout, BufWriter, Write};
 
 #[derive(Debug, Clone)]
 pub struct MsgBar {
@@ -77,16 +77,27 @@ impl MsgBar {
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         Log::ep_s("　　　　　　　　MsgBar.draw");
-        if self.msg_readonly.len() > 0 {
-            str_vec.push(self.get_disp_readonly_msg());
-        }
-        if self.msg_keyrecord.len() > 0 {
-            str_vec.push(self.get_disp_keyrecord_msg());
-        }
-        if !self.msg.str.is_empty() {
-            Log::ep_s("　　　　　　　　MsgBar.draw.!self.msg.str.is_empty()");
 
-            str_vec.push(self.get_disp_msg());
+        if self.msg_readonly.is_empty() || self.msg_keyrecord.is_empty() || !self.msg.str.is_empty() {
+            str_vec.push(Colors::get_default_bg());
+
+            if !self.msg_readonly.is_empty() {
+                str_vec.push(self.get_disp_readonly_msg());
+            }
+            if !self.msg_keyrecord.is_empty() {
+                str_vec.push(self.get_disp_keyrecord_msg());
+            }
+            if !self.msg.str.is_empty() {
+                str_vec.push(self.get_disp_msg());
+            }
+
+            let out = stdout();
+            let mut out = BufWriter::new(out.lock());
+
+            let _ = out.write(&str_vec.concat().as_bytes());
+            out.flush().unwrap();
+
+            str_vec.clear();
         }
     }
 
@@ -118,7 +129,8 @@ impl MsgBar {
             MsgType::Info => Colors::get_msg_highlight_fg(),
             MsgType::Error => Colors::get_msg_err_fg(),
         };
-        return format!("{}{}{}{}", MoveTo(0, (self.disp_row_posi - 1) as u16), Clear(ClearType::CurrentLine), color, self.msg.str.clone());
+        let msg_str = format!("{msg:^width$}", msg = self.msg.str, width = self.disp_col_num - (get_str_width(&self.msg.str) - self.msg.str.chars().count()));
+        return format!("{}{}{}{}", MoveTo(0, (self.disp_row_posi - 1) as u16), Clear(ClearType::CurrentLine), color, msg_str);
     }
 
     pub fn set_info(&mut self, msg: &str) {

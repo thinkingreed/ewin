@@ -1,9 +1,6 @@
 use crate::{colors::*, def::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*, statusbar::*, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
-use std::{
-    cmp::{max, min},
-    io::Write,
-};
+use std::{cmp::min, io::Write};
 
 impl EvtAct {
     pub fn search(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) -> EvtActType {
@@ -29,7 +26,7 @@ impl EvtAct {
             mbar.set_err(&LANG.not_entered_search_str);
             return EvtActType::Hold;
         }
-        let search_vec = editor.get_search_ranges(&search_str.clone(), 0, editor.buf.len_chars());
+        let search_vec = editor.get_search_ranges(&search_str.clone(), 0, editor.buf.len_chars(), 0);
         if search_vec.len() == 0 {
             mbar.set_err(&LANG.cannot_find_char_search_for);
             return EvtActType::Hold;
@@ -53,24 +50,29 @@ impl EvtAct {
         editor.search.str = prom.cont_1.buf.iter().collect::<String>();
 
         let s_idx = editor.buf.line_to_char(editor.offset_y);
-        let ey = editor.offset_y + editor.disp_row_num;
+        let ey = min(editor.offset_y + editor.disp_row_num, editor.buf.len_lines());
         let search_org = editor.search.clone();
 
         Log::ep("s_idx", &s_idx);
         Log::ep("e_idx", &editor.buf.line_to_char(ey));
 
-        editor.search.ranges = if editor.search.str.len() == 0 { vec![] } else { editor.get_search_ranges(&editor.search.str, s_idx, editor.buf.line_to_char(ey)) };
+        editor.search.ranges = if editor.search.str.len() == 0 { vec![] } else { editor.get_search_ranges(&editor.search.str, s_idx, editor.buf.line_to_char(ey), 0) };
 
         if !search_org.ranges.is_empty() || !editor.search.ranges.is_empty() {
             // Search in advance for drawing
             if !editor.search.ranges.is_empty() {
                 editor.search_str(true, true);
             }
+
+            /*
             editor.d_range.draw_type = DrawType::Target;
-            let (sy, ey) = editor.search.get_y_range();
+            let (sy_curt, ey) = editor.search.get_y_range();
             let (sy_org, ey_org) = search_org.get_y_range();
-            editor.d_range.sy = min(sy, sy_org);
+            editor.d_range.sy = min(sy_curt, sy_org);
             editor.d_range.ey = max(ey, ey_org);
+            */
+            editor.d_range.draw_type = DrawType::After;
+            editor.d_range.sy = editor.offset_y;
             Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
         }
     }

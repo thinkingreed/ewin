@@ -1,8 +1,6 @@
 use crate::{colors::*, def::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*, statusbar::*, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
-use std::io::Write;
-use std::path::Path;
-use std::process;
+use std::{io::Write, path::Path, process};
 use tokio::process::{Child, Command};
 use tokio_util::codec::LinesCodecError;
 
@@ -36,7 +34,6 @@ impl EvtAct {
             } else {
                 editor.d_range.draw_type = DrawType::All;
             }
-
             Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
         } else {
             Log::ep_s("grep is canceled");
@@ -65,10 +62,17 @@ impl EvtAct {
 
     pub fn exec_grep(editor: &Editor) -> Child {
         Log::ep_s("　　　　　　　　exec_cmd");
-
+        // -r:Subfolder search, -H:File name display, -n:Line number display,
+        // -I:Binary file not applicable, -i:Ignore-case
+        let mut cmd_option = "-rHnI".to_string();
+        if !CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens {
+            cmd_option.push('i');
+        };
+        if !CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex {
+            cmd_option.push('F');
+        };
         return Command::new("grep")
-            // -r:サブフォルダ検索、-H:ファイル名表示、-n:行番号表示、-I:バイナリファイル対象外
-            .arg("-rHnI")
+            .arg(cmd_option)
             .arg(editor.search.str.clone())
             .arg(format!("--include={}", editor.search.filenm))
             // folder
@@ -97,16 +101,28 @@ impl EvtAct {
                 PageDown | PageUp | Home | End | F(3) | Down | Up | Left | Right => {
                     return EvtActType::Next;
                 }
+
                 Enter => {
                     let grep_result = &editor.grep_result_vec[editor.cur.y];
                     if grep_result.row_num != USIZE_UNDEFINED {
                         let search_str = &editor.search.str;
                         let path = Path::new(&editor.search.folder).join(&grep_result.filenm);
 
+                        let cfg = CFG.get().unwrap().try_lock().unwrap();
+                        let args = format!(
+                            "search_str={} search_file={} search_case_sens={} search_regex={} search_row_num={}",
+                            search_str,
+                            path.to_string_lossy().to_string(),
+                            cfg.general.editor.search.case_sens.to_string(),
+                            cfg.general.editor.search.regex.to_string(),
+                            grep_result.row_num.to_string()
+                        );
                         Log::ep_s("startup_terminal");
-                        Terminal::startup_terminal(format!("search_str={} search_file={} search_row_num={}", search_str, path.to_string_lossy().to_string(), grep_result.row_num.to_string()));
+                        Log::ep_s("args");
+                        Terminal::startup_terminal(args);
                     }
-                    return EvtActType::Hold;
+                    editor.d_range.draw_type = DrawType::All;
+                    return EvtActType::DrawOnly;
                 }
                 _ => return EvtActType::Hold,
             },

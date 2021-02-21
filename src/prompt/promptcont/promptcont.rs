@@ -94,7 +94,7 @@ impl PromptCont {
         let key_case_sens = format!("{}{}:{}Alt + c{}", Colors::get_default_fg(), &LANG.case_sens, Colors::get_msg_warning_fg(), Colors::get_default_fg(),);
         let opt_case_sens = PromptContOpt {
             key: key_case_sens,
-            is_check: CFG.get().unwrap().lock().unwrap().general.editor.search.case_sens,
+            is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens,
         };
         self.opt_1 = opt_case_sens;
     }
@@ -103,7 +103,7 @@ impl PromptCont {
         let key_regex = format!("{}{}:{}Alt + r{}", Colors::get_default_fg(), &LANG.regex, Colors::get_msg_warning_fg(), Colors::get_default_fg(),);
         let opt_regex = PromptContOpt {
             key: key_regex,
-            is_check: CFG.get().unwrap().lock().unwrap().general.editor.search.regex,
+            is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex,
         };
         self.opt_2 = opt_regex;
     }

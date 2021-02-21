@@ -1,5 +1,5 @@
 use crate::{def::*, global::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, util::*};
-use std::{collections::BTreeSet, iter::FromIterator, path::Path};
+use std::{cmp::min, collections::BTreeSet, iter::FromIterator, path::Path};
 
 impl Editor {
     pub fn all_select(&mut self) {
@@ -144,44 +144,53 @@ impl Editor {
         Log::ep_s("　　　　　　　　search_str");
 
         if self.search.str.len() > 0 {
-            Log::ep("search.index 111", &self.search.idx);
             if self.search.ranges.len() == 0 {
-                self.search.ranges = self.get_search_ranges(&self.search.str, 0, self.buf.len_chars());
+                self.search.ranges = self.get_search_ranges(&self.search.str, 0, self.buf.len_chars(), 0);
             }
             if self.search.ranges.len() == 0 {
                 return;
             }
             if self.search.row_num.len() == 0 {
                 self.search.idx = self.get_search_str_index(is_asc);
-                Log::ep("search.index 222", &self.search.idx);
             } else {
                 self.search.idx = self.get_search_row_no_index(&self.search.row_num);
             }
 
             if !is_incremental {
                 let range = self.search.ranges[self.search.idx];
-                Log::ep("search.range", &range);
+
+                Log::ep("range", &range);
+
                 self.set_cur_target(range.y, range.sx);
             }
+
             self.scroll();
             self.scroll_horizontal();
         }
     }
 
-    pub fn get_search_ranges(&self, search_str: &String, start_idx: usize, end_idx: usize) -> Vec<SearchRange> {
+    pub fn get_search_ranges(&self, search_str: &String, start_idx: usize, end_idx: usize, ignore_prefix_len: usize) -> Vec<SearchRange> {
         Log::ep_s("              get_search_ranges");
 
-        let mut rtn_vec = vec![];
+        let regex = CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex;
         let search_set = self.buf.search(&search_str, start_idx, end_idx);
+        let mut rtn_vec = vec![];
 
-        for (mut sx, mut ex) in search_set {
-            sx += start_idx;
-            ex += start_idx;
-            rtn_vec.push(SearchRange {
-                y: self.buf.char_to_line(sx),
-                sx: self.buf.char_to_line_idx(sx),
-                ex: self.buf.char_to_line_idx(ex),
-            });
+        // Case regex: Use the number of bytes
+        //      normal: Use the number of characters
+        for (sx, ex) in search_set {
+            // Ignore file name and line number match when grep
+            if ignore_prefix_len != 0 {
+                let line_s_idx = if regex { self.buf.line_to_byte(self.buf.byte_to_line(sx)) } else { self.buf.line_to_char(self.buf.char_to_line(sx)) };
+                if sx - line_s_idx < ignore_prefix_len {
+                    continue;
+                }
+            }
+            let y = if regex { self.buf.byte_to_line(sx) } else { self.buf.char_to_line(sx) };
+            let sx = if regex { self.buf.byte_to_line_char_idx(sx) } else { self.buf.char_to_line_char_idx(sx) };
+            let ex = if regex { self.buf.byte_to_line_char_idx(ex) } else { self.buf.char_to_line_char_idx(ex) };
+
+            rtn_vec.push(SearchRange { y: y, sx: sx, ex: ex });
         }
 
         return rtn_vec;
@@ -258,11 +267,33 @@ impl Editor {
         if vec.len() > 2 && vec[0] != "grep" {
             let ignore_prefix_str = format!("{}:{}:", vec[0], vec[1]);
 
-            let row_start_idx = self.buf.line_to_char(self.buf.len_lines() - 2);
-            let mut search_vec: Vec<SearchRange> = self.get_search_ranges(&self.search.str, row_start_idx + ignore_prefix_str.chars().count(), self.buf.len_chars());
+            let mut regex = false;
+            {
+                regex = CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex;
+            }
+            let row = self.buf.len_lines() - 2;
+
+            let mut start_idx = 0;
+            let mut end_idx = 0;
+            let mut ignore_prefix_len = 0;
+            if regex {
+                start_idx = self.buf.line_to_byte(row);
+                end_idx = self.buf.len_bytes();
+                ignore_prefix_len = ignore_prefix_str.len();
+            } else {
+                start_idx = self.buf.line_to_char(row);
+                end_idx = self.buf.len_chars();
+                ignore_prefix_len = ignore_prefix_str.chars().count();
+            }
+
+            Log::ep("ignore_prefix_str", &ignore_prefix_str);
+            Log::ep("start_idx", &start_idx);
+            Log::ep("end_idx", &end_idx);
+            Log::ep("ignore_prefix_len", &ignore_prefix_len);
+
+            let mut search_vec: Vec<SearchRange> = self.get_search_ranges(&self.search.str, start_idx, end_idx, ignore_prefix_len);
 
             self.search.ranges.append(&mut search_vec);
-            Log::ep("self.search.ranges.len", &self.search.ranges.len());
         }
 
         if vec.len() > 1 {

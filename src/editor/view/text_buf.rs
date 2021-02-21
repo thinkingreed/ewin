@@ -27,6 +27,9 @@ impl TextBuffer {
         self.text.len_chars()
     }
 
+    pub fn len_bytes<'a>(&'a self) -> usize {
+        self.text.len_bytes()
+    }
     pub fn char_vec_line<'a>(&'a self, i: usize) -> Vec<char> {
         self.line(i).chars().collect()
     }
@@ -68,14 +71,10 @@ impl TextBuffer {
                 }
             }
         }
-        Log::ep("remove_del_bs i", &i);
-        Log::ep("remove_del_bs i + del_num", &(i + del_num));
         self.text.remove(i..i + del_num);
     }
 
     pub fn remove_range(&mut self, sel: SelRange) {
-        Log::ep("remove_range sel", &sel);
-
         let i_s = self.text.line_to_char(sel.sy) + sel.sx;
         let i_e = self.text.line_to_char(sel.ey) + sel.ex;
 
@@ -118,24 +117,37 @@ impl TextBuffer {
     pub fn line_to_char<'a>(&'a self, i: usize) -> usize {
         self.text.line_to_char(i)
     }
+    pub fn line_to_byte<'a>(&'a self, i: usize) -> usize {
+        self.text.line_to_byte(i)
+    }
 
     pub fn char_to_line<'a>(&'a self, i: usize) -> usize {
         self.text.char_to_line(i)
     }
 
-    pub fn char_to_line_idx<'a>(&'a self, i: usize) -> usize {
+    pub fn char_to_byte<'a>(&'a self, i: usize) -> usize {
+        self.text.char_to_byte(i)
+    }
+
+    pub fn byte_to_line<'a>(&'a self, i: usize) -> usize {
+        self.text.byte_to_line(i)
+    }
+
+    pub fn char_to_line_char_idx<'a>(&'a self, i: usize) -> usize {
         i - self.text.line_to_char(self.text.char_to_line(i))
     }
 
+    pub fn byte_to_line_char_idx<'a>(&'a self, i: usize) -> usize {
+        self.text.byte_to_char(i) - self.text.line_to_char(self.text.byte_to_line(i))
+    }
+
     pub fn search(&self, search_pattern: &str, start_idx: usize, end_idx: usize) -> BTreeSet<(usize, usize)> {
-        const BATCH_SIZE: usize = 2560;
+        const BATCH_SIZE: usize = 256;
 
         let mut head = start_idx; // Keep track of where we are between searches
         let mut rtn_set: BTreeSet<(usize, usize)> = BTreeSet::new();
 
-        let cfg_search = &CFG.get().unwrap().lock().unwrap().general.editor.search;
-
-        Log::ep("cfg_search", cfg_search);
+        let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
 
         if !cfg_search.regex {
             // normal
@@ -158,22 +170,24 @@ impl TextBuffer {
                 Ok(re) => re,
                 Err(_) => return rtn_set,
             };
-            let s_line_idx = self.text.char_to_line(start_idx);
-            let e_line_idx = self.text.char_to_line(end_idx);
+            let s_line_idx = self.text.byte_to_line(start_idx);
+            let e_line_idx = self.text.byte_to_line(end_idx);
             let lines = self.text.lines_at(s_line_idx);
             let mut len_chars_sum = start_idx;
 
             for (i, line) in lines.enumerate() {
                 let str = String::from(line);
+
                 for m in re.find_iter(&str) {
                     rtn_set.insert((len_chars_sum + m.start(), len_chars_sum + m.end()));
                 }
-                len_chars_sum += line.len_chars();
+                len_chars_sum += line.len_bytes();
                 if i + s_line_idx == e_line_idx {
                     break;
                 }
             }
         }
+
         rtn_set
     }
 

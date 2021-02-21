@@ -31,45 +31,49 @@ impl Colors {
         str_vec.push(Colors::bg(cfg.colors.editor.bg));
     }
     pub fn set_rownum_color(str_vec: &mut Vec<String>) {
-        let cfg = CFG.get().unwrap().lock().unwrap();
+        let cfg = CFG.get().unwrap().try_lock().unwrap();
         str_vec.push(Colors::fg(cfg.colors.editor.line_number.fg));
         str_vec.push(Colors::bg(cfg.colors.editor.line_number.bg));
     }
 
     pub fn set_select_color(str_vec: &mut Vec<String>) {
-        let cfg = CFG.get().unwrap().lock().unwrap();
+        let cfg = CFG.get().unwrap().try_lock().unwrap();
         str_vec.push(Colors::fg(cfg.colors.editor.selection.fg));
         str_vec.push(Colors::bg(cfg.colors.editor.selection.bg));
     }
     pub fn get_sber_bg() -> String {
-        return Colors::bg(CFG.get().unwrap().lock().unwrap().colors.editor.bg);
+        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
     }
     pub fn get_sber_fg() -> String {
-        return Colors::fg(CFG.get().unwrap().lock().unwrap().colors.status_bar.fg);
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.status_bar.fg);
     }
 
     pub fn get_default_fg() -> String {
-        return Colors::fg(CFG.get().unwrap().lock().unwrap().colors.editor.fg);
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.editor.fg);
+    }
+
+    pub fn get_default_bg() -> String {
+        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
     }
 
     pub fn get_msg_highlight_fg() -> String {
-        return Colors::fg(CFG.get().unwrap().lock().unwrap().colors.msg.highlight_fg);
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.msg.highlight_fg);
     }
     pub fn get_msg_normal_fg() -> String {
-        return Colors::fg(CFG.get().unwrap().lock().unwrap().colors.msg.normal_fg);
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.msg.normal_fg);
     }
 
     pub fn get_msg_warning_fg() -> String {
         // orange
-        return Colors::fg(CFG.get().unwrap().lock().unwrap().colors.msg.warning_fg);
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.msg.warning_fg);
     }
 
     pub fn get_msg_err_fg() -> String {
-        return Colors::fg(CFG.get().unwrap().lock().unwrap().colors.msg.err_fg);
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.msg.err_fg);
     }
 
     pub fn set_eof(str_vec: &mut Vec<String>) {
-        let cfg = CFG.get().unwrap().lock().unwrap();
+        let cfg = CFG.get().unwrap().try_lock().unwrap();
         str_vec.push(Colors::fg(cfg.colors.editor.control_char.fg));
         str_vec.push(EOF_STR.to_string());
         str_vec.push(Colors::fg(cfg.colors.editor.fg));

@@ -1,18 +1,17 @@
-use crate::{colors::*, global::*, help::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*, statusbar::*, terminal::*};
+use crate::{colors::*, global::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*, statusbar::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
-use std::io::Write;
 
 impl EvtAct {
-    pub fn close<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prompt: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
+    pub fn close(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> EvtActType {
         match editor.evt {
             Key(KeyEvent { code: Char(c), .. }) => {
                 if c == 'y' {
                     // save成否判定
-                    if editor.save(mbar, prompt, sbar) {
+                    if editor.save(mbar, prom, sbar) {
                         return EvtActType::Exit;
                     } else {
-                        Terminal::draw(out, editor, mbar, prompt, help, sbar).unwrap();
-                        return EvtActType::Hold;
+                        editor.d_range.draw_type = DrawType::All;
+                        return EvtActType::DrawOnly;
                     }
                 } else if c == 'n' {
                     return EvtActType::Exit;

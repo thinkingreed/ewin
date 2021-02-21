@@ -159,18 +159,18 @@ impl EvtAct {
                 _ => {}
             }
         }
-        // Search・replace option
-        if prom.is_search || prom.is_replace {
+        // Search・replace・grep option
+        if prom.is_search || prom.is_replace || prom.is_grep {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::ALT, code }) => match code {
                     Char('c') => {
                         prom.cont_1.opt_1.toggle_check();
-                        CFG.get().unwrap().lock().map(|mut cfg| cfg.general.editor.search.case_sens = prom.cont_1.opt_1.is_check).unwrap();
+                        CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.case_sens = prom.cont_1.opt_1.is_check).unwrap();
                         return EvtActType::Hold;
                     }
                     Char('r') => {
                         prom.cont_1.opt_2.toggle_check();
-                        CFG.get().unwrap().lock().map(|mut cfg| cfg.general.editor.search.regex = prom.cont_1.opt_2.is_check).unwrap();
+                        CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.regex = prom.cont_1.opt_2.is_check).unwrap();
                         return EvtActType::Hold;
                     }
                     _ => return EvtActType::Hold,
@@ -215,15 +215,15 @@ impl EvtAct {
         }
 
         if prom.is_save_new_file == true {
-            return EvtAct::save_new_filenm(out, editor, mbar, prom, help, sbar);
+            return EvtAct::save_new_filenm(editor, mbar, prom, sbar);
         } else if prom.is_close_confirm == true {
-            return EvtAct::close(out, editor, mbar, prom, help, sbar);
+            return EvtAct::close(editor, mbar, prom, sbar);
         } else if prom.is_search == true {
             return EvtAct::search(editor, mbar, prom);
         } else if prom.is_replace == true {
-            return EvtAct::replace(out, editor, mbar, prom, help, sbar);
+            return EvtAct::replace(editor, mbar, prom);
         } else if prom.is_grep == true {
-            return EvtAct::grep(out, editor, mbar, prom, help, sbar);
+            return EvtAct::grep(editor, mbar, prom);
         } else if prom.is_grep_result == true {
             return EvtAct::grep_result(editor);
         } else if prom.is_move_line == true {

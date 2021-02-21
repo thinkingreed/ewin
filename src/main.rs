@@ -3,7 +3,7 @@ use crossterm::{
     event::{Event, EventStream},
     ErrorKind,
 };
-use ewin::{cfg::cfg::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, terminal::*};
+use ewin::{cfg::cfg::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, terminal::*};
 use futures::{future::FutureExt, select, StreamExt};
 use std::{
     ffi::OsStr,
@@ -36,16 +36,15 @@ async fn main() {
     let mut help = Help::new();
     let mut sbar = StatusBar::new();
 
-    Terminal::set_disp_size(&mut editor, &mut mbar, &mut prom, &mut help, &mut sbar);
-
-    editor.file.ext = Path::new(&file_path).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string();
-    let err_str = Cfg::init(&editor.file.ext);
+    Terminal::init();
+    let args = Terminal::init_args(&file_path);
+    let err_str = Cfg::init(&args);
     if !err_str.is_empty() {
         mbar.set_err(&err_str);
     }
-
-    Terminal::init();
-    Terminal::activate(&mut editor, &mut mbar, &mut prom, &mut sbar, file_path);
+    Terminal::set_disp_size(&mut editor, &mut mbar, &mut prom, &mut help, &mut sbar);
+    Terminal::activate(&args, &mut editor, &mut mbar, &mut prom, &mut sbar);
+    // Terminal::set_disp_size(&mut editor, &mut mbar, &mut prom, &mut help, &mut sbar);
 
     let out = stdout();
     let mut out = BufWriter::new(out.lock());
