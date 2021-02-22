@@ -47,11 +47,12 @@ impl EvtAct {
         mbar.msg = Msg::default();
         mbar.set_readonly(&LANG.unable_to_edit);
 
-        if editor.grep_result_vec.len() > 0 {
-            prom.grep_result_after();
+        if editor.grep_result_vec.is_empty() {
+            prom.set_grep_result_after_no_result(editor, mbar, help, sbar);
         } else {
-            prom.set_grep_result_after_no_result();
+            prom.grep_result_after(editor, mbar, help, sbar);
         }
+
         editor.buf.insert_end(&EOF_MARK.to_string());
         editor.set_cur_default();
         editor.scroll();
@@ -132,22 +133,25 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn grep_result(&mut self) {
+    pub fn grep_result(&mut self, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
         self.disp_row_num = 2;
-        let mut cont = PromptCont::new();
+        Terminal::set_disp_size(editor, mbar, self, help, sbar);
+        let mut cont = PromptCont::new_not_edit(self.disp_row_posi as u16);
         cont.set_grep_result();
         self.cont_1 = cont;
     }
 
-    pub fn grep_result_after(&mut self) {
+    pub fn grep_result_after(&mut self, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
         self.disp_row_num = 2;
-        let mut cont = PromptCont::new();
+        Terminal::set_disp_size(editor, mbar, self, help, sbar);
+        let mut cont = PromptCont::new_not_edit(self.disp_row_posi as u16);
         cont.set_grep_result_after();
         self.cont_1 = cont;
     }
-    pub fn set_grep_result_after_no_result(&mut self) {
+    pub fn set_grep_result_after_no_result(&mut self, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
         self.disp_row_num = 2;
-        let mut cont = PromptCont::new();
+        Terminal::set_disp_size(editor, mbar, self, help, sbar);
+        let mut cont = PromptCont::new_not_edit(self.disp_row_posi as u16);
         cont.set_grep_result_after_no_result();
         self.cont_1 = cont;
     }
@@ -157,13 +161,25 @@ impl PromptCont {
     pub fn set_grep_result(&mut self) {
         self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.long_time_to_search);
         self.key_desc = format!("{}{}:{}Ctrl + c", Colors::get_default_fg(), &LANG.cancel, Colors::get_msg_highlight_fg(),);
+
+        let base_posi = self.disp_row_posi - 1;
+        self.guide_row_posi = base_posi;
+        self.key_desc_row_posi = base_posi + 1;
     }
     pub fn set_grep_result_after(&mut self) {
         self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.show_search_result);
         self.key_desc = format!("{}{}:{}Enter", Colors::get_default_fg(), &LANG.open_target_file_in_another_terminal, Colors::get_msg_highlight_fg(),);
+
+        let base_posi = self.disp_row_posi - 1;
+        self.guide_row_posi = base_posi;
+        self.key_desc_row_posi = base_posi + 1;
     }
     pub fn set_grep_result_after_no_result(&mut self) {
         self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.show_search_no_result);
         self.key_desc = format!("{}{}:{}Ctrl + w", Colors::get_default_fg(), &LANG.close, Colors::get_msg_highlight_fg(),);
+
+        let base_posi = self.disp_row_posi - 1;
+        self.guide_row_posi = base_posi;
+        self.key_desc_row_posi = base_posi + 1;
     }
 }

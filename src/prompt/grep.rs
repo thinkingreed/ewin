@@ -1,4 +1,4 @@
-use crate::{colors::*, def::*, global::*, log::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*, util::*};
+use crate::{colors::*, def::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*, statusbar::*, terminal::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::{env, fs, path::Path};
 
@@ -58,15 +58,16 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn grep(&mut self) {
+    pub fn grep(&mut self, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
         self.is_grep = true;
         self.disp_row_num = 9;
-        let mut cont_1 = PromptCont::new();
-        let mut cont_2 = PromptCont::new();
-        let mut cont_3 = PromptCont::new();
-        cont_1.set_grep(self, PromptBufPosi::First);
-        cont_2.set_grep(self, PromptBufPosi::Second);
-        cont_3.set_grep(self, PromptBufPosi::Third);
+        Terminal::set_disp_size(editor, mbar, self, help, sbar);
+        let mut cont_1 = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::First);
+        let mut cont_2 = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::Second);
+        let mut cont_3 = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::Third);
+        cont_1.set_grep(self);
+        cont_2.set_grep(self);
+        cont_3.set_grep(self);
         self.cont_1 = cont_1;
         self.cont_2 = cont_2;
         self.cont_3 = cont_3;
@@ -77,28 +78,28 @@ impl Prompt {
 
         if self.is_replace {
             match self.buf_posi {
-                PromptBufPosi::First => self.cursor_down(),
-                PromptBufPosi::Second => self.cursor_up(),
+                PromptContPosi::First => self.cursor_down(),
+                PromptContPosi::Second => self.cursor_up(),
                 _ => {}
             }
         } else if self.is_grep {
             match self.buf_posi {
-                PromptBufPosi::First => {
+                PromptContPosi::First => {
                     if is_asc {
                         self.cursor_down();
                     } else {
-                        self.buf_posi = PromptBufPosi::Third;
+                        self.buf_posi = PromptContPosi::Third;
                         Prompt::set_cur(&self.cont_1, &mut self.cont_3);
                     }
                 }
-                PromptBufPosi::Second => {
+                PromptContPosi::Second => {
                     if is_asc {
                         self.cursor_down();
                     } else {
                         self.cursor_up();
                     }
                 }
-                PromptBufPosi::Third => {
+                PromptContPosi::Third => {
                     self.cont_3.buf = self.get_tab_candidate(is_asc).chars().collect();
                     let (cur_x, width) = get_row_width(&self.cont_3.buf[..], false);
                     self.cont_3.cur.x = cur_x;
@@ -180,11 +181,13 @@ impl Prompt {
 }
 
 impl PromptCont {
-    pub fn set_grep(&mut self, prom: &Prompt, cont_type: PromptBufPosi) {
-        if cont_type == PromptBufPosi::First {
+    pub fn set_grep(&mut self, prom: &Prompt) {
+        let base_posi = self.disp_row_posi - 1;
+
+        if self.prompt_cont_posi == PromptContPosi::First {
             self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.set_grep);
             self.key_desc = format!(
-                "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Ctrl + c  {}{}:{}Tab {}({})",
+                "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Esc  {}{}:{}Tab {}({})",
                 Colors::get_default_fg(),
                 &LANG.search,
                 Colors::get_msg_highlight_fg(),
@@ -204,7 +207,13 @@ impl PromptCont {
             self.set_opt_regex();
 
             self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.search_str, Colors::get_default_fg());
-        } else if cont_type == PromptBufPosi::Second {
+
+            self.guide_row_posi = base_posi;
+            self.key_desc_row_posi = base_posi + 1;
+            self.opt_row_posi = base_posi + 2;
+            self.buf_desc_row_posi = base_posi + 3;
+            self.buf_row_posi = base_posi + 4;
+        } else if self.prompt_cont_posi == PromptContPosi::Second {
             self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.search_file, Colors::get_default_fg());
 
             if prom.cache_search_filenm.len() > 0 {
@@ -212,6 +221,8 @@ impl PromptCont {
             } else {
                 self.buf = "*.*".chars().collect();
             }
+            self.buf_desc_row_posi = base_posi + 5;
+            self.buf_row_posi = base_posi + 6;
         } else {
             self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.search_folder, Colors::get_default_fg());
             if prom.cache_search_folder.len() > 0 {
@@ -221,6 +232,8 @@ impl PromptCont {
                     self.buf = path.to_string_lossy().to_string().chars().collect();
                 }
             };
+            self.buf_desc_row_posi = base_posi + 7;
+            self.buf_row_posi = base_posi + 8;
         }
     }
 }

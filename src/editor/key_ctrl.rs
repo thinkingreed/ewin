@@ -1,5 +1,5 @@
-use crate::{def::*, global::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, util::*};
-use std::{cmp::min, collections::BTreeSet, iter::FromIterator, path::Path};
+use crate::{def::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, util::*};
+use std::{collections::BTreeSet, iter::FromIterator, path::Path};
 
 impl Editor {
     pub fn all_select(&mut self) {
@@ -17,17 +17,7 @@ impl Editor {
         self.d_range.draw_type = DrawType::All;
     }
 
-    pub fn close(&mut self, prom: &mut Prompt) -> bool {
-        Log::ep("is_change", &prom.is_change);
-
-        if prom.is_change == true {
-            prom.save_confirm_str();
-            prom.is_close_confirm = true;
-            return false;
-        };
-        return true;
-    }
-    pub fn save(&mut self, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) -> bool {
+    pub fn save(&mut self, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> bool {
         Log::ep_s("　　　　　　　  save");
 
         if prom.cont_1.buf.len() > 0 {
@@ -38,7 +28,7 @@ impl Editor {
         if !Path::new(&sbar.filenm).exists() && prom.cont_1.buf.len() == 0 {
             Log::ep_s("!Path::new(&sbar.filenm).exists()");
             prom.is_save_new_file = true;
-            prom.save_new_file();
+            prom.save_new_file(self, mbar, help, sbar);
             return false;
         } else {
             if let Some(path) = self.file.path.as_ref() {

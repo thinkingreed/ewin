@@ -220,10 +220,8 @@ impl Default for SelRange {
 }
 
 impl SelRange {
-    // 0-indexedの為に初期値を-1
     pub fn clear(&mut self) {
         //  Log::ep_s("SelRange.clear");
-
         self.sy = 0;
         self.ey = 0;
         self.sx = 0;
@@ -231,6 +229,16 @@ impl SelRange {
         self.s_disp_x = 0;
         self.e_disp_x = 0;
     }
+
+    // For prompt buf
+    pub fn clear_prompt(&mut self) {
+        //  Log::ep_s("SelRange.clear");
+        self.sx = USIZE_UNDEFINED;
+        self.ex = USIZE_UNDEFINED;
+        self.s_disp_x = USIZE_UNDEFINED;
+        self.e_disp_x = USIZE_UNDEFINED;
+    }
+
     pub fn is_selected(&self) -> bool {
         return !(self.sy == 0 && self.ey == 0 && self.s_disp_x == 0 && self.e_disp_x == 0);
     }

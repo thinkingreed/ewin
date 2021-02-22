@@ -31,9 +31,6 @@ impl Editor {
         Log::ep("self.draw.sy", &self.draw.sy);
         Log::ep("self.draw.ey", &self.draw.ey);
 
-        let cfg = CFG.get().unwrap().try_lock().unwrap();
-        let highlighter = Highlighter::new(&cfg.syntax.theme);
-
         match self.d_range.draw_type {
             DrawType::None => {
                 // If highlight is enabled, read the full text first
@@ -41,27 +38,31 @@ impl Editor {
                     self.draw.sy = 0;
                     self.draw.ey = self.buf.len_lines() - 1;
                 }
-                self.set_draw_regions(&highlighter, &cfg);
+                self.set_draw_regions();
             }
-            DrawType::Target | DrawType::After | DrawType::All | DrawType::ScrollDown | DrawType::ScrollUp => self.set_draw_regions(&highlighter, &cfg),
+            DrawType::Target | DrawType::After | DrawType::All | DrawType::ScrollDown | DrawType::ScrollUp => self.set_draw_regions(),
             DrawType::Not => {}
         }
     }
-    fn set_draw_regions(&mut self, highlighter: &Highlighter, cfg: &Cfg) {
+    fn set_draw_regions(&mut self) {
+        let cfg = CFG.get().unwrap().try_lock().unwrap();
         let sel_ranges = self.sel.get_range();
 
         for y in self.draw.sy..=self.draw.ey {
             let row_vec = self.buf.char_vec_line(y);
             if self.file.is_enable_syntax_highlight {
-                self.set_regions_highlight(&cfg, y, row_vec, sel_ranges, &highlighter);
+                self.set_regions_highlight(&cfg, y, row_vec, sel_ranges);
             } else {
                 self.set_regions(&cfg, y, row_vec, sel_ranges);
             }
         }
     }
 
-    fn set_regions_highlight(&mut self, cfg: &Cfg, y: usize, row_vec: Vec<char>, sel_ranges: SelRange, highlighter: &Highlighter) {
+    fn set_regions_highlight(&mut self, cfg: &Cfg, y: usize, row_vec: Vec<char>, sel_ranges: SelRange) {
         // Log::ep_s("                  set_regions_highlight");
+
+        let highlighter = Highlighter::new(&cfg.syntax.theme);
+
         let mut cells: Vec<Cell> = vec![];
         let row = row_vec.iter().collect::<String>();
 

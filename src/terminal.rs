@@ -245,7 +245,7 @@ impl Terminal {
         return args;
     }
 
-    pub fn activate(args: &Args, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
+    pub fn activate(args: &Args, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
         // grep_result
 
         editor.file.ext = args.ext.clone();
@@ -264,7 +264,7 @@ impl Terminal {
                 prom.is_grep_stdout = true;
                 prom.is_grep_stderr = true;
 
-                prom.grep_result();
+                prom.grep_result(editor, mbar, help, sbar);
                 editor.set_cur_default();
                 editor.scroll();
                 editor.scroll_horizontal();

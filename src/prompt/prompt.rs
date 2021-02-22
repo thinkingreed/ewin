@@ -1,5 +1,5 @@
 use crate::{def::*, log::*, prompt::promptcont::promptcont::*, util::*};
-use crossterm::{cursor::*, terminal::*};
+use crossterm::{cursor::*, terminal::ClearType::*, terminal::*};
 use std::{
     fmt,
     io::{stdout, BufWriter, Write},
@@ -12,7 +12,7 @@ pub struct Prompt {
     pub cont_1: PromptCont,
     pub cont_2: PromptCont,
     pub cont_3: PromptCont,
-    pub buf_posi: PromptBufPosi,
+    pub buf_posi: PromptContPosi,
     pub tab_comp: TabComp,
     // cache
     pub cache_search_filenm: String,
@@ -48,7 +48,7 @@ impl Default for Prompt {
             cont_1: PromptCont::default(),
             cont_2: PromptCont::default(),
             cont_3: PromptCont::default(),
-            buf_posi: PromptBufPosi::First,
+            buf_posi: PromptContPosi::First,
             tab_comp: TabComp::default(),
             cache_search_filenm: String::new(),
             cache_search_folder: String::new(),
@@ -99,7 +99,7 @@ impl Prompt {
         self.cont_1 = PromptCont::default();
         self.cont_2 = PromptCont::default();
         self.cont_3 = PromptCont::default();
-        self.buf_posi = PromptBufPosi::First;
+        self.buf_posi = PromptContPosi::First;
         self.is_close_confirm = false;
         self.is_save_new_file = false;
         self.is_search = false;
@@ -112,75 +112,52 @@ impl Prompt {
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         Log::ep_s("　　　　　　　　Prompt draw");
+
         if self.cont_1.guide.len() > 0 {
-            let cont_desc = format!("{}{}{}", MoveTo(0, (self.disp_row_posi - 1) as u16), Clear(ClearType::CurrentLine), self.cont_1.guide.clone());
-            str_vec.push(cont_desc);
+            Prompt::set_draw_vec(str_vec, self.cont_1.guide_row_posi, &self.cont_1.guide);
+            Prompt::set_draw_vec(str_vec, self.cont_1.key_desc_row_posi, &self.cont_1.key_desc);
 
-            let key_desc = format!("{}{}{}", MoveTo(0, (self.disp_row_posi) as u16), Clear(ClearType::CurrentLine), self.cont_1.key_desc.clone());
-            str_vec.push(key_desc);
-
-            let mut idx = 0;
-            if self.is_search {
+            if self.is_save_new_file || self.is_move_line {
+                Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
+            } else if self.is_search {
                 let opt_1 = &self.cont_1.opt_1;
                 let opt_2 = &self.cont_1.opt_2;
                 let opt_str = format!("{}{}  {}{}", opt_1.key, opt_1.get_check_str(), opt_2.key, opt_2.get_check_str());
-                idx += 1;
-                let str = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), opt_str);
-                str_vec.push(str);
-                idx += 1;
-                let buf = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_1.ctl_select_color());
-                str_vec.push(buf);
-            }
-
-            if self.is_save_new_file || self.is_move_line {
-                idx += 1;
-                let buf = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_1.ctl_select_color());
-                str_vec.push(buf);
+                Prompt::set_draw_vec(str_vec, self.cont_1.opt_row_posi, &opt_str);
+                Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
             }
             if self.is_replace || self.is_grep {
                 let opt_1 = &self.cont_1.opt_1;
                 let opt_2 = &self.cont_1.opt_2;
                 let opt_str = format!("{}{}  {}{}", opt_1.key, opt_1.get_check_str(), opt_2.key, opt_2.get_check_str());
-                idx += 1;
-                let str = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), opt_str);
-                str_vec.push(str);
-                idx += 1;
-                let buf_desc_1 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_1.buf_desc.clone());
-                str_vec.push(buf_desc_1);
-                idx += 1;
-                let buf_1 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_1.ctl_select_color());
-                str_vec.push(buf_1);
-                idx += 1;
-                let buf_desc_2 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_2.buf_desc.clone());
-                str_vec.push(buf_desc_2);
-                idx += 1;
-                let buf_2 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_2.ctl_select_color());
-                str_vec.push(buf_2);
+                Prompt::set_draw_vec(str_vec, self.cont_1.opt_row_posi, &opt_str);
+                Prompt::set_draw_vec(str_vec, self.cont_1.buf_desc_row_posi, &self.cont_1.buf_desc.clone());
+                Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
+                Prompt::set_draw_vec(str_vec, self.cont_2.buf_desc_row_posi, &self.cont_2.buf_desc);
+                Prompt::set_draw_vec(str_vec, self.cont_2.buf_row_posi, &self.cont_2.get_draw_buf_str());
+
                 if self.is_grep {
-                    idx += 1;
-                    let buf_desc_3 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_3.buf_desc.clone());
-                    str_vec.push(buf_desc_3);
-                    idx += 1;
-                    let buf_3 = format!("{}{}{}", MoveTo(0, (self.disp_row_posi + idx) as u16), Clear(ClearType::CurrentLine), self.cont_3.ctl_select_color());
-                    str_vec.push(buf_3);
+                    Prompt::set_draw_vec(str_vec, self.cont_3.buf_desc_row_posi, &self.cont_3.buf_desc);
+                    Prompt::set_draw_vec(str_vec, self.cont_3.buf_row_posi, &self.cont_3.get_draw_buf_str());
                 }
             }
 
             let out = stdout();
             let mut out = BufWriter::new(out.lock());
-
             let _ = out.write(&str_vec.concat().as_bytes());
             out.flush().unwrap();
             str_vec.clear();
         }
     }
-
+    pub fn set_draw_vec(str_vec: &mut Vec<String>, posi: u16, cont: &String) {
+        str_vec.push(format!("{}{}{}", MoveTo(0, posi), Clear(CurrentLine), cont));
+    }
     pub fn draw_only<T: Write>(&mut self, out: &mut T) {
         Log::ep_s("　　　　　　　　Prompt draw_only");
         let mut v: Vec<String> = vec![];
         self.draw(&mut v);
         self.draw_cur(&mut v);
-        write!(out, "{}", v.concat()).unwrap();
+        let _ = out.write(&v.concat().as_bytes());
         out.flush().unwrap();
     }
 
@@ -193,11 +170,11 @@ impl Prompt {
 
     pub fn draw_cur(&mut self, str_vec: &mut Vec<String>) {
         if self.is_replace || self.is_grep {
-            if self.buf_posi == PromptBufPosi::First {
+            if self.buf_posi == PromptContPosi::First {
                 str_vec.push(MoveTo((self.cont_1.cur.disp_x - 1) as u16, (self.disp_row_posi + 3) as u16).to_string());
-            } else if self.buf_posi == PromptBufPosi::Second {
+            } else if self.buf_posi == PromptContPosi::Second {
                 str_vec.push(MoveTo((self.cont_2.cur.disp_x - 1) as u16, (self.disp_row_posi + 5) as u16).to_string());
-            } else if self.buf_posi == PromptBufPosi::Third {
+            } else if self.buf_posi == PromptContPosi::Third {
                 str_vec.push(MoveTo((self.cont_3.cur.disp_x - 1) as u16, (self.disp_row_posi + 7) as u16).to_string());
             }
         } else {
@@ -208,16 +185,16 @@ impl Prompt {
     pub fn cursor_down(&mut self) {
         Log::ep_s("◆　cursor_down");
         if self.is_replace {
-            if self.buf_posi == PromptBufPosi::First {
-                self.buf_posi = PromptBufPosi::Second;
+            if self.buf_posi == PromptContPosi::First {
+                self.buf_posi = PromptContPosi::Second;
                 Prompt::set_cur(&self.cont_1, &mut self.cont_2)
             }
         } else if self.is_grep {
-            if self.buf_posi == PromptBufPosi::First {
-                self.buf_posi = PromptBufPosi::Second;
+            if self.buf_posi == PromptContPosi::First {
+                self.buf_posi = PromptContPosi::Second;
                 Prompt::set_cur(&self.cont_1, &mut self.cont_2)
-            } else if self.buf_posi == PromptBufPosi::Second {
-                self.buf_posi = PromptBufPosi::Third;
+            } else if self.buf_posi == PromptContPosi::Second {
+                self.buf_posi = PromptContPosi::Third;
                 Prompt::set_cur(&self.cont_2, &mut self.cont_3)
             }
         }
@@ -227,16 +204,16 @@ impl Prompt {
         Log::ep_s("cursor_up");
 
         if self.is_replace {
-            if self.buf_posi == PromptBufPosi::Second {
-                self.buf_posi = PromptBufPosi::First;
+            if self.buf_posi == PromptContPosi::Second {
+                self.buf_posi = PromptContPosi::First;
                 Prompt::set_cur(&self.cont_2, &mut self.cont_1)
             }
         } else if self.is_grep {
-            if self.buf_posi == PromptBufPosi::Second {
-                self.buf_posi = PromptBufPosi::First;
+            if self.buf_posi == PromptContPosi::Second {
+                self.buf_posi = PromptContPosi::First;
                 Prompt::set_cur(&self.cont_2, &mut self.cont_1)
-            } else if self.buf_posi == PromptBufPosi::Third {
-                self.buf_posi = PromptBufPosi::Second;
+            } else if self.buf_posi == PromptContPosi::Third {
+                self.buf_posi = PromptContPosi::Second;
                 Prompt::set_cur(&self.cont_3, &mut self.cont_2)
             }
         }
@@ -256,5 +233,20 @@ impl Prompt {
         self.cont_1.sel.clear();
         self.cont_2.sel.clear();
         self.cont_3.sel.clear();
+    }
+
+    pub fn ctrl_mouse<T: Write>(&mut self, x: u16, y: u16, is_mouse_left_down: bool, out: &mut T) {
+        Log::ep_s("　　　　　　　  PromptCont.ctrl_mouse");
+
+        if y == self.cont_1.buf_row_posi {
+            self.buf_posi = PromptContPosi::First;
+            self.cont_1.ctrl_mouse(x, y, is_mouse_left_down, out);
+        } else if y == self.cont_2.buf_row_posi {
+            self.buf_posi = PromptContPosi::Second;
+            self.cont_2.ctrl_mouse(x, y, is_mouse_left_down, out);
+        } else if y == self.cont_3.buf_row_posi {
+            self.buf_posi = PromptContPosi::Third;
+            self.cont_3.ctrl_mouse(x, y, is_mouse_left_down, out);
+        }
     }
 }

@@ -37,23 +37,23 @@ impl EvtAct {
                         }
                         Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                             Char('w') => {
-                                if editor.close(prom) == true {
+                                if prom.close(editor, mbar, help, sbar) == true {
                                     return true;
                                 }
                             }
                             Char('s') => {
-                                editor.save(mbar, prom, sbar);
+                                editor.save(mbar, prom, help, sbar);
                             }
                             Char('c') => editor.copy(),
                             Char('x') => editor.exec_edit_proc(EvtType::Cut, ""),
                             Char('v') => editor.exec_edit_proc(EvtType::Paste, ""),
                             Char('a') => editor.all_select(),
-                            Char('f') => prom.search(),
-                            Char('r') => prom.replace(),
-                            Char('g') => prom.grep(),
+                            Char('f') => prom.search(editor, mbar, help, sbar),
+                            Char('r') => prom.replace(editor, mbar, help, sbar),
+                            Char('g') => prom.grep(editor, mbar, help, sbar),
                             Char('z') => editor.undo(mbar),
                             Char('y') => editor.redo(),
-                            Char('l') => prom.move_row(),
+                            Char('l') => prom.move_row(editor, mbar, help, sbar),
                             Home => editor.ctrl_home(),
                             End => editor.ctrl_end(),
                             _ => mbar.set_err(&LANG.unsupported_operation),

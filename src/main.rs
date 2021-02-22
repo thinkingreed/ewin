@@ -43,8 +43,7 @@ async fn main() {
         mbar.set_err(&err_str);
     }
     Terminal::set_disp_size(&mut editor, &mut mbar, &mut prom, &mut help, &mut sbar);
-    Terminal::activate(&args, &mut editor, &mut mbar, &mut prom, &mut sbar);
-    // Terminal::set_disp_size(&mut editor, &mut mbar, &mut prom, &mut help, &mut sbar);
+    Terminal::activate(&args, &mut editor, &mut mbar, &mut prom, &mut help, &mut sbar);
 
     let out = stdout();
     let mut out = BufWriter::new(out.lock());

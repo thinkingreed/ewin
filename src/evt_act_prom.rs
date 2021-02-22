@@ -1,6 +1,6 @@
-use crate::prompt::promptcont::promptcont::PromptBufPosi::*;
-use crate::{global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, terminal::*};
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent as M_Event, MouseEventKind as M_EventKind};
+use crate::prompt::promptcont::promptcont::PromptContPosi::*;
+use crate::{help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, terminal::*};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_EventKind, MouseEventKind as M_Kind};
 use std::io::Write;
 
 impl EvtAct {
@@ -30,7 +30,14 @@ impl EvtAct {
         if prom.is_save_new_file || prom.is_search || prom.is_close_confirm || prom.is_replace || prom.is_grep || prom.is_grep_result || prom.is_move_line {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                    Char('c') => {
+                    Char('w') => {
+                        Terminal::init_draw(out, editor, mbar, prom, help, sbar);
+                        return EvtActType::Next;
+                    }
+                    _ => {}
+                },
+                Key(KeyEvent { code, .. }) => match code {
+                    Esc => {
                         if prom.is_grep_result && prom.is_grep_result_cancel == false {
                             prom.is_grep_result_cancel = true;
                         } else {
@@ -40,12 +47,9 @@ impl EvtAct {
                         }
                         return EvtActType::DrawOnly;
                     }
-                    Char('w') => {
-                        Terminal::init_draw(out, editor, mbar, prom, help, sbar);
-                        return EvtActType::Next;
-                    }
                     _ => {}
                 },
+
                 _ => {}
             }
         }
@@ -141,6 +145,9 @@ impl EvtAct {
                     }
                     _ => {}
                 },
+                Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => prom.ctrl_mouse(x, y, true, out),
+                Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: _, row: _, .. }) => {}
+                Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => prom.ctrl_mouse(x, y, false, out),
                 _ => {}
             }
         }
@@ -164,17 +171,24 @@ impl EvtAct {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::ALT, code }) => match code {
                     Char('c') => {
-                        prom.cont_1.opt_1.toggle_check();
-                        CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.case_sens = prom.cont_1.opt_1.is_check).unwrap();
+                        prom.cont_1.change_opt_case_sens();
                         return EvtActType::Hold;
                     }
                     Char('r') => {
-                        prom.cont_1.opt_2.toggle_check();
-                        CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.regex = prom.cont_1.opt_2.is_check).unwrap();
+                        prom.cont_1.change_opt_regex();
                         return EvtActType::Hold;
                     }
                     _ => return EvtActType::Hold,
                 },
+                Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => {
+                    if prom.cont_1.opt_row_posi == y {
+                        if prom.cont_1.opt_1.mouse_range.0 <= x && x <= prom.cont_1.opt_1.mouse_range.1 {
+                            prom.cont_1.change_opt_case_sens();
+                        } else if prom.cont_1.opt_2.mouse_range.0 <= x && x <= prom.cont_1.opt_2.mouse_range.1 {
+                            prom.cont_1.change_opt_regex();
+                        }
+                    }
+                }
                 _ => {}
             }
         }
@@ -215,9 +229,9 @@ impl EvtAct {
         }
 
         if prom.is_save_new_file == true {
-            return EvtAct::save_new_filenm(editor, mbar, prom, sbar);
+            return EvtAct::save_new_filenm(editor, mbar, prom, help, sbar);
         } else if prom.is_close_confirm == true {
-            return EvtAct::close(editor, mbar, prom, sbar);
+            return EvtAct::close(editor, mbar, prom, help, sbar);
         } else if prom.is_search == true {
             return EvtAct::search(editor, mbar, prom);
         } else if prom.is_replace == true {

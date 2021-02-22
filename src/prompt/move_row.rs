@@ -42,10 +42,11 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn move_row(&mut self) {
+    pub fn move_row(&mut self, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
         self.is_move_line = true;
         self.disp_row_num = 3;
-        let mut cont = PromptCont::new();
+        Terminal::set_disp_size(editor, mbar, self, help, sbar);
+        let mut cont = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::First);
         cont.set_move_row();
         self.cont_1 = cont;
     }
@@ -55,7 +56,7 @@ impl PromptCont {
     pub fn set_move_row(&mut self) {
         self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), LANG.set_move_row);
         self.key_desc = format!(
-            "{}{}:{}Enter  {}{}:{}Ctrl + c{}",
+            "{}{}:{}Enter  {}{}:{}Esc{}",
             Colors::get_default_fg(),
             &LANG.move_to_specified_row,
             Colors::get_msg_highlight_fg(),
@@ -64,5 +65,9 @@ impl PromptCont {
             Colors::get_msg_highlight_fg(),
             Colors::get_default_fg(),
         );
+        let base_posi = self.disp_row_posi - 1;
+        self.guide_row_posi = base_posi;
+        self.key_desc_row_posi = base_posi + 1;
+        self.buf_row_posi = base_posi + 2;
     }
 }

@@ -6,6 +6,8 @@ impl EvtAct {
     pub fn search(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) -> EvtActType {
         Log::ep_s("Process.search");
 
+        Log::ep("editor.evt", &editor.evt);
+
         match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 F(4) => return EvtAct::exec_search_confirm(editor, mbar, prom),
@@ -79,10 +81,11 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn search(&mut self) {
+    pub fn search(&mut self, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
         self.is_search = true;
         self.disp_row_num = 4;
-        let mut cont = PromptCont::new();
+        Terminal::set_disp_size(editor, mbar, self, help, sbar);
+        let mut cont = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::First);
         cont.set_search();
         self.cont_1 = cont;
     }
@@ -92,7 +95,7 @@ impl PromptCont {
     pub fn set_search(&mut self) {
         self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), LANG.set_search);
         self.key_desc = format!(
-            "{}{}:{}F3  {}{}:{}Shift + F4  {}{}:{}Ctrl + c{}",
+            "{}{}:{}F3  {}{}:{}Shift + F4  {}{}:{}Esc{}",
             Colors::get_default_fg(),
             &LANG.search_bottom,
             Colors::get_msg_highlight_fg(),
@@ -107,5 +110,11 @@ impl PromptCont {
 
         self.set_opt_case_sens();
         self.set_opt_regex();
+
+        let base_posi = self.disp_row_posi - 1;
+        self.guide_row_posi = base_posi;
+        self.key_desc_row_posi = base_posi + 1;
+        self.opt_row_posi = base_posi + 2;
+        self.buf_row_posi = base_posi + 3;
     }
 }

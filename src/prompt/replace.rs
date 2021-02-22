@@ -1,4 +1,4 @@
-use crate::{colors::*, global::*, log::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*};
+use crate::{colors::*, global::*, help::Help, log::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*, statusbar::StatusBar, terminal::Terminal};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 
 impl EvtAct {
@@ -36,24 +36,27 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn replace(&mut self) {
+    pub fn replace(&mut self, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
         self.is_replace = true;
         self.disp_row_num = 7;
-        let mut cont_1 = PromptCont::new();
-        let mut cont_2 = PromptCont::new();
-        cont_1.set_replace(PromptBufPosi::First);
-        cont_2.set_replace(PromptBufPosi::Second);
+        Terminal::set_disp_size(editor, mbar, self, help, sbar);
+        let mut cont_1 = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::First);
+        let mut cont_2 = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::Second);
+        cont_1.set_replace();
+        cont_2.set_replace();
         self.cont_1 = cont_1;
         self.cont_2 = cont_2;
     }
 }
 
 impl PromptCont {
-    pub fn set_replace(&mut self, cont_type: PromptBufPosi) {
-        if cont_type == PromptBufPosi::First {
+    pub fn set_replace(&mut self) {
+        let base_posi = self.disp_row_posi - 1;
+
+        if self.prompt_cont_posi == PromptContPosi::First {
             self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.set_replace);
             self.key_desc = format!(
-                "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Ctrl + c",
+                "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Esc",
                 Colors::get_default_fg(),
                 &LANG.all_replace,
                 Colors::get_msg_highlight_fg(),
@@ -65,8 +68,17 @@ impl PromptCont {
                 Colors::get_msg_highlight_fg(),
             );
             self.buf_desc = format!("{}{}", Colors::get_default_fg(), &LANG.search_str,);
+
+            self.guide_row_posi = base_posi;
+            self.key_desc_row_posi = base_posi + 1;
+            self.opt_row_posi = base_posi + 2;
+            self.buf_desc_row_posi = base_posi + 3;
+            self.buf_row_posi = base_posi + 4;
         } else {
             self.buf_desc = format!("{}{}", Colors::get_default_fg(), &LANG.replace_char,);
+
+            self.buf_desc_row_posi = base_posi + 5;
+            self.buf_row_posi = base_posi + 6;
         }
         self.set_opt_case_sens();
         self.set_opt_regex();
