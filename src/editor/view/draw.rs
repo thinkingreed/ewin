@@ -87,6 +87,8 @@ impl Editor {
                     } else {
                         str_vec.push(SetBackgroundColor(CrosstermColor::from(cfg.colors.editor.bg)).to_string());
                     }
+                } else {
+                    str_vec.push(SetBackgroundColor(CrosstermColor::from(cfg.colors.editor.bg)).to_string());
                 }
                 str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, 0).to_string()));
             }
