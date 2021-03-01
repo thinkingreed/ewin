@@ -1,4 +1,3 @@
-use crate::prompt::promptcont::promptcont::PromptContPosi::*;
 use crate::{help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_EventKind, MouseEventKind as M_Kind};
 use std::io::Write;
@@ -49,7 +48,6 @@ impl EvtAct {
                     }
                     _ => {}
                 },
-
                 _ => {}
             }
         }
@@ -62,36 +60,13 @@ impl EvtAct {
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                     Left | Right | BackTab | Home | End | Char(_) => {
                         match code {
-                            Right => match prom.buf_posi {
-                                First => prom.cont_1.shift_right(),
-                                Second => prom.cont_2.shift_right(),
-                                Third => prom.cont_3.shift_right(),
-                            },
-                            Left => match prom.buf_posi {
-                                First => prom.cont_1.shift_left(),
-                                Second => prom.cont_2.shift_left(),
-                                Third => prom.cont_3.shift_left(),
-                            },
-                            BackTab => {
-                                prom.tab(false);
-                                prom.clear_sels();
-                            }
-                            Home => match prom.buf_posi {
-                                First => prom.cont_1.shift_home(),
-                                Second => prom.cont_2.shift_home(),
-                                Third => prom.cont_3.shift_home(),
-                            },
-                            End => match prom.buf_posi {
-                                First => prom.cont_1.shift_end(),
-                                Second => prom.cont_2.shift_end(),
-                                Third => prom.cont_3.shift_end(),
-                            },
+                            Right => prom.shift_right(),
+                            Left => prom.shift_left(),
+                            Home => prom.shift_home(),
+                            End => prom.shift_end(),
+                            BackTab => prom.tab(false),
                             Char(c) => {
-                                match prom.buf_posi {
-                                    First => prom.cont_1.insert_char(c.to_ascii_uppercase(), prom.is_move_line, editor),
-                                    Second => prom.cont_2.insert_char(c.to_ascii_uppercase(), prom.is_move_line, editor),
-                                    Third => prom.cont_3.insert_char(c.to_ascii_uppercase(), prom.is_move_line, editor),
-                                }
+                                prom.insert_char(c.to_ascii_uppercase(), prom.is_move_line, editor);
                                 prom.clear_sels();
                             }
                             _ => {}
@@ -103,11 +78,7 @@ impl EvtAct {
                 },
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                     Char('v') => {
-                        let is_all_redrow = match prom.buf_posi {
-                            First => prom.cont_1.paste(editor, mbar),
-                            Second => prom.cont_2.paste(editor, mbar),
-                            Third => prom.cont_3.paste(editor, mbar),
-                        };
+                        let is_all_redrow = prom.paste(editor, mbar);
                         if is_all_redrow {
                             Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
                         } else {
@@ -124,19 +95,11 @@ impl EvtAct {
                 Key(KeyEvent { code, .. }) => match code {
                     Left | Right | Char(_) | Delete | Backspace | Home | End | Up | Down | Tab => {
                         match code {
-                            Left | Right | Delete | Backspace | Home | End => match prom.buf_posi {
-                                First => prom.cont_1.edit(code),
-                                Second => prom.cont_2.edit(code),
-                                Third => prom.cont_3.edit(code),
-                            },
+                            Left | Right | Delete | Backspace | Home | End => prom.operation(code),
                             Up => prom.cursor_up(),
                             Down => prom.cursor_down(),
                             Tab => prom.tab(true),
-                            Char(c) => match prom.buf_posi {
-                                First => prom.cont_1.insert_char(c, prom.is_move_line, editor),
-                                Second => prom.cont_2.insert_char(c, prom.is_move_line, editor),
-                                Third => prom.cont_3.insert_char(c, prom.is_move_line, editor),
-                            },
+                            Char(c) => prom.insert_char(c, prom.is_move_line, editor),
                             _ => {}
                         }
                         prom.clear_sels();

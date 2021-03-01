@@ -6,44 +6,49 @@ impl Editor {
             return;
         }
         let is_selected_org = self.sel.is_selected();
+        let mut ep_org = EvtProc::default();
         // selected range delete
         if self.sel.is_selected() {
             Log::ep_s("exec_edit_proc is_selected_org");
-            let mut ep = EvtProc { evt_type: EvtType::Del, ..EvtProc::default() };
+            ep_org = EvtProc { evt_type: EvtType::Del, ..EvtProc::default() };
             //.d_range.draw_type = DrawType::All;
-            ep.cur_s = Cur {
+            ep_org.cur_s = Cur {
                 y: self.sel.sy,
                 x: self.sel.sx + self.rnw,
                 disp_x: self.sel.s_disp_x,
             };
-            ep.cur_e = self.cur;
-            ep.str = self.buf.slice(self.sel.get_range());
-            ep.sel = self.sel;
+            ep_org.cur_e = self.cur;
+            ep_org.str = self.buf.slice(self.sel.get_range());
+            ep_org.sel = self.sel;
             self.del_sel_range();
             self.sel.clear();
-            ep.d_range = self.d_range;
-            self.history.regist_edit(self.evt, ep);
+            ep_org.d_range = self.d_range;
+            self.history.regist_edit(self.evt, &ep_org);
         }
 
         // not selected Del, BS, Cut or InsertChar, Paste, Enter
-        if (evt == EvtType::InsertChar || evt == EvtType::Paste || evt == EvtType::Enter) || (!is_selected_org && (evt == EvtType::Del || evt == EvtType::BS || evt == EvtType::Cut)) {
+        if (evt == EvtType::InsertChar || evt == EvtType::Paste || evt == EvtType::Enter || evt == EvtType::Cut) || (!is_selected_org && (evt == EvtType::Del || evt == EvtType::BS)) {
             let mut ep = EvtProc { evt_type: evt, ..EvtProc::default() };
 
             ep.cur_s = self.cur;
-            ep.str = str.to_string();
+            if evt == EvtType::InsertChar || evt == EvtType::Paste {
+                ep.str = str.to_string();
+            }
 
             match evt {
                 EvtType::Del => self.delete(&mut ep),
                 EvtType::BS => self.back_space(&mut ep),
                 EvtType::Enter => self.enter(),
-                EvtType::Cut => self.cut(),
+                EvtType::Cut => self.cut(ep_org.str),
                 EvtType::InsertChar => self.insert_char(str.chars().nth(0).unwrap_or(' ')),
                 EvtType::Paste => self.paste(&mut ep),
                 _ => {}
             }
-            ep.cur_e = self.cur;
-            ep.d_range = self.d_range;
-            self.history.regist_edit(self.evt, ep);
+            if evt != EvtType::Cut {
+                ep.cur_e = self.cur;
+                ep.d_range = self.d_range;
+                self.history.regist_edit(self.evt, &ep);
+            }
         }
         self.scroll();
         self.scroll_horizontal();

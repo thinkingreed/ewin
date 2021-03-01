@@ -67,7 +67,7 @@ impl Editor {
         self.set_cur_default();
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw<T: Write>(&mut self, out: &mut T) {
         Log::ep_s("draw");
 
         let mut str_vec: Vec<String> = vec![];
@@ -77,22 +77,25 @@ impl Editor {
         Log::ep("d_range", &d_range);
 
         match d_range.draw_type {
-            DrawType::Not => {}
+            DrawType::Not | DrawType::MoveCur => {}
             DrawType::None | DrawType::All => {
                 let cfg = CFG.get().unwrap().try_lock().unwrap();
-
                 if let Some(c) = cfg.syntax.theme.settings.background {
                     if is_enable_syntax_highlight(&self.file.ext) && cfg.colors.theme.theme_bg_enable {
-                        str_vec.push(SetBackgroundColor(CrosstermColor::from(Color::from(c))).to_string());
+                        str_vec.push(Colors::bg(Color::from(c)));
                     } else {
-                        str_vec.push(SetBackgroundColor(CrosstermColor::from(cfg.colors.editor.bg)).to_string());
+                        str_vec.push(Colors::bg(cfg.colors.editor.bg));
                     }
                 } else {
-                    str_vec.push(SetBackgroundColor(CrosstermColor::from(cfg.colors.editor.bg)).to_string());
+                    str_vec.push(Colors::bg(cfg.colors.editor.bg));
                 }
                 str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, 0).to_string()));
             }
             DrawType::Target => {
+                Log::ep("self.offset_y", &self.offset_y);
+                Log::ep("d_range.sy", &d_range.sy);
+                Log::ep("d_range.ey", &d_range.ey);
+
                 for i in d_range.sy - self.offset_y..=d_range.ey - self.offset_y {
                     str_vec.push(format!("{}{}", MoveTo(0, i as u16), Clear(ClearType::CurrentLine)));
                 }
@@ -147,9 +150,6 @@ impl Editor {
                 str_vec.push(NEW_LINE_CRLF.to_string());
             }
         }
-
-        let out = stdout();
-        let mut out = BufWriter::new(out.lock());
 
         let _ = out.write(&str_vec.concat().as_bytes());
         out.flush().unwrap();

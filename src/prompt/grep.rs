@@ -107,6 +107,7 @@ impl Prompt {
                 }
             }
         }
+        self.clear_sels()
     }
 
     fn get_tab_candidate(&mut self, is_asc: bool) -> String {

@@ -1,8 +1,7 @@
-use crate::{def::*, model::*};
+use crate::{def::*, global::*, model::*};
 use anyhow::Context;
 use std::io::Read;
-use std::process;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use unicode_width::UnicodeWidthChar;
 
 pub fn get_str_width(msg: &str) -> usize {
@@ -131,7 +130,7 @@ pub fn split_inclusive(target: &str, split_char: char) -> Vec<String> {
 }
 #[cfg(target_os = "linux")]
 pub fn get_env() -> Env {
-    let child = Command::new("uname").arg("-r").stdout(process::Stdio::piped()).spawn().unwrap();
+    let child = Command::new("uname").arg("-r").stdout(Stdio::piped()).spawn().unwrap();
     let mut stdout = child.stdout.context("take stdout").unwrap();
     let mut buf = String::new();
     stdout.read_to_string(&mut buf).unwrap();
@@ -145,6 +144,18 @@ pub fn get_env() -> Env {
 #[cfg(target_os = "windows")]
 pub fn get_env() -> Env {
     return Env::Windows;
+}
+
+pub fn is_powershell_enable() -> bool {
+    let mut rtn = false;
+    if *ENV == Env::WSL {
+        let result = Command::new("powershell.exe").stdout(Stdio::null()).stdin(Stdio::null()).stderr(Stdio::null()).spawn();
+        rtn = match result {
+            Ok(_) => true,
+            Err(_) => false,
+        };
+    }
+    return rtn;
 }
 
 pub fn is_line_end(c: char) -> bool {

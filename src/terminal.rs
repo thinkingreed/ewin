@@ -72,9 +72,9 @@ impl Terminal {
         let d_range = editor.d_range;
         Log::ep("d_range", &d_range);
 
-        if d_range.draw_type != DrawType::Not {
+        if !(d_range.draw_type == DrawType::Not || d_range.draw_type == DrawType::MoveCur) {
             editor.draw_cache();
-            editor.draw();
+            editor.draw(out);
         }
 
         let mut str_vec: Vec<String> = vec![];
@@ -209,7 +209,7 @@ impl Terminal {
     }
     pub fn exit() {
         disable_raw_mode().unwrap();
-        execute!(stdout(), LeaveAlternateScreen, DisableMouseCapture, ResetColor).unwrap();
+        execute!(stdout(), LeaveAlternateScreen, DisableMouseCapture, ResetColor, Show).unwrap();
     }
 
     pub fn init_args(file_path: &String) -> Args {

@@ -41,7 +41,7 @@ impl Editor {
                 self.set_draw_regions();
             }
             DrawType::Target | DrawType::After | DrawType::All | DrawType::ScrollDown | DrawType::ScrollUp => self.set_draw_regions(),
-            DrawType::Not => {}
+            DrawType::Not | DrawType::MoveCur => {}
         }
     }
     fn set_draw_regions(&mut self) {
@@ -163,7 +163,6 @@ impl Draw {
                 || (sel_range.ey == y && sel_range.sy != y && disp_x < sel_range.e_disp_x)
                 || (sel_range.sy < y && y < sel_range.ey)
             {
-                Log::ep_s("Select Select Select");
                 return CharStyleType::Select;
             }
         }

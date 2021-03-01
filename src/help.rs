@@ -98,7 +98,6 @@ impl Help {
             // 4th line
             self.set_key_bind_ex(&mut vec, KEY_SELECT, &LANG.range_select, KEY_SELECT.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (KEY_SELECT.chars().count() + 1));
             self.set_key_bind_wide(&mut vec, KEY_ALL_SELECT, &LANG.all_select);
-            // self.set_key_bind_wide(&mut vec, KEY_MOVE_ROW, &LANG.move_row);
             self.set_key_bind_wide(&mut vec, KEY_HELP, &format!("{} {}", &LANG.help, &LANG.end));
             self.key_bind_vec.push(vec.clone());
             vec.clear();

@@ -8,7 +8,7 @@ pub const NEW_LINE: char = '\n';
 pub const NEW_LINE_CR: char = '\r';
 pub const NEW_LINE_CRLF: &str = "\r\n";
 // mark to treat as char
-pub const NEW_LINE_MARK: char = '↲';
+pub const NEW_LINE_MARK: char = '↓';
 pub const EOF_MARK: char = '▚';
 pub const EOF_STR: &str = "EOF";
 pub const MULTI_CLICK_MILLISECONDS: i64 = 500;
@@ -24,6 +24,7 @@ pub const UP: Event = Key(KeyEvent { code: Up, modifiers: KeyModifiers::NONE });
 pub const PAGE_DOWN: Event = Key(KeyEvent { code: PageDown, modifiers: KeyModifiers::NONE });
 pub const DEL: Event = Key(KeyEvent { code: Delete, modifiers: KeyModifiers::NONE });
 pub const BS: Event = Key(KeyEvent { code: Backspace, modifiers: KeyModifiers::NONE });
+pub const HOME: Event = Key(KeyEvent { code: Home, modifiers: KeyModifiers::NONE });
 pub const END: Event = Key(KeyEvent { code: End, modifiers: KeyModifiers::NONE });
 pub const ENTER: Event = Key(KeyEvent { code: Enter, modifiers: KeyModifiers::NONE });
 pub const SEARCH: Event = Key(KeyEvent { code: F(3), modifiers: KeyModifiers::NONE });

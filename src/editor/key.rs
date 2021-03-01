@@ -159,14 +159,12 @@ impl Editor {
         self.cur.x = self.rnw;
         self.cur.disp_x = self.rnw + 1;
         self.scroll_horizontal();
-        self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
     }
 
     pub fn end(&mut self) {
         self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y));
         self.scroll();
         self.scroll_horizontal();
-        self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
     }
 
     pub fn page_down(&mut self) {

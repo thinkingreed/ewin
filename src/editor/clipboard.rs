@@ -9,10 +9,17 @@ use std::process::Command;
 impl Editor {
     pub fn set_clipboard(&mut self, copy_string: &str) {
         if *ENV == Env::WSL {
-            Log::ep_s("try_set_clipboard ");
-            if let Err(err) = self.try_set_clipboard(&copy_string) {
-                Log::ep("try_set_clipboard err", &err.to_string());
+            if *IS_POWERSHELL_ENABLE {
+                Log::ep_s("set_win_clipboard ");
+                if let Err(err) = self.set_win_clipboard(&copy_string) {
+                    Log::ep("set_win_clipboard err", &err.to_string());
+                    self.clipboard = copy_string.to_string();
+                }
+            } else {
+                self.clipboard = copy_string.to_string();
             }
+
+            Log::ep("self.clipboard", &self.clipboard);
         } else {
             Log::ep_s("ClipboardProvider::new() ");
             let result: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
@@ -25,7 +32,7 @@ impl Editor {
             }
         };
     }
-    fn try_set_clipboard(&mut self, copy_string: &str) -> anyhow::Result<()> {
+    fn set_win_clipboard(&mut self, copy_string: &str) -> anyhow::Result<()> {
         let mut p = Command::new("powershell.exe").arg("set-clipboard").arg("-Value").arg(copy_string).stdin(process::Stdio::piped()).spawn()?;
         {
             let mut stdin = p.stdin.take().context("take stdin")?;
@@ -37,10 +44,13 @@ impl Editor {
 
     pub fn get_clipboard(&mut self) -> anyhow::Result<String> {
         if *ENV == Env::WSL {
-            Log::ep_s("try_get_clipboard");
-            return self.try_get_clipboard();
+            if *IS_POWERSHELL_ENABLE {
+                Log::ep_s("get_win_clipboard");
+                return self.get_win_clipboard();
+            } else {
+                return Ok(self.clipboard.clone());
+            }
         } else {
-            Log::ep_s("ClipboardProvider::new() ");
             let provider: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
             match provider {
                 Ok(mut ctx) => return Ok(ctx.get_contents().unwrap_or("".to_string())),
@@ -52,7 +62,7 @@ impl Editor {
         }
     }
 
-    fn try_get_clipboard(&mut self) -> anyhow::Result<String> {
+    fn get_win_clipboard(&mut self) -> anyhow::Result<String> {
         let p = Command::new("powershell.exe").arg("get-clipboard").stdout(process::Stdio::piped()).spawn()?;
         let mut stdout = p.stdout.context("take stdout")?;
         let mut buf = String::new();

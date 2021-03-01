@@ -1,9 +1,6 @@
 use crate::{def::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, terminal::*};
-use crossterm::{
-    event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind},
-    terminal::*,
-};
-use std::{cmp::max, cmp::min, io::Write};
+use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
+use std::io::Write;
 
 impl EvtAct {
     pub fn match_event<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> bool {
@@ -31,10 +28,7 @@ impl EvtAct {
                     editor.sel_org = editor.sel;
 
                     match editor.evt {
-                        Resize(_, _) => {
-                            write!(out, "{}", Clear(ClearType::All)).unwrap();
-                            Terminal::set_disp_size(editor, mbar, prom, help, sbar);
-                        }
+                        Resize(_, _) => editor.d_range.draw_type = DrawType::All,
                         Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                             Char('w') => {
                                 if prom.close(editor, mbar, help, sbar) == true {
@@ -92,7 +86,7 @@ impl EvtAct {
                         Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => editor.cur_up(),
                         Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => editor.cur_down(),
                         Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, true),
-                        Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: _, row: _, .. }) => {}
+                        Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: _, row: _, .. }) => return false,
                         Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, false),
                         _ => mbar.set_err(&LANG.unsupported_operation),
                     }
@@ -128,7 +122,7 @@ impl EvtAct {
     pub fn init(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) {
         Log::ep_s("init");
 
-        // updown_xの初期化
+        // Initialize of updown_x
         match editor.evt {
             //  Down | Up | ShiftDown | ShiftUp
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
@@ -158,8 +152,11 @@ impl EvtAct {
             Key(KeyEvent { code, .. }) => match code {
                 Down | Up | Left | Right | Home | End => {
                     if editor.sel.is_selected() {
-                        editor.d_range.draw_type = DrawType::All;
-                    }
+                        let sel = editor.sel.get_range();
+                        editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
+                    } else {
+                        editor.d_range.draw_type = DrawType::MoveCur;
+                    };
                 }
                 F(1) => editor.d_range.draw_type = DrawType::All,
                 F(3) => {
@@ -174,6 +171,12 @@ impl EvtAct {
             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
                 if editor.sel.is_selected() {
                     editor.d_range.draw_type = DrawType::Target;
+                }
+            }
+            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {
+                if editor.sel.is_selected() {
+                    let sel = editor.sel.get_range();
+                    editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
                 }
             }
             _ => editor.d_range.draw_type = DrawType::Not,
@@ -239,11 +242,17 @@ impl EvtAct {
                 F(3) => {}
                 _ => editor.sel.clear(),
             },
-            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) => editor.d_range = DRange::new(min(editor.cur.y, editor.sel_org.sy), max(editor.cur.y, editor.sel_org.ey), DrawType::Target),
-            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) | Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) => {
+                Log::ep("editor.sel_org", &editor.sel_org);
+                if editor.sel_org.is_selected() {
+                    let sel_org = editor.sel_org.get_range();
+                    editor.d_range = DRange::new(sel_org.sy, sel_org.ey, DrawType::Target);
+                }
+            }
+            Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
                 if editor.sel.is_selected() {
-                    let sel = editor.sel.get_range();
-                    editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
+                    let sy = editor.sel.get_diff_y_mouse_drag(editor.sel_org, editor.cur.y);
+                    editor.d_range = DRange::new(sy, sy + 1, DrawType::Target);
                 }
             }
             _ => editor.sel.clear(),
@@ -285,7 +294,6 @@ impl EvtAct {
                         mbar.set_err(&LANG.no_value_in_clipboard.to_string());
                         return true;
                     }
-                    editor.clipboard = clipboard;
                 }
                 _ => {}
             },

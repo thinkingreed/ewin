@@ -9,7 +9,6 @@ use std::{
     ffi::OsStr,
     io::{stdout, BufWriter, Write},
     panic,
-    path::Path,
 };
 use tokio_util::codec::{FramedRead, LinesCodec};
 

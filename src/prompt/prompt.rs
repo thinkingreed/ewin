@@ -1,5 +1,6 @@
-use crate::{def::*, log::*, prompt::promptcont::promptcont::*, util::*};
-use crossterm::{cursor::*, terminal::ClearType::*, terminal::*};
+use crate::{def::*, log::*, model::Editor, msgbar::MsgBar, prompt::promptcont::promptcont::PromptContPosi::*, prompt::promptcont::promptcont::*, util::*};
+use crossterm::{cursor::*, event::*, terminal::ClearType::*, terminal::*};
+
 use std::{
     fmt,
     io::{stdout, BufWriter, Write},
@@ -169,17 +170,19 @@ impl Prompt {
     }
 
     pub fn draw_cur(&mut self, str_vec: &mut Vec<String>) {
-        if self.is_replace || self.is_grep {
-            if self.buf_posi == PromptContPosi::First {
-                str_vec.push(MoveTo((self.cont_1.cur.disp_x - 1) as u16, (self.disp_row_posi + 3) as u16).to_string());
-            } else if self.buf_posi == PromptContPosi::Second {
-                str_vec.push(MoveTo((self.cont_2.cur.disp_x - 1) as u16, (self.disp_row_posi + 5) as u16).to_string());
-            } else if self.buf_posi == PromptContPosi::Third {
-                str_vec.push(MoveTo((self.cont_3.cur.disp_x - 1) as u16, (self.disp_row_posi + 7) as u16).to_string());
-            }
-        } else {
-            str_vec.push(MoveTo((self.cont_1.cur.disp_x - 1) as u16, (self.disp_row_posi + self.disp_row_num - 2) as u16).to_string());
+        let mut x = 0;
+        let mut y = 0;
+        if self.buf_posi == PromptContPosi::First {
+            x = self.cont_1.cur.disp_x - 1;
+            y = self.cont_1.buf_row_posi;
+        } else if self.buf_posi == PromptContPosi::Second {
+            x = self.cont_2.cur.disp_x - 1;
+            y = self.cont_2.buf_row_posi;
+        } else if self.buf_posi == PromptContPosi::Third {
+            x = self.cont_3.cur.disp_x - 1;
+            y = self.cont_3.buf_row_posi;
         }
+        str_vec.push(MoveTo(x as u16, y as u16).to_string());
     }
 
     pub fn cursor_down(&mut self) {
@@ -221,10 +224,7 @@ impl Prompt {
 
     pub fn set_cur(cont_org: &PromptCont, cont: &mut PromptCont) {
         cont.updown_x = cont_org.cur.disp_x;
-        Log::ep("cont.updown_x", &cont.updown_x);
         let (cur_x, width) = get_until_updown_x(&cont.buf, cont.updown_x);
-        Log::ep("cur_x", &cur_x);
-        Log::ep("width", &width);
         cont.cur.x = cur_x;
         cont.cur.disp_x = width;
     }
@@ -247,6 +247,57 @@ impl Prompt {
         } else if y == self.cont_3.buf_row_posi {
             self.buf_posi = PromptContPosi::Third;
             self.cont_3.ctrl_mouse(x, y, is_mouse_left_down, out);
+        }
+    }
+
+    pub fn shift_right(&mut self) {
+        match &self.buf_posi {
+            First => self.cont_1.shift_right(),
+            Second => self.cont_2.shift_right(),
+            Third => self.cont_3.shift_right(),
+        }
+    }
+    pub fn shift_left(&mut self) {
+        match &self.buf_posi {
+            First => self.cont_1.shift_left(),
+            Second => self.cont_2.shift_left(),
+            Third => self.cont_3.shift_left(),
+        }
+    }
+    pub fn shift_home(&mut self) {
+        match &self.buf_posi {
+            First => self.cont_1.shift_home(),
+            Second => self.cont_2.shift_home(),
+            Third => self.cont_3.shift_home(),
+        }
+    }
+    pub fn shift_end(&mut self) {
+        match &self.buf_posi {
+            First => self.cont_1.shift_end(),
+            Second => self.cont_2.shift_end(),
+            Third => self.cont_3.shift_end(),
+        }
+    }
+    pub fn insert_char(&mut self, c: char, is_move_line: bool, editor: &mut Editor) {
+        match self.buf_posi {
+            First => self.cont_1.insert_char(c, is_move_line, editor),
+            Second => self.cont_2.insert_char(c, is_move_line, editor),
+            Third => self.cont_3.insert_char(c, is_move_line, editor),
+        }
+    }
+    pub fn paste(&mut self, editor: &mut Editor, mbar: &mut MsgBar) -> bool {
+        match &self.buf_posi {
+            First => self.cont_1.paste(editor, mbar),
+            Second => self.cont_2.paste(editor, mbar),
+            Third => self.cont_3.paste(editor, mbar),
+        }
+    }
+
+    pub fn operation(&mut self, code: KeyCode) {
+        match &self.buf_posi {
+            First => self.cont_1.operation(code),
+            Second => self.cont_2.operation(code),
+            Third => self.cont_3.operation(code),
         }
     }
 }

@@ -160,7 +160,7 @@ impl Prompt {
 impl PromptCont {
     pub fn set_grep_result(&mut self) {
         self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.long_time_to_search);
-        self.key_desc = format!("{}{}:{}Ctrl + c", Colors::get_default_fg(), &LANG.cancel, Colors::get_msg_highlight_fg(),);
+        self.key_desc = format!("{}{}:{}Esc", Colors::get_default_fg(), &LANG.cancel, Colors::get_msg_highlight_fg(),);
 
         let base_posi = self.disp_row_posi - 1;
         self.guide_row_posi = base_posi;

@@ -24,12 +24,10 @@ impl PromptCont {
 
     pub fn shift_home(&mut self) {
         Log::ep_s("　　　　　　　　shift_home");
-
         self.shift_move_com(EvtType::ShiftHome);
     }
     pub fn shift_end(&mut self) {
         Log::ep_s("　　　　　　　  shift_end");
-
         self.shift_move_com(EvtType::ShiftEnd);
     }
 

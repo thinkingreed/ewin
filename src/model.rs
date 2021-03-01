@@ -303,6 +303,25 @@ impl SelRange {
         }
         return true;
     }
+    pub fn get_diff_y_mouse_drag(&mut self, sel_org: SelRange, cur_y: usize) -> usize {
+        let sel = self.get_range();
+        let sel_org = sel_org.get_range();
+
+        if sel.sy < sel_org.sy {
+            return sel.sy;
+        } else if sel.sy > sel_org.sy {
+            return sel.sy - 1;
+        } else if sel.ey > sel_org.ey {
+            return sel.ey - 1;
+        } else if sel.ey < sel_org.ey {
+            return sel.ey;
+        } else if sel.sy == cur_y {
+            return sel.sy;
+        //sel.ey == cur_y
+        } else {
+            return sel.ey - 1;
+        }
+    }
 }
 
 impl fmt::Display for SelRange {
@@ -354,6 +373,7 @@ pub struct Editor {
     pub sel: SelRange,
     pub sel_org: SelRange,
     pub evt: Event,
+    // Clipboard on memory
     pub clipboard: String,
     /// number displayed on the terminal
     pub disp_row_num: usize,
@@ -539,6 +559,7 @@ pub enum DrawType {
     All,
     ScrollDown,
     ScrollUp,
+    MoveCur,
     Not,
 }
 
@@ -551,6 +572,7 @@ impl fmt::Display for DrawType {
             DrawType::All => write!(f, "All"),
             DrawType::ScrollDown => write!(f, "ScrollDown"),
             DrawType::ScrollUp => write!(f, "ScrollUp"),
+            DrawType::MoveCur => write!(f, "MoveCur"),
             DrawType::Not => write!(f, "Not"),
         }
     }

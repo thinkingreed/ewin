@@ -67,7 +67,7 @@ impl PromptCont {
         self.cur.disp_x = 1;
     }
 
-    pub fn edit(&mut self, key: KeyCode) {
+    pub fn operation(&mut self, key: KeyCode) {
         match key {
             KeyCode::Left => self.cur_left(),
             KeyCode::Right => self.cur_right(),

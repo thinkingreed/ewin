@@ -3,7 +3,7 @@ use chrono::prelude::Local;
 use crossterm::event::Event;
 
 impl History {
-    pub fn regist_edit(&mut self, evt: Event, ep: EvtProc) {
+    pub fn regist_edit(&mut self, evt: Event, ep: &EvtProc) {
         Log::ep_s("　　　　　　　History.regist ");
         Log::ep("ep ", &ep);
 

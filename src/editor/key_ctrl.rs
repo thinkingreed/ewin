@@ -11,9 +11,11 @@ impl Editor {
         self.d_range.draw_type = DrawType::All;
     }
 
-    pub fn cut(&mut self) {
+    pub fn cut(&mut self, cut_str: String) {
         Log::ep_s("　　　　　　　  cut");
-        self.copy();
+        // self.sel = ep.sel.clone();
+        self.copy_str(cut_str.clone());
+        // self.sel.clear();
         self.d_range.draw_type = DrawType::All;
     }
 
@@ -49,25 +51,34 @@ impl Editor {
         return false;
     }
 
+    pub fn copy_str(&mut self, str: String) {
+        Log::ep("copy str", &str);
+
+        let copy_string = if *ENV == Env::WSL && *IS_POWERSHELL_ENABLE { self.get_wsl_str(&str) } else { str };
+
+        /*
+        let mut copy_string;
+        if *ENV == Env::WSL && *IS_POWERSHELL_ENABLE {
+            copy_string = self.get_wsl_str(&str);
+        } else {
+            copy_string = str;
+        } */
+
+        self.set_clipboard(&copy_string);
+    }
+
     pub fn copy(&mut self) {
         Log::ep_s("　　　　　　　  copy");
 
-        let mut str = self.buf.slice(self.sel.get_range());
-
-        Log::ep("str", &str);
-
-        let copy_string = match *ENV {
-            Env::WSL => self.get_wsl_str(&mut str),
-            _ => str,
-        };
-        self.set_clipboard(&copy_string);
+        let str = self.buf.slice(self.sel.get_range());
+        self.copy_str(str)
     }
 
     // WSL:powershell.clipboard
     // enclose the string in "’ "
     // new line are ","
     // Empty line is an empty string
-    fn get_wsl_str(&mut self, str: &mut String) -> String {
+    fn get_wsl_str(&mut self, str: &String) -> String {
         let mut copy_str: String = String::new();
         let str = str.replace(NEW_LINE_CRLF, &NEW_LINE.to_string());
         let vec = Vec::from_iter(str.split(NEW_LINE).map(String::from));
@@ -87,7 +98,7 @@ impl Editor {
         self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::After);
         Log::ep("clipboard str", &self.clipboard);
         if self.evt == PASTE {
-            ep.str = self.clipboard.clone();
+            ep.str = self.get_clipboard().unwrap_or("".to_string());
         }
         ep.sel.set_s(self.cur.y, self.cur.x - self.rnw, self.cur.disp_x);
         self.insert_str(&ep.str);
@@ -263,18 +274,10 @@ impl Editor {
             }
             let row = self.buf.len_lines() - 2;
 
-            let mut start_idx = 0;
-            let mut end_idx = 0;
-            let mut ignore_prefix_len = 0;
-            if regex {
-                start_idx = self.buf.line_to_byte(row);
-                end_idx = self.buf.len_bytes();
-                ignore_prefix_len = ignore_prefix_str.len();
-            } else {
-                start_idx = self.buf.line_to_char(row);
-                end_idx = self.buf.len_chars();
-                ignore_prefix_len = ignore_prefix_str.chars().count();
-            }
+            let (start_idx, end_idx, ignore_prefix_len) = match regex {
+                true => (self.buf.line_to_byte(row), self.buf.len_bytes(), ignore_prefix_str.len()),
+                false => (self.buf.line_to_char(row), self.buf.len_chars(), ignore_prefix_str.chars().count()),
+            };
 
             Log::ep("ignore_prefix_str", &ignore_prefix_str);
             Log::ep("start_idx", &start_idx);

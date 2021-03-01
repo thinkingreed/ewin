@@ -22,6 +22,7 @@ impl Editor {
                 }
             }
         }
+        Log::ep("self.offset_y", &self.offset_y);
     }
     // move to row
     pub fn scroll_move_row(&mut self) {
@@ -171,7 +172,7 @@ impl Editor {
     }
     pub fn set_draw_range(&mut self, curt_y_org: usize, offset_y_org: usize, offset_x_org: usize, rnw_org: usize) {
         Log::ep_s("set_draw_range");
-        Log::ep("self.d_range.draw_type", &self.d_range.draw_type);
+        Log::ep("self.d_range", &self.d_range);
 
         if (self.offset_x > 0 && curt_y_org != self.cur.y) || offset_x_org != self.offset_x {
             self.d_range = DRange::new(min(curt_y_org, self.cur.y), max(curt_y_org, self.cur.y), DrawType::Target);
@@ -191,7 +192,7 @@ impl Editor {
                 _ => self.d_range.draw_type = DrawType::All,
             }
         }
-        Log::ep("self.d_range.draw_type", &self.d_range.draw_type);
+        Log::ep("self.d_range", &self.d_range);
     }
 
     pub fn set_draw_range_scroll(&mut self, y: usize, draw_type: DrawType) {
