@@ -196,6 +196,73 @@ err_foreground = "#ff0000"
    The cursor moves to the character in the search result.
 ![grep_result_move_file](assets/img/grep_result_move_file.png "grep_result_move_file")
 
+## Settings when using via Tera Term
+- **Please change the keyboard setting screen opened from 「Settings」>「Keyboard」 as follows**  
+1. BackSpace key  
+   Check 「BackSpace key」
+2. Delete key  
+   Uncheck「Delete key」
+3. Alt key  
+   Select "on"「Meta key」 
+
+- **After backing up KEYBOARD.CNF in the installation directory, make the following changes**  
+1. Comment out for Shift + F3・F4  
+```
+   ;Shift + F3 key  
+   ;F13=573  
+   ;Shift + F4 key  
+   ;F14=574  
+```
+2. Comment out for Ctrl + Home・End    
+```
+   ; Ctrl + Home  
+   ;BuffTop=1351  
+   ; Ctrl + End  
+   ;BuffBottom=1359   
+```
+3. Edit for Ctrl + c・v    
+```
+   ; Ctrl + Insert  
+   EditCopy=1362  
+   ; Shift + Insert  
+   EditPaste=850
+
+        ↓↓↓  
+   
+   ; Ctrl + Insert  
+   EditCopy=off  
+   EditCopy=1070  
+   ; Shift + Insert  
+   EditPaste=off  
+   EditPaste=1071   
+```
+4. Add for Shift + Up・Down・Right・Left・Home・End・F1..F4    
+```
+   [User keys]
+   ; PC special keys: Shift- Up, Down, Right, Left, Home, End, F1..F4 
+   User1=840,0,$1B[2A
+   User2=848,0,$1B[2B
+   User3=845,0,$1B[2C
+   User4=843,0,$1B[2D
+   User5=839,0,$1B[2H
+   User6=847,0,$1B[2F
+   User7=571,0,$1B[2P
+   User8=572,0,$1B[2Q
+   User9=573,0,$1B[2R
+   User10=574,0,$1B[2S
+
+   ; PC special keys: Ctrl- Home, End
+   User11=1351,0,$1B[5H
+   User12=1359,0,$1B[5F
+```
+
+
+
+
+
+
+
+
 ## Future Works
 
 - Making various settings into a configuration file
