@@ -1,11 +1,12 @@
 use crate::{
+    bar::headerbar::*,
+    bar::msgbar::*,
+    bar::statusbar::*,
     global::*,
     help::{Help, HelpMode},
     log::*,
     model::*,
-    msgbar::*,
     prompt::prompt::*,
-    statusbar::*,
 };
 use crossterm::{
     cursor::*,
@@ -77,6 +78,9 @@ impl Terminal {
             editor.draw(out);
         }
 
+        let mut hbar = HeaderBar::new(editor.disp_col_num);
+        hbar.draw(out);
+
         let mut str_vec: Vec<String> = vec![];
 
         help.draw(&mut str_vec);
@@ -106,7 +110,7 @@ impl Terminal {
             Log::ep("cur.y", &editor.cur.y);
             Log::ep("offset_y", &editor.offset_y);
             */
-            str_vec.push(MoveTo((editor.cur.disp_x - 1 - editor.offset_disp_x) as u16, (editor.cur.y - editor.offset_y) as u16).to_string());
+            str_vec.push(MoveTo((editor.cur.disp_x - 1 - editor.offset_disp_x) as u16, (editor.cur.y - editor.offset_y + editor.disp_row_posi) as u16).to_string());
         }
     }
 
@@ -148,10 +152,11 @@ impl Terminal {
         mbar.disp_readonly_row_posi = rows - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
 
         editor.disp_col_num = cols;
-        editor.disp_row_num = rows - mbar.disp_readonly_row_num - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
+        let headerbar_row_num = 1;
+        editor.disp_row_num = rows - headerbar_row_num - mbar.disp_readonly_row_num - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
 
+        Log::ep("editor.disp_row_num", &editor.disp_row_num);
         /*
-           Log::ep("editor.disp_row_num", &editor.disp_row_num);
            Log::ep("mbar.disp_keyrecord_row_num", &mbar.disp_keyrecord_row_num);
            Log::ep("mbar.disp_readonly_row_num", &mbar.disp_readonly_row_num);
            Log::ep("mbar.disp_row_num", &mbar.disp_row_num);
@@ -168,7 +173,6 @@ impl Terminal {
         editor.d_range.draw_type = DrawType::All;
         Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
     }
-
     pub fn show_cur() {
         execute!(stdout(), Show).unwrap();
     }

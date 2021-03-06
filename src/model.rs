@@ -288,8 +288,8 @@ impl SelRange {
             self.clear();
         }
     }
-    pub fn set_sel_posi(&mut self, is_s: bool, y: usize, x: usize, disp_x: usize) {
-        if is_s {
+    pub fn set_sel_posi(&mut self, is_start: bool, y: usize, x: usize, disp_x: usize) {
+        if is_start {
             if !self.is_selected() {
                 self.set_s(y, x, disp_x);
             }
@@ -377,6 +377,7 @@ pub struct Editor {
     pub clipboard: String,
     /// number displayed on the terminal
     pub disp_row_num: usize,
+    pub disp_row_posi: usize,
     pub disp_col_num: usize,
     pub search: Search,
     pub draw: Draw,
@@ -406,6 +407,7 @@ impl Editor {
             clipboard: String::new(),
             // for UT set
             disp_row_num: 5,
+            disp_row_posi: 1,
             disp_col_num: 5,
             search: Search::default(),
             draw: Draw::default(),

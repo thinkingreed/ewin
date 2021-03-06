@@ -1,6 +1,6 @@
 pub mod global {
     use crate::{
-        cfg::{cfg::*, lang_cfg::*},
+        _cfg::{cfg::*, lang_cfg::*},
         model::*,
         util::*,
     };
@@ -16,6 +16,11 @@ pub mod global {
 pub mod colors;
 pub mod def;
 pub mod evt_act_prom;
+pub mod bar {
+    pub mod headerbar;
+    pub mod msgbar;
+    pub mod statusbar;
+}
 pub mod editor {
     pub mod view {
         pub mod buf_cache;
@@ -32,6 +37,7 @@ pub mod editor {
     pub mod key_shift;
     pub mod mouse;
 }
+
 pub mod model;
 pub mod prompt {
     pub mod promptcont {
@@ -52,11 +58,9 @@ pub mod prompt {
 pub mod evt_act;
 pub mod help;
 pub mod log;
-pub mod msgbar;
-pub mod statusbar;
 pub mod terminal;
 pub mod util;
-pub mod cfg {
+pub mod _cfg {
     pub mod cfg;
     pub mod lang;
     pub mod lang_cfg;

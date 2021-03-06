@@ -1,4 +1,4 @@
-use crate::{colors::*, def::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*, statusbar::*, terminal::*, util::*};
+use crate::{bar::msgbar::*, bar::statusbar::*, colors::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::{env, fs, path::Path};
 

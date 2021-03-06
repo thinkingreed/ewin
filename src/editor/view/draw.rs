@@ -1,4 +1,4 @@
-use crate::{colors::*, def::*, global::*, log::*, model::*, msgbar::*, terminal::*, util::*};
+use crate::{bar::msgbar::*, colors::*, def::*, global::*, log::*, model::*, terminal::*, util::*};
 use crossterm::{
     cursor::*,
     style::{Color as CrosstermColor, SetBackgroundColor},
@@ -89,8 +89,9 @@ impl Editor {
                 } else {
                     str_vec.push(Colors::bg(cfg.colors.editor.bg));
                 }
-                str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, 0).to_string()));
+                str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, 1).to_string()));
             }
+
             DrawType::Target => {
                 Log::ep("self.offset_y", &self.offset_y);
                 Log::ep("d_range.sy", &d_range.sy);
@@ -102,8 +103,8 @@ impl Editor {
                 str_vec.push(format!("{}", MoveTo(0, (d_range.sy - self.offset_y) as u16)));
             }
             DrawType::After => str_vec.push(format!("{}{}", MoveTo(0, (d_range.sy - self.offset_y) as u16), Clear(ClearType::FromCursorDown))),
-            DrawType::ScrollDown => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.disp_row_num - 1) as u16), Clear(ClearType::CurrentLine))),
-            DrawType::ScrollUp => str_vec.push(format!("{}{}", ScrollDown(1), MoveTo(0, 0))),
+            DrawType::ScrollDown => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, self.disp_row_num as u16), Clear(ClearType::CurrentLine))),
+            DrawType::ScrollUp => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, self.disp_row_posi as u16), Clear(ClearType::CurrentLine))),
         }
 
         for i in self.draw.sy..=self.draw.ey {
@@ -153,8 +154,6 @@ impl Editor {
 
         let _ = out.write(&str_vec.concat().as_bytes());
         out.flush().unwrap();
-
-        str_vec.clear();
 
         self.d_range.clear();
         self.sel_org.clear();

@@ -1,4 +1,4 @@
-use crate::{cfg::cfg::CfgSearch, def::*, global::*, log::*, model::*};
+use crate::{_cfg::cfg::CfgSearch, def::*, global::*, log::*, model::*};
 use anyhow::Result;
 use regex::RegexBuilder;
 use ropey::{iter::Chars, Rope, RopeSlice};

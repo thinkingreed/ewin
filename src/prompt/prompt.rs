@@ -1,4 +1,4 @@
-use crate::{def::*, log::*, model::Editor, msgbar::MsgBar, prompt::promptcont::promptcont::PromptContPosi::*, prompt::promptcont::promptcont::*, util::*};
+use crate::{bar::msgbar::MsgBar, def::*, log::*, model::Editor, prompt::promptcont::promptcont::PromptContPosi::*, prompt::promptcont::promptcont::*, util::*};
 use crossterm::{cursor::*, event::*, terminal::ClearType::*, terminal::*};
 
 use std::{

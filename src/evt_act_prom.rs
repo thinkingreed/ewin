@@ -1,4 +1,4 @@
-use crate::{help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, terminal::*};
+use crate::{bar::msgbar::*, bar::statusbar::*, help::*, log::*, model::*, prompt::prompt::*, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_EventKind, MouseEventKind as M_Kind};
 use std::io::Write;
 

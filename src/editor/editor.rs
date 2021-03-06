@@ -4,18 +4,33 @@ use std::cmp::{max, min};
 use unicode_width::UnicodeWidthChar;
 
 impl Editor {
+    const SCROLL_UP_EXTRA_NUM: usize = 1;
+    const SCROLL_DOWN_EXTRA_NUM: usize = 1;
+    const SCROLL_MOVE_EXTRA_NUM: usize = 3;
+
     // adjusting vertical posi of cursor
     pub fn scroll(&mut self) {
         Log::ep_s("　　　　　　　 scroll");
-        self.offset_y = min(self.offset_y, self.cur.y);
 
-        if self.cur.y + 1 >= self.disp_row_num {
+        if self.evt == CTRL_HOME {
+            self.offset_y = 0;
+        } else if self.evt == PAGE_UP {
+            self.offset_y = if self.offset_y >= self.disp_row_num { self.offset_y - self.disp_row_num } else { 0 };
+        } else {
+            if self.cur.y >= Editor::SCROLL_UP_EXTRA_NUM {
+                self.offset_y = min(self.offset_y, self.cur.y - Editor::SCROLL_UP_EXTRA_NUM);
+            }
+        }
+
+        if self.cur.y + Editor::SCROLL_DOWN_EXTRA_NUM >= self.disp_row_num {
             if self.evt == PAGE_DOWN {
-                if self.cur.y >= self.offset_y + self.disp_row_num {
-                    self.offset_y = self.cur.y;
-                }
+                self.offset_y = if self.buf.len_lines() - 1 > self.offset_y + self.disp_row_num * 2 {
+                    self.offset_y + self.disp_row_num
+                } else {
+                    self.buf.len_lines() - self.disp_row_num
+                };
             } else {
-                self.offset_y = max(self.offset_y, self.cur.y + 1 - self.disp_row_num);
+                self.offset_y = max(self.offset_y, self.cur.y + Editor::SCROLL_DOWN_EXTRA_NUM + 1 - self.disp_row_num);
                 // offset_y decreases
                 if self.offset_y + self.disp_row_num > self.buf.len_lines() {
                     self.offset_y = self.buf.len_lines() - self.disp_row_num;
@@ -26,20 +41,15 @@ impl Editor {
     }
     // move to row
     pub fn scroll_move_row(&mut self) {
-        let reserve_row_num = 3;
         if self.cur.y > self.offset_y + self.disp_row_num {
             // last page
             if self.buf.len_lines() - 1 - self.cur.y < self.disp_row_num {
                 self.offset_y = self.buf.len_lines() - self.disp_row_num;
             } else {
-                self.offset_y = self.cur.y - reserve_row_num;
+                self.offset_y = self.cur.y - Editor::SCROLL_MOVE_EXTRA_NUM;
             }
         } else if self.cur.y < self.offset_y {
-            if self.cur.y > reserve_row_num {
-                self.offset_y = self.cur.y - reserve_row_num;
-            } else {
-                self.offset_y = 0;
-            }
+            self.offset_y = if self.cur.y > Editor::SCROLL_MOVE_EXTRA_NUM { self.cur.y - Editor::SCROLL_MOVE_EXTRA_NUM } else { 0 };
         }
     }
 
@@ -182,11 +192,15 @@ impl Editor {
         }
         if offset_y_org != self.offset_y {
             match self.evt {
+                Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code, .. }) => match code {
+                    _ => self.d_range.draw_type = DrawType::All,
+                },
                 Key(KeyEvent { code, .. }) => match code {
                     Down => self.set_draw_range_scroll(self.offset_y + self.disp_row_num - 1, DrawType::ScrollDown),
                     Up => self.set_draw_range_scroll(self.offset_y, DrawType::ScrollUp),
                     _ => self.d_range.draw_type = DrawType::All,
                 },
+
                 Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => self.set_draw_range_scroll(self.offset_y + self.disp_row_num - 1, DrawType::ScrollDown),
                 Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => self.set_draw_range_scroll(self.offset_y, DrawType::ScrollUp),
                 _ => self.d_range.draw_type = DrawType::All,
@@ -197,5 +211,9 @@ impl Editor {
 
     pub fn set_draw_range_scroll(&mut self, y: usize, draw_type: DrawType) {
         self.d_range = DRange::new(y, y, draw_type);
+
+        if !self.sel.is_selected() {
+            self.d_range = DRange::new(y, y, draw_type);
+        }
     }
 }

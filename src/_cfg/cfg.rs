@@ -1,4 +1,4 @@
-use crate::{cfg::*, colors::*, def::*, global::*, log::*, terminal::*, util::*};
+use crate::{_cfg::*, colors::*, def::*, global::*, log::*, terminal::*, util::*};
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;

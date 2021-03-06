@@ -8,7 +8,7 @@ pub struct StatusBar {
     pub filenm_disp: String,
     pub filenm_disp_flg: bool,
     pub cur_str: String,
-    // Number displayed on the terminal
+    // Position on the terminal
     pub disp_row_num: usize,
     pub disp_row_posi: usize,
     pub disp_col_num: usize,
@@ -58,7 +58,7 @@ impl StatusBar {
 
         let sber_str = format!(
             "{}{}{}{}{}{}",
-            MoveTo(0, (self.disp_row_posi - 1) as u16),
+            MoveTo(0, (self.disp_row_posi) as u16),
             Clear(ClearType::CurrentLine),
             Colors::get_sber_bg(),
             Colors::get_sber_fg(),
@@ -77,43 +77,11 @@ impl StatusBar {
 
         str_vec.clear();
     }
-    /*
-    pub fn draw_cur(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
-        Log::ep_s("               StatusBar.draw_cur");
-        let rows = self.disp_row_posi;
-        // no display area
-        if rows == 0 {
-            return;
-        }
-        let cur_str = format!("{cur:>w$}", cur = self.get_cur_str(editor), w = self.cur_str.chars().count());
-        let all_str = format!("{}{}{}{}", Colors::get_sber_bg(), Colors::get_sber_fg(), self.filenm_disp, cur_str);
-        let sber_str = format!("{}{}{}{}", MoveTo(0, (rows - 1) as u16), Clear(ClearType::CurrentLine), all_str, Colors::get_default_fg());
 
-        str_vec.push(sber_str);
-    }
-    */
     pub fn get_cur_str(&mut self, editor: &mut Editor) -> String {
-        let mut row_vec: Vec<&str> = vec![];
-        row_vec.push(&LANG.row);
-        row_vec.push("(");
-        let row = (editor.cur.y + 1).to_string();
-        row_vec.push(&row);
-        row_vec.push("/");
-        let rows = editor.buf.len_lines().to_string();
-        row_vec.push(&rows);
-        row_vec.push(")");
-
-        let mut col_vec: Vec<&str> = vec![];
-        col_vec.push(&LANG.col);
-        col_vec.push("(");
-
-        let (cols, col) = (editor.buf.len_line_chars(editor.cur.y).to_string(), (editor.cur.x + 1 - editor.rnw).to_string());
-        col_vec.push(&col);
-        col_vec.push("/");
-        col_vec.push(&cols);
-        col_vec.push(")");
-
-        let cur_posi = format!("{rows} {cols}", rows = row_vec.concat(), cols = col_vec.concat(),);
+        let row_str = format!("{}({}/{})", &LANG.row, (editor.cur.y + 1).to_string(), editor.buf.len_lines().to_string());
+        let col_str = format!("{}({}/{})", &LANG.col, editor.buf.len_line_chars(editor.cur.y).to_string(), editor.cur.x + 1 - editor.rnw).to_string();
+        let cur_posi = format!("{rows} {cols}", rows = row_str, cols = col_str,);
         return cur_posi;
     }
 

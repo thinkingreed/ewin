@@ -3,7 +3,7 @@ use crossterm::{
     event::{Event, EventStream},
     ErrorKind,
 };
-use ewin::{cfg::cfg::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, terminal::*};
+use ewin::{_cfg::cfg::*, bar::msgbar::*, bar::statusbar::*, help::*, log::*, model::*, prompt::prompt::*, terminal::*};
 use futures::{future::FutureExt, select, StreamExt};
 use std::{
     ffi::OsStr,

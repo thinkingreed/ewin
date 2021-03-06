@@ -95,8 +95,6 @@ impl LangCfg {
         let lang_multi: LangMulti = serde_yaml::from_str(&LANG_CONFIG.to_string()).unwrap();
         let lang = env::var("LANG").unwrap_or("en_US".to_string());
 
-        return lang_multi.en;
-
         if lang.starts_with("ja_JP") {
             return lang_multi.ja;
         } else {

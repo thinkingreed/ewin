@@ -1,4 +1,4 @@
-use crate::{global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*};
+use crate::{bar::msgbar::*, bar::statusbar::*, global::*, help::*, log::*, model::*, prompt::prompt::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 
@@ -23,9 +23,8 @@ impl Editor {
             _ => {}
         }
         self.sel.set_sel_posi(false, self.cur.y, self.cur.x - self.rnw, self.cur.disp_x);
+        self.d_range.set_target(self.cur_y_org, self.cur.y);
         self.sel.check_overlap();
-
-        self.d_range.set_target(self.sel.sy, self.sel.ey);
     }
     pub fn shift_right(&mut self) {
         Log::ep_s("　　　　　　　  shift_right");

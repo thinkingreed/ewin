@@ -1,4 +1,4 @@
-use crate::{colors::*, global::*, help::Help, log::*, model::*, msgbar::*, prompt::prompt::*, prompt::promptcont::promptcont::*, statusbar::StatusBar, terminal::Terminal};
+use crate::{bar::msgbar::*, bar::statusbar::StatusBar, colors::*, global::*, help::Help, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::Terminal};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 
 impl EvtAct {

@@ -4,6 +4,7 @@ impl Editor {
     pub fn ctrl_mouse(&mut self, x: usize, y: usize, is_mouse_left_down: bool) {
         Log::ep_s("　　　　　　　  ctrl_mouse");
         if y >= self.disp_row_num || y >= self.buf.len_lines() {
+            self.d_range.draw_type = DrawType::Not;
             return;
         }
         let mut x = x;
@@ -17,6 +18,18 @@ impl Editor {
 
         self.set_mouse_sel(is_mouse_left_down);
         self.scroll_horizontal();
+        if is_mouse_left_down {
+            if self.sel_org.is_selected() {
+                let sel_org = self.sel_org.get_range();
+                self.d_range = DRange::new(sel_org.sy, sel_org.ey, DrawType::Target);
+            }
+        // Drag
+        } else {
+            if self.sel.is_selected() {
+                let sy = self.sel.get_diff_y_mouse_drag(self.sel_org, self.cur.y);
+                self.d_range = DRange::new(sy, sy + 1, DrawType::Target);
+            }
+        }
 
         Log::ep("self.history.mouse_click_vec", &self.history.mouse_click_vec);
     }

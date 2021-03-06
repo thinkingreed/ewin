@@ -254,14 +254,7 @@ err_foreground = "#ff0000"
    ; PC special keys: Ctrl- Home, End
    User11=1351,0,$1B[5H
    User12=1359,0,$1B[5F
-```
-
-
-
-
-
-
-
+```      
 
 ## Future Works
 

@@ -22,6 +22,7 @@ pub const LEFT: Event = Key(KeyEvent { code: Left, modifiers: KeyModifiers::NONE
 pub const DOWN: Event = Key(KeyEvent { code: Down, modifiers: KeyModifiers::NONE });
 pub const UP: Event = Key(KeyEvent { code: Up, modifiers: KeyModifiers::NONE });
 pub const PAGE_DOWN: Event = Key(KeyEvent { code: PageDown, modifiers: KeyModifiers::NONE });
+pub const PAGE_UP: Event = Key(KeyEvent { code: PageUp, modifiers: KeyModifiers::NONE });
 pub const DEL: Event = Key(KeyEvent { code: Delete, modifiers: KeyModifiers::NONE });
 pub const BS: Event = Key(KeyEvent { code: Backspace, modifiers: KeyModifiers::NONE });
 pub const HOME: Event = Key(KeyEvent { code: Home, modifiers: KeyModifiers::NONE });
@@ -41,6 +42,7 @@ pub const CUT: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Ch
 pub const UNDO: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('z') });
 pub const REDO: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('y') });
 pub const ALL_SELECT: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('a') });
+pub const CTRL_HOME: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Home });
 // Key
 pub const KEY_CLOSE: &'static str = "Ctrl + w";
 pub const KEY_COPY: &'static str = "Ctrl + c";

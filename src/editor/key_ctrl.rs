@@ -1,4 +1,4 @@
-use crate::{def::*, global::*, help::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::*, util::*};
+use crate::{bar::msgbar::*, bar::statusbar::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, util::*};
 use std::{collections::BTreeSet, iter::FromIterator, path::Path};
 
 impl Editor {

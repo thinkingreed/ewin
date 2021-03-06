@@ -1,4 +1,4 @@
-use crate::{cfg::cfg::Cfg, colors::*, log::Log, model::*};
+use crate::{_cfg::cfg::Cfg, colors::*, model::*};
 use crossterm::style::{Color as CrosstermColor, SetBackgroundColor, SetForegroundColor};
 use std::fmt;
 

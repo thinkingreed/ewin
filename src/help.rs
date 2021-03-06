@@ -1,6 +1,5 @@
-use crate::{colors::*, def::*, global::*, log::*, model::*, msgbar::*, prompt::prompt::*, statusbar::StatusBar, terminal::*, util::*};
+use crate::{bar::msgbar::*, bar::statusbar::StatusBar, colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, terminal::*, util::*};
 use crossterm::{cursor::*, terminal::*};
-use std::env;
 
 #[derive(Debug, Clone)]
 pub struct Help {
