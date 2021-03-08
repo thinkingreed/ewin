@@ -11,10 +11,12 @@ pub mod global {
     pub static LANG: Lazy<LangCfg> = Lazy::new(|| LangCfg::read_lang_cfg());
     pub static ENV: Lazy<Env> = Lazy::new(|| get_env());
     pub static CFG: OnceCell<Mutex<Cfg>> = OnceCell::new();
+    pub static FILE: OnceCell<Mutex<File>> = OnceCell::new();
     pub static IS_POWERSHELL_ENABLE: Lazy<bool> = Lazy::new(|| is_powershell_enable());
 }
 pub mod colors;
 pub mod def;
+pub mod evt_act_headerbar;
 pub mod evt_act_prom;
 pub mod bar {
     pub mod headerbar;

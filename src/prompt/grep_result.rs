@@ -1,11 +1,11 @@
-use crate::{bar::msgbar::*, bar::statusbar::*, colors::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*};
+use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, colors::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::{io::Write, path::Path, process};
 use tokio::process::{Child, Command};
 use tokio_util::codec::LinesCodecError;
 
 impl EvtAct {
-    pub fn draw_grep_result<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar, std_event: Option<Result<String, LinesCodecError>>, is_stdout: bool, child: &mut Child) {
+    pub fn draw_grep_result<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar, std_event: Option<Result<String, LinesCodecError>>, is_stdout: bool, child: &mut Child) {
         Log::ep_s("　　　　　　　draw_grep_result");
 
         if (prom.is_grep_stdout || prom.is_grep_stderr) && !prom.is_grep_result_cancel {
@@ -17,7 +17,7 @@ impl EvtAct {
                     //
                     if is_stdout {
                         Log::ep_s("prom.is_grep_stdout    false");
-                        EvtAct::exit_grep_result(out, editor, mbar, prom, help, sbar, child);
+                        EvtAct::exit_grep_result(out, hbar, editor, mbar, prom, help, sbar, child);
                     } else {
                         Log::ep_s("prom.is_grep_stderr    false");
                         prom.is_grep_stderr = false;
@@ -34,23 +34,23 @@ impl EvtAct {
             } else {
                 editor.d_range.draw_type = DrawType::All;
             }
-            Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
+            Terminal::draw(out, hbar, editor, mbar, prom, help, sbar).unwrap();
         } else {
             Log::ep_s("grep is canceled");
-            EvtAct::exit_grep_result(out, editor, mbar, prom, help, sbar, child);
+            EvtAct::exit_grep_result(out, hbar, editor, mbar, prom, help, sbar, child);
         }
     }
 
-    pub fn exit_grep_result<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar, child: &mut Child) {
+    pub fn exit_grep_result<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar, child: &mut Child) {
         child.kill();
         prom.clear();
         mbar.msg = Msg::default();
         mbar.set_readonly(&LANG.unable_to_edit);
 
         if editor.grep_result_vec.is_empty() {
-            prom.set_grep_result_after_no_result(editor, mbar, help, sbar);
+            prom.set_grep_result_after_no_result(hbar, editor, mbar, help, sbar);
         } else {
-            prom.grep_result_after(editor, mbar, help, sbar);
+            prom.grep_result_after(hbar, editor, mbar, help, sbar);
         }
 
         editor.buf.insert_end(&EOF_MARK.to_string());
@@ -58,7 +58,7 @@ impl EvtAct {
         editor.scroll();
         editor.scroll_horizontal();
         editor.d_range.draw_type = DrawType::All;
-        Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
+        Terminal::draw(out, hbar, editor, mbar, prom, help, sbar).unwrap();
     }
 
     pub fn exec_grep(editor: &Editor) -> Child {
@@ -133,24 +133,24 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn grep_result(&mut self, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn grep_result(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
         self.disp_row_num = 2;
-        Terminal::set_disp_size(editor, mbar, self, help, sbar);
+        Terminal::set_disp_size(hbar, editor, mbar, self, help, sbar);
         let mut cont = PromptCont::new_not_edit(self.disp_row_posi as u16);
         cont.set_grep_result();
         self.cont_1 = cont;
     }
 
-    pub fn grep_result_after(&mut self, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn grep_result_after(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
         self.disp_row_num = 2;
-        Terminal::set_disp_size(editor, mbar, self, help, sbar);
+        Terminal::set_disp_size(hbar, editor, mbar, self, help, sbar);
         let mut cont = PromptCont::new_not_edit(self.disp_row_posi as u16);
         cont.set_grep_result_after();
         self.cont_1 = cont;
     }
-    pub fn set_grep_result_after_no_result(&mut self, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn set_grep_result_after_no_result(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
         self.disp_row_num = 2;
-        Terminal::set_disp_size(editor, mbar, self, help, sbar);
+        Terminal::set_disp_size(hbar, editor, mbar, self, help, sbar);
         let mut cont = PromptCont::new_not_edit(self.disp_row_posi as u16);
         cont.set_grep_result_after_no_result();
         self.cont_1 = cont;

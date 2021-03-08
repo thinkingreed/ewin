@@ -65,10 +65,10 @@ pub enum ActivatMode {
 }
 
 impl Terminal {
-    pub fn draw<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> Result<(), io::Error> {
+    pub fn draw<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> Result<(), io::Error> {
         Log::ep_s("　　　　　　　　All draw");
 
-        Terminal::set_disp_size(editor, mbar, prom, help, sbar);
+        Terminal::set_disp_size(hbar, editor, mbar, prom, help, sbar);
 
         let d_range = editor.d_range;
         Log::ep("d_range", &d_range);
@@ -78,7 +78,6 @@ impl Terminal {
             editor.draw(out);
         }
 
-        let mut hbar = HeaderBar::new(editor.disp_col_num);
         hbar.draw(out);
 
         let mut str_vec: Vec<String> = vec![];
@@ -123,7 +122,7 @@ impl Terminal {
         return true;
     }
 
-    pub fn set_disp_size(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn set_disp_size(hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
         let (cols, rows) = size().unwrap();
         let (cols, rows) = (cols as usize, rows as usize);
 
@@ -152,9 +151,10 @@ impl Terminal {
         mbar.disp_readonly_row_posi = rows - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
 
         editor.disp_col_num = cols;
-        let headerbar_row_num = 1;
-        editor.disp_row_num = rows - headerbar_row_num - mbar.disp_readonly_row_num - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
+        editor.disp_row_num = rows - hbar.disp_row_num - mbar.disp_readonly_row_num - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
 
+        hbar.disp_col_num = cols;
+        hbar.set_posi(cols);
         Log::ep("editor.disp_row_num", &editor.disp_row_num);
         /*
            Log::ep("mbar.disp_keyrecord_row_num", &mbar.disp_keyrecord_row_num);
@@ -167,11 +167,11 @@ impl Terminal {
         */
     }
 
-    pub fn init_draw<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn init_draw<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
         prom.clear();
         mbar.clear();
         editor.d_range.draw_type = DrawType::All;
-        Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
+        Terminal::draw(out, hbar, editor, mbar, prom, help, sbar).unwrap();
     }
     pub fn show_cur() {
         execute!(stdout(), Show).unwrap();
@@ -249,10 +249,10 @@ impl Terminal {
         return args;
     }
 
-    pub fn activate(args: &Args, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn activate(args: &Args, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
         // grep_result
 
-        editor.file.ext = args.ext.clone();
+        // editor.file.ext = args.ext.clone();
 
         if args.mode == ActivatMode::GrepResult || args.mode == ActivatMode::Grep {
             editor.search.str = args.search_str.clone();
@@ -263,30 +263,35 @@ impl Terminal {
             editor.search.filenm = args.search_filenm.clone();
 
             if args.mode == ActivatMode::Grep {
-                sbar.filenm = format!("grep \"{}\" {}", &editor.search.str, &editor.search.file);
+                FILE.get().unwrap().try_lock().map(|mut file| file.filenm = format!("grep \"{}\" {}", &editor.search.str, &editor.search.file)).unwrap();
+
                 prom.is_grep_result = true;
                 prom.is_grep_stdout = true;
                 prom.is_grep_stderr = true;
 
-                prom.grep_result(editor, mbar, help, sbar);
+                prom.grep_result(hbar, editor, mbar, help, sbar);
                 editor.set_cur_default();
                 editor.scroll();
                 editor.scroll_horizontal();
                 mbar.set_info(&LANG.searching);
             } else {
-                sbar.filenm = args.search_file.clone();
+                let filenm = args.search_file.clone();
+                FILE.get().unwrap().try_lock().map(|mut file| file.filenm = filenm.clone()).unwrap();
+
                 editor.search.row_num = args.search_row_num.clone();
 
                 Log::ep("editor.search", &editor.search);
 
-                editor.open(Path::new(&sbar.filenm), mbar);
+                editor.open(Path::new(&filenm), mbar);
                 editor.search_str(true, false);
             }
 
         // Normal
         } else {
-            sbar.filenm = args.filenm.clone();
-            editor.open(Path::new(&args.filenm), mbar);
+            let filenm = args.filenm.clone();
+            FILE.get().unwrap().try_lock().map(|mut file| file.filenm = filenm.clone()).unwrap();
+
+            editor.open(Path::new(&filenm), mbar);
         }
     }
 

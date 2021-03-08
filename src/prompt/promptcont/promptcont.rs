@@ -46,14 +46,14 @@ impl Default for PromptCont {
 pub struct PromptContOpt {
     pub key: String,
     pub is_check: bool,
-    pub mouse_range: (u16, u16),
+    pub mouse_area: (u16, u16),
 }
 impl Default for PromptContOpt {
     fn default() -> Self {
         PromptContOpt {
             key: String::new(),
             is_check: false,
-            mouse_range: (0, 0),
+            mouse_area: (0, 0),
         }
     }
 }
@@ -116,29 +116,36 @@ impl PromptCont {
     }
 
     pub fn set_opt_case_sens(&mut self) {
-        let key_case_sens = format!("{}{}:{}Alt + c{}", Colors::get_default_fg(), &LANG.case_sens, Colors::get_msg_warning_fg(), Colors::get_default_fg());
+        let key_case_sens = format!("{}{}:{}Alt + c", Colors::get_default_fg(), &LANG.case_sens, Colors::get_msg_warning_fg());
         let sx = get_str_width(&format!("{}:Alt + c", &LANG.case_sens)) as u16;
         let opt_case_sens = PromptContOpt {
             key: key_case_sens,
             is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens,
-            mouse_range: (sx, sx + 3),
+            mouse_area: (sx, sx + 3),
         };
         self.opt_1 = opt_case_sens;
     }
 
     pub fn set_opt_regex(&mut self) {
-        let key_regex = format!("{}{}:{}Alt + r{}", Colors::get_default_fg(), &LANG.regex, Colors::get_msg_warning_fg(), Colors::get_default_fg(),);
+        let key_regex = format!("{}{}:{}Alt + r", Colors::get_default_fg(), &LANG.regex, Colors::get_msg_warning_fg());
 
         // +2 is the space between options
-        let sx = self.opt_1.mouse_range.1 + 2 + get_str_width(&format!("{}:Alt + r", &LANG.regex)) as u16;
+        let sx = self.opt_1.mouse_area.1 + 3 + get_str_width(&format!("{}:Alt + r", &LANG.regex)) as u16 + 1;
 
         let opt_regex = PromptContOpt {
             key: key_regex,
             is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex,
-            mouse_range: (sx, sx + 3),
+            mouse_area: (sx, sx + 3),
         };
         self.opt_2 = opt_regex;
     }
+
+    /*
+    pub fn get_opt_disp_str(&mut self) {
+        let opt_1 = self.opt_1;
+        let opt_2 = self.opt_2;
+        let opt_str = format!("{}{}  {}{}", opt_1.key, opt_1.get_check_str(), opt_2.key, opt_2.get_check_str());
+    } */
 
     pub fn change_opt_case_sens(&mut self) {
         self.opt_1.toggle_check();

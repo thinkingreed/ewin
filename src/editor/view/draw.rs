@@ -1,14 +1,10 @@
 use crate::{bar::msgbar::*, colors::*, def::*, global::*, log::*, model::*, terminal::*, util::*};
-use crossterm::{
-    cursor::*,
-    style::{Color as CrosstermColor, SetBackgroundColor},
-    terminal::*,
-};
+use crossterm::{cursor::*, terminal::*};
 use std::{
     cmp::min,
     env,
     fs::metadata,
-    io::{stdout, BufWriter, ErrorKind, Write},
+    io::{ErrorKind, Write},
     path,
 };
 use unicode_width::UnicodeWidthChar;
@@ -23,13 +19,17 @@ impl Editor {
                 if file_meta.permissions().readonly() {
                     mbar.set_readonly(&format!("{}({})", &LANG.unable_to_edit, &LANG.no_write_permission));
                 }
+                /*
+                let mut ext = String::new();
+                {
+                    ext = FILE.get().unwrap().try_lock().unwrap().ext.clone();
+                } */
                 // Judge enable syntax_highlight
-                if CFG.get().unwrap().try_lock().unwrap().syntax.syntax_reference.is_some() && file_meta.len() < ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE && is_enable_syntax_highlight(&self.file.ext) {
-                    self.file.is_enable_syntax_highlight = true;
+                if CFG.get().unwrap().try_lock().unwrap().syntax.syntax_reference.is_some() && file_meta.len() < ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE && is_enable_syntax_highlight(&FILE.get().unwrap().try_lock().unwrap().ext) {
+                    FILE.get().unwrap().try_lock().map(|mut file| file.is_enable_syntax_highlight = true).unwrap();
                 }
-                Log::ep("self.file.is_enable_syntax_highlight", &self.file.is_enable_syntax_highlight);
 
-                self.file.path = Some(path.into());
+                FILE.get().unwrap().try_lock().map(|mut file| file.path = Some(path.into())).unwrap();
             } else {
                 Terminal::exit();
                 println!("{}", LANG.file_not_found.clone());
@@ -56,7 +56,7 @@ impl Editor {
                 }
                 ErrorKind::NotFound => {
                     self.buf.text.insert_char(self.buf.text.len_chars(), EOF_MARK);
-                    self.file.path = None;
+                    FILE.get().unwrap().try_lock().map(|mut file| file.path = None).unwrap();
                 }
                 _ => {
                     Terminal::exit();
@@ -76,12 +76,14 @@ impl Editor {
         let d_range = self.d_range.get_range();
         Log::ep("d_range", &d_range);
 
+        let is_syntax_highlight = FILE.get().unwrap().try_lock().unwrap().is_enable_syntax_highlight;
         match d_range.draw_type {
             DrawType::Not | DrawType::MoveCur => {}
             DrawType::None | DrawType::All => {
                 let cfg = CFG.get().unwrap().try_lock().unwrap();
                 if let Some(c) = cfg.syntax.theme.settings.background {
-                    if is_enable_syntax_highlight(&self.file.ext) && cfg.colors.theme.theme_bg_enable {
+                    //  if is_enable_syntax_highlight(&self.file.ext) && cfg.colors.theme.theme_bg_enable {
+                    if is_syntax_highlight && cfg.colors.theme.theme_bg_enable {
                         str_vec.push(Colors::bg(Color::from(c)));
                     } else {
                         str_vec.push(Colors::bg(cfg.colors.editor.bg));
@@ -89,7 +91,7 @@ impl Editor {
                 } else {
                     str_vec.push(Colors::bg(cfg.colors.editor.bg));
                 }
-                str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, 1).to_string()));
+                str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, self.disp_row_posi as u16).to_string()));
             }
 
             DrawType::Target => {
@@ -98,11 +100,11 @@ impl Editor {
                 Log::ep("d_range.ey", &d_range.ey);
 
                 for i in d_range.sy - self.offset_y..=d_range.ey - self.offset_y {
-                    str_vec.push(format!("{}{}", MoveTo(0, i as u16), Clear(ClearType::CurrentLine)));
+                    str_vec.push(format!("{}{}", MoveTo(0, (i + self.disp_row_posi) as u16), Clear(ClearType::CurrentLine)));
                 }
-                str_vec.push(format!("{}", MoveTo(0, (d_range.sy - self.offset_y) as u16)));
+                str_vec.push(format!("{}", MoveTo(0, (d_range.sy - self.offset_y + self.disp_row_posi) as u16)));
             }
-            DrawType::After => str_vec.push(format!("{}{}", MoveTo(0, (d_range.sy - self.offset_y) as u16), Clear(ClearType::FromCursorDown))),
+            DrawType::After => str_vec.push(format!("{}{}", MoveTo(0, (d_range.sy - self.offset_y + self.disp_row_posi) as u16), Clear(ClearType::FromCursorDown))),
             DrawType::ScrollDown => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, self.disp_row_num as u16), Clear(ClearType::CurrentLine))),
             DrawType::ScrollUp => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, self.disp_row_posi as u16), Clear(ClearType::CurrentLine))),
         }
@@ -114,7 +116,7 @@ impl Editor {
             let row_cell = &self.draw.cells[i];
             let (mut sx, mut ex) = (0, row_cell.len());
 
-            if self.file.is_enable_syntax_highlight {
+            if is_syntax_highlight {
                 sx = if i == self.cur.y { self.offset_x } else { 0 };
                 ex = min(sx + self.disp_col_num, self.buf.len_line_chars(i));
             }

@@ -1,9 +1,9 @@
-use crate::{bar::msgbar::*, bar::statusbar::*, colors::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*};
+use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, colors::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::{cmp::min, io::Write};
 
 impl EvtAct {
-    pub fn search(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) -> EvtActType {
+    pub fn search(hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) -> EvtActType {
         Log::ep_s("Process.search");
 
         Log::ep("editor.evt", &editor.evt);
@@ -47,7 +47,7 @@ impl EvtAct {
             return EvtActType::Next;
         }
     }
-    pub fn exec_search_incremental<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn exec_search_incremental<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
         Log::ep_s("exec_search_incremental");
         editor.search.str = prom.cont_1.buf.iter().collect::<String>();
 
@@ -75,16 +75,16 @@ impl EvtAct {
             */
             editor.d_range.draw_type = DrawType::After;
             editor.d_range.sy = editor.offset_y;
-            Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
+            Terminal::draw(out, hbar, editor, mbar, prom, help, sbar).unwrap();
         }
     }
 }
 
 impl Prompt {
-    pub fn search(&mut self, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn search(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
         self.is_search = true;
         self.disp_row_num = 4;
-        Terminal::set_disp_size(editor, mbar, self, help, sbar);
+        Terminal::set_disp_size(hbar, editor, mbar, self, help, sbar);
         let mut cont = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::First);
         cont.set_search();
         self.cont_1 = cont;

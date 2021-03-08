@@ -1,13 +1,12 @@
 use std::io::{stdout, BufWriter, Write};
 
-use crate::{colors::*, def::*, global::*, log::*, model::*, util::*};
+use crate::{colors::*, global::*, log::*, model::*, util::*};
 use crossterm::{cursor::*, terminal::*};
 #[derive(Debug, Clone)]
 pub struct StatusBar {
-    pub filenm: String,
-    pub filenm_disp: String,
-    pub filenm_disp_flg: bool,
     pub cur_str: String,
+    pub changed_str: String,
+
     // Position on the terminal
     pub disp_row_num: usize,
     pub disp_row_posi: usize,
@@ -17,10 +16,8 @@ pub struct StatusBar {
 impl Default for StatusBar {
     fn default() -> Self {
         StatusBar {
-            filenm: String::new(),
-            filenm_disp: String::new(),
-            filenm_disp_flg: false,
             cur_str: String::new(),
+            changed_str: String::new(),
             disp_row_num: 1,
             disp_row_posi: 0,
             disp_col_num: 0,
@@ -40,19 +37,16 @@ impl StatusBar {
             return;
         }
         let cur_s = self.get_cur_str(editor);
-        let (help_w, filenm_w, cur_w) = self.get_areas_width(self.disp_col_num, &get_str_width(&cur_s) + 1);
+        let (changed_w, cur_w) = self.get_areas_width(self.disp_col_num, &get_str_width(&cur_s) + 1);
 
-        let mut file_str = self.filenm.clone();
-        if file_str.len() == 0 {
-            file_str = LANG.new_file.clone();
+        let is_changed = FILE.get().unwrap().try_lock().unwrap().is_changed;
+        if is_changed {
+            self.changed_str = LANG.changed.clone();
         }
+        Log::ep("is_changed", &is_changed);
+        Log::ep("self.changed_str", &self.changed_str);
 
-        let help = format!("{}:{}", KEY_HELP, LANG.help);
-        let help_disp = format!("{h:^width$}", h = help, width = help_w);
-
-        let filenm = cut_str(file_str.clone(), filenm_w, true);
-        self.filenm_disp = format!("{fnm:^width$}", fnm = filenm, width = filenm_w - (get_str_width(&filenm) - filenm.chars().count()));
-
+        self.changed_str = format!("{changed:^w$}", changed = self.changed_str, w = changed_w - (get_str_width(&self.changed_str) - self.changed_str.chars().count()));
         // Adjusted by the difference between the character width and the number of characters
         self.cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
 
@@ -62,7 +56,7 @@ impl StatusBar {
             Clear(ClearType::CurrentLine),
             Colors::get_sber_bg(),
             Colors::get_sber_fg(),
-            format!("{}{}{}", help_disp, self.filenm_disp, self.cur_str),
+            format!("{}{}", self.changed_str, self.cur_str),
             Colors::get_default_fg(),
         );
 
@@ -85,15 +79,7 @@ impl StatusBar {
         return cur_posi;
     }
 
-    fn get_areas_width(&self, cols_w: usize, cur_str_w: usize) -> (usize, usize, usize) {
-        // "f1:help "
-        let help_w_max = 8;
-        if cur_str_w > cols_w {
-            return (0, 0, cols_w);
-        } else if cur_str_w + help_w_max > cols_w {
-            return (cols_w - cur_str_w, 0, cur_str_w);
-        } else {
-            return (help_w_max, cols_w - help_w_max - cur_str_w, cur_str_w);
-        }
+    fn get_areas_width(&self, cols_w: usize, cur_str_w: usize) -> (usize, usize) {
+        return (cols_w - cur_str_w, cur_str_w);
     }
 }

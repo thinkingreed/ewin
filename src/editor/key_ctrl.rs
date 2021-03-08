@@ -1,4 +1,4 @@
-use crate::{bar::msgbar::*, bar::statusbar::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, util::*};
+use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, util::*};
 use std::{collections::BTreeSet, iter::FromIterator, path::Path};
 
 impl Editor {
@@ -19,25 +19,25 @@ impl Editor {
         self.d_range.draw_type = DrawType::All;
     }
 
-    pub fn save(&mut self, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> bool {
+    pub fn save(&mut self, hbar: &mut HeaderBar, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> bool {
         Log::ep_s("　　　　　　　  save");
 
         if prom.cont_1.buf.len() > 0 {
             let s = prom.cont_1.buf.iter().collect::<String>();
-            self.file.path = Some(Path::new(&s).into());
+            FILE.get().unwrap().try_lock().map(|mut file| file.path = Some(Path::new(&s).into())).unwrap();
         }
 
-        if !Path::new(&sbar.filenm).exists() && prom.cont_1.buf.len() == 0 {
+        if !Path::new(&FILE.get().unwrap().try_lock().unwrap().filenm).exists() && prom.cont_1.buf.len() == 0 {
             Log::ep_s("!Path::new(&sbar.filenm).exists()");
             prom.is_save_new_file = true;
-            prom.save_new_file(self, mbar, help, sbar);
+            prom.save_new_file(hbar, self, mbar, help, sbar);
             return false;
         } else {
-            if let Some(path) = self.file.path.as_ref() {
+            if let Some(path) = FILE.get().unwrap().try_lock().unwrap().path.as_ref() {
                 let result = self.buf.write_to(&path.to_string_lossy().to_string());
                 match result {
                     Ok(()) => {
-                        prom.is_change = false;
+                        FILE.get().unwrap().try_lock().map(|mut file| file.is_changed = false).unwrap();
                         prom.clear();
                         mbar.clear();
                         return true;

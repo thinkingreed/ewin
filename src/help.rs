@@ -1,5 +1,6 @@
-use crate::{bar::msgbar::*, bar::statusbar::StatusBar, colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, terminal::*, util::*};
+use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::StatusBar, colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, terminal::*, util::*};
 use crossterm::{cursor::*, terminal::*};
+use unicode_width::UnicodeWidthChar;
 
 #[derive(Debug, Clone)]
 pub struct Help {
@@ -29,7 +30,9 @@ pub enum HelpMode {
 #[derive(Debug, Clone)]
 pub struct KeyBind {
     pub key: String,
-    pub func: String,
+    pub func_nm: String,
+    pub key_bind_len: usize,
+    pub mouse_area: (usize, usize),
 }
 
 impl Help {
@@ -44,21 +47,21 @@ impl Help {
         return Help { ..Help::default() };
     }
 
-    pub fn disp_toggle(&mut self, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
+    pub fn disp_toggle(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
         self.mode = match self.mode {
             HelpMode::Show => HelpMode::None,
             HelpMode::None => HelpMode::Show,
         };
 
         if self.mode == HelpMode::Show {
-            Terminal::set_disp_size(editor, mbar, prom, self, sbar);
+            Terminal::set_disp_size(hbar, editor, mbar, prom, self, sbar);
             // Cursor moves out of help display area
             if editor.cur.y - editor.offset_y > editor.disp_row_num - 1 {
                 editor.cur.y = editor.offset_y + editor.disp_row_num - 1;
                 editor.cur.x = editor.rnw;
                 editor.cur.disp_x = editor.rnw + 1;
             }
-            editor.d_range.draw_type = DrawType::Not;
+            editor.d_range.draw_type = DrawType::All;
         } else {
             editor.d_range = DRange::new(editor.disp_row_num - 1, 0, DrawType::After);
         }
@@ -96,7 +99,7 @@ impl Help {
             vec.clear();
             // 4th line
             self.set_key_bind_ex(&mut vec, KEY_SELECT, &LANG.range_select, KEY_SELECT.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (KEY_SELECT.chars().count() + 1));
-            self.set_key_bind_wide(&mut vec, KEY_ALL_SELECT, &LANG.all_select);
+            self.set_key_bind_wide(&mut vec, KEY_HELP_DETAIL, &format!("{} {}", &LANG.help, &LANG.detail));
             self.set_key_bind_wide(&mut vec, KEY_HELP, &format!("{} {}", &LANG.help, &LANG.end));
             self.key_bind_vec.push(vec.clone());
             vec.clear();
@@ -114,7 +117,7 @@ impl Help {
             if i > 0 {
                 if let Some(vec) = self.key_bind_vec.get(i - 1) {
                     for bind in vec {
-                        str_vec.push(format!("{}{}", bind.key, bind.func));
+                        str_vec.push(format!("{}{}", bind.key, bind.func_nm));
                     }
                 }
             }
@@ -131,9 +134,29 @@ impl Help {
     pub fn set_key_bind_ex(&mut self, vec: &mut Vec<KeyBind>, key: &'static str, func: &String, key_width: usize, key_func_width: usize) {
         let key = format!("{s:<w$}", s = key, w = key_width);
         let func = format!("{s:^w$}", s = func, w = key_func_width - (get_str_width(&func) - func.chars().count()));
-        vec.push(KeyBind {
+
+        let mut key_w = 0;
+        for c in key.chars() {
+            key_w += c.width().unwrap_or(0);
+        }
+        let mut func_w = 0;
+        for c in func.chars() {
+            func_w += c.width().unwrap_or(0);
+        }
+        let mut row_w = 0;
+        for key_bind in vec.iter() {
+            row_w += key_bind.key_bind_len;
+        }
+
+        let key_bind = KeyBind {
             key: format!("{}{}", Colors::get_msg_highlight_fg(), key),
-            func: format!("{}{}", Colors::get_msg_normal_fg(), func),
-        });
+            func_nm: format!("{}{}", Colors::get_msg_normal_fg(), func),
+            key_bind_len: key_w + func_w,
+            mouse_area: (row_w, row_w + key_w - 1),
+        };
+
+        Log::ep("key_bind", &key_bind.clone());
+
+        vec.push(key_bind);
     }
 }

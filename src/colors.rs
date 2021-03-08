@@ -41,54 +41,75 @@ impl Colors {
         str_vec.push(Colors::fg(cfg.colors.editor.selection.fg));
         str_vec.push(Colors::bg(cfg.colors.editor.selection.bg));
     }
+    //
+    // default
+    //
+    pub fn get_default_fg() -> String {
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.editor.fg);
+    }
+    fn get_default_inversion_fg() -> String {
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
+    }
+    pub fn get_default_bg() -> String {
+        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
+    }
+    pub fn get_default_fg_bg() -> String {
+        return format!("{}{}", Colors::get_default_bg(), Colors::get_default_fg());
+    }
+    //
+    // sber
+    //
     pub fn get_sber_bg() -> String {
         return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
     }
     pub fn get_sber_fg() -> String {
         return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.status_bar.fg);
     }
-
-    pub fn get_default_fg() -> String {
-        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.editor.fg);
+    pub fn get_sber_inversion_bg() -> String {
+        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.status_bar.fg);
     }
-
-    pub fn get_default_bg() -> String {
-        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
+    pub fn get_sber_inversion_fg_bg() -> String {
+        return format!("{}{}", Colors::get_sber_inversion_bg(), Colors::get_default_inversion_fg());
     }
-
+    //
+    // msg
+    //
     pub fn get_msg_highlight_fg() -> String {
         return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.msg.highlight_fg);
     }
     pub fn get_msg_normal_fg() -> String {
         return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.msg.normal_fg);
     }
-
     pub fn get_msg_warning_fg() -> String {
-        // orange
         return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.msg.warning_fg);
     }
-
+    pub fn get_msg_warning_inversion_bg() -> String {
+        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.msg.warning_fg);
+    }
+    pub fn get_msg_warning_inversion_fg_bg() -> String {
+        return format!("{}{}", Colors::get_msg_warning_inversion_bg(), Colors::get_default_inversion_fg());
+    }
     pub fn get_msg_err_fg() -> String {
         return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.msg.err_fg);
     }
-
+    //
+    // eof
+    //
     pub fn set_eof(str_vec: &mut Vec<String>) {
         let cfg = CFG.get().unwrap().try_lock().unwrap();
         str_vec.push(Colors::fg(cfg.colors.editor.control_char.fg));
         str_vec.push(EOF_STR.to_string());
         str_vec.push(Colors::fg(cfg.colors.editor.fg));
     }
-
     pub fn hex2rgb(hex: &str) -> Color {
         let rgb2 = transform_Rgb::from_hex_str(hex).unwrap();
         let t = rgb2.as_tuple();
         return Color { rgb: Rgb { r: t.0 as u8, g: t.1 as u8, b: t.2 as u8 } };
     }
 
-    pub fn fg(c: Color) -> String {
+    fn fg(c: Color) -> String {
         SetForegroundColor(CrosstermColor::Rgb { r: c.rgb.r, g: c.rgb.g, b: c.rgb.b }).to_string()
     }
-
     pub fn bg(c: Color) -> String {
         SetBackgroundColor(CrosstermColor::Rgb { r: c.rgb.r, g: c.rgb.g, b: c.rgb.b }).to_string()
     }

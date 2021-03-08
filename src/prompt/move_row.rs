@@ -1,9 +1,9 @@
-use crate::{bar::msgbar::*, bar::statusbar::*, colors::*, global::*, help::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*};
+use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, colors::*, global::*, help::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 
 impl EvtAct {
-    pub fn move_row<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
+    pub fn move_row<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
         Log::ep_s("　　　　　　　　EvtAct.move_row");
 
         match editor.evt {
@@ -28,7 +28,7 @@ impl EvtAct {
 
                     prom.clear();
                     mbar.clear();
-                    Terminal::set_disp_size(editor, mbar, prom, help, sbar);
+                    Terminal::set_disp_size(hbar, editor, mbar, prom, help, sbar);
                     editor.scroll_move_row();
                     editor.scroll_horizontal();
                     editor.d_range.draw_type = DrawType::All;
@@ -42,10 +42,10 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn move_row(&mut self, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn move_row(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
         self.is_move_line = true;
         self.disp_row_num = 3;
-        Terminal::set_disp_size(editor, mbar, self, help, sbar);
+        Terminal::set_disp_size(hbar, editor, mbar, self, help, sbar);
         let mut cont = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::First);
         cont.set_move_row();
         self.cont_1 = cont;

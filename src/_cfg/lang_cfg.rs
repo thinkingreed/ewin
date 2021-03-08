@@ -18,9 +18,11 @@ pub struct LangCfg {
     pub undo: String,
     pub redo: String,
     pub cut: String,
+    pub changed: String,
+    pub detail: String,
     pub grep: String,
     pub range_select: String,
-    pub all_select: String,
+    // pub all_select: String,
     pub move_row: String,
     pub search: String,
     pub search_bottom: String,
@@ -92,7 +94,7 @@ pub struct LangMulti {
 
 impl LangCfg {
     pub fn read_lang_cfg() -> LangCfg {
-        let lang_multi: LangMulti = serde_yaml::from_str(&LANG_CONFIG.to_string()).unwrap();
+        let lang_multi: LangMulti = toml::from_str(&LANG_CONFIG.to_string()).unwrap();
         let lang = env::var("LANG").unwrap_or("en_US".to_string());
 
         if lang.starts_with("ja_JP") {

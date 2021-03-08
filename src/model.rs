@@ -367,7 +367,6 @@ pub struct Editor {
     pub cur_y_org: usize,
     // Basic x position when moving the cursor up and down  line_num_width + 1 over initial:0
     pub updown_x: usize,
-    pub file: File,
     // row_number_width
     pub rnw: usize,
     pub sel: SelRange,
@@ -399,7 +398,6 @@ impl Editor {
             offset_disp_x: 0,
             cur_y_org: 0,
             updown_x: 0,
-            file: File::default(),
             rnw: 0,
             sel: SelRange::default(),
             sel_org: SelRange::default(),
@@ -424,16 +422,20 @@ pub struct TextBuffer {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct File {
+    pub filenm: String,
     pub ext: String,
     pub path: Option<path::PathBuf>,
+    pub is_changed: bool,
     pub is_enable_syntax_highlight: bool,
 }
 
 impl Default for File {
     fn default() -> Self {
         File {
+            filenm: String::new(),
             ext: String::new(),
             path: None,
+            is_changed: false,
             is_enable_syntax_highlight: false,
         }
     }

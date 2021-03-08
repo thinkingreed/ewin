@@ -168,15 +168,29 @@ impl Editor {
     }
 
     pub fn is_edit_evt(&self, is_incl_unredo: bool) -> bool {
-        if is_incl_unredo {
-            match self.evt {
-                PASTE | UNDO | REDO | DEL | BS | CUT | ENTER | Key(KeyEvent { code: Char(_), modifiers: KeyModifiers::NONE }) | Key(KeyEvent { code: Char(_), modifiers: KeyModifiers::SHIFT }) => return true,
+        match self.evt {
+            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
+                Char('x') | Char('v') => return true,
                 _ => return false,
-            }
-        } else {
-            match self.evt {
-                PASTE | DEL | BS | CUT | ENTER | Key(KeyEvent { code: Char(_), modifiers: KeyModifiers::NONE }) | Key(KeyEvent { code: Char(_), modifiers: KeyModifiers::SHIFT }) => return true,
+            },
+            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
+                Char(_) => return true,
                 _ => return false,
+            },
+            Key(KeyEvent { code, modifiers: KeyModifiers::NONE }) => match code {
+                Delete | Backspace | Enter | Char(_) => return true,
+                _ => return false,
+            },
+            _ => {
+                if is_incl_unredo {
+                    if self.evt == UNDO || self.evt == REDO {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
             }
         }
     }

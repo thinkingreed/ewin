@@ -1,4 +1,4 @@
-use crate::{bar::msgbar::*, bar::statusbar::*, global::*, help::*, log::*, model::*, prompt::prompt::*};
+use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, global::*, help::*, log::*, model::*, prompt::prompt::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 
@@ -112,7 +112,7 @@ impl Editor {
         }
     }
 
-    pub fn exec_record_key<T: Write>(&mut self, out: &mut T, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn exec_record_key<T: Write>(&mut self, out: &mut T, hbar: &mut HeaderBar, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
         if self.key_record_vec.len() > 0 {
             prom.is_key_record_exec = true;
             let macro_vec = self.key_record_vec.clone();
@@ -121,7 +121,7 @@ impl Editor {
                 if i == macro_vec.len() - 1 {
                     prom.is_key_record_exec_draw = true;
                 }
-                EvtAct::match_event(out, self, mbar, prom, help, sbar);
+                EvtAct::match_event(out, hbar, self, mbar, prom, help, sbar);
             }
             prom.is_key_record_exec = false;
             prom.is_key_record_exec_draw = false;

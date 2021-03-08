@@ -32,5 +32,5 @@ foreground = "#87411f"
 [colors.msg]
 normal_foreground = "#ffffff"
 highlight_foreground = "#00c800"
-warning_foreground = "#ffa500"
+warning_foreground = "#aa6400"
 err_foreground = "#ff0000"

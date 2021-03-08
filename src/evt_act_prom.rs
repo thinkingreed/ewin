@@ -1,36 +1,15 @@
-use crate::{bar::msgbar::*, bar::statusbar::*, help::*, log::*, model::*, prompt::prompt::*, terminal::*};
+use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, help::*, log::*, model::*, prompt::prompt::*, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_EventKind, MouseEventKind as M_Kind};
 use std::io::Write;
 
 impl EvtAct {
-    pub fn check_next_process<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
-        match editor.evt {
-            Resize(_, _) => return EvtActType::Next,
-            _ => {}
-        }
-
-        EvtAct::check_clear_mag(editor, mbar);
-        let evt_act = EvtAct::check_prom(out, editor, mbar, prom, help, sbar);
-        EvtAct::finalize_check_prom(editor, prom);
-
-        if evt_act == EvtActType::Hold {
-            if mbar.msg_org != mbar.msg {
-                mbar.draw_only(out);
-                prom.draw_cur_only(out);
-            }
-            prom.draw_only(out);
-        }
-
-        return evt_act;
-    }
-
-    pub fn check_prom<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
+    pub fn check_prom<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
         // Close・End
         if prom.is_save_new_file || prom.is_search || prom.is_close_confirm || prom.is_replace || prom.is_grep || prom.is_grep_result || prom.is_move_line {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                     Char('w') => {
-                        Terminal::init_draw(out, editor, mbar, prom, help, sbar);
+                        Terminal::init_draw(out, hbar, editor, mbar, prom, help, sbar);
                         return EvtActType::Next;
                     }
                     _ => {}
@@ -80,7 +59,7 @@ impl EvtAct {
                     Char('v') => {
                         let is_all_redrow = prom.paste(editor, mbar);
                         if is_all_redrow {
-                            Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
+                            Terminal::draw(out, hbar, editor, mbar, prom, help, sbar).unwrap();
                         } else {
                             prom.clear_sels();
                             prom.draw_only(out);
@@ -119,11 +98,11 @@ impl EvtAct {
             match editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::ALT, .. }) => {}
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                    Char('v') => EvtAct::exec_search_incremental(out, editor, mbar, prom, help, sbar),
+                    Char('v') => EvtAct::exec_search_incremental(out, hbar, editor, mbar, prom, help, sbar),
                     _ => {}
                 },
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) | Key(KeyEvent { code, .. }) => match code {
-                    Char(_) | Delete | Backspace => EvtAct::exec_search_incremental(out, editor, mbar, prom, help, sbar),
+                    Char(_) | Delete | Backspace => EvtAct::exec_search_incremental(out, hbar, editor, mbar, prom, help, sbar),
                     _ => {}
                 },
                 _ => {}
@@ -145,9 +124,9 @@ impl EvtAct {
                 },
                 Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => {
                     if prom.cont_1.opt_row_posi == y {
-                        if prom.cont_1.opt_1.mouse_range.0 <= x && x <= prom.cont_1.opt_1.mouse_range.1 {
+                        if prom.cont_1.opt_1.mouse_area.0 <= x && x <= prom.cont_1.opt_1.mouse_area.1 {
                             prom.cont_1.change_opt_case_sens();
-                        } else if prom.cont_1.opt_2.mouse_range.0 <= x && x <= prom.cont_1.opt_2.mouse_range.1 {
+                        } else if prom.cont_1.opt_2.mouse_area.0 <= x && x <= prom.cont_1.opt_2.mouse_area.1 {
                             prom.cont_1.change_opt_regex();
                         }
                     }
@@ -192,11 +171,11 @@ impl EvtAct {
         }
 
         if prom.is_save_new_file == true {
-            return EvtAct::save_new_filenm(editor, mbar, prom, help, sbar);
+            return EvtAct::save_new_filenm(hbar, editor, mbar, prom, help, sbar);
         } else if prom.is_close_confirm == true {
-            return EvtAct::close(editor, mbar, prom, help, sbar);
+            return EvtAct::close(hbar, editor, mbar, prom, help, sbar);
         } else if prom.is_search == true {
-            return EvtAct::search(editor, mbar, prom);
+            return EvtAct::search(hbar, editor, mbar, prom);
         } else if prom.is_replace == true {
             return EvtAct::replace(editor, mbar, prom);
         } else if prom.is_grep == true {
@@ -204,7 +183,7 @@ impl EvtAct {
         } else if prom.is_grep_result == true {
             return EvtAct::grep_result(editor);
         } else if prom.is_move_line == true {
-            return EvtAct::move_row(out, editor, mbar, prom, help, sbar);
+            return EvtAct::move_row(out, hbar, editor, mbar, prom, help, sbar);
         } else {
             Log::ep_s("EvtProcess::NextEvtProcess");
             return EvtActType::Next;
@@ -226,8 +205,8 @@ impl EvtAct {
         }
     }
 
-    pub fn finalize_check_prom(editor: &mut Editor, prom: &mut Prompt) {
-        Log::ep_s("finalize_check_prom");
+    pub fn check_grep_clear_tab_comp(editor: &mut Editor, prom: &mut Prompt) {
+        Log::ep_s("check_grep_clear_tab_comp");
 
         if prom.is_grep {
             // Check clear tab candidate

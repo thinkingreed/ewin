@@ -1,4 +1,4 @@
-use crate::{bar::msgbar::*, bar::statusbar::StatusBar, colors::*, global::*, help::Help, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::Terminal};
+use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::StatusBar, colors::*, global::*, help::Help, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::Terminal};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 
 impl EvtAct {
@@ -23,7 +23,7 @@ impl EvtAct {
                         editor.replace(prom, search_set);
                         mbar.clear();
                         prom.clear();
-                        prom.is_change = true;
+                        FILE.get().unwrap().try_lock().map(|mut file| file.is_changed = true).unwrap();
                     }
                     editor.d_range.draw_type = DrawType::All;
                     return EvtActType::DrawOnly;
@@ -36,10 +36,10 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn replace(&mut self, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn replace(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
         self.is_replace = true;
         self.disp_row_num = 7;
-        Terminal::set_disp_size(editor, mbar, self, help, sbar);
+        Terminal::set_disp_size(hbar, editor, mbar, self, help, sbar);
         let mut cont_1 = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::First);
         let mut cont_2 = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::Second);
         cont_1.set_replace();

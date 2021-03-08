@@ -1,4 +1,4 @@
-use crate::{bar::msgbar::MsgBar, def::*, log::*, model::Editor, prompt::promptcont::promptcont::PromptContPosi::*, prompt::promptcont::promptcont::*, util::*};
+use crate::{bar::msgbar::MsgBar, colors::*, def::*, log::*, model::Editor, prompt::promptcont::promptcont::PromptContPosi::*, prompt::promptcont::promptcont::*, util::*};
 use crossterm::{cursor::*, event::*, terminal::ClearType::*, terminal::*};
 
 use std::{
@@ -19,7 +19,6 @@ pub struct Prompt {
     pub cache_search_filenm: String,
     pub cache_search_folder: String,
     // fn clear not clear
-    pub is_change: bool,
     pub is_grep_result: bool,
     pub is_grep_result_cancel: bool,
     // *************
@@ -43,7 +42,6 @@ impl Default for Prompt {
             disp_row_num: 0,
             disp_row_posi: 0,
             disp_col_num: 0,
-            is_change: false,
             is_grep_result: false,
             is_grep_result_cancel: false,
             cont_1: PromptCont::default(),
@@ -121,16 +119,26 @@ impl Prompt {
             if self.is_save_new_file || self.is_move_line {
                 Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
             } else if self.is_search {
-                let opt_1 = &self.cont_1.opt_1;
-                let opt_2 = &self.cont_1.opt_2;
-                let opt_str = format!("{}{}  {}{}", opt_1.key, opt_1.get_check_str(), opt_2.key, opt_2.get_check_str());
+                let o1 = &self.cont_1.opt_1;
+                let o2 = &self.cont_1.opt_2;
+                let opt_str = format!(
+                    "{} {}{}{}  {} {}{}{}",
+                    o1.key,
+                    Colors::get_msg_warning_inversion_fg_bg(),
+                    o1.get_check_str(),
+                    Colors::get_default_fg_bg(),
+                    o2.key,
+                    Colors::get_msg_warning_inversion_fg_bg(),
+                    o2.get_check_str(),
+                    Colors::get_default_fg_bg(),
+                );
                 Prompt::set_draw_vec(str_vec, self.cont_1.opt_row_posi, &opt_str);
                 Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
             }
             if self.is_replace || self.is_grep {
-                let opt_1 = &self.cont_1.opt_1;
-                let opt_2 = &self.cont_1.opt_2;
-                let opt_str = format!("{}{}  {}{}", opt_1.key, opt_1.get_check_str(), opt_2.key, opt_2.get_check_str());
+                let o1 = &self.cont_1.opt_1;
+                let o2 = &self.cont_1.opt_2;
+                let opt_str = format!("{}{}  {}{}", o1.key, o1.get_check_str(), o2.key, o2.get_check_str());
                 Prompt::set_draw_vec(str_vec, self.cont_1.opt_row_posi, &opt_str);
                 Prompt::set_draw_vec(str_vec, self.cont_1.buf_desc_row_posi, &self.cont_1.buf_desc.clone());
                 Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());

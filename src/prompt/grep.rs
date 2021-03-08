@@ -1,4 +1,4 @@
-use crate::{bar::msgbar::*, bar::statusbar::*, colors::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*, util::*};
+use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, colors::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::{env, fs, path::Path};
 
@@ -58,10 +58,10 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn grep(&mut self, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn grep(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
         self.is_grep = true;
         self.disp_row_num = 9;
-        Terminal::set_disp_size(editor, mbar, self, help, sbar);
+        Terminal::set_disp_size(hbar, editor, mbar, self, help, sbar);
         let mut cont_1 = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::First);
         let mut cont_2 = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::Second);
         let mut cont_3 = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::Third);

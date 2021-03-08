@@ -1,9 +1,9 @@
-use crate::{bar::msgbar::*, bar::statusbar::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, terminal::*};
+use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use std::io::Write;
 
 impl EvtAct {
-    pub fn match_event<T: Write>(out: &mut T, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> bool {
+    pub fn match_event<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> bool {
         match editor.evt {
             Mouse(M_Event { kind: M_Kind::Moved, .. }) => return false,
             _ => {}
@@ -11,7 +11,7 @@ impl EvtAct {
 
         Terminal::hide_cur();
         mbar.msg_org = mbar.msg.clone();
-        let evt_next_process = EvtAct::check_next_process(out, editor, mbar, prom, help, sbar);
+        let evt_next_process = EvtAct::check_next_process(out, hbar, editor, mbar, prom, help, sbar);
 
         match evt_next_process {
             EvtActType::Exit => return true,
@@ -31,23 +31,23 @@ impl EvtAct {
                         Resize(_, _) => editor.d_range.draw_type = DrawType::All,
                         Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                             Char('w') => {
-                                if prom.close(editor, mbar, help, sbar) == true {
+                                if prom.close(hbar, editor, mbar, help, sbar) == true {
                                     return true;
                                 }
                             }
                             Char('s') => {
-                                editor.save(mbar, prom, help, sbar);
+                                editor.save(hbar, mbar, prom, help, sbar);
                             }
                             Char('c') => editor.copy(),
                             Char('x') => editor.exec_edit_proc(EvtType::Cut, ""),
                             Char('v') => editor.exec_edit_proc(EvtType::Paste, ""),
                             Char('a') => editor.all_select(),
-                            Char('f') => prom.search(editor, mbar, help, sbar),
-                            Char('r') => prom.replace(editor, mbar, help, sbar),
-                            Char('g') => prom.grep(editor, mbar, help, sbar),
+                            Char('f') => prom.search(hbar, editor, mbar, help, sbar),
+                            Char('r') => prom.replace(hbar, editor, mbar, help, sbar),
+                            Char('g') => prom.grep(hbar, editor, mbar, help, sbar),
                             Char('z') => editor.undo(mbar),
                             Char('y') => editor.redo(),
-                            Char('l') => prom.move_row(editor, mbar, help, sbar),
+                            Char('l') => prom.move_row(hbar, editor, mbar, help, sbar),
                             Home => editor.ctrl_home(),
                             End => editor.ctrl_end(),
                             _ => mbar.set_err(&LANG.unsupported_operation),
@@ -62,7 +62,7 @@ impl EvtAct {
                             End => editor.shift_end(),
                             Char(c) => editor.exec_edit_proc(EvtType::InsertChar, &c.to_ascii_uppercase().to_string()),
                             F(1) => editor.record_key_start(mbar, prom),
-                            F(2) => editor.exec_record_key(out, mbar, prom, help, sbar),
+                            F(2) => editor.exec_record_key(out, hbar, mbar, prom, help, sbar),
                             F(4) => editor.search_str(false, false),
                             _ => mbar.set_err(&LANG.unsupported_operation),
                         },
@@ -79,14 +79,14 @@ impl EvtAct {
                             Right => editor.cur_right(),
                             Home => editor.home(),
                             End => editor.end(),
-                            F(1) => help.disp_toggle(editor, mbar, prom, sbar),
+                            F(1) => help.disp_toggle(hbar, editor, mbar, prom, sbar),
                             F(3) => editor.search_str(true, false),
                             _ => mbar.set_err(&LANG.unsupported_operation),
                         },
                         Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => editor.cur_up(),
                         Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => editor.cur_down(),
                         Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, true),
-                        Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: _, row: _, .. }) => return false,
+                        Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: _, row: _, .. }) => {}
                         Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => editor.ctrl_mouse((x + 1) as usize, y as usize, false),
                         _ => mbar.set_err(&LANG.unsupported_operation),
                     }
@@ -111,12 +111,38 @@ impl EvtAct {
                 }
                 // When key_record is executed, redraw only at the end
                 if editor.d_range.draw_type != DrawType::Not || (prom.is_key_record_exec == false || prom.is_key_record_exec == true && prom.is_key_record_exec_draw == true) {
-                    Terminal::draw(out, editor, mbar, prom, help, sbar).unwrap();
+                    Terminal::draw(out, hbar, editor, mbar, prom, help, sbar).unwrap();
                 }
             }
         }
         Terminal::show_cur();
         return false;
+    }
+
+    pub fn check_next_process<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
+        Log::ep_s("　　　　　　　　check_next_process");
+
+        let evt_act = EvtAct::check_headerbar(hbar, editor);
+
+        if evt_act == EvtActType::Next {
+            return EvtActType::Next;
+        }
+
+        EvtAct::check_clear_mag(editor, mbar);
+        EvtAct::check_grep_clear_tab_comp(editor, prom);
+        let evt_act = EvtAct::check_prom(out, hbar, editor, mbar, prom, help, sbar);
+
+        Log::ep("evt_act", &evt_act);
+
+        if evt_act == EvtActType::Hold {
+            if mbar.msg_org != mbar.msg {
+                mbar.draw_only(out);
+                prom.draw_cur_only(out);
+            }
+            prom.draw_only(out);
+        }
+
+        return evt_act;
     }
 
     pub fn init(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) {
@@ -184,7 +210,7 @@ impl EvtAct {
 
         // Edit    is_change=true, Clear redo_vec,
         if editor.is_edit_evt(false) {
-            prom.is_change = true;
+            FILE.get().unwrap().try_lock().map(|mut file| file.is_changed = true).unwrap();
             editor.history.clear_redo_vec();
         }
 
@@ -192,14 +218,12 @@ impl EvtAct {
         match editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                 Char('x') | Char('v') => {
-                    prom.is_change = true;
                     editor.history.clear_redo_vec();
                 }
                 _ => {}
             },
             Key(KeyEvent { code, .. }) => match code {
                 Char(_) | Enter | Backspace | Delete => {
-                    prom.is_change = true;
                     editor.history.clear_redo_vec();
                 }
                 _ => {}
