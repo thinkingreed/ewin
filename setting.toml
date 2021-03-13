@@ -1,11 +1,7 @@
 [general.editor.search]
 case_sens = true
 regex = false
-
-# If theme is set, theme color has the highest priority
 [colors.theme]
-# theme_path = "tmTheme.tmTheme"
-# theme_background_enable = true
 
 [colors.editor]
 background = "#000000"

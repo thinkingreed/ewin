@@ -6,13 +6,15 @@ pub mod global {
     };
     use once_cell::sync::Lazy;
     use once_cell::sync::OnceCell;
-    use std::sync::Mutex;
+    use std::{collections::BTreeSet, sync::Mutex};
 
     pub static LANG: Lazy<LangCfg> = Lazy::new(|| LangCfg::read_lang_cfg());
     pub static ENV: Lazy<Env> = Lazy::new(|| get_env());
     pub static CFG: OnceCell<Mutex<Cfg>> = OnceCell::new();
     pub static FILE: OnceCell<Mutex<File>> = OnceCell::new();
     pub static IS_POWERSHELL_ENABLE: Lazy<bool> = Lazy::new(|| is_powershell_enable());
+    pub static REPLACE_SEARCH_RANGE: OnceCell<Mutex<BTreeSet<(usize, usize)>>> = OnceCell::new();
+    pub static REPLACE_REPLACE_RANGE: OnceCell<Mutex<BTreeSet<(usize, usize)>>> = OnceCell::new();
 }
 pub mod colors;
 pub mod def;

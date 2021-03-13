@@ -191,7 +191,7 @@ impl TextBuffer {
         rtn_set
     }
 
-    pub fn replace(&mut self, replace_str: &str, search_set: BTreeSet<(usize, usize)>) -> usize {
+    pub fn replace(&mut self, replace_str: &str, search_set: &BTreeSet<(usize, usize)>) -> usize {
         let replace_str_len = replace_str.chars().count();
         // let search_set = self.search(search_pattern, 0, self.text.len_chars());
 

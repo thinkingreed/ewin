@@ -1,5 +1,5 @@
 use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, util::*};
-use std::{collections::BTreeSet, iter::FromIterator, path::Path};
+use std::{collections::BTreeSet, iter::FromIterator, path::Path, sync::Mutex};
 
 impl Editor {
     pub fn all_select(&mut self) {
@@ -26,14 +26,20 @@ impl Editor {
             let s = prom.cont_1.buf.iter().collect::<String>();
             FILE.get().unwrap().try_lock().map(|mut file| file.path = Some(Path::new(&s).into())).unwrap();
         }
-
-        if !Path::new(&FILE.get().unwrap().try_lock().unwrap().filenm).exists() && prom.cont_1.buf.len() == 0 {
+        let filenm;
+        let path;
+        {
+            let file_global = FILE.get().unwrap().try_lock().unwrap();
+            filenm = file_global.filenm.clone();
+            path = file_global.path.clone();
+        }
+        if !Path::new(&filenm).exists() && prom.cont_1.buf.len() == 0 {
             Log::ep_s("!Path::new(&sbar.filenm).exists()");
             prom.is_save_new_file = true;
             prom.save_new_file(hbar, self, mbar, help, sbar);
             return false;
         } else {
-            if let Some(path) = FILE.get().unwrap().try_lock().unwrap().path.as_ref() {
+            if let Some(path) = path.as_ref() {
                 let result = self.buf.write_to(&path.to_string_lossy().to_string());
                 match result {
                     Ok(()) => {
@@ -237,11 +243,37 @@ impl Editor {
         return index;
     }
 
-    pub fn replace(&mut self, prom: &mut Prompt, search_set: BTreeSet<(usize, usize)>) {
+    pub fn replace(&mut self, ep: &mut EvtProc) {
         Log::ep_s("　　　　　　　　replace");
-        let replace_str: String = prom.cont_2.buf.iter().collect();
-        let end_char_idx = self.buf.replace(&replace_str, search_set);
 
+        Log::ep("self.evt", &self.evt);
+        Log::ep("epepepepepepepepep", &ep);
+
+        // Nomal REPLACE
+        let search_set = if self.evt == ENTER {
+            REPLACE_SEARCH_RANGE.get().unwrap().try_lock().unwrap().clone()
+        } else if self.evt == UNDO {
+            REPLACE_REPLACE_RANGE.get().unwrap().try_lock().unwrap().clone()
+        // REDO
+        } else {
+            REPLACE_SEARCH_RANGE.get().unwrap().try_lock().unwrap().clone()
+        };
+
+        Log::ep("search_set", &search_set);
+
+        let end_char_idx = self.buf.replace(&ep.str_replace, &search_set);
+        if self.evt == ENTER {
+            let diff: isize = (ep.str_replace.chars().count() - ep.str.chars().count()) as isize;
+            let mut replace_set: BTreeSet<(usize, usize)> = BTreeSet::new();
+            for (sx, ex) in &search_set {
+                replace_set.insert((*sx, (*ex as isize + diff) as usize));
+            }
+            Log::ep("replace_set", &replace_set);
+
+            let _ = REPLACE_REPLACE_RANGE.set(Mutex::new(replace_set));
+        }
+
+        self.d_range = DRange::new(self.offset_y, self.offset_y, DrawType::After);
         let y = self.buf.char_to_line(end_char_idx);
         let x = end_char_idx - self.buf.line_to_char(y) + 1;
         self.set_cur_target(y, x);
@@ -308,7 +340,7 @@ impl Editor {
             Log::ep("EvtProc", &ep);
             // initial cursor posi set
             match ep.evt_type {
-                EvtType::Cut | EvtType::Del | EvtType::InsertChar | EvtType::Paste => self.set_evtproc(&ep, &ep.cur_s),
+                EvtType::Cut | EvtType::Del | EvtType::InsertChar | EvtType::Paste | EvtType::Replace => self.set_evtproc(&ep, &ep.cur_s),
                 EvtType::BS => {
                     if ep.sel.is_selected() {
                         self.set_evtproc(&ep, &ep.cur_s);
@@ -321,14 +353,15 @@ impl Editor {
             }
             // exec
             match ep.evt_type {
-                EvtType::InsertChar => self.exec_edit_proc(EvtType::Del, ""),
+                EvtType::InsertChar => self.exec_edit_proc(EvtType::Del, "", ""),
                 EvtType::Paste => {
                     // Set paste target with sel
                     self.sel = ep.sel;
-                    self.exec_edit_proc(EvtType::Del, "");
+                    self.exec_edit_proc(EvtType::Del, "", "");
                 }
-                EvtType::Enter => self.exec_edit_proc(EvtType::BS, ""),
-                EvtType::Del | EvtType::BS | EvtType::Cut => self.exec_edit_proc(EvtType::Paste, &ep.str),
+                EvtType::Enter => self.exec_edit_proc(EvtType::BS, "", ""),
+                EvtType::Del | EvtType::BS | EvtType::Cut => self.exec_edit_proc(EvtType::Paste, &ep.str, ""),
+                EvtType::Replace => self.exec_edit_proc(EvtType::Replace, &ep.str_replace, &ep.str),
                 _ => {}
             }
 
@@ -346,15 +379,16 @@ impl Editor {
             self.set_evtproc(&ep, &ep.cur_s);
             self.sel = ep.sel;
             match ep.evt_type {
-                EvtType::Del => self.exec_edit_proc(EvtType::Del, ""),
-                EvtType::BS => self.exec_edit_proc(EvtType::BS, ""),
-                EvtType::Cut => self.exec_edit_proc(EvtType::Cut, ""),
-                EvtType::Enter => self.exec_edit_proc(EvtType::Enter, ""),
-                EvtType::InsertChar => self.exec_edit_proc(EvtType::InsertChar, &ep.str),
+                EvtType::Del => self.exec_edit_proc(EvtType::Del, "", ""),
+                EvtType::BS => self.exec_edit_proc(EvtType::BS, "", ""),
+                EvtType::Cut => self.exec_edit_proc(EvtType::Cut, "", ""),
+                EvtType::Enter => self.exec_edit_proc(EvtType::Enter, "", ""),
+                EvtType::InsertChar => self.exec_edit_proc(EvtType::InsertChar, &ep.str, ""),
                 EvtType::Paste => {
                     self.sel.clear();
-                    self.exec_edit_proc(EvtType::Paste, &ep.str);
+                    self.exec_edit_proc(EvtType::Paste, &ep.str, "");
                 }
+                EvtType::Replace => self.exec_edit_proc(EvtType::Replace, &ep.str, &ep.str_replace),
                 _ => {}
             }
         }

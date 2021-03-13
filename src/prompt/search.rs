@@ -3,7 +3,7 @@ use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::{cmp::min, io::Write};
 
 impl EvtAct {
-    pub fn search(hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) -> EvtActType {
+    pub fn search(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) -> EvtActType {
         Log::ep_s("Process.search");
 
         Log::ep("editor.evt", &editor.evt);

@@ -1,5 +1,6 @@
 use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::StatusBar, colors::*, global::*, help::Help, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::Terminal};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
+use std::sync::Mutex;
 
 impl EvtAct {
     pub fn replace(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) -> EvtActType {
@@ -9,10 +10,11 @@ impl EvtAct {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {
                     let search_str = prom.cont_1.buf.iter().collect::<String>();
+                    let replace_str = prom.cont_2.buf.iter().collect::<String>();
 
-                    if search_str.len() == 0 {
+                    if search_str.is_empty() {
                         mbar.set_err(&LANG.not_entered_search_str);
-                    } else if prom.cont_2.buf.len() == 0 {
+                    } else if replace_str.is_empty() {
                         mbar.set_err(&LANG.not_entered_replace_str);
                     } else {
                         let search_set = editor.buf.search(&search_str.clone(), 0, editor.buf.len_chars());
@@ -20,11 +22,15 @@ impl EvtAct {
                             mbar.set_err(&LANG.cannot_find_char_search_for);
                             return EvtActType::DrawOnly;
                         }
-                        editor.replace(prom, search_set);
+
+                        let _ = REPLACE_SEARCH_RANGE.set(Mutex::new(search_set));
+
+                        editor.exec_edit_proc(EvtType::Replace, &search_str, &replace_str);
                         mbar.clear();
                         prom.clear();
                         FILE.get().unwrap().try_lock().map(|mut file| file.is_changed = true).unwrap();
                     }
+
                     editor.d_range.draw_type = DrawType::All;
                     return EvtActType::DrawOnly;
                 }

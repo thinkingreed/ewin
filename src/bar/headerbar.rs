@@ -57,7 +57,7 @@ impl HeaderBar {
         let close_btn = format!(" {} ", self.close_btn);
 
         let hber_str = format!(
-            "{}{}{}{}{}{}{}{} {}{}{}",
+            "{}{}{}{}{}{}{}{} {}{}{} ",
             MoveTo(0, self.disp_row_posi as u16),
             Clear(ClearType::CurrentLine),
             Colors::get_default_bg(),

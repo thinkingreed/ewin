@@ -39,8 +39,8 @@ impl EvtAct {
                                 editor.save(hbar, mbar, prom, help, sbar);
                             }
                             Char('c') => editor.copy(),
-                            Char('x') => editor.exec_edit_proc(EvtType::Cut, ""),
-                            Char('v') => editor.exec_edit_proc(EvtType::Paste, ""),
+                            Char('x') => editor.exec_edit_proc(EvtType::Cut, "", ""),
+                            Char('v') => editor.exec_edit_proc(EvtType::Paste, "", ""),
                             Char('a') => editor.all_select(),
                             Char('f') => prom.search(hbar, editor, mbar, help, sbar),
                             Char('r') => prom.replace(hbar, editor, mbar, help, sbar),
@@ -60,17 +60,17 @@ impl EvtAct {
                             Up => editor.shift_up(),
                             Home => editor.shift_home(),
                             End => editor.shift_end(),
-                            Char(c) => editor.exec_edit_proc(EvtType::InsertChar, &c.to_ascii_uppercase().to_string()),
+                            Char(c) => editor.exec_edit_proc(EvtType::InsertChar, &c.to_ascii_uppercase().to_string(), ""),
                             F(1) => editor.record_key_start(mbar, prom),
                             F(2) => editor.exec_record_key(out, hbar, mbar, prom, help, sbar),
                             F(4) => editor.search_str(false, false),
                             _ => mbar.set_err(&LANG.unsupported_operation),
                         },
                         Key(KeyEvent { code, .. }) => match code {
-                            Char(c) => editor.exec_edit_proc(EvtType::InsertChar, &c.to_string()),
-                            Enter => editor.exec_edit_proc(EvtType::Enter, ""),
-                            Backspace => editor.exec_edit_proc(EvtType::BS, ""),
-                            Delete => editor.exec_edit_proc(EvtType::Del, ""),
+                            Char(c) => editor.exec_edit_proc(EvtType::InsertChar, &c.to_string(), ""),
+                            Enter => editor.exec_edit_proc(EvtType::Enter, "", ""),
+                            Backspace => editor.exec_edit_proc(EvtType::BS, "", ""),
+                            Delete => editor.exec_edit_proc(EvtType::Del, "", ""),
                             PageDown => editor.page_down(),
                             PageUp => editor.page_up(),
                             Up => editor.cur_up(),
@@ -262,7 +262,7 @@ impl EvtAct {
                 F(3) => {}
                 _ => editor.sel.clear(),
             },
-            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {}
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) => {}
             _ => editor.sel.clear(),
         }
 

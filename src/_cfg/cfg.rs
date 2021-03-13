@@ -1,8 +1,7 @@
 use crate::{_cfg::*, colors::*, def::*, global::*, log::*, terminal::*, util::*};
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::sync::Mutex;
-use std::{fs, fs::File, io::Write};
+use std::{fs, fs::File, io::Write, sync::Mutex};
 use syntect::{
     self,
     highlighting::{Theme, ThemeSet},

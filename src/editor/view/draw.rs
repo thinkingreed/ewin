@@ -19,16 +19,9 @@ impl Editor {
                 if file_meta.permissions().readonly() {
                     mbar.set_readonly(&format!("{}({})", &LANG.unable_to_edit, &LANG.no_write_permission));
                 }
-                /*
-                let mut ext = String::new();
-                {
-                    ext = FILE.get().unwrap().try_lock().unwrap().ext.clone();
-                } */
-                // Judge enable syntax_highlight
                 if CFG.get().unwrap().try_lock().unwrap().syntax.syntax_reference.is_some() && file_meta.len() < ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE && is_enable_syntax_highlight(&FILE.get().unwrap().try_lock().unwrap().ext) {
                     FILE.get().unwrap().try_lock().map(|mut file| file.is_enable_syntax_highlight = true).unwrap();
                 }
-
                 FILE.get().unwrap().try_lock().map(|mut file| file.path = Some(path.into())).unwrap();
             } else {
                 Terminal::exit();
@@ -79,7 +72,7 @@ impl Editor {
         let is_syntax_highlight = FILE.get().unwrap().try_lock().unwrap().is_enable_syntax_highlight;
         match d_range.draw_type {
             DrawType::Not | DrawType::MoveCur => {}
-            DrawType::None | DrawType::All => {
+            DrawType::None => {
                 let cfg = CFG.get().unwrap().try_lock().unwrap();
                 if let Some(c) = cfg.syntax.theme.settings.background {
                     //  if is_enable_syntax_highlight(&self.file.ext) && cfg.colors.theme.theme_bg_enable {
@@ -93,7 +86,6 @@ impl Editor {
                 }
                 str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, self.disp_row_posi as u16).to_string()));
             }
-
             DrawType::Target => {
                 Log::ep("self.offset_y", &self.offset_y);
                 Log::ep("d_range.sy", &d_range.sy);
@@ -104,6 +96,7 @@ impl Editor {
                 }
                 str_vec.push(format!("{}", MoveTo(0, (d_range.sy - self.offset_y + self.disp_row_posi) as u16)));
             }
+            DrawType::All => str_vec.push(format!("{}{}", MoveTo(0, self.disp_row_posi as u16), Clear(ClearType::FromCursorDown))),
             DrawType::After => str_vec.push(format!("{}{}", MoveTo(0, (d_range.sy - self.offset_y + self.disp_row_posi) as u16), Clear(ClearType::FromCursorDown))),
             DrawType::ScrollDown => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, self.disp_row_num as u16), Clear(ClearType::CurrentLine))),
             DrawType::ScrollUp => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, self.disp_row_posi as u16), Clear(ClearType::CurrentLine))),

@@ -153,7 +153,6 @@ impl Terminal {
         editor.disp_col_num = cols;
         editor.disp_row_num = rows - hbar.disp_row_num - mbar.disp_readonly_row_num - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
 
-        hbar.disp_col_num = cols;
         hbar.set_posi(cols);
         Log::ep("editor.disp_row_num", &editor.disp_row_num);
         /*

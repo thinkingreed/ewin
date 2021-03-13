@@ -93,8 +93,7 @@ impl Editor {
         // cur_right
         } else if self.evt == RIGHT && self.offset_disp_x + self.disp_col_num < self.cur.disp_x + offset_x_extra_num {
             let width = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], true).1;
-            // +1 for EOF
-            if width + 1 > self.disp_col_num - self.rnw {
+            if width > self.disp_col_num - self.rnw {
                 self.offset_x += offset_x_change_num;
             }
 

@@ -175,7 +175,7 @@ impl EvtAct {
         } else if prom.is_close_confirm == true {
             return EvtAct::close(hbar, editor, mbar, prom, help, sbar);
         } else if prom.is_search == true {
-            return EvtAct::search(hbar, editor, mbar, prom);
+            return EvtAct::search(editor, mbar, prom);
         } else if prom.is_replace == true {
             return EvtAct::replace(editor, mbar, prom);
         } else if prom.is_grep == true {

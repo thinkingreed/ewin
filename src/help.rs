@@ -40,7 +40,7 @@ impl Help {
 
     const KEY_WIDTH: usize = 9;
     const KEY_WIDTH_WIDE: usize = 11;
-    const KEY_FUNC_WIDTH: usize = 8;
+    const KEY_FUNC_WIDTH: usize = 9;
     const KEY_FUNC_WIDTH_WIDE: usize = 12;
 
     pub fn new() -> Self {
@@ -114,11 +114,12 @@ impl Help {
         for (i, sy) in (0_usize..).zip(self.disp_row_posi - 1..self.disp_row_posi - 1 + self.disp_row_num) {
             str_vec.push(format!("{}{}", MoveTo(0, sy as u16), Clear(ClearType::CurrentLine)));
             // Blank line to leave one line interval
-            if i > 0 {
-                if let Some(vec) = self.key_bind_vec.get(i - 1) {
-                    for bind in vec {
-                        str_vec.push(format!("{}{}", bind.key, bind.func_nm));
-                    }
+            if i == 0 {
+                continue;
+            }
+            if let Some(vec) = self.key_bind_vec.get(i - 1) {
+                for bind in vec {
+                    str_vec.push(format!("{}{}", bind.key, bind.func_nm));
                 }
             }
         }

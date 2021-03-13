@@ -18,8 +18,9 @@ impl Editor {
         self.scroll_horizontal();
         if is_mouse_left_down {
             if self.sel_org.is_selected() {
-                let sel_org = self.sel_org.get_range();
-                self.d_range = DRange::new(sel_org.sy, sel_org.ey, DrawType::Target);
+                // let sel_org = self.sel_org.get_range();
+                // self.d_range = DRange::new(sel_org.sy, sel_org.ey, DrawType::Target);
+                self.d_range.draw_type = DrawType::All;
             }
         // Drag
         } else {

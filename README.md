@@ -27,7 +27,7 @@ Download the latest .deb package from the [release page](https://github.com/thin
 Download the latest .rpm package from the [release page](https://github.com/thinkingreed/ewin/releases) and install it via:
 
 ```
-sudo yun install ewin_0.0.0.x86_64.rpm
+rpm -ivh ewin_0.0.0.x86_64.rpm
 ```
 
 ### Via Snap
@@ -258,7 +258,7 @@ err_foreground = "#ff0000"
 
 ## Future Works
 
-- Making various settings into a configuration file
+- Support for character codes other than UTF-8
 - Grep-Replace function
 
 ## License

@@ -1,7 +1,7 @@
 use crate::{log::*, model::*};
 
 impl Editor {
-    pub fn exec_edit_proc(&mut self, evt: EvtType, str: &str) {
+    pub fn exec_edit_proc(&mut self, evt: EvtType, str: &str, str_replace: &str) {
         if self.check_evtproc_return(evt) {
             return;
         }
@@ -11,7 +11,6 @@ impl Editor {
         if self.sel.is_selected() {
             Log::ep_s("exec_edit_proc is_selected_org");
             ep_org = EvtProc { evt_type: EvtType::Del, ..EvtProc::default() };
-            //.d_range.draw_type = DrawType::All;
             ep_org.cur_s = Cur {
                 y: self.sel.sy,
                 x: self.sel.sx + self.rnw,
@@ -27,12 +26,15 @@ impl Editor {
         }
 
         // not selected Del, BS, Cut or InsertChar, Paste, Enter
-        if (evt == EvtType::InsertChar || evt == EvtType::Paste || evt == EvtType::Enter || evt == EvtType::Cut) || (!is_selected_org && (evt == EvtType::Del || evt == EvtType::BS)) {
+        if (evt == EvtType::InsertChar || evt == EvtType::Paste || evt == EvtType::Enter || evt == EvtType::Cut || evt == EvtType::Replace) || (!is_selected_org && (evt == EvtType::Del || evt == EvtType::BS)) {
             let mut ep = EvtProc { evt_type: evt, ..EvtProc::default() };
 
             ep.cur_s = self.cur;
-            if evt == EvtType::InsertChar || evt == EvtType::Paste {
+            if evt == EvtType::InsertChar || evt == EvtType::Paste || evt == EvtType::Replace {
                 ep.str = str.to_string();
+                if evt == EvtType::Replace {
+                    ep.str_replace = str_replace.to_string();
+                }
             }
 
             match evt {
@@ -42,6 +44,8 @@ impl Editor {
                 EvtType::Cut => self.cut(ep_org.str),
                 EvtType::InsertChar => self.insert_char(str.chars().nth(0).unwrap_or(' ')),
                 EvtType::Paste => self.paste(&mut ep),
+                // In case of replace, only registration of Evt process
+                EvtType::Replace => self.replace(&mut ep),
                 _ => {}
             }
             if evt != EvtType::Cut {
