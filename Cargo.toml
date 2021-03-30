@@ -39,7 +39,7 @@ crossterm  = {version ="0.19.0", features = ["event-stream"]}
 serde = { version = "1.0.123", features = ["derive"] }
 toml = "0.5.8"
 cargo-deb = "1.28.3"
-tokio = { version = "1.2.0", features = ["full"] }
+tokio = { version = "1.4.0", features = ["full"] }
 tokio-util = { version = "0.6.3", features = ["codec"] }
 futures = "0.3"
 futures-util = "0.3.12"

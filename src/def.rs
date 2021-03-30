@@ -28,7 +28,7 @@ pub const BS: Event = Key(KeyEvent { code: Backspace, modifiers: KeyModifiers::N
 pub const HOME: Event = Key(KeyEvent { code: Home, modifiers: KeyModifiers::NONE });
 pub const END: Event = Key(KeyEvent { code: End, modifiers: KeyModifiers::NONE });
 pub const ENTER: Event = Key(KeyEvent { code: Enter, modifiers: KeyModifiers::NONE });
-pub const SEARCH: Event = Key(KeyEvent { code: F(3), modifiers: KeyModifiers::NONE });
+pub const NEXT_SEARCH: Event = Key(KeyEvent { code: F(3), modifiers: KeyModifiers::NONE });
 pub const KEY_NULL: Event = Key(KeyEvent { code: Null, modifiers: KeyModifiers::NONE });
 pub const HELP: Event = Key(KeyEvent { code: F(1), modifiers: KeyModifiers::NONE });
 // SHIFT
@@ -44,7 +44,11 @@ pub const CUT: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Ch
 pub const UNDO: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('z') });
 pub const REDO: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('y') });
 pub const ALL_SELECT: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('a') });
+pub const REPLACE: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('r') });
 pub const CTRL_HOME: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Home });
+pub const CTRL_SEARCH: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('f') });
+pub const CTRL_GREP: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('g') });
+
 // Key
 pub const KEY_CLOSE: &'static str = "Ctrl + w";
 pub const KEY_COPY: &'static str = "Ctrl + c";

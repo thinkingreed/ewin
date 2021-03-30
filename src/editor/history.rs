@@ -36,6 +36,10 @@ impl History {
             Some(self.undo_vec[self.undo_vec.len() - 1].clone())
         }
     }
+    pub fn len_undo(&mut self) -> usize {
+        self.undo_vec.len()
+    }
+
     pub fn get_redo_last(&mut self) -> Option<EvtProc> {
         if self.redo_vec.len() == 0 {
             None

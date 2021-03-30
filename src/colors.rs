@@ -30,6 +30,11 @@ impl Colors {
         str_vec.push(Colors::fg(cfg.colors.editor.fg));
         str_vec.push(Colors::bg(cfg.colors.editor.bg));
     }
+    pub fn set_rownum_curt_color(str_vec: &mut Vec<String>) {
+        let cfg = CFG.get().unwrap().try_lock().unwrap();
+        str_vec.push(Colors::fg(cfg.colors.editor.line_number.fg));
+        str_vec.push(Colors::bg(cfg.colors.editor.bg));
+    }
     pub fn set_rownum_color(str_vec: &mut Vec<String>) {
         let cfg = CFG.get().unwrap().try_lock().unwrap();
         str_vec.push(Colors::fg(cfg.colors.editor.line_number.fg));

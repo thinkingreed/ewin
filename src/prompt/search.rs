@@ -1,69 +1,74 @@
-use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, colors::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*};
+use crate::{colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, tab::Tab, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::{cmp::min, io::Write};
 
 impl EvtAct {
-    pub fn search(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) -> EvtActType {
+    pub fn search(tab: &mut Tab) -> EvtActType {
         Log::ep_s("Process.search");
 
-        Log::ep("editor.evt", &editor.evt);
+        Log::ep("editor.evt", &tab.editor.evt);
 
-        match editor.evt {
+        match tab.editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                F(4) => return EvtAct::exec_search_confirm(editor, mbar, prom),
+                F(4) => return EvtAct::exec_search_confirm(tab),
                 _ => return EvtActType::Hold,
             },
             Key(KeyEvent { code, .. }) => match code {
-                F(3) => return EvtAct::exec_search_confirm(editor, mbar, prom),
+                F(3) => return EvtAct::exec_search_confirm(tab),
                 _ => return EvtActType::Hold,
             },
             _ => return EvtActType::Hold,
         }
     }
 
-    fn exec_search_confirm(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) -> EvtActType {
+    fn exec_search_confirm(tab: &mut Tab) -> EvtActType {
         Log::ep_s("exec_search_confirm");
-        let search_str = prom.cont_1.buf.iter().collect::<String>();
+        let search_str = tab.prom.cont_1.buf.iter().collect::<String>();
         if search_str.len() == 0 {
-            mbar.set_err(&LANG.not_entered_search_str);
+            tab.mbar.set_err(&LANG.not_entered_search_str);
             return EvtActType::Hold;
         }
-        let search_vec = editor.get_search_ranges(&search_str.clone(), 0, editor.buf.len_chars(), 0);
+        let search_vec = tab.editor.get_search_ranges(&search_str.clone(), 0, tab.editor.buf.len_chars(), 0);
         if search_vec.len() == 0 {
-            mbar.set_err(&LANG.cannot_find_char_search_for);
+            tab.mbar.set_err(&LANG.cannot_find_char_search_for);
             return EvtActType::Hold;
         } else {
             Log::ep_s("exec_search    !!!");
 
-            editor.search.clear();
-            editor.search.ranges = search_vec;
-            editor.search.str = search_str;
+            tab.editor.search.clear();
+            tab.editor.search.ranges = search_vec;
+            tab.editor.search.str = search_str;
             // Set index to initial value
-            editor.search.idx = USIZE_UNDEFINED;
+            tab.editor.search.idx = USIZE_UNDEFINED;
 
-            prom.clear();
-            mbar.clear();
-            editor.d_range.draw_type = DrawType::All;
+            tab.prom.clear();
+            tab.state.clear();
+            tab.mbar.clear();
+            tab.editor.d_range.draw_type = DrawType::All;
             return EvtActType::Next;
         }
     }
-    pub fn exec_search_incremental<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn exec_search_incremental<T: Write>(out: &mut T, term: &mut Terminal, tab: &mut Tab) {
         Log::ep_s("exec_search_incremental");
-        editor.search.str = prom.cont_1.buf.iter().collect::<String>();
+        tab.editor.search.str = tab.prom.cont_1.buf.iter().collect::<String>();
 
-        let s_idx = editor.buf.line_to_char(editor.offset_y);
-        let ey = min(editor.offset_y + editor.disp_row_num, editor.buf.len_lines());
-        let search_org = editor.search.clone();
+        let s_idx = tab.editor.buf.line_to_char(tab.editor.offset_y);
+        let ey = min(tab.editor.offset_y + tab.editor.disp_row_num, tab.editor.buf.len_lines());
+        let search_org = tab.editor.search.clone();
 
         Log::ep("s_idx", &s_idx);
-        Log::ep("e_idx", &editor.buf.line_to_char(ey));
+        Log::ep("e_idx", &tab.editor.buf.line_to_char(ey));
 
-        editor.search.ranges = if editor.search.str.len() == 0 { vec![] } else { editor.get_search_ranges(&editor.search.str, s_idx, editor.buf.line_to_char(ey), 0) };
+        tab.editor.search.ranges = if tab.editor.search.str.len() == 0 {
+            vec![]
+        } else {
+            tab.editor.get_search_ranges(&tab.editor.search.str, s_idx, tab.editor.buf.line_to_char(ey), 0)
+        };
 
-        if !search_org.ranges.is_empty() || !editor.search.ranges.is_empty() {
+        if !search_org.ranges.is_empty() || !tab.editor.search.ranges.is_empty() {
             // Search in advance for drawing
-            if !editor.search.ranges.is_empty() {
-                editor.search_str(true, true);
+            if !tab.editor.search.ranges.is_empty() {
+                tab.editor.search_str(true, true);
             }
 
             /*
@@ -73,21 +78,21 @@ impl EvtAct {
             editor.d_range.sy = min(sy_curt, sy_org);
             editor.d_range.ey = max(ey, ey_org);
             */
-            editor.d_range.draw_type = DrawType::After;
-            editor.d_range.sy = editor.offset_y;
-            Terminal::draw(out, hbar, editor, mbar, prom, help, sbar).unwrap();
+            tab.editor.d_range.draw_type = DrawType::After;
+            tab.editor.d_range.sy = tab.editor.offset_y;
+            term.draw(out, tab);
         }
     }
 }
 
 impl Prompt {
-    pub fn search(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
-        self.is_search = true;
-        self.disp_row_num = 4;
-        Terminal::set_disp_size(hbar, editor, mbar, self, help, sbar);
-        let mut cont = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::First);
+    pub fn search(term: &mut Terminal, tab: &mut Tab) {
+        tab.state.is_search = true;
+        tab.prom.disp_row_num = 4;
+        term.set_disp_size(tab);
+        let mut cont = PromptCont::new_edit(tab.prom.disp_row_posi as u16, PromptContPosi::First);
         cont.set_search();
-        self.cont_1 = cont;
+        tab.prom.cont_1 = cont;
     }
 }
 

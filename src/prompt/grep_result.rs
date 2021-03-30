@@ -1,83 +1,99 @@
-use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, colors::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*};
+use crate::{bar::msgbar::*, colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, tab::Tab, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
-use std::{io::Write, path::Path, process};
+use std::{
+    ffi::OsStr,
+    io::Write,
+    path::{Path, PathBuf},
+    process,
+    sync::Arc,
+};
 use tokio::process::{Child, Command};
-use tokio_util::codec::LinesCodecError;
 
 impl EvtAct {
-    pub fn draw_grep_result<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar, std_event: Option<Result<String, LinesCodecError>>, is_stdout: bool, child: &mut Child) {
+    pub fn draw_grep_result<T: Write>(out: &mut T, term: &mut Terminal, job_grep: JobGrep) {
         Log::ep_s("　　　　　　　draw_grep_result");
+        Log::ep("job_grep", &job_grep.clone());
 
-        if (prom.is_grep_stdout || prom.is_grep_stderr) && !prom.is_grep_result_cancel {
-            let mut line_str = String::new();
-            match std_event {
-                Some(Ok(result_str)) => line_str = result_str,
-                Some(Err(e)) => println!("err {:?}", e),
-                None => {
-                    //
-                    if is_stdout {
-                        Log::ep_s("prom.is_grep_stdout    false");
-                        EvtAct::exit_grep_result(out, hbar, editor, mbar, prom, help, sbar, child);
-                    } else {
-                        Log::ep_s("prom.is_grep_stderr    false");
-                        prom.is_grep_stderr = false;
-                    }
+        let arc = Arc::clone(&term.tabs.tab_vec[term.tabs_idx]);
+        let mut tab = arc.try_lock().unwrap();
+
+        if !job_grep.is_cancel {
+            if !(job_grep.is_stdout_end) {
+                /*
+                if line_str.is_empty() {
                     return;
                 }
-            }
-            let line_str = line_str.replace(&editor.search.folder, "");
-            editor.buf.insert_end(&format!("{}{}", line_str, NEW_LINE));
-            editor.set_grep_result();
-            if editor.buf.len_lines() > editor.disp_row_num {
-                let y = editor.offset_y + editor.disp_row_num - 2;
-                editor.d_range = DRange::new(y, y, DrawType::ScrollDown);
+                 */
+                // Log::ep("line_str", &line_str);
+
+                let path = PathBuf::from(&tab.editor.search.file);
+                let filenm = path.file_name().unwrap_or(OsStr::new("")).to_string_lossy().to_string();
+                let replace_folder = tab.editor.search.file.replace(&filenm, "");
+                let line_str = job_grep.grep_str.replace(&replace_folder, "");
+
+                tab.editor.buf.insert_end(&format!("{}{}", line_str, NEW_LINE));
+
+                let rnw_org = tab.editor.rnw;
+                tab.editor.set_grep_result();
+                if tab.editor.buf.len_lines() > tab.editor.disp_row_num && rnw_org == tab.editor.rnw {
+                    let y = tab.editor.offset_y + tab.editor.disp_row_num - 2;
+                    tab.editor.d_range = DRange::new(y, y, DrawType::ScrollDown);
+                } else {
+                    tab.editor.d_range.draw_type = DrawType::All;
+                }
+                term.draw(out, &mut tab);
             } else {
-                editor.d_range.draw_type = DrawType::All;
+                Log::ep_s("grep is end");
+                EvtAct::exit_grep_result(out, term, &mut tab);
             }
-            Terminal::draw(out, hbar, editor, mbar, prom, help, sbar).unwrap();
         } else {
             Log::ep_s("grep is canceled");
-            EvtAct::exit_grep_result(out, hbar, editor, mbar, prom, help, sbar, child);
+            EvtAct::exit_grep_result(out, term, &mut tab);
         }
     }
 
-    pub fn exit_grep_result<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar, child: &mut Child) {
-        child.kill();
-        prom.clear();
-        mbar.msg = Msg::default();
-        mbar.set_readonly(&LANG.unable_to_edit);
+    pub fn exit_grep_result<T: Write>(out: &mut T, term: &mut Terminal, tab: &mut Tab) {
+        tab.prom.clear();
+        tab.state.clear();
+        tab.mbar.msg = Msg::default();
+        tab.mbar.set_readonly(&LANG.unable_to_edit);
 
-        if editor.grep_result_vec.is_empty() {
-            prom.set_grep_result_after_no_result(hbar, editor, mbar, help, sbar);
+        if tab.editor.grep_result_vec.is_empty() {
+            Prompt::set_grep_result_after_no_result(term, tab);
         } else {
-            prom.grep_result_after(hbar, editor, mbar, help, sbar);
+            Prompt::grep_result_after(term, tab);
         }
 
-        editor.buf.insert_end(&EOF_MARK.to_string());
-        editor.set_cur_default();
-        editor.scroll();
-        editor.scroll_horizontal();
-        editor.d_range.draw_type = DrawType::All;
-        Terminal::draw(out, hbar, editor, mbar, prom, help, sbar).unwrap();
+        tab.editor.buf.insert_end(&EOF_MARK.to_string());
+        tab.editor.set_cur_default();
+        tab.editor.scroll();
+        tab.editor.scroll_horizontal();
+        tab.editor.d_range.draw_type = DrawType::All;
+        term.draw(out, tab);
     }
 
-    pub fn exec_grep(editor: &Editor) -> Child {
+    pub fn exec_grep(search_str: &String, search_folder: &String, search_filenm: &String) -> Child {
         Log::ep_s("　　　　　　　　exec_cmd");
         // -r:Subfolder search, -H:File name display, -n:Line number display,
         // -I:Binary file not applicable, -i:Ignore-case
         let mut cmd_option = "-rHnI".to_string();
-        if !CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens {
-            cmd_option.push('i');
-        };
-        if !CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex {
-            cmd_option.push('F');
-        };
+        {
+            if !CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens {
+                cmd_option.push('i');
+            };
+        }
+        {
+            if !CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex {
+                cmd_option.push('F');
+            };
+        }
         return Command::new("grep")
             .arg(cmd_option)
-            .arg(editor.search.str.clone())
-            .arg(format!("--include={}", editor.search.filenm))
+            .arg(search_str)
+            .arg(format!("--include={}", search_filenm))
             // folder
-            .arg(editor.search.folder.clone())
+            .arg(search_folder)
+            .kill_on_drop(true)
             .stdout(process::Stdio::piped())
             .stderr(process::Stdio::piped())
             .spawn()
@@ -133,27 +149,27 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn grep_result(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
-        self.disp_row_num = 2;
-        Terminal::set_disp_size(hbar, editor, mbar, self, help, sbar);
-        let mut cont = PromptCont::new_not_edit(self.disp_row_posi as u16);
+    pub fn grep_result(term: &mut Terminal, tab: &mut Tab) {
+        tab.prom.disp_row_num = 2;
+        term.set_disp_size(tab);
+        let mut cont = PromptCont::new_not_edit(tab.prom.disp_row_posi as u16);
         cont.set_grep_result();
-        self.cont_1 = cont;
+        tab.prom.cont_1 = cont;
     }
 
-    pub fn grep_result_after(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
-        self.disp_row_num = 2;
-        Terminal::set_disp_size(hbar, editor, mbar, self, help, sbar);
-        let mut cont = PromptCont::new_not_edit(self.disp_row_posi as u16);
+    pub fn grep_result_after(term: &mut Terminal, tab: &mut Tab) {
+        tab.prom.disp_row_num = 2;
+        term.set_disp_size(tab);
+        let mut cont = PromptCont::new_not_edit(tab.prom.disp_row_posi as u16);
         cont.set_grep_result_after();
-        self.cont_1 = cont;
+        tab.prom.cont_1 = cont;
     }
-    pub fn set_grep_result_after_no_result(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
-        self.disp_row_num = 2;
-        Terminal::set_disp_size(hbar, editor, mbar, self, help, sbar);
-        let mut cont = PromptCont::new_not_edit(self.disp_row_posi as u16);
+    pub fn set_grep_result_after_no_result(term: &mut Terminal, tab: &mut Tab) {
+        tab.prom.disp_row_num = 2;
+        term.set_disp_size(tab);
+        let mut cont = PromptCont::new_not_edit(tab.prom.disp_row_posi as u16);
         cont.set_grep_result_after_no_result();
-        self.cont_1 = cont;
+        tab.prom.cont_1 = cont;
     }
 }
 

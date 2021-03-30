@@ -1,25 +1,17 @@
 use clap::{App, Arg};
-use crossterm::{
-    event::{Event, EventStream},
-    ErrorKind,
-};
-use ewin::{
-    _cfg::cfg::*,
-    bar::msgbar::*,
-    bar::{headerbar::HeaderBar, statusbar::*},
-    help::*,
-    log::*,
-    model::*,
-    prompt::prompt::*,
-    terminal::*,
-};
-use futures::{future::FutureExt, select, StreamExt};
+use crossterm::event::{Event::Mouse, EventStream, MouseEvent as M_Event, MouseEventKind as M_Kind};
+use ewin::{_cfg::cfg::*, global::*, model::*, terminal::*};
+use futures::{future::FutureExt, StreamExt};
+use std::sync::mpsc;
 use std::{
     ffi::OsStr,
-    io::{stdout, BufWriter, Write},
+    io::{stdout, BufWriter},
     panic,
+    process::*,
+    sync::mpsc::*,
+    thread, time,
 };
-use tokio_util::codec::{FramedRead, LinesCodec};
+use tokio_util::codec::{FramedRead, LinesCodec, LinesCodecError};
 
 #[tokio::main]
 async fn main() {
@@ -38,97 +30,117 @@ async fn main() {
         default_hook(e);
     }));
 
-    let (mut hbar, mut editor, mut mbar, mut prom, mut help, mut sbar) = (HeaderBar::new(), Editor::new(), MsgBar::new(), Prompt::new(), Help::new(), StatusBar::new());
-
     Terminal::init();
+
     let args = Terminal::init_args(&file_path);
     let err_str = Cfg::init(&args);
     if !err_str.is_empty() {
-        mbar.set_err(&err_str);
+        println!("{}", err_str);
     }
-    Terminal::set_disp_size(&mut hbar, &mut editor, &mut mbar, &mut prom, &mut help, &mut sbar);
-    Terminal::activate(&args, &mut hbar, &mut editor, &mut mbar, &mut prom, &mut help, &mut sbar);
+    let mut term = Terminal::new();
 
     let out = stdout();
     let mut out = BufWriter::new(out.lock());
+    term.activate(&args, &mut out);
 
-    Terminal::draw(&mut out, &mut hbar, &mut editor, &mut mbar, &mut prom, &mut help, &mut sbar).unwrap();
+    let (tx, rx) = channel();
+    let mut tx_grep = Sender::clone(&tx);
 
-    if prom.is_grep_result {
-        if let Err(err) = exec_events_grep_result(&mut out, &mut hbar, &mut editor, &mut mbar, &mut prom, &mut help, &mut sbar).await {
-            Log::ep("err", &err.to_string());
-        }
-    } else {
-        if let Err(err) = exec_events(&mut out, &mut hbar, &mut editor, &mut mbar, &mut prom, &mut help, &mut sbar).await {
-            Log::ep("err", &err.to_string());
-        }
-    }
-}
-
-async fn exec_events_grep_result<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> anyhow::Result<()> {
     // It also reads a normal Event to support cancellation.
     let mut reader = EventStream::new();
-    let mut child = EvtAct::exec_grep(editor);
+    tokio::spawn(async move {
+        loop {
+            if let Some(Ok(event)) = reader.next().fuse().await {
+                match event {
+                    Mouse(M_Event { kind: M_Kind::Moved, .. }) => continue,
+                    _ => {}
+                }
+                let job = Job {
+                    job_type: JobType::Event,
+                    job_evt: Some(JobEvent { evt: event }),
+                    ..Job::default()
+                };
+                let _ = tx.send(job);
+            }
+        }
+    });
 
-    let mut reader_stdout = FramedRead::new(child.stdout.take().unwrap(), LinesCodec::new());
-    let mut reader_stderr = FramedRead::new(child.stderr.take().unwrap(), LinesCodec::new());
-    let mut is_exit = false;
+    tokio::spawn(async move {
+        loop {
+            thread::sleep(time::Duration::from_millis(1000));
 
-    loop {
-        let mut event_next = reader.next().fuse();
-        if prom.is_grep_stdout || prom.is_grep_stderr {
-            let mut std_out_str = reader_stdout.next().fuse();
-            let mut std_err_str = reader_stderr.next().fuse();
-            select! {
-                std_out_event = std_out_str => {
-                    EvtAct::draw_grep_result(out, hbar, editor, mbar, prom, help, sbar, std_out_event, true,&mut child);
-                },
-                std_err_event = std_err_str => {
-                    EvtAct::draw_grep_result(out, hbar, editor, mbar, prom, help, sbar, std_err_event, false, &mut child);
-                },
-                maybe_event = event_next => {
-                    is_exit =  run_events(out, hbar, editor, mbar, prom, help, sbar, maybe_event);
+            if let Some(Ok(mut grep_info_vec)) = GREP_INFO_VEC.get().map(|vec| vec.try_lock()) {
+                let grep_info_vec_len = grep_info_vec.len() - 1;
+                if let Some(mut grep_info) = grep_info_vec.get_mut(grep_info_vec_len) {
+                    if grep_info.is_result_continue && !(grep_info.is_stdout_end && grep_info.is_stderr_end) {
+                        let mut child = EvtAct::exec_grep(&"123".to_string(), &grep_info.search_folder, &"*.txt".to_string());
+
+                        let mut reader_stdout = FramedRead::new(child.stdout.take().unwrap(), LinesCodec::new());
+                        let mut reader_stderr = FramedRead::new(child.stderr.take().unwrap(), LinesCodec::new());
+                        loop {
+                            // Sleep to receive key event
+                            thread::sleep(time::Duration::from_millis(10));
+
+                            let mut is_cancel = false;
+                            {
+                                if let Some(Ok(grep_cancel_vec)) = GREP_CANCEL_VEC.get().map(|vec| vec.try_lock()) {
+                                    is_cancel = grep_cancel_vec[grep_info_vec_len];
+                                    if is_cancel {
+                                        drop(child);
+                                        grep_info.is_result_continue = false;
+                                        break;
+                                    }
+                                }
+                            }
+                            if let Some(result) = reader_stdout.next().fuse().await {
+                                send_grep_job(result, &mut tx_grep, is_cancel, &grep_info);
+                            } else {
+                                grep_info.is_stdout_end = true;
+                            }
+                            if let Some(result) = reader_stderr.next().fuse().await {
+                                send_grep_job(result, &mut tx_grep, is_cancel, &grep_info);
+                            } else {
+                                grep_info.is_stderr_end = true;
+                            }
+                            if grep_info.is_stdout_end && grep_info.is_stderr_end {
+                                grep_info.is_result_continue = false;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
-        } else {
-            select! {
-            maybe_event = event_next => {
-                is_exit =  run_events(out, hbar, editor, mbar, prom, help, sbar, maybe_event);
-            }}
         }
-        if is_exit {
-            break;
-        }
-    }
-    Ok(())
-}
+    });
 
-async fn exec_events<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> anyhow::Result<()> {
-    let mut reader = EventStream::new();
-    let mut is_exit = false;
-    loop {
-        let mut event_next = reader.next().fuse();
-        select! {
-            maybe_event = event_next => {
-                is_exit =  run_events(out, hbar, editor, mbar, prom, help, sbar, maybe_event);
+    for job in rx {
+        match job.job_type {
+            JobType::Event => {
+                if EvtAct::match_event(job.job_evt.unwrap().evt, &mut out, &mut term) {
+                    break;
+                }
             }
-        }
-        if is_exit {
-            break;
+            JobType::GrepResult => EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap()),
         }
     }
-    Ok(())
+    Terminal::exit();
+    // TODO
+    exit(0);
 }
 
-fn run_events<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar, maybe_event: Option<Result<Event, ErrorKind>>) -> bool {
-    let mut is_exit = false;
-
-    if let Some(Ok(event)) = maybe_event {
-        editor.evt = event.clone();
-        is_exit = EvtAct::match_event(out, hbar, editor, mbar, prom, help, sbar);
-        if is_exit {
-            Terminal::exit();
-        }
+pub fn send_grep_job(result: Result<String, LinesCodecError>, tx_grep: &mut Sender<Job>, is_cancel: bool, grep_info: &GrepInfo) {
+    if let Ok(grep_str) = result {
+        let job = Job {
+            job_type: JobType::GrepResult,
+            job_grep: Some(JobGrep {
+                grep_str,
+                is_cancel,
+                is_stdout_end: grep_info.is_stdout_end,
+                is_stderr_end: grep_info.is_stderr_end,
+            }),
+            ..Job::default()
+        };
+        let _ = tx_grep.send(job);
+        //   Log::ep_s("Send:");
     }
-    return is_exit;
 }

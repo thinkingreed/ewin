@@ -1,27 +1,40 @@
-use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, colors::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*, util::*};
+use crate::{
+    colors::*,
+    def::*,
+    global::*,
+    log::*,
+    model::*,
+    prompt::prompt::*,
+    prompt::promptcont::promptcont::*,
+    tab::{Tab, TabState},
+    terminal::*,
+    util::*,
+};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
-use std::{env, fs, path::Path};
+use std::{cell::RefCell, env, fs, path::Path, rc::Rc, sync::Arc};
+use tokio::sync::Mutex;
 
 impl EvtAct {
-    pub fn grep(editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt) -> EvtActType {
+    pub fn grep(term: &mut Terminal, tab: &mut Tab) -> EvtActType {
         Log::ep_s("Process.grep");
 
-        match editor.evt {
+        match tab.editor.evt {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {
-                    let search_str = prom.cont_1.buf.iter().collect::<String>();
-                    let search_filenm = prom.cont_2.buf.iter().collect::<String>();
-                    let mut search_folder = prom.cont_3.buf.iter().collect::<String>();
+                    let search_str = tab.prom.cont_1.buf.iter().collect::<String>();
+                    let search_filenm = tab.prom.cont_2.buf.iter().collect::<String>();
+                    let mut search_folder = tab.prom.cont_3.buf.iter().collect::<String>();
 
                     if search_str.len() == 0 {
-                        mbar.set_err(&LANG.not_entered_search_str);
+                        tab.mbar.set_err(&LANG.not_entered_search_str);
                     } else if search_filenm.len() == 0 {
-                        mbar.set_err(&LANG.not_entered_search_file);
+                        tab.mbar.set_err(&LANG.not_entered_search_file);
                     } else if search_folder.len() == 0 {
-                        mbar.set_err(&LANG.not_entered_search_folder);
+                        tab.mbar.set_err(&LANG.not_entered_search_folder);
                     } else {
-                        mbar.clear();
-                        prom.clear();
+                        tab.mbar.clear();
+                        tab.prom.clear();
+                        tab.state.clear();
 
                         let current_dir = env::current_dir().unwrap().display().to_string();
                         Log::ep_s(&current_dir);
@@ -32,22 +45,59 @@ impl EvtAct {
                         Log::ep_s(&search_folder);
                         let path = Path::new(&search_folder).join(&search_filenm);
 
-                        prom.cache_search_filenm = search_filenm.clone();
-                        prom.cache_search_folder = search_folder.clone();
+                        tab.prom.cache_search_filenm = search_filenm.clone();
+                        tab.prom.cache_search_folder = search_folder.clone();
 
-                        let cfg = CFG.get().unwrap().try_lock().unwrap();
-                        let args = format!(
-                            "search_str={} search_file={} search_case_sens={} search_regex={}",
-                            search_str,
-                            path.to_string_lossy().to_string(),
-                            cfg.general.editor.search.case_sens.to_string(),
-                            cfg.general.editor.search.regex.to_string()
-                        );
-                        Log::ep_s(&args);
+                        let mut tab_grep = Tab::new();
+                        tab_grep.editor.search.str = search_str.clone();
+                        tab_grep.editor.search.file = path.to_string_lossy().to_string();
+                        tab_grep.editor.search.folder = search_folder.clone();
+                        tab_grep.editor.search.filenm = search_filenm.clone();
 
-                        Terminal::startup_terminal(args);
+                        Prompt::grep_result(term, tab);
+                        tab_grep.editor.set_cur_default();
+                        tab_grep.editor.scroll();
+                        tab_grep.editor.scroll_horizontal();
+                        tab_grep.mbar.set_info(&LANG.searching);
+                        tab_grep.editor.d_range.draw_type = DrawType::All;
+
+                        tab_grep.state.grep_info.is_result_continue = true;
+                        tab_grep.state.grep_info.is_stdout_end = false;
+                        tab_grep.state.grep_info.is_stderr_end = false;
+                        tab_grep.state.grep_info.search_str = search_str.clone();
+                        tab_grep.state.grep_info.search_filenm = search_filenm.clone();
+                        tab_grep.state.grep_info.search_folder = search_folder.clone();
+
+                        term.tabs_idx = term.tabs.tab_vec.len();
+
+                        if let Some(mu_grep_cancel_vec) = GREP_CANCEL_VEC.get() {
+                            Log::ep_s("grep_info Get");
+                            if let Ok(mut grep_cancel_vec) = mu_grep_cancel_vec.try_lock() {
+                                grep_cancel_vec.resize_with(term.tabs_idx, || false);
+                                //grep_cancel_vec.insert(term.tabs_idx, true);
+                            }
+                        } else {
+                            let vec = vec![false, false];
+                            let _ = GREP_CANCEL_VEC.set(tokio::sync::Mutex::new(vec));
+                        }
+
+                        if let Some(mu_grep_info_vec) = GREP_INFO_VEC.get() {
+                            Log::ep_s("grep_info Get");
+                            if let Ok(mut grep_info_vec) = mu_grep_info_vec.try_lock() {
+                                grep_info_vec.resize_with(term.tabs_idx, || GrepInfo::default());
+                                grep_info_vec.insert(term.tabs_idx, tab_grep.state.grep_info.clone());
+                            }
+                        } else {
+                            let vec = vec![GrepInfo::default(), tab_grep.state.grep_info.clone()];
+                            let _ = GREP_INFO_VEC.set(tokio::sync::Mutex::new(vec));
+                        }
+
+                        term.set_disp_size(&mut tab_grep);
+                        term.tabs.tab_vec.push(Arc::new(Mutex::new(tab_grep)));
+
+                        return EvtActType::Next;
                     }
-                    editor.d_range.draw_type = DrawType::All;
+                    tab.editor.d_range.draw_type = DrawType::All;
                     return EvtActType::DrawOnly;
                 }
                 _ => return EvtActType::Hold,
@@ -58,35 +108,35 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn grep(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
-        self.is_grep = true;
-        self.disp_row_num = 9;
-        Terminal::set_disp_size(hbar, editor, mbar, self, help, sbar);
-        let mut cont_1 = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::First);
-        let mut cont_2 = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::Second);
-        let mut cont_3 = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::Third);
-        cont_1.set_grep(self);
-        cont_2.set_grep(self);
-        cont_3.set_grep(self);
-        self.cont_1 = cont_1;
-        self.cont_2 = cont_2;
-        self.cont_3 = cont_3;
+    pub fn grep(term: &mut Terminal, tab: &mut Tab) {
+        tab.state.grep_info.is_grep = true;
+        tab.prom.disp_row_num = 9;
+        term.set_disp_size(tab);
+        let mut cont_1 = PromptCont::new_edit(tab.prom.disp_row_posi as u16, PromptContPosi::First);
+        let mut cont_2 = PromptCont::new_edit(tab.prom.disp_row_posi as u16, PromptContPosi::Second);
+        let mut cont_3 = PromptCont::new_edit(tab.prom.disp_row_posi as u16, PromptContPosi::Third);
+        cont_1.set_grep(&tab.prom);
+        cont_2.set_grep(&tab.prom);
+        cont_3.set_grep(&tab.prom);
+        tab.prom.cont_1 = cont_1;
+        tab.prom.cont_2 = cont_2;
+        tab.prom.cont_3 = cont_3;
     }
-    pub fn tab(&mut self, is_asc: bool) {
+    pub fn tab(&mut self, is_asc: bool, tab_state: &TabState) {
         Log::ep_s("tab");
         Log::ep("is_asc ", &is_asc);
 
-        if self.is_replace {
+        if tab_state.is_replace {
             match self.buf_posi {
-                PromptContPosi::First => self.cursor_down(),
-                PromptContPosi::Second => self.cursor_up(),
+                PromptContPosi::First => self.cursor_down(tab_state),
+                PromptContPosi::Second => self.cursor_up(tab_state),
                 _ => {}
             }
-        } else if self.is_grep {
+        } else if tab_state.grep_info.is_grep {
             match self.buf_posi {
                 PromptContPosi::First => {
                     if is_asc {
-                        self.cursor_down();
+                        self.cursor_down(tab_state);
                     } else {
                         self.buf_posi = PromptContPosi::Third;
                         Prompt::set_cur(&self.cont_1, &mut self.cont_3);
@@ -94,9 +144,9 @@ impl Prompt {
                 }
                 PromptContPosi::Second => {
                     if is_asc {
-                        self.cursor_down();
+                        self.cursor_down(tab_state);
                     } else {
-                        self.cursor_up();
+                        self.cursor_up(tab_state);
                     }
                 }
                 PromptContPosi::Third => {

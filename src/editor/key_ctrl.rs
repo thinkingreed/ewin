@@ -1,13 +1,13 @@
-use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, def::*, global::*, help::*, log::*, model::*, prompt::prompt::*, util::*};
+use crate::{def::*, global::*, log::*, model::*, tab::Tab, util::*};
 use std::{collections::BTreeSet, iter::FromIterator, path::Path, sync::Mutex};
 
 impl Editor {
     pub fn all_select(&mut self) {
         self.sel.clear();
-        self.sel.set_s(0, 0, self.rnw + 1);
+        self.sel.set_s(0, 0, self.get_rnw() + 1);
         let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.buf.len_lines() - 1)[..], false);
         // e_disp_x +1 for EOF
-        self.sel.set_e(self.buf.len_lines() - 1, cur_x, width + self.rnw + 1);
+        self.sel.set_e(self.buf.len_lines() - 1, cur_x, width + self.get_rnw() + 1);
         self.d_range.draw_type = DrawType::All;
     }
 
@@ -17,44 +17,6 @@ impl Editor {
         self.copy_str(cut_str.clone());
         // self.sel.clear();
         self.d_range.draw_type = DrawType::All;
-    }
-
-    pub fn save(&mut self, hbar: &mut HeaderBar, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> bool {
-        Log::ep_s("　　　　　　　  save");
-
-        if prom.cont_1.buf.len() > 0 {
-            let s = prom.cont_1.buf.iter().collect::<String>();
-            FILE.get().unwrap().try_lock().map(|mut file| file.path = Some(Path::new(&s).into())).unwrap();
-        }
-        let filenm;
-        let path;
-        {
-            let file_global = FILE.get().unwrap().try_lock().unwrap();
-            filenm = file_global.filenm.clone();
-            path = file_global.path.clone();
-        }
-        if !Path::new(&filenm).exists() && prom.cont_1.buf.len() == 0 {
-            Log::ep_s("!Path::new(&sbar.filenm).exists()");
-            prom.is_save_new_file = true;
-            prom.save_new_file(hbar, self, mbar, help, sbar);
-            return false;
-        } else {
-            if let Some(path) = path.as_ref() {
-                let result = self.buf.write_to(&path.to_string_lossy().to_string());
-                match result {
-                    Ok(()) => {
-                        FILE.get().unwrap().try_lock().map(|mut file| file.is_changed = false).unwrap();
-                        prom.clear();
-                        mbar.clear();
-                        return true;
-                    }
-                    Err(err) => {
-                        Log::ep("err", &err.to_string());
-                    }
-                }
-            }
-        }
-        return false;
     }
 
     pub fn copy_str(&mut self, str: String) {
@@ -106,22 +68,22 @@ impl Editor {
         if self.evt == PASTE {
             ep.str = self.get_clipboard().unwrap_or("".to_string());
         }
-        ep.sel.set_s(self.cur.y, self.cur.x - self.rnw, self.cur.disp_x);
+        ep.sel.set_s(self.cur.y, self.cur.x - self.get_rnw(), self.cur.disp_x);
         self.insert_str(&ep.str);
-        ep.sel.set_e(self.cur.y, self.cur.x - self.rnw, self.cur.disp_x);
+        ep.sel.set_e(self.cur.y, self.cur.x - self.get_rnw(), self.cur.disp_x);
     }
 
     pub fn insert_str(&mut self, str: &str) {
         Log::ep_s("        insert_str");
 
-        let i = self.buf.line_to_char(self.cur.y) + self.cur.x - self.rnw;
+        let i = self.buf.line_to_char(self.cur.y) + self.cur.x - self.get_rnw();
         self.buf.insert(i, str);
         let insert_strs: Vec<&str> = str.split(NEW_LINE).collect();
 
         let last_str_len = insert_strs.last().unwrap().chars().count();
         self.cur.y += insert_strs.len() - 1;
 
-        let x = if insert_strs.len() == 1 { self.cur.x - self.rnw + last_str_len } else { last_str_len };
+        let x = if insert_strs.len() == 1 { self.cur.x - self.get_rnw() + last_str_len } else { last_str_len };
         self.set_cur_target(self.cur.y, x);
 
         self.scroll();
@@ -204,7 +166,7 @@ impl Editor {
     }
 
     pub fn get_search_str_index(&mut self, is_asc: bool) -> usize {
-        let cur_x = self.cur.x - self.rnw;
+        let cur_x = self.cur.x - self.get_rnw();
 
         if is_asc {
             if self.search.idx == USIZE_UNDEFINED {
@@ -285,8 +247,12 @@ impl Editor {
         Log::ep_s("set_grep_result");
 
         self.rnw = self.buf.len_lines().to_string().len();
-        self.cur = Cur { y: self.buf.len_lines() - 1, x: self.rnw, disp_x: 0 };
-        self.cur.disp_x = self.rnw + get_char_width(self.buf.char(self.cur.y, self.cur.x - self.rnw));
+        self.cur = Cur {
+            y: self.buf.len_lines() - 1,
+            x: self.get_rnw(),
+            disp_x: 0,
+        };
+        self.cur.disp_x = self.get_rnw() + get_char_width(self.buf.char(self.cur.y, self.cur.x - self.get_rnw()));
         self.scroll();
 
         // -2 is a line break for each line
@@ -311,6 +277,7 @@ impl Editor {
                 false => (self.buf.line_to_char(row), self.buf.len_chars(), ignore_prefix_str.chars().count()),
             };
 
+            Log::ep("self.search.str", &self.search.str);
             Log::ep("ignore_prefix_str", &ignore_prefix_str);
             Log::ep("start_idx", &start_idx);
             Log::ep("end_idx", &end_idx);
@@ -334,7 +301,7 @@ impl Editor {
         }
     }
 
-    pub fn undo(&mut self, mbar: &mut MsgBar) {
+    pub fn undo(&mut self) {
         Log::ep_s("　　　　　　　　undo");
         if let Some(ep) = self.history.get_undo_last() {
             Log::ep("EvtProc", &ep);
@@ -367,8 +334,6 @@ impl Editor {
 
             self.scroll();
             self.scroll_horizontal();
-        } else {
-            mbar.set_err(&LANG.no_undo_operation.to_string());
         }
     }
 
@@ -395,5 +360,42 @@ impl Editor {
     }
 }
 
-#[cfg(test)]
-mod tests {}
+impl Tab {
+    pub fn save(&mut self) -> bool {
+        Log::ep_s("　　　　　　　  save");
+        if self.prom.cont_1.buf.len() > 0 {
+            let s = self.prom.cont_1.buf.iter().collect::<String>();
+            FILE.get().unwrap().try_lock().map(|mut file| file.path = Some(Path::new(&s).into())).unwrap();
+        }
+        let filenm;
+        let path;
+        {
+            let file_global = FILE.get().unwrap().try_lock().unwrap();
+            filenm = file_global.filenm.clone();
+            path = file_global.path.clone();
+        }
+        if !Path::new(&filenm).exists() && self.prom.cont_1.buf.len() == 0 {
+            Log::ep_s("!Path::new(&sbar.filenm).exists()");
+            self.prom.is_save_new_file = true;
+            self.prom.save_new_file();
+            return false;
+        } else {
+            if let Some(path) = path.as_ref() {
+                let result = self.editor.buf.write_to(&path.to_string_lossy().to_string());
+                match result {
+                    Ok(()) => {
+                        FILE.get().unwrap().try_lock().map(|mut file| file.is_changed = false).unwrap();
+                        self.prom.clear();
+                        self.mbar.clear();
+                        self.state.clear();
+                        return true;
+                    }
+                    Err(err) => {
+                        Log::ep("err", &err.to_string());
+                    }
+                }
+            }
+        }
+        return false;
+    }
+}

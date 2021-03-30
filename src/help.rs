@@ -1,4 +1,4 @@
-use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::StatusBar, colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, terminal::*, util::*};
+use crate::{colors::*, def::*, global::*, log::*, model::*, util::*};
 use crossterm::{cursor::*, terminal::*};
 use unicode_width::UnicodeWidthChar;
 
@@ -36,7 +36,7 @@ pub struct KeyBind {
 }
 
 impl Help {
-    pub const DISP_ROW_NUM: usize = 5;
+    pub const DISP_ROW_NUM: usize = 4;
 
     const KEY_WIDTH: usize = 9;
     const KEY_WIDTH_WIDE: usize = 11;
@@ -47,19 +47,20 @@ impl Help {
         return Help { ..Help::default() };
     }
 
-    pub fn disp_toggle(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, sbar: &mut StatusBar) {
+    pub fn disp_toggle(&mut self, editor: &mut Editor) {
         self.mode = match self.mode {
             HelpMode::Show => HelpMode::None,
             HelpMode::None => HelpMode::Show,
         };
 
         if self.mode == HelpMode::Show {
-            Terminal::set_disp_size(hbar, editor, mbar, prom, self, sbar);
+            // TODO set_disp_size必要か確認
+            // term.set_disp_size();
             // Cursor moves out of help display area
             if editor.cur.y - editor.offset_y > editor.disp_row_num - 1 {
                 editor.cur.y = editor.offset_y + editor.disp_row_num - 1;
-                editor.cur.x = editor.rnw;
-                editor.cur.disp_x = editor.rnw + 1;
+                editor.cur.x = editor.get_rnw();
+                editor.cur.disp_x = editor.get_rnw() + 1;
             }
             editor.d_range.draw_type = DrawType::All;
         } else {
@@ -111,7 +112,7 @@ impl Help {
             */
         }
 
-        for (i, sy) in (0_usize..).zip(self.disp_row_posi - 1..self.disp_row_posi - 1 + self.disp_row_num) {
+        for (i, sy) in (0_usize..).zip(self.disp_row_posi - 1..=self.disp_row_posi - 1 + self.disp_row_num) {
             str_vec.push(format!("{}{}", MoveTo(0, sy as u16), Clear(ClearType::CurrentLine)));
             // Blank line to leave one line interval
             if i == 0 {

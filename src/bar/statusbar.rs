@@ -1,6 +1,6 @@
 use std::io::{stdout, BufWriter, Write};
 
-use crate::{colors::*, global::*, log::*, model::*, util::*};
+use crate::{colors::*, global::*, log::*, tab::*, util::*};
 use crossterm::{cursor::*, terminal::*};
 #[derive(Debug, Clone)]
 pub struct StatusBar {
@@ -31,26 +31,26 @@ impl StatusBar {
     pub fn new() -> Self {
         StatusBar { ..StatusBar::default() }
     }
-    pub fn draw(&mut self, str_vec: &mut Vec<String>, editor: &mut Editor) {
+    pub fn draw(str_vec: &mut Vec<String>, tab: &mut Tab) {
         Log::ep_s("　　　　　　　　StatusBar.draw");
 
-        if self.disp_row_num == 0 {
+        if tab.sbar.disp_row_num == 0 {
             return;
         }
-        let cur_s = self.get_cur_str(editor);
-        let (other_w, cur_w) = self.get_areas_width(self.disp_col_num, &get_str_width(&cur_s) + 1);
+        let cur_s = StatusBar::get_cur_str(tab);
+        let (other_w, cur_w) = tab.sbar.get_areas_width(tab.sbar.disp_col_num, &get_str_width(&cur_s) + 1);
 
-        self.other_str = " ".repeat(other_w);
+        tab.sbar.other_str = " ".repeat(other_w);
         // Adjusted by the difference between the character width and the number of characters
-        self.cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
+        tab.sbar.cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
 
         let sber_str = format!(
             "{}{}{}{}{}{}",
-            MoveTo(0, (self.disp_row_posi) as u16),
+            MoveTo(0, (tab.sbar.disp_row_posi) as u16),
             Clear(ClearType::CurrentLine),
             Colors::get_sber_bg(),
             Colors::get_sber_fg(),
-            format!("{}{}", self.other_str, self.cur_str),
+            format!("{}{}", tab.sbar.other_str, tab.sbar.cur_str),
             Colors::get_default_fg(),
         );
 
@@ -66,9 +66,15 @@ impl StatusBar {
         str_vec.clear();
     }
 
-    pub fn get_cur_str(&mut self, editor: &mut Editor) -> String {
-        let row_str = format!("{}({}/{})", &LANG.row, (editor.cur.y + 1).to_string(), editor.buf.len_lines().to_string());
-        let col_str = format!("{}({}/{})", &LANG.col, editor.cur.x + 1 - editor.rnw, (editor.buf.len_line_chars(editor.cur.y) - 1).to_string()).to_string();
+    pub fn get_cur_str(tab: &mut Tab) -> String {
+        let cur = tab.editor.cur.clone();
+        let len_lines = tab.editor.buf.len_lines();
+        let rnw = tab.editor.get_rnw();
+        let len_line_chars = tab.editor.buf.len_line_chars(tab.editor.cur.y);
+
+        let row_str = format!("{}({}/{})", &LANG.row, (cur.y + 1).to_string(), len_lines.to_string());
+        let len_line_chars = if len_line_chars == 0 { 0 } else { len_line_chars - 1 };
+        let col_str = format!("{}({}/{})", &LANG.col, cur.x + 1 - rnw, len_line_chars.to_string()).to_string();
         let cur_posi = format!("{rows} {cols}", rows = row_str, cols = col_str,);
         return cur_posi;
     }

@@ -1,12 +1,11 @@
 use crate::{
-    bar::headerbar::*,
-    bar::msgbar::*,
-    bar::statusbar::*,
+    bar::headerbar::HeaderBar,
+    bar::statusbar::StatusBar,
     global::*,
     help::{Help, HelpMode},
     log::*,
     model::*,
-    prompt::prompt::*,
+    tab::Tab,
 };
 use crossterm::{
     cursor::*,
@@ -17,15 +16,54 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use std::{
+    cell::RefCell,
     ffi::OsStr,
     io::{self, stdout, Write},
     path::Path,
     path::PathBuf,
     process,
     process::Command,
+    rc::Rc,
+    sync::Arc,
 };
-#[derive(Debug)]
-pub struct Terminal {}
+use tokio::sync::Mutex;
+#[derive(Debug, Clone)]
+
+pub struct Terminal {
+    pub hbar: HeaderBar,
+    pub help: Help,
+    pub tabs: Tabs,
+    pub tabs_idx: usize,
+}
+
+impl Terminal {
+    pub fn new() -> Self {
+        return Terminal { ..Terminal::default() };
+    }
+}
+
+impl Default for Terminal {
+    fn default() -> Self {
+        Terminal {
+            hbar: HeaderBar::new(),
+            tabs: Tabs::default(),
+            tabs_idx: 0,
+            help: Help::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Tabs {
+    pub tab_vec: Vec<Arc<Mutex<Tab>>>,
+}
+
+impl Default for Tabs {
+    fn default() -> Self {
+        Tabs { tab_vec: vec![Arc::new(Mutex::new(Tab::new()))] }
+    }
+}
+impl Tabs {}
 
 pub struct Args {
     pub mode: ActivatMode,
@@ -65,43 +103,45 @@ pub enum ActivatMode {
 }
 
 impl Terminal {
-    pub fn draw<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> Result<(), io::Error> {
+    pub fn draw<T: Write>(&mut self, out: &mut T, tab: &mut Tab) {
         Log::ep_s("　　　　　　　　All draw");
 
-        Terminal::set_disp_size(hbar, editor, mbar, prom, help, sbar);
+        self.set_disp_size(tab);
 
-        let d_range = editor.d_range;
+        let d_range = tab.editor.d_range;
         Log::ep("d_range", &d_range);
 
         if !(d_range.draw_type == DrawType::Not || d_range.draw_type == DrawType::MoveCur) {
-            editor.draw_cache();
-            editor.draw(out);
+            tab.editor.draw_cache();
+            tab.editor.draw(out);
         }
 
-        hbar.draw(out);
-
+        self.hbar.draw(out);
         let mut str_vec: Vec<String> = vec![];
 
-        help.draw(&mut str_vec);
-        mbar.draw(&mut str_vec);
-        prom.draw(&mut str_vec);
+        self.help.draw(&mut str_vec);
+        tab.mbar.draw(&mut str_vec);
+        tab.prom.draw(&mut str_vec, &tab.state);
         if d_range.draw_type != DrawType::Not {
-            sbar.draw(&mut str_vec, editor);
+            StatusBar::draw(&mut str_vec, tab)
         }
-        Terminal::draw_cur(&mut str_vec, editor, prom);
+        Terminal::draw_cur(&mut str_vec, tab);
 
         let _ = out.write(&str_vec.concat().as_bytes());
-        out.flush()?;
-
-        return Ok(());
+        out.flush().unwrap();
     }
 
-    pub fn draw_cur(str_vec: &mut Vec<String>, editor: &mut Editor, prom: &mut Prompt) {
+    pub fn draw_cur(str_vec: &mut Vec<String>, tab: &mut Tab) {
         Log::ep_s("　　　　　　　set_cur_str");
 
-        if prom.is_save_new_file || prom.is_search || prom.is_replace || prom.is_grep || prom.is_move_line {
-            prom.draw_cur(str_vec);
+        if tab.prom.is_save_new_file || tab.state.is_search || tab.state.is_replace || tab.state.grep_info.is_grep || tab.prom.is_move_line {
+            tab.prom.draw_cur(str_vec);
         } else {
+            Log::ep("cur", &tab.editor.cur);
+            Log::ep("editor.get_rnw()", &tab.editor.get_rnw());
+            Log::ep("editor.cur.disp_x - 1 - editor.offset_disp_x", &(tab.editor.cur.disp_x - 1 - tab.editor.offset_disp_x));
+            Log::ep("editor.cur.disp_x", &tab.editor.cur.disp_x);
+
             /*
             Log::ep("cur.disp_x - 1 - editor.offset_disp_x", &(editor.cur.disp_x - 1 - editor.offset_disp_x));
             Log::ep("cur.disp_x ", &editor.cur.disp_x);
@@ -109,7 +149,7 @@ impl Terminal {
             Log::ep("cur.y", &editor.cur.y);
             Log::ep("offset_y", &editor.offset_y);
             */
-            str_vec.push(MoveTo((editor.cur.disp_x - 1 - editor.offset_disp_x) as u16, (editor.cur.y - editor.offset_y + editor.disp_row_posi) as u16).to_string());
+            str_vec.push(MoveTo((tab.editor.cur.disp_x - tab.editor.offset_disp_x) as u16, (tab.editor.cur.y - tab.editor.offset_y + tab.editor.disp_row_posi) as u16).to_string());
         }
     }
 
@@ -122,39 +162,42 @@ impl Terminal {
         return true;
     }
 
-    pub fn set_disp_size(hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn set_disp_size(&mut self, tab: &mut Tab) {
+        Log::ep_s("set_disp_size");
+
         let (cols, rows) = size().unwrap();
         let (cols, rows) = (cols as usize, rows as usize);
 
         Log::ep("rows", &rows);
         Log::ep("cols", &cols);
 
-        sbar.disp_row_num = 1;
-        sbar.disp_row_posi = rows;
-        sbar.disp_col_num = cols;
+        self.hbar.set_posi(cols);
+        self.help.disp_row_num = if self.help.mode == HelpMode::Show { Help::DISP_ROW_NUM } else { 0 };
+        self.help.disp_row_posi = if self.help.mode == HelpMode::Show { rows - self.help.disp_row_num } else { 0 };
 
-        Log::ep("help.mode", &help.mode);
+        tab.sbar.disp_row_num = 1;
+        let help_disp_row_num = if self.help.disp_row_num > 0 { self.help.disp_row_num + 1 } else { 0 };
+        tab.sbar.disp_row_posi = rows - help_disp_row_num;
+        tab.sbar.disp_col_num = cols;
 
-        help.disp_row_num = if help.mode == HelpMode::Show { Help::DISP_ROW_NUM } else { 0 };
-        help.disp_row_posi = if help.mode == HelpMode::Show { rows - sbar.disp_row_num - help.disp_row_num + 1 } else { 0 };
+        Log::ep("self.help.mode", &self.help.mode);
 
-        prom.disp_col_num = cols;
-        prom.disp_row_posi = rows - prom.disp_row_num + 1 - help.disp_row_num - sbar.disp_row_num;
+        tab.prom.disp_col_num = cols;
+        tab.prom.disp_row_posi = rows - tab.prom.disp_row_num + 1 - self.help.disp_row_num - tab.sbar.disp_row_num;
 
-        mbar.disp_col_num = cols;
-        mbar.disp_readonly_row_num = if mbar.msg_readonly.is_empty() { 0 } else { 1 };
-        mbar.disp_keyrecord_row_num = if mbar.msg_keyrecord.is_empty() { 0 } else { 1 };
-        mbar.disp_row_num = if mbar.msg.str.is_empty() { 0 } else { 1 };
+        tab.mbar.disp_col_num = cols;
+        tab.mbar.disp_readonly_row_num = if tab.mbar.msg_readonly.is_empty() { 0 } else { 1 };
+        tab.mbar.disp_keyrecord_row_num = if tab.mbar.msg_keyrecord.is_empty() { 0 } else { 1 };
+        tab.mbar.disp_row_num = if tab.mbar.msg.str.is_empty() { 0 } else { 1 };
 
-        mbar.disp_row_posi = rows - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
-        mbar.disp_keyrecord_row_posi = rows - mbar.disp_row_num - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
-        mbar.disp_readonly_row_posi = rows - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
+        tab.mbar.disp_row_posi = rows - tab.prom.disp_row_num - self.help.disp_row_num - tab.sbar.disp_row_num;
+        tab.mbar.disp_keyrecord_row_posi = rows - tab.mbar.disp_row_num - tab.prom.disp_row_num - self.help.disp_row_num - tab.sbar.disp_row_num;
+        tab.mbar.disp_readonly_row_posi = rows - tab.mbar.disp_keyrecord_row_num - tab.mbar.disp_row_num - tab.prom.disp_row_num - self.help.disp_row_num - tab.sbar.disp_row_num;
 
-        editor.disp_col_num = cols;
-        editor.disp_row_num = rows - hbar.disp_row_num - mbar.disp_readonly_row_num - mbar.disp_keyrecord_row_num - mbar.disp_row_num - prom.disp_row_num - help.disp_row_num - sbar.disp_row_num;
+        tab.editor.disp_col_num = cols;
+        tab.editor.disp_row_num = rows - self.hbar.disp_row_num - tab.mbar.disp_readonly_row_num - tab.mbar.disp_keyrecord_row_num - tab.mbar.disp_row_num - tab.prom.disp_row_num - self.help.disp_row_num - tab.sbar.disp_row_num;
 
-        hbar.set_posi(cols);
-        Log::ep("editor.disp_row_num", &editor.disp_row_num);
+        Log::ep("editor.disp_row_num", &tab.editor.disp_row_num);
         /*
            Log::ep("mbar.disp_keyrecord_row_num", &mbar.disp_keyrecord_row_num);
            Log::ep("mbar.disp_readonly_row_num", &mbar.disp_readonly_row_num);
@@ -166,12 +209,14 @@ impl Terminal {
         */
     }
 
-    pub fn init_draw<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
-        prom.clear();
-        mbar.clear();
-        editor.d_range.draw_type = DrawType::All;
-        Terminal::draw(out, hbar, editor, mbar, prom, help, sbar).unwrap();
+    pub fn init_draw<T: Write>(&mut self, out: &mut T, tab: &mut Tab) {
+        tab.prom.clear();
+        tab.state.clear();
+        tab.mbar.clear();
+        tab.editor.d_range.draw_type = DrawType::All;
+        self.draw(out, tab);
     }
+
     pub fn show_cur() {
         execute!(stdout(), Show).unwrap();
     }
@@ -248,50 +293,54 @@ impl Terminal {
         return args;
     }
 
-    pub fn activate(args: &Args, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn activate<T: Write>(&mut self, args: &Args, out: &mut T) {
+        let arc = Arc::clone(&self.tabs.tab_vec[self.tabs_idx]);
+        let mut tab = arc.try_lock().unwrap();
+
         // grep_result
 
-        // editor.file.ext = args.ext.clone();
+        /*
+         if args.mode == ActivatMode::GrepResult || args.mode == ActivatMode::Grep {
+             editor.search.str = args.search_str.clone();
+             editor.search.file = args.search_file.clone();
+             CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.case_sens = args.search_case_sens).unwrap();
+             CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.regex = args.search_regex).unwrap();
+             editor.search.folder = args.search_folder.clone();
+             editor.search.filenm = args.search_filenm.clone();
 
-        if args.mode == ActivatMode::GrepResult || args.mode == ActivatMode::Grep {
-            editor.search.str = args.search_str.clone();
-            editor.search.file = args.search_file.clone();
-            CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.case_sens = args.search_case_sens).unwrap();
-            CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.regex = args.search_regex).unwrap();
-            editor.search.folder = args.search_folder.clone();
-            editor.search.filenm = args.search_filenm.clone();
+             if args.mode == ActivatMode::Grep {
+                 FILE.get().unwrap().try_lock().map(|mut file| file.filenm = format!("grep \"{}\" {}", &editor.search.str, &editor.search.file)).unwrap();
 
-            if args.mode == ActivatMode::Grep {
-                FILE.get().unwrap().try_lock().map(|mut file| file.filenm = format!("grep \"{}\" {}", &editor.search.str, &editor.search.file)).unwrap();
+                 prom.is_grep_result = true;
+                 prom.is_grep_stdout = true;
+                 prom.is_grep_stderr = true;
 
-                prom.is_grep_result = true;
-                prom.is_grep_stdout = true;
-                prom.is_grep_stderr = true;
+                 prom.grep_result(self);
+                 editor.set_cur_default();
+                 editor.scroll();
+                 editor.scroll_horizontal();
+                 mbar.set_info(&LANG.searching);
+             } else {
+                 let filenm = args.search_file.clone();
+                 FILE.get().unwrap().try_lock().map(|mut file| file.filenm = filenm.clone()).unwrap();
 
-                prom.grep_result(hbar, editor, mbar, help, sbar);
-                editor.set_cur_default();
-                editor.scroll();
-                editor.scroll_horizontal();
-                mbar.set_info(&LANG.searching);
-            } else {
-                let filenm = args.search_file.clone();
-                FILE.get().unwrap().try_lock().map(|mut file| file.filenm = filenm.clone()).unwrap();
+                 editor.search.row_num = args.search_row_num.clone();
 
-                editor.search.row_num = args.search_row_num.clone();
+                 Log::ep("editor.search", &editor.search);
 
-                Log::ep("editor.search", &editor.search);
+                 editor.open(Path::new(&filenm), &mut *mbar);
+                 editor.search_str(true, false);
+             }
 
-                editor.open(Path::new(&filenm), mbar);
-                editor.search_str(true, false);
-            }
+         // Normal
+         } else {
+        */
+        let filenm = args.filenm.clone();
+        FILE.get().unwrap().try_lock().map(|mut file| file.filenm = filenm.clone()).unwrap();
 
-        // Normal
-        } else {
-            let filenm = args.filenm.clone();
-            FILE.get().unwrap().try_lock().map(|mut file| file.filenm = filenm.clone()).unwrap();
-
-            editor.open(Path::new(&filenm), mbar);
-        }
+        tab.open(Path::new(&filenm));
+        self.draw(out, &mut tab);
+        //  }
     }
 
     pub fn check_activate_mode(file_path: &String) -> ActivatMode {

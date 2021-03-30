@@ -1,10 +1,11 @@
-use crate::{bar::msgbar::MsgBar, colors::*, def::*, log::*, model::Editor, prompt::promptcont::promptcont::PromptContPosi::*, prompt::promptcont::promptcont::*, util::*};
+use crate::{colors::*, def::*, log::*, prompt::promptcont::promptcont::PromptContPosi::*, prompt::promptcont::promptcont::*, tab::TabState, util::*};
 use crossterm::{cursor::*, event::*, terminal::ClearType::*, terminal::*};
 
 use std::{
     fmt,
     io::{stdout, BufWriter, Write},
 };
+#[derive(Debug, Clone)]
 pub struct Prompt {
     pub disp_row_num: usize,
     pub disp_row_posi: usize,
@@ -19,17 +20,13 @@ pub struct Prompt {
     pub cache_search_filenm: String,
     pub cache_search_folder: String,
     // fn clear not clear
-    pub is_grep_result: bool,
-    pub is_grep_result_cancel: bool,
     // *************
     pub is_close_confirm: bool,
     pub is_save_new_file: bool,
-    pub is_search: bool,
-    pub is_replace: bool,
-    pub is_grep: bool,
+    // pub is_search: bool,
+    // pub is_replace: bool,
+    // pub is_grep: bool,
     // grep result stdout/stderr output complete flg
-    pub is_grep_stdout: bool,
-    pub is_grep_stderr: bool,
     pub is_key_record: bool,
     pub is_key_record_exec: bool,
     pub is_key_record_exec_draw: bool,
@@ -42,8 +39,8 @@ impl Default for Prompt {
             disp_row_num: 0,
             disp_row_posi: 0,
             disp_col_num: 0,
-            is_grep_result: false,
-            is_grep_result_cancel: false,
+            //  is_grep_result: false,
+            //  is_grep_result_cancel: false,
             cont_1: PromptCont::default(),
             cont_2: PromptCont::default(),
             cont_3: PromptCont::default(),
@@ -53,11 +50,9 @@ impl Default for Prompt {
             cache_search_folder: String::new(),
             is_close_confirm: false,
             is_save_new_file: false,
-            is_search: false,
-            is_replace: false,
-            is_grep: false,
-            is_grep_stdout: false,
-            is_grep_stderr: false,
+            //  is_search: false,
+            // is_replace: false,
+            // is_grep: false,
             is_key_record: false,
             is_key_record_exec: false,
             is_key_record_exec_draw: false,
@@ -101,15 +96,13 @@ impl Prompt {
         self.buf_posi = PromptContPosi::First;
         self.is_close_confirm = false;
         self.is_save_new_file = false;
-        self.is_search = false;
-        self.is_replace = false;
-        self.is_grep = false;
-        self.is_grep_stdout = false;
-        self.is_grep_stderr = false;
+        //   self.is_search = false;
+        // self.is_replace = false;
+        // self.is_grep = false;
         self.is_move_line = false;
     }
 
-    pub fn draw(&mut self, str_vec: &mut Vec<String>) {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>, tab_state: &TabState) {
         Log::ep_s("　　　　　　　　Prompt draw");
 
         if self.cont_1.guide.len() > 0 {
@@ -118,7 +111,7 @@ impl Prompt {
 
             if self.is_save_new_file || self.is_move_line {
                 Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
-            } else if self.is_search {
+            } else if tab_state.is_search {
                 let o1 = &self.cont_1.opt_1;
                 let o2 = &self.cont_1.opt_2;
                 let opt_str = format!(
@@ -135,7 +128,7 @@ impl Prompt {
                 Prompt::set_draw_vec(str_vec, self.cont_1.opt_row_posi, &opt_str);
                 Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
             }
-            if self.is_replace || self.is_grep {
+            if tab_state.is_replace || tab_state.grep_info.is_grep {
                 let o1 = &self.cont_1.opt_1;
                 let o2 = &self.cont_1.opt_2;
                 let opt_str = format!("{}{}  {}{}", o1.key, o1.get_check_str(), o2.key, o2.get_check_str());
@@ -145,7 +138,7 @@ impl Prompt {
                 Prompt::set_draw_vec(str_vec, self.cont_2.buf_desc_row_posi, &self.cont_2.buf_desc);
                 Prompt::set_draw_vec(str_vec, self.cont_2.buf_row_posi, &self.cont_2.get_draw_buf_str());
 
-                if self.is_grep {
+                if tab_state.grep_info.is_grep {
                     Prompt::set_draw_vec(str_vec, self.cont_3.buf_desc_row_posi, &self.cont_3.buf_desc);
                     Prompt::set_draw_vec(str_vec, self.cont_3.buf_row_posi, &self.cont_3.get_draw_buf_str());
                 }
@@ -161,10 +154,10 @@ impl Prompt {
     pub fn set_draw_vec(str_vec: &mut Vec<String>, posi: u16, cont: &String) {
         str_vec.push(format!("{}{}{}", MoveTo(0, posi), Clear(CurrentLine), cont));
     }
-    pub fn draw_only<T: Write>(&mut self, out: &mut T) {
+    pub fn draw_only<T: Write>(&mut self, out: &mut T, tab_state: &TabState) {
         Log::ep_s("　　　　　　　　Prompt draw_only");
         let mut v: Vec<String> = vec![];
-        self.draw(&mut v);
+        self.draw(&mut v, tab_state);
         self.draw_cur(&mut v);
         let _ = out.write(&v.concat().as_bytes());
         out.flush().unwrap();
@@ -193,14 +186,14 @@ impl Prompt {
         str_vec.push(MoveTo(x as u16, y as u16).to_string());
     }
 
-    pub fn cursor_down(&mut self) {
+    pub fn cursor_down(&mut self, tab_state: &TabState) {
         Log::ep_s("◆　cursor_down");
-        if self.is_replace {
+        if tab_state.is_replace {
             if self.buf_posi == PromptContPosi::First {
                 self.buf_posi = PromptContPosi::Second;
                 Prompt::set_cur(&self.cont_1, &mut self.cont_2)
             }
-        } else if self.is_grep {
+        } else if tab_state.grep_info.is_grep {
             if self.buf_posi == PromptContPosi::First {
                 self.buf_posi = PromptContPosi::Second;
                 Prompt::set_cur(&self.cont_1, &mut self.cont_2)
@@ -211,15 +204,15 @@ impl Prompt {
         }
     }
 
-    pub fn cursor_up(&mut self) {
+    pub fn cursor_up(&mut self, tab_state: &TabState) {
         Log::ep_s("cursor_up");
 
-        if self.is_replace {
+        if tab_state.is_replace {
             if self.buf_posi == PromptContPosi::Second {
                 self.buf_posi = PromptContPosi::First;
                 Prompt::set_cur(&self.cont_2, &mut self.cont_1)
             }
-        } else if self.is_grep {
+        } else if tab_state.grep_info.is_grep {
             if self.buf_posi == PromptContPosi::Second {
                 self.buf_posi = PromptContPosi::First;
                 Prompt::set_cur(&self.cont_2, &mut self.cont_1)
@@ -286,18 +279,18 @@ impl Prompt {
             Third => self.cont_3.shift_end(),
         }
     }
-    pub fn insert_char(&mut self, c: char, is_move_line: bool, editor: &mut Editor) {
+    pub fn insert_char(&mut self, c: char, rnw: usize) {
         match self.buf_posi {
-            First => self.cont_1.insert_char(c, is_move_line, editor),
-            Second => self.cont_2.insert_char(c, is_move_line, editor),
-            Third => self.cont_3.insert_char(c, is_move_line, editor),
+            First => self.cont_1.insert_char(c, self.is_move_line, rnw),
+            Second => self.cont_2.insert_char(c, self.is_move_line, rnw),
+            Third => self.cont_3.insert_char(c, self.is_move_line, rnw),
         }
     }
-    pub fn paste(&mut self, editor: &mut Editor, mbar: &mut MsgBar) -> bool {
+    pub fn paste(&mut self, clipboard: &String) -> bool {
         match &self.buf_posi {
-            First => self.cont_1.paste(editor, mbar),
-            Second => self.cont_2.paste(editor, mbar),
-            Third => self.cont_3.paste(editor, mbar),
+            First => self.cont_1.paste(clipboard),
+            Second => self.cont_2.paste(clipboard),
+            Third => self.cont_3.paste(clipboard),
         }
     }
 

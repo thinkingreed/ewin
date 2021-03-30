@@ -106,14 +106,12 @@ impl Editor {
     }
 
     fn set_regions(&mut self, cfg: &Cfg, y: usize, row_vec: Vec<char>, sel_ranges: SelRange) {
-        // Log::ep_s("                  set_regions");
-
         let mut cells: Vec<Cell> = vec![];
         let (mut x, mut width) = (0, 0);
         let (mut style_org, mut style_type_org) = (CharStyle::none(), CharStyleType::Nomal);
 
         let sx = if y == self.cur.y { self.offset_x } else { 0 };
-        let ex = min(sx + self.disp_col_num, self.buf.len_line_chars(y));
+        let ex = min(sx + self.disp_col_num - self.get_rnw() - Editor::RNW_MARGIN, self.buf.len_line_chars(y));
 
         let mut row: Vec<char> = vec![];
         row.resize(ex - sx, ' ');
@@ -130,7 +128,7 @@ impl Editor {
 
     fn set_style(&mut self, cfg: &Cfg, c: char, width: usize, y: usize, x: usize, style: &CharStyle, style_org: &mut CharStyle, style_type_org: &mut CharStyleType, sel_ranges: SelRange, regions: &mut Vec<Cell>) {
         let from_style = self.draw.get_from_style(cfg, x, &style, &style_org, style_type_org);
-        let style_type = self.draw.ctrl_style_type(c, width, &sel_ranges, &self.search.ranges, self.rnw, y, x);
+        let style_type = self.draw.ctrl_style_type(c, width, &sel_ranges, &self.search.ranges, self.get_rnw(), y, x);
 
         let to_style = match style_type {
             CharStyleType::Select => CharStyle::selected(&cfg),

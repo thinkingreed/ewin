@@ -12,6 +12,10 @@ pub mod global {
     pub static ENV: Lazy<Env> = Lazy::new(|| get_env());
     pub static CFG: OnceCell<Mutex<Cfg>> = OnceCell::new();
     pub static FILE: OnceCell<Mutex<File>> = OnceCell::new();
+    pub static GREP_INFO_VEC: OnceCell<tokio::sync::Mutex<Vec<GrepInfo>>> = OnceCell::new();
+    // Cancel is defined independently. Because it needs to be obtained when GREP_INFO_VEC is locked
+    pub static GREP_CANCEL_VEC: OnceCell<tokio::sync::Mutex<Vec<bool>>> = OnceCell::new();
+
     pub static IS_POWERSHELL_ENABLE: Lazy<bool> = Lazy::new(|| is_powershell_enable());
     pub static REPLACE_SEARCH_RANGE: OnceCell<Mutex<BTreeSet<(usize, usize)>>> = OnceCell::new();
     pub static REPLACE_REPLACE_RANGE: OnceCell<Mutex<BTreeSet<(usize, usize)>>> = OnceCell::new();
@@ -62,6 +66,7 @@ pub mod prompt {
 pub mod evt_act;
 pub mod help;
 pub mod log;
+pub mod tab;
 pub mod terminal;
 pub mod util;
 pub mod _cfg {

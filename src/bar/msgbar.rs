@@ -55,6 +55,7 @@ impl MsgBar {
     pub fn new() -> Self {
         MsgBar { ..MsgBar::default() }
     }
+   
 
     pub fn clear_mag(&mut self) {
         Log::ep_s("　　　　　　　　MsgBar.clear_mag");

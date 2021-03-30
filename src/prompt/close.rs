@@ -1,16 +1,16 @@
-use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, colors::*, global::*, help::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*};
+use crate::{colors::*, global::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, tab::Tab};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 
 impl EvtAct {
-    pub fn close(hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
-        match editor.evt {
+    pub fn close(tab: &mut Tab) -> EvtActType {
+        match tab.editor.evt {
             Key(KeyEvent { code: Char(c), .. }) => {
                 if c == 'y' {
                     // save成否判定
-                    if editor.save(hbar, mbar, prom, help, sbar) {
+                    if tab.save() {
                         return EvtActType::Exit;
                     } else {
-                        editor.d_range.draw_type = DrawType::All;
+                        tab.editor.d_range.draw_type = DrawType::All;
                         return EvtActType::DrawOnly;
                     }
                 } else if c == 'n' {
@@ -25,17 +25,16 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn close(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) -> bool {
+    pub fn close(&mut self) -> bool {
         if FILE.get().unwrap().try_lock().unwrap().is_changed == true {
-            self.save_confirm_str(hbar, editor, mbar, help, sbar);
+            self.save_confirm_str();
             self.is_close_confirm = true;
             return false;
         };
         return true;
     }
-    pub fn save_confirm_str(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn save_confirm_str(&mut self) {
         self.disp_row_num = 2;
-        Terminal::set_disp_size(hbar, editor, mbar, self, help, sbar);
         let mut cont = PromptCont::new_not_edit(self.disp_row_posi as u16);
         cont.set_save_confirm();
         self.cont_1 = cont;

@@ -1,7 +1,11 @@
 extern crate ropey;
 use crate::{def::*, editor::view::char_style::*};
 use chrono::NaiveDateTime;
-use crossterm::event::{Event, Event::Key, KeyCode::Null};
+use crossterm::event::{
+    Event,
+    Event::Key,
+    KeyCode::{End, Null},
+};
 use ropey::Rope;
 use std::cmp::{max, min};
 use std::collections::VecDeque;
@@ -131,6 +135,7 @@ pub struct Search {
     pub str: String,
     pub idx: usize,
     pub ranges: Vec<SearchRange>,
+    // Full path
     pub file: String,
     pub filenm: String,
     pub folder: String,
@@ -357,7 +362,7 @@ impl fmt::Display for Cur {
 }
 
 // エディタの内部状態
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Editor {
     pub buf: TextBuffer,
     pub buf_cache: Vec<Vec<char>>,
@@ -390,6 +395,8 @@ pub struct Editor {
 }
 
 impl Editor {
+    pub const RNW_MARGIN: usize = 1;
+
     pub fn new() -> Self {
         Editor {
             buf: TextBuffer::default(),
@@ -403,7 +410,7 @@ impl Editor {
             rnw: 0,
             sel: SelRange::default(),
             sel_org: SelRange::default(),
-            evt: Key(Null.into()),
+            evt: Key(End.into()),
             clipboard: String::new(),
             // for UT set
             disp_row_num: 5,
@@ -470,8 +477,60 @@ pub enum CharType {
     HalfSpace,
     FullSpace,
 }
+#[derive(Debug, Clone)]
+pub struct Job {
+    pub job_type: JobType,
+    pub job_evt: Option<JobEvent>,
+    pub job_grep: Option<JobGrep>,
+}
 
-#[derive(Debug)]
+impl Default for Job {
+    fn default() -> Self {
+        Job {
+            job_type: JobType::Event,
+            job_evt: None,
+            job_grep: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct JobEvent {
+    pub evt: Event,
+}
+
+impl Default for JobEvent {
+    fn default() -> Self {
+        JobEvent { evt: Event::Key(Null.into()) }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct JobGrep {
+    pub grep_str: String,
+    pub is_stdout_end: bool,
+    pub is_stderr_end: bool,
+    pub is_cancel: bool,
+}
+
+impl Default for JobGrep {
+    fn default() -> Self {
+        JobGrep {
+            grep_str: String::new(),
+            is_stdout_end: false,
+            is_stderr_end: false,
+            is_cancel: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum JobType {
+    Event,
+    GrepResult,
+}
+
+#[derive(Debug, Clone)]
 pub struct Draw {
     pub sy: usize,
     pub ey: usize,
@@ -622,5 +681,35 @@ impl fmt::Display for EvtType {
         }
     }
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct GrepInfo {
+    pub is_grep: bool,
+    pub is_stdout_end: bool,
+    pub is_stderr_end: bool,
+    pub is_result_continue: bool,
+    // pub is_grep_result_init: bool,
+    //  pub is_grep_result_cancel: bool,
+    pub search_str: String,
+    pub search_folder: String,
+    pub search_filenm: String,
+}
+
+impl Default for GrepInfo {
+    fn default() -> Self {
+        GrepInfo {
+            is_grep: false,
+            is_stdout_end: false,
+            is_stderr_end: false,
+            is_result_continue: false,
+            //  is_grep_result_init: false,
+            //  is_grep_result_cancel: false,
+            search_str: String::new(),
+            search_folder: String::new(),
+            search_filenm: String::new(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UT {}

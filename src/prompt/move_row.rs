@@ -1,37 +1,37 @@
-use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, colors::*, global::*, help::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*};
+use crate::{colors::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, tab::Tab};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::io::Write;
 
 impl EvtAct {
-    pub fn move_row<T: Write>(out: &mut T, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) -> EvtActType {
+    pub fn move_row<T: Write>(out: &mut T, tab: &mut Tab) -> EvtActType {
         Log::ep_s("　　　　　　　　EvtAct.move_row");
 
-        match editor.evt {
+        match tab.editor.evt {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {
-                    let str = prom.cont_1.buf.iter().collect::<String>();
+                    let str = tab.prom.cont_1.buf.iter().collect::<String>();
                     if str.is_empty() {
-                        mbar.set_err(&LANG.not_entered_row_number_to_move);
-                        mbar.draw_only(out);
+                        tab.mbar.set_err(&LANG.not_entered_row_number_to_move);
+                        tab.mbar.draw_only(out);
                         return EvtActType::Hold;
                     }
                     let row_num: usize = str.parse().unwrap();
-                    if row_num > editor.buf.len_lines() || row_num == 0 {
-                        mbar.set_err(&LANG.number_within_current_number_of_rows);
-                        mbar.draw_only(out);
+                    if row_num > tab.editor.buf.len_lines() || row_num == 0 {
+                        tab.mbar.set_err(&LANG.number_within_current_number_of_rows);
+                        tab.mbar.draw_only(out);
                         return EvtActType::Hold;
                     }
 
-                    editor.cur.y = row_num - 1;
-                    editor.cur.x = editor.rnw;
-                    editor.cur.disp_x = editor.rnw + 1;
+                    tab.editor.cur.y = row_num - 1;
+                    tab.editor.cur.x = tab.editor.get_rnw();
+                    tab.editor.cur.disp_x = tab.editor.get_rnw() + 1;
 
-                    prom.clear();
-                    mbar.clear();
-                    Terminal::set_disp_size(hbar, editor, mbar, prom, help, sbar);
-                    editor.scroll_move_row();
-                    editor.scroll_horizontal();
-                    editor.d_range.draw_type = DrawType::All;
+                    tab.prom.clear();
+                    tab.state.clear();
+                    tab.mbar.clear();
+                    tab.editor.scroll_move_row();
+                    tab.editor.scroll_horizontal();
+                    tab.editor.d_range.draw_type = DrawType::All;
                     return EvtActType::DrawOnly;
                 }
                 _ => return EvtActType::Hold,
@@ -42,10 +42,9 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn move_row(&mut self, hbar: &mut HeaderBar, editor: &mut Editor, mbar: &mut MsgBar, help: &mut Help, sbar: &mut StatusBar) {
+    pub fn move_row(&mut self) {
         self.is_move_line = true;
         self.disp_row_num = 3;
-        Terminal::set_disp_size(hbar, editor, mbar, self, help, sbar);
         let mut cont = PromptCont::new_edit(self.disp_row_posi as u16, PromptContPosi::First);
         cont.set_move_row();
         self.cont_1 = cont;

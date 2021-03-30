@@ -8,8 +8,8 @@ background = "#000000"
 foreground = "#ffffff"
 
 [colors.editor.line_number]
-background = "#000000"
-foreground = "#6e6e6e"
+background = "#282828"
+foreground = "#c0c0c0"
 
 [colors.editor.selection]
 background = "#dd4814"

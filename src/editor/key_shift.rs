@@ -1,10 +1,10 @@
-use crate::{bar::headerbar::*, bar::msgbar::*, bar::statusbar::*, global::*, help::*, log::*, model::*, prompt::prompt::*};
+use crate::{global::*, log::*, model::*, tab::Tab, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
-use std::io::Write;
+use std::{io::Write, rc::Rc, sync::Arc};
 
 impl Editor {
     fn shift_move_com(&mut self, do_type: EvtType) {
-        self.sel.set_sel_posi(true, self.cur.y, self.cur.x - self.rnw, self.cur.disp_x);
+        self.sel.set_sel_posi(true, self.cur.y, self.cur.x - self.get_rnw(), self.cur.disp_x);
 
         match do_type {
             EvtType::ShiftRight => self.cur_right(),
@@ -12,8 +12,8 @@ impl Editor {
             EvtType::ShiftUp => self.cur_up(),
             EvtType::ShiftDown => self.cur_down(),
             EvtType::ShiftHome => {
-                self.cur.x = self.rnw;
-                self.cur.disp_x = self.rnw + 1;
+                self.cur.x = self.get_rnw();
+                self.cur.disp_x = self.get_rnw() + 1;
             }
             EvtType::ShiftEnd => {
                 self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y));
@@ -22,7 +22,7 @@ impl Editor {
             }
             _ => {}
         }
-        self.sel.set_sel_posi(false, self.cur.y, self.cur.x - self.rnw, self.cur.disp_x);
+        self.sel.set_sel_posi(false, self.cur.y, self.cur.x - self.get_rnw(), self.cur.disp_x);
         self.d_range.set_target(self.cur_y_org, self.cur.y);
         self.sel.check_overlap();
     }
@@ -64,18 +64,6 @@ impl Editor {
         self.shift_move_com(EvtType::ShiftEnd);
     }
 
-    pub fn record_key_start(&mut self, mbar: &mut MsgBar, prom: &mut Prompt) {
-        Log::ep_s("　　　　　　　　macro_record_start");
-        if prom.is_key_record {
-            prom.is_key_record = false;
-            mbar.clear_keyrecord();
-            self.d_range.draw_type = DrawType::All;
-        } else {
-            prom.is_key_record = true;
-            mbar.set_keyrecord(&LANG.key_recording);
-            self.key_record_vec = vec![];
-        }
-    }
     pub fn record_key(&mut self) {
         match self.evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
@@ -111,22 +99,39 @@ impl Editor {
             _ => {}
         }
     }
+}
 
-    pub fn exec_record_key<T: Write>(&mut self, out: &mut T, hbar: &mut HeaderBar, mbar: &mut MsgBar, prom: &mut Prompt, help: &mut Help, sbar: &mut StatusBar) {
-        if self.key_record_vec.len() > 0 {
-            prom.is_key_record_exec = true;
-            let macro_vec = self.key_record_vec.clone();
-            for (i, mac) in macro_vec.iter().enumerate() {
-                self.evt = mac.evt;
-                if i == macro_vec.len() - 1 {
-                    prom.is_key_record_exec_draw = true;
-                }
-                EvtAct::match_event(out, hbar, self, mbar, prom, help, sbar);
-            }
-            prom.is_key_record_exec = false;
-            prom.is_key_record_exec_draw = false;
+impl Tab {
+    pub fn record_key_start(&mut self) {
+        Log::ep_s("　　　　　　　　macro_record_start");
+        if self.prom.is_key_record {
+            self.prom.is_key_record = false;
+            self.mbar.clear_keyrecord();
+            self.editor.d_range.draw_type = DrawType::All;
         } else {
-            mbar.set_err(&LANG.no_key_record_exec.to_string());
+            self.prom.is_key_record = true;
+            self.mbar.set_keyrecord(&LANG.key_recording);
+            self.editor.key_record_vec = vec![];
+        }
+    }
+    pub fn exec_record_key<T: Write>(&mut self, out: &mut T, term: &mut Terminal) {
+        let arc = Arc::clone(&term.tabs.tab_vec[term.tabs_idx]);
+        let mut tab = arc.try_lock().unwrap();
+
+        if self.editor.key_record_vec.len() > 0 {
+            tab.prom.is_key_record_exec = true;
+            let macro_vec = self.editor.key_record_vec.clone();
+            for (i, mac) in macro_vec.iter().enumerate() {
+                self.editor.evt = mac.evt;
+                if i == macro_vec.len() - 1 {
+                    tab.prom.is_key_record_exec_draw = true;
+                }
+                EvtAct::match_event(self.editor.evt, out, term);
+            }
+            tab.prom.is_key_record_exec = false;
+            tab.prom.is_key_record_exec_draw = false;
+        } else {
+            tab.mbar.set_err(&LANG.no_key_record_exec.to_string());
         }
     }
 }

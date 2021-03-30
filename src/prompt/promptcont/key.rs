@@ -1,15 +1,15 @@
-use crate::{model::*, prompt::promptcont::promptcont::*, util::*};
+use crate::{prompt::promptcont::promptcont::*, util::*};
 use crossterm::event::KeyCode;
 use std::cmp::{max, min};
 use unicode_width::UnicodeWidthChar;
 
 impl PromptCont {
-    pub fn insert_char(&mut self, c: char, is_move_line: bool, editor: &mut Editor) {
+    pub fn insert_char(&mut self, c: char, is_move_line: bool, rnw: usize) {
         if is_move_line && !c.is_ascii_digit() {
             return;
         }
         let str: String = self.buf.iter().collect::<String>();
-        if is_move_line && str.chars().count() == editor.rnw {
+        if is_move_line && str.chars().count() == rnw {
             return;
         }
         if self.sel.is_selected() {
