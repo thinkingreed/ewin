@@ -10,20 +10,20 @@ impl EvtAct {
 
         match tab.editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                F(4) => return EvtAct::exec_search_confirm(tab),
+                F(4) => return EvtAct::exec_search_confirm(tab, tab.prom.cont_1.buf.iter().collect::<String>()),
                 _ => return EvtActType::Hold,
             },
             Key(KeyEvent { code, .. }) => match code {
-                F(3) => return EvtAct::exec_search_confirm(tab),
+                F(3) => return EvtAct::exec_search_confirm(tab, tab.prom.cont_1.buf.iter().collect::<String>()),
                 _ => return EvtActType::Hold,
             },
             _ => return EvtActType::Hold,
         }
     }
 
-    fn exec_search_confirm(tab: &mut Tab) -> EvtActType {
+    pub fn exec_search_confirm(tab: &mut Tab, search_str: String) -> EvtActType {
         Log::ep_s("exec_search_confirm");
-        let search_str = tab.prom.cont_1.buf.iter().collect::<String>();
+        // let search_str = tab.prom.cont_1.buf.iter().collect::<String>();
         if search_str.len() == 0 {
             tab.mbar.set_err(&LANG.not_entered_search_str);
             return EvtActType::Hold;
@@ -38,6 +38,7 @@ impl EvtAct {
             tab.editor.search.clear();
             tab.editor.search.ranges = search_vec;
             tab.editor.search.str = search_str;
+
             // Set index to initial value
             tab.editor.search.idx = USIZE_UNDEFINED;
 

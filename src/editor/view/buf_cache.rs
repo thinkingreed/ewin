@@ -34,7 +34,7 @@ impl Editor {
         match self.d_range.draw_type {
             DrawType::None => {
                 // If highlight is enabled, read the full text first
-                if FILE.get().unwrap().try_lock().unwrap().is_enable_syntax_highlight && self.draw.syntax_state_vec.len() == 0 {
+                if self.is_enable_syntax_highlight && self.draw.syntax_state_vec.len() == 0 {
                     self.draw.sy = 0;
                     self.draw.ey = self.buf.len_lines() - 1;
                 }
@@ -50,7 +50,7 @@ impl Editor {
 
         for y in self.draw.sy..=self.draw.ey {
             let row_vec = self.buf.char_vec_line(y);
-            if FILE.get().unwrap().try_lock().unwrap().is_enable_syntax_highlight {
+            if self.is_enable_syntax_highlight {
                 self.set_regions_highlight(&cfg, y, row_vec, sel_ranges);
             } else {
                 self.set_regions(&cfg, y, row_vec, sel_ranges);
@@ -133,7 +133,7 @@ impl Editor {
         let to_style = match style_type {
             CharStyleType::Select => CharStyle::selected(&cfg),
             CharStyleType::Nomal => {
-                if FILE.get().unwrap().try_lock().unwrap().is_enable_syntax_highlight {
+                if self.is_enable_syntax_highlight {
                     *style
                 } else {
                     CharStyle::normal(cfg)

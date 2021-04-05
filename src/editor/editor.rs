@@ -72,12 +72,12 @@ impl Editor {
         if self.get_rnw() == self.cur.x {
             self.offset_x = 0;
         // KEY_NULL:grep_result initial display
-        } else if self.cur_y_org != self.cur.y || self.evt == END || self.evt == NEXT_SEARCH || self.evt == SEARCH_DESC || self.evt == KEY_NULL {
+        } else if self.cur_y_org != self.cur.y || self.evt == END || self.evt == SEARCH_ASC || self.evt == SEARCH_DESC || self.evt == KEY_NULL {
             self.offset_x = self.get_x_offset(self.cur.y, self.cur.x - self.get_rnw());
 
-            if self.evt == NEXT_SEARCH || self.evt == SEARCH_DESC || self.evt == KEY_NULL {
+            if self.evt == SEARCH_ASC || self.evt == SEARCH_DESC || self.evt == KEY_NULL {
                 let str_width = get_str_width(&self.search.str);
-                if self.evt == NEXT_SEARCH || self.evt == KEY_NULL {
+                if self.evt == SEARCH_ASC || self.evt == KEY_NULL {
                     // Offset setting to display a few characters to the right of the search character for easier viewing
                     if self.cur.disp_x + str_width + 5 > self.offset_disp_x + self.disp_col_num {
                         self.offset_x += str_width + 5;

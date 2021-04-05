@@ -1,4 +1,4 @@
-use crate::{def::*, global::*, log::*, model::*, tab::Tab, util::*};
+use crate::{def::*, global::*, log::*, model::*, tab::Tab, terminal::Terminal, util::*};
 use std::{collections::BTreeSet, iter::FromIterator, path::Path, sync::Mutex};
 
 impl Editor {
@@ -111,6 +111,7 @@ impl Editor {
 
     pub fn search_str(&mut self, is_asc: bool, is_incremental: bool) {
         Log::ep_s("　　　　　　　　search_str");
+        Log::ep("self.search", &self.search);
 
         if self.search.str.len() > 0 {
             if self.search.ranges.len() == 0 {
@@ -119,10 +120,14 @@ impl Editor {
             if self.search.ranges.len() == 0 {
                 return;
             }
-            if self.search.row_num.len() == 0 {
+
+            Log::ep("range", &self.search.ranges);
+
+            if self.search.row_num == USIZE_UNDEFINED {
                 self.search.idx = self.get_search_str_index(is_asc);
             } else {
-                self.search.idx = self.get_search_row_no_index(&self.search.row_num);
+                self.search.idx = self.get_search_row_no_index(self.search.row_num);
+                self.search.row_num = USIZE_UNDEFINED;
             }
 
             if !is_incremental {
@@ -194,11 +199,11 @@ impl Editor {
             return max_index;
         }
     }
-    pub fn get_search_row_no_index(&self, row_num: &String) -> usize {
-        let row_num: usize = row_num.parse().unwrap();
+    pub fn get_search_row_no_index(&self, row_num: usize) -> usize {
+        // let row_num: usize = row_num.parse().unwrap();
         let index = 0;
         for (i, range) in self.search.ranges.iter().enumerate() {
-            if row_num == range.y + 1 {
+            if row_num == range.y {
                 return i;
             }
         }
@@ -247,11 +252,7 @@ impl Editor {
         Log::ep_s("set_grep_result");
 
         self.rnw = self.buf.len_lines().to_string().len();
-        self.cur = Cur {
-            y: self.buf.len_lines() - 1,
-            x: self.get_rnw(),
-            disp_x: 0,
-        };
+        self.cur = Cur { y: self.buf.len_lines() - 1, x: self.get_rnw(), disp_x: 0 };
         self.cur.disp_x = self.get_rnw() + get_char_width(self.buf.char(self.cur.y, self.cur.x - self.get_rnw()));
         self.scroll();
 
@@ -266,10 +267,7 @@ impl Editor {
         if vec.len() > 2 && vec[0] != "grep" {
             let ignore_prefix_str = format!("{}:{}:", vec[0], vec[1]);
 
-            let mut regex = false;
-            {
-                regex = CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex;
-            }
+            let regex = CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex;
             let row = self.buf.len_lines() - 2;
 
             let (start_idx, end_idx, ignore_prefix_len) = match regex {
@@ -361,38 +359,30 @@ impl Editor {
 }
 
 impl Tab {
-    pub fn save(&mut self) -> bool {
+    pub fn save(&mut self, term: &mut Terminal) -> bool {
         Log::ep_s("　　　　　　　  save");
         if self.prom.cont_1.buf.len() > 0 {
-            let s = self.prom.cont_1.buf.iter().collect::<String>();
-            FILE.get().unwrap().try_lock().map(|mut file| file.path = Some(Path::new(&s).into())).unwrap();
+            term.hbar.file_vec[term.tab_idx].filenm = self.prom.cont_1.buf.iter().collect::<String>();
         }
-        let filenm;
-        let path;
-        {
-            let file_global = FILE.get().unwrap().try_lock().unwrap();
-            filenm = file_global.filenm.clone();
-            path = file_global.path.clone();
-        }
+        let filenm = term.hbar.file_vec[term.tab_idx].filenm.clone();
+
         if !Path::new(&filenm).exists() && self.prom.cont_1.buf.len() == 0 {
             Log::ep_s("!Path::new(&sbar.filenm).exists()");
             self.prom.is_save_new_file = true;
             self.prom.save_new_file();
             return false;
         } else {
-            if let Some(path) = path.as_ref() {
-                let result = self.editor.buf.write_to(&path.to_string_lossy().to_string());
-                match result {
-                    Ok(()) => {
-                        FILE.get().unwrap().try_lock().map(|mut file| file.is_changed = false).unwrap();
-                        self.prom.clear();
-                        self.mbar.clear();
-                        self.state.clear();
-                        return true;
-                    }
-                    Err(err) => {
-                        Log::ep("err", &err.to_string());
-                    }
+            let result = self.editor.buf.write_to(&filenm);
+            match result {
+                Ok(()) => {
+                    term.hbar.file_vec[term.tab_idx].is_changed = false;
+                    self.prom.clear();
+                    self.mbar.clear();
+                    self.state.clear();
+                    return true;
+                }
+                Err(err) => {
+                    Log::ep("err", &err.to_string());
                 }
             }
         }

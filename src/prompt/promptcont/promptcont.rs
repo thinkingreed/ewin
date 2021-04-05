@@ -157,7 +157,7 @@ impl PromptCont {
         CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.regex = self.opt_2.is_check).unwrap();
     }
 
-    pub fn ctrl_mouse<T: Write>(&mut self, x: u16, y: u16, is_mouse_left_down: bool, out: &mut T) {
+    pub fn ctrl_mouse(&mut self, x: u16, y: u16, is_mouse_left_down: bool) {
         Log::ep_s("　　　　　　　  PromptCont.ctrl_mouse");
         if y != self.buf_row_posi {
             return;

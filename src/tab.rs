@@ -1,50 +1,32 @@
 use crate::{bar::msgbar::*, bar::statusbar::*, def::*, global::*, log::*, model::*, prompt::prompt::*, terminal::*, util::*};
 
-use std::{env, fmt, fs::metadata, io::ErrorKind, path};
+use std::{env, fmt, fs::metadata, io::ErrorKind, path::Path};
 
 #[derive(Debug, Clone)]
 pub struct Tab {
-    pub state: TabState,
     pub editor: Editor,
     pub mbar: MsgBar,
     pub prom: Prompt,
     pub sbar: StatusBar,
+    pub state: TabState,
 }
 #[derive(Debug, Clone)]
 pub struct TabState {
     pub is_search: bool,
     pub is_replace: bool,
     pub grep_info: GrepInfo,
-    // pub is_grep: bool,
-    // pub is_grep_result: bool,
-    // pub is_grep_result_cancel: bool,
-    // pub is_grep_stdout_end: bool,
-    // pub is_grep_stderr_end: bool,
 }
 
 impl Default for TabState {
     fn default() -> Self {
-        TabState {
-            is_search: false,
-            is_replace: false,
-            grep_info: GrepInfo::default(),
-            // is_grep: false,
-            // is_grep_result: false,
-            // is_grep_result_cancel: false,
-            // is_grep_stdout_end: false,
-            // is_grep_stderr_end: false,
-        }
+        TabState { is_search: false, is_replace: false, grep_info: GrepInfo::default() }
     }
 }
 impl TabState {
     pub fn clear(&mut self) {
         self.is_search = false;
-        //  self.is_grep = false;
         self.is_replace = false;
-        // self.is_grep_result = false;
-        // self.is_grep_result_cancel = false;
-        // self.is_grep_stdout_end = false;
-        // self.is_grep_stderr_end = false;
+        self.grep_info.clear();
     }
 }
 
@@ -65,8 +47,9 @@ impl Tab {
         }
     }
 
-    pub fn open(&mut self, path: &path::Path) {
+    pub fn open(&mut self, term: &Terminal, filenm: &String) {
         Log::ep_s("           open");
+        let path = Path::new(&filenm);
 
         if path.to_string_lossy().to_string().len() > 0 {
             if path.exists() {
@@ -74,10 +57,13 @@ impl Tab {
                 if file_meta.permissions().readonly() {
                     self.mbar.set_readonly(&format!("{}({})", &LANG.unable_to_edit, &LANG.no_write_permission));
                 }
-                if CFG.get().unwrap().try_lock().unwrap().syntax.syntax_reference.is_some() && file_meta.len() < ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE && is_enable_syntax_highlight(&FILE.get().unwrap().try_lock().unwrap().ext) {
-                    FILE.get().unwrap().try_lock().map(|mut file| file.is_enable_syntax_highlight = true).unwrap();
+
+                let ext = term.hbar.file_vec[term.tab_idx].ext.clone();
+
+                if CFG.get().unwrap().try_lock().unwrap().syntax.syntax_reference.is_some() && file_meta.len() < ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE && is_enable_syntax_highlight(&ext) {
+                    self.editor.is_enable_syntax_highlight = true;
                 }
-                FILE.get().unwrap().try_lock().map(|mut file| file.path = Some(path.into())).unwrap();
+            // FILE.get().unwrap().try_lock().map(|mut file| file.path = Some(path.into())).unwrap();
             } else {
                 Terminal::exit();
                 println!("{}", LANG.file_not_found.clone());
@@ -104,7 +90,7 @@ impl Tab {
                 }
                 ErrorKind::NotFound => {
                     self.editor.buf.text.insert_char(self.editor.buf.text.len_chars(), EOF_MARK);
-                    FILE.get().unwrap().try_lock().map(|mut file| file.path = None).unwrap();
+                    // FILE.get().unwrap().try_lock().map(|mut file| file.path = None).unwrap();
                 }
                 _ => {
                     Terminal::exit();

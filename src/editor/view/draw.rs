@@ -13,14 +13,13 @@ impl Editor {
         let d_range = self.d_range.get_range();
         Log::ep("d_range", &d_range);
 
-        let is_syntax_highlight = FILE.get().unwrap().try_lock().unwrap().is_enable_syntax_highlight;
         match d_range.draw_type {
             DrawType::Not | DrawType::MoveCur => {}
             DrawType::None => {
                 let cfg = CFG.get().unwrap().try_lock().unwrap();
                 if let Some(c) = cfg.syntax.theme.settings.background {
                     //  if is_enable_syntax_highlight(&self.file.ext) && cfg.colors.theme.theme_bg_enable {
-                    if is_syntax_highlight && cfg.colors.theme.theme_bg_enable {
+                    if self.is_enable_syntax_highlight && cfg.colors.theme.theme_bg_enable {
                         str_vec.push(Colors::bg(Color::from(c)));
                     } else {
                         str_vec.push(Colors::bg(cfg.colors.editor.bg));

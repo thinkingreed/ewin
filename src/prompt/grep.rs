@@ -1,4 +1,5 @@
 use crate::{
+    bar::headerbar::*,
     colors::*,
     def::*,
     global::*,
@@ -11,8 +12,7 @@ use crate::{
     util::*,
 };
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
-use std::{cell::RefCell, env, fs, path::Path, rc::Rc, sync::Arc};
-use tokio::sync::Mutex;
+use std::{cell::RefCell, env, fs, path::Path, rc::Rc};
 
 impl EvtAct {
     pub fn grep(term: &mut Terminal, tab: &mut Tab) -> EvtActType {
@@ -50,50 +50,32 @@ impl EvtAct {
 
                         let mut tab_grep = Tab::new();
                         tab_grep.editor.search.str = search_str.clone();
-                        tab_grep.editor.search.file = path.to_string_lossy().to_string();
+                        tab_grep.editor.search.filenm = path.to_string_lossy().to_string();
                         tab_grep.editor.search.folder = search_folder.clone();
-                        tab_grep.editor.search.filenm = search_filenm.clone();
 
-                        Prompt::grep_result(term, tab);
-                        tab_grep.editor.set_cur_default();
-                        tab_grep.editor.scroll();
-                        tab_grep.editor.scroll_horizontal();
+                        Prompt::set_grep_result(term, tab);
+
                         tab_grep.mbar.set_info(&LANG.searching);
-                        tab_grep.editor.d_range.draw_type = DrawType::All;
 
-                        tab_grep.state.grep_info.is_result_continue = true;
+                        tab_grep.state.grep_info.is_result = true;
                         tab_grep.state.grep_info.is_stdout_end = false;
                         tab_grep.state.grep_info.is_stderr_end = false;
                         tab_grep.state.grep_info.search_str = search_str.clone();
                         tab_grep.state.grep_info.search_filenm = search_filenm.clone();
                         tab_grep.state.grep_info.search_folder = search_folder.clone();
+                        term.tab_idx = term.tabs.len();
 
-                        term.tabs_idx = term.tabs.tab_vec.len();
+                        GREP_CANCEL_VEC.get().unwrap().try_lock().unwrap().resize_with(term.tab_idx + 1, || false);
+                        GREP_INFO_VEC.get().unwrap().try_lock().unwrap().insert(term.tab_idx, tab_grep.state.grep_info.clone());
 
-                        if let Some(mu_grep_cancel_vec) = GREP_CANCEL_VEC.get() {
-                            Log::ep_s("grep_info Get");
-                            if let Ok(mut grep_cancel_vec) = mu_grep_cancel_vec.try_lock() {
-                                grep_cancel_vec.resize_with(term.tabs_idx, || false);
-                                //grep_cancel_vec.insert(term.tabs_idx, true);
-                            }
-                        } else {
-                            let vec = vec![false, false];
-                            let _ = GREP_CANCEL_VEC.set(tokio::sync::Mutex::new(vec));
-                        }
+                        let mut h_file = HeaderFile::default();
+                        h_file.filenm = format!(r#"{} "{}""#, &LANG.grep, &search_str);
+                        term.hbar.file_vec.push(h_file);
 
-                        if let Some(mu_grep_info_vec) = GREP_INFO_VEC.get() {
-                            Log::ep_s("grep_info Get");
-                            if let Ok(mut grep_info_vec) = mu_grep_info_vec.try_lock() {
-                                grep_info_vec.resize_with(term.tabs_idx, || GrepInfo::default());
-                                grep_info_vec.insert(term.tabs_idx, tab_grep.state.grep_info.clone());
-                            }
-                        } else {
-                            let vec = vec![GrepInfo::default(), tab_grep.state.grep_info.clone()];
-                            let _ = GREP_INFO_VEC.set(tokio::sync::Mutex::new(vec));
-                        }
+                        HeaderBar::set_header_filenm(term);
 
                         term.set_disp_size(&mut tab_grep);
-                        term.tabs.tab_vec.push(Arc::new(Mutex::new(tab_grep)));
+                        term.tabs.push(Rc::new(RefCell::new(tab_grep)));
 
                         return EvtActType::Next;
                     }

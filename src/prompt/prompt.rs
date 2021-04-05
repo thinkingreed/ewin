@@ -114,17 +114,7 @@ impl Prompt {
             } else if tab_state.is_search {
                 let o1 = &self.cont_1.opt_1;
                 let o2 = &self.cont_1.opt_2;
-                let opt_str = format!(
-                    "{} {}{}{}  {} {}{}{}",
-                    o1.key,
-                    Colors::get_msg_warning_inversion_fg_bg(),
-                    o1.get_check_str(),
-                    Colors::get_default_fg_bg(),
-                    o2.key,
-                    Colors::get_msg_warning_inversion_fg_bg(),
-                    o2.get_check_str(),
-                    Colors::get_default_fg_bg(),
-                );
+                let opt_str = format!("{} {}{}{}  {} {}{}{}", o1.key, Colors::get_msg_warning_inversion_fg_bg(), o1.get_check_str(), Colors::get_default_fg_bg(), o2.key, Colors::get_msg_warning_inversion_fg_bg(), o2.get_check_str(), Colors::get_default_fg_bg(),);
                 Prompt::set_draw_vec(str_vec, self.cont_1.opt_row_posi, &opt_str);
                 Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
             }
@@ -236,18 +226,18 @@ impl Prompt {
         self.cont_3.sel.clear();
     }
 
-    pub fn ctrl_mouse<T: Write>(&mut self, x: u16, y: u16, is_mouse_left_down: bool, out: &mut T) {
+    pub fn ctrl_mouse(&mut self, x: u16, y: u16, is_mouse_left_down: bool) {
         Log::ep_s("　　　　　　　  PromptCont.ctrl_mouse");
 
         if y == self.cont_1.buf_row_posi {
             self.buf_posi = PromptContPosi::First;
-            self.cont_1.ctrl_mouse(x, y, is_mouse_left_down, out);
+            self.cont_1.ctrl_mouse(x, y, is_mouse_left_down);
         } else if y == self.cont_2.buf_row_posi {
             self.buf_posi = PromptContPosi::Second;
-            self.cont_2.ctrl_mouse(x, y, is_mouse_left_down, out);
+            self.cont_2.ctrl_mouse(x, y, is_mouse_left_down);
         } else if y == self.cont_3.buf_row_posi {
             self.buf_posi = PromptContPosi::Third;
-            self.cont_3.ctrl_mouse(x, y, is_mouse_left_down, out);
+            self.cont_3.ctrl_mouse(x, y, is_mouse_left_down);
         }
     }
 

@@ -48,7 +48,7 @@ pub struct LangCfg {
     pub move_to_specified_row: String,
     pub unable_to_edit: String,
     pub complement: String,
-    pub open_target_file_in_another_terminal: String,
+    pub open_target_file: String,
     pub key_record_start: String,
     pub key_record_stop: String,
     pub key_recording: String,

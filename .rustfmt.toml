@@ -1,5 +1,5 @@
 unstable_features = true
-max_width=300
+max_width=500
 chain_width=300
 single_line_if_else=true
 fn_call_width = 300
@@ -8,5 +8,7 @@ fn_empty_single_line = false
 fn_single_line = true
 struct_lit_single_line = true
 struct_lit_width = 300
+imports_layout = "Horizontal"
+merge_imports = true
 
 

@@ -4,8 +4,10 @@ use std::io::Write;
 
 impl EvtAct {
     pub fn check_prom<T: Write>(out: &mut T, term: &mut Terminal, tab: &mut Tab) -> EvtActType {
+        Log::ep_s("　　　　　　　　check_prom");
+
         // Close・End
-        if tab.prom.is_save_new_file || tab.state.is_search || tab.prom.is_close_confirm || tab.state.is_replace || tab.state.grep_info.is_grep || tab.state.grep_info.is_result_continue || tab.prom.is_move_line {
+        if tab.prom.is_save_new_file || tab.state.is_search || tab.prom.is_close_confirm || tab.state.is_replace || tab.state.grep_info.is_grep || tab.state.grep_info.is_result || tab.prom.is_move_line {
             match tab.editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                     Char('w') => {
@@ -16,12 +18,12 @@ impl EvtAct {
                 },
                 Key(KeyEvent { code, .. }) => match code {
                     Esc => {
-                        Log::ep("tab.state.grep_info.is_grep_result", &tab.state.grep_info.is_result_continue);
-                        if tab.state.grep_info.is_result_continue {
-                            GREP_CANCEL_VEC.get().unwrap().try_lock().map(|mut vec| vec[term.tabs_idx] = true).unwrap();
-                            Log::ep_s("grep_result_cancel grep_result_cancel grep_result_cancel grep_result_cancel grep_result_cancel");
+                        Log::ep("tab.state.grep_info.is_grep_result", &tab.state.grep_info.is_result);
+                        if tab.state.grep_info.is_result {
+                            GREP_CANCEL_VEC.get().unwrap().try_lock().map(|mut vec| vec[term.tab_idx] = true).unwrap();
                         } else {
                             tab.prom.clear();
+                            tab.state.clear();
                             tab.state.clear();
                             tab.mbar.clear();
                             tab.editor.d_range.draw_type = DrawType::All;
@@ -95,12 +97,13 @@ impl EvtAct {
                     }
                     _ => {}
                 },
-                Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => tab.prom.ctrl_mouse(x, y, true, out),
+                Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => tab.prom.ctrl_mouse(x, y, true),
                 Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: _, row: _, .. }) => {}
-                Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => tab.prom.ctrl_mouse(x, y, false, out),
+                Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => tab.prom.ctrl_mouse(x, y, false),
                 _ => {}
             }
         }
+
         // incremental search
         if tab.state.is_search {
             match tab.editor.evt {
@@ -148,7 +151,7 @@ impl EvtAct {
         }
 
         // unable to edit
-        if tab.state.grep_info.is_result_continue == true || tab.mbar.msg_readonly.len() > 0 {
+        if tab.state.grep_info.is_result == true || tab.mbar.msg_readonly.len() > 0 {
             match tab.editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                     F(4) | Right | Left | Down | Up | Home | End => return EvtActType::Next,
@@ -161,7 +164,7 @@ impl EvtAct {
                 Key(KeyEvent { code, .. }) => match code {
                     PageDown | PageUp | Home | End | Down | Up | Left | Right => return EvtActType::Next,
                     Enter => {
-                        if !tab.state.grep_info.is_result_continue {
+                        if !tab.state.grep_info.is_result {
                             return EvtActType::Hold;
                         }
                     }
@@ -179,17 +182,17 @@ impl EvtAct {
         }
 
         if tab.prom.is_save_new_file == true {
-            return EvtAct::save_new_filenm(tab);
+            return EvtAct::save_new_filenm(term, tab);
         } else if tab.prom.is_close_confirm == true {
-            return EvtAct::close(tab);
+            return EvtAct::close(term, tab);
         } else if tab.state.is_search == true {
             return EvtAct::search(tab);
         } else if tab.state.is_replace == true {
-            return EvtAct::replace(tab);
+            return EvtAct::replace(term, tab);
         } else if tab.state.grep_info.is_grep == true {
             return EvtAct::grep(term, tab);
-        } else if tab.state.grep_info.is_result_continue == true {
-            return EvtAct::grep_result(&mut tab.editor);
+        } else if tab.state.grep_info.is_result == true {
+            return EvtAct::grep_result(term, &mut tab.editor);
         } else if tab.prom.is_move_line == true {
             return EvtAct::move_row(out, tab);
         } else {

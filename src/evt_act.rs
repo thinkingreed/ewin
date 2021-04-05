@@ -4,7 +4,6 @@ use std::{
     cmp::{max, min},
     io::Write,
     rc::Rc,
-    sync::Arc,
 };
 
 impl EvtAct {
@@ -15,19 +14,26 @@ impl EvtAct {
         }
         Terminal::hide_cur();
 
-        let evt_next_process = EvtAct::check_next_process(event, out, term);
+        let evt_act_type = EvtAct::check_next_process(event, out, term);
 
-        match evt_next_process {
+        Log::ep("evt_act_type", &evt_act_type);
+
+        match evt_act_type {
             EvtActType::Exit => return true,
             EvtActType::Hold => {}
             EvtActType::DrawOnly | EvtActType::Next => {
-                let arc = Arc::clone(&term.tabs.tab_vec[term.tabs_idx]);
-                let mut tab = arc.try_lock().unwrap();
+                Log::ep("term.tab_idx", &term.tab_idx);
 
+                let rc = Rc::clone(&term.tabs[term.tab_idx]);
+                let mut tab = rc.borrow_mut();
                 Log::ep("editor.evt", &tab.editor.evt);
 
-                if evt_next_process == EvtActType::Next && !EvtAct::check_err(&mut tab) {
-                    EvtAct::init(&mut tab);
+                if evt_act_type == EvtActType::DrawOnly {
+                    tab.editor.d_range.draw_type = DrawType::None;
+                }
+
+                if evt_act_type == EvtActType::Next && !EvtAct::check_err(&mut tab) {
+                    EvtAct::init(term, &mut tab);
 
                     tab.editor.cur_y_org = tab.editor.cur.y;
                     let offset_y_org = tab.editor.offset_y;
@@ -39,12 +45,12 @@ impl EvtAct {
                         Resize(_, _) => tab.editor.d_range.draw_type = DrawType::All,
                         Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                             Char('w') => {
-                                if tab.prom.close() == true {
+                                if Prompt::close(term, &mut tab) == true {
                                     return true;
                                 }
                             }
                             Char('s') => {
-                                let _ = tab.save();
+                                let _ = tab.save(term);
                             }
                             Char('c') => tab.editor.copy(),
                             Char('x') => tab.editor.exec_edit_proc(EvtType::Cut, "", ""),
@@ -108,14 +114,17 @@ impl EvtAct {
                     let cur_y_org = tab.editor.cur_y_org;
                     tab.editor.set_draw_range(cur_y_org, offset_y_org, offset_x_org, rnw_org);
                 }
+
                 Log::ep("offset_y", &tab.editor.offset_y);
                 Log::ep("offset_x", &tab.editor.offset_x);
                 Log::ep("cur.y", &tab.editor.cur.y);
                 Log::ep("cur.x", &tab.editor.cur.x);
                 Log::ep("cur.disp_x", &tab.editor.cur.disp_x);
-                Log::ep("", &tab.editor.sel);
+                // Log::ep("", &tab.editor.sel);
+                // Log::ep("", &tab.editor.search);
                 Log::ep("", &tab.state);
-                // Log::ep("", &editor.search);
+
+                Log::ep("d_range", &tab.editor.d_range);
 
                 // Redraw in case of msg change
                 if tab.mbar.msg_org != tab.mbar.msg {
@@ -131,19 +140,23 @@ impl EvtAct {
         return false;
     }
 
-    pub fn check_next_process<T: Write>(event: Event, out: &mut T, term: &mut Terminal) -> EvtActType {
-        Log::ep_s("　　　　　　　　check_next_process");
+    pub fn check_next_process<T: Write>(evt: Event, out: &mut T, term: &mut Terminal) -> EvtActType {
+        let (event, evt_act) = EvtAct::check_headerbar(evt, term);
 
-        let arc = Arc::clone(&term.tabs.tab_vec[term.tabs_idx]);
-        let mut tab = arc.try_lock().unwrap();
+        term.tabs[term.tab_idx].borrow_mut().editor.evt = event;
+        if evt_act != EvtActType::Hold {
+            return evt_act;
+        }
+        Log::ep("check_headerbar", &event.clone());
+        let rc = Rc::clone(&term.tabs[term.tab_idx]);
+        let mut tab = rc.borrow_mut();
 
-        tab.editor.evt = event;
         tab.mbar.msg_org = tab.mbar.msg.clone();
 
-        let evt_act = EvtAct::check_headerbar(&mut term.hbar, &mut tab.editor);
+        Log::ep("evt_act", &evt_act);
 
-        if evt_act == EvtActType::Next {
-            return EvtActType::Next;
+        if evt_act != EvtActType::Hold {
+            return evt_act;
         }
 
         EvtAct::check_clear_mag(&mut tab);
@@ -164,7 +177,7 @@ impl EvtAct {
         return evt_act;
     }
 
-    pub fn init(tab: &mut Tab) {
+    pub fn init(term: &mut Terminal, tab: &mut Tab) {
         Log::ep_s("init");
 
         // Initialize of updown_x
@@ -202,7 +215,15 @@ impl EvtAct {
                     } else {
                         if tab.editor.evt == DOWN || tab.editor.evt == UP {
                             let y = tab.editor.cur.y - tab.editor.offset_y;
-                            let y_after = if tab.editor.evt == DOWN { y + 1 } else { y - 1 };
+                            let y_after = if tab.editor.evt == DOWN {
+                                y + 1
+                            } else {
+                                if y == 0 {
+                                    0
+                                } else {
+                                    y - 1
+                                }
+                            };
                             tab.editor.d_range = DRange::new(min(y, y_after), max(y, y_after), DrawType::Target);
                         } else {
                             tab.editor.d_range.draw_type = DrawType::MoveCur;
@@ -235,7 +256,8 @@ impl EvtAct {
 
         // Edit    is_change=true, Clear redo_vec,
         if tab.editor.is_edit_evt(false) {
-            FILE.get().unwrap().try_lock().map(|mut file| file.is_changed = true).unwrap();
+            term.hbar.file_vec[term.tab_idx].is_changed = true;
+            // FILE_VEC.get().unwrap().try_lock().unwrap()[term.tab_idx].is_changed = true;
             tab.editor.history.clear_redo_vec();
         }
 

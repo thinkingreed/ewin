@@ -3,7 +3,7 @@ use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::sync::Mutex;
 
 impl EvtAct {
-    pub fn replace(tab: &mut Tab) -> EvtActType {
+    pub fn replace(term: &mut Terminal, tab: &mut Tab) -> EvtActType {
         Log::ep_s("Process.replace");
 
         match tab.editor.evt {
@@ -29,7 +29,7 @@ impl EvtAct {
                         tab.mbar.clear();
                         tab.prom.clear();
                         tab.state.clear();
-                        FILE.get().unwrap().try_lock().map(|mut file| file.is_changed = true).unwrap();
+                        term.hbar.file_vec[term.tab_idx].is_changed = true;
                     }
 
                     tab.editor.d_range.draw_type = DrawType::All;
@@ -62,18 +62,7 @@ impl PromptCont {
 
         if self.prompt_cont_posi == PromptContPosi::First {
             self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.set_replace);
-            self.key_desc = format!(
-                "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Esc",
-                Colors::get_default_fg(),
-                &LANG.all_replace,
-                Colors::get_msg_highlight_fg(),
-                Colors::get_default_fg(),
-                &LANG.move_input_field,
-                Colors::get_msg_highlight_fg(),
-                Colors::get_default_fg(),
-                &LANG.close,
-                Colors::get_msg_highlight_fg(),
-            );
+            self.key_desc = format!("{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Esc", Colors::get_default_fg(), &LANG.all_replace, Colors::get_msg_highlight_fg(), Colors::get_default_fg(), &LANG.move_input_field, Colors::get_msg_highlight_fg(), Colors::get_default_fg(), &LANG.close, Colors::get_msg_highlight_fg(),);
             self.buf_desc = format!("{}{}", Colors::get_default_fg(), &LANG.search_str,);
 
             self.guide_row_posi = base_posi;

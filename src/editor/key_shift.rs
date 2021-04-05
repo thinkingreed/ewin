@@ -1,6 +1,6 @@
 use crate::{global::*, log::*, model::*, tab::Tab, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
-use std::{io::Write, rc::Rc, sync::Arc};
+use std::{io::Write, rc::Rc};
 
 impl Editor {
     fn shift_move_com(&mut self, do_type: EvtType) {
@@ -74,10 +74,7 @@ impl Editor {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 Right | Left | Down | Up | Home | End => self.key_record_vec.push(KeyRecord { evt: self.evt.clone(), ..KeyRecord::default() }),
                 Char(c) => self.key_record_vec.push(KeyRecord {
-                    evt: Key(KeyEvent {
-                        code: Char(c.to_ascii_uppercase()),
-                        modifiers: KeyModifiers::SHIFT,
-                    }),
+                    evt: Key(KeyEvent { code: Char(c.to_ascii_uppercase()), modifiers: KeyModifiers::SHIFT }),
                     ..KeyRecord::default()
                 }),
                 F(4) => self.key_record_vec.push(KeyRecord {
@@ -115,8 +112,8 @@ impl Tab {
         }
     }
     pub fn exec_record_key<T: Write>(&mut self, out: &mut T, term: &mut Terminal) {
-        let arc = Arc::clone(&term.tabs.tab_vec[term.tabs_idx]);
-        let mut tab = arc.try_lock().unwrap();
+        let rc = Rc::clone(&term.tabs[term.tab_idx]);
+        let mut tab = rc.borrow_mut();
 
         if self.editor.key_record_vec.len() > 0 {
             tab.prom.is_key_record_exec = true;

@@ -3,7 +3,6 @@
 	"tasks": [
 		{
 			"type": "cargo",
-			"command": "build",
 			"problemMatcher": [
 				"$rustc"
 			],
@@ -12,10 +11,10 @@
 				"isDefault": true
 			},
 			"label": "rust: cargo build"
-		},
+		}
+		/*
 		{
 			"type": "cargo",
-			"command": "test",
 			"problemMatcher": [
 				"$rustc"
 			],
@@ -25,5 +24,6 @@
 			},
 			"label": "rust: cargo test"
 		}
+		*/
 	]
 }

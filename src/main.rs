@@ -1,8 +1,7 @@
 use clap::{App, Arg};
 use crossterm::event::{Event::Mouse, EventStream, MouseEvent as M_Event, MouseEventKind as M_Kind};
-use ewin::{_cfg::cfg::*, global::*, model::*, terminal::*};
-use futures::{future::FutureExt, StreamExt};
-use std::sync::mpsc;
+use ewin::{_cfg::cfg::*, global::*, log::*, model::*, terminal::*};
+use futures::{future::FutureExt, select, StreamExt};
 use std::{
     ffi::OsStr,
     io::{stdout, BufWriter},
@@ -11,7 +10,7 @@ use std::{
     sync::mpsc::*,
     thread, time,
 };
-use tokio_util::codec::{FramedRead, LinesCodec, LinesCodecError};
+use tokio_util::codec::{FramedRead, LinesCodec};
 
 #[tokio::main]
 async fn main() {
@@ -55,11 +54,7 @@ async fn main() {
                     Mouse(M_Event { kind: M_Kind::Moved, .. }) => continue,
                     _ => {}
                 }
-                let job = Job {
-                    job_type: JobType::Event,
-                    job_evt: Some(JobEvent { evt: event }),
-                    ..Job::default()
-                };
+                let job = Job { job_type: JobType::Event, job_evt: Some(JobEvent { evt: event }), ..Job::default() };
                 let _ = tx.send(job);
             }
         }
@@ -72,8 +67,8 @@ async fn main() {
             if let Some(Ok(mut grep_info_vec)) = GREP_INFO_VEC.get().map(|vec| vec.try_lock()) {
                 let grep_info_vec_len = grep_info_vec.len() - 1;
                 if let Some(mut grep_info) = grep_info_vec.get_mut(grep_info_vec_len) {
-                    if grep_info.is_result_continue && !(grep_info.is_stdout_end && grep_info.is_stderr_end) {
-                        let mut child = EvtAct::exec_grep(&"123".to_string(), &grep_info.search_folder, &"*.txt".to_string());
+                    if grep_info.is_result && !grep_info.is_cancel && !(grep_info.is_stdout_end && grep_info.is_stderr_end) {
+                        let mut child = EvtAct::get_grep_child(&"1".to_string(), &grep_info.search_folder, &"*.txt".to_string());
 
                         let mut reader_stdout = FramedRead::new(child.stdout.take().unwrap(), LinesCodec::new());
                         let mut reader_stderr = FramedRead::new(child.stderr.take().unwrap(), LinesCodec::new());
@@ -81,29 +76,40 @@ async fn main() {
                             // Sleep to receive key event
                             thread::sleep(time::Duration::from_millis(10));
 
+                            Log::ep_s("loop");
                             let mut is_cancel = false;
                             {
                                 if let Some(Ok(grep_cancel_vec)) = GREP_CANCEL_VEC.get().map(|vec| vec.try_lock()) {
                                     is_cancel = grep_cancel_vec[grep_info_vec_len];
                                     if is_cancel {
                                         drop(child);
-                                        grep_info.is_result_continue = false;
+                                        grep_info.is_cancel = false;
+                                        send_grep_job("".to_string(), &mut tx_grep, &grep_info);
                                         break;
                                     }
                                 }
                             }
-                            if let Some(result) = reader_stdout.next().fuse().await {
-                                send_grep_job(result, &mut tx_grep, is_cancel, &grep_info);
-                            } else {
-                                grep_info.is_stdout_end = true;
-                            }
-                            if let Some(result) = reader_stderr.next().fuse().await {
-                                send_grep_job(result, &mut tx_grep, is_cancel, &grep_info);
-                            } else {
-                                grep_info.is_stderr_end = true;
+                            let mut read_stdout = reader_stdout.next().fuse();
+                            let mut read_stderr = reader_stderr.next().fuse();
+                            select! {
+                                std_out = read_stdout => {
+                                    match std_out {
+                                        Some(Ok(grep_str))=> send_grep_job(grep_str, &mut tx_grep, &grep_info),
+                                        None=> grep_info.is_stdout_end = true,
+                                        _ => {},
+                                    }
+                                },
+                                std_err = read_stderr => {
+                                    match std_err {
+                                        Some(Ok(grep_str)) => send_grep_job(grep_str, &mut tx_grep, &grep_info),
+                                        None => grep_info.is_stderr_end = true,
+                                        _ => {},
+                                    }
+                                }
                             }
                             if grep_info.is_stdout_end && grep_info.is_stderr_end {
-                                grep_info.is_result_continue = false;
+                                //     drop(child);
+                                send_grep_job("".to_string(), &mut tx_grep, &grep_info);
                                 break;
                             }
                         }
@@ -128,19 +134,16 @@ async fn main() {
     exit(0);
 }
 
-pub fn send_grep_job(result: Result<String, LinesCodecError>, tx_grep: &mut Sender<Job>, is_cancel: bool, grep_info: &GrepInfo) {
-    if let Ok(grep_str) = result {
-        let job = Job {
-            job_type: JobType::GrepResult,
-            job_grep: Some(JobGrep {
-                grep_str,
-                is_cancel,
-                is_stdout_end: grep_info.is_stdout_end,
-                is_stderr_end: grep_info.is_stderr_end,
-            }),
-            ..Job::default()
-        };
-        let _ = tx_grep.send(job);
-        //   Log::ep_s("Send:");
-    }
+pub fn send_grep_job(grep_str: String, tx_grep: &mut Sender<Job>, grep_info: &GrepInfo) {
+    let job = Job {
+        job_type: JobType::GrepResult,
+        job_grep: Some(JobGrep {
+            grep_str,
+            is_cancel: grep_info.is_cancel,
+            is_stdout_end: grep_info.is_stdout_end,
+            is_stderr_end: grep_info.is_stderr_end,
+        }),
+        ..Job::default()
+    };
+    let _ = tx_grep.send(job);
 }

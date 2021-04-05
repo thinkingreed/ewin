@@ -8,6 +8,8 @@ pub fn get_str_width(msg: &str) -> usize {
     let msg_chars = msg.chars().collect::<Vec<char>>();
     let mut width = 0;
     for i in 0..msg_chars.len() {
+        // Because the width varies depending on the environment
+
         width += &msg_chars[i].width().unwrap_or(0);
     }
     return width;

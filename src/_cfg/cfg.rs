@@ -228,10 +228,6 @@ impl Cfg {
         }
         let _ = CFG.set(Mutex::new(cfg));
 
-        let mut file = crate::model::File::default();
-        file.ext = args.ext.clone();
-        let _ = FILE.set(Mutex::new(file));
-
         return err_str;
     }
 }

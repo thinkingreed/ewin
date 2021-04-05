@@ -9,7 +9,7 @@ use crossterm::event::{
 use ropey::Rope;
 use std::cmp::{max, min};
 use std::collections::VecDeque;
-use std::{fmt, path};
+use std::fmt;
 use syntect::highlighting::HighlightState;
 use syntect::parsing::{ParseState, ScopeStackOp};
 
@@ -68,13 +68,7 @@ impl fmt::Display for EvtProc {
 }
 impl EvtProc {
     pub fn new(do_type: EvtType, cur_s: Cur, cur_e: Cur, d_range: DRange) -> Self {
-        return EvtProc {
-            evt_type: do_type,
-            cur_s: cur_s,
-            cur_e: cur_e,
-            d_range: d_range,
-            ..EvtProc::default()
-        };
+        return EvtProc { evt_type: do_type, cur_s: cur_s, cur_e: cur_e, d_range: d_range, ..EvtProc::default() };
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -88,11 +82,7 @@ pub struct History {
 
 impl Default for History {
     fn default() -> Self {
-        History {
-            mouse_click_vec: VecDeque::new(),
-            undo_vec: vec![],
-            redo_vec: vec![],
-        }
+        History { mouse_click_vec: VecDeque::new(), undo_vec: vec![], redo_vec: vec![] }
     }
 }
 impl fmt::Display for History {
@@ -114,7 +104,6 @@ pub enum Opetype {
     Redo,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// 検索範囲
 pub struct GrepResult {
     pub filenm: String,
     pub row_num: usize,
@@ -136,10 +125,9 @@ pub struct Search {
     pub idx: usize,
     pub ranges: Vec<SearchRange>,
     // Full path
-    pub file: String,
     pub filenm: String,
     pub folder: String,
-    pub row_num: String,
+    pub row_num: usize,
 }
 
 impl Search {
@@ -148,7 +136,6 @@ impl Search {
         self.idx = USIZE_UNDEFINED;
         self.ranges = vec![];
         // file full path
-        self.file = String::new();
         self.filenm = String::new();
         self.folder = String::new();
     }
@@ -167,10 +154,9 @@ impl Default for Search {
             str: String::new(),
             idx: USIZE_UNDEFINED,
             ranges: vec![],
-            file: String::new(),
             filenm: String::new(),
             folder: String::new(),
-            row_num: String::new(),
+            row_num: USIZE_UNDEFINED,
         }
     }
 }
@@ -267,14 +253,7 @@ impl SelRange {
             e_disp_x = self.s_disp_x;
         }
         // 範囲選択が続く可能性がある為に新規構造体を返却
-        SelRange {
-            sy: sy,
-            ey: ey,
-            sx: sx,
-            ex: ex,
-            s_disp_x: s_disp_x,
-            e_disp_x: e_disp_x,
-        }
+        SelRange { sy: sy, ey: ey, sx: sx, ex: ex, s_disp_x: s_disp_x, e_disp_x: e_disp_x }
     }
 
     pub fn set_s(&mut self, y: usize, x: usize, disp_x: usize) {
@@ -392,6 +371,7 @@ pub struct Editor {
     pub history: History,
     pub grep_result_vec: Vec<GrepResult>,
     pub key_record_vec: Vec<KeyRecord>,
+    pub is_enable_syntax_highlight: bool,
 }
 
 impl Editor {
@@ -422,6 +402,7 @@ impl Editor {
             history: History::default(),
             grep_result_vec: vec![],
             key_record_vec: vec![],
+            is_enable_syntax_highlight: false,
         }
     }
 }
@@ -433,20 +414,12 @@ pub struct TextBuffer {
 pub struct File {
     pub filenm: String,
     pub ext: String,
-    pub path: Option<path::PathBuf>,
     pub is_changed: bool,
-    pub is_enable_syntax_highlight: bool,
 }
 
 impl Default for File {
     fn default() -> Self {
-        File {
-            filenm: String::new(),
-            ext: String::new(),
-            path: None,
-            is_changed: false,
-            is_enable_syntax_highlight: false,
-        }
+        File { filenm: String::new(), ext: String::new(), is_changed: false }
     }
 }
 
@@ -486,11 +459,7 @@ pub struct Job {
 
 impl Default for Job {
     fn default() -> Self {
-        Job {
-            job_type: JobType::Event,
-            job_evt: None,
-            job_grep: None,
-        }
+        Job { job_type: JobType::Event, job_evt: None, job_grep: None }
     }
 }
 
@@ -515,12 +484,7 @@ pub struct JobGrep {
 
 impl Default for JobGrep {
     fn default() -> Self {
-        JobGrep {
-            grep_str: String::new(),
-            is_stdout_end: false,
-            is_stderr_end: false,
-            is_cancel: false,
-        }
+        JobGrep { grep_str: String::new(), is_stdout_end: false, is_stderr_end: false, is_cancel: false }
     }
 }
 
@@ -550,13 +514,7 @@ pub struct SyntaxState {
 
 impl Default for Draw {
     fn default() -> Self {
-        Draw {
-            sy: 0,
-            ey: 0,
-            char_vec: vec![],
-            cells: vec![],
-            syntax_state_vec: vec![],
-        }
+        Draw { sy: 0, ey: 0, char_vec: vec![], cells: vec![], syntax_state_vec: vec![] }
     }
 }
 
@@ -685,9 +643,10 @@ impl fmt::Display for EvtType {
 #[derive(Debug, Clone, PartialEq)]
 pub struct GrepInfo {
     pub is_grep: bool,
+    pub is_result: bool,
     pub is_stdout_end: bool,
     pub is_stderr_end: bool,
-    pub is_result_continue: bool,
+    pub is_cancel: bool,
     // pub is_grep_result_init: bool,
     //  pub is_grep_result_cancel: bool,
     pub search_str: String,
@@ -699,15 +658,28 @@ impl Default for GrepInfo {
     fn default() -> Self {
         GrepInfo {
             is_grep: false,
+            is_result: false,
+            is_cancel: false,
             is_stdout_end: false,
             is_stderr_end: false,
-            is_result_continue: false,
             //  is_grep_result_init: false,
             //  is_grep_result_cancel: false,
             search_str: String::new(),
             search_folder: String::new(),
             search_filenm: String::new(),
         }
+    }
+}
+
+impl GrepInfo {
+    pub fn clear(&mut self) {
+        self.is_grep = false;
+        self.is_stdout_end = false;
+        self.is_stderr_end = false;
+        self.is_result = false;
+        self.search_str = String::new();
+        self.search_folder = String::new();
+        self.search_filenm = String::new();
     }
 }
 
