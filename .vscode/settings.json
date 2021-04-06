@@ -4,11 +4,6 @@
     "editor.suggestFontSize": 14,
     "terminal.integrated.shell.linux": "/bin/bash",
     "workbench.iconTheme": "vscode-icons",
-    "vs-kubernetes": {
-        "vs-kubernetes.draft-path.linux": "/home/hi/.vs-kubernetes/tools/draft/linux-amd64/draft",
-        "vs-kubernetes.helm-path.linux": "/home/hi/.vs-kubernetes/tools/helm/linux-amd64/helm",
-        "vs-kubernetes.minikube-path.linux": "/home/hi/.vs-kubernetes/tools/minikube/linux-amd64/minikube"
-    },
     "workbench.activityBar.visible": true,
     "editor.formatOnSave": true,
 }

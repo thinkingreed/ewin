@@ -225,9 +225,9 @@ impl Terminal {
 
         let mut h_file = HeaderFile::default();
         h_file.ext = Path::new(&args.filenm).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string();
-        h_file.filenm = args.filenm.clone();
-
+        h_file.filenm = if args.filenm.is_empty() { LANG.new_file.clone() } else { args.filenm.clone() };
         self.hbar.file_vec.push(h_file);
+
         tab.open(&self, &args.filenm);
         self.draw(out, &mut tab);
     }

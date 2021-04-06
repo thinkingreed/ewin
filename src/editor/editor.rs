@@ -4,8 +4,8 @@ use std::cmp::{max, min};
 use unicode_width::UnicodeWidthChar;
 
 impl Editor {
-    const SCROLL_UP_EXTRA_NUM: usize = 1;
-    const SCROLL_DOWN_EXTRA_NUM: usize = 1;
+    pub const SCROLL_UP_EXTRA_NUM: usize = 1;
+    pub const SCROLL_DOWN_EXTRA_NUM: usize = 1;
     const SCROLL_MOVE_EXTRA_NUM: usize = 3;
 
     // adjusting vertical posi of cursor
@@ -24,11 +24,7 @@ impl Editor {
 
         if self.cur.y + Editor::SCROLL_DOWN_EXTRA_NUM >= self.disp_row_num {
             if self.evt == PAGE_DOWN {
-                self.offset_y = if self.buf.len_lines() - 1 > self.offset_y + self.disp_row_num * 2 {
-                    self.offset_y + self.disp_row_num
-                } else {
-                    self.buf.len_lines() - self.disp_row_num
-                };
+                self.offset_y = if self.buf.len_lines() - 1 > self.offset_y + self.disp_row_num * 2 { self.offset_y + self.disp_row_num } else { self.buf.len_lines() - self.disp_row_num };
             } else {
                 self.offset_y = max(self.offset_y, self.cur.y + Editor::SCROLL_DOWN_EXTRA_NUM + 1 - self.disp_row_num);
                 // offset_y decreases
@@ -155,11 +151,7 @@ impl Editor {
 
     pub fn set_cur_default(&mut self) {
         self.rnw = self.buf.len_lines().to_string().len();
-        self.cur = Cur {
-            y: 0,
-            x: self.get_rnw(),
-            disp_x: self.get_rnw() + Editor::RNW_MARGIN,
-        };
+        self.cur = Cur { y: 0, x: self.get_rnw(), disp_x: self.get_rnw() + Editor::RNW_MARGIN };
     }
 
     pub fn set_cur_target(&mut self, y: usize, x: usize) {
@@ -227,11 +219,19 @@ impl Editor {
     }
 
     pub fn set_draw_range_scroll(&mut self, y: usize, draw_type: DrawType) {
+        if draw_type == DrawType::ScrollDown {
+            self.d_range = DRange::new(y - Editor::SCROLL_DOWN_EXTRA_NUM - 1, y, draw_type);
+        } else {
+            self.d_range = DRange::new(y, y + Editor::SCROLL_UP_EXTRA_NUM + 1, draw_type);
+        }
+
+        /*
         self.d_range = DRange::new(y, y, draw_type);
 
         if !self.sel.is_selected() {
             self.d_range = DRange::new(y, y, draw_type);
         }
+         */
     }
     pub fn get_rnw(&self) -> usize {
         return self.rnw;

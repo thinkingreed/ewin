@@ -30,10 +30,6 @@ impl Editor {
                 str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, self.disp_row_posi as u16).to_string()));
             }
             DrawType::Target => {
-                Log::ep("self.offset_y", &self.offset_y);
-                Log::ep("d_range.sy", &d_range.sy);
-                Log::ep("d_range.ey", &d_range.ey);
-
                 for i in d_range.sy - self.offset_y..=d_range.ey - self.offset_y {
                     str_vec.push(format!("{}{}", MoveTo(0, (i + self.disp_row_posi) as u16), Clear(ClearType::CurrentLine)));
                 }
@@ -41,9 +37,11 @@ impl Editor {
             }
             DrawType::All => str_vec.push(format!("{}{}", MoveTo(0, self.disp_row_posi as u16), Clear(ClearType::FromCursorDown))),
             DrawType::After => str_vec.push(format!("{}{}", MoveTo(0, (d_range.sy - self.offset_y + self.disp_row_posi) as u16), Clear(ClearType::FromCursorDown))),
-            DrawType::ScrollDown => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, self.disp_row_num as u16), Clear(ClearType::CurrentLine))),
-            DrawType::ScrollUp => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, self.disp_row_posi as u16), Clear(ClearType::CurrentLine))),
+            DrawType::ScrollDown => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.disp_row_num - Editor::SCROLL_DOWN_EXTRA_NUM - 1) as u16), Clear(ClearType::FromCursorDown))),
+            DrawType::ScrollUp => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, (self.disp_row_posi) as u16), Clear(ClearType::CurrentLine))),
         }
+
+        Log::ep("self.disp_row_posi + Editor::SCROLL_UP_EXTRA_NUM + 1", &(self.disp_row_posi + Editor::SCROLL_UP_EXTRA_NUM + 1));
 
         for i in self.draw.sy..=self.draw.ey {
             // Log::ep("iii", &i);
@@ -90,7 +88,8 @@ impl Editor {
     }
 
     fn set_row_num(&mut self, i: usize, str_vec: &mut Vec<String>) {
-        if i == self.cur.y - self.offset_y {
+        // if i == self.cur.y - self.offset_y {
+        if i == self.cur.y {
             Colors::set_rownum_curt_color(str_vec);
         } else {
             Colors::set_rownum_color(str_vec);

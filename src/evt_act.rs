@@ -214,7 +214,9 @@ impl EvtAct {
                         tab.editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
                     } else {
                         if tab.editor.evt == DOWN || tab.editor.evt == UP {
-                            let y = tab.editor.cur.y - tab.editor.offset_y;
+                            // let y = tab.editor.cur.y - tab.editor.offset_y;
+                            let y = tab.editor.cur.y;
+
                             let y_after = if tab.editor.evt == DOWN {
                                 y + 1
                             } else {
@@ -224,6 +226,7 @@ impl EvtAct {
                                     y - 1
                                 }
                             };
+
                             tab.editor.d_range = DRange::new(min(y, y_after), max(y, y_after), DrawType::Target);
                         } else {
                             tab.editor.d_range.draw_type = DrawType::MoveCur;

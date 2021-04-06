@@ -29,7 +29,7 @@ impl EvtAct {
             let tab_idx = term.tab_idx;
             term.tab_idx = if term.tab_idx == term.tabs.len() - 1 { term.tab_idx - 1 } else { term.tab_idx };
             term.tabs.remove(tab_idx);
-            term.hbar.file_vec.remove(term.tab_idx);
+            term.hbar.file_vec.remove(tab_idx);
             // FILE_VEC.get().unwrap().try_lock().unwrap().remove(term.tab_idx);
             //    term.tab_idx = if term.tab_idx == 0 { term.tab_idx } else { term.tab_idx - 1 };
             return EvtActType::DrawOnly;
