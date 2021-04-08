@@ -130,7 +130,8 @@ impl Editor {
 
     fn set_style(&mut self, cfg: &Cfg, c: char, width: usize, y: usize, x: usize, style: &CharStyle, style_org: &mut CharStyle, style_type_org: &mut CharStyleType, sel_ranges: SelRange, regions: &mut Vec<Cell>) {
         let from_style = self.draw.get_from_style(cfg, x, &style, &style_org, style_type_org);
-        let style_type = self.draw.ctrl_style_type(c, width, &sel_ranges, &self.search.ranges, self.get_rnw(), y, x + self.offset_x);
+        let x = if self.cur.y == y { x + self.offset_x } else { x };
+        let style_type = self.draw.ctrl_style_type(c, width, &sel_ranges, &self.search.ranges, self.get_rnw(), y, x);
 
         let to_style = match style_type {
             CharStyleType::Select => CharStyle::selected(&cfg),
