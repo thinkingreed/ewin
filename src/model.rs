@@ -396,7 +396,7 @@ impl Editor {
             rnw_org: 0,
             sel: SelRange::default(),
             sel_org: SelRange::default(),
-            evt: Key(End.into()),
+            evt: Key(Null.into()),
             clipboard: String::new(),
             // for UT set
             disp_row_num: 5,

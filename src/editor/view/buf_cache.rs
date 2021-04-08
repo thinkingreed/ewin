@@ -164,10 +164,6 @@ impl Draw {
             }
         }
         for range in search_ranges {
-            Log::ep("ccc", &c);
-            Log::ep("yyy", &y);
-            Log::ep("xxx", &x);
-
             if range.y == y && range.sx <= x && x < range.ex {
                 return CharStyleType::Select;
             } else if range.y > y {

@@ -61,6 +61,9 @@ impl Editor {
         let offset_x_change_num = 10;
 
         let offset_x_org = self.offset_x;
+
+        Log::ep("offset_x_org", &offset_x_org);
+
         let vec = &self.buf.char_vec_line(self.cur.y);
 
         // Calc offset_x
@@ -70,6 +73,8 @@ impl Editor {
         // KEY_NULL:grep_result initial display
         } else if self.cur_y_org != self.cur.y || self.evt == END || self.evt == SEARCH_ASC || self.evt == SEARCH_DESC || self.evt == KEY_NULL {
             self.offset_x = self.get_x_offset(self.cur.y, self.cur.x - self.get_rnw());
+
+            Log::ep("self.offset_x", &self.offset_x);
 
             if self.evt == SEARCH_ASC || self.evt == SEARCH_DESC || self.evt == KEY_NULL {
                 let str_width = get_str_width(&self.search.str);
@@ -106,7 +111,6 @@ impl Editor {
         } else if offset_x_org != self.offset_x {
             if self.offset_x < offset_x_org {
                 // Log::ep_s(" self.x_offset < x_offset_org  ");
-
                 let ttt = get_row_width(&vec[self.offset_x..offset_x_org], false).1;
                 Log::ep(" ttt", &ttt);
                 self.offset_disp_x -= get_row_width(&vec[self.offset_x..offset_x_org], false).1;
@@ -127,12 +131,12 @@ impl Editor {
 
     /// Get x_offset from the specified y・x
     pub fn get_x_offset(&mut self, y: usize, x: usize) -> usize {
+        Log::ep_s("　　　　　　　　get_x_offset");
+
         let (mut count, mut width) = (0, 0);
         for i in (0..x).rev() {
             let c = self.buf.char(y, i);
-            // Log::ep("ccccc", c);
             width += c.width().unwrap_or(0);
-            // Log::ep("width", width);
             if width + self.get_rnw() + 1 > self.disp_col_num {
                 break;
             }
@@ -236,10 +240,12 @@ impl Editor {
         return self.rnw;
     }
     pub fn set_org(term: &mut Terminal) {
-        term.tabs[term.idx].editor.cur_y_org = term.tabs[term.idx].editor.cur.y;
-        term.tabs[term.idx].editor.offset_y_org = term.tabs[term.idx].editor.offset_y;
-        term.tabs[term.idx].editor.offset_x_org = term.tabs[term.idx].editor.offset_x;
-        term.tabs[term.idx].editor.rnw_org = term.tabs[term.idx].editor.get_rnw();
-        term.tabs[term.idx].editor.sel_org = term.tabs[term.idx].editor.sel;
+        let tab = term.tabs.get_mut(term.idx).unwrap();
+
+        tab.editor.cur_y_org = tab.editor.cur.y;
+        tab.editor.offset_y_org = tab.editor.offset_y;
+        tab.editor.offset_x_org = tab.editor.offset_x;
+        tab.editor.rnw_org = tab.editor.get_rnw();
+        tab.editor.sel_org = tab.editor.sel;
     }
 }

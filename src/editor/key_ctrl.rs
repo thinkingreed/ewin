@@ -142,6 +142,8 @@ impl Editor {
                 Log::ep("range", &range);
 
                 self.set_cur_target(range.y, range.sx);
+
+                Log::ep("self.cur", &self.cur);
             }
 
             self.scroll();
@@ -255,6 +257,8 @@ impl Editor {
     }
 
     pub fn set_grep_result(&mut self) {
+        Log::ep_s("set_grep_result");
+
         Log::ep_s("set_grep_result");
 
         self.rnw = self.buf.len_lines().to_string().len();

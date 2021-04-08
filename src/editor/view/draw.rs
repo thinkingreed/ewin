@@ -95,7 +95,9 @@ impl Editor {
         if self.cur.y == i && self.offset_disp_x > 0 {
             str_vec.push(">".repeat(self.get_rnw()));
         } else {
-            str_vec.push(" ".repeat(self.get_rnw() - (i + 1).to_string().len()).to_string());
+            if self.get_rnw() > 0 {
+                str_vec.push(" ".repeat(self.get_rnw() - (i + 1).to_string().len()).to_string());
+            }
             str_vec.push((i + 1).to_string());
         }
         str_vec.push(" ".repeat(Editor::RNW_MARGIN).to_string());

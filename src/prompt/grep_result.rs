@@ -49,7 +49,6 @@ impl EvtAct {
         } else {
             Prompt::set_grep_result_after(term);
         }
-
         term.tabs[term.idx].editor.buf.insert_end(&EOF_MARK.to_string());
         term.tabs[term.idx].editor.set_cur_default();
         term.tabs[term.idx].editor.scroll();
@@ -118,10 +117,13 @@ impl EvtAct {
                         term.hbar.file_vec.push(h_file);
 
                         tab_grep.open(&term.hbar.file_vec[term.idx], &grep_result.filenm);
-                        tab_grep.editor.search_str(true, false);
+                        tab_grep.editor.evt = KEY_NULL;
                         term.tabs.push(tab_grep);
+                        term.set_disp_size();
+
+                        term.tabs[term.idx].editor.search_str(true, false);
                     }
-                    return EvtActType::DrawOnly;
+                    return EvtActType::Next;
                 }
                 _ => return EvtActType::Hold,
             },

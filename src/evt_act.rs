@@ -94,6 +94,8 @@ impl EvtAct {
                             End => term.tabs[term.idx].editor.end(),
                             F(1) => term.help.disp_toggle(&mut term.tabs[term.idx].editor),
                             F(3) => term.tabs[term.idx].editor.search_str(true, false),
+                            // Initial display
+                            Null => {}
                             _ => term.tabs[term.idx].mbar.set_err(&LANG.unsupported_operation),
                         },
 
@@ -169,44 +171,46 @@ impl EvtAct {
         // let rc = Rc::clone(&term.term.tabs[term.tab_idx]s[term.term.tabs[term.tab_idx]_idx]);
         //  let mut term.tabs[term.tab_idx] = term.term.tabs[term.tab_idx]s[term.term.tabs[term.tab_idx]_idx];
 
+        let tab = term.tabs.get_mut(term.idx).unwrap();
+
         // Initialize of updown_x
-        match term.tabs[term.idx].editor.evt {
+        match tab.editor.evt {
             //  Down | Up | ShiftDown | ShiftUp
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 Down | Up => {}
-                _ => term.tabs[term.idx].editor.updown_x = 0,
+                _ => tab.editor.updown_x = 0,
             },
             Key(KeyEvent { code, .. }) => match code {
                 Down | Up => {}
-                _ => term.tabs[term.idx].editor.updown_x = 0,
+                _ => tab.editor.updown_x = 0,
             },
             Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => {}
             Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {}
-            _ => term.tabs[term.idx].editor.updown_x = 0,
+            _ => tab.editor.updown_x = 0,
         }
         // redraw判定
-        term.tabs[term.idx].editor.d_range.draw_type = DrawType::Not;
-        match term.tabs[term.idx].editor.evt {
-            Resize(_, _) => term.tabs[term.idx].editor.d_range.draw_type = DrawType::All,
+        tab.editor.d_range.draw_type = DrawType::Not;
+        match tab.editor.evt {
+            Resize(_, _) => tab.editor.d_range.draw_type = DrawType::All,
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                Home | End | Char('c') => term.tabs[term.idx].editor.d_range.draw_type = DrawType::Not,
-                _ => term.tabs[term.idx].editor.d_range.draw_type = DrawType::All,
+                Home | End | Char('c') => tab.editor.d_range.draw_type = DrawType::Not,
+                _ => tab.editor.d_range.draw_type = DrawType::All,
             },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 Down | Up | Left | Right | Home | End | F(4) => {}
-                _ => term.tabs[term.idx].editor.d_range.draw_type = DrawType::All,
+                _ => tab.editor.d_range.draw_type = DrawType::All,
             },
             Key(KeyEvent { code, .. }) => match code {
                 Down | Up | Left | Right | Home | End => {
-                    if term.tabs[term.idx].editor.sel.is_selected() {
-                        let sel = term.tabs[term.idx].editor.sel.get_range();
-                        term.tabs[term.idx].editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
+                    if tab.editor.sel.is_selected() {
+                        let sel = tab.editor.sel.get_range();
+                        tab.editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
                     } else {
-                        if term.tabs[term.idx].editor.evt == DOWN || term.tabs[term.idx].editor.evt == UP {
+                        if tab.editor.evt == DOWN || tab.editor.evt == UP {
                             // let y = term.tabs[term.tab_idx].editor.cur.y - term.tabs[term.tab_idx].editor.offset_y;
-                            let y = term.tabs[term.idx].editor.cur.y;
+                            let y = tab.editor.cur.y;
 
-                            let y_after = if term.tabs[term.idx].editor.evt == DOWN {
+                            let y_after = if tab.editor.evt == DOWN {
                                 y + 1
                             } else {
                                 if y == 0 {
@@ -216,34 +220,34 @@ impl EvtAct {
                                 }
                             };
 
-                            term.tabs[term.idx].editor.d_range = DRange::new(min(y, y_after), max(y, y_after), DrawType::Target);
+                            tab.editor.d_range = DRange::new(min(y, y_after), max(y, y_after), DrawType::Target);
                         } else {
-                            term.tabs[term.idx].editor.d_range.draw_type = DrawType::MoveCur;
+                            tab.editor.d_range.draw_type = DrawType::MoveCur;
                         }
                     };
                 }
-                F(1) => term.tabs[term.idx].editor.d_range.draw_type = DrawType::All,
+                F(1) => tab.editor.d_range.draw_type = DrawType::All,
                 F(3) => {
-                    if term.tabs[term.idx].editor.search.idx == USIZE_UNDEFINED {
-                        term.tabs[term.idx].editor.d_range.draw_type = DrawType::All;
+                    if tab.editor.search.idx == USIZE_UNDEFINED {
+                        tab.editor.d_range.draw_type = DrawType::All;
                     }
                 }
-                _ => term.tabs[term.idx].editor.d_range.draw_type = DrawType::All,
+                _ => tab.editor.d_range.draw_type = DrawType::All,
             },
 
             // for err msg or selected
             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
-                if term.tabs[term.idx].editor.sel.is_selected() {
-                    term.tabs[term.idx].editor.d_range.draw_type = DrawType::Target;
+                if tab.editor.sel.is_selected() {
+                    tab.editor.d_range.draw_type = DrawType::Target;
                 }
             }
             Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {
-                if term.tabs[term.idx].editor.sel.is_selected() {
-                    let sel = term.tabs[term.idx].editor.sel.get_range();
-                    term.tabs[term.idx].editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
+                if tab.editor.sel.is_selected() {
+                    let sel = tab.editor.sel.get_range();
+                    tab.editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
                 }
             }
-            _ => term.tabs[term.idx].editor.d_range.draw_type = DrawType::Not,
+            _ => tab.editor.d_range.draw_type = DrawType::Not,
         }
 
         // Edit    is_change=true, Clear redo_vec,

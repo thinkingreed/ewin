@@ -106,14 +106,12 @@ impl Terminal {
         if tab.prom.is_save_new_file || tab.state.is_search || tab.state.is_replace || tab.state.grep_info.is_grep || tab.prom.is_move_line {
             tab.prom.draw_cur(str_vec);
         } else {
-            /*
             Log::ep("cur", &tab.editor.cur);
             Log::ep("editor.get_rnw()", &tab.editor.get_rnw());
-            Log::ep("editor.cur.disp_x", &tab.editor.cur.disp_x);
-            Log::ep("cur.y", &tab.editor.cur.y);
             Log::ep("offset_disp_x", &tab.editor.offset_disp_x);
             Log::ep("offset_y", &tab.editor.offset_y);
-              */
+            Log::ep("tab.editor.disp_row_posi", &tab.editor.disp_row_posi);
+
             str_vec.push(MoveTo((tab.editor.cur.disp_x - tab.editor.offset_disp_x) as u16, (tab.editor.cur.y - tab.editor.offset_y + tab.editor.disp_row_posi) as u16).to_string());
         }
     }
