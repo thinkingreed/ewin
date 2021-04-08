@@ -1,4 +1,14 @@
-use crate::{bar::msgbar::*, bar::statusbar::*, def::*, global::*, log::*, model::*, prompt::prompt::*, terminal::*, util::*};
+use crate::{
+    bar::msgbar::*,
+    bar::{headerbar::HeaderFile, statusbar::*},
+    def::*,
+    global::*,
+    log::*,
+    model::*,
+    prompt::prompt::*,
+    terminal::*,
+    util::*,
+};
 
 use std::{env, fmt, fs::metadata, io::ErrorKind, path::Path};
 
@@ -47,7 +57,7 @@ impl Tab {
         }
     }
 
-    pub fn open(&mut self, term: &Terminal, filenm: &String) {
+    pub fn open(&mut self, h_file: &HeaderFile, filenm: &String) {
         Log::ep_s("           open");
         let path = Path::new(&filenm);
 
@@ -58,7 +68,7 @@ impl Tab {
                     self.mbar.set_readonly(&format!("{}({})", &LANG.unable_to_edit, &LANG.no_write_permission));
                 }
 
-                let ext = term.hbar.file_vec[term.tab_idx].ext.clone();
+                let ext = h_file.ext.clone();
 
                 if CFG.get().unwrap().try_lock().unwrap().syntax.syntax_reference.is_some() && file_meta.len() < ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE && is_enable_syntax_highlight(&ext) {
                     self.editor.is_enable_syntax_highlight = true;

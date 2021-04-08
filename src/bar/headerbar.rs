@@ -75,7 +75,7 @@ impl HeaderBar {
 
         let mut hber_str = format!("{}{}{}{}", MoveTo(0, term.hbar.disp_row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_default_bg(), Colors::get_sber_fg(),);
         for (i, file) in term.hbar.file_vec.iter().enumerate() {
-            if i == term.tab_idx {
+            if i == term.idx {
                 hber_str.push_str(&format!("{}{}{}{}{}{}", &Colors::get_sber_inversion_fg_bg(), &file.filenm_disp.clone(), &Colors::get_default_fg_bg(), &Colors::get_sber_fg(), &"|", &Colors::get_default_fg_bg()));
             } else {
                 hber_str.push_str(&format!("{}{}{}", &Colors::get_sber_fg(), &file.filenm_disp.clone(), &"|"));

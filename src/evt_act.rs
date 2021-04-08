@@ -3,7 +3,6 @@ use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton
 use std::{
     cmp::{max, min},
     io::Write,
-    rc::Rc,
 };
 
 impl EvtAct {
@@ -22,117 +21,105 @@ impl EvtAct {
             EvtActType::Exit => return true,
             EvtActType::Hold => {}
             EvtActType::DrawOnly | EvtActType::Next => {
-                Log::ep("term.tab_idx", &term.tab_idx);
+                Log::ep("term.tab_idx", &term.idx);
 
-                let rc = Rc::clone(&term.tabs[term.tab_idx]);
-                let mut tab = rc.borrow_mut();
-                Log::ep("editor.evt", &tab.editor.evt);
+                // let rc = Rc::clone(&term.tabs[term.tab_idx]);
+                // let mut tab = term.tabs[term.tab_idx];
+                // Log::ep("editor.evt", &tab.editor.evt);
 
                 if evt_act_type == EvtActType::DrawOnly {
-                    tab.editor.d_range.draw_type = DrawType::None;
+                    //  tab.editor.d_range.draw_type = DrawType::None;
+                    term.tabs[term.idx].editor.d_range.draw_type = DrawType::None;
                 }
 
-                if evt_act_type == EvtActType::Next && !EvtAct::check_err(&mut tab) {
-                    EvtAct::init(term, &mut tab);
+                if evt_act_type == EvtActType::Next && !EvtAct::check_err(term) {
+                    EvtAct::init(term);
+                    Editor::set_org(term);
 
-                    tab.editor.cur_y_org = tab.editor.cur.y;
-                    let offset_y_org = tab.editor.offset_y;
-                    let offset_x_org = tab.editor.offset_x;
-                    let rnw_org = tab.editor.get_rnw();
-                    tab.editor.sel_org = tab.editor.sel;
+                    let evt = term.tabs[term.idx].editor.evt;
 
-                    match tab.editor.evt {
-                        Resize(_, _) => tab.editor.d_range.draw_type = DrawType::All,
+                    match &evt {
+                        Resize(_, _) => {
+                            term.tabs[term.idx].editor.d_range.draw_type = DrawType::All;
+                        }
                         Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                             Char('w') => {
-                                if Prompt::close(term, &mut tab) == true {
+                                if Prompt::close(term) == true {
                                     return true;
                                 }
                             }
                             Char('s') => {
-                                let _ = tab.save(term);
+                                let _ = Tab::save(term);
                             }
-                            Char('c') => tab.editor.copy(),
-                            Char('x') => tab.editor.exec_edit_proc(EvtType::Cut, "", ""),
-                            Char('v') => tab.editor.exec_edit_proc(EvtType::Paste, "", ""),
-                            Char('a') => tab.editor.all_select(),
-                            Char('f') => Prompt::search(term, &mut tab),
-                            Char('r') => Prompt::replace(term, &mut tab),
-                            Char('g') => Prompt::grep(term, &mut tab),
-                            Char('z') => tab.editor.undo(),
-                            Char('y') => tab.editor.redo(),
-                            Char('l') => tab.prom.move_row(),
-                            Home => tab.editor.ctrl_home(),
-                            End => tab.editor.ctrl_end(),
-                            _ => tab.mbar.set_err(&LANG.unsupported_operation),
+                            Char('c') => term.tabs[term.idx].editor.copy(),
+                            Char('x') => term.tabs[term.idx].editor.exec_edit_proc(EvtType::Cut, "", ""),
+                            Char('v') => term.tabs[term.idx].editor.exec_edit_proc(EvtType::Paste, "", ""),
+                            Char('a') => term.tabs[term.idx].editor.all_select(),
+                            Char('f') => Prompt::search(term),
+                            Char('r') => Prompt::replace(term),
+                            Char('g') => Prompt::grep(term),
+                            Char('z') => term.tabs[term.idx].editor.undo(),
+                            Char('y') => term.tabs[term.idx].editor.redo(),
+                            Char('l') => Prompt::move_row(term),
+                            Home => term.tabs[term.idx].editor.ctrl_home(),
+                            End => term.tabs[term.idx].editor.ctrl_end(),
+                            _ => term.tabs[term.idx].mbar.set_err(&LANG.unsupported_operation),
                         },
 
                         Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                            Right => tab.editor.shift_right(),
-                            Left => tab.editor.shift_left(),
-                            Down => tab.editor.shift_down(),
-                            Up => tab.editor.shift_up(),
-                            Home => tab.editor.shift_home(),
-                            End => tab.editor.shift_end(),
-                            Char(c) => tab.editor.exec_edit_proc(EvtType::InsertChar, &c.to_ascii_uppercase().to_string(), ""),
-                            F(1) => tab.record_key_start(),
-                            F(2) => tab.exec_record_key(out, term),
-                            F(4) => tab.editor.search_str(false, false),
-                            _ => tab.mbar.set_err(&LANG.unsupported_operation),
+                            Right => term.tabs[term.idx].editor.shift_right(),
+                            Left => term.tabs[term.idx].editor.shift_left(),
+                            Down => term.tabs[term.idx].editor.shift_down(),
+                            Up => term.tabs[term.idx].editor.shift_up(),
+                            Home => term.tabs[term.idx].editor.shift_home(),
+                            End => term.tabs[term.idx].editor.shift_end(),
+                            Char(c) => term.tabs[term.idx].editor.exec_edit_proc(EvtType::InsertChar, &c.to_ascii_uppercase().to_string(), ""),
+                            F(1) => term.tabs[term.idx].record_key_start(),
+                            F(2) => Tab::exec_record_key(out, term),
+                            F(4) => term.tabs[term.idx].editor.search_str(false, false),
+                            _ => term.tabs[term.idx].mbar.set_err(&LANG.unsupported_operation),
                         },
                         Key(KeyEvent { code, .. }) => match code {
-                            Char(c) => tab.editor.exec_edit_proc(EvtType::InsertChar, &c.to_string(), ""),
-                            Enter => tab.editor.exec_edit_proc(EvtType::Enter, "", ""),
-                            Backspace => tab.editor.exec_edit_proc(EvtType::BS, "", ""),
-                            Delete => tab.editor.exec_edit_proc(EvtType::Del, "", ""),
-                            PageDown => tab.editor.page_down(),
-                            PageUp => tab.editor.page_up(),
-                            Up => tab.editor.cur_up(),
-                            Down => tab.editor.cur_down(),
-                            Left => tab.editor.cur_left(),
-                            Right => tab.editor.cur_right(),
-                            Home => tab.editor.home(),
-                            End => tab.editor.end(),
-                            F(1) => term.help.disp_toggle(&mut tab.editor),
-                            F(3) => tab.editor.search_str(true, false),
-                            _ => tab.mbar.set_err(&LANG.unsupported_operation),
+                            Char(c) => term.tabs[term.idx].editor.exec_edit_proc(EvtType::InsertChar, &c.to_string(), ""),
+                            Enter => term.tabs[term.idx].editor.exec_edit_proc(EvtType::Enter, "", ""),
+                            Backspace => term.tabs[term.idx].editor.exec_edit_proc(EvtType::BS, "", ""),
+                            Delete => term.tabs[term.idx].editor.exec_edit_proc(EvtType::Del, "", ""),
+                            PageDown => term.tabs[term.idx].editor.page_down(),
+                            PageUp => term.tabs[term.idx].editor.page_up(),
+                            Up => term.tabs[term.idx].editor.cur_up(),
+                            Down => term.tabs[term.idx].editor.cur_down(),
+                            Left => term.tabs[term.idx].editor.cur_left(),
+                            Right => term.tabs[term.idx].editor.cur_right(),
+                            Home => term.tabs[term.idx].editor.home(),
+                            End => term.tabs[term.idx].editor.end(),
+                            F(1) => term.help.disp_toggle(&mut term.tabs[term.idx].editor),
+                            F(3) => term.tabs[term.idx].editor.search_str(true, false),
+                            _ => term.tabs[term.idx].mbar.set_err(&LANG.unsupported_operation),
                         },
 
-                        Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => tab.editor.cur_up(),
-                        Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => tab.editor.cur_down(),
-                        Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => tab.editor.ctrl_mouse((x + 1) as usize, y as usize, true),
+                        Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => term.tabs[term.idx].editor.cur_up(),
+                        Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => term.tabs[term.idx].editor.cur_down(),
+                        Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => term.tabs[term.idx].editor.ctrl_mouse((x + 1) as usize, *y as usize, true),
                         Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: _, row: _, .. }) => {}
-                        Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => tab.editor.ctrl_mouse((x + 1) as usize, y as usize, false),
+                        Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => term.tabs[term.idx].editor.ctrl_mouse((x + 1) as usize, *y as usize, false),
 
-                        _ => tab.mbar.set_err(&LANG.unsupported_operation),
+                        _ => term.tabs[term.idx].mbar.set_err(&LANG.unsupported_operation),
                     }
 
-                    if tab.prom.is_key_record {
-                        tab.editor.record_key();
+                    if term.tabs[term.idx].prom.is_key_record {
+                        term.tabs[term.idx].editor.record_key();
                     }
-                    EvtAct::finalize(&mut tab.editor);
-                    let cur_y_org = tab.editor.cur_y_org;
-                    tab.editor.set_draw_range(cur_y_org, offset_y_org, offset_x_org, rnw_org);
+                    EvtAct::finalize(&mut term.tabs[term.idx].editor);
+                    term.tabs[term.idx].editor.set_draw_range();
                 }
-
-                Log::ep("offset_y", &tab.editor.offset_y);
-                Log::ep("offset_x", &tab.editor.offset_x);
-                Log::ep("cur.y", &tab.editor.cur.y);
-                Log::ep("cur.x", &tab.editor.cur.x);
-                Log::ep("cur.disp_x", &tab.editor.cur.disp_x);
-                // Log::ep("", &tab.editor.sel);
-                // Log::ep("", &tab.editor.search);
-                Log::ep("", &tab.state);
-
-                Log::ep("d_range", &tab.editor.d_range);
 
                 // Redraw in case of msg change
-                if tab.mbar.msg_org != tab.mbar.msg {
-                    tab.editor.d_range.draw_type = DrawType::All;
+                if term.tabs[term.idx].mbar.msg_org != term.tabs[term.idx].mbar.msg {
+                    term.tabs[term.idx].editor.d_range.draw_type = DrawType::All;
                 }
                 // When key_record is executed, redraw only at the end
-                if tab.editor.d_range.draw_type != DrawType::Not || (tab.prom.is_key_record_exec == false || tab.prom.is_key_record_exec == true && tab.prom.is_key_record_exec_draw == true) {
-                    term.draw(out, &mut tab);
+                if term.tabs[term.idx].editor.d_range.draw_type != DrawType::Not || (term.tabs[term.idx].prom.is_key_record_exec == false || term.tabs[term.idx].prom.is_key_record_exec == true && term.tabs[term.idx].prom.is_key_record_exec_draw == true) {
+                    term.draw(out);
                 }
             }
         }
@@ -143,15 +130,15 @@ impl EvtAct {
     pub fn check_next_process<T: Write>(evt: Event, out: &mut T, term: &mut Terminal) -> EvtActType {
         let (event, evt_act) = EvtAct::check_headerbar(evt, term);
 
-        term.tabs[term.tab_idx].borrow_mut().editor.evt = event;
+        term.tabs[term.idx].editor.evt = event;
         if evt_act != EvtActType::Hold {
             return evt_act;
         }
         Log::ep("check_headerbar", &event.clone());
-        let rc = Rc::clone(&term.tabs[term.tab_idx]);
-        let mut tab = rc.borrow_mut();
+        // let rc = Rc::clone(&term.tabs[term.tab_idx]);
+        // let mut tab = term.tabs[term.tab_idx];
 
-        tab.mbar.msg_org = tab.mbar.msg.clone();
+        term.tabs[term.idx].mbar.msg_org = term.tabs[term.idx].mbar.msg.clone();
 
         Log::ep("evt_act", &evt_act);
 
@@ -159,65 +146,67 @@ impl EvtAct {
             return evt_act;
         }
 
-        EvtAct::check_clear_mag(&mut tab);
-        EvtAct::check_grep_clear_tab_comp(&mut tab);
-        let evt_act = EvtAct::check_prom(out, term, &mut tab);
+        EvtAct::check_clear_mag(&mut term.tabs[term.idx]);
+        EvtAct::check_grep_clear_tab_comp(&mut term.tabs[term.idx]);
+        let evt_act = EvtAct::check_prom(out, term);
 
         Log::ep("evt_act", &evt_act);
 
         if evt_act == EvtActType::Hold {
-            if tab.mbar.msg_org != tab.mbar.msg {
-                tab.mbar.draw_only(out);
-                tab.prom.draw_cur_only(out);
+            if term.tabs[term.idx].mbar.msg_org != term.tabs[term.idx].mbar.msg {
+                term.tabs[term.idx].mbar.draw_only(out);
+                term.tabs[term.idx].prom.draw_cur_only(out);
             }
-            let tab_state = tab.state.clone();
-            tab.prom.draw_only(out, &tab_state);
+            let tab_state = term.tabs[term.idx].state.clone();
+            term.tabs[term.idx].prom.draw_only(out, &tab_state);
         }
 
         return evt_act;
     }
 
-    pub fn init(term: &mut Terminal, tab: &mut Tab) {
+    pub fn init(term: &mut Terminal) {
         Log::ep_s("init");
+        // let rc = Rc::clone(&term.term.tabs[term.tab_idx]s[term.term.tabs[term.tab_idx]_idx]);
+        //  let mut term.tabs[term.tab_idx] = term.term.tabs[term.tab_idx]s[term.term.tabs[term.tab_idx]_idx];
 
         // Initialize of updown_x
-        match tab.editor.evt {
+        match term.tabs[term.idx].editor.evt {
             //  Down | Up | ShiftDown | ShiftUp
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 Down | Up => {}
-                _ => tab.editor.updown_x = 0,
+                _ => term.tabs[term.idx].editor.updown_x = 0,
             },
             Key(KeyEvent { code, .. }) => match code {
                 Down | Up => {}
-                _ => tab.editor.updown_x = 0,
+                _ => term.tabs[term.idx].editor.updown_x = 0,
             },
             Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => {}
             Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {}
-            _ => tab.editor.updown_x = 0,
+            _ => term.tabs[term.idx].editor.updown_x = 0,
         }
         // redraw判定
-        tab.editor.d_range.draw_type = DrawType::Not;
-        match tab.editor.evt {
-            Resize(_, _) => tab.editor.d_range.draw_type = DrawType::All,
+        term.tabs[term.idx].editor.d_range.draw_type = DrawType::Not;
+        match term.tabs[term.idx].editor.evt {
+            Resize(_, _) => term.tabs[term.idx].editor.d_range.draw_type = DrawType::All,
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                Home | End | Char('c') => tab.editor.d_range.draw_type = DrawType::Not,
-                _ => tab.editor.d_range.draw_type = DrawType::All,
+                Home | End | Char('c') => term.tabs[term.idx].editor.d_range.draw_type = DrawType::Not,
+                _ => term.tabs[term.idx].editor.d_range.draw_type = DrawType::All,
             },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 Down | Up | Left | Right | Home | End | F(4) => {}
-                _ => tab.editor.d_range.draw_type = DrawType::All,
+                _ => term.tabs[term.idx].editor.d_range.draw_type = DrawType::All,
             },
             Key(KeyEvent { code, .. }) => match code {
                 Down | Up | Left | Right | Home | End => {
-                    if tab.editor.sel.is_selected() {
-                        let sel = tab.editor.sel.get_range();
-                        tab.editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
+                    if term.tabs[term.idx].editor.sel.is_selected() {
+                        let sel = term.tabs[term.idx].editor.sel.get_range();
+                        term.tabs[term.idx].editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
                     } else {
-                        if tab.editor.evt == DOWN || tab.editor.evt == UP {
-                            // let y = tab.editor.cur.y - tab.editor.offset_y;
-                            let y = tab.editor.cur.y;
+                        if term.tabs[term.idx].editor.evt == DOWN || term.tabs[term.idx].editor.evt == UP {
+                            // let y = term.tabs[term.tab_idx].editor.cur.y - term.tabs[term.tab_idx].editor.offset_y;
+                            let y = term.tabs[term.idx].editor.cur.y;
 
-                            let y_after = if tab.editor.evt == DOWN {
+                            let y_after = if term.tabs[term.idx].editor.evt == DOWN {
                                 y + 1
                             } else {
                                 if y == 0 {
@@ -227,67 +216,67 @@ impl EvtAct {
                                 }
                             };
 
-                            tab.editor.d_range = DRange::new(min(y, y_after), max(y, y_after), DrawType::Target);
+                            term.tabs[term.idx].editor.d_range = DRange::new(min(y, y_after), max(y, y_after), DrawType::Target);
                         } else {
-                            tab.editor.d_range.draw_type = DrawType::MoveCur;
+                            term.tabs[term.idx].editor.d_range.draw_type = DrawType::MoveCur;
                         }
                     };
                 }
-                F(1) => tab.editor.d_range.draw_type = DrawType::All,
+                F(1) => term.tabs[term.idx].editor.d_range.draw_type = DrawType::All,
                 F(3) => {
-                    if tab.editor.search.idx == USIZE_UNDEFINED {
-                        tab.editor.d_range.draw_type = DrawType::All;
+                    if term.tabs[term.idx].editor.search.idx == USIZE_UNDEFINED {
+                        term.tabs[term.idx].editor.d_range.draw_type = DrawType::All;
                     }
                 }
-                _ => tab.editor.d_range.draw_type = DrawType::All,
+                _ => term.tabs[term.idx].editor.d_range.draw_type = DrawType::All,
             },
 
             // for err msg or selected
             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
-                if tab.editor.sel.is_selected() {
-                    tab.editor.d_range.draw_type = DrawType::Target;
+                if term.tabs[term.idx].editor.sel.is_selected() {
+                    term.tabs[term.idx].editor.d_range.draw_type = DrawType::Target;
                 }
             }
             Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {
-                if tab.editor.sel.is_selected() {
-                    let sel = tab.editor.sel.get_range();
-                    tab.editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
+                if term.tabs[term.idx].editor.sel.is_selected() {
+                    let sel = term.tabs[term.idx].editor.sel.get_range();
+                    term.tabs[term.idx].editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
                 }
             }
-            _ => tab.editor.d_range.draw_type = DrawType::Not,
+            _ => term.tabs[term.idx].editor.d_range.draw_type = DrawType::Not,
         }
 
         // Edit    is_change=true, Clear redo_vec,
-        if tab.editor.is_edit_evt(false) {
-            term.hbar.file_vec[term.tab_idx].is_changed = true;
-            // FILE_VEC.get().unwrap().try_lock().unwrap()[term.tab_idx].is_changed = true;
-            tab.editor.history.clear_redo_vec();
+        if term.tabs[term.idx].editor.is_edit_evt(false) {
+            term.hbar.file_vec[term.idx].is_changed = true;
+            // FILE_VEC.get().unwrap().try_lock().unwrap()[term.term.tabs[term.tab_idx]_idx].is_changed = true;
+            term.tabs[term.idx].editor.history.clear_redo_vec();
         }
 
         // clear_redo_vec
-        match tab.editor.evt {
+        match term.tabs[term.idx].editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                Char('x') | Char('v') => tab.editor.history.clear_redo_vec(),
+                Char('x') | Char('v') => term.tabs[term.idx].editor.history.clear_redo_vec(),
                 _ => {}
             },
             Key(KeyEvent { code, .. }) => match code {
-                Char(_) | Enter | Backspace | Delete => tab.editor.history.clear_redo_vec(),
+                Char(_) | Enter | Backspace | Delete => term.tabs[term.idx].editor.history.clear_redo_vec(),
                 _ => {}
             },
             _ => {}
         }
         // Msg clear  Other than cursor move
-        match tab.editor.evt {
+        match term.tabs[term.idx].editor.evt {
             Resize(_, _) => {}
-            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, .. }) => tab.mbar.clear_mag(),
-            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, .. }) => tab.mbar.clear_mag(),
+            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, .. }) => term.tabs[term.idx].mbar.clear_mag(),
+            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, .. }) => term.tabs[term.idx].mbar.clear_mag(),
             Key(KeyEvent { code, .. }) => match code {
                 Down | Up | Left | Right | Home | End => {}
-                _ => tab.mbar.clear_mag(),
+                _ => term.tabs[term.idx].mbar.clear_mag(),
             },
             Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => {}
             Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {}
-            _ => tab.mbar.clear_mag(),
+            _ => term.tabs[term.idx].mbar.clear_mag(),
         }
     }
 
@@ -317,27 +306,27 @@ impl EvtAct {
             editor.search.ranges = editor.get_search_ranges(&editor.search.str, 0, editor.buf.len_chars(), 0);
         }
     }
-    pub fn check_err(tab: &mut Tab) -> bool {
+    pub fn check_err(term: &mut Terminal) -> bool {
         let is_return = false;
 
-        match tab.editor.evt {
+        match term.tabs[term.idx].editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                 // Check if sel range is set
                 Char('x') | Char('c') => {
-                    if !tab.editor.sel.is_selected() {
-                        tab.mbar.set_err(&LANG.no_sel_range.to_string());
+                    if !term.tabs[term.idx].editor.sel.is_selected() {
+                        term.tabs[term.idx].mbar.set_err(&LANG.no_sel_range.to_string());
                         return true;
                     }
                 }
                 Char('z') => {
-                    if tab.editor.history.len_undo() == 0 {
-                        tab.mbar.set_err(&LANG.no_undo_operation.to_string());
+                    if term.tabs[term.idx].editor.history.len_undo() == 0 {
+                        term.tabs[term.idx].mbar.set_err(&LANG.no_undo_operation.to_string());
                         return true;
                     }
                 }
                 Char('y') => {
-                    if tab.editor.history.len_redo() == 0 {
-                        tab.mbar.set_err(&LANG.no_operation_re_exec.to_string());
+                    if term.tabs[term.idx].editor.history.len_redo() == 0 {
+                        term.tabs[term.idx].mbar.set_err(&LANG.no_operation_re_exec.to_string());
                         return true;
                     }
                 }
@@ -346,19 +335,19 @@ impl EvtAct {
             _ => {}
         }
         // Check if sel range is set
-        match tab.editor.evt {
+        match term.tabs[term.idx].editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                 Char('v') => {
-                    let clipboard = tab.editor.get_clipboard().unwrap_or("".to_string());
+                    let clipboard = term.tabs[term.idx].editor.get_clipboard().unwrap_or("".to_string());
                     if clipboard.len() == 0 {
-                        tab.mbar.set_err(&LANG.no_value_in_clipboard.to_string());
+                        term.tabs[term.idx].mbar.set_err(&LANG.no_value_in_clipboard.to_string());
                         return true;
                     }
                     // TODO TEST
                     // Do not paste multiple lines for Prompt
-                    if tab.prom.is_save_new_file || tab.state.is_search || tab.state.is_replace || tab.state.grep_info.is_grep || tab.prom.is_move_line {
+                    if term.tabs[term.idx].prom.is_save_new_file || term.tabs[term.idx].state.is_search || term.tabs[term.idx].state.is_replace || term.tabs[term.idx].state.grep_info.is_grep || term.tabs[term.idx].prom.is_move_line {
                         if clipboard.match_indices(NEW_LINE).count() > 0 {
-                            tab.mbar.set_err(&LANG.cannot_paste_multi_rows.clone());
+                            term.tabs[term.idx].mbar.set_err(&LANG.cannot_paste_multi_rows.clone());
                             return true;
                         };
                     }

@@ -4,10 +4,13 @@ use std::{collections::BTreeSet, iter::FromIterator, path::Path, sync::Mutex};
 impl Editor {
     pub fn all_select(&mut self) {
         self.sel.clear();
-        self.sel.set_s(0, 0, self.get_rnw() + 1);
+        let s_disp_x = self.get_rnw() + 1;
+        self.sel.set_s(0, 0, s_disp_x);
         let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.buf.len_lines() - 1)[..], false);
         // e_disp_x +1 for EOF
-        self.sel.set_e(self.buf.len_lines() - 1, cur_x, width + self.get_rnw() + 1);
+        let y = self.buf.len_lines() - 1;
+        let e_disp_x = width + self.get_rnw() + 1;
+        self.sel.set_e(y, cur_x, e_disp_x);
         self.d_range.draw_type = DrawType::All;
     }
 
@@ -92,6 +95,7 @@ impl Editor {
 
     pub fn ctrl_home(&mut self) {
         Log::ep_s("ctl_home");
+
         self.updown_x = 0;
         self.set_cur_default();
         self.scroll();
@@ -100,8 +104,10 @@ impl Editor {
 
     pub fn ctrl_end(&mut self) {
         Log::ep_s("　　　　　　　　ctl_end");
+
         let y = self.buf.len_lines() - 1;
-        self.set_cur_target(y, self.buf.len_line_chars(y));
+        let len_line_chars = self.buf.len_line_chars(y);
+        self.set_cur_target(y, len_line_chars);
         self.scroll();
         self.scroll_horizontal();
         if self.updown_x == 0 {
@@ -301,6 +307,7 @@ impl Editor {
 
     pub fn undo(&mut self) {
         Log::ep_s("　　　　　　　　undo");
+
         if let Some(ep) = self.history.get_undo_last() {
             Log::ep("EvtProc", &ep);
             // initial cursor posi set
@@ -337,6 +344,7 @@ impl Editor {
 
     pub fn redo(&mut self) {
         Log::ep_s("　　　　　　　　redo");
+
         if let Some(ep) = self.history.get_redo_last() {
             Log::ep("EvtProc", &ep);
             self.set_evtproc(&ep, &ep.cur_s);
@@ -359,26 +367,26 @@ impl Editor {
 }
 
 impl Tab {
-    pub fn save(&mut self, term: &mut Terminal) -> bool {
+    pub fn save(term: &mut Terminal) -> bool {
         Log::ep_s("　　　　　　　  save");
-        if self.prom.cont_1.buf.len() > 0 {
-            term.hbar.file_vec[term.tab_idx].filenm = self.prom.cont_1.buf.iter().collect::<String>();
+        if term.tabs[term.idx].prom.cont_1.buf.len() > 0 {
+            term.hbar.file_vec[term.idx].filenm = term.tabs[term.idx].prom.cont_1.buf.iter().collect::<String>();
         }
-        let filenm = term.hbar.file_vec[term.tab_idx].filenm.clone();
+        let filenm = term.hbar.file_vec[term.idx].filenm.clone();
 
-        if !Path::new(&filenm).exists() && self.prom.cont_1.buf.len() == 0 {
+        if !Path::new(&filenm).exists() && term.tabs[term.idx].prom.cont_1.buf.len() == 0 {
             Log::ep_s("!Path::new(&sbar.filenm).exists()");
-            self.prom.is_save_new_file = true;
-            self.prom.save_new_file();
+            term.tabs[term.idx].prom.is_save_new_file = true;
+            term.tabs[term.idx].prom.save_new_file();
             return false;
         } else {
-            let result = self.editor.buf.write_to(&filenm);
+            let result = term.tabs[term.idx].editor.buf.write_to(&filenm);
             match result {
                 Ok(()) => {
-                    term.hbar.file_vec[term.tab_idx].is_changed = false;
-                    self.prom.clear();
-                    self.mbar.clear();
-                    self.state.clear();
+                    term.hbar.file_vec[term.idx].is_changed = false;
+                    term.tabs[term.idx].prom.clear();
+                    term.tabs[term.idx].mbar.clear();
+                    term.tabs[term.idx].state.clear();
                     return true;
                 }
                 Err(err) => {

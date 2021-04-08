@@ -1,16 +1,16 @@
-use crate::{colors::*, global::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, tab::Tab, terminal::Terminal};
+use crate::{colors::*, def::CLOSE, global::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, tab::Tab, terminal::Terminal};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 
 impl EvtAct {
-    pub fn close(term: &mut Terminal, tab: &mut Tab) -> EvtActType {
-        match tab.editor.evt {
+    pub fn close(term: &mut Terminal) -> EvtActType {
+        match term.tabs[term.idx].editor.evt {
             Key(KeyEvent { code: Char(c), .. }) => {
                 if c == 'y' {
                     // save成否判定
-                    if tab.save(term) {
+                    if Tab::save(term) {
                         return EvtAct::check_exit_close(term);
                     } else {
-                        tab.editor.d_range.draw_type = DrawType::All;
+                        term.tabs[term.idx].editor.d_range.draw_type = DrawType::All;
                         return EvtActType::DrawOnly;
                     }
                 } else if c == 'n' {
@@ -26,8 +26,8 @@ impl EvtAct {
         if term.tabs.len() == 1 {
             return EvtActType::Exit;
         } else {
-            let tab_idx = term.tab_idx;
-            term.tab_idx = if term.tab_idx == term.tabs.len() - 1 { term.tab_idx - 1 } else { term.tab_idx };
+            let tab_idx = term.idx;
+            term.idx = if term.idx == term.tabs.len() - 1 { term.idx - 1 } else { term.idx };
             term.tabs.remove(tab_idx);
             term.hbar.file_vec.remove(tab_idx);
             // FILE_VEC.get().unwrap().try_lock().unwrap().remove(term.tab_idx);
@@ -38,18 +38,28 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn close(term: &mut Terminal, tab: &mut Tab) -> bool {
-        if term.hbar.file_vec[term.tab_idx].is_changed == true {
+    pub fn close(term: &mut Terminal) -> bool {
+        if term.hbar.file_vec[term.idx].is_changed == true {
             // tab.prom.save_confirm_str(term);
-            tab.prom.disp_row_num = 2;
-            term.set_disp_size(tab);
-            let mut cont = PromptCont::new_not_edit(tab.prom.disp_row_posi as u16);
+            term.tabs[term.idx].prom.disp_row_num = 2;
+            term.set_disp_size();
+            let mut cont = PromptCont::new_not_edit(term.tabs[term.idx].prom.disp_row_posi as u16);
             cont.set_save_confirm();
-            tab.prom.cont_1 = cont;
-            tab.prom.is_close_confirm = true;
+            term.tabs[term.idx].prom.cont_1 = cont;
+            term.tabs[term.idx].prom.is_close_confirm = true;
             return false;
         };
-        return true;
+        if term.tabs.len() == 1 {
+            return true;
+        } else {
+            let tab_idx = term.idx;
+            term.idx = if term.idx == term.hbar.file_vec.len() - 1 { term.idx - 1 } else { term.idx };
+            term.del_tab(tab_idx);
+            // Redraw the previous tab
+            term.tabs[term.idx].editor.d_range.draw_type = DrawType::All;
+            term.tabs[term.idx].editor.evt = CLOSE;
+            return false;
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 use crate::{global::*, log::*, model::*, tab::Tab, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
-use std::{io::Write, rc::Rc};
+use std::io::Write;
 
 impl Editor {
     fn shift_move_com(&mut self, do_type: EvtType) {
@@ -111,24 +111,24 @@ impl Tab {
             self.editor.key_record_vec = vec![];
         }
     }
-    pub fn exec_record_key<T: Write>(&mut self, out: &mut T, term: &mut Terminal) {
-        let rc = Rc::clone(&term.tabs[term.tab_idx]);
-        let mut tab = rc.borrow_mut();
+    pub fn exec_record_key<T: Write>(out: &mut T, term: &mut Terminal) {
+        // let rc = Rc::clone(&term.tabs[term.tab_idx]);
+        // let mut tab = term.tabs[term.tab_idx];
 
-        if self.editor.key_record_vec.len() > 0 {
-            tab.prom.is_key_record_exec = true;
-            let macro_vec = self.editor.key_record_vec.clone();
+        if term.tabs[term.idx].editor.key_record_vec.len() > 0 {
+            term.tabs[term.idx].prom.is_key_record_exec = true;
+            let macro_vec = term.tabs[term.idx].editor.key_record_vec.clone();
             for (i, mac) in macro_vec.iter().enumerate() {
-                self.editor.evt = mac.evt;
+                term.tabs[term.idx].editor.evt = mac.evt;
                 if i == macro_vec.len() - 1 {
-                    tab.prom.is_key_record_exec_draw = true;
+                    term.tabs[term.idx].prom.is_key_record_exec_draw = true;
                 }
-                EvtAct::match_event(self.editor.evt, out, term);
+                EvtAct::match_event(term.tabs[term.idx].editor.evt, out, term);
             }
-            tab.prom.is_key_record_exec = false;
-            tab.prom.is_key_record_exec_draw = false;
+            term.tabs[term.idx].prom.is_key_record_exec = false;
+            term.tabs[term.idx].prom.is_key_record_exec_draw = false;
         } else {
-            tab.mbar.set_err(&LANG.no_key_record_exec.to_string());
+            term.tabs[term.idx].mbar.set_err(&LANG.no_key_record_exec.to_string());
         }
     }
 }

@@ -3,12 +3,12 @@ use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton
 use std::io::Write;
 
 impl EvtAct {
-    pub fn check_prom<T: Write>(out: &mut T, term: &mut Terminal, tab: &mut Tab) -> EvtActType {
+    pub fn check_prom<T: Write>(out: &mut T, term: &mut Terminal) -> EvtActType {
         Log::ep_s("　　　　　　　　check_prom");
 
         // Close・End
-        if tab.prom.is_save_new_file || tab.state.is_search || tab.prom.is_close_confirm || tab.state.is_replace || tab.state.grep_info.is_grep || tab.state.grep_info.is_result || tab.prom.is_move_line {
-            match tab.editor.evt {
+        if term.tabs[term.idx].prom.is_save_new_file || term.tabs[term.idx].state.is_search || term.tabs[term.idx].prom.is_close_confirm || term.tabs[term.idx].state.is_replace || term.tabs[term.idx].state.grep_info.is_grep || term.tabs[term.idx].state.grep_info.is_result || term.tabs[term.idx].prom.is_move_line {
+            match term.tabs[term.idx].editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                     Char('w') => {
                         // term.init_draw(out);
@@ -18,15 +18,15 @@ impl EvtAct {
                 },
                 Key(KeyEvent { code, .. }) => match code {
                     Esc => {
-                        Log::ep("tab.state.grep_info.is_grep_result", &tab.state.grep_info.is_result);
-                        if tab.state.grep_info.is_result {
-                            GREP_CANCEL_VEC.get().unwrap().try_lock().map(|mut vec| vec[term.tab_idx] = true).unwrap();
+                        Log::ep("term.tabs[term.tab_idx].state.grep_info.is_grep_result", &term.tabs[term.idx].state.grep_info.is_result);
+                        if term.tabs[term.idx].state.grep_info.is_result {
+                            GREP_CANCEL_VEC.get().unwrap().try_lock().map(|mut vec| vec[term.idx] = true).unwrap();
                         } else {
-                            tab.prom.clear();
-                            tab.state.clear();
-                            tab.state.clear();
-                            tab.mbar.clear();
-                            tab.editor.d_range.draw_type = DrawType::All;
+                            term.tabs[term.idx].prom.clear();
+                            term.tabs[term.idx].state.clear();
+                            term.tabs[term.idx].state.clear();
+                            term.tabs[term.idx].mbar.clear();
+                            term.tabs[term.idx].editor.d_range.draw_type = DrawType::All;
                         }
                         return EvtActType::DrawOnly;
                     }
@@ -39,37 +39,40 @@ impl EvtAct {
         let mut evt_act_type = None;
 
         // contents operation
-        if tab.prom.is_save_new_file || tab.state.is_search || tab.state.is_replace || tab.state.grep_info.is_grep || tab.prom.is_move_line {
-            match tab.editor.evt {
+        if term.tabs[term.idx].prom.is_save_new_file || term.tabs[term.idx].state.is_search || term.tabs[term.idx].state.is_replace || term.tabs[term.idx].state.grep_info.is_grep || term.tabs[term.idx].prom.is_move_line {
+            let state = &term.tabs[term.idx].state.clone();
+            match term.tabs[term.idx].editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                     Left | Right | BackTab | Home | End | Char(_) => {
                         match code {
-                            Right => tab.prom.shift_right(),
-                            Left => tab.prom.shift_left(),
-                            Home => tab.prom.shift_home(),
-                            End => tab.prom.shift_end(),
-                            BackTab => tab.prom.tab(false, &tab.state),
+                            Right => term.tabs[term.idx].prom.shift_right(),
+                            Left => term.tabs[term.idx].prom.shift_left(),
+                            Home => term.tabs[term.idx].prom.shift_home(),
+                            End => term.tabs[term.idx].prom.shift_end(),
+                            BackTab => {
+                                term.tabs[term.idx].prom.tab(false, state);
+                            }
                             Char(c) => {
-                                let rnw = tab.editor.get_rnw();
-                                tab.prom.insert_char(c.to_ascii_uppercase(), rnw);
-                                tab.prom.clear_sels();
+                                let rnw = term.tabs[term.idx].editor.get_rnw();
+                                term.tabs[term.idx].prom.insert_char(c.to_ascii_uppercase(), rnw);
+                                term.tabs[term.idx].prom.clear_sels();
                             }
                             _ => {}
                         }
-                        tab.prom.draw_only(out, &tab.state);
+                        term.tabs[term.idx].prom.draw_only(out, state);
                         evt_act_type = Some(EvtActType::Hold);
                     }
                     _ => {}
                 },
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                     Char('v') => {
-                        let clipboard = tab.editor.get_clipboard().unwrap_or("".to_string());
-                        let is_all_redrow = tab.prom.paste(&clipboard);
+                        let clipboard = term.tabs[term.idx].editor.get_clipboard().unwrap_or("".to_string());
+                        let is_all_redrow = term.tabs[term.idx].prom.paste(&clipboard);
                         if is_all_redrow {
-                            term.draw(out, tab);
+                            term.draw(out);
                         } else {
-                            tab.prom.clear_sels();
-                            tab.prom.draw_only(out, &tab.state);
+                            term.tabs[term.idx].prom.clear_sels();
+                            term.tabs[term.idx].prom.draw_only(out, state);
                         }
                         evt_act_type = Some(EvtActType::Hold);
                     }
@@ -81,64 +84,64 @@ impl EvtAct {
                 Key(KeyEvent { code, .. }) => match code {
                     Left | Right | Char(_) | Delete | Backspace | Home | End | Up | Down | Tab => {
                         match code {
-                            Left | Right | Delete | Backspace | Home | End => tab.prom.operation(code),
-                            Up => tab.prom.cursor_up(&tab.state),
-                            Down => tab.prom.cursor_down(&tab.state),
-                            Tab => tab.prom.tab(true, &tab.state),
+                            Left | Right | Delete | Backspace | Home | End => term.tabs[term.idx].prom.operation(code),
+                            Up => term.tabs[term.idx].prom.cursor_up(state),
+                            Down => term.tabs[term.idx].prom.cursor_down(state),
+                            Tab => term.tabs[term.idx].prom.tab(true, state),
                             Char(c) => {
-                                let rnw = tab.editor.get_rnw();
-                                tab.prom.insert_char(c, rnw);
+                                let rnw = term.tabs[term.idx].editor.get_rnw();
+                                term.tabs[term.idx].prom.insert_char(c, rnw);
                             }
                             _ => {}
                         }
-                        tab.prom.clear_sels();
-                        tab.prom.draw_only(out, &tab.state);
+                        term.tabs[term.idx].prom.clear_sels();
+                        term.tabs[term.idx].prom.draw_only(out, state);
                         evt_act_type = Some(EvtActType::Hold);
                     }
                     _ => {}
                 },
-                Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => tab.prom.ctrl_mouse(x, y, true),
+                Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => term.tabs[term.idx].prom.ctrl_mouse(x, y, true),
                 Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: _, row: _, .. }) => {}
-                Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => tab.prom.ctrl_mouse(x, y, false),
+                Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => term.tabs[term.idx].prom.ctrl_mouse(x, y, false),
                 _ => {}
             }
         }
 
         // incremental search
-        if tab.state.is_search {
-            match tab.editor.evt {
+        if term.tabs[term.idx].state.is_search {
+            match term.tabs[term.idx].editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::ALT, .. }) => {}
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                    Char('v') => EvtAct::exec_search_incremental(out, term, tab),
+                    Char('v') => EvtAct::exec_search_incremental(out, term),
                     _ => {}
                 },
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) | Key(KeyEvent { code, .. }) => match code {
-                    Char(_) | Delete | Backspace => EvtAct::exec_search_incremental(out, term, tab),
+                    Char(_) | Delete | Backspace => EvtAct::exec_search_incremental(out, term),
                     _ => {}
                 },
                 _ => {}
             }
         }
         // Search・replace・grep option
-        if tab.state.is_search || tab.state.is_replace || tab.state.grep_info.is_grep {
-            match tab.editor.evt {
+        if term.tabs[term.idx].state.is_search || term.tabs[term.idx].state.is_replace || term.tabs[term.idx].state.grep_info.is_grep {
+            match term.tabs[term.idx].editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::ALT, code }) => match code {
                     Char('c') => {
-                        tab.prom.cont_1.change_opt_case_sens();
+                        term.tabs[term.idx].prom.cont_1.change_opt_case_sens();
                         return EvtActType::Hold;
                     }
                     Char('r') => {
-                        tab.prom.cont_1.change_opt_regex();
+                        term.tabs[term.idx].prom.cont_1.change_opt_regex();
                         return EvtActType::Hold;
                     }
                     _ => return EvtActType::Hold,
                 },
                 Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => {
-                    if tab.prom.cont_1.opt_row_posi == y {
-                        if tab.prom.cont_1.opt_1.mouse_area.0 <= x && x <= tab.prom.cont_1.opt_1.mouse_area.1 {
-                            tab.prom.cont_1.change_opt_case_sens();
-                        } else if tab.prom.cont_1.opt_2.mouse_area.0 <= x && x <= tab.prom.cont_1.opt_2.mouse_area.1 {
-                            tab.prom.cont_1.change_opt_regex();
+                    if term.tabs[term.idx].prom.cont_1.opt_row_posi == y {
+                        if term.tabs[term.idx].prom.cont_1.opt_1.mouse_area.0 <= x && x <= term.tabs[term.idx].prom.cont_1.opt_1.mouse_area.1 {
+                            term.tabs[term.idx].prom.cont_1.change_opt_case_sens();
+                        } else if term.tabs[term.idx].prom.cont_1.opt_2.mouse_area.0 <= x && x <= term.tabs[term.idx].prom.cont_1.opt_2.mouse_area.1 {
+                            term.tabs[term.idx].prom.cont_1.change_opt_regex();
                         }
                     }
                 }
@@ -151,8 +154,8 @@ impl EvtAct {
         }
 
         // unable to edit
-        if tab.state.grep_info.is_result == true || tab.mbar.msg_readonly.len() > 0 {
-            match tab.editor.evt {
+        if term.tabs[term.idx].state.grep_info.is_result == true || term.tabs[term.idx].mbar.msg_readonly.len() > 0 {
+            match term.tabs[term.idx].editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                     F(4) | Right | Left | Down | Up | Home | End => return EvtActType::Next,
                     _ => return EvtActType::Hold,
@@ -164,13 +167,13 @@ impl EvtAct {
                 Key(KeyEvent { code, .. }) => match code {
                     PageDown | PageUp | Home | End | Down | Up | Left | Right => return EvtActType::Next,
                     Enter => {
-                        if !tab.state.grep_info.is_result {
+                        if !term.tabs[term.idx].state.grep_info.is_result {
                             return EvtActType::Hold;
                         }
                     }
                     F(3) => {}
                     _ => {
-                        if !tab.prom.is_close_confirm == true {
+                        if !term.tabs[term.idx].prom.is_close_confirm == true {
                             return EvtActType::Hold;
                         }
                     }
@@ -181,20 +184,20 @@ impl EvtAct {
             }
         }
 
-        if tab.prom.is_save_new_file == true {
-            return EvtAct::save_new_filenm(term, tab);
-        } else if tab.prom.is_close_confirm == true {
-            return EvtAct::close(term, tab);
-        } else if tab.state.is_search == true {
-            return EvtAct::search(tab);
-        } else if tab.state.is_replace == true {
-            return EvtAct::replace(term, tab);
-        } else if tab.state.grep_info.is_grep == true {
-            return EvtAct::grep(term, tab);
-        } else if tab.state.grep_info.is_result == true {
-            return EvtAct::grep_result(term, &mut tab.editor);
-        } else if tab.prom.is_move_line == true {
-            return EvtAct::move_row(out, tab);
+        if term.tabs[term.idx].prom.is_save_new_file == true {
+            return EvtAct::save_new_filenm(term);
+        } else if term.tabs[term.idx].prom.is_close_confirm == true {
+            return EvtAct::close(term);
+        } else if term.tabs[term.idx].state.is_search == true {
+            return EvtAct::search(term);
+        } else if term.tabs[term.idx].state.is_replace == true {
+            return EvtAct::replace(term);
+        } else if term.tabs[term.idx].state.grep_info.is_grep == true {
+            return EvtAct::grep(term);
+        } else if term.tabs[term.idx].state.grep_info.is_result == true {
+            return EvtAct::grep_result(term);
+        } else if term.tabs[term.idx].prom.is_move_line == true {
+            return EvtAct::move_row(out, term);
         } else {
             Log::ep_s("EvtProcess::NextEvtProcess");
             return EvtActType::Next;

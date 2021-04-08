@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use crate::{bar::headerbar::*, def::*, global::*, log::*, model::*, tab::*, terminal::Terminal};
 use crossterm::event::{Event::*, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind, *};
 
@@ -28,21 +26,20 @@ impl EvtAct {
 
                     if h_file.close_area.0 <= x && x <= h_file.close_area.1 {
                         if term.hbar.file_vec[idx].is_changed {
-                            term.tab_idx = idx;
+                            term.idx = idx;
                             return (CLOSE, EvtActType::Next);
                         } else {
                             if term.tabs.len() == 1 {
                                 return (CLOSE, EvtActType::Next);
                             } else {
-                                term.tab_idx = if idx == term.hbar.file_vec.len() - 1 { idx - 1 } else { idx };
-                                term.tabs.remove(idx);
-                                term.hbar.file_vec.remove(idx);
+                                term.idx = if idx == term.hbar.file_vec.len() - 1 { idx - 1 } else { idx };
+                                term.del_tab(idx);
                                 return (rtn_event, EvtActType::DrawOnly);
                             }
                         }
                     }
                     if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 {
-                        term.tab_idx = idx;
+                        term.idx = idx;
                         return (rtn_event, EvtActType::DrawOnly);
                     }
                 }
@@ -51,13 +48,13 @@ impl EvtAct {
                     let mut new_tab = Tab::new();
                     new_tab.editor.set_cur_default();
 
-                    term.tab_idx = term.tabs.len();
+                    term.idx = term.tabs.len();
 
                     let mut h_file = HeaderFile::default();
                     h_file.filenm = LANG.new_file.clone();
                     term.hbar.file_vec.push(h_file);
                     HeaderBar::set_header_filenm(term);
-                    term.tabs.push(Rc::new(RefCell::new(new_tab)));
+                    term.tabs.push(new_tab);
 
                     return (rtn_event, EvtActType::DrawOnly);
                 } else if term.hbar.close_btn_area.0 <= x && x <= term.hbar.close_btn_area.1 {

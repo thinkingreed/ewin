@@ -16,19 +16,18 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use std::{
-    cell::RefCell,
     ffi::OsStr,
     io::{stdout, Write},
     path::Path,
-    rc::Rc,
 };
 #[derive(Debug, Clone)]
 
 pub struct Terminal {
     pub hbar: HeaderBar,
     pub help: Help,
-    pub tabs: Vec<Rc<RefCell<Tab>>>,
-    pub tab_idx: usize,
+    pub tabs: Vec<Tab>,
+    // tab index
+    pub idx: usize,
 }
 
 impl Terminal {
@@ -39,12 +38,7 @@ impl Terminal {
 
 impl Default for Terminal {
     fn default() -> Self {
-        Terminal {
-            hbar: HeaderBar::new(),
-            tabs: vec![Rc::new(RefCell::new(Tab::new()))],
-            tab_idx: 0,
-            help: Help::new(),
-        }
+        Terminal { hbar: HeaderBar::new(), tabs: vec![Tab::new()], idx: 0, help: Help::new() }
     }
 }
 
@@ -77,29 +71,30 @@ impl Default for Args {
 }
 
 impl Terminal {
-    pub fn draw<T: Write>(&mut self, out: &mut T, tab: &mut Tab) {
+    pub fn draw<T: Write>(&mut self, out: &mut T) {
         Log::ep_s("　　　　　　　　All draw");
 
-        self.set_disp_size(tab);
+        self.set_disp_size();
 
-        let d_range = tab.editor.d_range;
+        let d_range = self.tabs[self.idx].editor.d_range;
         Log::ep("d_range", &d_range);
 
         if !(d_range.draw_type == DrawType::Not || d_range.draw_type == DrawType::MoveCur) {
-            tab.editor.draw_cache();
-            tab.editor.draw(out);
+            self.tabs[self.idx].editor.draw_cache();
+            self.tabs[self.idx].editor.draw(out);
         }
 
         HeaderBar::draw(out, &self);
         let mut str_vec: Vec<String> = vec![];
 
         self.help.draw(&mut str_vec);
-        tab.mbar.draw(&mut str_vec);
-        tab.prom.draw(&mut str_vec, &tab.state);
+        self.tabs[self.idx].mbar.draw(&mut str_vec);
+        let state = &self.tabs[self.idx].state.clone();
+        self.tabs[self.idx].prom.draw(&mut str_vec, state);
         if d_range.draw_type != DrawType::Not {
-            StatusBar::draw(&mut str_vec, tab)
+            StatusBar::draw(&mut str_vec, &mut self.tabs[self.idx])
         }
-        Terminal::draw_cur(&mut str_vec, tab);
+        Terminal::draw_cur(&mut str_vec, &mut self.tabs[self.idx]);
 
         let _ = out.write(&str_vec.concat().as_bytes());
         out.flush().unwrap();
@@ -132,7 +127,7 @@ impl Terminal {
         return true;
     }
 
-    pub fn set_disp_size(&mut self, tab: &mut Tab) {
+    pub fn set_disp_size(&mut self) {
         Log::ep_s("set_disp_size");
 
         let (cols, rows) = size().unwrap();
@@ -148,29 +143,29 @@ impl Terminal {
         self.help.disp_row_num = if self.help.mode == HelpMode::Show { Help::DISP_ROW_NUM } else { 0 };
         self.help.disp_row_posi = if self.help.mode == HelpMode::Show { rows - self.help.disp_row_num } else { 0 };
 
-        tab.sbar.disp_row_num = 1;
+        self.tabs[self.idx].sbar.disp_row_num = 1;
         let help_disp_row_num = if self.help.disp_row_num > 0 { self.help.disp_row_num + 1 } else { 0 };
-        tab.sbar.disp_row_posi = rows - help_disp_row_num;
-        tab.sbar.disp_col_num = cols;
+        self.tabs[self.idx].sbar.disp_row_posi = rows - help_disp_row_num;
+        self.tabs[self.idx].sbar.disp_col_num = cols;
 
         Log::ep("self.help.mode", &self.help.mode);
 
-        tab.prom.disp_col_num = cols;
-        tab.prom.disp_row_posi = rows - tab.prom.disp_row_num + 1 - self.help.disp_row_num - tab.sbar.disp_row_num;
+        self.tabs[self.idx].prom.disp_col_num = cols;
+        self.tabs[self.idx].prom.disp_row_posi = rows - self.tabs[self.idx].prom.disp_row_num + 1 - self.help.disp_row_num - self.tabs[self.idx].sbar.disp_row_num;
 
-        tab.mbar.disp_col_num = cols;
-        tab.mbar.disp_readonly_row_num = if tab.mbar.msg_readonly.is_empty() { 0 } else { 1 };
-        tab.mbar.disp_keyrecord_row_num = if tab.mbar.msg_keyrecord.is_empty() { 0 } else { 1 };
-        tab.mbar.disp_row_num = if tab.mbar.msg.str.is_empty() { 0 } else { 1 };
+        self.tabs[self.idx].mbar.disp_col_num = cols;
+        self.tabs[self.idx].mbar.disp_readonly_row_num = if self.tabs[self.idx].mbar.msg_readonly.is_empty() { 0 } else { 1 };
+        self.tabs[self.idx].mbar.disp_keyrecord_row_num = if self.tabs[self.idx].mbar.msg_keyrecord.is_empty() { 0 } else { 1 };
+        self.tabs[self.idx].mbar.disp_row_num = if self.tabs[self.idx].mbar.msg.str.is_empty() { 0 } else { 1 };
 
-        tab.mbar.disp_row_posi = rows - tab.prom.disp_row_num - self.help.disp_row_num - tab.sbar.disp_row_num;
-        tab.mbar.disp_keyrecord_row_posi = rows - tab.mbar.disp_row_num - tab.prom.disp_row_num - self.help.disp_row_num - tab.sbar.disp_row_num;
-        tab.mbar.disp_readonly_row_posi = rows - tab.mbar.disp_keyrecord_row_num - tab.mbar.disp_row_num - tab.prom.disp_row_num - self.help.disp_row_num - tab.sbar.disp_row_num;
+        self.tabs[self.idx].mbar.disp_row_posi = rows - self.tabs[self.idx].prom.disp_row_num - self.help.disp_row_num - self.tabs[self.idx].sbar.disp_row_num;
+        self.tabs[self.idx].mbar.disp_keyrecord_row_posi = rows - self.tabs[self.idx].mbar.disp_row_num - self.tabs[self.idx].prom.disp_row_num - self.help.disp_row_num - self.tabs[self.idx].sbar.disp_row_num;
+        self.tabs[self.idx].mbar.disp_readonly_row_posi = rows - self.tabs[self.idx].mbar.disp_keyrecord_row_num - self.tabs[self.idx].mbar.disp_row_num - self.tabs[self.idx].prom.disp_row_num - self.help.disp_row_num - self.tabs[self.idx].sbar.disp_row_num;
 
-        tab.editor.disp_col_num = cols;
-        tab.editor.disp_row_num = rows - self.hbar.disp_row_num - tab.mbar.disp_readonly_row_num - tab.mbar.disp_keyrecord_row_num - tab.mbar.disp_row_num - tab.prom.disp_row_num - self.help.disp_row_num - tab.sbar.disp_row_num;
+        self.tabs[self.idx].editor.disp_col_num = cols;
+        self.tabs[self.idx].editor.disp_row_num = rows - self.hbar.disp_row_num - self.tabs[self.idx].mbar.disp_readonly_row_num - self.tabs[self.idx].mbar.disp_keyrecord_row_num - self.tabs[self.idx].mbar.disp_row_num - self.tabs[self.idx].prom.disp_row_num - self.help.disp_row_num - self.tabs[self.idx].sbar.disp_row_num;
 
-        /*Log::ep("editor.disp_row_num", &tab.editor.disp_row_num);
+        /*Log::ep("editor.disp_row_num", &self.tabs[self.idx].editor.disp_row_num);
 
            Log::ep("mbar.disp_keyrecord_row_num", &mbar.disp_keyrecord_row_num);
            Log::ep("mbar.disp_readonly_row_num", &mbar.disp_readonly_row_num);
@@ -187,7 +182,7 @@ impl Terminal {
         tab.state.clear();
         tab.mbar.clear();
         tab.editor.d_range.draw_type = DrawType::All;
-        self.draw(out, tab);
+        self.draw(out);
     }
 
     pub fn show_cur() {
@@ -217,9 +212,6 @@ impl Terminal {
     }
 
     pub fn activate<T: Write>(&mut self, args: &Args, out: &mut T) {
-        let rc = Rc::clone(&self.tabs[self.tab_idx]);
-        let mut tab = rc.borrow_mut();
-
         let _ = GREP_INFO_VEC.set(tokio::sync::Mutex::new(vec![GrepInfo::default()]));
         let _ = GREP_CANCEL_VEC.set(tokio::sync::Mutex::new(vec![]));
 
@@ -228,8 +220,24 @@ impl Terminal {
         h_file.filenm = if args.filenm.is_empty() { LANG.new_file.clone() } else { args.filenm.clone() };
         self.hbar.file_vec.push(h_file);
 
-        tab.open(&self, &args.filenm);
-        self.draw(out, &mut tab);
+        self.tabs[self.idx].open(&self.hbar.file_vec[self.idx], &args.filenm);
+        self.draw(out);
+    }
+
+    pub fn del_tab(&mut self, tab_idx: usize) {
+        self.tabs.remove(tab_idx);
+        self.hbar.file_vec.remove(tab_idx);
+
+        if let Some(Ok(mut grep_info_vec)) = GREP_INFO_VEC.get().map(|vec| vec.try_lock()) {
+            if grep_info_vec.len() > tab_idx {
+                grep_info_vec.remove(tab_idx);
+            }
+        }
+        if let Some(Ok(mut grep_cancel_vec)) = GREP_CANCEL_VEC.get().map(|vec| vec.try_lock()) {
+            if grep_cancel_vec.len() > tab_idx {
+                grep_cancel_vec.remove(tab_idx);
+            }
+        }
     }
 }
 impl UT {

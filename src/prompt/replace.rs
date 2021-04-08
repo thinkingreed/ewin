@@ -1,38 +1,38 @@
-use crate::{colors::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, tab::Tab, terminal::Terminal};
+use crate::{colors::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::Terminal};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::sync::Mutex;
 
 impl EvtAct {
-    pub fn replace(term: &mut Terminal, tab: &mut Tab) -> EvtActType {
+    pub fn replace(term: &mut Terminal) -> EvtActType {
         Log::ep_s("Process.replace");
 
-        match tab.editor.evt {
+        match term.tabs[term.idx].editor.evt {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {
-                    let search_str = tab.prom.cont_1.buf.iter().collect::<String>();
-                    let replace_str = tab.prom.cont_2.buf.iter().collect::<String>();
+                    let search_str = term.tabs[term.idx].prom.cont_1.buf.iter().collect::<String>();
+                    let replace_str = term.tabs[term.idx].prom.cont_2.buf.iter().collect::<String>();
 
                     if search_str.is_empty() {
-                        tab.mbar.set_err(&LANG.not_entered_search_str);
+                        term.tabs[term.idx].mbar.set_err(&LANG.not_entered_search_str);
                     } else if replace_str.is_empty() {
-                        tab.mbar.set_err(&LANG.not_entered_replace_str);
+                        term.tabs[term.idx].mbar.set_err(&LANG.not_entered_replace_str);
                     } else {
-                        let search_set = tab.editor.buf.search(&search_str.clone(), 0, tab.editor.buf.len_chars());
+                        let search_set = term.tabs[term.idx].editor.buf.search(&search_str.clone(), 0, term.tabs[term.idx].editor.buf.len_chars());
                         if search_set.len() == 0 {
-                            tab.mbar.set_err(&LANG.cannot_find_char_search_for);
+                            term.tabs[term.idx].mbar.set_err(&LANG.cannot_find_char_search_for);
                             return EvtActType::DrawOnly;
                         }
 
                         let _ = REPLACE_SEARCH_RANGE.set(Mutex::new(search_set));
 
-                        tab.editor.exec_edit_proc(EvtType::Replace, &search_str, &replace_str);
-                        tab.mbar.clear();
-                        tab.prom.clear();
-                        tab.state.clear();
-                        term.hbar.file_vec[term.tab_idx].is_changed = true;
+                        term.tabs[term.idx].editor.exec_edit_proc(EvtType::Replace, &search_str, &replace_str);
+                        term.tabs[term.idx].mbar.clear();
+                        term.tabs[term.idx].prom.clear();
+                        term.tabs[term.idx].state.clear();
+                        term.hbar.file_vec[term.idx].is_changed = true;
                     }
 
-                    tab.editor.d_range.draw_type = DrawType::All;
+                    term.tabs[term.idx].editor.d_range.draw_type = DrawType::All;
                     return EvtActType::DrawOnly;
                 }
                 _ => return EvtActType::Hold,
@@ -43,16 +43,16 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn replace(term: &mut Terminal, tab: &mut Tab) {
-        tab.state.is_replace = true;
-        tab.prom.disp_row_num = 7;
-        term.set_disp_size(tab);
-        let mut cont_1 = PromptCont::new_edit(tab.prom.disp_row_posi as u16, PromptContPosi::First);
-        let mut cont_2 = PromptCont::new_edit(tab.prom.disp_row_posi as u16, PromptContPosi::Second);
+    pub fn replace(term: &mut Terminal) {
+        term.tabs[term.idx].state.is_replace = true;
+        term.tabs[term.idx].prom.disp_row_num = 7;
+        term.set_disp_size();
+        let mut cont_1 = PromptCont::new_edit(term.tabs[term.idx].prom.disp_row_posi as u16, PromptContPosi::First);
+        let mut cont_2 = PromptCont::new_edit(term.tabs[term.idx].prom.disp_row_posi as u16, PromptContPosi::Second);
         cont_1.set_replace();
         cont_2.set_replace();
-        tab.prom.cont_1 = cont_1;
-        tab.prom.cont_2 = cont_2;
+        term.tabs[term.idx].prom.cont_1 = cont_1;
+        term.tabs[term.idx].prom.cont_2 = cont_2;
     }
 }
 

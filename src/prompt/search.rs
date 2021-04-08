@@ -1,27 +1,28 @@
-use crate::{colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, tab::Tab, terminal::*};
+use crate::{colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::{cmp::min, io::Write};
 
 impl EvtAct {
-    pub fn search(tab: &mut Tab) -> EvtActType {
+    pub fn search(term: &mut Terminal) -> EvtActType {
         Log::ep_s("Process.search");
 
-        Log::ep("editor.evt", &tab.editor.evt);
+        Log::ep("editor.evt", &term.tabs[term.idx].editor.evt);
 
-        match tab.editor.evt {
+        match term.tabs[term.idx].editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                F(4) => return EvtAct::exec_search_confirm(tab, tab.prom.cont_1.buf.iter().collect::<String>()),
+                F(4) => return EvtAct::exec_search_confirm(term, term.tabs[term.idx].prom.cont_1.buf.iter().collect::<String>()),
                 _ => return EvtActType::Hold,
             },
             Key(KeyEvent { code, .. }) => match code {
-                F(3) => return EvtAct::exec_search_confirm(tab, tab.prom.cont_1.buf.iter().collect::<String>()),
+                F(3) => return EvtAct::exec_search_confirm(term, term.tabs[term.idx].prom.cont_1.buf.iter().collect::<String>()),
                 _ => return EvtActType::Hold,
             },
             _ => return EvtActType::Hold,
         }
     }
 
-    pub fn exec_search_confirm(tab: &mut Tab, search_str: String) -> EvtActType {
+    pub fn exec_search_confirm(term: &mut Terminal, search_str: String) -> EvtActType {
+        let tab = term.tabs.get_mut(term.idx).unwrap();
         Log::ep_s("exec_search_confirm");
         // let search_str = tab.prom.cont_1.buf.iter().collect::<String>();
         if search_str.len() == 0 {
@@ -49,27 +50,23 @@ impl EvtAct {
             return EvtActType::Next;
         }
     }
-    pub fn exec_search_incremental<T: Write>(out: &mut T, term: &mut Terminal, tab: &mut Tab) {
+    pub fn exec_search_incremental<T: Write>(out: &mut T, term: &mut Terminal) {
         Log::ep_s("exec_search_incremental");
-        tab.editor.search.str = tab.prom.cont_1.buf.iter().collect::<String>();
+        term.tabs[term.idx].editor.search.str = term.tabs[term.idx].prom.cont_1.buf.iter().collect::<String>();
 
-        let s_idx = tab.editor.buf.line_to_char(tab.editor.offset_y);
-        let ey = min(tab.editor.offset_y + tab.editor.disp_row_num, tab.editor.buf.len_lines());
-        let search_org = tab.editor.search.clone();
+        let s_idx = term.tabs[term.idx].editor.buf.line_to_char(term.tabs[term.idx].editor.offset_y);
+        let ey = min(term.tabs[term.idx].editor.offset_y + term.tabs[term.idx].editor.disp_row_num, term.tabs[term.idx].editor.buf.len_lines());
+        let search_org = term.tabs[term.idx].editor.search.clone();
 
         Log::ep("s_idx", &s_idx);
-        Log::ep("e_idx", &tab.editor.buf.line_to_char(ey));
+        Log::ep("e_idx", &term.tabs[term.idx].editor.buf.line_to_char(ey));
 
-        tab.editor.search.ranges = if tab.editor.search.str.len() == 0 {
-            vec![]
-        } else {
-            tab.editor.get_search_ranges(&tab.editor.search.str, s_idx, tab.editor.buf.line_to_char(ey), 0)
-        };
+        term.tabs[term.idx].editor.search.ranges = if term.tabs[term.idx].editor.search.str.len() == 0 { vec![] } else { term.tabs[term.idx].editor.get_search_ranges(&term.tabs[term.idx].editor.search.str, s_idx, term.tabs[term.idx].editor.buf.line_to_char(ey), 0) };
 
-        if !search_org.ranges.is_empty() || !tab.editor.search.ranges.is_empty() {
+        if !search_org.ranges.is_empty() || !term.tabs[term.idx].editor.search.ranges.is_empty() {
             // Search in advance for drawing
-            if !tab.editor.search.ranges.is_empty() {
-                tab.editor.search_str(true, true);
+            if !term.tabs[term.idx].editor.search.ranges.is_empty() {
+                term.tabs[term.idx].editor.search_str(true, true);
             }
 
             /*
@@ -79,40 +76,28 @@ impl EvtAct {
             editor.d_range.sy = min(sy_curt, sy_org);
             editor.d_range.ey = max(ey, ey_org);
             */
-            tab.editor.d_range.draw_type = DrawType::After;
-            tab.editor.d_range.sy = tab.editor.offset_y;
-            term.draw(out, tab);
+            term.tabs[term.idx].editor.d_range.draw_type = DrawType::After;
+            term.tabs[term.idx].editor.d_range.sy = term.tabs[term.idx].editor.offset_y;
+            term.draw(out);
         }
     }
 }
 
 impl Prompt {
-    pub fn search(term: &mut Terminal, tab: &mut Tab) {
-        tab.state.is_search = true;
-        tab.prom.disp_row_num = 4;
-        term.set_disp_size(tab);
-        let mut cont = PromptCont::new_edit(tab.prom.disp_row_posi as u16, PromptContPosi::First);
+    pub fn search(term: &mut Terminal) {
+        term.tabs[term.idx].state.is_search = true;
+        term.tabs[term.idx].prom.disp_row_num = 4;
+        term.set_disp_size();
+        let mut cont = PromptCont::new_edit(term.tabs[term.idx].prom.disp_row_posi as u16, PromptContPosi::First);
         cont.set_search();
-        tab.prom.cont_1 = cont;
+        term.tabs[term.idx].prom.cont_1 = cont;
     }
 }
 
 impl PromptCont {
     pub fn set_search(&mut self) {
         self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), LANG.set_search);
-        self.key_desc = format!(
-            "{}{}:{}F3  {}{}:{}Shift + F4  {}{}:{}Esc{}",
-            Colors::get_default_fg(),
-            &LANG.search_bottom,
-            Colors::get_msg_highlight_fg(),
-            Colors::get_default_fg(),
-            &LANG.search_top,
-            Colors::get_msg_highlight_fg(),
-            Colors::get_default_fg(),
-            &LANG.close,
-            Colors::get_msg_highlight_fg(),
-            Colors::get_default_fg(),
-        );
+        self.key_desc = format!("{}{}:{}F3  {}{}:{}Shift + F4  {}{}:{}Esc{}", Colors::get_default_fg(), &LANG.search_bottom, Colors::get_msg_highlight_fg(), Colors::get_default_fg(), &LANG.search_top, Colors::get_msg_highlight_fg(), Colors::get_default_fg(), &LANG.close, Colors::get_msg_highlight_fg(), Colors::get_default_fg(),);
 
         self.set_opt_case_sens();
         self.set_opt_regex();

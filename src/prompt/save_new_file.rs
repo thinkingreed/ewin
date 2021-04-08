@@ -3,23 +3,23 @@ use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::path::Path;
 
 impl EvtAct {
-    pub fn save_new_filenm(term: &mut Terminal, tab: &mut Tab) -> EvtActType {
-        match tab.editor.evt {
+    pub fn save_new_filenm(term: &mut Terminal) -> EvtActType {
+        match term.tabs[term.idx].editor.evt {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {
-                    if tab.prom.cont_1.buf.len() == 0 {
-                        tab.mbar.set_err(&LANG.not_entered_filenm);
+                    if term.tabs[term.idx].prom.cont_1.buf.len() == 0 {
+                        term.tabs[term.idx].mbar.set_err(&LANG.not_entered_filenm);
                     } else {
-                        let filenm = tab.prom.cont_1.buf.iter().collect::<String>();
+                        let filenm = term.tabs[term.idx].prom.cont_1.buf.iter().collect::<String>();
                         if Path::new(&filenm).exists() {
-                            tab.mbar.set_err(&LANG.file_already_exists);
+                            term.tabs[term.idx].mbar.set_err(&LANG.file_already_exists);
                             return EvtActType::Hold;
                         }
-                        term.hbar.file_vec[term.tab_idx].filenm = filenm.clone();
+                        term.hbar.file_vec[term.idx].filenm = filenm.clone();
 
-                        tab.save(term);
+                        Tab::save(term);
                     }
-                    tab.editor.d_range.draw_type = DrawType::All;
+                    term.tabs[term.idx].editor.d_range.draw_type = DrawType::All;
                     return EvtActType::DrawOnly;
                 }
                 _ => return EvtActType::Hold,

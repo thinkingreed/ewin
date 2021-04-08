@@ -1,6 +1,6 @@
 use clap::{App, Arg};
 use crossterm::event::{Event::Mouse, EventStream, MouseEvent as M_Event, MouseEventKind as M_Kind};
-use ewin::{_cfg::cfg::*, global::*, log::*, model::*, terminal::*};
+use ewin::{_cfg::cfg::*, global::*, model::*, terminal::*};
 use futures::{future::FutureExt, select, StreamExt};
 use std::{
     ffi::OsStr,
@@ -68,7 +68,7 @@ async fn main() {
                 let grep_info_vec_len = grep_info_vec.len() - 1;
                 if let Some(mut grep_info) = grep_info_vec.get_mut(grep_info_vec_len) {
                     if grep_info.is_result && !grep_info.is_cancel && !(grep_info.is_stdout_end && grep_info.is_stderr_end) {
-                        let mut child = EvtAct::get_grep_child(&"1".to_string(), &grep_info.search_folder, &"*.txt".to_string());
+                        let mut child = EvtAct::get_grep_child(&"12".to_string(), &grep_info.search_folder, &"*.*".to_string());
 
                         let mut reader_stdout = FramedRead::new(child.stdout.take().unwrap(), LinesCodec::new());
                         let mut reader_stderr = FramedRead::new(child.stderr.take().unwrap(), LinesCodec::new());
@@ -76,15 +76,15 @@ async fn main() {
                             // Sleep to receive key event
                             thread::sleep(time::Duration::from_millis(10));
 
-                            Log::ep_s("loop");
-                            let mut is_cancel = false;
                             {
                                 if let Some(Ok(grep_cancel_vec)) = GREP_CANCEL_VEC.get().map(|vec| vec.try_lock()) {
-                                    is_cancel = grep_cancel_vec[grep_info_vec_len];
+                                    let is_cancel = grep_cancel_vec[grep_info_vec_len];
                                     if is_cancel {
                                         drop(child);
-                                        grep_info.is_cancel = false;
+                                        grep_info.is_cancel = true;
                                         send_grep_job("".to_string(), &mut tx_grep, &grep_info);
+                                        grep_info.is_result = false;
+                                        grep_info.is_cancel = false;
                                         break;
                                     }
                                 }
@@ -110,6 +110,9 @@ async fn main() {
                             if grep_info.is_stdout_end && grep_info.is_stderr_end {
                                 //     drop(child);
                                 send_grep_job("".to_string(), &mut tx_grep, &grep_info);
+                                grep_info.is_result = false;
+                                grep_info.is_stdout_end = false;
+                                grep_info.is_stderr_end = false;
                                 break;
                             }
                         }

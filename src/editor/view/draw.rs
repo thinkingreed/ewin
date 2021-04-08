@@ -41,8 +41,6 @@ impl Editor {
             DrawType::ScrollUp => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, (self.disp_row_posi) as u16), Clear(ClearType::CurrentLine))),
         }
 
-        Log::ep("self.disp_row_posi + Editor::SCROLL_UP_EXTRA_NUM + 1", &(self.disp_row_posi + Editor::SCROLL_UP_EXTRA_NUM + 1));
-
         for i in self.draw.sy..=self.draw.ey {
             // Log::ep("iii", &i);
 

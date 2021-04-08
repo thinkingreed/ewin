@@ -55,7 +55,6 @@ impl MsgBar {
     pub fn new() -> Self {
         MsgBar { ..MsgBar::default() }
     }
-   
 
     pub fn clear_mag(&mut self) {
         Log::ep_s("　　　　　　　　MsgBar.clear_mag");
@@ -140,6 +139,9 @@ impl MsgBar {
     }
 
     pub fn set_err(&mut self, msg: &str) {
+        // let rc = Rc::clone(&term.tabs[term.tab_idx]);
+        //  let mut tab = term.tabs[term.tab_idx];
+
         self.msg.str = msg.to_string();
         self.msg.msg_type = MsgType::Error;
     }
