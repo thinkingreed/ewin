@@ -68,7 +68,8 @@ async fn main() {
                 let grep_info_vec_len = grep_info_vec.len() - 1;
                 if let Some(mut grep_info) = grep_info_vec.get_mut(grep_info_vec_len) {
                     if grep_info.is_result && !grep_info.is_cancel && !(grep_info.is_stdout_end && grep_info.is_stderr_end) {
-                        let mut child = EvtAct::get_grep_child(&"1".to_string(), &grep_info.search_folder, &"*.ttt".to_string());
+                        // let mut child = EvtAct::get_grep_child(&"1".to_string(), &grep_info.search_folder, &"*.ttt".to_string());
+                        let mut child = EvtAct::get_grep_child(&grep_info.search_str, &grep_info.search_folder, &grep_info.search_filenm);
 
                         let mut reader_stdout = FramedRead::new(child.stdout.take().unwrap(), LinesCodec::new());
                         let mut reader_stderr = FramedRead::new(child.stderr.take().unwrap(), LinesCodec::new());
