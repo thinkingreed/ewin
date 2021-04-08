@@ -104,6 +104,9 @@ impl EvtAct {
                 PageDown | PageUp | Home | End | F(3) | Down | Up | Left | Right => return EvtActType::Next,
                 Enter => {
                     let grep_result = &term.tabs[term.idx].editor.grep_result_vec[term.tabs[term.idx].editor.cur.y];
+
+                    Log::ep("grep_result", &grep_result);
+
                     if grep_result.row_num != USIZE_UNDEFINED {
                         let mut tab_grep = Tab::new();
                         tab_grep.editor.search.str = term.tabs[term.idx].editor.search.str.clone();

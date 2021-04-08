@@ -78,6 +78,7 @@ impl Editor {
             scope = syntax_state.highlight_state.path.clone();
             parse = syntax_state.parse_state.clone();
         }
+
         let mut highlight_state = HighlightState::new(&highlighter, scope);
         let ops = parse.parse_line(&row, &cfg.syntax.syntax_set);
         let iter = HighlightIterator::new(&mut highlight_state, &ops[..], &row, &highlighter);
@@ -122,13 +123,14 @@ impl Editor {
             self.set_style(cfg, c, width, y, x, &CharStyle::normal(cfg), &mut style_org, &mut style_type_org, sel_ranges, &mut cells);
             x += 1;
         }
+
         self.draw.char_vec[y] = row_vec;
         self.draw.cells[y] = cells;
     }
 
     fn set_style(&mut self, cfg: &Cfg, c: char, width: usize, y: usize, x: usize, style: &CharStyle, style_org: &mut CharStyle, style_type_org: &mut CharStyleType, sel_ranges: SelRange, regions: &mut Vec<Cell>) {
         let from_style = self.draw.get_from_style(cfg, x, &style, &style_org, style_type_org);
-        let style_type = self.draw.ctrl_style_type(c, width, &sel_ranges, &self.search.ranges, self.get_rnw(), y, x);
+        let style_type = self.draw.ctrl_style_type(c, width, &sel_ranges, &self.search.ranges, self.get_rnw(), y, x + self.offset_x);
 
         let to_style = match style_type {
             CharStyleType::Select => CharStyle::selected(&cfg),
@@ -156,15 +158,15 @@ impl Draw {
             // Start line
             // End line
             // Intermediate line
-            if (sel_range.sy == sel_range.ey && sel_range.s_disp_x <= disp_x && disp_x < sel_range.e_disp_x)
-                || (sel_range.sy == y && sel_range.ey != y && sel_range.s_disp_x <= disp_x)
-                || (sel_range.ey == y && sel_range.sy != y && disp_x < sel_range.e_disp_x)
-                || (sel_range.sy < y && y < sel_range.ey)
-            {
+            if (sel_range.sy == sel_range.ey && sel_range.s_disp_x <= disp_x && disp_x < sel_range.e_disp_x) || (sel_range.sy == y && sel_range.ey != y && sel_range.s_disp_x <= disp_x) || (sel_range.ey == y && sel_range.sy != y && disp_x < sel_range.e_disp_x) || (sel_range.sy < y && y < sel_range.ey) {
                 return CharStyleType::Select;
             }
         }
         for range in search_ranges {
+            Log::ep("ccc", &c);
+            Log::ep("yyy", &y);
+            Log::ep("xxx", &x);
+
             if range.y == y && range.sx <= x && x < range.ex {
                 return CharStyleType::Select;
             } else if range.y > y {
