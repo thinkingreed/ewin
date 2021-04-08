@@ -62,6 +62,7 @@ impl Default for HeaderFile {
 impl HeaderBar {
     const HELP_BTN_WITH: usize = 7;
     const CLOSE_BTN_WITH: usize = 3;
+    const FILENM_LEN_LIMMIT: usize = 15;
 
     pub fn new() -> Self {
         HeaderBar { ..HeaderBar::default() }
@@ -109,6 +110,12 @@ impl HeaderBar {
         for (i, header_file) in term.hbar.file_vec.iter_mut().enumerate() {
             let s_w = width;
             header_file.filenm_disp = if header_file.is_changed { format!("● {} ×", header_file.filenm.clone()) } else { format!("{} ×", header_file.filenm.clone()) };
+
+            // cut str
+            if get_str_width(&header_file.filenm_disp) > HeaderBar::FILENM_LEN_LIMMIT {
+                header_file.filenm_disp = cut_str(header_file.filenm_disp.clone(), HeaderBar::FILENM_LEN_LIMMIT, true);
+            }
+
             width += get_str_width(&header_file.filenm_disp);
             all_filenm = if i == 0 { header_file.filenm_disp.clone() } else { format!("{}|{}", all_filenm, header_file.filenm_disp) };
             let e_w = get_str_width(&all_filenm);
@@ -123,6 +130,9 @@ impl HeaderBar {
                 term.hbar.plus_btn_area = (width, width + 2);
             }
         }
+
+        Log::ep("term.hbar.all_filenm_w", &term.hbar.all_filenm_w);
+        Log::ep("get_str_width(&all_filenm)", &get_str_width(&all_filenm));
 
         term.hbar.all_filenm_rest = term.hbar.all_filenm_w - get_str_width(&all_filenm);
     }
