@@ -62,7 +62,7 @@ impl Default for HeaderFile {
 impl HeaderBar {
     const HELP_BTN_WITH: usize = 7;
     const CLOSE_BTN_WITH: usize = 3;
-    const FILENM_LEN_LIMMIT: usize = 15;
+    const FILENM_LEN_LIMMIT: usize = 16;
 
     pub fn new() -> Self {
         HeaderBar { ..HeaderBar::default() }
