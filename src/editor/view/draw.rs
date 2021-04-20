@@ -1,29 +1,23 @@
-use crate::{colors::*, def::*, global::*, log::*, model::*};
+use crate::{colors::*, def::*, global::*, log::*, model::*, terminal::*};
 use crossterm::{cursor::*, terminal::*};
 use std::io::Write;
 use unicode_width::UnicodeWidthChar;
 
 impl Editor {
-    pub fn draw<T: Write>(&mut self, out: &mut T) {
+    pub fn draw<T: Write>(&mut self, out: &mut T, term_mode: TermMode) {
         Log::ep_s("draw");
 
         let mut str_vec: Vec<String> = vec![];
         let (mut y, mut x) = (0, 0);
 
         let d_range = self.d_range.get_range();
-        Log::ep("d_range", &d_range);
 
         match d_range.draw_type {
             DrawType::Not | DrawType::MoveCur => {}
             DrawType::None => {
                 let cfg = CFG.get().unwrap().try_lock().unwrap();
-                if let Some(c) = cfg.syntax.theme.settings.background {
-                    //  if is_enable_syntax_highlight(&self.file.ext) && cfg.colors.theme.theme_bg_enable {
-                    if self.is_enable_syntax_highlight && cfg.colors.theme.theme_bg_enable {
-                        str_vec.push(Colors::bg(Color::from(c)));
-                    } else {
-                        str_vec.push(Colors::bg(cfg.colors.editor.bg));
-                    }
+                if let Some(color) = cfg.syntax.theme.settings.background {
+                    str_vec.push(if self.is_enable_syntax_highlight && cfg.colors.theme.theme_bg_enable { Colors::bg(Color::from(color)) } else { Colors::bg(cfg.colors.editor.bg) });
                 } else {
                     str_vec.push(Colors::bg(cfg.colors.editor.bg));
                 }
@@ -42,11 +36,10 @@ impl Editor {
         }
 
         for i in self.draw.sy..=self.draw.ey {
-            // Log::ep("iii", &i);
-
-            self.set_row_num(i, &mut str_vec);
+            self.set_row_num(i, &mut str_vec, term_mode);
             let row_cell = &self.draw.cells[i];
 
+            let mut c_org = ' ';
             for (x_idx, cell) in (0_usize..).zip(row_cell) {
                 cell.draw_style(&mut str_vec, x_idx == 0 && self.offset_x > 0);
                 let c = cell.c;
@@ -61,12 +54,20 @@ impl Editor {
                 }
                 x += width;
 
-                match c {
-                    EOF_MARK => Colors::set_eof(&mut str_vec),
-                    NEW_LINE => str_vec.push(NEW_LINE_MARK.to_string()),
-                    NEW_LINE_CR => {}
-                    _ => str_vec.push(c.to_string()),
+                if term_mode == TermMode::Normal {
+                    match c {
+                        EOF_MARK => Colors::set_eof(&mut str_vec),
+                        NEW_LINE => str_vec.push(if c_org == NEW_LINE_CR { NEW_LINE_CRLF_MARK.to_string() } else { NEW_LINE_LF_MARK.to_string() }),
+                        NEW_LINE_CR => {}
+                        _ => str_vec.push(c.to_string()),
+                    }
+                } else {
+                    match c {
+                        EOF_MARK | NEW_LINE | NEW_LINE_CR => {}
+                        _ => str_vec.push(c.to_string()),
+                    }
                 }
+                c_org = c;
             }
             y += 1;
             x = 0;
@@ -85,22 +86,24 @@ impl Editor {
         self.sel_org.clear();
     }
 
-    fn set_row_num(&mut self, i: usize, str_vec: &mut Vec<String>) {
-        // if i == self.cur.y - self.offset_y {
-        if i == self.cur.y {
-            Colors::set_rownum_curt_color(str_vec);
-        } else {
-            Colors::set_rownum_color(str_vec);
-        }
-        if self.cur.y == i && self.offset_disp_x > 0 {
-            str_vec.push(">".repeat(self.get_rnw()));
-        } else {
-            if self.get_rnw() > 0 {
-                str_vec.push(" ".repeat(self.get_rnw() - (i + 1).to_string().len()).to_string());
+    fn set_row_num(&mut self, i: usize, str_vec: &mut Vec<String>, term_mode: TermMode) {
+        if term_mode == TermMode::Normal {
+            // if i == self.cur.y - self.offset_y {
+            if i == self.cur.y {
+                Colors::set_rownum_curt_color(str_vec);
+            } else {
+                Colors::set_rownum_color(str_vec);
             }
-            str_vec.push((i + 1).to_string());
+            if self.cur.y == i && self.offset_disp_x > 0 {
+                str_vec.push(">".repeat(self.get_rnw()));
+            } else {
+                if self.get_rnw() > 0 {
+                    str_vec.push(" ".repeat(self.get_rnw() - (i + 1).to_string().len()).to_string());
+                }
+                str_vec.push((i + 1).to_string());
+            }
+            str_vec.push(" ".repeat(Editor::RNW_MARGIN).to_string());
+            Colors::set_text_color(str_vec);
         }
-        str_vec.push(" ".repeat(Editor::RNW_MARGIN).to_string());
-        Colors::set_text_color(str_vec);
     }
 }

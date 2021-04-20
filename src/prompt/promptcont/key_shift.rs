@@ -9,12 +9,12 @@ impl PromptCont {
             EvtType::ShiftLeft => self.cur_left(),
             EvtType::ShiftHome => {
                 self.cur.x = 0;
-                self.cur.disp_x = 1;
+                self.cur.disp_x = 0;
             }
             EvtType::ShiftEnd => {
                 let (cur_x, width) = get_row_width(&self.buf[..], false);
                 self.cur.x = cur_x;
-                self.cur.disp_x = width + 1;
+                self.cur.disp_x = width;
             }
             _ => {}
         }

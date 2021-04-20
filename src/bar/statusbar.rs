@@ -44,15 +44,7 @@ impl StatusBar {
         // Adjusted by the difference between the character width and the number of characters
         tab.sbar.cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
 
-        let sber_str = format!(
-            "{}{}{}{}{}{}",
-            MoveTo(0, (tab.sbar.disp_row_posi) as u16),
-            Clear(ClearType::CurrentLine),
-            Colors::get_sber_bg(),
-            Colors::get_sber_fg(),
-            format!("{}{}", tab.sbar.other_str, tab.sbar.cur_str),
-            Colors::get_default_fg(),
-        );
+        let sber_str = format!("{}{}{}{}{}{}", MoveTo(0, (tab.sbar.disp_row_posi) as u16), Clear(ClearType::CurrentLine), Colors::get_sbar_bg(), Colors::get_sbar_fg(), format!("{}{}", tab.sbar.other_str, tab.sbar.cur_str), Colors::get_default_fg(),);
 
         str_vec.push(sber_str);
         Colors::set_text_color(str_vec);
@@ -69,12 +61,11 @@ impl StatusBar {
     pub fn get_cur_str(tab: &mut Tab) -> String {
         let cur = tab.editor.cur.clone();
         let len_lines = tab.editor.buf.len_lines();
-        let rnw = tab.editor.get_rnw();
         let len_line_chars = tab.editor.buf.len_line_chars(tab.editor.cur.y);
 
         let row_str = format!("{}({}/{})", &LANG.row, (cur.y + 1).to_string(), len_lines.to_string());
         let len_line_chars = if len_line_chars == 0 { 0 } else { len_line_chars - 1 };
-        let col_str = format!("{}({}/{})", &LANG.col, cur.x + 1 - rnw, len_line_chars.to_string()).to_string();
+        let col_str = format!("{}({}/{})", &LANG.col, cur.x + 1, len_line_chars.to_string()).to_string();
         let cur_posi = format!("{rows} {cols}", rows = row_str, cols = col_str,);
         return cur_posi;
     }

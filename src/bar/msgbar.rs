@@ -110,7 +110,7 @@ impl MsgBar {
             write!(out, "{}", self.get_disp_keyrecord_msg()).unwrap();
             out.flush().unwrap();
         }
-        if self.msg.str != self.msg_org.str {
+        if self.is_msg_changed() {
             write!(out, "{}", self.get_disp_msg()).unwrap();
             out.flush().unwrap();
         }
@@ -152,5 +152,13 @@ impl MsgBar {
 
     pub fn set_readonly(&mut self, msg: &str) {
         self.msg_readonly = msg.to_string();
+    }
+
+    pub fn is_msg_changed(&mut self) -> bool {
+        if self.msg_org == self.msg {
+            return false;
+        } else {
+            return true;
+        }
     }
 }

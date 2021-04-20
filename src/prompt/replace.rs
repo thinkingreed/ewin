@@ -47,8 +47,8 @@ impl Prompt {
         term.tabs[term.idx].state.is_replace = true;
         term.tabs[term.idx].prom.disp_row_num = 7;
         term.set_disp_size();
-        let mut cont_1 = PromptCont::new_edit(term.tabs[term.idx].prom.disp_row_posi as u16, PromptContPosi::First);
-        let mut cont_2 = PromptCont::new_edit(term.tabs[term.idx].prom.disp_row_posi as u16, PromptContPosi::Second);
+        let mut cont_1 = PromptCont::new_edit_type(term.tabs[term.idx].prom.disp_row_posi as u16, PromptContPosi::First);
+        let mut cont_2 = PromptCont::new_edit_type(term.tabs[term.idx].prom.disp_row_posi as u16, PromptContPosi::Second);
         cont_1.set_replace();
         cont_2.set_replace();
         term.tabs[term.idx].prom.cont_1 = cont_1;

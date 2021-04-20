@@ -22,8 +22,11 @@ foreground = "#000000"
 [colors.editor.control_char]
 foreground = "#6e6e6e"
 
+[colors.header_bar]
+foreground = "#c0c0c0"
+
 [colors.status_bar]
-foreground = "#87411f"
+foreground = "#c0c0c0"
 
 [colors.msg]
 normal_foreground = "#ffffff"

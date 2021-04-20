@@ -32,33 +32,14 @@ impl From<Color> for CrosstermColor {
 
 impl CharStyle {
     pub fn from_syntect_style(cfg: &Cfg, style: syntect::highlighting::Style) -> CharStyle {
-        return if cfg.colors.theme.theme_bg_enable {
-            CharStyle {
-                bg: style.background.into(),
-                fg: style.foreground.into(),
-            }
-        } else {
-            CharStyle { bg: cfg.colors.editor.bg, fg: style.foreground.into() }
-        };
+        return if cfg.colors.theme.theme_bg_enable { CharStyle { bg: style.background.into(), fg: style.foreground.into() } } else { CharStyle { bg: cfg.colors.editor.bg, fg: style.foreground.into() } };
     }
 
     pub fn normal(cfg: &Cfg) -> CharStyle {
         let editor = &cfg.colors.editor;
         CharStyle {
-            fg: Color {
-                rgb: Rgb {
-                    r: editor.fg.rgb.r,
-                    g: editor.fg.rgb.g,
-                    b: editor.fg.rgb.b,
-                },
-            },
-            bg: Color {
-                rgb: Rgb {
-                    r: editor.bg.rgb.r,
-                    g: editor.bg.rgb.g,
-                    b: editor.bg.rgb.b,
-                },
-            },
+            fg: Color { rgb: Rgb { r: editor.fg.rgb.r, g: editor.fg.rgb.g, b: editor.fg.rgb.b } },
+            bg: Color { rgb: Rgb { r: editor.bg.rgb.r, g: editor.bg.rgb.g, b: editor.bg.rgb.b } },
         }
     }
 
@@ -74,47 +55,22 @@ impl CharStyle {
         let control_char = &cfg.colors.editor.control_char;
         let editor = &cfg.colors.editor;
         CharStyle {
-            fg: Color {
-                rgb: Rgb {
-                    r: control_char.fg.rgb.r,
-                    g: control_char.fg.rgb.g,
-                    b: control_char.fg.rgb.b,
-                },
-            },
-            bg: Color {
-                rgb: Rgb {
-                    r: editor.bg.rgb.r,
-                    g: editor.bg.rgb.g,
-                    b: editor.bg.rgb.b,
-                },
-            },
+            fg: Color { rgb: Rgb { r: control_char.fg.rgb.r, g: control_char.fg.rgb.g, b: control_char.fg.rgb.b } },
+            bg: Color { rgb: Rgb { r: editor.bg.rgb.r, g: editor.bg.rgb.g, b: editor.bg.rgb.b } },
         }
     }
 
     pub fn selected(cfg: &Cfg) -> CharStyle {
         let selection = &cfg.colors.editor.selection;
         CharStyle {
-            fg: Color {
-                rgb: Rgb {
-                    r: selection.fg.rgb.r,
-                    g: selection.fg.rgb.g,
-                    b: selection.fg.rgb.b,
-                },
-            },
-            bg: Color {
-                rgb: Rgb {
-                    r: selection.bg.rgb.r,
-                    g: selection.bg.rgb.g,
-                    b: selection.bg.rgb.b,
-                },
-            },
+            fg: Color { rgb: Rgb { r: selection.fg.rgb.r, g: selection.fg.rgb.g, b: selection.fg.rgb.b } },
+            bg: Color { rgb: Rgb { r: selection.bg.rgb.r, g: selection.bg.rgb.g, b: selection.bg.rgb.b } },
         }
     }
 }
 
 impl Cell {
     pub fn draw_style(&self, str_vec: &mut Vec<String>, forced_change: bool) {
-        // TODO ansi_color
         if self.from.fg != self.to.fg || forced_change {
             str_vec.push(SetForegroundColor(CrosstermColor::from(self.to.fg)).to_string());
         }

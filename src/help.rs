@@ -1,43 +1,9 @@
-use crate::{colors::*, def::*, global::*, log::*, model::*, util::*};
+use crate::{colors::*, def::*, global::*, log::*, model::*, terminal::Terminal, util::*};
 use crossterm::{cursor::*, terminal::*};
 use unicode_width::UnicodeWidthChar;
 
-#[derive(Debug, Clone)]
-pub struct Help {
-    pub mode: HelpMode,
-    // Number displayed on the terminal
-    pub disp_row_num: usize,
-    pub disp_row_posi: usize,
-    pub key_bind_vec: Vec<Vec<KeyBind>>,
-}
-impl Default for Help {
-    fn default() -> Self {
-        Help {
-            mode: HelpMode::None,
-            disp_row_num: 0,
-            disp_row_posi: 0,
-            key_bind_vec: vec![],
-        }
-    }
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// HelpMode
-pub enum HelpMode {
-    Show,
-    // Details,
-    None,
-}
-#[derive(Debug, Clone)]
-pub struct KeyBind {
-    pub key: String,
-    pub func_nm: String,
-    pub key_bind_len: usize,
-    pub mouse_area: (usize, usize),
-}
-
 impl Help {
-    pub const DISP_ROW_NUM: usize = 4;
-
+    pub const DISP_ROW_NUM: usize = 5;
     const KEY_WIDTH: usize = 9;
     const KEY_WIDTH_WIDE: usize = 11;
     const KEY_FUNC_WIDTH: usize = 9;
@@ -47,25 +13,23 @@ impl Help {
         return Help { ..Help::default() };
     }
 
-    pub fn disp_toggle(&mut self, editor: &mut Editor) {
-        self.mode = match self.mode {
+    pub fn disp_toggle(term: &mut Terminal) {
+        term.help.mode = match term.help.mode {
             HelpMode::Show => HelpMode::None,
             HelpMode::None => HelpMode::Show,
         };
+        term.set_disp_size();
 
-        if self.mode == HelpMode::Show {
-            // TODO set_disp_size必要か確認
-            // term.set_disp_size();
+        let tab = term.tabs.get_mut(term.idx).unwrap();
+        if term.help.mode == HelpMode::Show {
             // Cursor moves out of help display area
-            if editor.cur.y - editor.offset_y > editor.disp_row_num - 1 {
-                editor.cur.y = editor.offset_y + editor.disp_row_num - 1;
-                editor.cur.x = editor.get_rnw();
-                editor.cur.disp_x = editor.get_rnw() + 1;
+            if tab.editor.cur.y - tab.editor.offset_y > tab.editor.disp_row_num - 1 {
+                tab.editor.cur.y = tab.editor.offset_y + tab.editor.disp_row_num - 1;
+                tab.editor.cur.x = 0;
+                tab.editor.cur.disp_x = tab.editor.get_rnw() + Editor::RNW_MARGIN;
             }
-            editor.d_range.draw_type = DrawType::All;
-        } else {
-            editor.d_range = DRange::new(editor.disp_row_num - 1, 0, DrawType::After);
         }
+        tab.editor.d_range.draw_type = DrawType::All;
     }
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
@@ -100,28 +64,43 @@ impl Help {
             vec.clear();
             // 4th line
             self.set_key_bind_ex(&mut vec, KEY_SELECT, &LANG.range_select, KEY_SELECT.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (KEY_SELECT.chars().count() + 1));
-            self.set_key_bind_wide(&mut vec, KEY_HELP_DETAIL, &format!("{} {}", &LANG.help, &LANG.detail));
-            self.set_key_bind_wide(&mut vec, KEY_HELP, &format!("{} {}", &LANG.help, &LANG.end));
+            self.set_key_bind_ex(&mut vec, KEY_MOUSE_SWITCH, &LANG.mouse_switch, KEY_MOUSE_SWITCH.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (KEY_MOUSE_SWITCH.chars().count() + 1));
             self.key_bind_vec.push(vec.clone());
             vec.clear();
-            /* // 5th line
-               self.set_key_bind_ex(&mut vec, KEY_HELP, &format!("{} {}", &LANG.help, &LANG.end), Help::KEY_FUNC_WIDTH, Help::KEY_WIDTH);
-               self.set_key_bind_ex(&mut vec, HELP_DETAIL, &env!("CARGO_PKG_REPOSITORY").to_string(), HELP_DETAIL.chars().count() + 1, Help::KEY_FUNC_WIDTH_WIDE - HELP_DETAIL.chars().count() + 1);
-               self.key_bind_vec.push(vec.clone());
-               vec.clear();
-            */
+            // 5th line
+            self.set_key_bind_ex(&mut vec, KEY_HELP, &format!("{}{}", &LANG.help, &LANG.end), Help::KEY_FUNC_WIDTH, Help::KEY_WIDTH);
+            self.set_key_bind_ex(&mut vec, HELP_DETAIL, &env!("CARGO_PKG_REPOSITORY").to_string(), HELP_DETAIL.chars().count() + 1, Help::KEY_FUNC_WIDTH_WIDE - HELP_DETAIL.chars().count() + 1);
+            self.key_bind_vec.push(vec.clone());
+            vec.clear();
         }
 
-        for (i, sy) in (0_usize..).zip(self.disp_row_posi - 1..=self.disp_row_posi - 1 + self.disp_row_num) {
+        for (i, sy) in (0_usize..).zip(self.disp_row_posi..self.disp_row_posi + self.disp_row_num) {
             str_vec.push(format!("{}{}", MoveTo(0, sy as u16), Clear(ClearType::CurrentLine)));
-            // Blank line to leave one line interval
-            if i == 0 {
-                continue;
-            }
-            if let Some(vec) = self.key_bind_vec.get(i - 1) {
+
+            if let Some(vec) = self.key_bind_vec.get(i) {
+                let mut row_str = String::new();
+                let mut width = 0;
                 for bind in vec {
-                    str_vec.push(format!("{}{}", bind.key, bind.func_nm));
+                    if width + get_str_width(&bind.key) <= self.disp_col_num {
+                        row_str.push_str(&format!("{}{}", Colors::get_msg_highlight_fg(), bind.key));
+                        width += get_str_width(&bind.key);
+
+                        if width + get_str_width(&bind.funcnm) <= self.disp_col_num {
+                            row_str.push_str(&format!("{}{}", Colors::get_msg_normal_fg(), bind.funcnm));
+                            width += get_str_width(&bind.funcnm);
+                        } else {
+                            let funcnm = cut_str(bind.funcnm.clone(), self.disp_col_num - width, false);
+                            row_str.push_str(&format!("{}{}", Colors::get_msg_normal_fg(), funcnm));
+                            break;
+                        }
+                    } else {
+                        let key = cut_str(bind.key.clone(), self.disp_col_num - width, false);
+                        row_str.push_str(&format!("{}{}", Colors::get_msg_highlight_fg(), key));
+                        break;
+                    }
                 }
+
+                str_vec.push(row_str.clone());
             }
         }
     }
@@ -151,14 +130,49 @@ impl Help {
         }
 
         let key_bind = KeyBind {
-            key: format!("{}{}", Colors::get_msg_highlight_fg(), key),
-            func_nm: format!("{}{}", Colors::get_msg_normal_fg(), func),
+            key: key,
+            funcnm: func,
             key_bind_len: key_w + func_w,
             mouse_area: (row_w, row_w + key_w - 1),
         };
 
-        Log::ep("key_bind", &key_bind.clone());
+        // Log::ep("key_bind", &key_bind.clone());
 
         vec.push(key_bind);
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct Help {
+    pub mode: HelpMode,
+    // Number displayed on the terminal
+    pub disp_row_num: usize,
+    pub disp_col_num: usize,
+    pub disp_row_posi: usize,
+    pub key_bind_vec: Vec<Vec<KeyBind>>,
+}
+impl Default for Help {
+    fn default() -> Self {
+        Help {
+            mode: HelpMode::None,
+            disp_col_num: 0,
+            disp_row_num: 0,
+            disp_row_posi: 0,
+            key_bind_vec: vec![],
+        }
+    }
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// HelpMode
+pub enum HelpMode {
+    Show,
+    // Details,
+    None,
+}
+#[derive(Debug, Clone)]
+pub struct KeyBind {
+    pub key: String,
+    pub funcnm: String,
+    pub key_bind_len: usize,
+    pub mouse_area: (usize, usize),
 }

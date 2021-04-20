@@ -26,13 +26,11 @@ impl EvtAct {
         if term.tabs.len() == 1 {
             return EvtActType::Exit;
         } else {
-            let tab_idx = term.idx;
+            let tmp_idx = term.idx;
             term.idx = if term.idx == term.tabs.len() - 1 { term.idx - 1 } else { term.idx };
-            term.tabs.remove(tab_idx);
-            term.hbar.file_vec.remove(tab_idx);
-            // FILE_VEC.get().unwrap().try_lock().unwrap().remove(term.tab_idx);
-            //    term.tab_idx = if term.tab_idx == 0 { term.tab_idx } else { term.tab_idx - 1 };
-            return EvtActType::DrawOnly;
+            term.tabs.remove(tmp_idx);
+            term.hbar.file_vec.remove(tmp_idx);
+            return EvtActType::Next;
         }
     }
 }
@@ -43,10 +41,10 @@ impl Prompt {
             // tab.prom.save_confirm_str(term);
             term.tabs[term.idx].prom.disp_row_num = 2;
             term.set_disp_size();
-            let mut cont = PromptCont::new_not_edit(term.tabs[term.idx].prom.disp_row_posi as u16);
+            let mut cont = PromptCont::new_not_edit_type(term.tabs[term.idx].prom.disp_row_posi as u16);
             cont.set_save_confirm();
             term.tabs[term.idx].prom.cont_1 = cont;
-            term.tabs[term.idx].prom.is_close_confirm = true;
+            term.tabs[term.idx].state.is_close_confirm = true;
             return false;
         };
         if term.tabs.len() == 1 {

@@ -1,17 +1,13 @@
 extern crate ropey;
-use crate::{def::*, editor::view::char_style::*};
+use crate::{def::*, editor::view::char_style::*, terminal::TermMode};
 use chrono::NaiveDateTime;
-use crossterm::event::{
-    Event,
-    Event::Key,
-    KeyCode::{End, Null},
-};
+use crossterm::event::{Event, Event::Key, KeyCode::Null};
 use ropey::Rope;
 use std::cmp::{max, min};
 use std::collections::VecDeque;
 use std::fmt;
-use syntect::highlighting::HighlightState;
 use syntect::parsing::{ParseState, ScopeStackOp};
+use syntect::{highlighting::HighlightState, parsing::SyntaxReference};
 
 /// Event後のEditor以外の操作
 #[derive(Debug, Clone)]
@@ -22,7 +18,7 @@ pub enum EvtActType {
     // Promt Process only
     Hold,
     Exit,
-    // Editor key Process
+    // key Process
     Next,
     // Do not Editor key Process
     DrawOnly,
@@ -320,17 +316,17 @@ impl fmt::Display for SelRange {
 /// Editor, Prompt
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Cur {
-    // Editor.bufferの[y]
+    // Editor.buffer [y]
     pub y: usize,
-    // Editor.bufferの[y][x] + line_num_width
+    // Editor.buffer [y][x]
     pub x: usize,
-    // 2文字分文字対応 line_num_width + 1以上
+    // Display position on the terminal, row num width + 1
     pub disp_x: usize,
 }
 
 impl Default for Cur {
     fn default() -> Self {
-        Cur { y: 0, x: 0, disp_x: 1 }
+        Cur { y: 0, x: 0, disp_x: 0 }
     }
 }
 
@@ -343,6 +339,7 @@ impl fmt::Display for Cur {
 // エディタの内部状態
 #[derive(Debug, Clone)]
 pub struct Editor {
+    pub mode: TermMode,
     pub buf: TextBuffer,
     pub buf_cache: Vec<Vec<char>>,
     /// current cursor position
@@ -382,6 +379,7 @@ impl Editor {
 
     pub fn new() -> Self {
         Editor {
+            mode: TermMode::Normal,
             buf: TextBuffer::default(),
             buf_cache: vec![],
             cur: Cur::default(),
@@ -483,6 +481,7 @@ impl Default for JobEvent {
 #[derive(Debug, Clone)]
 pub struct JobGrep {
     pub grep_str: String,
+    pub is_result: bool,
     pub is_stdout_end: bool,
     pub is_stderr_end: bool,
     pub is_cancel: bool,
@@ -490,7 +489,13 @@ pub struct JobGrep {
 
 impl Default for JobGrep {
     fn default() -> Self {
-        JobGrep { grep_str: String::new(), is_stdout_end: false, is_stderr_end: false, is_cancel: false }
+        JobGrep {
+            grep_str: String::new(),
+            is_result: false,
+            is_stdout_end: false,
+            is_stderr_end: false,
+            is_cancel: false,
+        }
     }
 }
 
@@ -506,9 +511,9 @@ pub struct Draw {
     pub ey: usize,
     // pub x_vec: Vec<(usize, usize)>,
     // Caching the drawing string because ropey takes a long time to access char
-    pub char_vec: Vec<Vec<char>>,
     pub cells: Vec<Vec<Cell>>,
     pub syntax_state_vec: Vec<SyntaxState>,
+    pub syntax_reference: Option<SyntaxReference>,
 }
 
 #[derive(Debug, Clone)]
@@ -520,18 +525,13 @@ pub struct SyntaxState {
 
 impl Default for Draw {
     fn default() -> Self {
-        Draw { sy: 0, ey: 0, char_vec: vec![], cells: vec![], syntax_state_vec: vec![] }
+        Draw { sy: 0, ey: 0, cells: vec![], syntax_state_vec: vec![], syntax_reference: None }
     }
 }
 
 impl fmt::Display for Draw {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Draw y_s:{}, y_e:{}, char_vec:{:?}, ", self.sy, self.ey, self.char_vec)
-    }
-}
-impl Draw {
-    pub fn new(sy: usize, ey: usize) -> Self {
-        return Draw { sy: sy, ey: ey, ..Draw::default() };
+        write!(f, "Draw y_s:{}, y_e:{}, ", self.sy, self.ey)
     }
 }
 

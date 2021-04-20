@@ -1,19 +1,32 @@
 use crate::{colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
-use std::{cmp::min, io::Write};
+use std::cmp::min;
 
 impl EvtAct {
     pub fn search(term: &mut Terminal) -> EvtActType {
         Log::ep_s("Process.search");
 
-        Log::ep("editor.evt", &term.tabs[term.idx].editor.evt);
-
-        match term.tabs[term.idx].editor.evt {
+        match term.curt().editor.evt {
+            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
+                Char('v') => {
+                    EvtAct::exec_search_incremental(term);
+                    return EvtActType::DrawOnly;
+                }
+                _ => return EvtActType::Hold,
+            },
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
+                Char(_) => {
+                    EvtAct::exec_search_incremental(term);
+                    return EvtActType::DrawOnly;
+                }
                 F(4) => return EvtAct::exec_search_confirm(term, term.tabs[term.idx].prom.cont_1.buf.iter().collect::<String>()),
                 _ => return EvtActType::Hold,
             },
             Key(KeyEvent { code, .. }) => match code {
+                Char(_) | Delete | Backspace => {
+                    EvtAct::exec_search_incremental(term);
+                    return EvtActType::DrawOnly;
+                }
                 F(3) => return EvtAct::exec_search_confirm(term, term.tabs[term.idx].prom.cont_1.buf.iter().collect::<String>()),
                 _ => return EvtActType::Hold,
             },
@@ -50,25 +63,21 @@ impl EvtAct {
             return EvtActType::Next;
         }
     }
-    pub fn exec_search_incremental<T: Write>(out: &mut T, term: &mut Terminal) {
+    pub fn exec_search_incremental(term: &mut Terminal) {
         Log::ep_s("exec_search_incremental");
-        term.tabs[term.idx].editor.search.str = term.tabs[term.idx].prom.cont_1.buf.iter().collect::<String>();
+        term.curt().editor.search.str = term.curt().prom.cont_1.buf.iter().collect::<String>();
 
         let s_idx = term.tabs[term.idx].editor.buf.line_to_char(term.tabs[term.idx].editor.offset_y);
-        let ey = min(term.tabs[term.idx].editor.offset_y + term.tabs[term.idx].editor.disp_row_num, term.tabs[term.idx].editor.buf.len_lines());
-        let search_org = term.tabs[term.idx].editor.search.clone();
+        let ey = min(term.curt().editor.offset_y + term.curt().editor.disp_row_num, term.curt().editor.buf.len_lines());
+        let search_org = term.curt().editor.search.clone();
 
-        Log::ep("s_idx", &s_idx);
-        Log::ep("e_idx", &term.tabs[term.idx].editor.buf.line_to_char(ey));
+        term.curt().editor.search.ranges = if term.curt().editor.search.str.len() == 0 { vec![] } else { term.tabs[term.idx].editor.get_search_ranges(&term.tabs[term.idx].editor.search.str, s_idx, term.tabs[term.idx].editor.buf.line_to_char(ey), 0) };
 
-        term.tabs[term.idx].editor.search.ranges = if term.tabs[term.idx].editor.search.str.len() == 0 { vec![] } else { term.tabs[term.idx].editor.get_search_ranges(&term.tabs[term.idx].editor.search.str, s_idx, term.tabs[term.idx].editor.buf.line_to_char(ey), 0) };
-
-        if !search_org.ranges.is_empty() || !term.tabs[term.idx].editor.search.ranges.is_empty() {
+        if !search_org.ranges.is_empty() || !term.curt().editor.search.ranges.is_empty() {
             // Search in advance for drawing
-            if !term.tabs[term.idx].editor.search.ranges.is_empty() {
-                term.tabs[term.idx].editor.search_str(true, true);
+            if !term.curt().editor.search.ranges.is_empty() {
+                term.curt().editor.search_str(true, true);
             }
-
             /*
             editor.d_range.draw_type = DrawType::Target;
             let (sy_curt, ey) = editor.search.get_y_range();
@@ -76,21 +85,21 @@ impl EvtAct {
             editor.d_range.sy = min(sy_curt, sy_org);
             editor.d_range.ey = max(ey, ey_org);
             */
-            term.tabs[term.idx].editor.d_range.draw_type = DrawType::After;
-            term.tabs[term.idx].editor.d_range.sy = term.tabs[term.idx].editor.offset_y;
-            term.draw(out);
+            term.curt().editor.d_range.draw_type = DrawType::After;
+            term.curt().editor.d_range.sy = term.curt().editor.offset_y;
+            //  term.draw(out);
         }
     }
 }
 
 impl Prompt {
     pub fn search(term: &mut Terminal) {
-        term.tabs[term.idx].state.is_search = true;
-        term.tabs[term.idx].prom.disp_row_num = 4;
+        term.curt().state.is_search = true;
+        term.curt().prom.disp_row_num = 4;
         term.set_disp_size();
-        let mut cont = PromptCont::new_edit(term.tabs[term.idx].prom.disp_row_posi as u16, PromptContPosi::First);
+        let mut cont = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::First);
         cont.set_search();
-        term.tabs[term.idx].prom.cont_1 = cont;
+        term.curt().prom.cont_1 = cont;
     }
 }
 

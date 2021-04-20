@@ -10,9 +10,8 @@ impl Editor {
         Log::ep_s("　　　　　　　draw_cache");
 
         // char_vec initialize
-        let diff: isize = self.buf.len_lines() as isize - self.draw.char_vec.len() as isize;
+        let diff: isize = self.buf.len_lines() as isize - self.draw.cells.len() as isize;
         if diff > 0 {
-            self.draw.char_vec.resize_with(self.buf.len_lines() as usize, || vec![]);
             self.draw.cells.resize_with(self.buf.len_lines() as usize, || vec![]);
         }
 
@@ -28,19 +27,17 @@ impl Editor {
             }
             _ => {}
         }
+
+        // If highlight is enabled, read the full text first
+        if self.is_enable_syntax_highlight && self.draw.syntax_state_vec.len() == 0 {
+            self.draw.sy = 0;
+            self.draw.ey = self.buf.len_lines() - 1;
+        }
         Log::ep("self.draw.sy", &self.draw.sy);
         Log::ep("self.draw.ey", &self.draw.ey);
 
         match self.d_range.draw_type {
-            DrawType::None => {
-                // If highlight is enabled, read the full text first
-                if self.is_enable_syntax_highlight && self.draw.syntax_state_vec.len() == 0 {
-                    self.draw.sy = 0;
-                    self.draw.ey = self.buf.len_lines() - 1;
-                }
-                self.set_draw_regions();
-            }
-            DrawType::Target | DrawType::After | DrawType::All | DrawType::ScrollDown | DrawType::ScrollUp => self.set_draw_regions(),
+            DrawType::None | DrawType::Target | DrawType::After | DrawType::All | DrawType::ScrollDown | DrawType::ScrollUp => self.set_draw_regions(),
             DrawType::Not | DrawType::MoveCur => {}
         }
     }
@@ -50,19 +47,21 @@ impl Editor {
 
         for y in self.draw.sy..=self.draw.ey {
             let row_vec = self.buf.char_vec_line(y);
+            let sx = if y == self.cur.y { self.offset_x } else { 0 };
+            let ex = min(sx + self.disp_col_num - self.get_rnw() - Editor::RNW_MARGIN, self.buf.len_line_chars(y));
+
             if self.is_enable_syntax_highlight {
-                self.set_regions_highlight(&cfg, y, row_vec, sel_ranges);
+                self.set_regions_highlight(&cfg, y, row_vec, sel_ranges, sx, ex);
             } else {
-                self.set_regions(&cfg, y, row_vec, sel_ranges);
+                self.set_regions(&cfg, y, row_vec, sel_ranges, sx, ex);
             }
         }
     }
 
-    fn set_regions_highlight(&mut self, cfg: &Cfg, y: usize, row_vec: Vec<char>, sel_ranges: SelRange) {
+    fn set_regions_highlight(&mut self, cfg: &Cfg, y: usize, row_vec: Vec<char>, sel_ranges: SelRange, sx: usize, ex: usize) {
         // Log::ep_s("                  set_regions_highlight");
 
         let highlighter = Highlighter::new(&cfg.syntax.theme);
-
         let mut cells: Vec<Cell> = vec![];
         let row = row_vec.iter().collect::<String>();
 
@@ -71,7 +70,7 @@ impl Editor {
 
         if self.draw.syntax_state_vec.len() == 0 {
             scope = ScopeStack::new();
-            parse = ParseState::new(&cfg.syntax.syntax_reference.clone().unwrap());
+            parse = ParseState::new(&self.draw.syntax_reference.clone().unwrap());
         } else {
             let y = if y == 0 { 1 } else { y };
             let syntax_state = self.draw.syntax_state_vec[y - 1].clone();
@@ -101,18 +100,15 @@ impl Editor {
             }
         }
         self.draw.syntax_state_vec.insert(y, SyntaxState { highlight_state, parse_state: parse, ops });
-        self.draw.char_vec[y] = row_vec;
-        self.draw.cells[y] = cells;
-        // Log::ep("regions", regions.clone());
+        self.draw.cells[y] = cells.drain(sx..ex).collect();
     }
 
-    fn set_regions(&mut self, cfg: &Cfg, y: usize, row_vec: Vec<char>, sel_ranges: SelRange) {
+    fn set_regions(&mut self, cfg: &Cfg, y: usize, row_vec: Vec<char>, sel_ranges: SelRange, sx: usize, ex: usize) {
+        // Log::ep_s("                  set_regions");
+
         let mut cells: Vec<Cell> = vec![];
         let (mut x, mut width) = (0, 0);
         let (mut style_org, mut style_type_org) = (CharStyle::none(), CharStyleType::Nomal);
-
-        let sx = if y == self.cur.y { self.offset_x } else { 0 };
-        let ex = min(sx + self.disp_col_num - self.get_rnw() - Editor::RNW_MARGIN, self.buf.len_line_chars(y));
 
         let mut row: Vec<char> = vec![];
         row.resize(ex - sx, ' ');
@@ -123,14 +119,11 @@ impl Editor {
             self.set_style(cfg, c, width, y, x, &CharStyle::normal(cfg), &mut style_org, &mut style_type_org, sel_ranges, &mut cells);
             x += 1;
         }
-
-        self.draw.char_vec[y] = row_vec;
         self.draw.cells[y] = cells;
     }
 
     fn set_style(&mut self, cfg: &Cfg, c: char, width: usize, y: usize, x: usize, style: &CharStyle, style_org: &mut CharStyle, style_type_org: &mut CharStyleType, sel_ranges: SelRange, regions: &mut Vec<Cell>) {
         let from_style = self.draw.get_from_style(cfg, x, &style, &style_org, style_type_org);
-        let x = if self.cur.y == y { x + self.offset_x } else { x };
         let style_type = self.draw.ctrl_style_type(c, width, &sel_ranges, &self.search.ranges, self.get_rnw(), y, x);
 
         let to_style = match style_type {

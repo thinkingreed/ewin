@@ -9,7 +9,6 @@ pub fn get_str_width(msg: &str) -> usize {
     let mut width = 0;
     for i in 0..msg_chars.len() {
         // Because the width varies depending on the environment
-
         width += &msg_chars[i].width().unwrap_or(0);
     }
     return width;
@@ -19,7 +18,6 @@ pub fn get_row_width(vec: &[char], is_ctrlchar_incl: bool) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
 
     for c in vec {
-        // Log::ep("ccccc", c);
         if c == &EOF_MARK || c == &NEW_LINE || c == &NEW_LINE_CR {
             if is_ctrlchar_incl && (c == &NEW_LINE || c == &NEW_LINE_CR) {
                 width += 1;
@@ -37,26 +35,16 @@ pub fn get_row_width(vec: &[char], is_ctrlchar_incl: bool) -> (usize, usize) {
 /// Calculate disp_x and cursor_x by adding the width up to updown_x.
 pub fn get_until_updown_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
-    for i in 0..buf.len() + 1 {
-        if let Some(c) = buf.get(i) {
-            if c == &EOF_MARK || c == &NEW_LINE || c == &NEW_LINE_CR {
-                width += 1;
-                break;
-            }
-            let mut c_len = c.width().unwrap_or(0);
-            if width + c_len >= x {
-                if c_len > 1 {
-                    c_len = 1;
-                }
-                width += c_len;
-                break;
-            } else {
-                width += c_len;
-            }
-            cur_x += 1;
-        // White space at the end of Prompt
+    for c in buf {
+        if c == &EOF_MARK || c == &NEW_LINE || c == &NEW_LINE_CR {
+            break;
+        }
+        let c_len = c.width().unwrap_or(0);
+        if width + c_len > x {
+            break;
         } else {
-            width += 1;
+            width += c_len;
+            cur_x += 1;
         }
     }
     return (cur_x, width);

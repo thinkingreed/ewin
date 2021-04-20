@@ -1,11 +1,10 @@
-use crate::{_cfg::*, colors::*, def::*, global::*, log::*, terminal::*, util::*};
+use crate::{_cfg::*, colors::*, def::*, global::*, log::*};
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
 use std::{fs, fs::File, io::Write, sync::Mutex};
 use syntect::{
     self,
     highlighting::{Theme, ThemeSet},
-    parsing::SyntaxReference,
     parsing::SyntaxSet,
 };
 use theme_loader::ThemeLoader;
@@ -37,6 +36,7 @@ pub struct CfgSearch {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgColors {
     pub theme: CfgColorTheme,
+    pub header_bar: CfgColorHeaderBar,
     pub editor: CfgColorEditor,
     pub status_bar: CfgColorStatusBar,
     pub msg: CfgColorMsg,
@@ -99,6 +99,14 @@ pub struct ControlChar {
     pub fg: Color,
 }
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename = "HeaderBar")]
+pub struct CfgColorHeaderBar {
+    foreground: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub fg: Color,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename = "StatusBar")]
 pub struct CfgColorStatusBar {
     foreground: String,
@@ -127,7 +135,6 @@ pub struct CfgColorMsg {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Syntax {
     pub syntax_set: SyntaxSet,
-    pub syntax_reference: Option<SyntaxReference>,
     pub theme: Theme,
     pub theme_set: ThemeSet,
     pub fg: Color,
@@ -138,7 +145,6 @@ impl Default for Syntax {
     fn default() -> Self {
         Syntax {
             syntax_set: SyntaxSet::load_defaults_newlines(),
-            syntax_reference: None,
             theme_set: ThemeSet::load_defaults(),
             theme: Theme::default(),
             fg: Color::default(),
@@ -147,7 +153,7 @@ impl Default for Syntax {
     }
 }
 impl Cfg {
-    pub fn init(args: &Args) -> String {
+    pub fn init() -> String {
         let mut cfg: Cfg = toml::from_str(include_str!("../../setting.toml")).unwrap();
         let mut err_str = "".to_string();
 
@@ -176,6 +182,8 @@ impl Cfg {
             }
         }
 
+        cfg.colors.header_bar.fg = Colors::hex2rgb(&cfg.colors.header_bar.foreground);
+
         cfg.colors.editor.fg = Colors::hex2rgb(&cfg.colors.editor.foreground);
         cfg.colors.editor.bg = Colors::hex2rgb(&cfg.colors.editor.background);
         cfg.colors.editor.line_number.bg = Colors::hex2rgb(&cfg.colors.editor.line_number.background);
@@ -192,32 +200,24 @@ impl Cfg {
         cfg.colors.msg.err_fg = Colors::hex2rgb(&cfg.colors.msg.err_foreground);
         cfg.colors.status_bar.fg = Colors::hex2rgb(&cfg.colors.status_bar.foreground);
 
-        if is_enable_syntax_highlight(&args.ext) {
-            match ThemeLoader::new(&cfg.colors.theme.theme_path, &cfg.syntax.theme_set.themes).load() {
-                Ok((theme, err_string)) => {
-                    if !err_string.is_empty() {
-                        err_str = err_string;
-                    }
-                    cfg.syntax.theme = theme;
-                    if let Some(c) = cfg.syntax.theme.settings.background {
-                        if let Some(theme_bg_enable) = cfg.colors.theme.theme_background_enable {
-                            cfg.colors.editor.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
-                            cfg.colors.editor.line_number.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
-                            cfg.colors.theme.theme_bg_enable = theme_bg_enable;
-                        } else {
-                            cfg.colors.theme.theme_bg_enable = false;
-                        }
+        match ThemeLoader::new(&cfg.colors.theme.theme_path, &cfg.syntax.theme_set.themes).load() {
+            Ok((theme, err_string)) => {
+                if !err_string.is_empty() {
+                    err_str = err_string;
+                }
+                cfg.syntax.theme = theme;
+                if let Some(c) = cfg.syntax.theme.settings.background {
+                    if let Some(theme_bg_enable) = cfg.colors.theme.theme_background_enable {
+                        cfg.colors.editor.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
+                        cfg.colors.editor.line_number.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
+                        cfg.colors.theme.theme_bg_enable = theme_bg_enable;
+                    } else {
+                        cfg.colors.theme.theme_bg_enable = false;
                     }
                 }
-                // Even if the set theme fails to read, the internal theme is read, so the theme is surely read.
-                Err(_) => {}
             }
-        }
-
-        if let Some(sr) = cfg.syntax.syntax_set.find_syntax_by_extension(&args.ext) {
-            cfg.syntax.syntax_reference = Some(sr.clone());
-        } else {
-            cfg.syntax.syntax_reference = None;
+            // Even if the set theme fails to read, the internal theme is read, so the theme is surely read.
+            Err(_) => {}
         }
 
         if cfg!(debug_assertions) {

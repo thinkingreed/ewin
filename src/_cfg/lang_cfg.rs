@@ -22,6 +22,7 @@ pub struct LangCfg {
     pub detail: String,
     pub grep: String,
     pub range_select: String,
+    pub mouse_switch: String,
     // pub all_select: String,
     pub move_row: String,
     pub search: String,

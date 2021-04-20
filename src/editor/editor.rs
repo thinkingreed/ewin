@@ -1,4 +1,10 @@
-use crate::{def::*, log::*, model::*, terminal::Terminal, util::*};
+use crate::{
+    def::*,
+    log::*,
+    model::*,
+    terminal::{TermMode, Terminal},
+    util::*,
+};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use std::cmp::{max, min};
 use unicode_width::UnicodeWidthChar;
@@ -26,7 +32,8 @@ impl Editor {
             if self.evt == PAGE_DOWN {
                 self.offset_y = if self.buf.len_lines() - 1 > self.offset_y + self.disp_row_num * 2 { self.offset_y + self.disp_row_num } else { self.buf.len_lines() - self.disp_row_num };
             } else {
-                self.offset_y = max(self.offset_y, self.cur.y + Editor::SCROLL_DOWN_EXTRA_NUM + 1 - self.disp_row_num);
+                // self.offset_y = max(self.offset_y, self.cur.y + Editor::SCROLL_DOWN_EXTRA_NUM + 1 - self.disp_row_num);
+                self.offset_y = max(self.offset_y, self.cur.y + Editor::SCROLL_DOWN_EXTRA_NUM - self.disp_row_num);
                 // offset_y decreases
                 if self.offset_y + self.disp_row_num > self.buf.len_lines() {
                     self.offset_y = self.buf.len_lines() - self.disp_row_num;
@@ -35,6 +42,7 @@ impl Editor {
         }
         Log::ep("self.offset_y", &self.offset_y);
     }
+
     // move to row
     pub fn scroll_move_row(&mut self) {
         if self.cur.y > self.offset_y + self.disp_row_num {
@@ -68,13 +76,19 @@ impl Editor {
 
         // Calc offset_x
         // Up・Down・Home ...
-        if self.get_rnw() == self.cur.x {
+        if 0 == self.cur.x {
             self.offset_x = 0;
+
         // KEY_NULL:grep_result initial display
         } else if self.cur_y_org != self.cur.y || self.evt == END || self.evt == SEARCH_ASC || self.evt == SEARCH_DESC || self.evt == KEY_NULL {
-            self.offset_x = self.get_x_offset(self.cur.y, self.cur.x - self.get_rnw());
+            self.offset_x = self.get_x_offset(self.cur.y, self.cur.x);
 
-            Log::ep("self.offset_x", &self.offset_x);
+            if self.evt == END {
+                // +3 extra
+                if self.offset_x + self.get_rnw() > self.disp_col_num {
+                    self.offset_x += 3;
+                }
+            }
 
             if self.evt == SEARCH_ASC || self.evt == SEARCH_DESC || self.evt == KEY_NULL {
                 let str_width = get_str_width(&self.search.str);
@@ -99,7 +113,7 @@ impl Editor {
             }
 
         // cur_left
-        } else if self.evt == LEFT && self.cur.disp_x - 1 >= self.get_rnw() + offset_x_extra_num && self.offset_disp_x >= self.cur.disp_x - 1 - self.get_rnw() - offset_x_extra_num {
+        } else if self.evt == LEFT && self.cur.disp_x - self.get_rnw() - Editor::RNW_MARGIN >= offset_x_extra_num && self.offset_disp_x >= self.cur.disp_x - self.get_rnw() - Editor::RNW_MARGIN - offset_x_extra_num {
             Log::ep_s(" self.x_offset + self.get_rnw() + extra > self.cur.x ");
             self.offset_x = if self.offset_x >= offset_x_change_num { self.offset_x - offset_x_change_num } else { 0 };
         }
@@ -137,7 +151,7 @@ impl Editor {
         for i in (0..x).rev() {
             let c = self.buf.char(y, i);
             width += c.width().unwrap_or(0);
-            if width + self.get_rnw() + 1 > self.disp_col_num {
+            if width + self.get_rnw() + Editor::RNW_MARGIN + 1 > self.disp_col_num {
                 break;
             }
             count += 1;
@@ -154,16 +168,22 @@ impl Editor {
     }
 
     pub fn set_cur_default(&mut self) {
-        self.rnw = self.buf.len_lines().to_string().len();
-        self.cur = Cur { y: 0, x: self.get_rnw(), disp_x: self.get_rnw() + Editor::RNW_MARGIN };
+        if self.mode == TermMode::Normal {
+            self.rnw = self.buf.len_lines().to_string().len();
+            self.cur = Cur { y: 0, x: 0, disp_x: self.get_rnw() + Editor::RNW_MARGIN };
+        } else {
+            self.rnw = 0;
+            self.cur = Cur { y: 0, x: 0, disp_x: 0 };
+        }
     }
 
     pub fn set_cur_target(&mut self, y: usize, x: usize) {
         self.cur.y = y;
-        self.rnw = self.buf.len_lines().to_string().len();
         let (cur_x, width) = get_row_width(&self.buf.char_vec_range(y, x), false);
-        self.cur.x = cur_x + self.get_rnw();
-        self.cur.disp_x = width + self.get_rnw() + Editor::RNW_MARGIN;
+
+        self.rnw = if self.mode == TermMode::Normal { self.buf.len_lines().to_string().len() } else { 0 };
+        self.cur.disp_x = if self.mode == TermMode::Normal { width + self.get_rnw() + Editor::RNW_MARGIN } else { width };
+        self.cur.x = cur_x;
     }
 
     pub fn is_edit_evt(&self, is_incl_unredo: bool) -> bool {

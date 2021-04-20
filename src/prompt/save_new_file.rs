@@ -16,9 +16,12 @@ impl EvtAct {
                             return EvtActType::Hold;
                         }
                         term.hbar.file_vec[term.idx].filenm = filenm.clone();
-
                         Tab::save(term);
+                        if term.tabs[term.idx].state.is_close_confirm {
+                            return EvtAct::check_exit_close(term);
+                        }
                     }
+                    // Normal save
                     term.tabs[term.idx].editor.d_range.draw_type = DrawType::All;
                     return EvtActType::DrawOnly;
                 }
@@ -30,11 +33,13 @@ impl EvtAct {
 }
 
 impl Prompt {
-    pub fn save_new_file(&mut self) {
-        self.disp_row_num = 3;
-        let mut cont = PromptCont::new_not_edit(self.disp_row_posi as u16);
+    pub fn save_new_file(term: &mut Terminal) {
+        term.tabs[term.idx].state.is_save_new_file = true;
+        term.tabs[term.idx].prom.disp_row_num = 3;
+        term.set_disp_size();
+        let mut cont = PromptCont::new_not_edit_type(term.tabs[term.idx].prom.disp_row_posi as u16);
         cont.set_new_file_name();
-        self.cont_1 = cont;
+        term.tabs[term.idx].prom.cont_1 = cont;
     }
 }
 

@@ -11,7 +11,7 @@ impl Editor {
         if self.sel.is_selected() {
             Log::ep_s("exec_edit_proc is_selected_org");
             ep_org = EvtProc { evt_type: EvtType::Del, ..EvtProc::default() };
-            ep_org.cur_s = Cur { y: self.sel.sy, x: self.sel.sx + self.get_rnw(), disp_x: self.sel.s_disp_x };
+            ep_org.cur_s = Cur { y: self.sel.sy, x: self.sel.sx, disp_x: self.sel.s_disp_x };
             ep_org.cur_e = self.cur;
             ep_org.str = self.buf.slice(self.sel.get_range());
             ep_org.sel = self.sel;
@@ -67,7 +67,7 @@ impl Editor {
         if evt_type == EvtType::Del {
             // End of last line
             if !self.sel.is_selected() {
-                if self.cur.y == self.buf.len_lines() - 1 && self.cur.x == self.buf.len_line_chars(self.cur.y) + self.get_rnw() - 1 {
+                if self.cur.y == self.buf.len_lines() - 1 && self.cur.x == self.buf.len_line_chars(self.cur.y) - 1 {
                     self.d_range.draw_type = DrawType::Not;
                     return true;
                 }
@@ -75,7 +75,7 @@ impl Editor {
         } else if evt_type == EvtType::BS {
             // For the starting point
             if !self.sel.is_selected() {
-                if self.cur.y == 0 && self.cur.x == self.get_rnw() {
+                if self.cur.y == 0 && self.cur.x == 0 {
                     self.d_range.draw_type = DrawType::Not;
                     return true;
                 }

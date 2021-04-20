@@ -50,11 +50,7 @@ pub struct PromptContOpt {
 }
 impl Default for PromptContOpt {
     fn default() -> Self {
-        PromptContOpt {
-            key: String::new(),
-            is_check: false,
-            mouse_area: (0, 0),
-        }
+        PromptContOpt { key: String::new(), is_check: false, mouse_area: (0, 0) }
     }
 }
 impl PromptContOpt {
@@ -77,16 +73,12 @@ pub enum PromptContPosi {
     Third,
 }
 impl PromptCont {
-    pub fn new_not_edit(disp_row_posi: u16) -> Self {
+    pub fn new_not_edit_type(disp_row_posi: u16) -> Self {
         PromptCont { disp_row_posi, ..PromptCont::default() }
     }
 
-    pub fn new_edit(disp_row_posi: u16, prompt_cont_posi: PromptContPosi) -> Self {
-        PromptCont {
-            disp_row_posi,
-            prompt_cont_posi,
-            ..PromptCont::default()
-        }
+    pub fn new_edit_type(disp_row_posi: u16, prompt_cont_posi: PromptContPosi) -> Self {
+        PromptCont { disp_row_posi, prompt_cont_posi, ..PromptCont::default() }
     }
 
     pub fn get_draw_buf_str(&mut self) -> String {
@@ -164,7 +156,7 @@ impl PromptCont {
         }
         let (cur_x, width) = get_until_x(&self.buf, x as usize);
         self.cur.x = cur_x;
-        self.cur.disp_x = width + 1;
+        self.cur.disp_x = width;
 
         if is_mouse_left_down {
             self.sel.clear_prompt();

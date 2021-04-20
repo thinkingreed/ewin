@@ -1,5 +1,14 @@
-use crate::{def::*, global::*, log::*, model::*, tab::Tab, terminal::Terminal, util::*};
-use std::{collections::BTreeSet, iter::FromIterator, path::Path, sync::Mutex};
+use crate::{
+    def::*,
+    global::*,
+    log::*,
+    model::*,
+    prompt::prompt::Prompt,
+    tab::Tab,
+    terminal::{TermMode, Terminal},
+    util::*,
+};
+use std::{collections::BTreeSet, iter::FromIterator, sync::Mutex};
 
 impl Editor {
     pub fn all_select(&mut self) {
@@ -26,14 +35,6 @@ impl Editor {
         Log::ep("copy str", &str);
 
         let copy_string = if *ENV == Env::WSL && *IS_POWERSHELL_ENABLE { self.get_wsl_str(&str) } else { str };
-
-        /*
-        let mut copy_string;
-        if *ENV == Env::WSL && *IS_POWERSHELL_ENABLE {
-            copy_string = self.get_wsl_str(&str);
-        } else {
-            copy_string = str;
-        } */
 
         self.set_clipboard(&copy_string);
     }
@@ -66,27 +67,31 @@ impl Editor {
 
     pub fn paste(&mut self, ep: &mut EvtProc) {
         Log::ep_s("　　　　　　　  paste");
-        self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::After);
+        if self.is_enable_syntax_highlight {
+            self.d_range.draw_type = DrawType::All;
+        } else {
+            self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::After);
+        }
         Log::ep("clipboard str", &self.clipboard);
         if self.evt == PASTE {
             ep.str = self.get_clipboard().unwrap_or("".to_string());
         }
-        ep.sel.set_s(self.cur.y, self.cur.x - self.get_rnw(), self.cur.disp_x);
+        ep.sel.set_s(self.cur.y, self.cur.x, self.cur.disp_x);
         self.insert_str(&ep.str);
-        ep.sel.set_e(self.cur.y, self.cur.x - self.get_rnw(), self.cur.disp_x);
+        ep.sel.set_e(self.cur.y, self.cur.x, self.cur.disp_x);
     }
 
     pub fn insert_str(&mut self, str: &str) {
         Log::ep_s("        insert_str");
 
-        let i = self.buf.line_to_char(self.cur.y) + self.cur.x - self.get_rnw();
+        let i = self.buf.line_to_char(self.cur.y) + self.cur.x;
         self.buf.insert(i, str);
         let insert_strs: Vec<&str> = str.split(NEW_LINE).collect();
 
         let last_str_len = insert_strs.last().unwrap().chars().count();
         self.cur.y += insert_strs.len() - 1;
 
-        let x = if insert_strs.len() == 1 { self.cur.x - self.get_rnw() + last_str_len } else { last_str_len };
+        let x = if insert_strs.len() == 1 { self.cur.x + last_str_len } else { last_str_len };
         self.set_cur_target(self.cur.y, x);
 
         self.scroll();
@@ -111,7 +116,7 @@ impl Editor {
         self.scroll();
         self.scroll_horizontal();
         if self.updown_x == 0 {
-            self.updown_x = self.cur.disp_x;
+            self.updown_x = self.cur.disp_x - self.rnw - Editor::RNW_MARGIN;
         }
     }
 
@@ -179,7 +184,7 @@ impl Editor {
     }
 
     pub fn get_search_str_index(&mut self, is_asc: bool) -> usize {
-        let cur_x = self.cur.x - self.get_rnw();
+        let cur_x = self.cur.x;
 
         if is_asc {
             if self.search.idx == USIZE_UNDEFINED {
@@ -248,7 +253,11 @@ impl Editor {
             let _ = REPLACE_REPLACE_RANGE.set(Mutex::new(replace_set));
         }
 
-        self.d_range = DRange::new(self.offset_y, self.offset_y, DrawType::After);
+        if self.is_enable_syntax_highlight {
+            self.d_range.draw_type = DrawType::All;
+        } else {
+            self.d_range = DRange::new(self.offset_y, self.offset_y, DrawType::After);
+        }
         let y = self.buf.char_to_line(end_char_idx);
         let x = end_char_idx - self.buf.line_to_char(y) + 1;
         self.set_cur_target(y, x);
@@ -259,11 +268,14 @@ impl Editor {
     pub fn set_grep_result(&mut self) {
         Log::ep_s("set_grep_result");
 
-        Log::ep_s("set_grep_result");
+        if self.mode == TermMode::Normal {
+            self.rnw = self.buf.len_lines().to_string().len();
+            self.cur = Cur { y: self.buf.len_lines() - 1, x: 0, disp_x: self.get_rnw() + Editor::RNW_MARGIN };
+        } else {
+            self.rnw = 0;
+            self.cur = Cur { y: self.buf.len_lines() - 1, x: 0, disp_x: 0 };
+        }
 
-        self.rnw = self.buf.len_lines().to_string().len();
-        self.cur = Cur { y: self.buf.len_lines() - 1, x: self.get_rnw(), disp_x: 0 };
-        self.cur.disp_x = self.get_rnw() + get_char_width(self.buf.char(self.cur.y, self.cur.x - self.get_rnw()));
         self.scroll();
 
         // -2 is a line break for each line
@@ -337,7 +349,11 @@ impl Editor {
                 }
                 EvtType::Enter => self.exec_edit_proc(EvtType::BS, "", ""),
                 EvtType::Del | EvtType::BS | EvtType::Cut => self.exec_edit_proc(EvtType::Paste, &ep.str, ""),
-                EvtType::Replace => self.exec_edit_proc(EvtType::Replace, &ep.str_replace, &ep.str),
+                EvtType::Replace => {
+                    self.exec_edit_proc(EvtType::Replace, &ep.str_replace, &ep.str);
+                    // Return cursor position
+                    self.set_evtproc(&ep, &ep.cur_s);
+                }
                 _ => {}
             }
 
@@ -378,10 +394,9 @@ impl Tab {
         }
         let filenm = term.hbar.file_vec[term.idx].filenm.clone();
 
-        if !Path::new(&filenm).exists() && term.tabs[term.idx].prom.cont_1.buf.len() == 0 {
+        if filenm == LANG.new_file {
             Log::ep_s("!Path::new(&sbar.filenm).exists()");
-            term.tabs[term.idx].prom.is_save_new_file = true;
-            term.tabs[term.idx].prom.save_new_file();
+            Prompt::save_new_file(term);
             return false;
         } else {
             let result = term.tabs[term.idx].editor.buf.write_to(&filenm);
@@ -390,7 +405,9 @@ impl Tab {
                     term.hbar.file_vec[term.idx].is_changed = false;
                     term.tabs[term.idx].prom.clear();
                     term.tabs[term.idx].mbar.clear();
-                    term.tabs[term.idx].state.clear();
+                    if !term.tabs[term.idx].state.is_close_confirm {
+                        term.tabs[term.idx].state.clear();
+                    }
                     return true;
                 }
                 Err(err) => {

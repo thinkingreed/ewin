@@ -1,12 +1,11 @@
-use crate::{def::*, log::*, model::*, util::*};
+use crate::{def::*, log::*, model::*, terminal::TermMode, util::*};
 use crossterm::event::{Event::*, KeyCode::*};
-use std::cmp::{max, min};
+use std::cmp::min;
 
 impl Editor {
     pub fn cur_up(&mut self) {
         Log::ep_s("　　　　　　　 c_u start");
         Log::ep("self.cur.y", &self.cur.y);
-        Log::ep("self.disp_row_posi", &self.disp_row_posi);
         if self.cur.y > 0 {
             self.cur.y -= 1;
             self.cur_updown_com();
@@ -27,30 +26,36 @@ impl Editor {
 
     pub fn cur_updown_com(&mut self) {
         if self.updown_x == 0 {
-            self.updown_x = self.cur.disp_x;
+            self.updown_x = if self.mode == TermMode::Normal { self.cur.disp_x - self.rnw - Editor::RNW_MARGIN } else { self.cur.disp_x };
         }
-        // Left, Rightの場合は設定しない
+        // Not set for Left and Right
         if self.evt == Key(Left.into()) || self.evt == Key(Right.into()) {
         } else {
-            let (cur_x, disp_x) = get_until_updown_x(&self.buf.char_vec_line(self.cur.y), self.updown_x - self.get_rnw());
-            self.cur.disp_x = disp_x + self.get_rnw();
-            self.cur.x = cur_x + self.get_rnw();
+            Log::ep("self.updown_x", &self.updown_x);
+
+            let (cur_x, disp_x) = get_until_updown_x(&self.buf.char_vec_line(self.cur.y), self.updown_x);
+
+            Log::ep("cur_x", &cur_x);
+            Log::ep("disp_x", &disp_x);
+
+            self.cur.disp_x = if self.mode == TermMode::Normal { disp_x + self.get_rnw() + Editor::RNW_MARGIN } else { disp_x };
+            self.cur.x = cur_x;
         }
     }
 
     pub fn cur_left(&mut self) {
         Log::ep_s("　　　　　　　  c_l start");
         // 0, 0の位置の場合
-        if self.cur.y == 0 && self.cur.x == self.get_rnw() {
+        if self.cur.y == 0 && self.cur.x == 0 {
             return;
         // 行頭の場合
-        } else if self.cur.x == self.get_rnw() {
+        } else if self.cur.x == 0 {
             self.cur_up();
             self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y));
         } else {
-            self.cur.x = max(self.cur.x - 1, self.get_rnw());
-            self.cur.disp_x -= get_char_width(self.buf.char(self.cur.y, self.cur.x - self.get_rnw()));
-            let c = self.buf.char(self.cur.y, self.cur.x - self.get_rnw());
+            self.cur.x = if self.cur.x == 0 { 0 } else { self.cur.x - 1 };
+            self.cur.disp_x -= get_char_width(self.buf.char(self.cur.y, self.cur.x));
+            let c = self.buf.char(self.cur.y, self.cur.x);
             if c == NEW_LINE_CR && (self.evt == SHIFT_LEFT || self.evt == LEFT) {
                 self.cur.disp_x -= 1;
                 self.cur.x -= 1;
@@ -64,12 +69,20 @@ impl Editor {
         Log::ep_s("　　　　　　　  c_r start");
 
         let mut is_end_of_line = false;
-        let c = self.buf.char(self.cur.y, self.cur.x - self.get_rnw());
+        let c = self.buf.char(self.cur.y, self.cur.x);
         if self.evt == RIGHT || self.evt == PASTE {
-            if is_line_end(c) {
-                is_end_of_line = true;
+            if self.mode == TermMode::Normal {
+                if is_line_end(c) {
+                    is_end_of_line = true;
+                }
+            } else {
+                let vec = self.buf.char_vec_line(self.cur.y);
+                let (cur_x, _) = get_row_width(&vec[..], false);
+                if self.cur.x == cur_x {
+                    is_end_of_line = true;
+                }
             }
-        } else if self.evt == SHIFT_RIGHT && self.cur.x == self.buf.len_line_chars(self.cur.y) + self.get_rnw() {
+        } else if self.evt == SHIFT_RIGHT && self.cur.x == self.buf.len_line_chars(self.cur.y) {
             is_end_of_line = true;
         }
 
@@ -79,17 +92,17 @@ impl Editor {
             if self.cur.y == self.buf.len_lines() - 1 {
                 return;
             } else {
-                self.updown_x = self.get_rnw();
-                self.cur.disp_x = self.get_rnw() + 1;
-                self.cur.x = self.get_rnw();
+                self.updown_x = if self.mode == TermMode::Normal { self.get_rnw() } else { 0 };
+                self.cur.disp_x = if self.mode == TermMode::Normal { self.get_rnw() + Editor::RNW_MARGIN } else { 0 };
+                self.cur.x = 0;
                 self.cur_down();
             }
         } else {
             if c == EOF_MARK {
                 return;
             }
-            self.cur.disp_x += get_char_width(self.buf.char(self.cur.y, self.cur.x - self.get_rnw()));
-            self.cur.x = min(self.cur.x + 1, self.buf.len_line_chars(self.cur.y) + self.get_rnw());
+            self.cur.disp_x += get_char_width(self.buf.char(self.cur.y, self.cur.x));
+            self.cur.x = min(self.cur.x + 1, self.buf.len_line_chars(self.cur.y));
             if self.evt == SHIFT_RIGHT && c == NEW_LINE_CR {
                 self.cur.disp_x += 1;
                 self.cur.x += 1;
@@ -101,24 +114,31 @@ impl Editor {
 
     pub fn enter(&mut self) {
         Log::ep_s("　　　　　　　  enter");
-        self.buf.insert_char(self.cur.y, self.cur.x - self.get_rnw(), NEW_LINE);
+        self.buf.insert_char(self.cur.y, self.cur.x, NEW_LINE);
         self.set_cur_target(self.cur.y + 1, 0);
-        self.d_range = DRange::new(self.cur.y - 1, 0, DrawType::After);
+        if self.is_enable_syntax_highlight {
+            self.d_range.draw_type = DrawType::All;
+        } else {
+            self.d_range = DRange::new(self.cur.y - 1, 0, DrawType::After);
+        }
         self.scroll();
         self.scroll_horizontal();
     }
 
     pub fn insert_char(&mut self, c: char) {
-        self.buf.insert_char(self.cur.y, self.cur.x - self.get_rnw(), c);
+        self.buf.insert_char(self.cur.y, self.cur.x, c);
         self.cur_right();
-        // TODO ファイル形式でTarget・After判定
-        self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
+        if self.is_enable_syntax_highlight {
+            self.d_range.draw_type = DrawType::All;
+        } else {
+            self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::After);
+        }
     }
 
     pub fn back_space(&mut self, ep: &mut EvtProc) {
         Log::ep_s("　　　　　　　  back_space");
         // beginning of the line
-        if self.cur.x == self.get_rnw() {
+        if self.cur.x == 0 {
             self.cur.y -= 1;
             self.d_range = DRange::new(self.cur.y, 0, DrawType::After);
             let (mut cur_x, _) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], true);
@@ -135,31 +155,38 @@ impl Editor {
             self.scroll_horizontal();
         } else {
             self.cur_left();
-            ep.str = self.buf.char(self.cur.y, self.cur.x - self.get_rnw()).to_string();
-            self.buf.remove_del_bs(EvtType::BS, self.cur.y, self.cur.x - self.get_rnw());
-            self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
+            ep.str = self.buf.char(self.cur.y, self.cur.x).to_string();
+            self.buf.remove_del_bs(EvtType::BS, self.cur.y, self.cur.x);
+            if self.is_enable_syntax_highlight {
+                self.d_range.draw_type = DrawType::All;
+            } else {
+                self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
+            }
         }
     }
 
     pub fn delete(&mut self, ep: &mut EvtProc) {
         Log::ep_s("　　　　　　　  delete");
-        let c = self.buf.char(self.cur.y, self.cur.x - self.get_rnw());
+        let c = self.buf.char(self.cur.y, self.cur.x);
         ep.str = if c == NEW_LINE_CR { format!("{}{}", c.to_string(), NEW_LINE) } else { c.to_string() };
-        self.buf.remove_del_bs(EvtType::Del, self.cur.y, self.cur.x - self.get_rnw());
+        self.buf.remove_del_bs(EvtType::Del, self.cur.y, self.cur.x);
         self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
 
         if is_line_end(c) {
-            self.set_cur_target(self.cur.y, self.cur.x - self.get_rnw());
+            self.set_cur_target(self.cur.y, self.cur.x);
             self.d_range.draw_type = DrawType::After;
             self.scroll();
             self.scroll_horizontal();
+        }
+        if self.is_enable_syntax_highlight {
+            self.d_range.draw_type = DrawType::All;
         }
     }
 
     pub fn home(&mut self) {
         Log::ep_s("　　　　　　　  home");
-        self.cur.x = self.get_rnw();
-        self.cur.disp_x = self.get_rnw() + 1;
+        self.cur.x = 0;
+        self.cur.disp_x = if self.mode == TermMode::Normal { self.get_rnw() + Editor::RNW_MARGIN } else { 0 };
         self.scroll_horizontal();
     }
 

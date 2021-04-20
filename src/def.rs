@@ -8,7 +8,8 @@ pub const NEW_LINE: char = '\n';
 pub const NEW_LINE_CR: char = '\r';
 pub const NEW_LINE_CRLF: &str = "\r\n";
 // mark to treat as char
-pub const NEW_LINE_MARK: char = '↓';
+pub const NEW_LINE_LF_MARK: char = '↓';
+pub const NEW_LINE_CRLF_MARK: char = '↵';
 pub const EOF_MARK: char = '▚';
 pub const EOF_STR: &str = "EOF";
 pub const MULTI_CLICK_MILLISECONDS: i64 = 500;
@@ -67,5 +68,5 @@ pub const KEY_SELECT: &'static str = "Shift + ↑↓←→ / Mouse";
 pub const KEY_RECORD_START: &'static str = "Shift + F1";
 pub const KEY_RECORD_STOP: &'static str = "Shift + F2";
 pub const KEY_HELP: &'static str = "F1";
-pub const KEY_HELP_DETAIL: &'static str = "F1 * 2";
-pub const HELP_DETAIL: &'static str = "detail";
+pub const KEY_MOUSE_SWITCH: &'static str = "F12";
+pub const HELP_DETAIL: &'static str = "Help detail";

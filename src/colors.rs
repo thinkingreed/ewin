@@ -62,22 +62,36 @@ impl Colors {
         return format!("{}{}", Colors::get_default_bg(), Colors::get_default_fg());
     }
     //
-    // sber
+    // HeaderBar
     //
-    pub fn get_sber_bg() -> String {
+    fn get_hbar_bg() -> String {
         return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
     }
-    pub fn get_sber_fg() -> String {
-        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.status_bar.fg);
+    
+    
+    fn get_hbar_fg() -> String {
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.header_bar.fg);
     }
-    pub fn get_sber_inversion_bg() -> String {
-        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.status_bar.fg);
+    pub fn get_hbar_fg_bg() -> String {
+        return format!("{}{}", Colors::get_hbar_fg(), Colors::get_hbar_bg());
     }
-    pub fn get_sber_inversion_fg_bg() -> String {
-        return format!("{}{}", Colors::get_sber_inversion_bg(), Colors::get_default_inversion_fg());
+    pub fn get_hbar_inversion_bg() -> String {
+        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.header_bar.fg);
+    }
+    pub fn get_hbar_inversion_fg_bg() -> String {
+        return format!("{}{}", Colors::get_hbar_inversion_bg(), Colors::get_default_inversion_fg());
     }
     //
-    // msg
+    // StatusBar
+    //
+    pub fn get_sbar_bg() -> String {
+        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
+    }
+    pub fn get_sbar_fg() -> String {
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.status_bar.fg);
+    }
+    //
+    // MsgBar
     //
     pub fn get_msg_highlight_fg() -> String {
         return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.msg.highlight_fg);

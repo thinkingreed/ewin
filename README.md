@@ -69,6 +69,8 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 |                | -r:Subfolder search,-H:File name display,-n:Line number display,-I: Binary file not applicable|             |
 | `Shift` + `F1` | Key record start or stop.Recording key operation.                                    |―            |
 | `Shift` + `F2` | Execution of the recorded key.                                                       |―            |
+| `Ctrl` + `t`   | Create new tab.                                                                      |―            |
+| `Ctrl` + `q`   | Change next tab.                                                                     |―            |
 
 
 - **Moving cursor**

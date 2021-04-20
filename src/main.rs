@@ -1,5 +1,5 @@
 use clap::{App, Arg};
-use crossterm::event::{Event::Mouse, EventStream, MouseEvent as M_Event, MouseEventKind as M_Kind};
+use crossterm::event::{Event::Mouse, EventStream, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use ewin::{_cfg::cfg::*, global::*, model::*, terminal::*};
 use futures::{future::FutureExt, select, StreamExt};
 use std::{
@@ -31,15 +31,15 @@ async fn main() {
 
     Terminal::init();
 
-    let args = Terminal::init_args(&file_path);
-    let err_str = Cfg::init(&args);
+    let err_str = Cfg::init();
     if !err_str.is_empty() {
         println!("{}", err_str);
     }
-    let mut term = Terminal::new();
 
+    let args = Terminal::init_args(&file_path);
     let out = stdout();
     let mut out = BufWriter::new(out.lock());
+    let mut term = Terminal::new();
     term.activate(&args, &mut out);
 
     let (tx, rx) = channel();
@@ -52,6 +52,7 @@ async fn main() {
             if let Some(Ok(event)) = reader.next().fuse().await {
                 match event {
                     Mouse(M_Event { kind: M_Kind::Moved, .. }) => continue,
+                    Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: _, row: _, .. }) => continue,
                     _ => {}
                 }
                 let job = Job { job_type: JobType::Event, job_evt: Some(JobEvent { evt: event }), ..Job::default() };
@@ -65,10 +66,13 @@ async fn main() {
             thread::sleep(time::Duration::from_millis(1000));
 
             if let Some(Ok(mut grep_info_vec)) = GREP_INFO_VEC.get().map(|vec| vec.try_lock()) {
-                let grep_info_vec_len = grep_info_vec.len() - 1;
-                if let Some(mut grep_info) = grep_info_vec.get_mut(grep_info_vec_len) {
+                if grep_info_vec.is_empty() {
+                    continue;
+                }
+
+                let grep_info_idx = grep_info_vec.len() - 1;
+                if let Some(mut grep_info) = grep_info_vec.get_mut(grep_info_idx) {
                     if grep_info.is_result && !grep_info.is_cancel && !(grep_info.is_stdout_end && grep_info.is_stderr_end) {
-                        // let mut child = EvtAct::get_grep_child(&"1".to_string(), &grep_info.search_folder, &"*.ttt".to_string());
                         let mut child = EvtAct::get_grep_child(&grep_info.search_str, &grep_info.search_folder, &grep_info.search_filenm);
 
                         let mut reader_stdout = FramedRead::new(child.stdout.take().unwrap(), LinesCodec::new());
@@ -79,7 +83,7 @@ async fn main() {
 
                             {
                                 if let Some(Ok(grep_cancel_vec)) = GREP_CANCEL_VEC.get().map(|vec| vec.try_lock()) {
-                                    let is_cancel = grep_cancel_vec[grep_info_vec_len];
+                                    let is_cancel = grep_cancel_vec[grep_info_idx];
                                     if is_cancel {
                                         drop(child);
                                         grep_info.is_cancel = true;
@@ -134,7 +138,6 @@ async fn main() {
         }
     }
     Terminal::exit();
-    // TODO
     exit(0);
 }
 
@@ -143,6 +146,7 @@ pub fn send_grep_job(grep_str: String, tx_grep: &mut Sender<Job>, grep_info: &Gr
         job_type: JobType::GrepResult,
         job_grep: Some(JobGrep {
             grep_str,
+            is_result: grep_info.is_result,
             is_cancel: grep_info.is_cancel,
             is_stdout_end: grep_info.is_stdout_end,
             is_stderr_end: grep_info.is_stderr_end,

@@ -59,12 +59,12 @@ impl PromptCont {
     pub fn end(&mut self) {
         self.cur.x = self.buf.len();
         let (_, width) = get_row_width(&self.buf[..], false);
-        self.cur.disp_x = width + 1;
+        self.cur.disp_x = width;
     }
 
     pub fn home(&mut self) {
         self.cur.x = 0;
-        self.cur.disp_x = 1;
+        self.cur.disp_x = 0;
     }
 
     pub fn operation(&mut self, key: KeyCode) {

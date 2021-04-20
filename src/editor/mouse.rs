@@ -11,8 +11,8 @@ impl Editor {
         let x = if x <= self.get_rnw() { self.get_rnw() + 1 } else { x };
         self.cur.y = y + self.offset_y;
         let (cur_x, width) = get_until_x(&self.buf.char_vec_line(y + self.offset_y), x + self.offset_x - self.get_rnw() - 1);
-        self.cur.x = cur_x + self.get_rnw();
-        self.cur.disp_x = width + self.get_rnw() + 1;
+        self.cur.x = cur_x;
+        self.cur.disp_x = width + self.get_rnw() + Editor::RNW_MARGIN;
 
         self.set_mouse_sel(is_mouse_left_down);
         self.scroll_horizontal();
@@ -39,13 +39,13 @@ impl Editor {
             match click_count {
                 1 => {
                     self.sel.clear();
-                    self.sel.set_s(self.cur.y, self.cur.x - self.get_rnw(), self.cur.disp_x);
-                    self.sel.set_e(self.cur.y, self.cur.x - self.get_rnw(), self.cur.disp_x);
+                    self.sel.set_s(self.cur.y, self.cur.x, self.cur.disp_x);
+                    self.sel.set_e(self.cur.y, self.cur.x, self.cur.disp_x);
                 }
                 2 => {
                     self.sel.ey = self.cur.y;
                     let row = &self.buf.char_vec_line(self.cur.y);
-                    let (sx, ex) = get_delim_x(&row, self.cur.x - self.get_rnw());
+                    let (sx, ex) = get_delim_x(&row, self.cur.x);
                     self.sel.sx = sx;
                     self.sel.ex = ex;
                     let (_, s_disp_x) = get_row_width(&row[..sx], false);
@@ -65,7 +65,7 @@ impl Editor {
                 _ => {}
             }
         } else {
-            self.sel.set_e(self.cur.y, self.cur.x - self.get_rnw(), self.cur.disp_x);
+            self.sel.set_e(self.cur.y, self.cur.x, self.cur.disp_x);
         }
     }
 }

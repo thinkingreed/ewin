@@ -6,32 +6,32 @@ impl EvtAct {
     pub fn move_row<T: Write>(out: &mut T, term: &mut Terminal) -> EvtActType {
         Log::ep_s("　　　　　　　　EvtAct.move_row");
 
-        match term.tabs[term.idx].editor.evt {
+        match term.curt().editor.evt {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {
-                    let str = term.tabs[term.idx].prom.cont_1.buf.iter().collect::<String>();
+                    let str = term.curt().prom.cont_1.buf.iter().collect::<String>();
                     if str.is_empty() {
-                        term.tabs[term.idx].mbar.set_err(&LANG.not_entered_row_number_to_move);
-                        term.tabs[term.idx].mbar.draw_only(out);
+                        term.curt().mbar.set_err(&LANG.not_entered_row_number_to_move);
+                        term.curt().mbar.draw_only(out);
                         return EvtActType::Hold;
                     }
                     let row_num: usize = str.parse().unwrap();
-                    if row_num > term.tabs[term.idx].editor.buf.len_lines() || row_num == 0 {
-                        term.tabs[term.idx].mbar.set_err(&LANG.number_within_current_number_of_rows);
-                        term.tabs[term.idx].mbar.draw_only(out);
+                    if row_num > term.curt().editor.buf.len_lines() || row_num == 0 {
+                        term.curt().mbar.set_err(&LANG.number_within_current_number_of_rows);
+                        term.curt().mbar.draw_only(out);
                         return EvtActType::Hold;
                     }
 
-                    term.tabs[term.idx].editor.cur.y = row_num - 1;
-                    term.tabs[term.idx].editor.cur.x = term.tabs[term.idx].editor.get_rnw();
-                    term.tabs[term.idx].editor.cur.disp_x = term.tabs[term.idx].editor.get_rnw() + 1;
+                    term.curt().editor.cur.y = row_num - 1;
+                    term.curt().editor.cur.x = 0;
+                    term.curt().editor.cur.disp_x = term.curt().editor.get_rnw() + Editor::RNW_MARGIN;
 
-                    term.tabs[term.idx].prom.clear();
-                    term.tabs[term.idx].state.clear();
-                    term.tabs[term.idx].mbar.clear();
-                    term.tabs[term.idx].editor.scroll_move_row();
-                    term.tabs[term.idx].editor.scroll_horizontal();
-                    term.tabs[term.idx].editor.d_range.draw_type = DrawType::All;
+                    term.curt().prom.clear();
+                    term.curt().state.clear();
+                    term.curt().mbar.clear();
+                    term.curt().editor.scroll_move_row();
+                    term.curt().editor.scroll_horizontal();
+                    term.curt().editor.d_range.draw_type = DrawType::All;
                     return EvtActType::DrawOnly;
                 }
                 _ => return EvtActType::Hold,
@@ -43,11 +43,11 @@ impl EvtAct {
 
 impl Prompt {
     pub fn move_row(term: &mut Terminal) {
-        term.tabs[term.idx].prom.is_move_line = true;
-        term.tabs[term.idx].prom.disp_row_num = 3;
-        let mut cont = PromptCont::new_edit(term.tabs[term.idx].prom.disp_row_posi as u16, PromptContPosi::First);
+        term.curt().state.is_move_line = true;
+        term.curt().prom.disp_row_num = 3;
+        let mut cont = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::First);
         cont.set_move_row();
-        term.tabs[term.idx].prom.cont_1 = cont;
+        term.curt().prom.cont_1 = cont;
     }
 }
 
