@@ -1,7 +1,7 @@
 use crate::{_cfg::*, colors::*, def::*, global::*, log::*};
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::{fs, fs::File, io::Write, sync::Mutex};
+use std::{env, fs, fs::File, io::Write, sync::Mutex};
 use syntect::{
     self,
     highlighting::{Theme, ThemeSet},
@@ -25,12 +25,17 @@ pub struct CfgGeneral {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgEditor {
     pub search: CfgSearch,
+    pub tab: CfgTab,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgSearch {
     pub case_sens: bool,
     pub regex: bool,
+}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CfgTab {
+    pub width: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

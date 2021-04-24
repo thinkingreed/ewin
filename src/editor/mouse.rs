@@ -8,18 +8,17 @@ impl Editor {
             return;
         }
         let y = y - self.disp_row_posi;
-        let x = if x <= self.get_rnw() { self.get_rnw() + 1 } else { x };
+        //  let x = if x <= self.get_rnw() { self.get_rnw() + Editor::RNW_MARGIN } else { x };
+        let x = x - self.get_rnw() - Editor::RNW_MARGIN;
         self.cur.y = y + self.offset_y;
-        let (cur_x, width) = get_until_x(&self.buf.char_vec_line(y + self.offset_y), x + self.offset_x - self.get_rnw() - 1);
+        let (cur_x, width) = get_until_x(&self.buf.char_vec_line(y + self.offset_y), x + self.offset_x);
         self.cur.x = cur_x;
-        self.cur.disp_x = width + self.get_rnw() + Editor::RNW_MARGIN;
+        self.cur.disp_x = width;
 
         self.set_mouse_sel(is_mouse_left_down);
         self.scroll_horizontal();
         if is_mouse_left_down {
             if self.sel_org.is_selected() {
-                // let sel_org = self.sel_org.get_range();
-                // self.d_range = DRange::new(sel_org.sy, sel_org.ey, DrawType::Target);
                 self.d_range.draw_type = DrawType::All;
             }
         // Drag
@@ -29,8 +28,6 @@ impl Editor {
                 self.d_range = DRange::new(sy, sy + 1, DrawType::Target);
             }
         }
-
-        Log::ep("self.history.mouse_click_vec", &self.history.mouse_click_vec);
     }
 
     pub fn set_mouse_sel(&mut self, is_mouse_left_down: bool) {
@@ -48,19 +45,19 @@ impl Editor {
                     let (sx, ex) = get_delim_x(&row, self.cur.x);
                     self.sel.sx = sx;
                     self.sel.ex = ex;
-                    let (_, s_disp_x) = get_row_width(&row[..sx], false);
-                    let (_, e_disp_x) = get_row_width(&row[..ex], false);
-                    self.sel.s_disp_x = s_disp_x + self.get_rnw() + 1;
-                    self.sel.e_disp_x = e_disp_x + self.get_rnw() + 1;
+                    let (_, s_disp_x) = get_row_width(&row[..sx], self.offset_disp_x, false);
+                    let (_, e_disp_x) = get_row_width(&row[..ex], self.offset_disp_x, false);
+                    self.sel.disp_x_s = s_disp_x;
+                    self.sel.disp_x_e = e_disp_x;
                 }
                 // One line
                 3 => {
                     self.sel.ey = self.cur.y;
-                    self.sel.sx = self.get_rnw();
-                    self.sel.s_disp_x = self.get_rnw() + 1;
-                    let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], true);
+                    self.sel.sx = 0;
+                    self.sel.disp_x_s = 0;
+                    let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], self.offset_disp_x, true);
                     self.sel.ex = cur_x;
-                    self.sel.e_disp_x = width + self.get_rnw() + 1;
+                    self.sel.disp_x_e = width;
                 }
                 _ => {}
             }

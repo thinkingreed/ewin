@@ -9,7 +9,7 @@ pub mod global {
     use std::{collections::BTreeSet, sync::Mutex};
 
     pub static LANG: Lazy<LangCfg> = Lazy::new(|| LangCfg::read_lang_cfg());
-    pub static ENV: Lazy<Env> = Lazy::new(|| get_env());
+    pub static ENV: Lazy<Env> = Lazy::new(|| get_env_platform());
     pub static CFG: OnceCell<Mutex<Cfg>> = OnceCell::new();
     pub static GREP_INFO_VEC: OnceCell<tokio::sync::Mutex<Vec<GrepInfo>>> = OnceCell::new();
     // Cancel is defined independently. Because it needs to be obtained when GREP_INFO_VEC is locked

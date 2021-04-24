@@ -1,6 +1,6 @@
 use crate::{colors::*, def::*, global::*, log::*, terminal::Terminal, util::*};
 use crossterm::{cursor::*, terminal::*};
-use std::io::Write;
+use std::{ffi::OsStr, io::Write, path::Path};
 use syntect::parsing::SyntaxReference;
 
 impl HeaderBar {
@@ -240,5 +240,15 @@ impl Default for HeaderFile {
             close_area: (0, 0),
             syntax_reference: None,
         }
+    }
+}
+
+impl HeaderFile {
+    pub fn new(filenm: String) -> Self {
+        return HeaderFile {
+            filenm: if filenm.is_empty() { LANG.new_file.clone() } else { filenm.clone() },
+            ext: Path::new(&filenm).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string(),
+            ..HeaderFile::default()
+        };
     }
 }

@@ -7,11 +7,13 @@ pub const COPY_END: &str = "COPY_END";
 pub const NEW_LINE: char = '\n';
 pub const NEW_LINE_CR: char = '\r';
 pub const NEW_LINE_CRLF: &str = "\r\n";
+pub const TAB: char = '\t';
 // mark to treat as char
 pub const NEW_LINE_LF_MARK: char = '↓';
 pub const NEW_LINE_CRLF_MARK: char = '↵';
 pub const EOF_MARK: char = '▚';
 pub const EOF_STR: &str = "EOF";
+pub const TAB_MARK: char = '^';
 pub const MULTI_CLICK_MILLISECONDS: i64 = 500;
 pub const DELIM_STR: &'static str = r#"!"\#$%&()*+-',./:;<=>?@[]^`{|}~"#;
 pub const HALF_SPACE: &'static str = " ";

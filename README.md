@@ -13,6 +13,7 @@ It provides basic features as a minimal text editor:
 - Support editing UTF-8 characters
 - Resizing terminal window supported. Screen size is responsible
 - Mouse support
+- Tab support
 
 ## Installation
 

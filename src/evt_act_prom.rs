@@ -22,7 +22,15 @@ impl EvtAct {
                 Key(KeyEvent { code, .. }) => match code {
                     Esc => {
                         if term.curt().state.grep_info.is_result {
-                            GREP_CANCEL_VEC.get().unwrap().try_lock().map(|mut vec| *vec.last_mut().unwrap() = true).unwrap();
+                            if (term.curt().state.grep_info.is_stdout_end && term.curt().state.grep_info.is_stderr_end) || term.curt().state.grep_info.is_cancel {
+                                if term.curt().state.is_search {
+                                    term.curt().prom.clear();
+                                    term.curt().state.is_search = false;
+                                    term.curt().editor.d_range.draw_type = DrawType::All;
+                                }
+                            } else {
+                                GREP_CANCEL_VEC.get().unwrap().try_lock().map(|mut vec| *vec.last_mut().unwrap() = true).unwrap();
+                            }
                         } else if term.curt().state.is_read_only {
                         } else {
                             term.curt().prom.clear();
@@ -142,13 +150,15 @@ impl EvtAct {
             }
         }
 
-        Log::ep("term.curt().state.is_read_only", &term.curt().state.is_read_only);
-
         // unable to edit
         if term.curt().state.grep_info.is_result || term.curt().state.is_read_only {
             Log::ep_s("unable to edit");
 
             match term.curt().editor.evt {
+                Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
+                    Char('f') => return EvtActType::Next,
+                    _ => return EvtActType::Hold,
+                },
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                     F(4) | Right | Left | Down | Up | Home | End => return EvtActType::Next,
                     _ => return EvtActType::Hold,
@@ -160,10 +170,12 @@ impl EvtAct {
                             return EvtActType::Hold;
                         }
                     }
-                    F(3) => {}
+                    F(3) | Esc => {}
                     _ => {
-                        if !term.curt().state.is_close_confirm == true {
-                            return EvtActType::Hold;
+                        if term.curt().state.grep_info.is_result && term.curt().state.is_search {
+                        } else if term.curt().state.is_close_confirm {
+                        } else {
+                            return EvtActType::DrawOnly;
                         }
                     }
                 },
@@ -188,7 +200,6 @@ impl EvtAct {
         } else if term.curt().state.is_move_line == true {
             return EvtAct::move_row(out, term);
         } else {
-            Log::ep_s("EvtProcess::NextEvtProcess");
             return EvtActType::Next;
         }
     }

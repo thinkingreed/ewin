@@ -11,7 +11,7 @@ impl Editor {
         if self.sel.is_selected() {
             Log::ep_s("exec_edit_proc is_selected_org");
             ep_org = EvtProc { evt_type: EvtType::Del, ..EvtProc::default() };
-            ep_org.cur_s = Cur { y: self.sel.sy, x: self.sel.sx, disp_x: self.sel.s_disp_x };
+            ep_org.cur_s = Cur { y: self.sel.sy, x: self.sel.sx, disp_x: self.sel.disp_x_s };
             ep_org.cur_e = self.cur;
             ep_org.str = self.buf.slice(self.sel.get_range());
             ep_org.sel = self.sel;

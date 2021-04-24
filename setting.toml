@@ -1,3 +1,5 @@
+[general.editor.tab]
+width = 4
 [general.editor.search]
 case_sens = true
 regex = false

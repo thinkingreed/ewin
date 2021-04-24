@@ -1,6 +1,6 @@
 use crate::{bar::headerbar::*, bar::msgbar::*, colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, tab::Tab, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
-use std::{ffi::OsStr, io::Write, path::PathBuf, process};
+use std::{ffi::OsStr, io::Write, path::*, process};
 use tokio::process::{Child, Command};
 
 impl EvtAct {
@@ -43,11 +43,12 @@ impl EvtAct {
 
         term.curt().mbar.msg = Msg::default();
         term.curt().mbar.set_readonly(&LANG.unable_to_edit);
+        term.curt().state.is_read_only = true;
 
         if term.curt().editor.grep_result_vec.is_empty() {
-            Prompt::set_grep_result_after_no_result(term);
+            Prompt::set_grep_no_result(term);
         } else {
-            Prompt::set_grep_result_after(term);
+            Prompt::set_grep_result(term);
         }
         term.curt().editor.buf.insert_end(&EOF_MARK.to_string());
         term.curt().editor.set_cur_default();
@@ -57,8 +58,9 @@ impl EvtAct {
         term.draw(out);
     }
 
+    #[cfg(target_os = "linux")]
     pub fn get_grep_child(search_str: &String, search_folder: &String, search_filenm: &String) -> Child {
-        Log::ep_s("　　　　　　　　exec_cmd");
+        Log::ep_s("　　　　　　　　get_grep_child linux");
         // -r:Subfolder search, -H:File name display, -n:Line number display,
         // -I:Binary file not applicable, -i:Ignore-case
         let mut cmd_option = "-rHnI".to_string();
@@ -86,6 +88,40 @@ impl EvtAct {
 
         return cmd;
     }
+    #[cfg(target_os = "windows")]
+    pub fn get_grep_child(search_str: &String, search_folder: &String, search_filenm: &String) -> Child {
+        Log::ep_s("　　　　　　　　get_grep_child windows");
+        // -r:Subfolder search, -H:File name display, -n:Line number display,
+        // -I:Binary file not applicable, -i:Ignore-case
+        let mut cmd_option = "-rHnI".to_string();
+        {
+            if !CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens {
+                cmd_option.push('i');
+            };
+        }
+        {
+            if !CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex {
+                cmd_option.push('F');
+            };
+        }
+
+        let path = Path::new(&search_folder);
+        path.push(&search_filenm);
+
+        let cmd = Command::new("sls")
+            //  .arg(cmd_option)
+            .arg(search_folder)
+            .arg("-Pattern")
+            .arg(path)
+            // folder
+            .kill_on_drop(true)
+            .stdout(process::Stdio::piped())
+            .stderr(process::Stdio::piped())
+            .spawn()
+            .unwrap();
+
+        return cmd;
+    }
 
     pub fn grep_result(term: &mut Terminal) -> EvtActType {
         Log::ep_s("　　　　　　　　grep_result");
@@ -104,19 +140,17 @@ impl EvtAct {
                 Enter => {
                     let grep_result = &term.tabs[term.idx].editor.grep_result_vec[term.tabs[term.idx].editor.cur.y];
                     Log::ep("grep_result", &grep_result);
+                    Log::ep("term.tabs[term.idx].editor.search", &term.tabs[term.idx].editor.search);
 
                     if grep_result.row_num != USIZE_UNDEFINED {
                         let mut tab_grep = Tab::new();
-                        tab_grep.editor.search.str = term.tabs[term.idx].editor.search.str.clone();
+                        tab_grep.editor.search.str = term.tabs[term.idx].state.grep_info.search_str.clone();
                         tab_grep.editor.search.row_num = grep_result.row_num - 1;
                         tab_grep.editor.evt = KEY_NULL;
                         tab_grep.editor.mode = term.mode;
 
                         term.idx = term.tabs.len();
-
-                        let mut h_file = HeaderFile::default();
-                        h_file.filenm = grep_result.filenm.clone();
-                        term.hbar.file_vec.push(h_file);
+                        term.hbar.file_vec.push(HeaderFile::new(grep_result.filenm.clone()));
 
                         tab_grep.open(&grep_result.filenm);
                         term.tabs.push(tab_grep);
@@ -136,6 +170,14 @@ impl EvtAct {
 }
 
 impl Prompt {
+    pub fn set_grep_working(term: &mut Terminal) {
+        term.curt().prom.disp_row_num = 2;
+        term.set_disp_size();
+        let mut cont = PromptCont::new_not_edit_type(term.curt().prom.disp_row_posi as u16);
+        cont.set_grep_working();
+        term.curt().prom.cont_1 = cont;
+    }
+
     pub fn set_grep_result(term: &mut Terminal) {
         term.curt().prom.disp_row_num = 2;
         term.set_disp_size();
@@ -143,25 +185,17 @@ impl Prompt {
         cont.set_grep_result();
         term.curt().prom.cont_1 = cont;
     }
-
-    pub fn set_grep_result_after(term: &mut Terminal) {
+    pub fn set_grep_no_result(term: &mut Terminal) {
         term.curt().prom.disp_row_num = 2;
         term.set_disp_size();
         let mut cont = PromptCont::new_not_edit_type(term.curt().prom.disp_row_posi as u16);
-        cont.set_grep_result_after();
-        term.curt().prom.cont_1 = cont;
-    }
-    pub fn set_grep_result_after_no_result(term: &mut Terminal) {
-        term.curt().prom.disp_row_num = 2;
-        term.set_disp_size();
-        let mut cont = PromptCont::new_not_edit_type(term.curt().prom.disp_row_posi as u16);
-        cont.set_grep_result_after_no_result();
+        cont.set_grep_no_result();
         term.curt().prom.cont_1 = cont;
     }
 }
 
 impl PromptCont {
-    pub fn set_grep_result(&mut self) {
+    pub fn set_grep_working(&mut self) {
         self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.long_time_to_search);
         self.key_desc = format!("{}{}:{}Esc", Colors::get_default_fg(), &LANG.cancel, Colors::get_msg_highlight_fg(),);
 
@@ -169,15 +203,15 @@ impl PromptCont {
         self.guide_row_posi = base_posi;
         self.key_desc_row_posi = base_posi + 1;
     }
-    pub fn set_grep_result_after(&mut self) {
+    pub fn set_grep_result(&mut self) {
         self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.show_search_result);
-        self.key_desc = format!("{}{}:{}Enter", Colors::get_default_fg(), &LANG.open_target_file, Colors::get_msg_highlight_fg(),);
+        self.key_desc = format!("{}{}:{}Enter  {}{}:{}Ctrl + f", Colors::get_default_fg(), &LANG.open_target_file, Colors::get_msg_highlight_fg(), Colors::get_default_fg(), &LANG.search, Colors::get_msg_highlight_fg(),);
 
         let base_posi = self.disp_row_posi - 1;
         self.guide_row_posi = base_posi;
         self.key_desc_row_posi = base_posi + 1;
     }
-    pub fn set_grep_result_after_no_result(&mut self) {
+    pub fn set_grep_no_result(&mut self) {
         self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.show_search_no_result);
         self.key_desc = format!("{}{}:{}Ctrl + w", Colors::get_default_fg(), &LANG.close, Colors::get_msg_highlight_fg(),);
 

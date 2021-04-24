@@ -103,7 +103,7 @@ impl PromptCont {
         let sel = self.sel.get_range();
         Log::ep("sel", &sel);
         self.buf.drain(sel.sx..sel.ex);
-        self.cur.disp_x = min(sel.s_disp_x, sel.e_disp_x);
+        self.cur.disp_x = min(sel.disp_x_s, sel.disp_x_e);
         self.cur.x = min(sel.sx, sel.ex);
     }
 

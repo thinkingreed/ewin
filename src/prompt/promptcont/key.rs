@@ -24,12 +24,12 @@ impl PromptCont {
     pub fn cur_left(&mut self) {
         if self.cur.x != 0 {
             self.cur.x = max(self.cur.x - 1, 0);
-            self.cur.disp_x -= get_cur_x_width(&self.buf, self.cur.x);
+            self.cur.disp_x -= get_char_width_not_tab(self.buf[self.cur.x]);
         }
     }
     pub fn cur_right(&mut self) {
         if self.cur.x < self.buf.len() {
-            self.cur.disp_x += get_cur_x_width(&self.buf, self.cur.x);
+            self.cur.disp_x += get_char_width_not_tab(self.buf[self.cur.x]);
             self.cur.x = min(self.cur.x + 1, self.buf.len());
         }
     }
@@ -51,14 +51,14 @@ impl PromptCont {
         } else {
             if self.cur.x > 0 {
                 self.cur.x -= 1;
-                self.cur.disp_x -= self.buf[self.cur.x].width().unwrap_or(0);
+                self.cur.disp_x -= get_char_width_not_tab(self.buf[self.cur.x]);
                 self.buf.remove(self.cur.x);
             }
         }
     }
     pub fn end(&mut self) {
         self.cur.x = self.buf.len();
-        let (_, width) = get_row_width(&self.buf[..], false);
+        let (_, width) = get_row_width(&self.buf[..], 0, false);
         self.cur.disp_x = width;
     }
 

@@ -12,7 +12,7 @@ impl PromptCont {
                 self.cur.disp_x = 0;
             }
             EvtType::ShiftEnd => {
-                let (cur_x, width) = get_row_width(&self.buf[..], false);
+                let (cur_x, width) = get_row_width(&self.buf[..], 0, false);
                 self.cur.x = cur_x;
                 self.cur.disp_x = width;
             }

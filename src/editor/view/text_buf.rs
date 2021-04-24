@@ -151,16 +151,18 @@ impl TextBuffer {
 
         if !cfg_search.regex {
             // normal
+            let mut next_head = 0;
             loop {
                 let mut is_end = true;
                 for (sx, ex) in SearchIter::from_rope_slice(&self.text.slice(head..end_idx), &search_pattern, &cfg_search).take(BATCH_SIZE) {
                     rtn_set.insert((sx + head, ex + head));
+                    next_head = ex + head;
                     is_end = false;
                 }
                 if is_end {
                     break;
                 }
-                head = rtn_set.iter().last().unwrap().1;
+                head = next_head;
             }
         } else {
             // regex

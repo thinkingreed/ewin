@@ -13,7 +13,7 @@ impl Editor {
             EvtType::ShiftDown => self.cur_down(),
             EvtType::ShiftHome => {
                 self.cur.x = 0;
-                self.cur.disp_x = self.get_rnw() + Editor::RNW_MARGIN;
+                self.cur.disp_x = 0;
             }
             EvtType::ShiftEnd => {
                 self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y));

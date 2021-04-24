@@ -1,12 +1,11 @@
 use clap::{App, Arg};
 use crossterm::event::{Event::Mouse, EventStream, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
-use ewin::{_cfg::cfg::*, global::*, model::*, terminal::*};
+use ewin::{_cfg::cfg::*, global::*, log::*, model::*, terminal::*};
 use futures::{future::FutureExt, select, StreamExt};
 use std::{
     ffi::OsStr,
     io::{stdout, BufWriter},
     panic,
-    process::*,
     sync::mpsc::*,
     thread, time,
 };
@@ -24,7 +23,8 @@ async fn main() {
     let default_hook = panic::take_hook();
     panic::set_hook(Box::new(move |e| {
         eprintln!("{}", e);
-        Terminal::exit();
+        Log::ep_tmp("Unexpected panic", e);
+        Terminal::finalize();
         // Set hook to log crash reason
         default_hook(e);
     }));
@@ -80,7 +80,6 @@ async fn main() {
                         loop {
                             // Sleep to receive key event
                             thread::sleep(time::Duration::from_millis(10));
-
                             {
                                 if let Some(Ok(grep_cancel_vec)) = GREP_CANCEL_VEC.get().map(|vec| vec.try_lock()) {
                                     let is_cancel = grep_cancel_vec[grep_info_idx];
@@ -137,8 +136,8 @@ async fn main() {
             JobType::GrepResult => EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap()),
         }
     }
+    Terminal::finalize();
     Terminal::exit();
-    exit(0);
 }
 
 pub fn send_grep_job(grep_str: String, tx_grep: &mut Sender<Job>, grep_info: &GrepInfo) {

@@ -104,7 +104,7 @@ impl Prompt {
     }
 
     pub fn cursor_down(&mut self, tab_state: &TabState) {
-        Log::ep_s("◆　cursor_down");
+        Log::ep_s("　cursor_down");
         if tab_state.is_replace {
             if self.buf_posi == PromptContPosi::First {
                 self.buf_posi = PromptContPosi::Second;
@@ -142,7 +142,7 @@ impl Prompt {
 
     pub fn set_cur(cont_org: &PromptCont, cont: &mut PromptCont) {
         cont.updown_x = cont_org.cur.disp_x;
-        let (cur_x, width) = get_until_updown_x(&cont.buf, cont.updown_x);
+        let (cur_x, width) = get_until_x(&cont.buf, cont.updown_x);
         cont.cur.x = cur_x;
         cont.cur.disp_x = width;
     }

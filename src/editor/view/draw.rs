@@ -8,7 +8,7 @@ impl Editor {
         Log::ep_s("draw");
 
         let mut str_vec: Vec<String> = vec![];
-        let (mut y, mut x) = (0, 0);
+        let (mut y, mut x_width) = (0, 0);
 
         let d_range = self.d_range.get_range();
 
@@ -35,6 +35,10 @@ impl Editor {
             DrawType::ScrollUp => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, (self.disp_row_posi) as u16), Clear(ClearType::CurrentLine))),
         }
 
+        let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
+
+        Log::ep("self.offset_disp_x", &self.offset_disp_x);
+
         for i in self.draw.sy..=self.draw.ey {
             self.set_row_num(i, &mut str_vec, term_mode);
             let row_cell = &self.draw.cells[i];
@@ -44,33 +48,44 @@ impl Editor {
                 cell.draw_style(&mut str_vec, x_idx == 0 && self.offset_x > 0);
                 let c = cell.c;
 
-                let mut width = c.width().unwrap_or(0);
-                if c == NEW_LINE {
-                    width = 1;
-                }
-                let x_w_l = x + width + self.get_rnw() + Editor::RNW_MARGIN;
+                // Log::ep("ccc", &c);
+
+                let tab_width = if c == TAB { cfg_tab_width - ((x_width + self.offset_disp_x) % cfg_tab_width) } else { 0 };
+
+                //  Log::ep("tab_width ", &tab_width);
+
+                let width = match c {
+                    TAB => tab_width,
+                    NEW_LINE => 1,
+                    _ => c.width().unwrap_or(0),
+                };
+                //  Log::ep("width ", &width);
+
+                let x_w_l = x_width + width + self.get_rnw() + Editor::RNW_MARGIN;
                 if x_w_l > self.disp_col_num {
                     break;
                 }
-                x += width;
+                x_width += width;
 
                 if term_mode == TermMode::Normal {
                     match c {
                         EOF_MARK => Colors::set_eof(&mut str_vec),
                         NEW_LINE => str_vec.push(if c_org == NEW_LINE_CR { NEW_LINE_CRLF_MARK.to_string() } else { NEW_LINE_LF_MARK.to_string() }),
                         NEW_LINE_CR => {}
+                        TAB => str_vec.push(format!("{}{}", TAB_MARK, " ".repeat(tab_width - 1))),
                         _ => str_vec.push(c.to_string()),
                     }
                 } else {
                     match c {
                         EOF_MARK | NEW_LINE | NEW_LINE_CR => {}
+                        TAB => str_vec.push(" ".repeat(tab_width)),
                         _ => str_vec.push(c.to_string()),
                     }
                 }
                 c_org = c;
             }
             y += 1;
-            x = 0;
+            x_width = 0;
 
             if y >= self.disp_row_num {
                 break;

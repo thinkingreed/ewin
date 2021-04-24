@@ -1,4 +1,4 @@
-use crate::{def::*, log::*, model::*, terminal::TermMode, util::*};
+use crate::{def::*, global::CFG, log::*, model::*, terminal::TermMode, util::*};
 use crossterm::event::{Event::*, KeyCode::*};
 use std::cmp::min;
 
@@ -26,19 +26,19 @@ impl Editor {
 
     pub fn cur_updown_com(&mut self) {
         if self.updown_x == 0 {
-            self.updown_x = if self.mode == TermMode::Normal { self.cur.disp_x - self.rnw - Editor::RNW_MARGIN } else { self.cur.disp_x };
+            self.updown_x = self.cur.disp_x;
         }
         // Not set for Left and Right
         if self.evt == Key(Left.into()) || self.evt == Key(Right.into()) {
         } else {
             Log::ep("self.updown_x", &self.updown_x);
 
-            let (cur_x, disp_x) = get_until_updown_x(&self.buf.char_vec_line(self.cur.y), self.updown_x);
+            let (cur_x, disp_x) = get_until_x(&self.buf.char_vec_line(self.cur.y), self.updown_x);
 
             Log::ep("cur_x", &cur_x);
             Log::ep("disp_x", &disp_x);
 
-            self.cur.disp_x = if self.mode == TermMode::Normal { disp_x + self.get_rnw() + Editor::RNW_MARGIN } else { disp_x };
+            self.cur.disp_x = disp_x;
             self.cur.x = cur_x;
         }
     }
@@ -53,20 +53,32 @@ impl Editor {
             self.cur_up();
             self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y));
         } else {
-            self.cur.x = if self.cur.x == 0 { 0 } else { self.cur.x - 1 };
-            self.cur.disp_x -= get_char_width(self.buf.char(self.cur.y, self.cur.x));
-            let c = self.buf.char(self.cur.y, self.cur.x);
-            if c == NEW_LINE_CR && (self.evt == SHIFT_LEFT || self.evt == LEFT) {
-                self.cur.disp_x -= 1;
+            let c = self.buf.char(self.cur.y, self.cur.x - 1);
+            Log::ep("ccc", &c);
+
+            if c == TAB {
+                let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
+                let (_, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[0..self.cur.x - 1], self.offset_disp_x, false);
+                self.cur.disp_x -= cfg_tab_width - width % cfg_tab_width;
                 self.cur.x -= 1;
+            } else {
+                self.cur.x -= 1;
+                self.cur.disp_x -= get_char_width_not_tab(c);
+                if c == NEW_LINE_CR && (self.evt == SHIFT_LEFT || self.evt == LEFT) {
+                    self.cur.disp_x -= 1;
+                    self.cur.x -= 1;
+                }
             }
         }
         self.scroll();
         self.scroll_horizontal();
     }
 
+    pub fn get_tab_pre_width(&mut self) {}
+
     pub fn cur_right(&mut self) {
         Log::ep_s("　　　　　　　  c_r start");
+        Log::ep("self.cur.x", &self.cur.x);
 
         let mut is_end_of_line = false;
         let c = self.buf.char(self.cur.y, self.cur.x);
@@ -77,13 +89,17 @@ impl Editor {
                 }
             } else {
                 let vec = self.buf.char_vec_line(self.cur.y);
-                let (cur_x, _) = get_row_width(&vec[..], false);
+                let (cur_x, _) = get_row_width(&vec[..], self.offset_disp_x, false);
                 if self.cur.x == cur_x {
                     is_end_of_line = true;
                 }
             }
-        } else if self.evt == SHIFT_RIGHT && self.cur.x == self.buf.len_line_chars(self.cur.y) {
-            is_end_of_line = true;
+        } else if self.evt == SHIFT_RIGHT {
+            let len_line_chars = self.buf.len_line_chars(self.cur.y);
+            let x = if c == NEW_LINE_CR { len_line_chars - 1 } else { len_line_chars };
+            if self.cur.x == x {
+                is_end_of_line = true;
+            }
         }
 
         // End of line
@@ -92,8 +108,8 @@ impl Editor {
             if self.cur.y == self.buf.len_lines() - 1 {
                 return;
             } else {
-                self.updown_x = if self.mode == TermMode::Normal { self.get_rnw() } else { 0 };
-                self.cur.disp_x = if self.mode == TermMode::Normal { self.get_rnw() + Editor::RNW_MARGIN } else { 0 };
+                self.updown_x = 0;
+                self.cur.disp_x = 0;
                 self.cur.x = 0;
                 self.cur_down();
             }
@@ -101,11 +117,23 @@ impl Editor {
             if c == EOF_MARK {
                 return;
             }
-            self.cur.disp_x += get_char_width(self.buf.char(self.cur.y, self.cur.x));
-            self.cur.x = min(self.cur.x + 1, self.buf.len_line_chars(self.cur.y));
-            if self.evt == SHIFT_RIGHT && c == NEW_LINE_CR {
-                self.cur.disp_x += 1;
+            Log::ep("ccc", &c);
+            Log::ep("self.cur.x", &self.cur.x);
+
+            if c == TAB {
+                let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
+                Log::ep("self.cur.disp_x", &self.cur.disp_x);
+                let tab_width = cfg_tab_width - (self.cur.disp_x % cfg_tab_width);
+                Log::ep("tab_width", &tab_width);
+                self.cur.disp_x += tab_width;
                 self.cur.x += 1;
+            } else {
+                self.cur.disp_x += get_char_width_not_tab(c);
+                self.cur.x = min(self.cur.x + 1, self.buf.len_line_chars(self.cur.y));
+                if self.evt == SHIFT_RIGHT && c == NEW_LINE_CR {
+                    self.cur.disp_x += 1;
+                    self.cur.x += 1;
+                }
             }
         }
         self.scroll();
@@ -141,7 +169,7 @@ impl Editor {
         if self.cur.x == 0 {
             self.cur.y -= 1;
             self.d_range = DRange::new(self.cur.y, 0, DrawType::After);
-            let (mut cur_x, _) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], true);
+            let (mut cur_x, _) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], self.offset_disp_x, true);
 
             // ' ' is meaningless value
             let c = if cur_x > 0 { self.buf.char(self.cur.y, cur_x - 1) } else { ' ' };
@@ -186,7 +214,7 @@ impl Editor {
     pub fn home(&mut self) {
         Log::ep_s("　　　　　　　  home");
         self.cur.x = 0;
-        self.cur.disp_x = if self.mode == TermMode::Normal { self.get_rnw() + Editor::RNW_MARGIN } else { 0 };
+        self.cur.disp_x = 0;
         self.scroll_horizontal();
     }
 

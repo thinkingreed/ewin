@@ -21,6 +21,7 @@ use std::{
     ffi::OsStr,
     io::{stdout, Write},
     path::Path,
+    process::exit,
 };
 
 impl Terminal {
@@ -48,25 +49,27 @@ impl Terminal {
         if d_range.draw_type != DrawType::Not {
             StatusBar::draw(&mut str_vec, &mut self.tabs[self.idx])
         }
-        Terminal::draw_cur(&mut str_vec, &mut self.tabs[self.idx]);
+        Terminal::draw_cur(&mut str_vec, &mut self.tabs[self.idx], self.mode);
 
         Log::ep("cur", &self.curt().editor.cur);
         Log::ep("offset_x", &self.curt().editor.offset_x);
         Log::ep("offset_disp_x", &self.curt().editor.offset_disp_x);
         Log::ep("offset_y", &self.curt().editor.offset_y);
         Log::ep("tab.state", &self.curt().state);
+        // Log::ep("", &self.curt().editor.sel);
 
         let _ = out.write(&str_vec.concat().as_bytes());
         out.flush().unwrap();
     }
 
-    pub fn draw_cur(str_vec: &mut Vec<String>, tab: &mut Tab) {
+    pub fn draw_cur(str_vec: &mut Vec<String>, tab: &mut Tab, term_mode: TermMode) {
         Log::ep_s("　　　　　　　set_cur_str");
 
         if tab.state.is_save_new_file || tab.state.is_search || tab.state.is_replace || tab.state.grep_info.is_grep || tab.state.is_move_line {
             tab.prom.draw_cur(str_vec);
         } else {
-            str_vec.push(MoveTo((tab.editor.cur.disp_x - tab.editor.offset_disp_x) as u16, (tab.editor.cur.y - tab.editor.offset_y + tab.editor.disp_row_posi) as u16).to_string());
+            let rnw_rnwmargin = if term_mode == TermMode::Normal { tab.editor.get_rnw() + Editor::RNW_MARGIN } else { 0 };
+            str_vec.push(MoveTo((tab.editor.cur.disp_x - tab.editor.offset_disp_x + rnw_rnwmargin) as u16, (tab.editor.cur.y - tab.editor.offset_y + tab.editor.disp_row_posi) as u16).to_string());
         }
     }
 
@@ -131,14 +134,6 @@ impl Terminal {
         */
     }
 
-    pub fn init_draw<T: Write>(&mut self, out: &mut T, tab: &mut Tab) {
-        tab.prom.clear();
-        tab.state.clear();
-        tab.mbar.clear();
-        tab.editor.d_range.draw_type = DrawType::All;
-        self.draw(out);
-    }
-
     pub fn show_cur() {
         execute!(stdout(), Show).unwrap();
     }
@@ -149,9 +144,12 @@ impl Terminal {
         enable_raw_mode().unwrap();
         execute!(stdout(), EnterAlternateScreen, EnableMouseCapture).unwrap();
     }
-    pub fn exit() {
+    pub fn finalize() {
         disable_raw_mode().unwrap();
         execute!(stdout(), LeaveAlternateScreen, DisableMouseCapture, ResetColor, Show).unwrap();
+    }
+    pub fn exit() {
+        exit(0);
     }
 
     pub fn init_args(file_path: &String) -> Args {
@@ -169,10 +167,7 @@ impl Terminal {
         let _ = GREP_INFO_VEC.set(tokio::sync::Mutex::new(vec![GrepInfo::default()]));
         let _ = GREP_CANCEL_VEC.set(tokio::sync::Mutex::new(vec![]));
 
-        let mut h_file = HeaderFile::default();
-        h_file.ext = Path::new(&args.filenm).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string();
-        h_file.filenm = if args.filenm.is_empty() { LANG.new_file.clone() } else { args.filenm.clone() };
-        self.hbar.file_vec.push(h_file);
+        self.hbar.file_vec.push(HeaderFile::new(args.filenm.clone()));
 
         self.curt().open(&args.filenm);
         self.draw(out);
@@ -181,9 +176,7 @@ impl Terminal {
     pub fn add_tab(&mut self, tab: Tab, filenm: &String) {
         self.idx = self.tabs.len();
 
-        let mut h_file = HeaderFile::default();
-        h_file.filenm = filenm.clone();
-        self.hbar.file_vec.push(h_file);
+        self.hbar.file_vec.push(HeaderFile::new(filenm.clone()));
         self.hbar.disp_base_idx = USIZE_UNDEFINED;
 
         HeaderBar::set_header_filenm(self);
@@ -211,11 +204,7 @@ impl Terminal {
         match self.mode {
             TermMode::Normal => {
                 for tab in self.tabs.iter_mut() {
-                    let rnw = tab.editor.get_rnw();
                     tab.editor.rnw = 0;
-                    // tab.editor.cur.x -= rnw;
-                    tab.editor.cur.disp_x -= rnw + Editor::RNW_MARGIN;
-                    // tab.editor.offset_disp_x -= if tab.editor.offset_disp_x >=rnw + Editor::RNW_MARGIN {rnw + Editor::RNW_MARGIN} rnw + Editor::RNW_MARGIN;
                     tab.editor.mode = TermMode::Mouse;
                 }
                 self.mode = TermMode::Mouse;
@@ -224,9 +213,6 @@ impl Terminal {
             TermMode::Mouse => {
                 for tab in self.tabs.iter_mut() {
                     tab.editor.rnw = tab.editor.buf.len_lines().to_string().len();
-                    // tab.editor.cur.x += tab.editor.rnw;
-                    tab.editor.cur.disp_x += tab.editor.rnw + Editor::RNW_MARGIN;
-                    // tab.editor.offset_disp_x += tab.editor.rnw + Editor::RNW_MARGIN;
                     tab.editor.mode = TermMode::Normal;
                 }
                 self.mode = TermMode::Normal;
@@ -243,11 +229,10 @@ impl Terminal {
         new_tab.editor.buf.text.insert_char(new_tab.editor.buf.text.len_chars(), EOF_MARK);
         new_tab.editor.d_range.draw_type = DrawType::All;
 
-        let dt: DateTime<Local> = Local::now();
+        //  let dt: DateTime<Local> = Local::now();
+        // self.add_tab(new_tab, &dt.format("%M:%S").to_string());
 
-        // term.add_tab(new_tab, &LANG.new_file);
-
-        self.add_tab(new_tab, &dt.format("%M:%S").to_string());
+        self.add_tab(new_tab, &LANG.new_file);
     }
 
     pub fn next_tab(&mut self) {

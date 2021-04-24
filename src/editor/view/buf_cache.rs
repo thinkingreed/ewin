@@ -1,5 +1,5 @@
 extern crate ropey;
-use crate::{_cfg::cfg::Cfg, def::*, editor::view::char_style::*, global::*, log::*, model::*};
+use crate::{_cfg::cfg::Cfg, def::*, editor::view::char_style::*, global::*, log::*, model::*, util::*};
 use std::cmp::min;
 use syntect::highlighting::{HighlightIterator, HighlightState, Highlighter, Style};
 use syntect::parsing::{ParseState, ScopeStack};
@@ -94,7 +94,11 @@ impl Editor {
             let mut style = CharStyle::from_syntect_style(cfg, style);
 
             for c in string.chars() {
-                width += if c == NEW_LINE || c == NEW_LINE_CR { 1 } else { c.width().unwrap_or(0) };
+                width += match c {
+                    NEW_LINE | NEW_LINE_CR => 1,
+                    TAB => get_char_width_exec(&c, width, cfg.general.editor.tab.width),
+                    _ => c.width().unwrap_or(0),
+                };
                 self.set_style(cfg, c, width, y, x, &mut style, &mut style_org, &mut style_type_org, sel_ranges, &mut cells);
                 x += 1;
             }
@@ -115,8 +119,13 @@ impl Editor {
         row.copy_from_slice(&row_vec[sx..ex]);
 
         for c in row {
-            width += if c == NEW_LINE || c == NEW_LINE_CR { 1 } else { c.width().unwrap_or(0) };
-            self.set_style(cfg, c, width, y, x, &CharStyle::normal(cfg), &mut style_org, &mut style_type_org, sel_ranges, &mut cells);
+            width += match c {
+                NEW_LINE | NEW_LINE_CR => 1,
+                TAB => get_char_width_exec(&c, width, cfg.general.editor.tab.width),
+                _ => c.width().unwrap_or(0),
+            };
+            let offset_x = if y == self.cur.y { self.offset_x } else { 0 };
+            self.set_style(cfg, c, width, y, offset_x + x, &CharStyle::normal(cfg), &mut style_org, &mut style_type_org, sel_ranges, &mut cells);
             x += 1;
         }
         self.draw.cells[y] = cells;
@@ -124,7 +133,7 @@ impl Editor {
 
     fn set_style(&mut self, cfg: &Cfg, c: char, width: usize, y: usize, x: usize, style: &CharStyle, style_org: &mut CharStyle, style_type_org: &mut CharStyleType, sel_ranges: SelRange, regions: &mut Vec<Cell>) {
         let from_style = self.draw.get_from_style(cfg, x, &style, &style_org, style_type_org);
-        let style_type = self.draw.ctrl_style_type(c, width, &sel_ranges, &self.search.ranges, self.get_rnw(), y, x);
+        let style_type = self.draw.ctrl_style_type(c, width, &sel_ranges, &self.search.ranges, y, x);
 
         let to_style = match style_type {
             CharStyleType::Select => CharStyle::selected(&cfg),
@@ -144,15 +153,13 @@ impl Editor {
 }
 
 impl Draw {
-    pub fn ctrl_style_type(&self, c: char, width: usize, sel_range: &SelRange, search_ranges: &Vec<SearchRange>, rnw: usize, y: usize, x: usize) -> CharStyleType {
+    pub fn ctrl_style_type(&self, c: char, width: usize, sel_range: &SelRange, search_ranges: &Vec<SearchRange>, y: usize, x: usize) -> CharStyleType {
         if sel_range.is_selected() && sel_range.sy <= y && y <= sel_range.ey {
-            let disp_x = width + rnw;
-
             // Lines with the same start and end
             // Start line
             // End line
             // Intermediate line
-            if (sel_range.sy == sel_range.ey && sel_range.s_disp_x <= disp_x && disp_x < sel_range.e_disp_x) || (sel_range.sy == y && sel_range.ey != y && sel_range.s_disp_x <= disp_x) || (sel_range.ey == y && sel_range.sy != y && disp_x < sel_range.e_disp_x) || (sel_range.sy < y && y < sel_range.ey) {
+            if (sel_range.sy == sel_range.ey && sel_range.disp_x_s < width && width <= sel_range.disp_x_e) || (sel_range.sy == y && sel_range.ey != y && sel_range.disp_x_s <= width) || (sel_range.ey == y && sel_range.sy != y && width < sel_range.disp_x_e) || (sel_range.sy < y && y < sel_range.ey) {
                 return CharStyleType::Select;
             }
         }
@@ -163,7 +170,10 @@ impl Draw {
                 break;
             }
         }
-        return if c == NEW_LINE { CharStyleType::CtrlChar } else { CharStyleType::Nomal };
+        match c {
+            NEW_LINE | TAB => return CharStyleType::CtrlChar,
+            _ => return CharStyleType::Nomal,
+        }
     }
 
     pub fn get_from_style(&mut self, cfg: &Cfg, i: usize, style: &CharStyle, style_org: &CharStyle, style_type_org: &CharStyleType) -> CharStyle {

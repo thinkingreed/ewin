@@ -15,12 +15,10 @@ impl EvtAct {
                 if y != term.hbar.disp_row_posi {
                     return EvtActType::Hold;
                 }
-
                 for (idx, h_file) in term.hbar.file_vec.iter().enumerate() {
                     if !h_file.is_disp {
                         continue;
                     }
-
                     if h_file.close_area.0 <= x && x <= h_file.close_area.1 {
                         if term.hbar.file_vec[idx].is_changed {
                             term.idx = idx;

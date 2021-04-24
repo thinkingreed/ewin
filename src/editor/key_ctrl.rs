@@ -15,7 +15,7 @@ impl Editor {
         self.sel.clear();
         let s_disp_x = self.get_rnw() + 1;
         self.sel.set_s(0, 0, s_disp_x);
-        let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.buf.len_lines() - 1)[..], false);
+        let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.buf.len_lines() - 1)[..], self.offset_disp_x, false);
         // e_disp_x +1 for EOF
         let y = self.buf.len_lines() - 1;
         let e_disp_x = width + self.get_rnw() + 1;
@@ -116,13 +116,14 @@ impl Editor {
         self.scroll();
         self.scroll_horizontal();
         if self.updown_x == 0 {
-            self.updown_x = self.cur.disp_x - self.rnw - Editor::RNW_MARGIN;
+            self.updown_x = self.cur.disp_x;
         }
     }
 
     pub fn search_str(&mut self, is_asc: bool, is_incremental: bool) {
         Log::ep_s("　　　　　　　　search_str");
         Log::ep("self.search", &self.search);
+        Log::ep("self.search.ranges.len()", &self.search.ranges.len());
 
         if self.search.str.len() > 0 {
             if self.search.ranges.len() == 0 {
@@ -143,12 +144,7 @@ impl Editor {
 
             if !is_incremental {
                 let range = self.search.ranges[self.search.idx];
-
-                Log::ep("range", &range);
-
                 self.set_cur_target(range.y, range.sx);
-
-                Log::ep("self.cur", &self.cur);
             }
 
             self.scroll();
@@ -187,9 +183,6 @@ impl Editor {
         let cur_x = self.cur.x;
 
         if is_asc {
-            if self.search.idx == USIZE_UNDEFINED {
-                return 0;
-            }
             for (i, range) in self.search.ranges.iter().enumerate() {
                 if self.cur.y < range.y || (self.cur.y == range.y && cur_x < range.sx) {
                     return i;
@@ -268,13 +261,8 @@ impl Editor {
     pub fn set_grep_result(&mut self) {
         Log::ep_s("set_grep_result");
 
-        if self.mode == TermMode::Normal {
-            self.rnw = self.buf.len_lines().to_string().len();
-            self.cur = Cur { y: self.buf.len_lines() - 1, x: 0, disp_x: self.get_rnw() + Editor::RNW_MARGIN };
-        } else {
-            self.rnw = 0;
-            self.cur = Cur { y: self.buf.len_lines() - 1, x: 0, disp_x: 0 };
-        }
+        self.rnw = if self.mode == TermMode::Normal { self.buf.len_lines().to_string().len() } else { 0 };
+        self.cur = Cur { y: self.buf.len_lines() - 1, x: 0, disp_x: 0 };
 
         self.scroll();
 
@@ -389,8 +377,8 @@ impl Editor {
 impl Tab {
     pub fn save(term: &mut Terminal) -> bool {
         Log::ep_s("　　　　　　　  save");
-        if term.tabs[term.idx].prom.cont_1.buf.len() > 0 {
-            term.hbar.file_vec[term.idx].filenm = term.tabs[term.idx].prom.cont_1.buf.iter().collect::<String>();
+        if term.curt().prom.cont_1.buf.len() > 0 {
+            term.hbar.file_vec[term.idx].filenm = term.curt().prom.cont_1.buf.iter().collect::<String>();
         }
         let filenm = term.hbar.file_vec[term.idx].filenm.clone();
 
@@ -399,14 +387,14 @@ impl Tab {
             Prompt::save_new_file(term);
             return false;
         } else {
-            let result = term.tabs[term.idx].editor.buf.write_to(&filenm);
+            let result = term.curt().editor.buf.write_to(&filenm);
             match result {
                 Ok(()) => {
                     term.hbar.file_vec[term.idx].is_changed = false;
-                    term.tabs[term.idx].prom.clear();
-                    term.tabs[term.idx].mbar.clear();
-                    if !term.tabs[term.idx].state.is_close_confirm {
-                        term.tabs[term.idx].state.clear();
+                    term.curt().prom.clear();
+                    term.curt().mbar.clear();
+                    if !term.curt().state.is_close_confirm {
+                        term.curt().state.clear();
                     }
                     return true;
                 }

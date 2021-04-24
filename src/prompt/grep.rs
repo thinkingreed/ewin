@@ -34,6 +34,7 @@ impl EvtAct {
                         term.curt().mbar.clear();
                         term.curt().prom.clear();
                         term.curt().state.clear();
+                        term.curt().state.clear_grep_info();
 
                         let current_dir = env::current_dir().unwrap().display().to_string();
                         Log::ep_s(&current_dir);
@@ -73,7 +74,7 @@ impl EvtAct {
                         GREP_CANCEL_VEC.get().unwrap().try_lock().unwrap().resize_with(GREP_INFO_VEC.get().unwrap().try_lock().unwrap().len(), || false);
 
                         term.add_tab(tab_grep, &format!(r#"{} "{}""#, &LANG.grep, &search_str));
-                        Prompt::set_grep_result(term);
+                        Prompt::set_grep_working(term);
                         term.curt().editor.d_range.draw_type = DrawType::All;
 
                         return EvtActType::Next;
@@ -132,7 +133,7 @@ impl Prompt {
                 }
                 PromptContPosi::Third => {
                     self.cont_3.buf = self.get_tab_candidate(is_asc).chars().collect();
-                    let (cur_x, width) = get_row_width(&self.cont_3.buf[..], false);
+                    let (cur_x, width) = get_row_width(&self.cont_3.buf[..], 0, false);
                     self.cont_3.cur.x = cur_x;
                     self.cont_3.cur.disp_x = width;
                 }

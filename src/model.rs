@@ -199,12 +199,12 @@ pub struct SelRange {
     pub sx: usize,
     pub ex: usize,
     // disp_x 1-indexed(line_num_width含む) disp_xに合せる為
-    pub s_disp_x: usize,
-    pub e_disp_x: usize,
+    pub disp_x_s: usize,
+    pub disp_x_e: usize,
 }
 impl Default for SelRange {
     fn default() -> Self {
-        SelRange { sy: 0, ey: 0, sx: 0, ex: 0, s_disp_x: 0, e_disp_x: 0 }
+        SelRange { sy: 0, ey: 0, sx: 0, ex: 0, disp_x_s: 0, disp_x_e: 0 }
     }
 }
 
@@ -215,8 +215,8 @@ impl SelRange {
         self.ey = 0;
         self.sx = 0;
         self.ex = 0;
-        self.s_disp_x = 0;
-        self.e_disp_x = 0;
+        self.disp_x_s = 0;
+        self.disp_x_e = 0;
     }
 
     // For prompt buf
@@ -224,12 +224,12 @@ impl SelRange {
         //  Log::ep_s("SelRange.clear");
         self.sx = USIZE_UNDEFINED;
         self.ex = USIZE_UNDEFINED;
-        self.s_disp_x = USIZE_UNDEFINED;
-        self.e_disp_x = USIZE_UNDEFINED;
+        self.disp_x_s = USIZE_UNDEFINED;
+        self.disp_x_e = USIZE_UNDEFINED;
     }
 
     pub fn is_selected(&self) -> bool {
-        return !(self.sy == 0 && self.ey == 0 && self.s_disp_x == 0 && self.e_disp_x == 0);
+        return !(self.sy == 0 && self.ey == 0 && self.disp_x_s == 0 && self.disp_x_e == 0);
     }
 
     /// 開始位置 < 終了位置に変換
@@ -238,35 +238,35 @@ impl SelRange {
         let mut ey = self.ey;
         let mut sx = self.sx;
         let mut ex = self.ex;
-        let mut s_disp_x = self.s_disp_x;
-        let mut e_disp_x = self.e_disp_x;
+        let mut s_disp_x = self.disp_x_s;
+        let mut e_disp_x = self.disp_x_e;
         if sy > ey || (sy == ey && s_disp_x > e_disp_x) {
             sy = self.ey;
             ey = self.sy;
             sx = self.ex;
             ex = self.sx;
-            s_disp_x = self.e_disp_x;
-            e_disp_x = self.s_disp_x;
+            s_disp_x = self.disp_x_e;
+            e_disp_x = self.disp_x_s;
         }
         // 範囲選択が続く可能性がある為に新規構造体を返却
-        SelRange { sy: sy, ey: ey, sx: sx, ex: ex, s_disp_x: s_disp_x, e_disp_x: e_disp_x }
+        SelRange { sy: sy, ey: ey, sx: sx, ex: ex, disp_x_s: s_disp_x, disp_x_e: e_disp_x }
     }
 
     pub fn set_s(&mut self, y: usize, x: usize, disp_x: usize) {
         self.sy = y;
         self.sx = x;
-        self.s_disp_x = disp_x;
+        self.disp_x_s = disp_x;
     }
 
     pub fn set_e(&mut self, y: usize, x: usize, disp_x: usize) {
         self.ey = y;
         self.ex = x;
-        self.e_disp_x = disp_x;
+        self.disp_x_e = disp_x;
     }
 
     pub fn check_overlap(&mut self) {
         // selectio start position and cursor overlap
-        if self.sy == self.ey && self.s_disp_x == self.e_disp_x {
+        if self.sy == self.ey && self.disp_x_s == self.disp_x_e {
             self.clear();
         }
     }
@@ -280,7 +280,7 @@ impl SelRange {
         }
     }
     pub fn is_another_select(&mut self, sel_org: SelRange) -> bool {
-        if self.sy == sel_org.sy && self.s_disp_x == sel_org.s_disp_x {
+        if self.sy == sel_org.sy && self.disp_x_s == sel_org.disp_x_s {
             return false;
         }
         return true;
@@ -308,7 +308,7 @@ impl SelRange {
 
 impl fmt::Display for SelRange {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SelRange sy:{}, ey:{}, sx:{}, ex:{}, s_disp_x:{}, e_disp_x:{},", self.sy, self.ey, self.sx, self.ex, self.s_disp_x, self.e_disp_x)
+        write!(f, "SelRange sy:{}, ey:{}, sx:{}, ex:{}, s_disp_x:{}, e_disp_x:{},", self.sy, self.ey, self.sx, self.ex, self.disp_x_s, self.disp_x_e)
     }
 }
 
@@ -682,7 +682,7 @@ impl GrepInfo {
         self.is_grep = false;
         self.is_stdout_end = false;
         self.is_stderr_end = false;
-        self.is_result = false;
+        // self.is_result = false;
         self.search_str = String::new();
         self.search_folder = String::new();
         self.search_filenm = String::new();

@@ -25,6 +25,7 @@ impl EvtAct {
             Key(KeyEvent { code, .. }) => match code {
                 Char(_) | Delete | Backspace => {
                     EvtAct::exec_search_incremental(term);
+
                     return EvtActType::DrawOnly;
                 }
                 F(3) => return EvtAct::exec_search_confirm(term, term.tabs[term.idx].prom.cont_1.buf.iter().collect::<String>()),
@@ -35,17 +36,18 @@ impl EvtAct {
     }
 
     pub fn exec_search_confirm(term: &mut Terminal, search_str: String) -> EvtActType {
-        let tab = term.tabs.get_mut(term.idx).unwrap();
         Log::ep_s("exec_search_confirm");
-        // let search_str = tab.prom.cont_1.buf.iter().collect::<String>();
+        let tab = term.tabs.get_mut(term.idx).unwrap();
+
         if search_str.len() == 0 {
             tab.mbar.set_err(&LANG.not_entered_search_str);
-            return EvtActType::Hold;
+            return EvtActType::DrawOnly;
         }
+
         let search_vec = tab.editor.get_search_ranges(&search_str.clone(), 0, tab.editor.buf.len_chars(), 0);
         if search_vec.len() == 0 {
             tab.mbar.set_err(&LANG.cannot_find_char_search_for);
-            return EvtActType::Hold;
+            return EvtActType::DrawOnly;
         } else {
             Log::ep_s("exec_search    !!!");
 
@@ -57,6 +59,7 @@ impl EvtAct {
             tab.editor.search.idx = USIZE_UNDEFINED;
 
             tab.prom.clear();
+            // tab.state.clear();
             tab.state.clear();
             tab.mbar.clear();
             tab.editor.d_range.draw_type = DrawType::All;

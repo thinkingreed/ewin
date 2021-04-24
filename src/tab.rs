@@ -47,6 +47,8 @@ impl TabState {
         self.is_replace = false;
         self.is_save_new_file = false;
         self.is_move_line = false;
+    }
+    pub fn clear_grep_info(&mut self) {
         self.grep_info.clear();
     }
 }
@@ -86,15 +88,17 @@ impl Tab {
                     self.editor.is_enable_syntax_highlight = true;
                 }
             } else {
-                Terminal::exit();
+                Terminal::finalize();
                 println!("{}", LANG.file_not_found.clone());
+                Terminal::exit();
             }
         } else {
             let curt_dir = env::current_dir().unwrap();
             let curt_dir = metadata(curt_dir).unwrap();
             if curt_dir.permissions().readonly() {
-                Terminal::exit();
+                Terminal::finalize();
                 println!("{}", LANG.no_write_permission.clone());
+                Terminal::exit();
             }
         }
         // read
@@ -106,13 +110,15 @@ impl Tab {
             }
             Err(err) => match err.kind() {
                 ErrorKind::PermissionDenied => {
-                    Terminal::exit();
+                    Terminal::finalize();
                     println!("{}", LANG.no_read_permission.clone());
+                    Terminal::exit();
                 }
                 ErrorKind::NotFound => self.editor.buf.text.insert_char(self.editor.buf.text.len_chars(), EOF_MARK),
                 _ => {
-                    Terminal::exit();
+                    Terminal::finalize();
                     println!("{} {:?}", LANG.file_opening_problem, err);
+                    Terminal::exit();
                 }
             },
         }

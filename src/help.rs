@@ -26,7 +26,7 @@ impl Help {
             if tab.editor.cur.y - tab.editor.offset_y > tab.editor.disp_row_num - 1 {
                 tab.editor.cur.y = tab.editor.offset_y + tab.editor.disp_row_num - 1;
                 tab.editor.cur.x = 0;
-                tab.editor.cur.disp_x = tab.editor.get_rnw() + Editor::RNW_MARGIN;
+                tab.editor.cur.disp_x = 0;
             }
         }
         tab.editor.d_range.draw_type = DrawType::All;

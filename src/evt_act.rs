@@ -33,6 +33,7 @@ impl EvtAct {
                         Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                             Char('w') => {
                                 if Prompt::close(term) == true {
+                                    Log::ep("Prompt::close(term) true", &true);
                                     return true;
                                 }
                             }
@@ -72,6 +73,7 @@ impl EvtAct {
                         },
                         Key(KeyEvent { code, .. }) => match code {
                             Char(c) => term.curt().editor.exec_edit_proc(EvtType::InsertChar, &c.to_string(), ""),
+                            Tab => term.curt().editor.exec_edit_proc(EvtType::InsertChar, &TAB.to_string(), ""),
                             Enter => term.curt().editor.exec_edit_proc(EvtType::Enter, "", ""),
                             Backspace => term.curt().editor.exec_edit_proc(EvtType::BS, "", ""),
                             Delete => term.curt().editor.exec_edit_proc(EvtType::Del, "", ""),
@@ -93,8 +95,8 @@ impl EvtAct {
 
                         Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => term.curt().editor.cur_up(),
                         Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => term.curt().editor.cur_down(),
-                        Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => term.curt().editor.ctrl_mouse((x + 1) as usize, *y as usize, true),
-                        Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => term.curt().editor.ctrl_mouse((x + 1) as usize, *y as usize, false),
+                        Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => term.curt().editor.ctrl_mouse(*x as usize, *y as usize, true),
+                        Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => term.curt().editor.ctrl_mouse(*x as usize, *y as usize, false),
 
                         _ => term.curt().mbar.set_err(&LANG.unsupported_operation),
                     }
@@ -139,6 +141,7 @@ impl EvtAct {
         Log::ep("evt_act check_prom", &evt_act);
 
         if evt_act == EvtActType::Hold && !term.curt().state.grep_info.is_result {
+            term.set_disp_size();
             term.curt().mbar.draw_only(out);
             let tab_state = term.curt().state.clone();
             term.curt().prom.draw_only(out, &tab_state);
@@ -203,11 +206,7 @@ impl EvtAct {
                     };
                 }
                 F(1) => tab.editor.d_range.draw_type = DrawType::All,
-                F(3) => {
-                    if tab.editor.search.idx == USIZE_UNDEFINED {
-                        tab.editor.d_range.draw_type = DrawType::All;
-                    }
-                }
+                F(3) => tab.editor.d_range.draw_type = DrawType::All,
                 _ => tab.editor.d_range.draw_type = DrawType::All,
             },
 

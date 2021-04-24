@@ -13,8 +13,7 @@ pub fn get_str_width(msg: &str) -> usize {
     }
     return width;
 }
-
-pub fn get_row_width(vec: &[char], is_ctrlchar_incl: bool) -> (usize, usize) {
+pub fn get_row_width(vec: &[char], offset_disp_x: usize, is_ctrlchar_incl: bool) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
 
     for c in vec {
@@ -25,21 +24,22 @@ pub fn get_row_width(vec: &[char], is_ctrlchar_incl: bool) -> (usize, usize) {
             }
             break;
         }
-        let c_len = c.width().unwrap_or(0);
+
+        let c_len = get_char_width(c, width + offset_disp_x);
         width += c_len;
         cur_x += 1;
     }
     return (cur_x, width);
 }
 
-/// Calculate disp_x and cursor_x by adding the width up to updown_x.
-pub fn get_until_updown_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
+/// Calculate disp_x and cursor_x by adding the widths up to x.
+pub fn get_until_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
     for c in buf {
-        if c == &EOF_MARK || c == &NEW_LINE || c == &NEW_LINE_CR {
+        if c == &NEW_LINE || c == &EOF_MARK || c == &NEW_LINE_CR {
             break;
         }
-        let c_len = c.width().unwrap_or(0);
+        let c_len = get_char_width(c, width);
         if width + c_len > x {
             break;
         } else {
@@ -50,76 +50,33 @@ pub fn get_until_updown_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
     return (cur_x, width);
 }
 
-/// Calculate disp_x and cursor_x by adding the widths up to x.
-pub fn get_until_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
-    let (mut cur_x, mut sum_width) = (0, 0);
-    for i in 0..=buf.len() {
-        if let Some(c) = buf.get(i) {
-            if c == &NEW_LINE || c == &EOF_MARK || c == &NEW_LINE_CR {
-                break;
-            }
-            let width = c.width().unwrap_or(0);
-            if sum_width + width > x {
-                break;
-            } else {
-                sum_width += width;
-                cur_x += 1;
-            }
-        }
-    }
-    return (cur_x, sum_width);
-}
-
-// Get the number of characters from the beginning of the string to the specified width.
-pub fn get_char_count(vec: &Vec<char>, width: usize) -> usize {
-    let (mut x, mut sum_width) = (0, 0);
-    for c in vec {
-        if width > sum_width {
-            sum_width += c.to_string().len();
-            x += 1;
-        } else {
-            break;
-        }
-    }
-    return x;
-}
-
-pub fn get_cur_x_width(buf: &Vec<char>, x: usize) -> usize {
-    if let Some(c) = buf.get(x) {
-        if c == &NEW_LINE {
-            return 1;
-        }
+// Everything including tab
+pub fn get_char_width(c: &char, width: usize) -> usize {
+    if c == &TAB {
+        let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
+        return get_char_width_exec(c, width, cfg_tab_width);
+    } else {
         return c.width().unwrap_or(0);
     }
-    return 1;
+}
+// Everything including tab
+pub fn get_char_width_exec(c: &char, width: usize, cfg_tab_width: usize) -> usize {
+    if c == &TAB {
+        return cfg_tab_width - width % cfg_tab_width;
+    } else {
+        return c.width().unwrap_or(0);
+    }
 }
 
-pub fn get_char_width(c: char) -> usize {
+pub fn get_char_width_not_tab(c: char) -> usize {
     if c == NEW_LINE {
         return 1;
     }
     return c.width().unwrap_or(0);
 }
 
-pub fn split_inclusive(target: &str, split_char: char) -> Vec<String> {
-    let mut vec: Vec<String> = vec![];
-    let mut string = String::new();
-
-    let chars: Vec<char> = target.chars().collect();
-    for (i, c) in chars.iter().enumerate() {
-        string.push(*c);
-        if *c == split_char {
-            vec.push(string.clone());
-            string.clear();
-        }
-        if i == chars.len() - 1 {
-            vec.push(string.clone());
-        }
-    }
-    return vec;
-}
 #[cfg(target_os = "linux")]
-pub fn get_env() -> Env {
+pub fn get_env_platform() -> Env {
     let child = Command::new("uname").arg("-r").stdout(Stdio::piped()).spawn().unwrap();
     let mut stdout = child.stdout.context("take stdout").unwrap();
     let mut buf = String::new();
@@ -132,8 +89,15 @@ pub fn get_env() -> Env {
     }
 }
 #[cfg(target_os = "windows")]
-pub fn get_env() -> Env {
+pub fn get_env_platform() -> Env {
     return Env::Windows;
+}
+pub fn get_env_tmp() -> String {
+    if *ENV == Env::Windows {
+        return "/var/tmp/ewin.log".to_string();
+    } else {
+        return "/var/tmp/ewin.log".to_string();
+    }
 }
 
 pub fn is_powershell_enable() -> bool {
@@ -149,6 +113,7 @@ pub fn is_powershell_enable() -> bool {
 }
 
 pub fn is_line_end(c: char) -> bool {
+    // LF, CR
     ['\u{000a}', '\u{000d}'].contains(&c)
 }
 

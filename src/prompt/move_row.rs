@@ -24,7 +24,7 @@ impl EvtAct {
 
                     term.curt().editor.cur.y = row_num - 1;
                     term.curt().editor.cur.x = 0;
-                    term.curt().editor.cur.disp_x = term.curt().editor.get_rnw() + Editor::RNW_MARGIN;
+                    term.curt().editor.cur.disp_x = 0;
 
                     term.curt().prom.clear();
                     term.curt().state.clear();
@@ -45,6 +45,7 @@ impl Prompt {
     pub fn move_row(term: &mut Terminal) {
         term.curt().state.is_move_line = true;
         term.curt().prom.disp_row_num = 3;
+        term.set_disp_size();
         let mut cont = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::First);
         cont.set_move_row();
         term.curt().prom.cont_1 = cont;
