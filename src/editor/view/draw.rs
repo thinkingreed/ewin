@@ -1,11 +1,11 @@
-use crate::{colors::*, def::*, global::*, log::*, model::*, terminal::*};
+use crate::{colors::*, def::*, global::*, log::*, model::*};
 use crossterm::{cursor::*, terminal::*};
 use std::io::Write;
 use unicode_width::UnicodeWidthChar;
 
 impl Editor {
     pub fn draw<T: Write>(&mut self, out: &mut T, term_mode: TermMode) {
-        Log::ep_s("draw");
+        Log::info_s("　　　　　　　Editor.draw");
 
         let mut str_vec: Vec<String> = vec![];
         let (mut y, mut x_width) = (0, 0);
@@ -37,8 +37,6 @@ impl Editor {
 
         let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
 
-        Log::ep("self.offset_disp_x", &self.offset_disp_x);
-
         for i in self.draw.sy..=self.draw.ey {
             self.set_row_num(i, &mut str_vec, term_mode);
             let row_cell = &self.draw.cells[i];
@@ -56,13 +54,11 @@ impl Editor {
 
                 let width = match c {
                     TAB => tab_width,
-                    NEW_LINE => 1,
+                    NEW_LINE_LF => 1,
                     _ => c.width().unwrap_or(0),
                 };
-                //  Log::ep("width ", &width);
 
-                let x_w_l = x_width + width + self.get_rnw() + Editor::RNW_MARGIN;
-                if x_w_l > self.disp_col_num {
+                if x_width + width > self.disp_col_num - self.get_rnw() - Editor::RNW_MARGIN {
                     break;
                 }
                 x_width += width;
@@ -70,14 +66,14 @@ impl Editor {
                 if term_mode == TermMode::Normal {
                     match c {
                         EOF_MARK => Colors::set_eof(&mut str_vec),
-                        NEW_LINE => str_vec.push(if c_org == NEW_LINE_CR { NEW_LINE_CRLF_MARK.to_string() } else { NEW_LINE_LF_MARK.to_string() }),
+                        NEW_LINE_LF => str_vec.push(if c_org == NEW_LINE_CR { NEW_LINE_CRLF_MARK.to_string() } else { NEW_LINE_LF_MARK.to_string() }),
                         NEW_LINE_CR => {}
                         TAB => str_vec.push(format!("{}{}", TAB_MARK, " ".repeat(tab_width - 1))),
                         _ => str_vec.push(c.to_string()),
                     }
                 } else {
                     match c {
-                        EOF_MARK | NEW_LINE | NEW_LINE_CR => {}
+                        EOF_MARK | NEW_LINE_LF | NEW_LINE_CR => {}
                         TAB => str_vec.push(" ".repeat(tab_width)),
                         _ => str_vec.push(c.to_string()),
                     }

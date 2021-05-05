@@ -1,11 +1,9 @@
-use crate::{colors::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::Terminal};
+use crate::{colors::*, global::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::Terminal};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 use std::sync::Mutex;
 
 impl EvtAct {
     pub fn replace(term: &mut Terminal) -> EvtActType {
-        Log::ep_s("Process.replace");
-
         match term.tabs[term.idx].editor.evt {
             Key(KeyEvent { code, .. }) => match code {
                 Enter => {

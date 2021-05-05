@@ -33,7 +33,7 @@ impl Help {
     }
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
-        Log::ep_s("　　　　　　　　Help.draw");
+        Log::info_s("　　　　　　　Help.draw");
 
         if self.mode == HelpMode::None {
             return;

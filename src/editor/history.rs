@@ -4,9 +4,6 @@ use crossterm::event::Event;
 
 impl History {
     pub fn regist_edit(&mut self, evt: Event, ep: &EvtProc) {
-        Log::ep_s("　　　　　　　History.regist ");
-        Log::ep("ep ", &ep);
-
         if evt == UNDO {
             if let Some(undo_ep) = self.pop_undo() {
                 self.redo_vec.push(undo_ep);
@@ -60,9 +57,7 @@ impl History {
         self.redo_vec.len()
     }
 
-    pub fn check_multi_click(&mut self, evt: &Event) -> usize {
-        Log::ep_s("　　　　　　　regist_mouse_click ");
-
+    pub fn count_multi_click(&mut self, evt: &Event) -> usize {
         let mut click_count = 1;
 
         if self.mouse_click_vec.len() > 2 {
@@ -70,12 +65,9 @@ impl History {
         }
         let now = Local::now().naive_local();
 
-        Log::ep("self.mouse_click_vec.len()", &self.mouse_click_vec.len());
-
         if self.mouse_click_vec.len() > 0 {
             if let Some((one_before, one_before_evt)) = self.mouse_click_vec.get(self.mouse_click_vec.len() - 1) {
                 if evt != one_before_evt || (now - *one_before).num_milliseconds() > MULTI_CLICK_MILLISECONDS {
-                    Log::ep_s("mouse_click_vec.clear() ");
                     self.mouse_click_vec.clear();
                 }
             }
@@ -84,14 +76,14 @@ impl History {
         if self.mouse_click_vec.len() == 1 {
             if let Some((one_before, _)) = self.mouse_click_vec.get(self.mouse_click_vec.len() - 1) {
                 if (now - *one_before).num_milliseconds() <= MULTI_CLICK_MILLISECONDS {
-                    Log::ep_s("                                           double_click");
+                    Log::debug_s("                                           double_click");
                     click_count = 2;
                 }
             }
         } else if self.mouse_click_vec.len() == 2 {
             if let Some((two_before, _)) = self.mouse_click_vec.get(self.mouse_click_vec.len() - 2) {
                 if (now - *two_before).num_milliseconds() <= MULTI_CLICK_MILLISECONDS * 2 {
-                    Log::ep_s("                                           triple_click");
+                    Log::debug_s("                                           triple_click");
                     click_count = 3;
                 }
             }

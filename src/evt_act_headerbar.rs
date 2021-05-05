@@ -1,44 +1,57 @@
-use crate::{def::*, log::*, model::*, terminal::Terminal};
+use crate::{def::*, log::*, model::*, prompt::prompt::Prompt, terminal::Terminal};
 use crossterm::event::{Event::*, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind, *};
 
 impl EvtAct {
     pub fn check_headerbar(event: Event, term: &mut Terminal) -> EvtActType {
-        Log::ep_s("　　　　　　　　check_headerbar");
-        Log::ep("event", &event.clone());
+        Log::debug_s("　　　　　　　check_headerbar");
 
         term.curt().editor.evt = event;
 
         match event {
             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => {
                 let (x, y) = (x as usize, y as usize);
-
                 if y != term.hbar.disp_row_posi {
                     return EvtActType::Hold;
                 }
-                for (idx, h_file) in term.hbar.file_vec.iter().enumerate() {
-                    if !h_file.is_disp {
-                        continue;
-                    }
-                    if h_file.close_area.0 <= x && x <= h_file.close_area.1 {
-                        if term.hbar.file_vec[idx].is_changed {
-                            term.idx = idx;
-                            term.curt().editor.evt = CLOSE;
-                            return EvtActType::Next;
-                        } else {
-                            if term.tabs.len() == 1 {
+
+                if term.hbar.all_filenm_space_w >= x {
+                    for (idx, h_file) in term.hbar.file_vec.iter().enumerate() {
+                        if !h_file.is_disp {
+                            continue;
+                        }
+                        if h_file.close_area.0 <= x && x <= h_file.close_area.1 {
+                            if term.hbar.file_vec[idx].is_changed {
+                                term.idx = idx;
                                 term.curt().editor.evt = CLOSE;
                                 return EvtActType::Next;
                             } else {
-                                term.idx = if idx == term.hbar.file_vec.len() - 1 { idx - 1 } else { idx };
-                                term.del_tab(idx);
-                                return EvtActType::DrawOnly;
+                                if term.tabs.len() == 1 {
+                                    term.curt().editor.evt = CLOSE;
+                                    return EvtActType::Next;
+                                } else {
+                                    term.idx = if idx == term.hbar.file_vec.len() - 1 { idx - 1 } else { idx };
+                                    term.del_tab(idx);
+                                    return EvtActType::DrawOnly;
+                                }
                             }
                         }
+                        if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 {
+                            term.idx = idx;
+                            term.curt().editor.evt = KEY_NULL;
+                            return EvtActType::Next;
+                        }
                     }
-                    if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 {
-                        term.idx = idx;
-                        term.curt().editor.evt = KEY_NULL;
-                        return EvtActType::Next;
+                    if term.hbar.all_filenm_rest_area.0 <= x && x <= term.hbar.all_filenm_rest_area.1 {
+                        match event {
+                            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: _, row: _, .. }) => {
+                                if term.hbar.history.count_multi_click(&event) == 2 {
+                                    term.new_tab();
+                                    return EvtActType::Next;
+                                }
+                            }
+                            _ => {}
+                        }
+                        return EvtActType::Hold;
                     }
                 }
                 if term.hbar.is_left_arrow_disp {
@@ -52,7 +65,7 @@ impl EvtAct {
                     }
                 }
                 if term.hbar.plus_btn_area.0 <= x && x <= term.hbar.plus_btn_area.1 {
-                    term.new_tab();
+                    Prompt::open_file(term);
 
                     return EvtActType::Next;
                 } else if term.hbar.help_btn_area.0 <= x && x <= term.hbar.help_btn_area.1 {

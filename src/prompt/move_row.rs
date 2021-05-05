@@ -1,10 +1,9 @@
 use crate::{colors::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::Terminal};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
-use std::io::Write;
 
 impl EvtAct {
-    pub fn move_row<T: Write>(out: &mut T, term: &mut Terminal) -> EvtActType {
-        Log::ep_s("　　　　　　　　EvtAct.move_row");
+    pub fn move_row(term: &mut Terminal) -> EvtActType {
+        Log::debug_s("　　　　　　　　EvtAct.move_row");
 
         match term.curt().editor.evt {
             Key(KeyEvent { code, .. }) => match code {
@@ -12,13 +11,11 @@ impl EvtAct {
                     let str = term.curt().prom.cont_1.buf.iter().collect::<String>();
                     if str.is_empty() {
                         term.curt().mbar.set_err(&LANG.not_entered_row_number_to_move);
-                        term.curt().mbar.draw_only(out);
                         return EvtActType::Hold;
                     }
                     let row_num: usize = str.parse().unwrap();
                     if row_num > term.curt().editor.buf.len_lines() || row_num == 0 {
                         term.curt().mbar.set_err(&LANG.number_within_current_number_of_rows);
-                        term.curt().mbar.draw_only(out);
                         return EvtActType::Hold;
                     }
 

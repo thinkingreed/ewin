@@ -1,4 +1,4 @@
-use crate::{log::*, model::*};
+use crate::model::*;
 
 impl Editor {
     pub fn exec_edit_proc(&mut self, evt: EvtType, str: &str, str_replace: &str) {
@@ -9,7 +9,6 @@ impl Editor {
         let mut ep_org = EvtProc::default();
         // selected range delete
         if self.sel.is_selected() {
-            Log::ep_s("exec_edit_proc is_selected_org");
             ep_org = EvtProc { evt_type: EvtType::Del, ..EvtProc::default() };
             ep_org.cur_s = Cur { y: self.sel.sy, x: self.sel.sx, disp_x: self.sel.disp_x_s };
             ep_org.cur_e = self.cur;

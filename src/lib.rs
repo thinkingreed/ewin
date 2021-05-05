@@ -11,6 +11,8 @@ pub mod global {
     pub static LANG: Lazy<LangCfg> = Lazy::new(|| LangCfg::read_lang_cfg());
     pub static ENV: Lazy<Env> = Lazy::new(|| get_env_platform());
     pub static CFG: OnceCell<Mutex<Cfg>> = OnceCell::new();
+    pub static LOG: OnceCell<crate::log::Log> = OnceCell::new();
+
     pub static GREP_INFO_VEC: OnceCell<tokio::sync::Mutex<Vec<GrepInfo>>> = OnceCell::new();
     // Cancel is defined independently. Because it needs to be obtained when GREP_INFO_VEC is locked
     pub static GREP_CANCEL_VEC: OnceCell<tokio::sync::Mutex<Vec<bool>>> = OnceCell::new();
@@ -33,6 +35,7 @@ pub mod editor {
         pub mod buf_cache;
         pub mod char_style;
         pub mod draw;
+        pub mod io;
         pub mod text_buf;
     }
     pub mod clipboard;
@@ -57,6 +60,7 @@ pub mod prompt {
     pub mod grep;
     pub mod grep_result;
     pub mod move_row;
+    pub mod open_file;
     pub mod prompt;
     pub mod replace;
     pub mod save_new_file;

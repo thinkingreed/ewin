@@ -52,14 +52,18 @@ impl Colors {
     pub fn get_default_fg() -> String {
         return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.editor.fg);
     }
-    fn get_default_inversion_fg() -> String {
-        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
-    }
     pub fn get_default_bg() -> String {
         return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
     }
     pub fn get_default_fg_bg() -> String {
         return format!("{}{}", Colors::get_default_bg(), Colors::get_default_fg());
+    }
+    fn get_default_inversion_fg() -> String {
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
+    }
+    pub fn get_default_inversion_fg_bg() -> String {
+        let cfg = CFG.get().unwrap().try_lock().unwrap();
+        return format!("{}{}", Colors::fg(cfg.colors.editor.bg), Colors::bg(cfg.colors.editor.fg));
     }
     //
     // HeaderBar
@@ -67,8 +71,7 @@ impl Colors {
     fn get_hbar_bg() -> String {
         return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
     }
-    
-    
+
     fn get_hbar_fg() -> String {
         return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.header_bar.fg);
     }
@@ -89,6 +92,9 @@ impl Colors {
     }
     pub fn get_sbar_fg() -> String {
         return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.status_bar.fg);
+    }
+    pub fn get_sbar_fg_bg() -> String {
+        return format!("{}{}", Colors::get_sbar_fg(), Colors::get_sbar_bg());
     }
     //
     // MsgBar

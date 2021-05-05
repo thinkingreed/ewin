@@ -1,11 +1,9 @@
-use crate::{def::*, global::CFG, log::*, model::*, terminal::TermMode, util::*};
+use crate::{def::*, global::CFG, log::*, model::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*};
 use std::cmp::min;
 
 impl Editor {
     pub fn cur_up(&mut self) {
-        Log::ep_s("　　　　　　　 c_u start");
-        Log::ep("self.cur.y", &self.cur.y);
         if self.cur.y > 0 {
             self.cur.y -= 1;
             self.cur_updown_com();
@@ -15,7 +13,7 @@ impl Editor {
     }
 
     pub fn cur_down(&mut self) {
-        Log::ep_s("　　　　　　　 c_d start");
+        Log::debug_s("　　　　　　　c_d start");
         if self.cur.y + 1 < self.buf.len_lines() {
             self.cur.y += 1;
             self.cur_updown_com();
@@ -31,20 +29,13 @@ impl Editor {
         // Not set for Left and Right
         if self.evt == Key(Left.into()) || self.evt == Key(Right.into()) {
         } else {
-            Log::ep("self.updown_x", &self.updown_x);
-
             let (cur_x, disp_x) = get_until_x(&self.buf.char_vec_line(self.cur.y), self.updown_x);
-
-            Log::ep("cur_x", &cur_x);
-            Log::ep("disp_x", &disp_x);
-
             self.cur.disp_x = disp_x;
             self.cur.x = cur_x;
         }
     }
 
     pub fn cur_left(&mut self) {
-        Log::ep_s("　　　　　　　  c_l start");
         // 0, 0の位置の場合
         if self.cur.y == 0 && self.cur.x == 0 {
             return;
@@ -54,7 +45,6 @@ impl Editor {
             self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y));
         } else {
             let c = self.buf.char(self.cur.y, self.cur.x - 1);
-            Log::ep("ccc", &c);
 
             if c == TAB {
                 let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
@@ -77,9 +67,6 @@ impl Editor {
     pub fn get_tab_pre_width(&mut self) {}
 
     pub fn cur_right(&mut self) {
-        Log::ep_s("　　　　　　　  c_r start");
-        Log::ep("self.cur.x", &self.cur.x);
-
         let mut is_end_of_line = false;
         let c = self.buf.char(self.cur.y, self.cur.x);
         if self.evt == RIGHT || self.evt == PASTE {
@@ -117,14 +104,10 @@ impl Editor {
             if c == EOF_MARK {
                 return;
             }
-            Log::ep("ccc", &c);
-            Log::ep("self.cur.x", &self.cur.x);
 
             if c == TAB {
                 let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
-                Log::ep("self.cur.disp_x", &self.cur.disp_x);
                 let tab_width = cfg_tab_width - (self.cur.disp_x % cfg_tab_width);
-                Log::ep("tab_width", &tab_width);
                 self.cur.disp_x += tab_width;
                 self.cur.x += 1;
             } else {
@@ -141,8 +124,7 @@ impl Editor {
     }
 
     pub fn enter(&mut self) {
-        Log::ep_s("　　　　　　　  enter");
-        self.buf.insert_char(self.cur.y, self.cur.x, NEW_LINE);
+        self.buf.insert_char(self.cur.y, self.cur.x, NEW_LINE_LF);
         self.set_cur_target(self.cur.y + 1, 0);
         if self.is_enable_syntax_highlight {
             self.d_range.draw_type = DrawType::All;
@@ -164,7 +146,7 @@ impl Editor {
     }
 
     pub fn back_space(&mut self, ep: &mut EvtProc) {
-        Log::ep_s("　　　　　　　  back_space");
+        Log::debug_s("　　　　　　　back_space");
         // beginning of the line
         if self.cur.x == 0 {
             self.cur.y -= 1;
@@ -173,7 +155,7 @@ impl Editor {
 
             // ' ' is meaningless value
             let c = if cur_x > 0 { self.buf.char(self.cur.y, cur_x - 1) } else { ' ' };
-            ep.str = if c == NEW_LINE_CR { NEW_LINE_CRLF.to_string() } else { NEW_LINE.to_string() };
+            ep.str = if c == NEW_LINE_CR { NEW_LINE_CRLF.to_string() } else { NEW_LINE_LF.to_string() };
             // Minus for newline code
             cur_x -= 1;
 
@@ -194,9 +176,9 @@ impl Editor {
     }
 
     pub fn delete(&mut self, ep: &mut EvtProc) {
-        Log::ep_s("　　　　　　　  delete");
+        Log::debug_s("　　　　　　　delete");
         let c = self.buf.char(self.cur.y, self.cur.x);
-        ep.str = if c == NEW_LINE_CR { format!("{}{}", c.to_string(), NEW_LINE) } else { c.to_string() };
+        ep.str = if c == NEW_LINE_CR { format!("{}{}", c.to_string(), NEW_LINE_LF) } else { c.to_string() };
         self.buf.remove_del_bs(EvtType::Del, self.cur.y, self.cur.x);
         self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
 
@@ -212,7 +194,6 @@ impl Editor {
     }
 
     pub fn home(&mut self) {
-        Log::ep_s("　　　　　　　  home");
         self.cur.x = 0;
         self.cur.disp_x = 0;
         self.scroll_horizontal();

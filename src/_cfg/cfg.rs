@@ -19,9 +19,14 @@ pub struct Cfg {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgGeneral {
+    pub log: Option<CfgLog>,
     pub editor: CfgEditor,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CfgLog {
+    pub level: Option<String>,
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgEditor {
     pub search: CfgSearch,
@@ -171,16 +176,14 @@ impl Cfg {
                 match fs::read_to_string(config_file) {
                     Ok(str) => read_str = str,
                     Err(e) => {
-                        err_str = format!("{} {}", LANG.file_loading_failed, config_file.to_string_lossy().to_string());
-                        Log::ep("SETTING_FILE read_to_string", &e);
+                        err_str = format!("{} {} {}", LANG.file_loading_failed, config_file.to_string_lossy().to_string(), e);
                     }
                 }
                 if err_str.is_empty() {
                     match toml::from_str(&read_str) {
                         Ok(c) => cfg = c,
                         Err(e) => {
-                            err_str = format!("{} {}", LANG.file_parsing_failed, config_file.to_string_lossy().to_string());
-                            Log::ep("SETTING_FILE parsing", &e);
+                            err_str = format!("{} {} {}", LANG.file_parsing_failed, config_file.to_string_lossy().to_string(), e);
                         }
                     };
                 }
@@ -231,6 +234,9 @@ impl Cfg {
             write!(file, "{}", s).unwrap();
             file.flush().unwrap();
         }
+
+        Log::set_logger(&cfg.general.log);
+
         let _ = CFG.set(Mutex::new(cfg));
 
         return err_str;

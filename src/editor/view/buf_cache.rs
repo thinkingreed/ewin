@@ -7,8 +7,6 @@ use unicode_width::UnicodeWidthChar;
 
 impl Editor {
     pub fn draw_cache(&mut self) {
-        Log::ep_s("　　　　　　　draw_cache");
-
         // char_vec initialize
         let diff: isize = self.buf.len_lines() as isize - self.draw.cells.len() as isize;
         if diff > 0 {
@@ -33,8 +31,8 @@ impl Editor {
             self.draw.sy = 0;
             self.draw.ey = self.buf.len_lines() - 1;
         }
-        Log::ep("self.draw.sy", &self.draw.sy);
-        Log::ep("self.draw.ey", &self.draw.ey);
+        Log::debug("self.draw.sy", &self.draw.sy);
+        Log::debug("self.draw.ey", &self.draw.ey);
 
         match self.d_range.draw_type {
             DrawType::None | DrawType::Target | DrawType::After | DrawType::All | DrawType::ScrollDown | DrawType::ScrollUp => self.set_draw_regions(),
@@ -95,7 +93,7 @@ impl Editor {
 
             for c in string.chars() {
                 width += match c {
-                    NEW_LINE | NEW_LINE_CR => 1,
+                    NEW_LINE_LF | NEW_LINE_CR => 1,
                     TAB => get_char_width_exec(&c, width, cfg.general.editor.tab.width),
                     _ => c.width().unwrap_or(0),
                 };
@@ -120,7 +118,7 @@ impl Editor {
 
         for c in row {
             width += match c {
-                NEW_LINE | NEW_LINE_CR => 1,
+                NEW_LINE_LF | NEW_LINE_CR => 1,
                 TAB => get_char_width_exec(&c, width, cfg.general.editor.tab.width),
                 _ => c.width().unwrap_or(0),
             };
@@ -171,7 +169,7 @@ impl Draw {
             }
         }
         match c {
-            NEW_LINE | TAB => return CharStyleType::CtrlChar,
+            NEW_LINE_LF | TAB => return CharStyleType::CtrlChar,
             _ => return CharStyleType::Nomal,
         }
     }

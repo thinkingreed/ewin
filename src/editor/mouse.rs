@@ -2,11 +2,13 @@ use crate::{log::*, model::*, util::*};
 
 impl Editor {
     pub fn ctrl_mouse(&mut self, x: usize, y: usize, is_mouse_left_down: bool) {
-        Log::ep_s("　　　　　　　  ctrl_mouse");
+        Log::debug_s("　　　　　　　ctrl_mouse");
         if y < self.disp_row_posi || y >= self.disp_row_num || y >= self.buf.len_lines() {
             self.d_range.draw_type = DrawType::Not;
             return;
         }
+        Log::debug("y", &y);
+        Log::debug("x", &x);
         let y = y - self.disp_row_posi;
         //  let x = if x <= self.get_rnw() { self.get_rnw() + Editor::RNW_MARGIN } else { x };
         let x = x - self.get_rnw() - Editor::RNW_MARGIN;
@@ -32,7 +34,7 @@ impl Editor {
 
     pub fn set_mouse_sel(&mut self, is_mouse_left_down: bool) {
         if is_mouse_left_down {
-            let click_count = self.history.check_multi_click(&self.evt);
+            let click_count = self.history.count_multi_click(&self.evt);
             match click_count {
                 1 => {
                     self.sel.clear();

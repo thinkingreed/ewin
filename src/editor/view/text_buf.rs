@@ -1,8 +1,7 @@
-use crate::{_cfg::cfg::CfgSearch, def::*, global::*, log::*, model::*};
-use anyhow::Result;
+use crate::{_cfg::cfg::CfgSearch, def::*, global::*, model::*};
 use regex::RegexBuilder;
 use ropey::{iter::Chars, Rope, RopeSlice};
-use std::{collections::BTreeSet, fs::File, io, io::BufWriter};
+use std::collections::BTreeSet;
 
 impl Default for TextBuffer {
     fn default() -> Self {
@@ -10,11 +9,6 @@ impl Default for TextBuffer {
     }
 }
 impl TextBuffer {
-    pub fn from_path(path: &str) -> io::Result<TextBuffer> {
-        let text = Rope::from_reader(&mut io::BufReader::new(File::open(&path)?))?;
-        Ok(TextBuffer { text: text })
-    }
-
     pub fn line<'a>(&'a self, i: usize) -> RopeSlice<'a> {
         self.text.line(i)
     }
@@ -60,12 +54,12 @@ impl TextBuffer {
         let c = self.char(y, x);
         // not select del
         if do_type == EvtType::Del {
-            if NEW_LINE_CR == c && NEW_LINE == self.char(y, x + 1) {
+            if NEW_LINE_CR == c && NEW_LINE_LF == self.char(y, x + 1) {
                 del_num = 2;
             }
         } else if do_type == EvtType::BS {
             if x > 0 {
-                if NEW_LINE == c && NEW_LINE_CR == self.char(y, x - 1) {
+                if NEW_LINE_LF == c && NEW_LINE_CR == self.char(y, x - 1) {
                     i -= 1;
                     del_num = 2;
                 }
@@ -79,13 +73,6 @@ impl TextBuffer {
         let i_e = self.text.line_to_char(sel.ey) + sel.ex;
 
         self.text.remove(i_s..i_e);
-    }
-
-    pub fn write_to(&mut self, path: &str) -> Result<()> {
-        self.text.remove(self.text.len_chars() - 1..self.text.len_chars());
-        self.text.write_to(BufWriter::new(File::create(path)?))?;
-        self.insert_end(EOF_MARK.to_string().as_str());
-        Ok(())
     }
 
     pub fn char<'a>(&'a self, y: usize, x: usize) -> char {
@@ -166,7 +153,6 @@ impl TextBuffer {
             }
         } else {
             // regex
-            Log::ep_s("　　　　　　　　regex search");
             let result = RegexBuilder::new(&search_pattern).case_insensitive(!cfg_search.case_sens).build();
             let re = match result {
                 Ok(re) => re,

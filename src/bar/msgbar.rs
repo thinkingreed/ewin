@@ -57,26 +57,26 @@ impl MsgBar {
     }
 
     pub fn clear_mag(&mut self) {
-        Log::ep_s("　　　　　　　　MsgBar.clear_mag");
+        Log::debug_s("　　　　　　　MsgBar.clear_mag");
         self.msg = Msg::default();
     }
 
     pub fn clear(&mut self) {
-        Log::ep_s("　　　　　　　　MsgBar.clear");
+        Log::debug_s("　　　　　　　MsgBar.clear");
         self.msg = Msg::default();
         self.disp_row_posi = 0;
         self.disp_col_num = 0;
     }
 
     pub fn clear_keyrecord(&mut self) {
-        Log::ep_s("　　　　　　　　MsgBar.clear_macro");
+        Log::debug_s("　　　　　　　MsgBar.clear_macro");
         self.msg_keyrecord = String::new();
         self.disp_keyrecord_row_posi = 0;
         self.disp_keyrecord_row_num = 0;
     }
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
-        Log::ep_s("　　　　　　　　MsgBar.draw");
+        Log::info_s("　　　　　　　MsgBar.draw");
 
         if self.msg_readonly.is_empty() || self.msg_keyrecord.is_empty() || !self.msg.str.is_empty() {
             str_vec.push(Colors::get_default_bg());

@@ -1,5 +1,7 @@
 use crate::{def::*, global::*, model::*};
+#[cfg(target_os = "linux")]
 use anyhow::Context;
+#[cfg(target_os = "linux")]
 use std::io::Read;
 use std::process::{Command, Stdio};
 use unicode_width::UnicodeWidthChar;
@@ -17,8 +19,8 @@ pub fn get_row_width(vec: &[char], offset_disp_x: usize, is_ctrlchar_incl: bool)
     let (mut cur_x, mut width) = (0, 0);
 
     for c in vec {
-        if c == &EOF_MARK || c == &NEW_LINE || c == &NEW_LINE_CR {
-            if is_ctrlchar_incl && (c == &NEW_LINE || c == &NEW_LINE_CR) {
+        if c == &EOF_MARK || c == &NEW_LINE_LF || c == &NEW_LINE_CR {
+            if is_ctrlchar_incl && (c == &NEW_LINE_LF || c == &NEW_LINE_CR) {
                 width += 1;
                 cur_x += 1;
             }
@@ -36,7 +38,7 @@ pub fn get_row_width(vec: &[char], offset_disp_x: usize, is_ctrlchar_incl: bool)
 pub fn get_until_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
     for c in buf {
-        if c == &NEW_LINE || c == &EOF_MARK || c == &NEW_LINE_CR {
+        if c == &NEW_LINE_LF || c == &EOF_MARK || c == &NEW_LINE_CR {
             break;
         }
         let c_len = get_char_width(c, width);
@@ -69,7 +71,7 @@ pub fn get_char_width_exec(c: &char, width: usize, cfg_tab_width: usize) -> usiz
 }
 
 pub fn get_char_width_not_tab(c: char) -> usize {
-    if c == NEW_LINE {
+    if c == NEW_LINE_LF {
         return 1;
     }
     return c.width().unwrap_or(0);
@@ -154,4 +156,25 @@ pub fn cut_str(str: String, limit_width: usize, is_from_before: bool) -> String 
         }
     }
     return str;
+}
+pub fn split_inclusive(target: &str, split_char: char) -> Vec<String> {
+    let mut vec: Vec<String> = vec![];
+    let mut string = String::new();
+
+    let chars: Vec<char> = target.chars().collect();
+    for (i, c) in chars.iter().enumerate() {
+        if *c == split_char {
+            if !string.is_empty() {
+                vec.push(string.clone());
+            }
+            vec.push(split_char.to_string());
+            string.clear();
+        } else {
+            string.push(*c);
+        }
+        if i == chars.len() - 1 && !string.is_empty() {
+            vec.push(string.clone());
+        }
+    }
+    return vec;
 }

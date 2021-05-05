@@ -1,13 +1,13 @@
-use crate::{def::NEW_LINE, global::*, log::*, model::*, tab::Tab, terminal::*};
+use crate::{def::NEW_LINE_LF, global::*, log::*, model::*, tab::Tab, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_EventKind, MouseEventKind as M_Kind};
 use std::io::Write;
 
 impl EvtAct {
     pub fn check_prom<T: Write>(out: &mut T, term: &mut Terminal) -> EvtActType {
-        Log::ep_s("　　　　　　　　check_prom");
+        Log::debug_s("　　　　　　　check_prom");
 
         // Close・End
-        if term.curt().state.is_save_new_file || term.curt().state.is_search || term.curt().state.is_close_confirm || term.curt().state.is_replace || term.curt().state.grep_info.is_grep || term.curt().state.grep_info.is_result || term.curt().state.is_move_line || term.curt().state.is_read_only {
+        if term.curt().state.is_not_normal() {
             match term.curt().editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                     Char('w') => {
@@ -35,6 +35,7 @@ impl EvtAct {
                         } else {
                             term.curt().prom.clear();
                             term.curt().state.clear();
+                            term.curt().state.grep_info.is_grep = false;
                             term.curt().mbar.clear();
                             term.curt().editor.d_range.draw_type = DrawType::All;
                         }
@@ -47,7 +48,7 @@ impl EvtAct {
         }
 
         // contents operation
-        if term.curt().state.is_save_new_file || term.curt().state.is_search || term.curt().state.is_replace || term.curt().state.grep_info.is_grep || term.curt().state.is_move_line {
+        if term.curt().state.is_exists_buf() {
             let state = &term.curt().state.clone();
             match term.curt().editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
@@ -92,9 +93,7 @@ impl EvtAct {
                     }
                     _ => {}
                 },
-                Key(KeyEvent { modifiers: KeyModifiers::ALT, code }) => match code {
-                    _ => {}
-                },
+                Key(KeyEvent { modifiers: KeyModifiers::ALT, .. }) => {}
                 Key(KeyEvent { code, .. }) => match code {
                     Left | Right | Char(_) | Delete | Backspace | Home | End | Up | Down | Tab => {
                         match code {
@@ -109,7 +108,7 @@ impl EvtAct {
                             _ => {}
                         }
                         // For incremental search
-                        if !term.curt().state.is_search {
+                        if !state.is_search && !state.is_open_file {
                             term.curt().prom.clear_sels();
                             term.curt().prom.draw_only(out, state);
                             return EvtActType::Hold;
@@ -117,10 +116,15 @@ impl EvtAct {
                     }
                     _ => {}
                 },
-                Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => term.curt().prom.ctrl_mouse(x, y, true),
-                Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => term.curt().prom.ctrl_mouse(x, y, false),
+                Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => term.curt().prom.ctrl_mouse(x, y, &state, true),
+                Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => term.curt().prom.ctrl_mouse(x, y, &state, false),
                 _ => {}
             }
+
+            /*            if state.is_open_file {
+                Log::ep_s("                    state.is_open_file");
+                return EvtActType::Hold;
+            } */
         }
 
         // Search・replace・grep option
@@ -152,11 +156,9 @@ impl EvtAct {
 
         // unable to edit
         if term.curt().state.grep_info.is_result || term.curt().state.is_read_only {
-            Log::ep_s("unable to edit");
-
             match term.curt().editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                    Char('f') => return EvtActType::Next,
+                    Char('f') | Char('q') => return EvtActType::Next,
                     _ => return EvtActType::Hold,
                 },
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
@@ -198,7 +200,9 @@ impl EvtAct {
         } else if term.curt().state.grep_info.is_result == true {
             return EvtAct::grep_result(term);
         } else if term.curt().state.is_move_line == true {
-            return EvtAct::move_row(out, term);
+            return EvtAct::move_row(term);
+        } else if term.curt().state.is_open_file == true {
+            return EvtAct::open_file(term);
         } else {
             return EvtActType::Next;
         }
@@ -220,10 +224,10 @@ impl EvtAct {
         }
     }
 
-    pub fn clear_grep_tab_comp(tab: &mut Tab) {
-        Log::ep_s("check_grep_clear_tab_comp");
+    pub fn clear_tab_comp(tab: &mut Tab) {
+        Log::debug_s("check_grep_clear_tab_comp");
 
-        if tab.state.grep_info.is_grep {
+        if tab.state.grep_info.is_grep || tab.state.is_open_file {
             // Check clear tab candidate
             match tab.editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
@@ -263,7 +267,7 @@ impl EvtAct {
         }
         // Do not paste multiple lines for Prompt
         if term.curt().state.is_save_new_file || term.curt().state.is_search || term.curt().state.is_replace || term.curt().state.grep_info.is_grep || term.curt().state.is_move_line {
-            if clipboard.match_indices(NEW_LINE).count() > 0 {
+            if clipboard.match_indices(NEW_LINE_LF).count() > 0 {
                 term.curt().mbar.set_err(&LANG.cannot_paste_multi_rows.clone());
                 return true;
             };

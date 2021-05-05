@@ -4,8 +4,6 @@ use std::cmp::min;
 
 impl EvtAct {
     pub fn search(term: &mut Terminal) -> EvtActType {
-        Log::ep_s("Process.search");
-
         match term.curt().editor.evt {
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                 Char('v') => {
@@ -36,7 +34,7 @@ impl EvtAct {
     }
 
     pub fn exec_search_confirm(term: &mut Terminal, search_str: String) -> EvtActType {
-        Log::ep_s("exec_search_confirm");
+        Log::debug_s("exec_search_confirm");
         let tab = term.tabs.get_mut(term.idx).unwrap();
 
         if search_str.len() == 0 {
@@ -49,8 +47,6 @@ impl EvtAct {
             tab.mbar.set_err(&LANG.cannot_find_char_search_for);
             return EvtActType::DrawOnly;
         } else {
-            Log::ep_s("exec_search    !!!");
-
             tab.editor.search.clear();
             tab.editor.search.ranges = search_vec;
             tab.editor.search.str = search_str;
@@ -67,7 +63,7 @@ impl EvtAct {
         }
     }
     pub fn exec_search_incremental(term: &mut Terminal) {
-        Log::ep_s("exec_search_incremental");
+        Log::debug_s("exec_search_incremental");
         term.curt().editor.search.str = term.curt().prom.cont_1.buf.iter().collect::<String>();
 
         let s_idx = term.tabs[term.idx].editor.buf.line_to_char(term.tabs[term.idx].editor.offset_y);
@@ -103,6 +99,10 @@ impl Prompt {
         let mut cont = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::First);
         cont.set_search();
         term.curt().prom.cont_1 = cont;
+    }
+    pub fn draw_search(&mut self, str_vec: &mut Vec<String>) {
+        Prompt::set_draw_vec(str_vec, self.cont_1.opt_row_posi, &self.get_serach_opt());
+        Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
     }
 }
 

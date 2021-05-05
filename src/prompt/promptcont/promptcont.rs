@@ -19,6 +19,7 @@ pub struct PromptCont {
     pub cur: Cur,
     pub updown_x: usize,
     pub sel: SelRange,
+    pub file_list_vec: Vec<File>,
 }
 impl Default for PromptCont {
     fn default() -> Self {
@@ -39,6 +40,7 @@ impl Default for PromptCont {
             cur: Cur::default(),
             updown_x: 0,
             sel: SelRange::default(),
+            file_list_vec: vec![],
         }
     }
 }
@@ -99,9 +101,7 @@ impl PromptCont {
     }
 
     pub fn del_sel_range(&mut self) {
-        Log::ep_s("　　　　　　　  del_sel_range");
         let sel = self.sel.get_range();
-        Log::ep("sel", &sel);
         self.buf.drain(sel.sx..sel.ex);
         self.cur.disp_x = min(sel.disp_x_s, sel.disp_x_e);
         self.cur.x = min(sel.sx, sel.ex);
@@ -132,13 +132,6 @@ impl PromptCont {
         self.opt_2 = opt_regex;
     }
 
-    /*
-    pub fn get_opt_disp_str(&mut self) {
-        let opt_1 = self.opt_1;
-        let opt_2 = self.opt_2;
-        let opt_str = format!("{}{}  {}{}", opt_1.key, opt_1.get_check_str(), opt_2.key, opt_2.get_check_str());
-    } */
-
     pub fn change_opt_case_sens(&mut self) {
         self.opt_1.toggle_check();
         CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.case_sens = self.opt_1.is_check).unwrap();
@@ -150,7 +143,7 @@ impl PromptCont {
     }
 
     pub fn ctrl_mouse(&mut self, x: u16, y: u16, is_mouse_left_down: bool) {
-        Log::ep_s("　　　　　　　  PromptCont.ctrl_mouse");
+        Log::debug_s("　　　　　　　PromptCont.ctrl_mouse");
         if y != self.buf_row_posi {
             return;
         }
@@ -167,7 +160,7 @@ impl PromptCont {
         }
     }
     pub fn draw_only<T: Write>(&mut self, out: &mut T) {
-        Log::ep_s("　　　　　　　　PromptCont draw_only");
+        Log::debug_s("　　　　　　　PromptCont.draw_only");
         let _ = out.write(&self.get_draw_buf_str().as_bytes());
         out.flush().unwrap();
     }

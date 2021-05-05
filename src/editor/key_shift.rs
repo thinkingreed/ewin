@@ -27,17 +27,17 @@ impl Editor {
         self.sel.check_overlap();
     }
     pub fn shift_right(&mut self) {
-        Log::ep_s("　　　　　　　  shift_right");
+        Log::debug_s("　　　　　　　shift_right");
         self.shift_move_com(EvtType::ShiftRight);
     }
 
     pub fn shift_left(&mut self) {
-        Log::ep_s("　　　　　　　  shift_left");
+        Log::debug_s("　　　　　　　shift_left");
         self.shift_move_com(EvtType::ShiftLeft);
     }
 
     pub fn shift_down(&mut self) {
-        Log::ep_s("　　　　　　　　shift_down");
+        Log::debug_s("　　　　　　　shift_down");
         if self.cur.y == self.buf.len_lines() - 1 {
             self.d_range.draw_type = DrawType::Not;
             return;
@@ -46,7 +46,7 @@ impl Editor {
     }
 
     pub fn shift_up(&mut self) {
-        Log::ep_s("　　　　　　　　shift_up");
+        Log::debug_s("　　　　　　　shift_up");
         if self.cur.y == 0 {
             self.d_range.draw_type = DrawType::Not;
             return;
@@ -55,12 +55,12 @@ impl Editor {
     }
 
     pub fn shift_home(&mut self) {
-        Log::ep_s("　　　　　　　　shift_home");
+        Log::debug_s("　　　　　　　shift_home");
         self.shift_move_com(EvtType::ShiftHome);
     }
 
     pub fn shift_end(&mut self) {
-        Log::ep_s("　　　　　　　  shift_end");
+        Log::debug_s("　　　　　　　shift_end");
         self.shift_move_com(EvtType::ShiftEnd);
     }
 
@@ -100,7 +100,7 @@ impl Editor {
 
 impl Tab {
     pub fn record_key_start(&mut self) {
-        Log::ep_s("　　　　　　　　macro_record_start");
+        Log::debug_s("　　　　　　　macro_record_start");
         if self.state.is_key_record {
             self.state.is_key_record = false;
             self.mbar.clear_keyrecord();

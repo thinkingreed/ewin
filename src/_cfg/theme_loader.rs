@@ -1,4 +1,4 @@
-use crate::{global::*, log::*};
+use crate::global::*;
 use anyhow::Result;
 use std::{collections::BTreeMap, fs::File, io::BufReader, path::Path};
 use syntect::highlighting::{Theme, ThemeSet};
@@ -11,11 +11,7 @@ pub struct ThemeLoader {
 
 impl ThemeLoader {
     pub fn new(theme_path: &Option<String>, themes: &BTreeMap<String, Theme>) -> ThemeLoader {
-        ThemeLoader {
-            theme_path: theme_path.clone(),
-            theme: None,
-            themes: themes.clone(),
-        }
+        ThemeLoader { theme_path: theme_path.clone(), theme: None, themes: themes.clone() }
     }
 
     /// Consumes the ThemeLoader to Theme.
@@ -35,8 +31,6 @@ impl ThemeLoader {
     fn load_user(&mut self) -> String {
         let mut err_str = "".to_string();
 
-        Log::ep("self.theme_path", &self.theme_path);
-
         if let Some(theme_path) = &self.theme_path {
             let theme_path = Path::new(&theme_path);
             if theme_path.exists() {
@@ -45,13 +39,12 @@ impl ThemeLoader {
                     match ThemeSet::load_from_reader(&mut reader) {
                         Ok(theme) => self.theme = Some(theme),
                         Err(e) => {
-                            err_str = format!("{} : {}", LANG.file_loading_failed, theme_path.to_string_lossy().to_string());
-                            Log::ep("e", &e);
+                            err_str = format!("{} {} {}", LANG.file_loading_failed, theme_path.to_string_lossy().to_string(), e);
                         }
                     }
                 }
             } else {
-                err_str = format!("{} : {}", LANG.file_not_found, theme_path.to_string_lossy().to_string());
+                err_str = format!("{} {}", LANG.file_not_found, theme_path.to_string_lossy().to_string());
             }
         }
         return err_str;

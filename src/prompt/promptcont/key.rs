@@ -8,6 +8,7 @@ impl PromptCont {
         if is_move_line && !c.is_ascii_digit() {
             return;
         }
+
         let str: String = self.buf.iter().collect::<String>();
         if is_move_line && str.chars().count() == rnw {
             return;

@@ -1,5 +1,5 @@
 extern crate ropey;
-use crate::{def::*, editor::view::char_style::*, terminal::TermMode};
+use crate::{def::*, editor::view::char_style::*};
 use chrono::NaiveDateTime;
 use crossterm::event::{Event, Event::Key, KeyCode::Null};
 use ropey::Rope;
@@ -417,13 +417,17 @@ pub struct TextBuffer {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct File {
     pub filenm: String,
-    pub ext: String,
-    pub is_changed: bool,
+    pub is_dir: bool,
 }
 
 impl Default for File {
     fn default() -> Self {
-        File { filenm: String::new(), ext: String::new(), is_changed: false }
+        File { filenm: String::new(), is_dir: false }
+    }
+}
+impl fmt::Display for File {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "File filenm:{}, is_dir:{} ", self.filenm, self.is_dir)
     }
 }
 
@@ -686,6 +690,35 @@ impl GrepInfo {
         self.search_str = String::new();
         self.search_folder = String::new();
         self.search_filenm = String::new();
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TermMode {
+    Normal,
+    Mouse,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Encode {
+    UTF8,
+    UTF16LE,
+    UTF16BE,
+    SJIS,
+    EucJp,
+    GBK,
+    Unknown,
+}
+impl fmt::Display for Encode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Encode::UTF8 => write!(f, "UTF-8"),
+            Encode::UTF16LE => write!(f, "UTF-16LE"),
+            Encode::UTF16BE => write!(f, "UTF-16BE"),
+            Encode::SJIS => write!(f, "Shift_JIS"),
+            Encode::EucJp => write!(f, "EUC-JP"),
+            Encode::GBK => write!(f, "GBK"),
+            Encode::Unknown => write!(f, "Unknown"),
+        }
     }
 }
 

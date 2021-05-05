@@ -7,8 +7,10 @@ use crate::{
     log::*,
     model::*,
     tab::Tab,
+    util::is_enable_syntax_highlight,
 };
 use chrono::{DateTime, Local};
+use clap::ArgMatches;
 use crossterm::{
     cursor::*,
     event::{DisableMouseCapture, EnableMouseCapture},
@@ -17,21 +19,23 @@ use crossterm::{
     terminal::*,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+
 use std::{
+    env,
     ffi::OsStr,
-    io::{stdout, Write},
+    fs::metadata,
+    io::{stdout, ErrorKind, Write},
     path::Path,
     process::exit,
 };
 
 impl Terminal {
     pub fn draw<T: Write>(&mut self, out: &mut T) {
-        Log::ep_s("　　　　　　　　All draw");
+        Log::info_s("　　　　　　　Terminal.draw start");
 
         self.set_disp_size();
 
         let d_range = self.curt().editor.d_range;
-        Log::ep("d_range", &d_range);
 
         if !(d_range.draw_type == DrawType::Not || d_range.draw_type == DrawType::MoveCur) {
             self.curt().editor.draw_cache();
@@ -47,25 +51,27 @@ impl Terminal {
         self.curt().prom.draw(&mut str_vec, state);
 
         if d_range.draw_type != DrawType::Not {
-            StatusBar::draw(&mut str_vec, &mut self.tabs[self.idx])
+            StatusBar::draw(&mut str_vec, &self.hbar.file_vec[self.idx], &mut self.tabs[self.idx])
         }
         Terminal::draw_cur(&mut str_vec, &mut self.tabs[self.idx], self.mode);
 
-        Log::ep("cur", &self.curt().editor.cur);
-        Log::ep("offset_x", &self.curt().editor.offset_x);
-        Log::ep("offset_disp_x", &self.curt().editor.offset_disp_x);
-        Log::ep("offset_y", &self.curt().editor.offset_y);
-        Log::ep("tab.state", &self.curt().state);
-        // Log::ep("", &self.curt().editor.sel);
+        Log::debug("cur", &self.curt().editor.cur);
+        Log::debug("offset_x", &self.curt().editor.offset_x);
+        Log::debug("offset_disp_x", &self.curt().editor.offset_disp_x);
+        Log::debug("offset_y", &self.curt().editor.offset_y);
+        Log::debug("tab.state", &self.curt().state);
+        // Log::debug("", &self.curt().editor.sel);
 
         let _ = out.write(&str_vec.concat().as_bytes());
         out.flush().unwrap();
+
+        Log::info_s("　　　　　　　Terminal.draw end");
     }
 
     pub fn draw_cur(str_vec: &mut Vec<String>, tab: &mut Tab, term_mode: TermMode) {
-        Log::ep_s("　　　　　　　set_cur_str");
+        Log::info_s("　　　　　　　draw_cur");
 
-        if tab.state.is_save_new_file || tab.state.is_search || tab.state.is_replace || tab.state.grep_info.is_grep || tab.state.is_move_line {
+        if tab.state.is_save_new_file || tab.state.is_search || tab.state.is_replace || tab.state.grep_info.is_grep || tab.state.is_move_line || tab.state.is_open_file {
             tab.prom.draw_cur(str_vec);
         } else {
             let rnw_rnwmargin = if term_mode == TermMode::Normal { tab.editor.get_rnw() + Editor::RNW_MARGIN } else { 0 };
@@ -83,13 +89,10 @@ impl Terminal {
     }
 
     pub fn set_disp_size(&mut self) {
-        Log::ep_s("set_disp_size");
-
+        Log::debug_s("set_disp_size");
         let (cols, rows) = size().unwrap();
         let (cols, rows) = (cols as usize, rows as usize);
-
-        Log::ep("rows", &rows);
-        Log::ep("cols", &cols);
+        Log::debug("rows, cols", &format!("{},{}", &rows, &cols));
 
         self.hbar.set_posi(cols);
         HeaderBar::set_header_filenm(self);
@@ -102,8 +105,6 @@ impl Terminal {
         let help_disp_row_num = if self.help.disp_row_num > 0 { self.help.disp_row_num + 1 } else { 0 };
         self.curt().sbar.disp_row_posi = rows - help_disp_row_num;
         self.curt().sbar.disp_col_num = cols;
-
-        Log::ep("self.help.mode", &self.help.mode);
 
         self.curt().prom.disp_col_num = cols;
         self.curt().prom.disp_row_posi = rows - self.curt().prom.disp_row_num + 1 - self.help.disp_row_num - self.curt().sbar.disp_row_num;
@@ -119,19 +120,6 @@ impl Terminal {
 
         self.curt().editor.disp_col_num = cols;
         self.curt().editor.disp_row_num = rows - self.hbar.disp_row_num - self.curt().mbar.disp_readonly_row_num - self.curt().mbar.disp_keyrecord_row_num - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.disp_row_num;
-
-        Log::ep("editor.disp_row_num", &self.curt().editor.disp_row_num);
-        Log::ep("editor.disp_row_posi", &self.curt().editor.disp_row_posi);
-        Log::ep("help.disp_row_posi", &self.help.disp_row_posi);
-        /*
-           Log::ep("mbar.disp_keyrecord_row_num", &mbar.disp_keyrecord_row_num);
-           Log::ep("mbar.disp_readonly_row_num", &mbar.disp_readonly_row_num);
-           Log::ep("mbar.disp_row_num", &mbar.disp_row_num);
-           Log::ep("prom.disp_row_num", &prom.disp_row_num);
-           Log::ep("help.disp_row_num", &help.disp_row_num);
-           Log::ep("help.disp_row_posi", &help.disp_row_posi);
-           Log::ep("sbar.disp_row_num", &sbar.disp_row_num);
-        */
     }
 
     pub fn show_cur() {
@@ -152,35 +140,114 @@ impl Terminal {
         exit(0);
     }
 
-    pub fn init_args(file_path: &String) -> Args {
-        let mut args = Args::default();
+    //  pub fn open(&mut self, filenm: &String, encoding: Encoding, tab: &mut Tab) {
+    pub fn open(&mut self, filenm: &String, tab: &mut Tab) {
+        Log::info("File open start", &filenm);
+        let path = Path::new(&filenm);
+        self.idx = self.tabs.len();
 
-        if !file_path.is_empty() {
-            args.filenm = file_path.to_string();
-            args.ext = Path::new(&args.filenm).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string();
+        let mut enc = Encode::Unknown;
+        let mut new_line = String::new();
+        let mut bom_exsist = None;
+
+        let path_str = &path.to_string_lossy().to_string();
+        if path_str.len() > 0 {
+            if path.exists() {
+                let file_meta = metadata(path).unwrap();
+                if file_meta.permissions().readonly() {
+                    tab.state.is_read_only = true;
+                    tab.mbar.set_readonly(&format!("{}({})", &LANG.unable_to_edit, &LANG.no_write_permission));
+                }
+                let ext = path.extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string();
+
+                tab.editor.draw.syntax_reference = if let Some(sr) = CFG.get().unwrap().try_lock().unwrap().syntax.syntax_set.find_syntax_by_extension(&ext) { Some(sr.clone()) } else { None };
+                if tab.editor.draw.syntax_reference.is_some() && file_meta.len() < ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE && is_enable_syntax_highlight(&ext) {
+                    tab.editor.is_enable_syntax_highlight = true;
+                }
+            } else {
+                Terminal::finalize();
+                println!("{}", LANG.file_not_found.clone());
+                Terminal::exit();
+            }
+        } else {
+            let curt_dir = env::current_dir().unwrap();
+            let curt_dir = metadata(curt_dir).unwrap();
+            if curt_dir.permissions().readonly() {
+                Terminal::finalize();
+                println!("{}", LANG.no_write_permission.clone());
+                Terminal::exit();
+            }
+        }
+        // read
+        let result = TextBuffer::from_path(path_str, enc);
+        match result {
+            Ok((text_buf, _enc, _new_line, _bom_exsist)) => {
+                enc = _enc;
+                new_line = _new_line;
+                bom_exsist = _bom_exsist;
+                tab.editor.buf = text_buf;
+                tab.editor.buf.text.insert_char(tab.editor.buf.text.len_chars(), EOF_MARK);
+            }
+            Err(err) => match err.kind() {
+                ErrorKind::PermissionDenied => {
+                    Terminal::finalize();
+                    println!("{}", LANG.no_read_permission.clone());
+                    Terminal::exit();
+                }
+                ErrorKind::NotFound => tab.editor.buf.text.insert_char(tab.editor.buf.text.len_chars(), EOF_MARK),
+                /*
+                ErrorKind::InvalidData => {
+                    enc = Encode::Unknown;
+                    let mut decoder = DecodeReaderBytesBuilder::new().utf8_passthru(true).build(std::fs::File::open(path_str).unwrap());
+                    let mut dest = vec![];
+                    decoder.read_to_end(&mut dest).unwrap();
+                    let mut builder = RopeBuilder::new();
+                    builder.append(&*String::from_utf8_lossy(&dest[..]));
+                    let text = builder.finish();
+                    tab.editor.buf = TextBuffer { text };
+                    tab.editor.buf.text.insert_char(tab.editor.buf.text.len_chars(), EOF_MARK);
+                }
+                 */
+                _ => {
+                    Terminal::finalize();
+                    println!("{} {:?}", LANG.file_opening_problem, err);
+                    Terminal::exit();
+                }
+            },
         }
 
-        return args;
+        if enc == Encode::Unknown {
+            tab.state.is_unknown_encoding = true;
+        }
+
+        let mut h_file = HeaderFile::new(&filenm);
+        h_file.enc = enc;
+        h_file.new_line = new_line;
+        h_file.bom_exsist = bom_exsist;
+        self.add_tab(tab.clone(), h_file);
+        self.curt().editor.set_cur_default();
+
+        Log::info("File open end", &filenm);
     }
 
     pub fn activate<T: Write>(&mut self, args: &Args, out: &mut T) {
+        Log::info_s("　　　　　　　activate");
+
         let _ = GREP_INFO_VEC.set(tokio::sync::Mutex::new(vec![GrepInfo::default()]));
         let _ = GREP_CANCEL_VEC.set(tokio::sync::Mutex::new(vec![]));
 
-        self.hbar.file_vec.push(HeaderFile::new(args.filenm.clone()));
-
-        self.curt().open(&args.filenm);
+        self.open(&args.filenm, &mut Tab::new());
         self.draw(out);
     }
 
-    pub fn add_tab(&mut self, tab: Tab, filenm: &String) {
+    pub fn add_tab(&mut self, tab: Tab, h_file: HeaderFile) {
         self.idx = self.tabs.len();
-
-        self.hbar.file_vec.push(HeaderFile::new(filenm.clone()));
-        self.hbar.disp_base_idx = USIZE_UNDEFINED;
-
-        HeaderBar::set_header_filenm(self);
         self.tabs.push(tab);
+
+        self.hbar.file_vec.push(h_file);
+        self.hbar.disp_base_idx = USIZE_UNDEFINED;
+        self.set_disp_size();
+        HeaderBar::set_header_filenm(self);
     }
 
     pub fn del_tab(&mut self, tab_idx: usize) {
@@ -229,10 +296,10 @@ impl Terminal {
         new_tab.editor.buf.text.insert_char(new_tab.editor.buf.text.len_chars(), EOF_MARK);
         new_tab.editor.d_range.draw_type = DrawType::All;
 
-        //  let dt: DateTime<Local> = Local::now();
-        // self.add_tab(new_tab, &dt.format("%M:%S").to_string());
+        let dt: DateTime<Local> = Local::now();
+        self.add_tab(new_tab, HeaderFile::new(&dt.format("%M:%S").to_string()));
 
-        self.add_tab(new_tab, &LANG.new_file);
+        // self.add_tab(new_tab, &LANG.new_file);
     }
 
     pub fn next_tab(&mut self) {
@@ -268,46 +335,30 @@ impl Terminal {
 
 impl Default for Terminal {
     fn default() -> Self {
-        Terminal {
-            mode: TermMode::Normal,
-            hbar: HeaderBar::new(),
-            tabs: vec![Tab::new()],
-            idx: 0,
-            help: Help::new(),
-        }
+        Terminal { mode: TermMode::Normal, hbar: HeaderBar::new(), tabs: vec![], idx: 0, help: Help::new() }
     }
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TermMode {
-    Normal,
-    Mouse,
 }
 
 pub struct Args {
     pub filenm: String,
-    pub ext: String,
-    pub search_str: String,
-    // full path
-    pub search_file: String,
-    pub search_folder: String,
-    pub search_filenm: String,
-    pub search_case_sens: bool,
-    pub search_regex: bool,
-    pub search_row_num: String,
+    pub encoding: Encode,
 }
 impl Default for Args {
     fn default() -> Self {
-        Args {
-            filenm: String::new(),
-            ext: String::new(),
-            search_str: String::new(),
-            search_file: String::new(),
-            search_folder: String::new(),
-            search_filenm: String::new(),
-            search_case_sens: true,
-            search_regex: false,
-            search_row_num: String::new(),
-        }
+        Args { filenm: String::new(), encoding: Encode::UTF8 }
+    }
+}
+impl Args {
+    pub fn new(matches: &ArgMatches) -> Self {
+        let file_path: String = matches.value_of_os("file").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
+        let args_encoding = matches.value_of_os("encodhing").unwrap_or(OsStr::new("UTF8")).to_string_lossy().to_string();
+
+        let encoding = match args_encoding.as_str() {
+            "sjis" => Encode::SJIS,
+            _ => Encode::UTF8,
+        };
+
+        return Args { filenm: file_path, encoding };
     }
 }
 

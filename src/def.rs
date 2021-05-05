@@ -4,7 +4,7 @@ pub const STR_UNDEFINED: &str = "STR_UNDEFINED";
 pub const USIZE_UNDEFINED: usize = usize::MAX;
 // Corresponding alternative character that cannot set a newline at the end in WSL
 pub const COPY_END: &str = "COPY_END";
-pub const NEW_LINE: char = '\n';
+pub const NEW_LINE_LF: char = '\n';
 pub const NEW_LINE_CR: char = '\r';
 pub const NEW_LINE_CRLF: &str = "\r\n";
 pub const TAB: char = '\t';

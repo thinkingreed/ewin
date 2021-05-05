@@ -1,9 +1,8 @@
-use clap::{App, Arg};
+use clap::{App, AppSettings, Arg};
 use crossterm::event::{Event::Mouse, EventStream, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use ewin::{_cfg::cfg::*, global::*, log::*, model::*, terminal::*};
 use futures::{future::FutureExt, select, StreamExt};
 use std::{
-    ffi::OsStr,
     io::{stdout, BufWriter},
     panic,
     sync::mpsc::*,
@@ -13,9 +12,17 @@ use tokio_util::codec::{FramedRead, LinesCodec};
 
 #[tokio::main]
 async fn main() {
-    let matches = App::new(env!("CARGO_PKG_NAME")).version(env!("CARGO_PKG_VERSION")).bin_name(env!("CARGO_PKG_NAME")).arg(Arg::with_name("file").required(false)).get_matches();
-    let file_path: String = matches.value_of_os("file").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
-
+    let matches = App::new(env!("CARGO_PKG_NAME"))
+        .version(env!("CARGO_PKG_VERSION"))
+        .bin_name(env!("CARGO_PKG_NAME"))
+        .setting(AppSettings::DeriveDisplayOrder)
+        .arg(Arg::with_name("file").required(false))
+        .arg(
+            Arg::from_usage("-e --encoding [OPTION] 'encoding option'")
+                .possible_values(&["sjis", "euc", "utf8"]) // 指定可能な値を設定
+                .default_value("utf8"), // デフォルト値を設定
+        )
+        .get_matches();
     // Processing ends when the terminal size is small
     if !Terminal::check_displayable() {
         return;
@@ -23,7 +30,7 @@ async fn main() {
     let default_hook = panic::take_hook();
     panic::set_hook(Box::new(move |e| {
         eprintln!("{}", e);
-        Log::ep_tmp("Unexpected panic", e);
+        Log::error("Unexpected panic", e);
         Terminal::finalize();
         // Set hook to log crash reason
         default_hook(e);
@@ -36,7 +43,7 @@ async fn main() {
         println!("{}", err_str);
     }
 
-    let args = Terminal::init_args(&file_path);
+    let args = Args::new(&matches);
     let out = stdout();
     let mut out = BufWriter::new(out.lock());
     let mut term = Terminal::new();
@@ -74,12 +81,13 @@ async fn main() {
                 if let Some(mut grep_info) = grep_info_vec.get_mut(grep_info_idx) {
                     if grep_info.is_result && !grep_info.is_cancel && !(grep_info.is_stdout_end && grep_info.is_stderr_end) {
                         let mut child = EvtAct::get_grep_child(&grep_info.search_str, &grep_info.search_folder, &grep_info.search_filenm);
-
                         let mut reader_stdout = FramedRead::new(child.stdout.take().unwrap(), LinesCodec::new());
                         let mut reader_stderr = FramedRead::new(child.stderr.take().unwrap(), LinesCodec::new());
+
                         loop {
                             // Sleep to receive key event
                             thread::sleep(time::Duration::from_millis(10));
+
                             {
                                 if let Some(Ok(grep_cancel_vec)) = GREP_CANCEL_VEC.get().map(|vec| vec.try_lock()) {
                                     let is_cancel = grep_cancel_vec[grep_info_idx];
@@ -105,7 +113,8 @@ async fn main() {
                                 },
                                 std_err = read_stderr => {
                                     match std_err {
-                                        Some(Ok(grep_str)) => send_grep_job(grep_str, &mut tx_grep, &grep_info),
+                                      Some(Ok(grep_str)) => send_grep_job(grep_str, &mut tx_grep, &grep_info),
+                                     //   Some(Ok(grep_str)) => Log::ep("grep_str err", &grep_str),
                                         None => grep_info.is_stderr_end = true,
                                         _ => {},
                                     }

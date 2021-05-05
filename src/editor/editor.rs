@@ -1,10 +1,4 @@
-use crate::{
-    def::*,
-    log::*,
-    model::*,
-    terminal::{TermMode, Terminal},
-    util::*,
-};
+use crate::{def::*, log::*, model::*, terminal::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use std::cmp::{max, min};
 
@@ -15,7 +9,7 @@ impl Editor {
 
     // adjusting vertical posi of cursor
     pub fn scroll(&mut self) {
-        Log::ep_s("　　　　　　　 scroll");
+        Log::debug_s("　　　　　　　scroll");
 
         if self.evt == CTRL_HOME || self.cur.y == 0 {
             self.offset_y = 0;
@@ -39,7 +33,6 @@ impl Editor {
                 }
             }
         }
-        Log::ep("self.offset_y", &self.offset_y);
     }
 
     // move to row
@@ -58,18 +51,15 @@ impl Editor {
 
     // adjusting horizontal posi of cursor
     pub fn scroll_horizontal(&mut self) {
-        Log::ep_s("　　　　　　　 scroll_horizontal");
-
-        Log::ep("self.evt", &self.evt);
+        Log::debug_s("　　　　　　　scroll_horizontal");
 
         // offset_x Number of characters for switching judgment
-        let offset_x_extra_num = 3;
+        let extra_num = 3;
+        let extra_num_search = 5;
         // Number of offset increase / decrease when switching the above offset
-        let offset_x_change_num = 10;
+        let add_width_num = 10;
 
         self.offset_x_org = self.offset_x;
-
-        Log::ep("offset_x_org", &self.offset_x_org);
 
         let vec = &self.buf.char_vec_line(self.cur.y);
 
@@ -78,6 +68,7 @@ impl Editor {
         if 0 == self.cur.x {
             self.offset_x = 0;
             self.offset_disp_x = 0;
+            return;
 
         // KEY_NULL:grep_result initial display
         } else if self.cur_y_org != self.cur.y || self.evt == PASTE || self.evt == END || self.evt == SEARCH_ASC || self.evt == SEARCH_DESC || self.evt == KEY_NULL {
@@ -85,7 +76,7 @@ impl Editor {
 
             if self.evt == END {
                 // +3 extra
-                if self.offset_x + self.get_rnw() + Editor::RNW_MARGIN > self.disp_col_num {
+                if self.cur.disp_x > self.disp_col_num - self.get_rnw() - Editor::RNW_MARGIN {
                     self.offset_x += 3;
                 }
             }
@@ -94,43 +85,38 @@ impl Editor {
                 let str_width = get_str_width(&self.search.str);
                 if self.evt == SEARCH_ASC || self.evt == KEY_NULL {
                     // Offset setting to display a few characters to the right of the search character for easier viewing
-                    if self.cur.disp_x + str_width + 5 > self.offset_disp_x + self.disp_col_num {
-                        self.offset_x += str_width + 5;
+                    if self.cur.disp_x + str_width + extra_num_search > self.offset_disp_x + self.disp_col_num - self.get_rnw() - Editor::RNW_MARGIN {
+                        self.offset_x += str_width + extra_num_search;
                     }
                 } else if self.evt == SEARCH_DESC {
                     // Calc offset_disp_x once to judge the display position
                     let offset_disp_x = get_row_width(&vec[..self.offset_x], self.offset_disp_x, false).1;
-                    if self.cur.disp_x + str_width + 5 > offset_disp_x + self.disp_col_num {
-                        self.offset_x += str_width + 5;
+                    // +5 extra
+                    if self.cur.disp_x + str_width + extra_num_search > offset_disp_x + self.disp_col_num - self.get_rnw() - Editor::RNW_MARGIN {
+                        self.offset_x += str_width + extra_num_search;
                     }
                 }
             }
-        // cur_right
-        } else if self.evt == RIGHT && self.offset_disp_x + self.disp_col_num < self.cur.disp_x + offset_x_extra_num {
+
+            // cur_right
+        } else if self.evt == RIGHT && self.offset_disp_x + self.disp_col_num - self.get_rnw() - Editor::RNW_MARGIN < self.cur.disp_x + extra_num {
             let width = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], self.offset_disp_x, true).1;
             if width > self.disp_col_num - self.get_rnw() - Editor::RNW_MARGIN {
-                self.offset_x += offset_x_change_num;
+                self.offset_x += add_width_num;
             }
 
         // cur_left
-        } else if self.evt == LEFT && self.cur.disp_x >= offset_x_extra_num && self.offset_disp_x >= self.cur.disp_x - offset_x_extra_num {
-            Log::ep_s(" self.x_offset + self.get_rnw() + extra > self.cur.x ");
-            self.offset_x = if self.offset_x >= offset_x_change_num { self.offset_x - offset_x_change_num } else { 0 };
+        } else if self.evt == LEFT && self.cur.disp_x >= extra_num && self.offset_disp_x >= self.cur.disp_x - extra_num {
+            self.offset_x = if self.offset_x >= add_width_num { self.offset_x - add_width_num } else { 0 };
         }
 
         // Calc offset_disp_x
         if self.cur_y_org != self.cur.y {
-            Log::ep_s(" self.cur_y_org != self.cur.y ");
             self.offset_disp_x = get_row_width(&vec[..self.offset_x], self.offset_disp_x, false).1;
         } else if self.offset_x_org != self.offset_x {
             if self.offset_x < self.offset_x_org {
-                // Log::ep_s(" self.x_offset < x_offset_org  ");
-                let ttt = get_row_width(&vec[self.offset_x..self.offset_x_org], self.offset_disp_x, false).1;
-                Log::ep(" ttt", &ttt);
                 self.offset_disp_x -= get_row_width(&vec[self.offset_x..self.offset_x_org], self.offset_disp_x, false).1;
             } else {
-                Log::ep_s("else self.x_offset < x_offset_org  ");
-                Log::ep("get_row_width(&vec[offset_x_org..self.offset_x], false).1", &get_row_width(&vec[self.offset_x_org..self.offset_x], self.offset_disp_x, false).1);
                 self.offset_disp_x += get_row_width(&vec[self.offset_x_org..self.offset_x], self.offset_disp_x, false).1;
             }
         }
@@ -138,15 +124,13 @@ impl Editor {
 
     /// Get x_offset from the specified y・x
     pub fn get_x_offset(&mut self, y: usize, x: usize) -> usize {
-        Log::ep_s("　　　　　　　　get_x_offset");
-
         let (mut cur_x, mut width) = (0, 0);
         let char_vec = self.buf.char_vec_range(y, x);
         for c in char_vec.iter().rev() {
             width += get_char_width(c, width);
 
             let rnw_margin = if self.mode == TermMode::Normal { self.get_rnw() + Editor::RNW_MARGIN + 1 } else { 0 };
-            if width + rnw_margin > self.disp_col_num {
+            if width > self.disp_col_num - rnw_margin {
                 break;
             }
             cur_x += 1;
@@ -154,25 +138,6 @@ impl Editor {
         return x - cur_x;
     }
 
-    /*
-    /// Get x_offset from the specified y・x
-    pub fn get_x_offset___(&mut self, y: usize, x: usize) -> usize {
-        Log::ep_s("　　　　　　　　get_x_offset");
-
-        let (mut cur_x, mut width) = (0, 0);
-
-        let char_vec = self.buf.char_vec_range(y, x);
-        for i in (0..x).rev() {
-            let c = self.buf.char(y, i);
-            width += c.width().unwrap_or(0);
-            if width + self.get_rnw() + Editor::RNW_MARGIN + 1 > self.disp_col_num {
-                break;
-            }
-            cur_x += 1;
-        }
-        return x - cur_x;
-    }
-     */
     pub fn del_sel_range(&mut self) {
         let sel = self.sel.get_range();
         self.buf.remove_range(sel);
@@ -227,9 +192,6 @@ impl Editor {
         }
     }
     pub fn set_draw_range(&mut self) {
-        Log::ep_s("set_draw_range");
-        Log::ep("self.d_range", &self.d_range);
-
         if self.d_range.draw_type != DrawType::All {
             if (self.offset_x > 0 && self.cur_y_org != self.cur.y) || self.offset_x_org != self.offset_x {
                 self.d_range = DRange::new(min(self.cur_y_org, self.cur.y), max(self.cur_y_org, self.cur.y), DrawType::Target);

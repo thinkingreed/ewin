@@ -55,7 +55,7 @@ Please see `ewin --help` for command usage.
 ## Operation
 
 ewin is a mode-less text editor. Like other famous mode-less text editors such as Nano, Emacs, you can edit text in terminal window using a keyboard.
-And several keys with Ctrl or Alt modifiers are mapped to various features.
+And several keys with Ctrl or Alt modifiers are mapped to various features.    
 
 - **Operations**
 
@@ -70,8 +70,9 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 |                | -r:Subfolder search,-H:File name display,-n:Line number display,-I: Binary file not applicable|             |
 | `Shift` + `F1` | Key record start or stop.Recording key operation.                                    |―            |
 | `Shift` + `F2` | Execution of the recorded key.                                                       |―            |
+| `Ctrl` + `o`   | Open new file.                                                                      |―            |
 | `Ctrl` + `t`   | Create new tab.                                                                      |―            |
-| `Ctrl` + `q`   | Change next tab.                                                                     |―            |
+| `Ctrl` + `q`   | Change next tab.                                                                     |―            | 
 
 
 - **Moving cursor**
@@ -133,12 +134,12 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 |`Copy`・`Paste`| `Ctrl` + `c`・`v`| WSL             | Need path to powershell.exe. Try $PSHOME at PowerShell terminal|
 
 ## Setting file
-
 Please edit the contents of setting.toml(initial setting) below and put it in this location.
 
 ### On Linux
 $HOME/.config/ewin/setting.toml
-
+### On Windows
+%USERPROFILE%AppData\\Roaming
 
 
 ```
@@ -180,7 +181,12 @@ warning_foreground = "#ffa500"
 err_foreground = "#ff0000"
 #################################################################
 ```
-
+## Maintenance
+Operation / Unexpected error log is output below.
+### On Linux
+/tmp/ewin/
+### On Windows
+%USERPROFILE%AppData\\Local\\Temp\\ewin\\
 
 ## Sample imsage
   

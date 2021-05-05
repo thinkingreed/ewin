@@ -1,7 +1,6 @@
-use crate::{colors::*, def::*, global::*, log::*, terminal::Terminal, util::*};
+use crate::{colors::*, def::*, global::*, log::*, model::*, terminal::*, util::*};
 use crossterm::{cursor::*, terminal::*};
-use std::{ffi::OsStr, io::Write, path::Path};
-use syntect::parsing::SyntaxReference;
+use std::io::Write;
 
 impl HeaderBar {
     const ALLOW_BTN_WITH: usize = 2;
@@ -11,7 +10,7 @@ impl HeaderBar {
     const FILENM_LEN_LIMMIT: usize = 12;
 
     pub fn draw<T: Write>(out: &mut T, term: &Terminal) {
-        Log::ep_s("　　　　　　　　HeaderBar.draw");
+        Log::info_s("　　　　　　　HeaderBar.draw");
 
         let plus_btn = format!(" {} ", '+');
         let help_btn = format!("{}:{}", KEY_HELP, LANG.help);
@@ -40,7 +39,7 @@ impl HeaderBar {
         if term.hbar.is_right_arrow_disp {
             hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_inversion_fg_bg(), right_arrow_btn, &Colors::get_hbar_fg_bg()));
         }
-        hber_str = format!("{}{}{}{}{} {}{}{}", hber_str, plus_btn, Colors::get_hbar_inversion_fg_bg(), help_btn, Colors::get_default_bg(), Colors::get_hbar_inversion_fg_bg(), close_btn, Colors::get_default_bg());
+        hber_str = format!("{}{}{}{} {}{}{} {}{}{}", hber_str, Colors::get_hbar_inversion_fg_bg(), plus_btn, Colors::get_default_bg(), Colors::get_hbar_inversion_fg_bg(), help_btn, Colors::get_default_bg(), Colors::get_hbar_inversion_fg_bg(), close_btn, Colors::get_default_bg());
 
         let _ = out.write(&hber_str.as_bytes());
         out.flush().unwrap();
@@ -48,10 +47,10 @@ impl HeaderBar {
 
     pub fn set_posi(&mut self, cols_w: usize) {
         self.disp_col_num = cols_w;
-        self.filenm_space_w = self.disp_col_num - HeaderBar::PLUS_BTN_WITH - HeaderBar::HELP_BTN_WITH - 1 - HeaderBar::CLOSE_BTN_WITH;
+        self.all_filenm_space_w = self.disp_col_num - HeaderBar::PLUS_BTN_WITH - 1 - HeaderBar::HELP_BTN_WITH - 1 - HeaderBar::CLOSE_BTN_WITH;
         // +1 is space between
-        self.plus_btn_area = (self.filenm_space_w, self.filenm_space_w + HeaderBar::PLUS_BTN_WITH - 1);
-        self.help_btn_area = (self.plus_btn_area.1 + 1, self.plus_btn_area.1 + 1 + HeaderBar::HELP_BTN_WITH - 1);
+        self.plus_btn_area = (self.all_filenm_space_w, self.all_filenm_space_w + HeaderBar::PLUS_BTN_WITH - 1);
+        self.help_btn_area = (self.plus_btn_area.1 + 2, self.plus_btn_area.1 + 2 + HeaderBar::HELP_BTN_WITH - 1);
         self.close_btn_area = (self.help_btn_area.1 + 2, self.help_btn_area.1 + 2 + HeaderBar::CLOSE_BTN_WITH - 1);
     }
 
@@ -92,7 +91,7 @@ impl HeaderBar {
             let h_file = term.hbar.file_vec.get_mut(*idx).unwrap();
             let right_arrow_w = if term.hbar.disp_base_idx != USIZE_UNDEFINED && *idx != vec_len - 1 { HeaderBar::ALLOW_BTN_WITH } else { 0 };
 
-            if term.hbar.filenm_space_w - left_arrow_w - right_arrow_w > width + get_str_width(&h_file.filenm_disp) {
+            if term.hbar.all_filenm_space_w - left_arrow_w - right_arrow_w > width + get_str_width(&h_file.filenm_disp) {
                 h_file.is_disp = true;
 
                 width += get_str_width(&h_file.filenm_disp);
@@ -107,7 +106,7 @@ impl HeaderBar {
                     term.hbar.disp_base_idx = idx_org;
                 }
                 // del last "|"
-                if i != tmp_all_vec[disp_base_idx..].len() - 1 {
+                if i <= tmp_all_vec.len() - 1 {
                     all_filenm_vec.pop();
                 }
                 break;
@@ -119,6 +118,7 @@ impl HeaderBar {
             // Returns Reverse to calculate the range of each tab
             all_filenm_vec.reverse();
         }
+
         if all_filenm_vec.last().unwrap().0 != vec_len - 1 {
             term.hbar.is_right_arrow_disp = true;
         }
@@ -127,7 +127,7 @@ impl HeaderBar {
         for (_, disp_str) in &all_filenm_vec {
             width += get_str_width(&disp_str);
         }
-        term.hbar.all_filenm_rest = term.hbar.filenm_space_w - width;
+        term.hbar.all_filenm_rest = term.hbar.all_filenm_space_w - width;
 
         // Width calc on tab
         let mut width = if term.hbar.is_left_arrow_disp { 2 } else { 0 };
@@ -152,7 +152,10 @@ impl HeaderBar {
         // Width calc on right_arrow
         if term.hbar.is_right_arrow_disp {
             term.hbar.all_filenm_rest -= HeaderBar::ALLOW_BTN_WITH;
-            term.hbar.right_arrow_area = (term.hbar.filenm_space_w - 2, term.hbar.filenm_space_w - 1);
+            term.hbar.right_arrow_area = (term.hbar.all_filenm_space_w - 2, term.hbar.all_filenm_space_w - 1);
+            term.hbar.all_filenm_rest_area = (term.hbar.all_filenm_space_w - term.hbar.all_filenm_rest - HeaderBar::ALLOW_BTN_WITH, term.hbar.right_arrow_area.0 - 1);
+        } else {
+            term.hbar.all_filenm_rest_area = (term.hbar.all_filenm_space_w - term.hbar.all_filenm_rest, term.hbar.all_filenm_space_w - 1);
         }
     }
 
@@ -176,7 +179,8 @@ impl HeaderBar {
 #[derive(Debug, Clone)]
 pub struct HeaderBar {
     pub all_filenm_rest: usize,
-    pub filenm_space_w: usize,
+    pub all_filenm_rest_area: (usize, usize),
+    pub all_filenm_space_w: usize,
     pub disp_base_idx: usize,
     pub file_vec: Vec<HeaderFile>,
     pub plus_btn_area: (usize, usize),
@@ -192,13 +196,15 @@ pub struct HeaderBar {
     pub disp_row_num: usize,
     pub disp_row_posi: usize,
     pub disp_col_num: usize,
+    pub history: History,
 }
 
 impl Default for HeaderBar {
     fn default() -> Self {
         HeaderBar {
             all_filenm_rest: 0,
-            filenm_space_w: 0,
+            all_filenm_rest_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
+            all_filenm_space_w: 0,
             disp_base_idx: USIZE_UNDEFINED,
             file_vec: vec![],
             plus_btn_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
@@ -212,6 +218,7 @@ impl Default for HeaderBar {
             disp_row_num: 1,
             disp_row_posi: 0,
             disp_col_num: 0,
+            history: History::default(),
         }
     }
 }
@@ -220,12 +227,14 @@ impl Default for HeaderBar {
 pub struct HeaderFile {
     pub filenm: String,
     pub filenm_disp: String,
-    pub ext: String,
+    // pub ext: String,
     pub is_disp: bool,
     pub is_changed: bool,
     pub filenm_area: (usize, usize),
     pub close_area: (usize, usize),
-    pub syntax_reference: Option<SyntaxReference>,
+    pub enc: Encode,
+    pub new_line: String,
+    pub bom_exsist: Option<Encode>,
 }
 
 impl Default for HeaderFile {
@@ -233,21 +242,22 @@ impl Default for HeaderFile {
         HeaderFile {
             filenm: String::new(),
             filenm_disp: String::new(),
-            ext: String::new(),
+            //  ext: String::new(),
             is_disp: false,
             is_changed: false,
             filenm_area: (0, 0),
             close_area: (0, 0),
-            syntax_reference: None,
+            enc: Encode::UTF8,
+            new_line: NEW_LINE_LF.to_string(),
+            bom_exsist: None,
         }
     }
 }
 
 impl HeaderFile {
-    pub fn new(filenm: String) -> Self {
+    pub fn new(filenm: &String) -> Self {
         return HeaderFile {
             filenm: if filenm.is_empty() { LANG.new_file.clone() } else { filenm.clone() },
-            ext: Path::new(&filenm).extension().unwrap_or(OsStr::new("txt")).to_string_lossy().to_string(),
             ..HeaderFile::default()
         };
     }

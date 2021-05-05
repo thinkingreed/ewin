@@ -1,6 +1,9 @@
 use super::lang::LANG_CONFIG;
 use serde::{Deserialize, Serialize};
+#[cfg(target_os = "linux")]
 use std::env;
+#[cfg(target_os = "windows")]
+use std::process::Command;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct LangCfg {
@@ -21,6 +24,8 @@ pub struct LangCfg {
     pub changed: String,
     pub detail: String,
     pub grep: String,
+    pub filenm: String,
+    pub file_list: String,
     pub range_select: String,
     pub mouse_switch: String,
     // pub all_select: String,
@@ -42,6 +47,7 @@ pub struct LangCfg {
     pub save_confirmation_to_close: String,
     pub terminal_size_small: String,
     pub set_new_filenm: String,
+    pub set_open_filenm: String,
     pub set_search: String,
     pub set_replace: String,
     pub set_grep: String,
@@ -49,11 +55,13 @@ pub struct LangCfg {
     pub move_to_specified_row: String,
     pub unable_to_edit: String,
     pub complement: String,
+    pub open: String,
     pub open_target_file: String,
     pub key_record_start: String,
     pub key_record_stop: String,
     pub key_recording: String,
     pub help: String,
+    pub move_dir: String,
     /// Long msg
     pub not_entered_filenm: String,
     pub not_entered_search_str: String,
@@ -93,15 +101,23 @@ pub struct LangMulti {
     ja: LangCfg,
 }
 
+#[cfg(target_os = "linux")]
 impl LangCfg {
     pub fn read_lang_cfg() -> LangCfg {
         let lang_multi: LangMulti = toml::from_str(&LANG_CONFIG.to_string()).unwrap();
         let lang = env::var("LANG").unwrap_or("en_US".to_string());
+        return if lang.starts_with("ja_JP") { lang_multi.ja } else { lang_multi.en };
+    }
+}
 
-        if lang.starts_with("ja_JP") {
-            return lang_multi.ja;
-        } else {
-            return lang_multi.en;
-        }
+#[cfg(target_os = "windows")]
+impl LangCfg {
+    pub fn read_lang_cfg() -> LangCfg {
+        let lang_multi: LangMulti = toml::from_str(&LANG_CONFIG.to_string()).unwrap();
+        let lang = match Command::new("powershell.exe").args(&["(Get-WinUserLanguageList)[0].LanguageTag"]).output() {
+            Ok(output) => String::from_utf8_lossy(&output.stdout).trim().to_string(),
+            Err(_) => "en_US".to_string(),
+        };
+        return if lang.starts_with("ja") { lang_multi.ja } else { lang_multi.en };
     }
 }

@@ -1,20 +1,24 @@
-use crate::{bar::headerbar::*, bar::msgbar::*, colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, tab::Tab, terminal::*};
+use crate::{bar::msgbar::*, colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, tab::Tab, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::{ffi::OsStr, io::Write, path::*, process};
 use tokio::process::{Child, Command};
 
 impl EvtAct {
     pub fn draw_grep_result<T: Write>(out: &mut T, term: &mut Terminal, job_grep: JobGrep) {
-        Log::ep_s("　　　　　　　draw_grep_result");
+        Log::debug_s("　　　　　　　draw_grep_result");
 
         if !job_grep.is_cancel {
             if !(job_grep.is_stdout_end && job_grep.is_stderr_end) {
+                if job_grep.grep_str.trim().len() == 0 {
+                    return;
+                }
+
                 let path = PathBuf::from(&term.curt().editor.search.filenm);
                 let filenm = path.file_name().unwrap_or(OsStr::new("")).to_string_lossy().to_string();
                 let replace_folder = term.curt().editor.search.filenm.replace(&filenm, "");
                 let line_str = job_grep.grep_str.replace(&replace_folder, "");
 
-                term.curt().editor.buf.insert_end(&format!("{}{}", line_str, NEW_LINE));
+                term.curt().editor.buf.insert_end(&format!("{}{}", line_str, NEW_LINE_LF));
 
                 let rnw_org = term.curt().editor.rnw;
                 term.curt().editor.set_grep_result();
@@ -26,11 +30,11 @@ impl EvtAct {
                 }
                 term.draw(out);
             } else {
-                Log::ep_s("grep is end");
+                Log::debug_s("grep is end");
                 EvtAct::exit_grep_result(out, term, job_grep);
             }
         } else {
-            Log::ep_s("grep is canceled");
+            Log::debug_s("grep is canceled");
             EvtAct::exit_grep_result(out, term, job_grep);
         }
     }
@@ -60,7 +64,7 @@ impl EvtAct {
 
     #[cfg(target_os = "linux")]
     pub fn get_grep_child(search_str: &String, search_folder: &String, search_filenm: &String) -> Child {
-        Log::ep_s("　　　　　　　　get_grep_child linux");
+        Log::debug_s("　　　　　　　　get_grep_child linux");
         // -r:Subfolder search, -H:File name display, -n:Line number display,
         // -I:Binary file not applicable, -i:Ignore-case
         let mut cmd_option = "-rHnI".to_string();
@@ -91,29 +95,26 @@ impl EvtAct {
     #[cfg(target_os = "windows")]
     pub fn get_grep_child(search_str: &String, search_folder: &String, search_filenm: &String) -> Child {
         Log::ep_s("　　　　　　　　get_grep_child windows");
-        // -r:Subfolder search, -H:File name display, -n:Line number display,
-        // -I:Binary file not applicable, -i:Ignore-case
-        let mut cmd_option = "-rHnI".to_string();
+        let mut cmd_option = "".to_string();
         {
-            if !CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens {
-                cmd_option.push('i');
+            if CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens {
+                cmd_option.push_str(&" -CaseSensitive");
             };
         }
         {
             if !CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex {
-                cmd_option.push('F');
+                cmd_option.push_str(&" -SimpleMatch");
             };
         }
+        let path = Path::new(&search_folder).join(&search_filenm);
 
-        let path = Path::new(&search_folder);
-        path.push(&search_filenm);
-
-        let cmd = Command::new("sls")
-            //  .arg(cmd_option)
-            .arg(search_folder)
-            .arg("-Pattern")
-            .arg(path)
-            // folder
+        let cmd = Command::new("powershell.exe")
+            .arg("sls")
+            .arg(format!(r#""{}""#, search_str))
+            .arg(format!("(dir -recurse {:?})", path))
+            .args(&["-exclude", "*.exe,*.zip,*.lzh,*.gz,*.Z,*.bz2,*.gif,*.jpg,*.png,*.bmp,*.tif,*.xls,*.doc,*.ppt,*.dvi,*.pdf,*.o,*.a,*.lib,*.rlib,*.rmeta,*.bin,*.pdb,*.dll"])
+            .arg(cmd_option)
+            .args(&["|", "Out-String", "-Width", "409600"])
             .kill_on_drop(true)
             .stdout(process::Stdio::piped())
             .stderr(process::Stdio::piped())
@@ -124,9 +125,10 @@ impl EvtAct {
     }
 
     pub fn grep_result(term: &mut Terminal) -> EvtActType {
-        Log::ep_s("　　　　　　　　grep_result");
+        Log::debug_s("　　　　　　　　grep_result");
 
-        match &term.curt().editor.evt {
+        let evt = term.curt().editor.evt.clone();
+        match evt {
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 F(4) | Right | Left | Down | Up | Home | End => return EvtActType::Next,
                 _ => return EvtActType::Hold,
@@ -138,9 +140,8 @@ impl EvtAct {
             Key(KeyEvent { code, .. }) => match code {
                 PageDown | PageUp | Home | End | F(3) | Down | Up | Left | Right => return EvtActType::Next,
                 Enter => {
-                    let grep_result = &term.tabs[term.idx].editor.grep_result_vec[term.tabs[term.idx].editor.cur.y];
-                    Log::ep("grep_result", &grep_result);
-                    Log::ep("term.tabs[term.idx].editor.search", &term.tabs[term.idx].editor.search);
+                    let y = term.tabs[term.idx].editor.cur.y;
+                    let grep_result = term.tabs[term.idx].editor.grep_result_vec[y].clone();
 
                     if grep_result.row_num != USIZE_UNDEFINED {
                         let mut tab_grep = Tab::new();
@@ -149,13 +150,7 @@ impl EvtAct {
                         tab_grep.editor.evt = KEY_NULL;
                         tab_grep.editor.mode = term.mode;
 
-                        term.idx = term.tabs.len();
-                        term.hbar.file_vec.push(HeaderFile::new(grep_result.filenm.clone()));
-
-                        tab_grep.open(&grep_result.filenm);
-                        term.tabs.push(tab_grep);
-                        term.set_disp_size();
-
+                        term.open(&grep_result.filenm, &mut tab_grep);
                         term.curt().editor.search_str(true, false);
                         return EvtActType::Next;
                     } else {

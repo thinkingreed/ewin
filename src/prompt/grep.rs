@@ -1,21 +1,10 @@
-use crate::{
-    colors::*,
-    def::*,
-    global::*,
-    log::*,
-    model::*,
-    prompt::prompt::*,
-    prompt::promptcont::promptcont::*,
-    tab::{Tab, TabState},
-    terminal::*,
-    util::*,
-};
+use crate::{bar::headerbar::HeaderFile, colors::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, tab::Tab, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
-use std::{env, fs, path::Path};
+use std::{env, path::Path};
 
 impl EvtAct {
     pub fn grep(term: &mut Terminal) -> EvtActType {
-        Log::ep_s("Process.grep");
+        Log::debug_s("Process.grep");
 
         match term.curt().editor.evt {
             Key(KeyEvent { code, .. }) => match code {
@@ -36,13 +25,11 @@ impl EvtAct {
                         term.curt().state.clear();
                         term.curt().state.clear_grep_info();
 
-                        let current_dir = env::current_dir().unwrap().display().to_string();
-                        Log::ep_s(&current_dir);
-                        Log::ep_s(&search_folder);
-                        if search_folder.chars().nth(0).unwrap() != '/' {
+                        if search_folder.chars().nth(0).unwrap() != '/' && search_folder.chars().nth(0).unwrap() != 'C' {
+                            let current_dir = env::current_dir().unwrap().display().to_string();
                             search_folder = format!("{}/{}", current_dir, search_folder);
                         }
-                        Log::ep_s(&search_folder);
+                        Log::debug_s(&search_folder);
                         let path = Path::new(&search_folder).join(&search_filenm);
 
                         term.curt().prom.cache_search_filenm = search_filenm.clone();
@@ -64,16 +51,12 @@ impl EvtAct {
                         tab_grep.state.grep_info.search_folder = search_folder.clone();
                         term.idx = term.tabs.len();
 
-                        Log::ep("GREP_INFO_VEC.len()", &GREP_INFO_VEC.get().unwrap().try_lock().unwrap().len());
-                        Log::ep("GREP_CANCEL_VEC.len()", &GREP_CANCEL_VEC.get().unwrap().try_lock().unwrap().len());
-                        Log::ep("term.idx", &term.idx);
-
                         {
                             GREP_INFO_VEC.get().unwrap().try_lock().unwrap().push(tab_grep.state.grep_info.clone());
                         }
                         GREP_CANCEL_VEC.get().unwrap().try_lock().unwrap().resize_with(GREP_INFO_VEC.get().unwrap().try_lock().unwrap().len(), || false);
 
-                        term.add_tab(tab_grep, &format!(r#"{} "{}""#, &LANG.grep, &search_str));
+                        term.add_tab(tab_grep, HeaderFile::new(&format!(r#"{} "{}""#, &LANG.grep, &search_str)));
                         Prompt::set_grep_working(term);
                         term.curt().editor.d_range.draw_type = DrawType::All;
 
@@ -94,127 +77,14 @@ impl Prompt {
         term.curt().state.grep_info.is_grep = true;
         term.curt().prom.disp_row_num = 9;
         term.set_disp_size();
-        let mut cont_1 = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::First);
-        let mut cont_2 = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::Second);
-        let mut cont_3 = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::Third);
-        cont_1.set_grep(&term.curt().prom);
-        cont_2.set_grep(&term.curt().prom);
-        cont_3.set_grep(&term.curt().prom);
-        term.curt().prom.cont_1 = cont_1;
-        term.curt().prom.cont_2 = cont_2;
-        term.curt().prom.cont_3 = cont_3;
-    }
-    pub fn tab(&mut self, is_asc: bool, tab_state: &TabState) {
-        Log::ep_s("tab");
-        Log::ep("is_asc ", &is_asc);
-
-        if tab_state.is_replace {
-            match self.buf_posi {
-                PromptContPosi::First => self.cursor_down(tab_state),
-                PromptContPosi::Second => self.cursor_up(tab_state),
-                _ => {}
-            }
-        } else if tab_state.grep_info.is_grep {
-            match self.buf_posi {
-                PromptContPosi::First => {
-                    if is_asc {
-                        self.cursor_down(tab_state);
-                    } else {
-                        self.buf_posi = PromptContPosi::Third;
-                        Prompt::set_cur(&self.cont_1, &mut self.cont_3);
-                    }
-                }
-                PromptContPosi::Second => {
-                    if is_asc {
-                        self.cursor_down(tab_state);
-                    } else {
-                        self.cursor_up(tab_state);
-                    }
-                }
-                PromptContPosi::Third => {
-                    self.cont_3.buf = self.get_tab_candidate(is_asc).chars().collect();
-                    let (cur_x, width) = get_row_width(&self.cont_3.buf[..], 0, false);
-                    self.cont_3.cur.x = cur_x;
-                    self.cont_3.cur.disp_x = width;
-                }
-            }
-        }
-        self.clear_sels()
-    }
-
-    fn get_tab_candidate(&mut self, is_asc: bool) -> String {
-        Log::ep_s("set_path");
-        let mut target_path = self.cont_3.buf.iter().collect::<String>();
-
-        // Search target dir
-        let mut base_dir = ".".to_string();
-        // Character string target up to cur.x
-        let _ = target_path.split_off(self.cont_3.cur.x);
-        let vec: Vec<(usize, &str)> = target_path.match_indices("/").collect();
-        // "/" exist
-        if vec.len() > 0 {
-            let (base, _) = target_path.split_at(vec[vec.len() - 1].0 + 1);
-            base_dir = base.to_string();
-        }
-
-        if self.tab_comp.dirs.len() == 0 {
-            if let Ok(mut read_dir) = fs::read_dir(&base_dir) {
-                while let Some(Ok(path)) = read_dir.next() {
-                    if path.path().is_dir() {
-                        let mut dir_str = path.path().display().to_string();
-                        let v: Vec<(usize, &str)> = dir_str.match_indices(target_path.as_str()).collect();
-                        if v.len() > 0 {
-                            // Replace "./" for display
-                            if &base_dir == "." {
-                                dir_str = dir_str.replace("./", "");
-                            }
-                            self.tab_comp.dirs.push(dir_str);
-                        }
-                    }
-                }
-            }
-            self.tab_comp.dirs.sort();
-        }
-
-        Log::ep("read_dir", &self.tab_comp.dirs.clone().join(" "));
-
-        let mut cont_3_str: String = self.cont_3.buf.iter().collect::<String>();
-        for candidate in &self.tab_comp.dirs {
-            // One candidate
-            if self.tab_comp.dirs.len() == 1 {
-                Log::ep_s("　　One candidate");
-                cont_3_str = format!("{}{}", candidate.to_string(), "/");
-                self.clear_tab_comp();
-                break;
-
-            // Multiple candidates
-            } else if self.tab_comp.dirs.len() > 1 {
-                Log::ep_s("  Multi candidates");
-                Log::ep("self.tab_comp.index", &self.tab_comp.index);
-                if is_asc && self.tab_comp.index >= self.tab_comp.dirs.len() - 1 || self.tab_comp.index == USIZE_UNDEFINED {
-                    self.tab_comp.index = 0;
-                } else if !is_asc && self.tab_comp.index == 0 {
-                    self.tab_comp.index = self.tab_comp.dirs.len() - 1;
-                } else {
-                    self.tab_comp.index = if is_asc { self.tab_comp.index + 1 } else { self.tab_comp.index - 1 };
-                }
-                cont_3_str = self.tab_comp.dirs[self.tab_comp.index].clone();
-                break;
-            }
-        }
-
-        return cont_3_str;
-    }
-
-    pub fn clear_tab_comp(&mut self) {
-        Log::ep_s("                  clear_tab_comp ");
-        self.tab_comp.index = USIZE_UNDEFINED;
-        self.tab_comp.dirs.clear();
+        term.curt().prom.cont_1 = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::First).get_grep(&term.curt().prom);
+        term.curt().prom.cont_2 = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::Second).get_grep(&term.curt().prom);
+        term.curt().prom.cont_3 = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::Third).get_grep(&term.curt().prom);
     }
 }
 
 impl PromptCont {
-    pub fn set_grep(&mut self, prom: &Prompt) {
+    pub fn get_grep(&mut self, prom: &Prompt) -> PromptCont {
         let base_posi = self.disp_row_posi - 1;
 
         if self.prompt_cont_posi == PromptContPosi::First {
@@ -268,5 +138,6 @@ impl PromptCont {
             self.buf_desc_row_posi = base_posi + 7;
             self.buf_row_posi = base_posi + 8;
         }
+        return self.clone();
     }
 }
