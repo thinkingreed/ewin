@@ -23,20 +23,26 @@ pub mod global {
 }
 pub mod colors;
 pub mod def;
-pub mod evt_act_headerbar;
-pub mod evt_act_prom;
+pub mod evt_act {
+    pub mod evt_act;
+    pub mod headerbar;
+    pub mod prom;
+    pub mod statusbar;
+}
 pub mod bar {
     pub mod headerbar;
     pub mod msgbar;
     pub mod statusbar;
 }
 pub mod editor {
+    pub mod buf {
+        pub mod edit;
+        pub mod io;
+    }
     pub mod view {
         pub mod buf_cache;
         pub mod char_style;
         pub mod draw;
-        pub mod io;
-        pub mod text_buf;
     }
     pub mod clipboard;
     pub mod editor;
@@ -57,6 +63,7 @@ pub mod prompt {
         pub mod promptcont;
     }
     pub mod close;
+    pub mod enc_nl;
     pub mod grep;
     pub mod grep_result;
     pub mod move_row;
@@ -66,7 +73,6 @@ pub mod prompt {
     pub mod save_new_file;
     pub mod search;
 }
-pub mod evt_act;
 pub mod help;
 pub mod log;
 pub mod tab;

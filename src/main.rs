@@ -17,11 +17,7 @@ async fn main() {
         .bin_name(env!("CARGO_PKG_NAME"))
         .setting(AppSettings::DeriveDisplayOrder)
         .arg(Arg::with_name("file").required(false))
-        .arg(
-            Arg::from_usage("-e --encoding [OPTION] 'encoding option'")
-                .possible_values(&["sjis", "euc", "utf8"]) // 指定可能な値を設定
-                .default_value("utf8"), // デフォルト値を設定
-        )
+        // .arg(Arg::from_usage("-e --encoding [OPTION] 'encoding option'").possible_values(&["sjis", "euc", "utf8"]).default_value("utf8"))
         .get_matches();
     // Processing ends when the terminal size is small
     if !Terminal::check_displayable() {

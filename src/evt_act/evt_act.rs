@@ -8,9 +8,10 @@ use std::{
 impl EvtAct {
     pub fn match_event<T: Write>(event: Event, out: &mut T, term: &mut Terminal) -> bool {
         Terminal::hide_cur();
+        Log::info("event", &event);
 
         let evt_act_type = EvtAct::check_next_process(event, out, term);
-        Log::debug("evt_act_type", &evt_act_type);
+        Log::debug("check_next_process evt_act_type", &evt_act_type);
 
         match evt_act_type {
             EvtActType::Exit => return true,
@@ -23,7 +24,6 @@ impl EvtAct {
                 if evt_act_type == EvtActType::Next && !EvtAct::check_err(term) {
                     EvtAct::init(term);
                     Editor::set_org(term);
-
                     let evt = term.curt().editor.evt;
 
                     match &evt {
@@ -51,6 +51,7 @@ impl EvtAct {
                             Char('t') => term.new_tab(),
                             Char('q') => term.next_tab(),
                             Char('o') => Prompt::open_file(term),
+                            Char('e') => Prompt::enc_nl(term),
                             Home => term.curt().editor.ctrl_home(),
                             End => term.curt().editor.ctrl_end(),
 
@@ -122,9 +123,21 @@ impl EvtAct {
     }
 
     pub fn check_next_process<T: Write>(evt: Event, out: &mut T, term: &mut Terminal) -> EvtActType {
-        let evt_act = EvtAct::check_headerbar(evt, term);
-        Log::debug("EvtAct::check_headerbar", &evt_act);
+        term.curt().editor.evt = evt;
 
+        match &evt {
+            Resize(_, _) => term.set_disp_size(),
+            _ => {}
+        }
+
+        let evt_act = EvtAct::check_headerbar(term);
+        Log::debug("EvtAct::check_headerbar", &evt_act);
+        if evt_act != EvtActType::Hold {
+            return evt_act;
+        }
+
+        let evt_act = EvtAct::check_statusbar(term);
+        Log::debug("EvtAct::check_statusbar", &evt_act);
         if evt_act != EvtActType::Hold {
             return evt_act;
         }
@@ -142,14 +155,13 @@ impl EvtAct {
         if evt_act == EvtActType::Hold && !term.curt().state.grep_info.is_result {
             term.set_disp_size();
             term.curt().mbar.draw_only(out);
-            let tab_state = term.curt().state.clone();
-            term.curt().prom.draw_only(out, &tab_state);
+            Prompt::draw_only(out, &term.curt());
         }
         return evt_act;
     }
 
     pub fn init(term: &mut Terminal) {
-        Log::debug_s("　　　　　　　EvtAct.init");
+        Log::debug_key("EvtAct.init");
 
         let tab = term.tabs.get_mut(term.idx).unwrap();
 
@@ -171,7 +183,7 @@ impl EvtAct {
         // redraw判定
         tab.editor.d_range.draw_type = DrawType::Not;
         match tab.editor.evt {
-            Resize(_, _) => tab.editor.d_range.draw_type = DrawType::All,
+            //  Resize(_, _) => tab.editor.d_range.draw_type = DrawType::All,
             Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                 Home | End | Char('c') => tab.editor.d_range.draw_type = DrawType::Not,
                 _ => tab.editor.d_range.draw_type = DrawType::All,
@@ -259,7 +271,7 @@ impl EvtAct {
     }
 
     pub fn finalize(editor: &mut Editor) {
-        Log::debug_s("　　　　　　　EvtAct.finalize");
+        Log::debug_key("EvtAct.finalize");
 
         // set sel draw range, Clear sel range
         match editor.evt {

@@ -13,7 +13,7 @@ impl Editor {
     }
 
     pub fn cur_down(&mut self) {
-        Log::debug_s("　　　　　　　c_d start");
+        Log::debug_s("              c_d start");
         if self.cur.y + 1 < self.buf.len_lines() {
             self.cur.y += 1;
             self.cur_updown_com();
@@ -146,7 +146,7 @@ impl Editor {
     }
 
     pub fn back_space(&mut self, ep: &mut EvtProc) {
-        Log::debug_s("　　　　　　　back_space");
+        Log::debug_s("              back_space");
         // beginning of the line
         if self.cur.x == 0 {
             self.cur.y -= 1;
@@ -176,7 +176,7 @@ impl Editor {
     }
 
     pub fn delete(&mut self, ep: &mut EvtProc) {
-        Log::debug_s("　　　　　　　delete");
+        Log::debug_s("              delete");
         let c = self.buf.char(self.cur.y, self.cur.x);
         ep.str = if c == NEW_LINE_CR { format!("{}{}", c.to_string(), NEW_LINE_LF) } else { c.to_string() };
         self.buf.remove_del_bs(EvtType::Del, self.cur.y, self.cur.x);

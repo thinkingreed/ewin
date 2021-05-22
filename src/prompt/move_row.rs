@@ -3,7 +3,7 @@ use crossterm::event::{Event::*, KeyCode::*, KeyEvent};
 
 impl EvtAct {
     pub fn move_row(term: &mut Terminal) -> EvtActType {
-        Log::debug_s("　　　　　　　　EvtAct.move_row");
+        Log::debug_s("              　EvtAct.move_row");
 
         match term.curt().editor.evt {
             Key(KeyEvent { code, .. }) => match code {
@@ -18,17 +18,13 @@ impl EvtAct {
                         term.curt().mbar.set_err(&LANG.number_within_current_number_of_rows);
                         return EvtActType::Hold;
                     }
-
                     term.curt().editor.cur.y = row_num - 1;
                     term.curt().editor.cur.x = 0;
                     term.curt().editor.cur.disp_x = 0;
 
-                    term.curt().prom.clear();
-                    term.curt().state.clear();
-                    term.curt().mbar.clear();
+                    term.clear_curt_tab_status();
                     term.curt().editor.scroll_move_row();
                     term.curt().editor.scroll_horizontal();
-                    term.curt().editor.d_range.draw_type = DrawType::All;
                     return EvtActType::DrawOnly;
                 }
                 _ => return EvtActType::Hold,

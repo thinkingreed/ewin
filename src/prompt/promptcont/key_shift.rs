@@ -23,21 +23,21 @@ impl PromptCont {
     }
 
     pub fn shift_home(&mut self) {
-        Log::debug_s("　　　　　　　　shift_home");
+        Log::debug_s("              　shift_home");
         self.shift_move_com(EvtType::ShiftHome);
     }
     pub fn shift_end(&mut self) {
-        Log::debug_s("　　　　　　　  shift_end");
+        Log::debug_s("                shift_end");
         self.shift_move_com(EvtType::ShiftEnd);
     }
 
     pub fn shift_right(&mut self) {
-        Log::debug_s("　　　　　　　  shift_right");
+        Log::debug_s("                shift_right");
         self.shift_move_com(EvtType::ShiftRight);
     }
 
     pub fn shift_left(&mut self) {
-        Log::debug_s("　　　　　　　  shift_left");
+        Log::debug_s("                shift_left");
         self.shift_move_com(EvtType::ShiftLeft);
     }
 }

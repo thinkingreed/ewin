@@ -2,7 +2,7 @@ use crate::{log::*, model::*, util::*};
 
 impl Editor {
     pub fn ctrl_mouse(&mut self, x: usize, y: usize, is_mouse_left_down: bool) {
-        Log::debug_s("　　　　　　　ctrl_mouse");
+        Log::debug_s("              ctrl_mouse");
         if y < self.disp_row_posi || y >= self.disp_row_num || y >= self.buf.len_lines() {
             self.d_range.draw_type = DrawType::Not;
             return;

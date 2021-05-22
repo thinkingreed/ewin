@@ -9,7 +9,7 @@ impl Editor {
 
     // adjusting vertical posi of cursor
     pub fn scroll(&mut self) {
-        Log::debug_s("　　　　　　　scroll");
+        Log::debug_s("              scroll");
 
         if self.evt == CTRL_HOME || self.cur.y == 0 {
             self.offset_y = 0;
@@ -51,7 +51,7 @@ impl Editor {
 
     // adjusting horizontal posi of cursor
     pub fn scroll_horizontal(&mut self) {
-        Log::debug_s("　　　　　　　scroll_horizontal");
+        Log::debug_s("              scroll_horizontal");
 
         // offset_x Number of characters for switching judgment
         let extra_num = 3;

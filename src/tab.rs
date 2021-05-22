@@ -21,12 +21,13 @@ impl TabState {
         self.is_save_new_file = false;
         self.is_move_line = false;
         self.is_open_file = false;
+        self.is_enc_nl = false;
     }
     pub fn clear_grep_info(&mut self) {
         self.grep_info.clear();
     }
     pub fn is_not_normal(&mut self) -> bool {
-        if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_line || self.is_key_record || self.is_key_record_exec || self.is_key_record_exec_draw || self.is_read_only || self.is_open_file || self.grep_info.is_grep || self.grep_info.is_result {
+        if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_line || self.is_key_record || self.is_key_record_exec || self.is_key_record_exec_draw || self.is_read_only || self.is_open_file || self.grep_info.is_grep || self.grep_info.is_result || self.is_enc_nl {
             return true;
         }
         return false;
@@ -59,7 +60,7 @@ pub struct TabState {
     pub is_key_record_exec_draw: bool,
     pub is_read_only: bool,
     pub is_open_file: bool,
-    pub is_unknown_encoding: bool,
+    pub is_enc_nl: bool,
     pub grep_info: GrepInfo,
 }
 
@@ -76,7 +77,7 @@ impl Default for TabState {
             is_key_record_exec_draw: false,
             is_read_only: false,
             is_open_file: false,
-            is_unknown_encoding: false,
+            is_enc_nl: false,
             grep_info: GrepInfo::default(),
         }
     }

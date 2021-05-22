@@ -5,7 +5,7 @@ use tokio::process::{Child, Command};
 
 impl EvtAct {
     pub fn draw_grep_result<T: Write>(out: &mut T, term: &mut Terminal, job_grep: JobGrep) {
-        Log::debug_s("　　　　　　　draw_grep_result");
+        Log::debug_s("              draw_grep_result");
 
         if !job_grep.is_cancel {
             if !(job_grep.is_stdout_end && job_grep.is_stderr_end) {
@@ -64,7 +64,7 @@ impl EvtAct {
 
     #[cfg(target_os = "linux")]
     pub fn get_grep_child(search_str: &String, search_folder: &String, search_filenm: &String) -> Child {
-        Log::debug_s("　　　　　　　　get_grep_child linux");
+        Log::debug_s("              　get_grep_child linux");
         // -r:Subfolder search, -H:File name display, -n:Line number display,
         // -I:Binary file not applicable, -i:Ignore-case
         let mut cmd_option = "-rHnI".to_string();
@@ -94,7 +94,7 @@ impl EvtAct {
     }
     #[cfg(target_os = "windows")]
     pub fn get_grep_child(search_str: &String, search_folder: &String, search_filenm: &String) -> Child {
-        Log::ep_s("　　　　　　　　get_grep_child windows");
+        Log::info_s("              get_grep_child windows");
         let mut cmd_option = "".to_string();
         {
             if CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens {
@@ -125,7 +125,7 @@ impl EvtAct {
     }
 
     pub fn grep_result(term: &mut Terminal) -> EvtActType {
-        Log::debug_s("　　　　　　　　grep_result");
+        Log::debug_s("              　grep_result");
 
         let evt = term.curt().editor.evt.clone();
         match evt {

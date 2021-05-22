@@ -5,7 +5,8 @@ use unicode_width::UnicodeWidthChar;
 
 impl Editor {
     pub fn draw<T: Write>(&mut self, out: &mut T, term_mode: TermMode) {
-        Log::info_s("　　　　　　　Editor.draw");
+        Log::info_key("Editor.draw");
+        Log::debug("editor.d_range", &self.d_range);
 
         let mut str_vec: Vec<String> = vec![];
         let (mut y, mut x_width) = (0, 0);
@@ -46,11 +47,7 @@ impl Editor {
                 cell.draw_style(&mut str_vec, x_idx == 0 && self.offset_x > 0);
                 let c = cell.c;
 
-                // Log::ep("ccc", &c);
-
                 let tab_width = if c == TAB { cfg_tab_width - ((x_width + self.offset_disp_x) % cfg_tab_width) } else { 0 };
-
-                //  Log::ep("tab_width ", &tab_width);
 
                 let width = match c {
                     TAB => tab_width,

@@ -32,8 +32,8 @@ impl EvtAct {
                         Log::debug_s(&search_folder);
                         let path = Path::new(&search_folder).join(&search_filenm);
 
-                        term.curt().prom.cache_search_filenm = search_filenm.clone();
-                        term.curt().prom.cache_search_folder = search_folder.clone();
+                        term.curt().prom.prom_grep.cache_search_filenm = search_filenm.clone();
+                        term.curt().prom.prom_grep.cache_search_folder = search_folder.clone();
 
                         let mut tab_grep = Tab::new();
                         tab_grep.editor.search.str = search_str.clone();
@@ -50,7 +50,6 @@ impl EvtAct {
                         tab_grep.state.grep_info.search_filenm = search_filenm.clone();
                         tab_grep.state.grep_info.search_folder = search_folder.clone();
                         term.idx = term.tabs.len();
-
                         {
                             GREP_INFO_VEC.get().unwrap().try_lock().unwrap().push(tab_grep.state.grep_info.clone());
                         }
@@ -87,7 +86,7 @@ impl PromptCont {
     pub fn get_grep(&mut self, prom: &Prompt) -> PromptCont {
         let base_posi = self.disp_row_posi - 1;
 
-        if self.prompt_cont_posi == PromptContPosi::First {
+        if self.posi == PromptContPosi::First {
             self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.set_grep);
             self.key_desc = format!(
                 "{}{}:{}Enter  {}{}:{}↓↑  {}{}:{}Esc  {}{}:{}Tab {}({})",
@@ -95,7 +94,7 @@ impl PromptCont {
                 &LANG.search,
                 Colors::get_msg_highlight_fg(),
                 Colors::get_default_fg(),
-                &LANG.move_input_field,
+                &LANG.move_setting_location,
                 Colors::get_msg_highlight_fg(),
                 Colors::get_default_fg(),
                 &LANG.close,
@@ -116,11 +115,11 @@ impl PromptCont {
             self.opt_row_posi = base_posi + 2;
             self.buf_desc_row_posi = base_posi + 3;
             self.buf_row_posi = base_posi + 4;
-        } else if self.prompt_cont_posi == PromptContPosi::Second {
+        } else if self.posi == PromptContPosi::Second {
             self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.search_file, Colors::get_default_fg());
 
-            if prom.cache_search_filenm.len() > 0 {
-                self.buf = prom.cache_search_filenm.chars().collect();
+            if prom.prom_grep.cache_search_filenm.len() > 0 {
+                self.buf = prom.prom_grep.cache_search_filenm.chars().collect();
             } else {
                 self.buf = "*.*".chars().collect();
             }
@@ -128,8 +127,8 @@ impl PromptCont {
             self.buf_row_posi = base_posi + 6;
         } else {
             self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.search_folder, Colors::get_default_fg());
-            if prom.cache_search_folder.len() > 0 {
-                self.buf = prom.cache_search_folder.chars().collect();
+            if prom.prom_grep.cache_search_folder.len() > 0 {
+                self.buf = prom.prom_grep.cache_search_folder.chars().collect();
             } else {
                 if let Ok(path) = env::current_dir() {
                     self.buf = path.to_string_lossy().to_string().chars().collect();
@@ -139,5 +138,22 @@ impl PromptCont {
             self.buf_row_posi = base_posi + 8;
         }
         return self.clone();
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PromGrep {
+    pub cache_search_filenm: String,
+    pub cache_search_folder: String,
+    pub tab_comp: TabComp,
+}
+
+impl Default for PromGrep {
+    fn default() -> Self {
+        PromGrep {
+            cache_search_filenm: String::new(),
+            cache_search_folder: String::new(),
+            tab_comp: TabComp::default(),
+        }
     }
 }

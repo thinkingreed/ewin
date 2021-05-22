@@ -6,7 +6,10 @@ width = 4
 [general.editor.search]
 case_sens = true
 regex = false
+# If theme is set, theme color has the highest priority
 [colors.theme] # option
+# theme_path = "tmTheme.tmTheme"
+# theme_background_enable = true
 
 [colors.editor]
 background = "#000000"
@@ -38,3 +41,8 @@ normal_foreground = "#ffffff"
 highlight_foreground = "#00c800"
 warning_foreground = "#aa6400"
 err_foreground = "#ff0000"
+
+[colors.file]
+normal_foreground = "#c0c0c0"
+directory_foreground = "#1e90ff"
+executable_foreground = "#008000"

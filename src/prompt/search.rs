@@ -54,11 +54,7 @@ impl EvtAct {
             // Set index to initial value
             tab.editor.search.idx = USIZE_UNDEFINED;
 
-            tab.prom.clear();
-            // tab.state.clear();
-            tab.state.clear();
-            tab.mbar.clear();
-            tab.editor.d_range.draw_type = DrawType::All;
+            term.clear_curt_tab_status();
             return EvtActType::Next;
         }
     }
@@ -100,7 +96,7 @@ impl Prompt {
         cont.set_search();
         term.curt().prom.cont_1 = cont;
     }
-    pub fn draw_search(&mut self, str_vec: &mut Vec<String>) {
+    pub fn draw_search(&self, str_vec: &mut Vec<String>) {
         Prompt::set_draw_vec(str_vec, self.cont_1.opt_row_posi, &self.get_serach_opt());
         Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
     }
@@ -119,5 +115,17 @@ impl PromptCont {
         self.key_desc_row_posi = base_posi + 1;
         self.opt_row_posi = base_posi + 2;
         self.buf_row_posi = base_posi + 3;
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PromSearch {
+    pub cache_search_filenm: String,
+    pub cache_search_folder: String,
+}
+
+impl Default for PromSearch {
+    fn default() -> Self {
+        PromSearch { cache_search_filenm: String::new(), cache_search_folder: String::new() }
     }
 }

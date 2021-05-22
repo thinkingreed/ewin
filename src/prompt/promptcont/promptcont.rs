@@ -1,89 +1,16 @@
 use crate::{colors::*, global::*, log::*, model::*, util::*};
 use std::{cmp::min, io::Write};
 
-#[derive(Debug, Clone)]
-pub struct PromptCont {
-    pub disp_row_posi: u16,
-    pub prompt_cont_posi: PromptContPosi,
-    pub guide_row_posi: u16,
-    pub key_desc_row_posi: u16,
-    pub opt_row_posi: u16,
-    pub buf_desc_row_posi: u16,
-    pub buf_row_posi: u16,
-    pub guide: String,
-    pub opt_1: PromptContOpt,
-    pub opt_2: PromptContOpt,
-    pub key_desc: String,
-    pub buf_desc: String,
-    pub buf: Vec<char>,
-    pub cur: Cur,
-    pub updown_x: usize,
-    pub sel: SelRange,
-    pub file_list_vec: Vec<File>,
-}
-impl Default for PromptCont {
-    fn default() -> Self {
-        PromptCont {
-            disp_row_posi: 0,
-            prompt_cont_posi: PromptContPosi::First,
-            guide_row_posi: 0,
-            key_desc_row_posi: 0,
-            opt_row_posi: 0,
-            buf_desc_row_posi: 0,
-            buf_row_posi: 0,
-            guide: String::new(),
-            key_desc: String::new(),
-            opt_1: PromptContOpt::default(),
-            opt_2: PromptContOpt::default(),
-            buf_desc: String::new(),
-            buf: vec![],
-            cur: Cur::default(),
-            updown_x: 0,
-            sel: SelRange::default(),
-            file_list_vec: vec![],
-        }
-    }
-}
-#[derive(Debug, Clone)]
-pub struct PromptContOpt {
-    pub key: String,
-    pub is_check: bool,
-    pub mouse_area: (u16, u16),
-}
-impl Default for PromptContOpt {
-    fn default() -> Self {
-        PromptContOpt { key: String::new(), is_check: false, mouse_area: (0, 0) }
-    }
-}
-impl PromptContOpt {
-    pub fn get_check_str(&self) -> String {
-        let str = if self.is_check { "[*]" } else { "[ ]" };
-        return str.to_string();
-    }
-    pub fn toggle_check(&mut self) {
-        match self.is_check {
-            true => self.is_check = false,
-            false => self.is_check = true,
-        }
-    }
-}
-
-#[derive(PartialEq, Debug, Clone)]
-pub enum PromptContPosi {
-    First,
-    Second,
-    Third,
-}
 impl PromptCont {
     pub fn new_not_edit_type(disp_row_posi: u16) -> Self {
         PromptCont { disp_row_posi, ..PromptCont::default() }
     }
 
     pub fn new_edit_type(disp_row_posi: u16, prompt_cont_posi: PromptContPosi) -> Self {
-        PromptCont { disp_row_posi, prompt_cont_posi, ..PromptCont::default() }
+        PromptCont { disp_row_posi, posi: prompt_cont_posi, ..PromptCont::default() }
     }
 
-    pub fn get_draw_buf_str(&mut self) -> String {
+    pub fn get_draw_buf_str(&self) -> String {
         // Log::ep_s("                          Prompt.ctl_select_color");
         let ranges = self.sel.get_range();
 
@@ -143,7 +70,7 @@ impl PromptCont {
     }
 
     pub fn ctrl_mouse(&mut self, x: u16, y: u16, is_mouse_left_down: bool) {
-        Log::debug_s("　　　　　　　PromptCont.ctrl_mouse");
+        Log::debug_s("              PromptCont.ctrl_mouse");
         if y != self.buf_row_posi {
             return;
         }
@@ -160,8 +87,89 @@ impl PromptCont {
         }
     }
     pub fn draw_only<T: Write>(&mut self, out: &mut T) {
-        Log::debug_s("　　　　　　　PromptCont.draw_only");
+        Log::debug_s("              PromptCont.draw_only");
         let _ = out.write(&self.get_draw_buf_str().as_bytes());
         out.flush().unwrap();
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct PromptCont {
+    pub disp_row_posi: u16,
+    pub posi: PromptContPosi,
+    pub guide_row_posi: u16,
+    pub key_desc_row_posi: u16,
+    pub opt_row_posi: u16,
+    pub buf_desc_row_posi: u16,
+    pub buf_row_posi: u16,
+    pub cur: Cur,
+    pub sel: SelRange,
+    pub guide: String,
+    pub opt_1: PromptContOpt,
+    pub opt_2: PromptContOpt,
+    pub key_desc: String,
+    pub buf_desc: String,
+    // For 1-line input
+    pub buf: Vec<char>,
+    pub updown_x: usize,
+    // For list display
+    pub file_list_vec: Vec<File>,
+    // For multi-line selection items
+    pub choices: Choices,
+}
+
+impl Default for PromptCont {
+    fn default() -> Self {
+        PromptCont {
+            disp_row_posi: 0,
+            posi: PromptContPosi::First,
+            guide_row_posi: 0,
+            key_desc_row_posi: 0,
+            opt_row_posi: 0,
+            buf_desc_row_posi: 0,
+            buf_row_posi: 0,
+            guide: String::new(),
+            key_desc: String::new(),
+            opt_1: PromptContOpt::default(),
+            opt_2: PromptContOpt::default(),
+            buf_desc: String::new(),
+            buf: vec![],
+            cur: Cur::default(),
+            updown_x: 0,
+            sel: SelRange::default(),
+            file_list_vec: vec![],
+            choices: Choices::default(),
+        }
+    }
+}
+#[derive(Debug, Clone)]
+pub struct PromptContOpt {
+    pub key: String,
+    pub is_check: bool,
+    pub mouse_area: (u16, u16),
+}
+impl Default for PromptContOpt {
+    fn default() -> Self {
+        PromptContOpt { key: String::new(), is_check: false, mouse_area: (0, 0) }
+    }
+}
+
+impl PromptContOpt {
+    pub fn get_check_str(&self) -> String {
+        let str = if self.is_check { "[*]" } else { "[ ]" };
+        return str.to_string();
+    }
+    pub fn toggle_check(&mut self) {
+        match self.is_check {
+            true => self.is_check = false,
+            false => self.is_check = true,
+        }
+    }
+}
+#[derive(PartialEq, Debug, Clone)]
+pub enum PromptContPosi {
+    First,
+    Second,
+    Third,
+    Fourth,
 }

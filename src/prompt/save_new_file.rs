@@ -16,9 +16,10 @@ impl EvtAct {
                             return EvtActType::Hold;
                         }
                         term.hbar.file_vec[term.idx].filenm = filenm.clone();
-                        Tab::save(term);
-                        if term.tabs[term.idx].state.is_close_confirm {
-                            return EvtAct::check_exit_close(term);
+                        if Tab::save(term) {
+                            if term.tabs[term.idx].state.is_close_confirm {
+                                return EvtAct::check_exit_close(term);
+                            }
                         }
                     }
                     // Normal save

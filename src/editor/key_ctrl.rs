@@ -15,7 +15,7 @@ impl Editor {
     }
 
     pub fn cut(&mut self, cut_str: String) {
-        Log::debug_s("　　　　　　　cut");
+        Log::debug_s("              cut");
         // self.sel = ep.sel.clone();
         self.copy_str(cut_str.clone());
         // self.sel.clear();
@@ -29,7 +29,7 @@ impl Editor {
     }
 
     pub fn copy(&mut self) {
-        Log::debug_s("　　　　　　　copy");
+        Log::debug_s("              copy");
 
         let str = self.buf.slice(self.sel.get_range());
         self.copy_str(str)
@@ -54,7 +54,7 @@ impl Editor {
     }
 
     pub fn paste(&mut self, ep: &mut EvtProc) {
-        Log::debug_s("　　　　　　　paste");
+        Log::debug_s("              paste");
         if self.is_enable_syntax_highlight {
             self.d_range.draw_type = DrawType::All;
         } else {
@@ -69,7 +69,7 @@ impl Editor {
     }
 
     pub fn insert_str(&mut self, str: &str) {
-        Log::debug_s("　　　　　　　insert_str");
+        Log::debug_s("              insert_str");
 
         let i = self.buf.line_to_char(self.cur.y) + self.cur.x;
         self.buf.insert(i, str);
@@ -192,7 +192,7 @@ impl Editor {
     }
 
     pub fn replace(&mut self, ep: &mut EvtProc) {
-        Log::debug_s("　　　　　　　replace");
+        Log::debug_s("              replace");
 
         // Nomal REPLACE
         let search_set = if self.evt == ENTER {
@@ -270,7 +270,7 @@ impl Editor {
     }
 
     pub fn undo(&mut self) {
-        Log::debug_s("　　　　　　　undo");
+        Log::debug_s("              undo");
 
         if let Some(ep) = self.history.get_undo_last() {
             Log::debug("EvtProc", &ep);
@@ -311,7 +311,7 @@ impl Editor {
     }
 
     pub fn redo(&mut self) {
-        Log::debug_s("　　　　　　　　redo");
+        Log::debug_s("              　redo");
 
         if let Some(ep) = self.history.get_redo_last() {
             Log::debug("EvtProc", &ep);
@@ -344,21 +344,31 @@ impl Tab {
             Prompt::save_new_file(term);
             return false;
         } else {
-            let encoding = term.hbar.file_vec[term.idx].enc;
-            Log::info_s(&format!("save {}, encoding {}", &filenm, &encoding));
-            let result = term.curt().editor.buf.write_to(&filenm, encoding);
+            let h_file = &term.hbar.file_vec[term.idx];
+            Log::info_s(&format!("Save {}, file info {:?}", &filenm, &h_file));
+            let result = term.tabs[term.idx].editor.buf.write_to(&filenm, &h_file);
             match result {
-                Ok(()) => {
-                    term.hbar.file_vec[term.idx].is_changed = false;
-                    term.curt().prom.clear();
-                    term.curt().mbar.clear();
-                    if !term.curt().state.is_close_confirm {
-                        term.curt().state.clear();
+                Ok(enc_errors) => {
+                    if enc_errors {
+                        Log::info("Encoding errors", &enc_errors);
+                        term.curt().mbar.set_err(&LANG.cannot_convert_encoding);
+
+                        return true;
+                    } else {
+                        term.hbar.file_vec[term.idx].is_changed = false;
+                        term.curt().prom.clear();
+                        term.curt().mbar.clear();
+                        if !term.curt().state.is_close_confirm {
+                            term.curt().state.clear();
+                        }
+                        Log::info("Saved file", &filenm.as_str());
+
+                        return false;
                     }
-                    return true;
                 }
                 Err(err) => {
-                    Log::debug("err", &err.to_string());
+                    term.curt().mbar.set_err(&format!("{} {:?}", LANG.file_saving_problem, err.kind()));
+                    Log::error("err", &err.to_string());
                 }
             }
         }

@@ -57,12 +57,15 @@ impl History {
         self.redo_vec.len()
     }
 
-    pub fn count_multi_click(&mut self, evt: &Event) -> usize {
+    pub fn  count_multi_click(&mut self, evt: &Event) -> usize {
         let mut click_count = 1;
+
+        Log::debug("mouse_click_vec", &self.mouse_click_vec);
 
         if self.mouse_click_vec.len() > 2 {
             self.mouse_click_vec.pop_front();
         }
+
         let now = Local::now().naive_local();
 
         if self.mouse_click_vec.len() > 0 {

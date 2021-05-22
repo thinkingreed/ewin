@@ -51,3 +51,7 @@ colors-transform = "0.2.11"
 directories = "3.0.1"
 regex = "1.4.3"
 encoding_rs= "0.8.28"
+byteorder = "1.4.3"
+
+[target.'cfg(unix)'.dependencies]
+permissions= "0.3.0"

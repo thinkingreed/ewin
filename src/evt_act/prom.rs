@@ -1,10 +1,10 @@
-use crate::{def::NEW_LINE_LF, global::*, log::*, model::*, tab::Tab, terminal::*};
+use crate::{def::NEW_LINE_LF, global::*, log::*, model::*, prompt::prompt::Prompt, tab::Tab, terminal::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_EventKind, MouseEventKind as M_Kind};
 use std::io::Write;
 
 impl EvtAct {
     pub fn check_prom<T: Write>(out: &mut T, term: &mut Terminal) -> EvtActType {
-        Log::debug_s("　　　　　　　check_prom");
+        Log::debug_key("check_prom");
 
         // Close・End
         if term.curt().state.is_not_normal() {
@@ -33,11 +33,8 @@ impl EvtAct {
                             }
                         } else if term.curt().state.is_read_only {
                         } else {
-                            term.curt().prom.clear();
-                            term.curt().state.clear();
+                            term.clear_curt_tab_status();
                             term.curt().state.grep_info.is_grep = false;
-                            term.curt().mbar.clear();
-                            term.curt().editor.d_range.draw_type = DrawType::All;
                         }
                         return EvtActType::DrawOnly;
                     }
@@ -60,6 +57,7 @@ impl EvtAct {
                             End => term.curt().prom.shift_end(),
                             BackTab => {
                                 term.curt().prom.tab(false, state);
+                                term.curt().prom.clear_sels()
                             }
                             Char(c) => {
                                 let rnw = term.curt().editor.get_rnw();
@@ -68,28 +66,29 @@ impl EvtAct {
                             }
                             _ => {}
                         }
+                        /*
                         // For incremental search
                         if !term.curt().state.is_search {
-                            term.curt().prom.draw_only(out, state);
+                            Prompt::draw_only(out, term.curt());
                             return EvtActType::Hold;
                         }
+                         */
                     }
                     _ => {}
                 },
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                     Char('v') => {
                         let clipboard = term.curt().editor.get_clipboard().unwrap_or("".to_string());
-                        let is_all_redrow = term.curt().prom.paste(&clipboard);
-                        if is_all_redrow {
-                            term.draw(out);
-                        } else {
-                            term.curt().prom.clear_sels();
-                            term.curt().prom.draw_only(out, state);
-                        }
+                        term.curt().prom.paste(&clipboard);
+                        term.curt().prom.clear_sels();
+                        Prompt::draw_only(out, term.curt());
+
+                        /*
                         // For incremental search
                         if !term.curt().state.is_search {
                             return EvtActType::Hold;
                         }
+                         */
                     }
                     _ => {}
                 },
@@ -107,12 +106,20 @@ impl EvtAct {
                             }
                             _ => {}
                         }
+
+                        match code {
+                            Left | Right | Up | Down | Home | End | Tab | Char(_) => term.curt().prom.clear_sels(),
+                            _ => {}
+                        }
+
+                        /*
                         // For incremental search
                         if !state.is_search && !state.is_open_file {
                             term.curt().prom.clear_sels();
-                            term.curt().prom.draw_only(out, state);
+                            Prompt::draw_only(out, term.curt());
                             return EvtActType::Hold;
                         }
+                         */
                     }
                     _ => {}
                 },
@@ -120,11 +127,6 @@ impl EvtAct {
                 Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => term.curt().prom.ctrl_mouse(x, y, &state, false),
                 _ => {}
             }
-
-            /*            if state.is_open_file {
-                Log::ep_s("                    state.is_open_file");
-                return EvtActType::Hold;
-            } */
         }
 
         // Search・replace・grep option
@@ -203,6 +205,8 @@ impl EvtAct {
             return EvtAct::move_row(term);
         } else if term.curt().state.is_open_file == true {
             return EvtAct::open_file(term);
+        } else if term.curt().state.is_enc_nl == true {
+            return EvtAct::enc_nl(term);
         } else {
             return EvtActType::Next;
         }
@@ -231,11 +235,23 @@ impl EvtAct {
             // Check clear tab candidate
             match tab.editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                    Left | Right | Home | End => tab.prom.clear_tab_comp(),
+                    Left | Right | Home | End => {
+                        if tab.state.grep_info.is_grep {
+                            tab.prom.prom_grep.tab_comp.clear_tab_comp()
+                        } else if tab.state.is_open_file {
+                            tab.prom.prom_open_file.tab_comp.clear_tab_comp()
+                        }
+                    }
                     _ => {}
                 },
                 Key(KeyEvent { code, .. }) => match code {
-                    Char(_) | Left | Right | Home | End | Backspace | Delete => tab.prom.clear_tab_comp(),
+                    Char(_) | Left | Right | Home | End | Backspace | Delete => {
+                        if tab.state.grep_info.is_grep {
+                            tab.prom.prom_grep.tab_comp.clear_tab_comp()
+                        } else if tab.state.is_open_file {
+                            tab.prom.prom_open_file.tab_comp.clear_tab_comp()
+                        }
+                    }
                     _ => {}
                 },
                 _ => {}

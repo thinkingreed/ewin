@@ -71,18 +71,23 @@ impl Colors {
     fn get_hbar_bg() -> String {
         return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
     }
-
     fn get_hbar_fg() -> String {
         return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.header_bar.fg);
     }
     pub fn get_hbar_fg_bg() -> String {
         return format!("{}{}", Colors::get_hbar_fg(), Colors::get_hbar_bg());
     }
-    pub fn get_hbar_inversion_bg() -> String {
+    pub fn get_hbar_inversion_bg_passive() -> String {
+        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.control_char.fg);
+    }
+    pub fn get_hbar_inversion_fg_bg_passive() -> String {
+        return format!("{}{}", Colors::get_hbar_inversion_bg_passive(), Colors::get_default_inversion_fg());
+    }
+    pub fn get_hbar_inversion_bg_active() -> String {
         return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.header_bar.fg);
     }
-    pub fn get_hbar_inversion_fg_bg() -> String {
-        return format!("{}{}", Colors::get_hbar_inversion_bg(), Colors::get_default_inversion_fg());
+    pub fn get_hbar_inversion_fg_bg_active() -> String {
+        return format!("{}{}", Colors::get_hbar_inversion_bg_active(), Colors::get_default_inversion_fg());
     }
     //
     // StatusBar
@@ -95,6 +100,15 @@ impl Colors {
     }
     pub fn get_sbar_fg_bg() -> String {
         return format!("{}{}", Colors::get_sbar_fg(), Colors::get_sbar_bg());
+    }
+    pub fn get_sbar_inversion_fg() -> String {
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
+    }
+    pub fn get_sbar_inversion_bg() -> String {
+        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.status_bar.fg);
+    }
+    pub fn get_sbar_inversion_fg_bg() -> String {
+        return format!("{}{}", Colors::get_sbar_inversion_fg(), Colors::get_sbar_inversion_bg());
     }
     //
     // MsgBar
@@ -117,6 +131,66 @@ impl Colors {
     pub fn get_msg_err_fg() -> String {
         return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.msg.err_fg);
     }
+    //
+    // File
+    //
+    pub fn get_file_normal_fg() -> String {
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.file.normal_fg);
+    }
+    pub fn get_file_normal_bg() -> String {
+        return Colors::get_default_bg();
+    }
+    pub fn get_file_normal_fg_bg() -> String {
+        return format!("{}{}", Colors::get_file_normal_fg(), Colors::get_file_normal_bg());
+    }
+    pub fn get_file_normal_inversion_fg() -> String {
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
+    }
+    pub fn get_file_normal_inversion_bg() -> String {
+        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.file.normal_fg);
+    }
+    pub fn get_file_normal_inversion_fg_bg() -> String {
+        return format!("{}{}", Colors::get_file_normal_inversion_fg(), Colors::get_file_normal_inversion_bg());
+    }
+
+    pub fn get_file_dir_fg() -> String {
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.file.directory_fg);
+    }
+    pub fn get_file_dir_bg() -> String {
+        return Colors::get_default_bg();
+    }
+    pub fn get_file_dir_fg_bg() -> String {
+        return format!("{}{}", Colors::get_file_dir_fg(), Colors::get_file_dir_bg());
+    }
+    pub fn get_file_dir_inversion_fg() -> String {
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
+    }
+    pub fn get_file_dir_inversion_bg() -> String {
+        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.file.directory_fg);
+    }
+    pub fn get_file_dir_inversion_fg_bg() -> String {
+        return format!("{}{}", Colors::get_file_dir_inversion_fg(), Colors::get_file_dir_inversion_bg());
+    }
+
+    pub fn get_file_executable_fg() -> String {
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.file.executable_fg);
+    }
+    pub fn get_file_executable_bg() -> String {
+        return Colors::get_default_bg();
+    }
+    pub fn get_file_executable_fg_bg() -> String {
+        return format!("{}{}", Colors::get_file_executable_fg(), Colors::get_file_executable_bg());
+    }
+    pub fn get_file_executable_inversion_fg() -> String {
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg);
+    }
+    pub fn get_file_executable_inversion_bg() -> String {
+        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.file.executable_fg);
+    }
+    pub fn get_file_executable_inversion_fg_bg() -> String {
+        return format!("{}{}", Colors::get_file_executable_inversion_fg(), Colors::get_file_executable_inversion_bg());
+    }
+
     //
     // eof
     //

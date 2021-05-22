@@ -2,6 +2,9 @@ extern crate ropey;
 use crate::{def::*, editor::view::char_style::*};
 use chrono::NaiveDateTime;
 use crossterm::event::{Event, Event::Key, KeyCode::Null};
+use encoding_rs::Encoding;
+#[cfg(target_os = "linux")]
+use permissions::*;
 use ropey::Rope;
 use std::cmp::{max, min};
 use std::collections::VecDeque;
@@ -416,18 +419,51 @@ pub struct TextBuffer {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct File {
-    pub filenm: String,
+    pub name: String,
     pub is_dir: bool,
 }
 
 impl Default for File {
     fn default() -> Self {
-        File { filenm: String::new(), is_dir: false }
+        File { name: String::new(), is_dir: false }
     }
 }
 impl fmt::Display for File {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "File filenm:{}, is_dir:{} ", self.filenm, self.is_dir)
+        write!(f, "File filenm:{}, is_dir:{} ", self.name, self.is_dir)
+    }
+}
+impl File {
+    #[cfg(target_os = "linux")]
+    pub fn is_readable_writable(path: &String) -> (bool, bool) {
+        if path.is_empty() {
+            return (true, true);
+        } else {
+            return (is_readable(path).unwrap_or(false), is_writable(path).unwrap_or(false));
+        }
+    }
+    #[cfg(target_os = "linux")]
+    pub fn is_executable(path: &String) -> bool {
+        if path.is_empty() {
+            return false;
+        } else {
+            return is_executable(path).unwrap_or(false);
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    pub fn is_readable_writable(path: &String) -> (bool, bool) {
+        // TDOD Permission Research
+        return (true, true);
+    }
+
+    #[cfg(target_os = "windows")]
+    pub fn is_executable(path: &String) -> bool {
+        if path.is_empty() {
+            return false;
+        } else {
+            return false;
+        }
     }
 }
 
@@ -704,10 +740,61 @@ pub enum Encode {
     UTF16LE,
     UTF16BE,
     SJIS,
+    JIS,
     EucJp,
     GBK,
     Unknown,
 }
+
+impl Encode {
+    pub fn into_encoding(self) -> &'static Encoding {
+        match self {
+            Encode::UTF16LE => return &encoding_rs::UTF_16LE_INIT,
+            Encode::UTF16BE => return &encoding_rs::UTF_16BE_INIT,
+            Encode::SJIS => return &encoding_rs::SHIFT_JIS_INIT,
+            Encode::JIS => return &encoding_rs::ISO_2022_JP_INIT,
+            Encode::EucJp => return &encoding_rs::EUC_JP_INIT,
+            Encode::GBK => return &encoding_rs::GBK_INIT,
+            _ => return &encoding_rs::UTF_8_INIT,
+        }
+    }
+    pub fn from_name(name: &String) -> Encode {
+        if name == &Encode::UTF16LE.to_string() {
+            return Encode::UTF16LE;
+        } else if name == &Encode::UTF16BE.to_string() {
+            return Encode::UTF16BE;
+        } else if name == &Encode::SJIS.to_string() {
+            return Encode::SJIS;
+        } else if name == &Encode::EucJp.to_string() {
+            return Encode::EucJp;
+        } else if name == &Encode::JIS.to_string() {
+            return Encode::JIS;
+        } else if name == &Encode::GBK.to_string() {
+            return Encode::GBK;
+        } else {
+            return Encode::UTF8;
+        }
+    }
+
+    pub fn from_encoding(from: &encoding_rs::Encoding) -> Encode {
+        if from == &encoding_rs::UTF_16LE_INIT {
+            return Encode::UTF16LE;
+        } else if from == &encoding_rs::UTF_16BE_INIT {
+            return Encode::UTF16BE;
+        } else if from == &encoding_rs::SHIFT_JIS_INIT {
+            return Encode::SJIS;
+        } else if from == &encoding_rs::EUC_JP_INIT {
+            return Encode::EucJp;
+        } else if from == &encoding_rs::ISO_2022_JP_INIT {
+            return Encode::JIS;
+        } else if from == &encoding_rs::GBK_INIT {
+            return Encode::GBK;
+        } else {
+            return Encode::UTF8;
+        }
+    }
+}
+
 impl fmt::Display for Encode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -715,10 +802,79 @@ impl fmt::Display for Encode {
             Encode::UTF16LE => write!(f, "UTF-16LE"),
             Encode::UTF16BE => write!(f, "UTF-16BE"),
             Encode::SJIS => write!(f, "Shift_JIS"),
+            Encode::JIS => write!(f, "JIS"),
             Encode::EucJp => write!(f, "EUC-JP"),
             Encode::GBK => write!(f, "GBK"),
             Encode::Unknown => write!(f, "Unknown"),
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+// DrawRange
+pub struct Choice {
+    pub name: String,
+    pub y: usize,
+    pub area: (usize, usize),
+}
+
+impl Default for Choice {
+    fn default() -> Self {
+        Choice { name: String::new(), y: 0, area: (USIZE_UNDEFINED, USIZE_UNDEFINED) }
+    }
+}
+
+impl Choice {
+    pub fn new(name: &String) -> Self {
+        return Choice { name: name.clone(), ..Choice::default() };
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Choices {
+    pub vec: Vec<Vec<Choice>>,
+    pub idx: usize,
+}
+
+impl Default for Choices {
+    fn default() -> Self {
+        Choices { vec: vec![], idx: USIZE_UNDEFINED }
+    }
+}
+
+impl Choices {
+    pub fn set_next_back_choice(&mut self, is_asc: bool) {
+        // count item
+        let mut total_idx = 0;
+        for v in self.vec.iter_mut() {
+            total_idx += v.len();
+        }
+        self.idx = if is_asc {
+            if total_idx == self.idx + 1 {
+                0
+            } else {
+                self.idx + 1
+            }
+        } else {
+            if self.idx == 0 {
+                total_idx - 1
+            } else {
+                self.idx - 1
+            }
+        };
+    }
+    pub fn get_choice(&self) -> Choice {
+        let dummy_item = Choice::new(&"".to_string());
+        let mut total_idx = 0;
+        for v in self.vec.iter() {
+            for item in v {
+                if self.idx == total_idx {
+                    return item.clone();
+                }
+                total_idx += 1;
+            }
+        }
+        return dummy_item;
     }
 }
 

@@ -21,7 +21,7 @@ impl Editor {
             }
             DrawType::All | DrawType::None => {
                 self.draw.sy = self.offset_y;
-                self.draw.ey = min(self.buf.len_lines() - 1, self.offset_y + self.disp_row_num - 1);
+                self.draw.ey = if self.disp_row_num == 0 { 0 } else { min(self.buf.len_lines() - 1, self.offset_y + self.disp_row_num - 1) };
             }
             _ => {}
         }

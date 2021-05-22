@@ -1,6 +1,6 @@
 use crate::{colors::*, def::*, global::*, log::*, model::*, terminal::*, util::*};
 use crossterm::{cursor::*, terminal::*};
-use std::io::Write;
+use std::{io::Write, path::Path};
 
 impl HeaderBar {
     const ALLOW_BTN_WITH: usize = 2;
@@ -8,9 +8,10 @@ impl HeaderBar {
     const HELP_BTN_WITH: usize = 7;
     const CLOSE_BTN_WITH: usize = 3;
     const FILENM_LEN_LIMMIT: usize = 12;
+    const FILE_SPLIT_STR: &'static str = "|";
 
     pub fn draw<T: Write>(out: &mut T, term: &Terminal) {
-        Log::info_s("　　　　　　　HeaderBar.draw");
+        Log::info_key("HeaderBar.draw");
 
         let plus_btn = format!(" {} ", '+');
         let help_btn = format!("{}:{}", KEY_HELP, LANG.help);
@@ -20,26 +21,27 @@ impl HeaderBar {
 
         let mut hber_str = format!("{}{}{}", MoveTo(0, term.hbar.disp_row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_hbar_fg_bg());
         if term.hbar.is_left_arrow_disp {
-            hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_inversion_fg_bg(), left_arrow_btn, &Colors::get_hbar_fg_bg()));
+            hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_inversion_fg_bg_active(), left_arrow_btn, &Colors::get_hbar_fg_bg()));
         }
         for (i, h_file) in term.hbar.file_vec.iter().enumerate() {
             if !h_file.is_disp {
                 continue;
             }
             if i == term.idx {
-                hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_inversion_fg_bg(), &h_file.filenm_disp.clone(), &Colors::get_hbar_fg_bg()));
+                hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_inversion_fg_bg_active(), &h_file.filenm_disp.clone(), &Colors::get_hbar_fg_bg()));
             } else {
-                hber_str.push_str(&format!("{}", &h_file.filenm_disp.clone()));
+                hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_inversion_fg_bg_passive(), &h_file.filenm_disp.clone(), &Colors::get_hbar_fg_bg()));
             }
             if i != term.hbar.file_vec.len() - 1 && term.hbar.file_vec.get(i + 1).unwrap().is_disp {
-                hber_str.push_str(&"|");
+                //    hber_str.push_str(&"|");
+                // hber_str.push_str(&" ");
             }
         }
         hber_str.push_str(&format!("{}{}", &Colors::get_default_bg(), &" ".repeat(term.hbar.all_filenm_rest)));
         if term.hbar.is_right_arrow_disp {
-            hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_inversion_fg_bg(), right_arrow_btn, &Colors::get_hbar_fg_bg()));
+            hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_inversion_fg_bg_active(), right_arrow_btn, &Colors::get_hbar_fg_bg()));
         }
-        hber_str = format!("{}{}{}{} {}{}{} {}{}{}", hber_str, Colors::get_hbar_inversion_fg_bg(), plus_btn, Colors::get_default_bg(), Colors::get_hbar_inversion_fg_bg(), help_btn, Colors::get_default_bg(), Colors::get_hbar_inversion_fg_bg(), close_btn, Colors::get_default_bg());
+        hber_str = format!("{}{}{}{} {}{}{} {}{}{}", hber_str, Colors::get_hbar_inversion_fg_bg_active(), plus_btn, Colors::get_default_bg(), Colors::get_hbar_inversion_fg_bg_active(), help_btn, Colors::get_default_bg(), Colors::get_hbar_inversion_fg_bg_active(), close_btn, Colors::get_default_bg());
 
         let _ = out.write(&hber_str.as_bytes());
         out.flush().unwrap();
@@ -64,8 +66,9 @@ impl HeaderBar {
         // Temperatures stored in Vec for ascending / descending sorting
         for (idx, h_file) in term.hbar.file_vec.iter_mut().enumerate() {
             // cut str
-            h_file.filenm_disp = if get_str_width(&h_file.filenm) > HeaderBar::FILENM_LEN_LIMMIT { cut_str(h_file.filenm.clone(), HeaderBar::FILENM_LEN_LIMMIT, true) } else { h_file.filenm.clone() };
-            h_file.filenm_disp = if h_file.is_changed { format!("* {} x", h_file.filenm_disp.clone()) } else { format!("{} x", h_file.filenm_disp.clone()) };
+            h_file.filenm_disp = if get_str_width(&h_file.filenm) > HeaderBar::FILENM_LEN_LIMMIT { cut_str(h_file.filenm.clone(), HeaderBar::FILENM_LEN_LIMMIT, true, false) } else { h_file.filenm.clone() };
+
+            h_file.filenm_disp = if h_file.is_changed { format!("* {} x ", h_file.filenm_disp.clone()) } else { format!("{} x ", h_file.filenm_disp.clone()) };
             tmp_all_vec.push((idx, h_file.filenm_disp.clone()));
         }
 
@@ -98,8 +101,9 @@ impl HeaderBar {
                 all_filenm_vec.push((*idx, h_file.filenm_disp.clone()));
 
                 if vec_len != 1 && i != tmp_all_vec[disp_base_idx..].len() - 1 {
-                    all_filenm_vec.push((USIZE_UNDEFINED, "|".to_string()));
-                    width += 1;
+                    // all_filenm_vec.push((USIZE_UNDEFINED, "|".to_string()));
+                    //   all_filenm_vec.push((USIZE_UNDEFINED, HeaderBar::FILE_SPLIT_STR.to_string()));
+                    //   width += 1;
                 }
             } else {
                 if term.hbar.disp_base_idx == USIZE_UNDEFINED {
@@ -107,7 +111,7 @@ impl HeaderBar {
                 }
                 // del last "|"
                 if i <= tmp_all_vec.len() - 1 {
-                    all_filenm_vec.pop();
+                    //  all_filenm_vec.pop();
                 }
                 break;
             }
@@ -133,7 +137,7 @@ impl HeaderBar {
         let mut width = if term.hbar.is_left_arrow_disp { 2 } else { 0 };
         for (idx, filenm) in all_filenm_vec.iter() {
             let s_w = width;
-            if *filenm == "|".to_string() {
+            if *filenm == HeaderBar::FILE_SPLIT_STR.to_string() {
                 width += 1;
                 continue;
             } else {
@@ -233,8 +237,10 @@ pub struct HeaderFile {
     pub filenm_area: (usize, usize),
     pub close_area: (usize, usize),
     pub enc: Encode,
-    pub new_line: String,
-    pub bom_exsist: Option<Encode>,
+    // new line
+    pub nl: String,
+    pub nl_org: String,
+    pub bom: Option<Encode>,
 }
 
 impl Default for HeaderFile {
@@ -248,8 +254,9 @@ impl Default for HeaderFile {
             filenm_area: (0, 0),
             close_area: (0, 0),
             enc: Encode::UTF8,
-            new_line: NEW_LINE_LF.to_string(),
-            bom_exsist: None,
+            nl: NEW_LINE_LF_STR.to_string(),
+            nl_org: NEW_LINE_LF_STR.to_string(),
+            bom: None,
         }
     }
 }
@@ -257,7 +264,7 @@ impl Default for HeaderFile {
 impl HeaderFile {
     pub fn new(filenm: &String) -> Self {
         return HeaderFile {
-            filenm: if filenm.is_empty() { LANG.new_file.clone() } else { filenm.clone() },
+            filenm: if filenm.is_empty() { LANG.new_file.clone() } else { Path::new(filenm).file_name().unwrap().to_string_lossy().to_string().clone() },
             ..HeaderFile::default()
         };
     }

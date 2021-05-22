@@ -50,6 +50,7 @@ pub struct CfgColors {
     pub editor: CfgColorEditor,
     pub status_bar: CfgColorStatusBar,
     pub msg: CfgColorMsg,
+    pub file: CfgColorFile,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -141,6 +142,20 @@ pub struct CfgColorMsg {
     #[serde(skip_deserializing, skip_serializing)]
     pub err_fg: Color,
 }
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename = "File")]
+pub struct CfgColorFile {
+    normal_foreground: String,
+    directory_foreground: String,
+    executable_foreground: String,
+
+    #[serde(skip_deserializing, skip_serializing)]
+    pub normal_fg: Color,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub directory_fg: Color,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub executable_fg: Color,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Syntax {
@@ -207,6 +222,10 @@ impl Cfg {
         cfg.colors.msg.warning_fg = Colors::hex2rgb(&cfg.colors.msg.warning_foreground);
         cfg.colors.msg.err_fg = Colors::hex2rgb(&cfg.colors.msg.err_foreground);
         cfg.colors.status_bar.fg = Colors::hex2rgb(&cfg.colors.status_bar.foreground);
+
+        cfg.colors.file.normal_fg = Colors::hex2rgb(&cfg.colors.file.normal_foreground);
+        cfg.colors.file.directory_fg = Colors::hex2rgb(&cfg.colors.file.directory_foreground);
+        cfg.colors.file.executable_fg = Colors::hex2rgb(&cfg.colors.file.executable_foreground);
 
         match ThemeLoader::new(&cfg.colors.theme.theme_path, &cfg.syntax.theme_set.themes).load() {
             Ok((theme, err_string)) => {

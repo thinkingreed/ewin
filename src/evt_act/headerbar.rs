@@ -1,13 +1,13 @@
 use crate::{def::*, log::*, model::*, prompt::prompt::Prompt, terminal::Terminal};
-use crossterm::event::{Event::*, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind, *};
+use crossterm::event::{Event::*, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
 
 impl EvtAct {
-    pub fn check_headerbar(event: Event, term: &mut Terminal) -> EvtActType {
-        Log::debug_s("　　　　　　　check_headerbar");
+    pub fn check_headerbar(term: &mut Terminal) -> EvtActType {
+        Log::debug_key("check_headerbar");
 
-        term.curt().editor.evt = event;
-
-        match event {
+        let evt = term.curt().editor.evt;
+        match evt {
+            Resize(_, _) => return EvtActType::Hold,
             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => {
                 let (x, y) = (x as usize, y as usize);
                 if y != term.hbar.disp_row_posi {
@@ -41,10 +41,13 @@ impl EvtAct {
                             return EvtActType::Next;
                         }
                     }
+
+                    Log::debug("term.hbar.all_filenm_rest_area", &term.hbar.all_filenm_rest_area);
+
                     if term.hbar.all_filenm_rest_area.0 <= x && x <= term.hbar.all_filenm_rest_area.1 {
-                        match event {
+                        match term.curt().editor.evt {
                             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: _, row: _, .. }) => {
-                                if term.hbar.history.count_multi_click(&event) == 2 {
+                                if term.hbar.history.count_multi_click(&evt) == 2 {
                                     term.new_tab();
                                     return EvtActType::Next;
                                 }
@@ -66,7 +69,6 @@ impl EvtAct {
                 }
                 if term.hbar.plus_btn_area.0 <= x && x <= term.hbar.plus_btn_area.1 {
                     Prompt::open_file(term);
-
                     return EvtActType::Next;
                 } else if term.hbar.help_btn_area.0 <= x && x <= term.hbar.help_btn_area.1 {
                     term.curt().editor.evt = HELP;

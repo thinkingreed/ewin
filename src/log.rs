@@ -27,35 +27,43 @@ impl Log {
         // Ignore the error
         let _ = fs::create_dir(&path);
         path.push(format!("{}_{}{}", env!("CARGO_PKG_NAME"), &dt.format("%Y_%m%d").to_string(), ".log"));
-        let file = OpenOptions::new().create(true).append(true).open(path).unwrap();
 
-        let log_level = match cfg_log {
-            Some(cfg_log) => match &cfg_log.level {
-                Some(level) => level,
+        if let Ok(file) = OpenOptions::new().create(true).append(true).open(path) {
+            // let file = OpenOptions::new().create(true).append(true).open(path).unwrap();
+
+            let log_level = match cfg_log {
+                Some(cfg_log) => match &cfg_log.level {
+                    Some(level) => level,
+                    _ => "info",
+                },
                 _ => "info",
-            },
-            _ => "info",
-        };
+            };
 
-        let log = Log { file, level: Log::set_log_level(&log_level) };
+            let log = Log { file, level: Log::set_log_level(&log_level) };
 
-        let _ = LOG.set(log);
+            let _ = LOG.set(log);
+        } else {
+            eprintln!("{}", &LANG.log_file_create_failed);
+        }
     }
 
     #[track_caller]
     pub fn write(s: &str, log_level: LogLevel) {
-        let log = LOG.get().unwrap();
-        if log.level > log_level {
-            return;
+        if let Some(log) = LOG.get() {
+            if log.level > log_level {
+                return;
+            }
+
+            let t = Local::now().format("%Y-%m-%d %H:%M:%S%.6f").to_string();
+            let caller = Location::caller().to_string();
+            let vec: Vec<&str> = caller.split(path::MAIN_SEPARATOR).collect();
+            let file_info = vec.last().unwrap();
+            let s = if cfg!(debug_assertions) { format!("{} {}", log_level, s) } else { format!("{} {} {} :: {}", t, log_level, s, file_info) };
+
+            writeln!(&log.file, "{}", s).unwrap();
+        } else {
+            eprintln!("{}", s);
         }
-
-        let t = Local::now().format("%Y-%m-%d %H:%M:%S%.6f").to_string();
-        let caller = Location::caller().to_string();
-        let vec: Vec<&str> = caller.split(path::MAIN_SEPARATOR).collect();
-        let file_info = vec.last().unwrap();
-        let s = if cfg!(debug_assertions) { format!("{} {}", log_level, s) } else { format!("{} {} {} :: {}", t, log_level, s, file_info) };
-
-        writeln!(&log.file, "{}", s).unwrap();
         if cfg!(debug_assertions) {
             eprintln!("{}", s);
         }
@@ -71,6 +79,10 @@ impl Log {
         Log::write(m, LogLevel::Info);
     }
     #[track_caller]
+    pub fn info_key(m: &str) {
+        Log::write(&format!("     {}", m), LogLevel::Info);
+    }
+    #[track_caller]
     pub fn debug<T: Debug>(m: &str, v: &T) {
         let s = &format!("{}: {:?}", m, v);
         Log::write(s, LogLevel::Debug);
@@ -78,6 +90,10 @@ impl Log {
     #[track_caller]
     pub fn debug_s(m: &str) {
         Log::write(m, LogLevel::Debug);
+    }
+    #[track_caller]
+    pub fn debug_key(m: &str) {
+        Log::write(&format!("     {}", m), LogLevel::Debug);
     }
     #[track_caller]
     pub fn warn<T: Debug>(m: &str, v: &T) {
