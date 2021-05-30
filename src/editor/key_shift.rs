@@ -1,4 +1,4 @@
-use crate::{global::*, log::*, model::*, tab::Tab, terminal::*};
+use crate::{global::*, log::*, model::*, tab::Tab, terminal::*, util::get_row_width};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
 use std::io::Write;
 
@@ -14,9 +14,12 @@ impl Editor {
             EvtType::ShiftHome => {
                 self.cur.x = 0;
                 self.cur.disp_x = 0;
+                self.scroll_horizontal();
             }
             EvtType::ShiftEnd => {
-                self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y));
+                let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], self.offset_disp_x, true);
+                self.set_cur_target(self.cur.y, cur_x, width);
+
                 self.scroll();
                 self.scroll_horizontal();
             }

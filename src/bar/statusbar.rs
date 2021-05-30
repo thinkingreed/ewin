@@ -16,13 +16,14 @@ impl StatusBar {
 
         let enc_nl = format!("{}({})", h_file.enc, h_file.nl);
         let (other_w, cur_w) = tab.sbar.get_areas_width(tab.sbar.disp_col_num, &enc_nl, &get_str_width(&cur_s) + 1);
-        tab.sbar.enc_nl_area = (other_w, other_w + enc_nl.len() - 1);
+        tab.sbar.cur_area = (other_w + 1, other_w + cur_w - 1);
+        tab.sbar.enc_nl_area = (other_w + cur_w, other_w + cur_w + enc_nl.len() - 1);
 
         tab.sbar.other_str = " ".repeat(other_w);
         // Adjusted by the difference between the character width and the number of characters
         tab.sbar.cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
 
-        let sbar_ctr = format!("{}{}{}{}{}", tab.sbar.other_str, Colors::get_sbar_inversion_fg_bg(), &enc_nl, Colors::get_sbar_fg_bg(), tab.sbar.cur_str);
+        let sbar_ctr = format!("{}{}{}{}{}", tab.sbar.other_str, tab.sbar.cur_str, Colors::get_sbar_inversion_fg_bg(), &enc_nl, Colors::get_sbar_fg_bg());
         let sber_all_str = format!("{}{}{}{}{}", MoveTo(0, (tab.sbar.disp_row_posi) as u16), Clear(ClearType::CurrentLine), Colors::get_sbar_fg_bg(), sbar_ctr, Colors::get_default_fg(),);
 
         str_vec.push(sber_all_str);
@@ -51,14 +52,6 @@ impl StatusBar {
 
     fn get_areas_width(&self, cols_w: usize, enc_nl: &String, cur_str_w: usize) -> (usize, usize) {
         return (cols_w - enc_nl.len() - cur_str_w, cur_str_w);
-
-        /*
-        if cur_str_w < StatusBar::CUR_AREA_BASE_WITH {
-            return (cols_w - StatusBar::CUR_AREA_BASE_WITH, StatusBar::CUR_AREA_BASE_WITH);
-        } else {
-            return (cols_w - cur_str_w, cur_str_w);
-        }
-         */
     }
 }
 
@@ -70,6 +63,7 @@ pub struct StatusBar {
     pub disp_row_num: usize,
     pub disp_row_posi: usize,
     pub disp_col_num: usize,
+    pub cur_area: (usize, usize),
     pub enc_nl_area: (usize, usize),
 }
 
@@ -81,6 +75,7 @@ impl Default for StatusBar {
             disp_row_num: 1,
             disp_row_posi: 0,
             disp_col_num: 0,
+            cur_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
             enc_nl_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
         }
     }

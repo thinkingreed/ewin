@@ -66,6 +66,7 @@ pub mod prompt {
     pub mod enc_nl;
     pub mod grep;
     pub mod grep_result;
+    pub mod menu;
     pub mod move_row;
     pub mod open_file;
     pub mod prompt;

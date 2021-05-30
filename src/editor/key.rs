@@ -4,6 +4,10 @@ use std::cmp::min;
 
 impl Editor {
     pub fn cur_up(&mut self) {
+        if self.cur.y == 0 {
+            self.d_range.draw_type = DrawType::Not;
+            return;
+        }
         if self.cur.y > 0 {
             self.cur.y -= 1;
             self.cur_updown_com();
@@ -13,6 +17,10 @@ impl Editor {
     }
 
     pub fn cur_down(&mut self) {
+        if self.cur.y == self.buf.len_lines() {
+            self.d_range.draw_type = DrawType::Not;
+            return;
+        }
         Log::debug_s("              c_d start");
         if self.cur.y + 1 < self.buf.len_lines() {
             self.cur.y += 1;
@@ -42,7 +50,7 @@ impl Editor {
         // 行頭の場合
         } else if self.cur.x == 0 {
             self.cur_up();
-            self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y));
+            self.set_cur_target_ex(self.cur.y, self.buf.len_line_chars(self.cur.y), false);
         } else {
             let c = self.buf.char(self.cur.y, self.cur.x - 1);
 
@@ -124,8 +132,9 @@ impl Editor {
     }
 
     pub fn enter(&mut self) {
-        self.buf.insert_char(self.cur.y, self.cur.x, NEW_LINE_LF);
-        self.set_cur_target(self.cur.y + 1, 0);
+        let nl_str = if self.h_file.nl == NEW_LINE_LF_STR { NEW_LINE_LF.to_string() } else { NEW_LINE_CRLF.to_string() };
+        self.buf.insert(self.cur.y, self.cur.x, &nl_str);
+        self.set_cur_target_ex(self.cur.y + 1, 0, false);
         if self.is_enable_syntax_highlight {
             self.d_range.draw_type = DrawType::All;
         } else {
@@ -160,7 +169,7 @@ impl Editor {
             cur_x -= 1;
 
             self.buf.remove_del_bs(EvtType::BS, self.cur.y, self.buf.len_line_chars(self.cur.y) - 1);
-            self.set_cur_target(self.cur.y, cur_x);
+            self.set_cur_target_ex(self.cur.y, cur_x, false);
             self.scroll();
             self.scroll_horizontal();
         } else {
@@ -183,7 +192,7 @@ impl Editor {
         self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
 
         if is_line_end(c) {
-            self.set_cur_target(self.cur.y, self.cur.x);
+            self.set_cur_target_ex(self.cur.y, self.cur.x, false);
             self.d_range.draw_type = DrawType::After;
             self.scroll();
             self.scroll_horizontal();
@@ -200,7 +209,7 @@ impl Editor {
     }
 
     pub fn end(&mut self) {
-        self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y));
+        self.set_cur_target_ex(self.cur.y, self.buf.len_line_chars(self.cur.y), false);
         self.scroll();
         self.scroll_horizontal();
     }

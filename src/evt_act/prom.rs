@@ -7,7 +7,7 @@ impl EvtAct {
         Log::debug_key("check_prom");
 
         // Close・End
-        if term.curt().state.is_not_normal() {
+        if !term.curt().state.is_normal() {
             match term.curt().editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                     Char('w') => {
@@ -21,6 +21,9 @@ impl EvtAct {
                 },
                 Key(KeyEvent { code, .. }) => match code {
                     Esc => {
+                        if term.state.is_all_close_confirm {
+                            term.cancel_close_all_tab();
+                        }
                         if term.curt().state.grep_info.is_result {
                             if (term.curt().state.grep_info.is_stdout_end && term.curt().state.grep_info.is_stderr_end) || term.curt().state.grep_info.is_cancel {
                                 if term.curt().state.is_search {
@@ -45,35 +48,26 @@ impl EvtAct {
         }
 
         // contents operation
-        if term.curt().state.is_exists_buf() {
+        if term.curt().state.is_exists_input_field() {
             let state = &term.curt().state.clone();
             match term.curt().editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                    Left | Right | BackTab | Home | End | Char(_) => {
-                        match code {
-                            Right => term.curt().prom.shift_right(),
-                            Left => term.curt().prom.shift_left(),
-                            Home => term.curt().prom.shift_home(),
-                            End => term.curt().prom.shift_end(),
-                            BackTab => {
-                                term.curt().prom.tab(false, state);
-                                term.curt().prom.clear_sels()
-                            }
-                            Char(c) => {
-                                let rnw = term.curt().editor.get_rnw();
-                                term.curt().prom.insert_char(c.to_ascii_uppercase(), rnw, state);
-                                term.curt().prom.clear_sels();
-                            }
-                            _ => {}
+                    Left | Right | BackTab | Home | End | Char(_) => match code {
+                        Right => term.curt().prom.shift_right(),
+                        Left => term.curt().prom.shift_left(),
+                        Home => term.curt().prom.shift_home(),
+                        End => term.curt().prom.shift_end(),
+                        BackTab => {
+                            term.curt().prom.tab(false, state);
+                            term.curt().prom.clear_sels()
                         }
-                        /*
-                        // For incremental search
-                        if !term.curt().state.is_search {
-                            Prompt::draw_only(out, term.curt());
-                            return EvtActType::Hold;
+                        Char(c) => {
+                            let rnw = term.curt().editor.get_rnw();
+                            term.curt().prom.insert_char(c.to_ascii_uppercase(), rnw, state);
+                            term.curt().prom.clear_sels();
                         }
-                         */
-                    }
+                        _ => {}
+                    },
                     _ => {}
                 },
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
@@ -82,13 +76,6 @@ impl EvtAct {
                         term.curt().prom.paste(&clipboard);
                         term.curt().prom.clear_sels();
                         Prompt::draw_only(out, term.curt());
-
-                        /*
-                        // For incremental search
-                        if !term.curt().state.is_search {
-                            return EvtActType::Hold;
-                        }
-                         */
                     }
                     _ => {}
                 },
@@ -111,15 +98,6 @@ impl EvtAct {
                             Left | Right | Up | Down | Home | End | Tab | Char(_) => term.curt().prom.clear_sels(),
                             _ => {}
                         }
-
-                        /*
-                        // For incremental search
-                        if !state.is_search && !state.is_open_file {
-                            term.curt().prom.clear_sels();
-                            Prompt::draw_only(out, term.curt());
-                            return EvtActType::Hold;
-                        }
-                         */
                     }
                     _ => {}
                 },
@@ -160,7 +138,7 @@ impl EvtAct {
         if term.curt().state.grep_info.is_result || term.curt().state.is_read_only {
             match term.curt().editor.evt {
                 Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                    Char('f') | Char('q') => return EvtActType::Next,
+                    Char('a') | Char('c') | Char('f') | Char('q') => return EvtActType::Next,
                     _ => return EvtActType::Hold,
                 },
                 Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
@@ -168,7 +146,7 @@ impl EvtAct {
                     _ => return EvtActType::Hold,
                 },
                 Key(KeyEvent { code, .. }) => match code {
-                    PageDown | PageUp | Home | End | Down | Up | Left | Right => return EvtActType::Next,
+                    PageDown | PageUp | Home | End | Down | Up | Left | Right | F(1) => return EvtActType::Next,
                     Enter => {
                         if !term.curt().state.grep_info.is_result {
                             return EvtActType::Hold;

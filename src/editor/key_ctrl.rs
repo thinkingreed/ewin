@@ -4,13 +4,9 @@ use std::{collections::BTreeSet, iter::FromIterator, sync::Mutex};
 impl Editor {
     pub fn all_select(&mut self) {
         self.sel.clear();
-        let s_disp_x = self.get_rnw() + 1;
-        self.sel.set_s(0, 0, s_disp_x);
+        self.sel.set_s(0, 0, 0);
         let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.buf.len_lines() - 1)[..], self.offset_disp_x, false);
-        // e_disp_x +1 for EOF
-        let y = self.buf.len_lines() - 1;
-        let e_disp_x = width + self.get_rnw() + 1;
-        self.sel.set_e(y, cur_x, e_disp_x);
+        self.sel.set_e(self.buf.len_lines() - 1, cur_x, width);
         self.d_range.draw_type = DrawType::All;
     }
 
@@ -55,14 +51,17 @@ impl Editor {
 
     pub fn paste(&mut self, ep: &mut EvtProc) {
         Log::debug_s("              paste");
+
         if self.is_enable_syntax_highlight {
             self.d_range.draw_type = DrawType::All;
         } else {
             self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::After);
         }
-        if self.evt == PASTE {
-            ep.str = self.get_clipboard().unwrap_or("".to_string());
-        }
+        // if self.evt == PASTE {
+        let mut clipboard = self.get_clipboard().unwrap_or("".to_string());
+        change_nl(&mut clipboard, &self.h_file);
+        ep.str = clipboard;
+        // }
         ep.sel.set_s(self.cur.y, self.cur.x, self.cur.disp_x);
         self.insert_str(&ep.str);
         ep.sel.set_e(self.cur.y, self.cur.x, self.cur.disp_x);
@@ -71,15 +70,14 @@ impl Editor {
     pub fn insert_str(&mut self, str: &str) {
         Log::debug_s("              insert_str");
 
-        let i = self.buf.line_to_char(self.cur.y) + self.cur.x;
-        self.buf.insert(i, str);
+        self.buf.insert(self.cur.y, self.cur.x, str);
         let insert_strs: Vec<&str> = str.split(NEW_LINE_LF).collect();
 
         let last_str_len = insert_strs.last().unwrap().chars().count();
         self.cur.y += insert_strs.len() - 1;
 
         let x = if insert_strs.len() == 1 { self.cur.x + last_str_len } else { last_str_len };
-        self.set_cur_target(self.cur.y, x);
+        self.set_cur_target_ex(self.cur.y, x, false);
 
         self.scroll();
         self.scroll_horizontal();
@@ -95,7 +93,7 @@ impl Editor {
     pub fn ctrl_end(&mut self) {
         let y = self.buf.len_lines() - 1;
         let len_line_chars = self.buf.len_line_chars(y);
-        self.set_cur_target(y, len_line_chars);
+        self.set_cur_target_ex(y, len_line_chars, false);
         self.scroll();
         self.scroll_horizontal();
         if self.updown_x == 0 {
@@ -121,7 +119,7 @@ impl Editor {
 
             if !is_incremental {
                 let range = self.search.ranges[self.search.idx];
-                self.set_cur_target(range.y, range.sx);
+                self.set_cur_target_ex(range.y, range.sx, false);
             }
 
             self.scroll();
@@ -221,7 +219,7 @@ impl Editor {
         }
         let y = self.buf.char_to_line(end_char_idx);
         let x = end_char_idx - self.buf.line_to_char(y) + 1;
-        self.set_cur_target(y, x);
+        self.set_cur_target_ex(y, x, false);
         self.scroll();
         self.scroll_horizontal();
     }
@@ -352,7 +350,6 @@ impl Tab {
                     if enc_errors {
                         Log::info("Encoding errors", &enc_errors);
                         term.curt().mbar.set_err(&LANG.cannot_convert_encoding);
-
                         return true;
                     } else {
                         term.hbar.file_vec[term.idx].is_changed = false;

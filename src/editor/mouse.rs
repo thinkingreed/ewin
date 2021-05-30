@@ -3,31 +3,39 @@ use crate::{log::*, model::*, util::*};
 impl Editor {
     pub fn ctrl_mouse(&mut self, x: usize, y: usize, is_mouse_left_down: bool) {
         Log::debug_s("              ctrl_mouse");
-        if y < self.disp_row_posi || y >= self.disp_row_num || y >= self.buf.len_lines() {
+        if y < self.disp_row_posi || y > self.disp_row_num || y > self.buf.len_lines() {
             self.d_range.draw_type = DrawType::Not;
             return;
         }
         Log::debug("y", &y);
         Log::debug("x", &x);
-        let y = y - self.disp_row_posi;
-        //  let x = if x <= self.get_rnw() { self.get_rnw() + Editor::RNW_MARGIN } else { x };
-        let x = x - self.get_rnw() - Editor::RNW_MARGIN;
-        self.cur.y = y + self.offset_y;
-        let (cur_x, width) = get_until_x(&self.buf.char_vec_line(y + self.offset_y), x + self.offset_x);
-        self.cur.x = cur_x;
-        self.cur.disp_x = width;
 
-        self.set_mouse_sel(is_mouse_left_down);
-        self.scroll_horizontal();
-        if is_mouse_left_down {
-            if self.sel_org.is_selected() {
-                self.d_range.draw_type = DrawType::All;
-            }
-        // Drag
+        let y = y - self.disp_row_posi;
+        if x < self.get_rnw() + Editor::RNW_MARGIN {
+            self.sel.set_s(y, 0, 0);
+            let (cur_x, width) = get_row_width(&self.buf.char_vec_line(y)[..], 0, true);
+            self.sel.set_e(y, cur_x, width);
+            self.set_cur_target(y + self.offset_y, cur_x, width);
+            self.d_range.draw_type = DrawType::All;
         } else {
-            if self.sel.is_selected() {
-                let sy = self.sel.get_diff_y_mouse_drag(self.sel_org, self.cur.y);
-                self.d_range = DRange::new(sy, sy + 1, DrawType::Target);
+            let x = x - self.get_rnw() - Editor::RNW_MARGIN;
+            self.cur.y = y + self.offset_y;
+            let (cur_x, width) = get_until_x(&self.buf.char_vec_line(y + self.offset_y), x + self.offset_x);
+            self.cur.x = cur_x;
+            self.cur.disp_x = width;
+
+            self.set_mouse_sel(is_mouse_left_down);
+            self.scroll_horizontal();
+            if is_mouse_left_down {
+                if self.sel_org.is_selected() {
+                    self.d_range.draw_type = DrawType::All;
+                }
+            // Drag
+            } else {
+                if self.sel.is_selected() {
+                    let sy = self.sel.get_diff_y_mouse_drag(self.sel_org, self.cur.y);
+                    self.d_range = DRange::new(sy, sy + 1, DrawType::Target);
+                }
             }
         }
     }

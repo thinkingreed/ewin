@@ -70,8 +70,9 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 |                | -r:Subfolder search,-H:File name display,-n:Line number display,-I: Binary file not applicable|             |
 | `Shift` + `F1` | Key record start or stop.Recording key operation.                                    |―            |
 | `Shift` + `F2` | Execution of the recorded key.                                                       |―            |
-| `Ctrl` + `o`   | Open new file.                                                                      |―            |
-| `Ctrl` + `t`   | Create new tab.                                                                      |―            |
+| `Ctrl` + `o`   | Open new file.                                                                       |―            |
+| `Ctrl` + `t`   | Create new tab. Another operation is to double-click the header.                     |―            |
+|                | In case of Windows, it will not be recognized unless you double-click slowly         |             |
 | `Ctrl` + `q`   | Change next tab.                                                                     |―            | 
 
 

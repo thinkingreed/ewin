@@ -11,7 +11,7 @@ impl Editor {
         let mut str_vec: Vec<String> = vec![];
         let (mut y, mut x_width) = (0, 0);
 
-        let d_range = self.d_range.get_range();
+        let d_range = self.d_range.clone();
 
         match d_range.draw_type {
             DrawType::Not | DrawType::MoveCur => {}

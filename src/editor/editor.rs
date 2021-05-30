@@ -1,6 +1,9 @@
 use crate::{def::*, log::*, model::*, terminal::*, util::*};
 use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseEvent as M_Event, MouseEventKind as M_Kind};
-use std::cmp::{max, min};
+use std::{
+    cmp::{max, min},
+    usize,
+};
 
 impl Editor {
     pub const SCROLL_UP_EXTRA_NUM: usize = 1;
@@ -71,7 +74,7 @@ impl Editor {
             return;
 
         // KEY_NULL:grep_result initial display
-        } else if self.cur_y_org != self.cur.y || self.evt == PASTE || self.evt == END || self.evt == SEARCH_ASC || self.evt == SEARCH_DESC || self.evt == KEY_NULL {
+        } else if self.cur_y_org != self.cur.y || self.evt == PASTE || self.evt == END || self.evt == SHIFT_HOME || self.evt == SHIFT_END || self.evt == SEARCH_ASC || self.evt == SEARCH_DESC || self.evt == KEY_NULL {
             self.offset_x = self.get_x_offset(self.cur.y, self.cur.x);
 
             if self.evt == END {
@@ -141,7 +144,7 @@ impl Editor {
     pub fn del_sel_range(&mut self) {
         let sel = self.sel.get_range();
         self.buf.remove_range(sel);
-        self.set_cur_target(sel.sy, sel.sx);
+        self.set_cur_target_ex(sel.sy, sel.sx, false);
         self.scroll();
         self.scroll_horizontal();
     }
@@ -155,9 +158,15 @@ impl Editor {
         self.cur = Cur { y: 0, x: 0, disp_x: 0 };
     }
 
-    pub fn set_cur_target(&mut self, y: usize, x: usize) {
+    pub fn set_cur_target(&mut self, y: usize, x: usize, disp_x: usize) {
         self.cur.y = y;
-        let (cur_x, width) = get_row_width(&self.buf.char_vec_range(y, x), self.offset_disp_x, false);
+        self.rnw = if self.mode == TermMode::Normal { self.buf.len_lines().to_string().len() } else { 0 };
+        self.cur.disp_x = disp_x;
+        self.cur.x = x;
+    }
+    pub fn set_cur_target_ex(&mut self, y: usize, x: usize, is_ctrlchar_incl: bool) {
+        self.cur.y = y;
+        let (cur_x, width) = get_row_width(&self.buf.char_vec_range(y, x), self.offset_disp_x, is_ctrlchar_incl);
 
         self.rnw = if self.mode == TermMode::Normal { self.buf.len_lines().to_string().len() } else { 0 };
         self.cur.disp_x = width;

@@ -27,7 +27,9 @@ pub struct LangCfg {
     pub detail: String,
     pub grep: String,
     pub open: String,
-    pub scroll: String,
+    pub movement: String,
+    pub file: String,
+    pub edit: String,
     pub filenm: String,
     pub file_list: String,
     pub presence_or_absence: String,
@@ -74,6 +76,9 @@ pub struct LangCfg {
     pub candidate_change: String,
     pub encoding: String,
     pub new_line_code: String,
+    pub menu: String,
+    pub new_tab: String,
+    pub save_as: String,
 
     /// Long msg
     pub not_entered_filenm: String,
@@ -90,6 +95,7 @@ pub struct LangCfg {
     pub no_operation_re_exec: String,
     pub number_within_current_number_of_rows: String,
     pub cannot_convert_encoding: String,
+    pub select_menu_and_work: String,
     // File
     pub no_read_permission: String,
     pub no_write_permission: String,
@@ -109,6 +115,11 @@ pub struct LangCfg {
     pub no_key_record_exec: String,
     // other
     pub unsupported_operation: String,
+    pub increase_height_terminal: String,
+
+    // editor info
+    pub simple_help_desc: String,
+    pub detailed_help_desc: String,
 }
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LangMulti {

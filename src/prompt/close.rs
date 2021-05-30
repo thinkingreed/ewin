@@ -30,7 +30,7 @@ impl EvtAct {
             term.idx = if term.idx == term.tabs.len() - 1 { term.idx - 1 } else { term.idx };
             term.tabs.remove(tmp_idx);
             term.hbar.file_vec.remove(tmp_idx);
-            return EvtActType::DrawOnly;
+            return EvtActType::Next;
         }
     }
 }

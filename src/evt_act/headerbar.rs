@@ -38,18 +38,16 @@ impl EvtAct {
                         if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 {
                             term.idx = idx;
                             term.curt().editor.evt = KEY_NULL;
-                            return EvtActType::Next;
+                            return EvtActType::DrawOnly;
                         }
                     }
-
-                    Log::debug("term.hbar.all_filenm_rest_area", &term.hbar.all_filenm_rest_area);
 
                     if term.hbar.all_filenm_rest_area.0 <= x && x <= term.hbar.all_filenm_rest_area.1 {
                         match term.curt().editor.evt {
                             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: _, row: _, .. }) => {
                                 if term.hbar.history.count_multi_click(&evt) == 2 {
                                     term.new_tab();
-                                    return EvtActType::Next;
+                                    return EvtActType::DrawOnly;
                                 }
                             }
                             _ => {}
@@ -70,26 +68,11 @@ impl EvtAct {
                 if term.hbar.plus_btn_area.0 <= x && x <= term.hbar.plus_btn_area.1 {
                     Prompt::open_file(term);
                     return EvtActType::Next;
-                } else if term.hbar.help_btn_area.0 <= x && x <= term.hbar.help_btn_area.1 {
-                    term.curt().editor.evt = HELP;
-                    return EvtActType::Next;
                 } else if term.hbar.close_btn_area.0 <= x && x <= term.hbar.close_btn_area.1 {
-                    let vec = &term.hbar.file_vec.clone();
-                    let mut vec_idx = vec.len();
-                    for h_file in vec.iter().rev() {
-                        vec_idx -= 1;
-                        if h_file.is_changed {
-                            term.tabs[vec_idx].editor.evt = CLOSE;
-                            term.tabs[vec_idx].state.is_close_confirm = true;
-                        } else {
-                            term.del_tab(vec_idx);
-                        }
-                    }
+                    term.close_all_tab();
+
                     if term.tabs.is_empty() {
                         return EvtActType::Exit;
-                    } else {
-                        term.idx = if term.idx > term.tabs.len() - 1 { term.tabs.len() - 1 } else { term.idx };
-                        term.hbar.disp_base_idx = 0;
                     }
                     return EvtActType::Next;
                 }

@@ -26,14 +26,20 @@ impl TabState {
     pub fn clear_grep_info(&mut self) {
         self.grep_info.clear();
     }
-    pub fn is_not_normal(&mut self) -> bool {
-        if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_line || self.is_key_record || self.is_key_record_exec || self.is_key_record_exec_draw || self.is_read_only || self.is_open_file || self.grep_info.is_grep || self.grep_info.is_result || self.is_enc_nl {
+    pub fn is_normal(&self) -> bool {
+        if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_line || self.is_key_record || self.is_key_record_exec || self.is_key_record_exec_draw || self.is_read_only || self.is_open_file || self.grep_info.is_grep || self.grep_info.is_result || self.is_enc_nl || self.is_menu {
+            return false;
+        }
+        return true;
+    }
+    pub fn is_exists_input_field(&self) -> bool {
+        if self.is_save_new_file || self.is_search || self.is_replace || self.grep_info.is_grep || self.is_move_line || self.is_open_file {
             return true;
         }
         return false;
     }
-    pub fn is_exists_buf(&mut self) -> bool {
-        if self.is_save_new_file || self.is_search || self.is_replace || self.grep_info.is_grep || self.is_move_line || self.is_open_file {
+    pub fn is_exists_choice(&self) -> bool {
+        if self.is_enc_nl || self.is_menu {
             return true;
         }
         return false;
@@ -62,6 +68,7 @@ pub struct TabState {
     pub is_open_file: bool,
     pub is_enc_nl: bool,
     pub grep_info: GrepInfo,
+    pub is_menu: bool,
 }
 
 impl Default for TabState {
@@ -79,6 +86,7 @@ impl Default for TabState {
             is_open_file: false,
             is_enc_nl: false,
             grep_info: GrepInfo::default(),
+            is_menu: false,
         }
     }
 }

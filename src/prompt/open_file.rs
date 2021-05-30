@@ -15,31 +15,31 @@ use std::{
 impl EvtAct {
     pub fn open_file(term: &mut Terminal) -> EvtActType {
         Log::debug_s("Process.open_file");
-        Log::debug("term.curt().editor.evt ", &term.curt().editor.evt);
 
         match term.curt().editor.evt {
             Resize(_, _) => {
                 PromOpenFile::set_file_list(&mut term.curt().prom);
                 return EvtActType::Next;
             }
-            Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => PromOpenFile::move_row_vec(term, CurDirection::Down),
-            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => PromOpenFile::move_row_vec(term, CurDirection::Up),
             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => {
                 let (x, y) = (x as usize, y as usize);
                 if y != term.curt().prom.cont_1.buf_row_posi as usize && !(term.curt().prom.cont_2.buf_row_posi as usize <= y && y <= term.curt().prom.cont_2.buf_row_posi as usize + term.curt().prom.disp_row_num - Prompt::OPEN_FILE_FIXED_PHRASE_ROW_NUM) {
                     return EvtActType::Hold;
                 } else {
+                    // File path
                     if y == term.curt().prom.cont_1.buf_row_posi as usize {
-                        let vec = split_inclusive(&term.curt().prom.cont_1.buf.iter().collect::<String>(), path::MAIN_SEPARATOR);
+                        let disp_vec = split_inclusive(&term.curt().prom.cont_1.buf.iter().collect::<String>(), path::MAIN_SEPARATOR);
 
+                        // Identifying the path of the clicked position
                         let (mut all_width, mut path_str) = (0, String::new());
-                        for path in vec {
-                            if path == path::MAIN_SEPARATOR.to_string() {
+                        for path in disp_vec.iter() {
+                            if path == &path::MAIN_SEPARATOR.to_string() {
                                 all_width += 1;
                             } else {
-                                let w = get_str_width(&path);
-                                if all_width < x && x < all_width + w {
+                                let width = get_str_width(&path);
+                                if all_width <= x && x <= all_width + width {
                                     path_str.push_str(&path);
+                                    path_str = path_str.replace(CONTINUE_STR, &term.curt().prom.prom_open_file.omitted_path_str);
                                     if Path::new(&path_str).metadata().unwrap().is_dir() {
                                         path_str.push(path::MAIN_SEPARATOR);
                                         PromOpenFile::set_file_path(&mut term.curt().prom, &path_str);
@@ -47,14 +47,16 @@ impl EvtAct {
                                     }
                                     break;
                                 }
-                                all_width += w;
+                                all_width += width;
                             }
                             path_str.push_str(&path);
                         }
+                        // File list
                     } else if term.curt().prom.cont_2.buf_row_posi as usize <= y && y <= term.curt().prom.cont_2.buf_row_posi as usize + term.curt().prom.disp_row_num - Prompt::OPEN_FILE_FIXED_PHRASE_ROW_NUM {
                         let disp_row_posi = term.curt().prom.cont_2.buf_row_posi as usize;
-                        let op_file_vec = term.curt().prom.prom_open_file.row_vec.clone();
-                        let dest = min(term.curt().prom.prom_open_file.row_vec.len(), term.curt().prom.prom_open_file.offset + term.curt().prom.prom_open_file.disp_row_len);
+                        let op_file_vec = term.curt().prom.prom_open_file.vec.clone();
+                        let dest = min(term.curt().prom.prom_open_file.vec.len(), term.curt().prom.prom_open_file.offset + term.curt().prom.prom_open_file.disp_row_len);
+                        // Identifying the file of the clicked position
                         for (row_idx, vec) in op_file_vec[term.curt().prom.prom_open_file.offset..dest].iter().enumerate() {
                             for op_file in vec.iter() {
                                 if y - disp_row_posi == row_idx && op_file.filenm_area.0 <= x && x <= op_file.filenm_area.1 {
@@ -65,27 +67,31 @@ impl EvtAct {
                     }
                 }
             }
+            Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => PromOpenFile::move_vec(term, CurDirection::Down),
+            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => PromOpenFile::move_vec(term, CurDirection::Up),
             Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
                 Char(_) => PromOpenFile::set_file_list(&mut term.curt().prom),
                 _ => return EvtActType::Hold,
             },
             Key(KeyEvent { code, .. }) => match code {
-                Up => PromOpenFile::move_row_vec(term, CurDirection::Up),
-                Down => PromOpenFile::move_row_vec(term, CurDirection::Down),
-                Left => PromOpenFile::move_row_vec(term, CurDirection::Left),
-                Right => PromOpenFile::move_row_vec(term, CurDirection::Right),
+                Up => PromOpenFile::move_vec(term, CurDirection::Up),
+                Down => PromOpenFile::move_vec(term, CurDirection::Down),
+                Left => PromOpenFile::move_vec(term, CurDirection::Left),
+                Right => PromOpenFile::move_vec(term, CurDirection::Right),
                 Char(_) | Delete | Backspace | Home | End | Tab => PromOpenFile::set_file_list(&mut term.curt().prom),
                 Enter => {
                     let path_str = term.curt().prom.cont_1.buf.iter().collect::<String>();
-                    let path = Path::new(&path_str);
-                    term.curt().prom.prom_open_file.cache_open_filenm = path_str.clone();
+                    let full_path_str = term.curt().prom.prom_open_file.select_open_file(&path_str);
+                    let path = Path::new(&full_path_str);
+
                     if path_str.len() == 0 {
                         term.curt().mbar.set_err(&LANG.not_entered_filenm);
                     } else if !path.exists() {
                         term.curt().mbar.set_err(&LANG.file_not_found);
+                    } else if !File::is_readable(&full_path_str) {
+                        term.curt().mbar.set_err(&LANG.no_read_permission);
                     } else if path.metadata().unwrap().is_dir() {
                         PromOpenFile::set_file_list(&mut term.curt().prom);
-                        // term.curt().mbar.set_err(&LANG.file_not_found);
                     } else {
                         if term.open(&path.display().to_string(), &mut Tab::new()) {
                             term.clear_pre_tab_status();
@@ -104,22 +110,26 @@ impl EvtAct {
 }
 
 impl Prompt {
-    const OPEN_FILE_FIXED_PHRASE_ROW_NUM: usize = 5;
+    pub const OPEN_FILE_FIXED_PHRASE_ROW_NUM: usize = 5;
+
     pub fn open_file(term: &mut Terminal) {
         term.curt().state.is_open_file = true;
-
-        let rows = size().unwrap().1 as usize;
-        // -1 is MsgBar
-        let disp_row_num = rows - term.hbar.disp_row_num - term.help.disp_row_num - term.curt().sbar.disp_row_num - 1;
-        term.curt().prom.disp_row_num = disp_row_num as usize;
-        term.set_disp_size();
-        term.curt().prom.cont_1 = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::First).get_open_file(&term.curt().prom);
-        term.curt().prom.cont_2 = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::Second).get_open_file(&term.curt().prom);
+        let is_disp = term.set_disp_size();
+        if !is_disp {
+            term.curt().mbar.set_err(&LANG.increase_height_terminal);
+            term.curt().prom.clear();
+            term.curt().state.clear();
+            return;
+        }
+        term.curt().prom.cont_1 = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::First).get_open_file(&mut term.curt().prom);
+        term.curt().prom.cont_2 = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::Second).get_open_file(&mut term.curt().prom);
         PromOpenFile::set_file_list(&mut term.curt().prom);
+
+        term.curt().prom.prom_open_file.base_path = get_dir_path(&term.curt().prom.cont_1.buf.iter().collect::<String>().replace(CONTINUE_STR, &term.curt().prom.prom_open_file.omitted_path_str));
     }
 
     pub fn draw_open_file(&self, str_vec: &mut Vec<String>) {
-        Log::debug_s("              　　　　　draw_open_file");
+        Log::debug_s("                draw_open_file");
 
         Prompt::set_draw_vec(str_vec, self.cont_1.buf_desc_row_posi, &self.cont_1.buf_desc.clone());
         Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
@@ -128,14 +138,12 @@ impl Prompt {
         let cont_2_buf_desc = format!("{}{}({}){}", Colors::get_msg_highlight_fg(), &LANG.file_list, num_of_disp, Colors::get_default_fg());
         Prompt::set_draw_vec(str_vec, self.cont_2.buf_desc_row_posi, &cont_2_buf_desc);
 
-        Log::debug("self.prom_open_file", &self.prom_open_file);
-
         // cont_2.buf
         for y in 0..self.prom_open_file.disp_row_len {
             str_vec.push(format!("{}{}", MoveTo(0, self.cont_2.buf_row_posi + y as u16), Clear(CurrentLine)));
             let mut row_str = String::new();
             let vec_y = y + self.prom_open_file.offset;
-            if let Some(vec) = self.prom_open_file.row_vec.get(vec_y) {
+            if let Some(vec) = self.prom_open_file.vec.get(vec_y) {
                 for (x, op_file) in vec.iter().enumerate() {
                     let file_disp_str = &self.prom_open_file.get_file_disp_str(&op_file, vec_y, x);
                     row_str.push_str(&format!("{}{}{}", file_disp_str, op_file.filenm_disp, Colors::get_default_fg_bg()));
@@ -149,13 +157,13 @@ impl Prompt {
 }
 
 impl PromptCont {
-    pub fn get_open_file(&mut self, prom: &Prompt) -> PromptCont {
+    pub fn get_open_file(&mut self, prom: &mut Prompt) -> PromptCont {
         let base_posi = self.disp_row_posi - 1;
 
         if self.posi == PromptContPosi::First {
             self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.set_open_filenm);
             self.key_desc = format!(
-                "{}{}:{}Enter  {}{}:{}Esc  {}{}:{}Tab  {}{}:{}Click  {}{}:{}↑↓",
+                "{}{}:{}Enter  {}{}:{}Esc  {}{}:{}Tab  {}{}:{}Click  {}{}:{}↑↓←→",
                 Colors::get_default_fg(),
                 &LANG.open,
                 Colors::get_msg_highlight_fg(),
@@ -169,14 +177,15 @@ impl PromptCont {
                 &LANG.select,
                 Colors::get_msg_highlight_fg(),
                 Colors::get_default_fg(),
-                &LANG.scroll,
+                &LANG.movement,
                 Colors::get_msg_highlight_fg(),
             );
 
             self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.filenm, Colors::get_default_fg());
 
-            if prom.prom_open_file.cache_open_filenm.len() > 0 {
-                self.buf = prom.prom_open_file.cache_open_filenm.chars().collect();
+            if prom.prom_open_file.cache_disp_filenm.len() > 0 {
+                self.buf = prom.prom_open_file.cache_disp_filenm.chars().collect();
+                prom.prom_open_file.base_path = prom.prom_open_file.cache_full_filenm.clone();
             } else {
                 if let Ok(path) = env::current_dir() {
                     self.buf = format!("{}{}", path.to_string_lossy().to_string(), path::MAIN_SEPARATOR).chars().collect();
@@ -200,41 +209,59 @@ impl PromptCont {
 }
 
 impl PromOpenFile {
-    pub const PATH_INPUT_FIELD: usize = usize::MAX;
+    pub const PATH_INPUT_FIELD: usize = USIZE_UNDEFINED;
 
     pub fn set_file_path(prom: &mut Prompt, path: &String) {
-        let width = get_str_width(path);
+        let path = &path.replace(CONTINUE_STR, &prom.prom_open_file.omitted_path_str);
+        // -2 is margin
+        let disp_path = cut_str(path.clone(), prom.disp_col_num - 2, true, true);
+
+        let tmp = disp_path.replace(CONTINUE_STR, "");
+        prom.prom_open_file.omitted_path_str = path.replace(&tmp, "");
+
+        Log::debug("File path omitted_path_str", &prom.prom_open_file.omitted_path_str);
+
+        let width = get_str_width(&disp_path);
         prom.cont_1.cur.disp_x = width;
-        prom.cont_1.cur.x = path.chars().count();
-        prom.cont_1.buf = path.chars().collect();
+        prom.cont_1.cur.x = disp_path.chars().count();
+        prom.cont_1.buf = disp_path.chars().collect();
     }
+
     pub fn set_file_path_parent(prom: &mut Prompt, path: &String) {
-        if path == &MAIN_SEPARATOR.to_string() {
+        if File::is_root_dir(path) {
+            PromOpenFile::set_file_path(prom, &path);
             return;
         }
+        let path = &path.replace(CONTINUE_STR, &prom.prom_open_file.omitted_path_str);
+
         let mut parent_str = Path::new(path).parent().unwrap().display().to_string();
-        if &parent_str != &MAIN_SEPARATOR.to_string() {
+        if !File::is_root_dir(&parent_str) {
             parent_str.push_str(&MAIN_SEPARATOR.to_string());
         }
         PromOpenFile::set_file_path(prom, &parent_str);
     }
 
     pub fn select_file(term: &mut Terminal, op_file: &OpenFile, is_click: bool) -> EvtActType {
-        let path_str = &term.curt().prom.cont_1.buf.iter().collect::<String>();
+        // let path = &term.curt().prom.cont_1.buf.iter().collect::<String>();
         if op_file.file.is_dir {
             if op_file.file.name == PARENT_FOLDER {
-                if is_click {
-                    PromOpenFile::set_file_path_parent(&mut term.curt().prom, path_str);
-                } else {
-                    let base_path = term.curt().prom.prom_open_file.base_path.clone();
-                    PromOpenFile::set_file_path_parent(&mut term.curt().prom, &base_path);
-                }
+                let base_path = term.curt().prom.prom_open_file.base_path.clone();
+                PromOpenFile::set_file_path_parent(&mut term.curt().prom, &base_path);
             } else {
-                PromOpenFile::chenge_file_path(&mut term.curt().prom, op_file);
+                let mut path = term.curt().prom.prom_open_file.base_path.clone();
+                path.push_str(&op_file.file.name);
+                if is_click && !File::is_readable(&path) {
+                    term.curt().mbar.set_err(&LANG.no_read_permission);
+                    return EvtActType::Hold;
+                } else {
+                    PromOpenFile::chenge_file_path(&mut term.curt().prom, op_file);
+                }
             }
         } else {
             if is_click {
-                if term.open(&format!("{}{}", path_str, op_file.file.name), &mut Tab::new()) {
+                let base_path = term.curt().prom.prom_open_file.base_path.clone();
+                let base_path = term.curt().prom.prom_open_file.select_open_file(&base_path);
+                if term.open(&format!("{}{}", &base_path, op_file.file.name), &mut Tab::new()) {
                     term.clear_pre_tab_status();
                 }
             } else {
@@ -248,8 +275,16 @@ impl PromOpenFile {
         return EvtActType::Hold;
     }
 
+    pub fn select_open_file(&mut self, path: &String) -> String {
+        self.cache_disp_filenm = get_dir_path(&path.clone());
+        let path_str = path.replace(CONTINUE_STR, &self.omitted_path_str);
+        self.cache_full_filenm = path_str.clone();
+        return path_str;
+    }
+
     pub fn chenge_file_path(prom: &mut Prompt, op_file: &OpenFile) {
         let mut path = prom.prom_open_file.base_path.clone();
+
         path.push_str(&op_file.file.name);
         if op_file.file.is_dir {
             path.push_str(&MAIN_SEPARATOR.to_string());
@@ -260,29 +295,34 @@ impl PromOpenFile {
     pub fn set_file_list(prom: &mut Prompt) {
         // Initialize
         prom.prom_open_file.offset = 0;
-        prom.prom_open_file.tgt_x = 0;
-        prom.prom_open_file.tgt_y = PromOpenFile::PATH_INPUT_FIELD;
+        prom.prom_open_file.vec_x = 0;
+        prom.prom_open_file.vec_y = PromOpenFile::PATH_INPUT_FIELD;
 
         let path = prom.cont_1.buf[..prom.cont_1.cur.x].iter().collect::<String>();
+        let path = path.replace(CONTINUE_STR, &prom.prom_open_file.omitted_path_str);
+
         let mut vec = get_tab_comp_files(path, false, false);
         vec.insert(0, File { name: PARENT_FOLDER.to_string(), is_dir: true });
+
         let (op_file_row_vec, file_count) = get_shaping_file_list(&mut vec, prom.disp_col_num);
-        prom.prom_open_file.row_vec = op_file_row_vec;
+        prom.prom_open_file.vec = op_file_row_vec;
         prom.prom_open_file.file_all_count = file_count;
         prom.prom_open_file.disp_row_len = prom.disp_row_num - Prompt::OPEN_FILE_FIXED_PHRASE_ROW_NUM;
+        //  prom.prom_open_file.base_path = get_dir_path(prom.cont_1.buf.iter().collect());
+        prom.prom_open_file.base_path = get_dir_path(&prom.cont_1.buf.iter().collect::<String>().replace(CONTINUE_STR, &prom.prom_open_file.omitted_path_str));
     }
 
     pub fn get_disp_file_count(&self) -> usize {
         let mut count = 0;
-        let dest = min(self.row_vec.len(), self.offset + self.disp_row_len);
-        for vec in self.row_vec[0..dest].iter() {
+        let dest = min(self.vec.len(), self.offset + self.disp_row_len);
+        for vec in self.vec[0..dest].iter() {
             count += vec.len();
         }
         return count;
     }
 
     pub fn down_disp_file_list(&mut self) {
-        if self.row_vec.len() - 1 - self.offset >= self.disp_row_len {
+        if self.vec.len() - 1 - self.offset >= self.disp_row_len {
             self.offset += 1;
         }
     }
@@ -293,71 +333,77 @@ impl PromOpenFile {
         }
     }
 
-    pub fn move_row_vec(term: &mut Terminal, cur_direction: CurDirection) {
-        // Initialize
-        if cur_direction == CurDirection::Down && term.curt().prom.prom_open_file.tgt_y == PromOpenFile::PATH_INPUT_FIELD {
-            let mut path = term.curt().prom.cont_1.buf.iter().collect::<String>();
-            path = get_dir_path(path);
-            term.curt().prom.prom_open_file.base_path = path;
+    pub fn move_vec(term: &mut Terminal, cur_direction: CurDirection) {
+        if term.curt().prom.prom_open_file.vec_y == PromOpenFile::PATH_INPUT_FIELD {
+            if cur_direction == CurDirection::Up {
+                return;
+            } else if cur_direction == CurDirection::Down {
+                term.curt().prom.prom_open_file.base_path = get_dir_path(&term.curt().prom.cont_1.buf.iter().collect::<String>().replace(CONTINUE_STR, &term.curt().prom.prom_open_file.omitted_path_str));
+            }
         }
-
-        term.curt().prom.prom_open_file.move_vec(cur_direction);
-        if term.curt().prom.prom_open_file.tgt_y == PromOpenFile::PATH_INPUT_FIELD {
-            let base_path = &term.curt().prom.prom_open_file.base_path.clone();
-            PromOpenFile::set_file_path(&mut term.curt().prom, base_path);
+        term.curt().prom.prom_open_file.set_vec_posi(cur_direction);
+        if term.curt().prom.prom_open_file.vec_y == PromOpenFile::PATH_INPUT_FIELD {
+            let base_path = term.curt().prom.prom_open_file.base_path.clone();
+            PromOpenFile::set_file_path(&mut term.curt().prom, &base_path);
             return;
         }
-        let (y, x) = (term.curt().prom.prom_open_file.tgt_y, term.curt().prom.prom_open_file.tgt_x);
-        let op_file = &term.curt().prom.prom_open_file.row_vec.get(y).unwrap().get(x).unwrap().clone();
+        let (y, x) = (term.curt().prom.prom_open_file.vec_y, term.curt().prom.prom_open_file.vec_x);
+        let op_file = &term.curt().prom.prom_open_file.vec.get(y).unwrap().get(x).unwrap().clone();
 
         let _ = PromOpenFile::select_file(term, &op_file, false);
     }
-    pub fn move_vec(&mut self, cur_direction: CurDirection) {
+
+    pub fn set_vec_posi(&mut self, cur_direction: CurDirection) {
         match cur_direction {
             CurDirection::Right | CurDirection::Left => {
-                if let Some(vec) = self.row_vec.get(self.tgt_y) {
+                if let Some(vec) = self.vec.get(self.vec_y) {
                     if cur_direction == CurDirection::Right {
-                        if let Some(_) = vec.get(self.tgt_x + 1) {
-                            self.tgt_x += 1;
+                        if let Some(_) = vec.get(self.vec_x + 1) {
+                            self.vec_x += 1;
                         };
                     } else {
-                        if self.tgt_x != 0 {
-                            if let Some(_) = vec.get(self.tgt_x - 1) {
-                                self.tgt_x -= 1;
+                        if self.vec_x != 0 {
+                            if let Some(_) = vec.get(self.vec_x - 1) {
+                                self.vec_x -= 1;
                             };
                         }
                     }
                 }
             }
             CurDirection::Up => {
-                if self.tgt_y == 0 {
-                    self.tgt_y = PromOpenFile::PATH_INPUT_FIELD;
+                if self.vec_y == 0 {
+                    self.vec_y = PromOpenFile::PATH_INPUT_FIELD;
                 } else {
-                    if let Some(vec) = self.row_vec.get(self.tgt_y - 1) {
-                        if let Some(_) = vec.get(self.tgt_x) {
-                            self.tgt_y -= 1;
+                    if let Some(vec) = self.vec.get(self.vec_y - 1) {
+                        if let Some(_) = vec.get(self.vec_x) {
+                            self.vec_y -= 1;
                         };
-                        if self.tgt_y < self.offset {
+                        if self.vec_y < self.offset {
                             self.offset -= 1;
                         }
                     }
                 }
             }
             CurDirection::Down => {
-                if self.tgt_y == PromOpenFile::PATH_INPUT_FIELD {
-                    // If the file exists other than "..", specify it.
-                    if self.tgt_x == 0 {
-                        self.tgt_y = if self.row_vec.get(1).is_some() { 1 } else { 0 };
+                if self.vec_y == PromOpenFile::PATH_INPUT_FIELD {
+                    if self.vec_x == 0 {
+                        if self.vec.len() == 1 {
+                            self.vec_x = if self.vec.get(0).unwrap().get(1).is_some() { 1 } else { 0 };
+                            self.vec_y = 0;
+                        } else {
+                            // If the file exists other than "..", specify it.
+                            self.vec_y = 1
+                        }
                     } else {
-                        self.tgt_y = 0;
+                        self.vec_y = 0;
                     }
                 } else {
-                    if let Some(vec) = self.row_vec.get(self.tgt_y + 1) {
-                        if let Some(_) = vec.get(self.tgt_x) {
-                            if self.tgt_y >= self.offset + self.disp_row_len - 1 {
+                    if let Some(vec) = self.vec.get(self.vec_y + 1) {
+                        if let Some(_) = vec.get(self.vec_x) {
+                            if self.vec_y >= self.offset + self.disp_row_len - 1 {
                                 self.offset += 1;
                             }
-                            self.tgt_y += 1;
+                            self.vec_y += 1;
                         };
                     }
                 }
@@ -365,8 +411,9 @@ impl PromOpenFile {
         }
     }
     pub fn get_file_disp_str(&self, op_file: &OpenFile, y: usize, x: usize) -> String {
-        if y == self.tgt_y && x == self.tgt_x {
-            return if op_file.file.is_dir {
+        // Select
+        return if y == self.vec_y && x == self.vec_x {
+            if op_file.file.is_dir {
                 Colors::get_file_dir_inversion_fg_bg()
             } else {
                 if File::is_executable(&op_file.file.name) {
@@ -374,9 +421,9 @@ impl PromOpenFile {
                 } else {
                     Colors::get_file_normal_inversion_fg_bg()
                 }
-            };
+            }
         } else {
-            return if op_file.file.is_dir {
+            if op_file.file.is_dir {
                 Colors::get_file_dir_fg_bg()
             } else {
                 if File::is_executable(&op_file.file.name) {
@@ -384,45 +431,137 @@ impl PromOpenFile {
                 } else {
                     Colors::get_file_normal_fg_bg()
                 }
-            };
-        }
+            }
+        };
     }
 }
+pub fn get_shaping_file_list(file_vec: &mut Vec<File>, cols: usize) -> (Vec<Vec<OpenFile>>, usize) {
+    const FILE_MAX_LEN: usize = 60;
+    const FILE_MERGIN: usize = 2;
 
-// Cursor direction
-#[derive(Debug, PartialEq)]
-pub enum CurDirection {
-    Right,
-    Left,
-    Up,
-    Down,
+    let file_vec_len = &file_vec.len();
+
+    let mut all_vec: Vec<Vec<OpenFile>> = vec![];
+    let mut column_len_file_vec: Vec<(usize, Vec<OpenFile>)> = vec![];
+
+    // From the order of the number of columns,
+    // try to see if the total display width of each column fits in the width of the terminal,
+    // and if it does not fit, subtract the number of columns.
+
+    let mut max_len = FILE_MAX_LEN;
+    for split_idx in (1..=13).rev() {
+        let mut row_num = file_vec_len / split_idx;
+        if row_num == 0 {
+            continue;
+        }
+        if split_idx == 1 {
+            max_len = size().unwrap().0 as usize;
+        }
+
+        let rest_num = file_vec_len % split_idx;
+        if rest_num != 0 {
+            row_num += 1;
+        }
+
+        let mut row_vec: Vec<OpenFile> = vec![];
+        for (idx, file) in file_vec.iter_mut().enumerate() {
+            row_vec.push(OpenFile { file: file.clone(), ..OpenFile::default() });
+            if &row_vec.len() == &row_num || idx == file_vec_len - 1 {
+                all_vec.push(row_vec.clone());
+                row_vec = vec![];
+            }
+        }
+
+        // Setting the display file name and calculating the maximum width for each column
+        let all_vec_len = all_vec.len();
+        let mut column_total_width = 0;
+        for (idx, vec) in all_vec.iter_mut().enumerate() {
+            let mut column_max_len = 0;
+            for op_file in vec.iter_mut() {
+                let mut filenm_len = get_str_width(&op_file.file.name);
+                if filenm_len > max_len {
+                    let cut_str = cut_str(op_file.file.name.clone(), max_len, false, true);
+                    filenm_len = get_str_width(&cut_str);
+                    op_file.filenm_disp = cut_str;
+                } else {
+                    op_file.filenm_disp = op_file.file.name.clone();
+                }
+
+                column_max_len = if filenm_len > column_max_len { filenm_len } else { column_max_len };
+            }
+            column_total_width += if all_vec_len - 1 == idx { column_max_len } else { column_max_len + FILE_MERGIN };
+            column_max_len += if all_vec_len - 1 == idx { 0 } else { FILE_MERGIN };
+
+            column_len_file_vec.push((column_max_len, vec.clone()));
+        }
+        if column_total_width <= cols {
+            break;
+        }
+        all_vec.clear();
+        column_len_file_vec.clear();
+    }
+
+    // Set the display file name for each column to the maximum width
+    let mut all_row_vec: Vec<Vec<OpenFile>> = vec![];
+    let mut all_count = 0;
+
+    if column_len_file_vec.len() > 0 {
+        let row_len = column_len_file_vec.first().unwrap().1.len();
+        let colum_len = column_len_file_vec.len();
+
+        Log::debug("row_len", &row_len);
+        Log::debug("colum_len", &colum_len);
+
+        for y in 0..row_len {
+            let mut row_width = 0;
+            let mut row_vec: Vec<OpenFile> = vec![];
+            for x in 0..colum_len {
+                if let Some((max_len, vec)) = column_len_file_vec.get_mut(x) {
+                    if let Some(op_file) = vec.get_mut(y) {
+                        let rest = *max_len - get_str_width(&op_file.filenm_disp);
+                        op_file.filenm_disp = format!("{}{}", op_file.filenm_disp, " ".repeat(rest));
+                        op_file.filenm_area = (row_width, row_width + *max_len - 1);
+                        row_width += *max_len;
+                        row_vec.push(op_file.clone());
+                        all_count += 1;
+                    }
+                }
+            }
+            all_row_vec.push(row_vec);
+        }
+    }
+    return (all_row_vec, all_count);
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PromOpenFile {
-    pub row_vec: Vec<Vec<OpenFile>>,
+    pub vec: Vec<Vec<OpenFile>>,
     pub file_all_count: usize,
     pub offset: usize,
     pub disp_row_len: usize,
-    pub cache_open_filenm: String,
+    pub cache_disp_filenm: String,
+    pub cache_full_filenm: String,
     pub tab_comp: TabComp,
-    pub tgt_y: usize,
-    pub tgt_x: usize,
+    pub vec_y: usize,
+    pub vec_x: usize,
     pub base_path: String,
+    pub omitted_path_str: String,
 }
 
 impl Default for PromOpenFile {
     fn default() -> Self {
         PromOpenFile {
-            row_vec: vec![],
+            vec: vec![],
             file_all_count: 0,
             offset: 0,
             disp_row_len: 0,
-            cache_open_filenm: String::new(),
+            cache_disp_filenm: String::new(),
+            cache_full_filenm: String::new(),
             tab_comp: TabComp::default(),
-            tgt_y: PromOpenFile::PATH_INPUT_FIELD,
-            tgt_x: 0,
+            vec_y: PromOpenFile::PATH_INPUT_FIELD,
+            vec_x: 0,
             base_path: String::new(),
+            omitted_path_str: String::new(),
         }
     }
 }
@@ -432,7 +571,6 @@ pub struct OpenFile {
     pub file: File,
     pub filenm_disp: String,
     pub filenm_area: (usize, usize),
-    // pub is_select: bool,
 }
 
 impl Default for OpenFile {
@@ -441,7 +579,6 @@ impl Default for OpenFile {
             file: File::default(),
             filenm_disp: String::new(),
             filenm_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
-            // is_select: false,
         }
     }
 }

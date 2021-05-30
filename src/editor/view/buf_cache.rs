@@ -13,7 +13,7 @@ impl Editor {
             self.draw.cells.resize_with(self.buf.len_lines() as usize, || vec![]);
         }
 
-        let d_range = self.d_range.get_range();
+        let d_range = self.d_range.clone();
         match d_range.draw_type {
             DrawType::Target | DrawType::After | DrawType::ScrollDown | DrawType::ScrollUp => {
                 self.draw.sy = d_range.sy;
@@ -130,8 +130,8 @@ impl Editor {
     }
 
     fn set_style(&mut self, cfg: &Cfg, c: char, width: usize, y: usize, x: usize, style: &CharStyle, style_org: &mut CharStyle, style_type_org: &mut CharStyleType, sel_ranges: SelRange, regions: &mut Vec<Cell>) {
-        let from_style = self.draw.get_from_style(cfg, x, &style, &style_org, style_type_org);
-        let style_type = self.draw.ctrl_style_type(c, width, &sel_ranges, &self.search.ranges, y, x);
+   
+       let style_type = self.draw.ctrl_style_type(c, width, &sel_ranges, &self.search.ranges, y, x);
 
         let to_style = match style_type {
             CharStyleType::Select => CharStyle::selected(&cfg),
@@ -144,7 +144,7 @@ impl Editor {
             }
             CharStyleType::CtrlChar => CharStyle::control_char(&cfg),
         };
-        regions.push(Cell { c, to: to_style, from: from_style });
+        regions.push(Cell { c, to: to_style, from: *style_org });
         *style_org = to_style;
         *style_type_org = style_type;
     }
@@ -154,10 +154,13 @@ impl Draw {
     pub fn ctrl_style_type(&self, c: char, width: usize, sel_range: &SelRange, search_ranges: &Vec<SearchRange>, y: usize, x: usize) -> CharStyleType {
         if sel_range.is_selected() && sel_range.sy <= y && y <= sel_range.ey {
             // Lines with the same start and end
+            if (sel_range.sy == sel_range.ey &&  sel_range.disp_x_s < width && width <= sel_range.disp_x_e) 
             // Start line
+            || (sel_range.sy == y && sel_range.ey != y && sel_range.disp_x_s < width) 
             // End line
+            || (sel_range.ey == y && sel_range.sy != y && width <= sel_range.disp_x_e) 
             // Intermediate line
-            if (sel_range.sy == sel_range.ey && sel_range.disp_x_s < width && width <= sel_range.disp_x_e) || (sel_range.sy == y && sel_range.ey != y && sel_range.disp_x_s <= width) || (sel_range.ey == y && sel_range.sy != y && width < sel_range.disp_x_e) || (sel_range.sy < y && y < sel_range.ey) {
+            || (sel_range.sy < y && y < sel_range.ey) {
                 return CharStyleType::Select;
             }
         }
@@ -174,15 +177,4 @@ impl Draw {
         }
     }
 
-    pub fn get_from_style(&mut self, cfg: &Cfg, i: usize, style: &CharStyle, style_org: &CharStyle, style_type_org: &CharStyleType) -> CharStyle {
-        let mut from_style = style;
-        let selected = &CharStyle::selected(&cfg);
-
-        if i == 0 || style.fg != style_org.fg {
-            return CharStyle::none();
-        } else if style.fg == style_org.fg && style.bg == style_org.bg {
-            from_style = if style_type_org == &CharStyleType::Select { selected } else { style }
-        }
-        return *from_style;
-    }
 }

@@ -36,8 +36,8 @@ impl TextBuffer {
         let i = self.text.line_to_char(y) + x;
         self.text.insert_char(i, c);
     }
-
-    pub fn insert(&mut self, i: usize, s: &str) {
+    pub fn insert(&mut self, y: usize, x: usize, s: &str) {
+        let i = self.text.line_to_char(y) + x;
         self.text.insert(i, s);
     }
 

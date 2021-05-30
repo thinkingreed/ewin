@@ -19,17 +19,20 @@ async fn main() {
         .arg(Arg::with_name("file").required(false))
         // .arg(Arg::from_usage("-e --encoding [OPTION] 'encoding option'").possible_values(&["sjis", "euc", "utf8"]).default_value("utf8"))
         .get_matches();
+
     // Processing ends when the terminal size is small
     if !Terminal::check_displayable() {
+        println!("{:?}", &LANG.terminal_size_small);
         return;
     }
     let default_hook = panic::take_hook();
-    panic::set_hook(Box::new(move |e| {
-        eprintln!("{}", e);
-        Log::error("Unexpected panic", e);
+    panic::set_hook(Box::new(move |panic_info| {
+        eprintln!("{}", panic_info);
+        Log::error("Unexpected panic", panic_info);
+
         Terminal::finalize();
         // Set hook to log crash reason
-        default_hook(e);
+        default_hook(panic_info);
     }));
 
     Terminal::init();

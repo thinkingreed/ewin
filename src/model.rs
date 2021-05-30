@@ -1,14 +1,19 @@
 extern crate ropey;
-use crate::{def::*, editor::view::char_style::*};
+use crate::{bar::headerbar::HeaderFile, def::*, editor::view::char_style::*};
 use chrono::NaiveDateTime;
 use crossterm::event::{Event, Event::Key, KeyCode::Null};
 use encoding_rs::Encoding;
-#[cfg(target_os = "linux")]
-use permissions::*;
+use faccess::PathExt;
+#[cfg(target_os = "windows")]
+use regex::Regex;
 use ropey::Rope;
-use std::cmp::{max, min};
-use std::collections::VecDeque;
-use std::fmt;
+#[cfg(target_os = "linux")]
+use std::path::MAIN_SEPARATOR;
+use std::{
+    cmp::{max, min},
+    collections::VecDeque,
+};
+use std::{fmt, path::Path};
 use syntect::parsing::{ParseState, ScopeStackOp};
 use syntect::{highlighting::HighlightState, parsing::SyntaxReference};
 
@@ -21,7 +26,7 @@ pub enum EvtActType {
     // Promt Process only
     Hold,
     Exit,
-    // key Process
+    // Editor Event Process
     Next,
     // Do not Editor key Process
     DrawOnly,
@@ -193,15 +198,14 @@ impl fmt::Display for SearchRange {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// SelectRange
-/// マウスの選択操作関連 0-indexed
 pub struct SelRange {
     // y 0-indexed
     pub sy: usize,
     pub ey: usize,
-    // x 0-indexed (line_num_width含まない)
+    // x 0-indexed (Not included row width)
     pub sx: usize,
     pub ex: usize,
-    // disp_x 1-indexed(line_num_width含む) disp_xに合せる為
+    // 0-indexed
     pub disp_x_s: usize,
     pub disp_x_e: usize,
 }
@@ -235,7 +239,7 @@ impl SelRange {
         return !(self.sy == 0 && self.ey == 0 && self.disp_x_s == 0 && self.disp_x_e == 0);
     }
 
-    /// 開始位置 < 終了位置に変換
+    // Convert to start position < end position
     pub fn get_range(&self) -> Self {
         let mut sy = self.sy;
         let mut ey = self.ey;
@@ -251,7 +255,6 @@ impl SelRange {
             s_disp_x = self.disp_x_e;
             e_disp_x = self.disp_x_s;
         }
-        // 範囲選択が続く可能性がある為に新規構造体を返却
         SelRange { sy: sy, ey: ey, sx: sx, ex: ex, disp_x_s: s_disp_x, disp_x_e: e_disp_x }
     }
 
@@ -375,6 +378,7 @@ pub struct Editor {
     pub grep_result_vec: Vec<GrepResult>,
     pub key_record_vec: Vec<KeyRecord>,
     pub is_enable_syntax_highlight: bool,
+    pub h_file: HeaderFile,
 }
 
 impl Editor {
@@ -410,6 +414,7 @@ impl Editor {
             grep_result_vec: vec![],
             key_record_vec: vec![],
             is_enable_syntax_highlight: false,
+            h_file: HeaderFile::default(),
         }
     }
 }
@@ -434,36 +439,40 @@ impl fmt::Display for File {
     }
 }
 impl File {
-    #[cfg(target_os = "linux")]
+    pub fn is_readable(path: &String) -> bool {
+        if path.is_empty() {
+            return true;
+        } else {
+            let path = Path::new(path);
+            return path.readable();
+        }
+    }
     pub fn is_readable_writable(path: &String) -> (bool, bool) {
         if path.is_empty() {
             return (true, true);
         } else {
-            return (is_readable(path).unwrap_or(false), is_writable(path).unwrap_or(false));
+            let path = Path::new(path);
+            return (path.readable(), path.writable());
+        }
+    }
+    pub fn is_executable(path: &String) -> bool {
+        if path.is_empty() {
+            return false;
+        } else {
+            let path = Path::new(path);
+            return path.executable();
         }
     }
     #[cfg(target_os = "linux")]
-    pub fn is_executable(path: &String) -> bool {
-        if path.is_empty() {
-            return false;
-        } else {
-            return is_executable(path).unwrap_or(false);
-        }
+    pub fn is_root_dir(path: &String) -> bool {
+        return path == &MAIN_SEPARATOR.to_string();
     }
 
     #[cfg(target_os = "windows")]
-    pub fn is_readable_writable(path: &String) -> (bool, bool) {
-        // TDOD Permission Research
-        return (true, true);
-    }
-
-    #[cfg(target_os = "windows")]
-    pub fn is_executable(path: &String) -> bool {
-        if path.is_empty() {
-            return false;
-        } else {
-            return false;
-        }
+    pub fn is_root_dir(path: &String) -> bool {
+        // C:\ or D:\ ...
+        let re = Regex::new(r"[a-zA-Z]:\\").unwrap();
+        return re.is_match(path) && path.chars().count() == 3;
     }
 }
 
@@ -594,9 +603,11 @@ impl DRange {
         return DRange { sy: sy, ey: ey, draw_type: d_type };
     }
 
+    /*
     pub fn get_range(&mut self) -> Self {
         return DRange { sy: self.sy, ey: self.ey, draw_type: self.draw_type };
     }
+     */
     pub fn set_target(&mut self, sy: usize, ey: usize) {
         self.draw_type = DrawType::Target;
         self.sy = min(sy, ey);
@@ -877,6 +888,13 @@ impl Choices {
         return dummy_item;
     }
 }
-
+// Cursor direction
+#[derive(Debug, PartialEq)]
+pub enum CurDirection {
+    Right,
+    Left,
+    Up,
+    Down,
+}
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UT {}

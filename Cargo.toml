@@ -1,6 +1,6 @@
 [package]
 name = "ewin"
-version = "0.8.7"
+version = "0.8.0"
 description = "Simple editor for Window(GUI) users.No need to remember commands."
 authors = ["thinkingreed"]
 edition = "2018"
@@ -9,6 +9,8 @@ repository = "https://github.com/thinkingreed/ewin"
 license = "MIT"
 keywords = ["text", "editor", "terminal", "cli", "tui"]
 categories = ["command-line-utilities"]
+build = "build.rs"
+
 
 [package.metadata.deb]
 extended-description = """\
@@ -50,8 +52,10 @@ chrono="0.4.19"
 colors-transform = "0.2.11"
 directories = "3.0.1"
 regex = "1.4.3"
+ripgrep = "12.1.1"
 encoding_rs= "0.8.28"
 byteorder = "1.4.3"
+faccess = "0.2.3"
 
-[target.'cfg(unix)'.dependencies]
-permissions= "0.3.0"
+[target.'cfg(windows)'.build-dependencies]
+windres = "0.2.2"

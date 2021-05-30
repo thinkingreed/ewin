@@ -14,12 +14,22 @@ impl EvtAct {
                 if y != tab.sbar.disp_row_posi {
                     return EvtActType::Hold;
                 }
+                if tab.sbar.cur_area.0 <= x && x <= tab.sbar.cur_area.1 {
+                    if term.curt().state.is_move_line {
+                        term.clear_curt_tab_status();
+                        return EvtActType::DrawOnly;
+                    } else {
+                        Prompt::move_row(term);
+                        return EvtActType::DrawOnly;
+                    }
+                }
                 if tab.sbar.enc_nl_area.0 <= x && x <= tab.sbar.enc_nl_area.1 {
                     if term.curt().state.is_enc_nl {
                         term.clear_curt_tab_status();
                         return EvtActType::DrawOnly;
                     } else {
                         Prompt::enc_nl(term);
+                        return EvtActType::DrawOnly;
                     }
                 }
                 return EvtActType::Hold;

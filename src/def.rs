@@ -13,10 +13,12 @@ pub const TAB: char = '\t';
 // mark to treat as char
 pub const NEW_LINE_LF_MARK: char = '↓';
 pub const NEW_LINE_CRLF_MARK: char = '↵';
+// Meaningless mark
 pub const EOF_MARK: char = '▚';
 pub const EOF_STR: &str = "EOF";
 pub const TAB_MARK: char = '^';
-pub const CONTINUE_STR: &'static str = "…";
+// "…" is not adopted because the width is handled differently depending on the terminal.
+pub const CONTINUE_STR: &'static str = "..";
 pub const PARENT_FOLDER: &'static str = "..";
 
 #[cfg(target_os = "windows")]
@@ -47,6 +49,8 @@ pub const SHIFT_RIGHT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, co
 pub const SHIFT_LEFT: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Left });
 pub const SHIFT_DOWN: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Down });
 pub const SHIFT_UP: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Up });
+pub const SHIFT_HOME: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: Home });
+pub const SHIFT_END: Event = Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code: End });
 pub const SEARCH_DESC: Event = Key(KeyEvent { code: F(4), modifiers: KeyModifiers::SHIFT });
 // CTRL
 pub const CLOSE: Event = Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code: Char('w') });

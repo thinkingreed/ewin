@@ -8,6 +8,8 @@ use std::{
 };
 
 impl Prompt {
+    pub const CHOICE_ITEM_MARGIN: usize = 2;
+
     pub fn draw(&self, str_vec: &mut Vec<String>, tab_state: &TabState) {
         Log::info_key("Prompt.draw");
 
@@ -34,6 +36,8 @@ impl Prompt {
                 self.draw_open_file(str_vec);
             } else if tab_state.is_enc_nl {
                 self.draw_enc_nl(str_vec);
+            } else if tab_state.is_menu {
+                self.draw_menu(str_vec);
             }
 
             let out = stdout();
@@ -67,7 +71,7 @@ impl Prompt {
         let mut x = 0;
         let mut y = 0;
 
-        if tab.state.is_save_new_file || tab.state.is_search || tab.state.is_replace || tab.state.grep_info.is_grep || tab.state.is_move_line || tab.state.is_open_file {
+        if tab.state.is_exists_input_field() {
             if self.prom_cont_posi == PromptContPosi::First {
                 x = self.cont_1.cur.disp_x;
                 y = self.cont_1.buf_row_posi;
@@ -81,6 +85,8 @@ impl Prompt {
             str_vec.push(MoveTo(x as u16, y as u16).to_string());
         } else if tab.state.is_enc_nl {
             tab.prom.draw_cur_enc_nl(str_vec);
+        } else if tab.state.is_menu {
+            tab.prom.draw_cur_menu(str_vec);
         }
     }
 
@@ -201,7 +207,7 @@ impl Prompt {
     }
 
     pub fn operation(&mut self, code: KeyCode) {
-        if self.prom_open_file.tgt_y != PromOpenFile::PATH_INPUT_FIELD {
+        if self.prom_open_file.vec_y != PromOpenFile::PATH_INPUT_FIELD {
             if code == KeyCode::Left || code == KeyCode::Right {
                 return;
             }
@@ -293,7 +299,6 @@ pub struct Prompt {
     pub prom_open_file: PromOpenFile,
     pub prom_grep: PromGrep,
     pub prom_search: PromSearch,
-    // cache
 }
 
 impl Default for Prompt {

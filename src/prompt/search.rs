@@ -73,16 +73,9 @@ impl EvtAct {
             if !term.curt().editor.search.ranges.is_empty() {
                 term.curt().editor.search_str(true, true);
             }
-            /*
-            editor.d_range.draw_type = DrawType::Target;
-            let (sy_curt, ey) = editor.search.get_y_range();
-            let (sy_org, ey_org) = search_org.get_y_range();
-            editor.d_range.sy = min(sy_curt, sy_org);
-            editor.d_range.ey = max(ey, ey_org);
-            */
+
             term.curt().editor.d_range.draw_type = DrawType::After;
             term.curt().editor.d_range.sy = term.curt().editor.offset_y;
-            //  term.draw(out);
         }
     }
 }

@@ -1,3 +1,5 @@
+use crossterm::cursor::MoveTo;
+
 use crate::{colors::*, global::*, log::*, model::*, util::*};
 use std::{cmp::min, io::Write};
 
@@ -90,6 +92,42 @@ impl PromptCont {
         Log::debug_s("              PromptCont.draw_only");
         let _ = out.write(&self.get_draw_buf_str().as_bytes());
         out.flush().unwrap();
+    }
+    /*
+     * choice
+     */
+    pub fn left_down_choice(&mut self, y: u16, x: usize) {
+        if y == self.buf_row_posi {
+            let mut total_idx = 0;
+            for vec in &self.choices.vec {
+                for item in vec {
+                    if item.area.0 <= x && x <= item.area.1 {
+                        self.choices.idx = total_idx;
+                    }
+                    total_idx += 1;
+                }
+            }
+        }
+    }
+    pub fn draw_cur_promcont(&self, str_vec: &mut Vec<String>) {
+        Log::debug_key("draw_cur_promcont");
+
+        let (mut y, mut x) = (0, 0);
+        let mut total_idx = 0;
+        for (row_idx, vec) in self.choices.vec.iter().enumerate() {
+            for item in vec {
+                if self.choices.idx == total_idx {
+                    y = self.buf_row_posi + row_idx as u16;
+                    x = item.area.0;
+                    break;
+                }
+                total_idx += 1;
+            }
+        }
+        Log::debug("x", &x);
+        Log::debug("y", &y);
+
+        str_vec.push(MoveTo(x as u16, y as u16).to_string());
     }
 }
 

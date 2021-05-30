@@ -6,8 +6,11 @@ use std::{cmp::min, fs::File, io::*, option::Option, *};
 
 impl TextBuffer {
     pub fn from_path(path: &str) -> io::Result<(TextBuffer, Encode, String, Option<Encode>)> {
-        let (mut read_str, enc, bom) = TextBuffer::read_encode(path)?;
+        let (mut read_str, mut enc, bom) = TextBuffer::read_encode(path)?;
 
+        if read_str.is_empty() {
+            enc = Encode::UTF8;
+        }
         let mut b = RopeBuilder::new();
         read_str.push(EOF_MARK);
         b.append(&read_str);

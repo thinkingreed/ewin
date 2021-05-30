@@ -45,4 +45,4 @@ err_foreground = "#ff0000"
 [colors.file]
 normal_foreground = "#c0c0c0"
 directory_foreground = "#1e90ff"
-executable_foreground = "#008000"
+executable_foreground = "#00c800"

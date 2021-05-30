@@ -31,7 +31,6 @@ impl EvtAct {
                         Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
                             Char('w') => {
                                 if Prompt::close(term) == true {
-                                    Log::debug("Prompt::close(term) true", &true);
                                     return true;
                                 }
                             }
@@ -51,10 +50,10 @@ impl EvtAct {
                             Char('t') => term.new_tab(),
                             Char('q') => term.next_tab(),
                             Char('o') => Prompt::open_file(term),
-                            Char('e') => Prompt::enc_nl(term),
                             Home => term.curt().editor.ctrl_home(),
                             End => term.curt().editor.ctrl_end(),
-
+                            Char('e') => Prompt::enc_nl(term),
+                            Char('h') => Prompt::menu(term),
                             _ => term.curt().mbar.set_err(&LANG.unsupported_operation),
                         },
 
@@ -69,6 +68,15 @@ impl EvtAct {
                             F(1) => term.curt().record_key_start(),
                             F(2) => Tab::exec_record_key(out, term),
                             F(4) => term.curt().editor.search_str(false, false),
+                            _ => term.curt().mbar.set_err(&LANG.unsupported_operation),
+                        },
+                        Key(KeyEvent { modifiers: KeyModifiers::ALT, code }) => match code {
+                            Char('w') => {
+                                term.close_all_tab();
+                                if term.tabs.is_empty() {
+                                    return true;
+                                }
+                            }
                             _ => term.curt().mbar.set_err(&LANG.unsupported_operation),
                         },
                         Key(KeyEvent { code, .. }) => match code {
@@ -88,7 +96,7 @@ impl EvtAct {
                             F(1) => Help::disp_toggle(term),
                             F(3) => term.curt().editor.search_str(true, false),
                             F(12) => term.ctrl_mouse_capture(),
-                            // Initial display
+                            // Initial display etc
                             Null => term.curt().editor.d_range.draw_type = DrawType::All,
                             _ => term.curt().mbar.set_err(&LANG.unsupported_operation),
                         },
@@ -118,27 +126,41 @@ impl EvtAct {
                 }
             }
         }
-        Terminal::show_cur();
+        Terminal::draw_cur(out, term);
         return false;
     }
 
     pub fn check_next_process<T: Write>(evt: Event, out: &mut T, term: &mut Terminal) -> EvtActType {
+        match &evt {
+            Resize(_, _) => {
+                if !Terminal::check_displayable() {
+                    term.state.is_displayable = false;
+                    Terminal::clear_display();
+                    println!("{}", &LANG.increase_height_terminal);
+                    return EvtActType::Hold;
+                } else {
+                    term.state.is_displayable = true;
+                }
+                term.set_disp_size();
+            }
+            _ => {
+                if !term.state.is_displayable {
+                    return EvtActType::Hold;
+                }
+            }
+        }
+
         term.curt().editor.evt = evt;
 
-        match &evt {
-            Resize(_, _) => term.set_disp_size(),
-            _ => {}
+        let evt_act = EvtAct::check_statusbar(term);
+        Log::debug("EvtAct::check_statusbar", &evt_act);
+        if evt_act == EvtActType::Next || evt_act == EvtActType::DrawOnly {
+            return evt_act;
         }
 
         let evt_act = EvtAct::check_headerbar(term);
         Log::debug("EvtAct::check_headerbar", &evt_act);
-        if evt_act != EvtActType::Hold {
-            return evt_act;
-        }
-
-        let evt_act = EvtAct::check_statusbar(term);
-        Log::debug("EvtAct::check_statusbar", &evt_act);
-        if evt_act != EvtActType::Hold {
+        if evt_act == EvtActType::Next || evt_act == EvtActType::DrawOnly || evt_act == EvtActType::Exit {
             return evt_act;
         }
 
@@ -180,7 +202,7 @@ impl EvtAct {
             Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {}
             _ => tab.editor.updown_x = 0,
         }
-        // redraw判定
+        // judgment redraw
         tab.editor.d_range.draw_type = DrawType::Not;
         match tab.editor.evt {
             //  Resize(_, _) => tab.editor.d_range.draw_type = DrawType::All,
@@ -192,24 +214,17 @@ impl EvtAct {
                 Down | Up | Left | Right | Home | End | F(4) => {}
                 _ => tab.editor.d_range.draw_type = DrawType::All,
             },
+            Key(KeyEvent { modifiers: KeyModifiers::ALT, code }) => match code {
+                Char('w') => tab.editor.d_range.draw_type = DrawType::Not,
+                _ => tab.editor.d_range.draw_type = DrawType::All,
+            },
             Key(KeyEvent { code, .. }) => match code {
                 Down | Up | Left | Right | Home | End => {
                     if tab.editor.sel.is_selected() {
-                        let sel = tab.editor.sel.get_range();
-                        tab.editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
+                        tab.editor.d_range.draw_type = DrawType::All;
                     } else {
                         if tab.editor.evt == DOWN || tab.editor.evt == UP {
-                            let y = tab.editor.cur.y;
-                            let y_after = if tab.editor.evt == DOWN {
-                                min(y + 1, tab.editor.buf.len_lines() - 1)
-                            } else {
-                                if y == 0 {
-                                    0
-                                } else {
-                                    y - 1
-                                }
-                            };
-
+                            let (y, y_after) = EvtAct::get_up_down_tgt(&tab.editor);
                             tab.editor.d_range = DRange::new(min(y, y_after), max(y, y_after), DrawType::Target);
                         } else {
                             tab.editor.d_range.draw_type = DrawType::MoveCur;
@@ -230,7 +245,10 @@ impl EvtAct {
             Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {
                 if tab.editor.sel.is_selected() {
                     let sel = tab.editor.sel.get_range();
-                    tab.editor.d_range = DRange::new(sel.sy, sel.ey, DrawType::Target);
+                    tab.editor.d_range = DRange::new(max(sel.sy, tab.editor.offset_y), sel.ey, DrawType::Target);
+                } else {
+                    let (y, y_after) = EvtAct::get_up_down_tgt(&tab.editor);
+                    tab.editor.d_range = DRange::new(min(y, y_after), max(y, y_after), DrawType::Target);
                 }
             }
             _ => tab.editor.d_range.draw_type = DrawType::Not,
@@ -287,7 +305,7 @@ impl EvtAct {
                 F(3) => {}
                 _ => editor.sel.clear(),
             },
-            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {}
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {}
             _ => editor.sel.clear(),
         }
 
@@ -326,5 +344,21 @@ impl EvtAct {
         }
 
         return is_return;
+    }
+
+    fn get_up_down_tgt(editor: &Editor) -> (usize, usize) {
+        let y = editor.cur.y;
+        let y_after = match editor.evt {
+            DOWN | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => min(y + 1, editor.buf.len_lines() - 1),
+            // UP・ScrollUp
+            _ => {
+                if y == 0 {
+                    0
+                } else {
+                    y - 1
+                }
+            }
+        };
+        return (y, y_after);
     }
 }
