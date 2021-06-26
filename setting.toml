@@ -20,11 +20,11 @@ background = "#282828"
 foreground = "#c0c0c0"
 
 [colors.editor.selection]
-background = "#dd4814"
+background = "#ff4500"
 foreground = "#000000"
 
 [colors.editor.search]
-background = "#dd4814"
+background = "#ff4500"
 foreground = "#000000"
 
 [colors.editor.control_char]

@@ -1,10 +1,16 @@
 use crate::{log::*, model::*, util::*};
+use std::cmp::min;
 
 impl Editor {
-    pub fn ctrl_mouse(&mut self, x: usize, y: usize, is_mouse_left_down: bool) {
-        Log::debug_s("              ctrl_mouse");
+    pub fn ctrl_mouse(&mut self, y: usize, x: usize, is_left_down: bool) {
+        Log::debug_key("ctrl_mouse");
         if y < self.disp_row_posi || y > self.disp_row_num || y > self.buf.len_lines() {
-            self.d_range.draw_type = DrawType::Not;
+            if self.sel.is_selected() {
+                self.sel.clear();
+                self.d_range.draw_type = DrawType::All;
+            } else {
+                self.d_range.draw_type = DrawType::Not;
+            }
             return;
         }
         Log::debug("y", &y);
@@ -15,18 +21,18 @@ impl Editor {
             self.sel.set_s(y, 0, 0);
             let (cur_x, width) = get_row_width(&self.buf.char_vec_line(y)[..], 0, true);
             self.sel.set_e(y, cur_x, width);
-            self.set_cur_target(y + self.offset_y, cur_x, width);
+            self.set_cur_target(y + self.offset_y, 0, false);
             self.d_range.draw_type = DrawType::All;
         } else {
-            let x = x - self.get_rnw() - Editor::RNW_MARGIN;
+            let x = if self.mode == EditerMode::Normal { x - self.get_rnw() - Editor::RNW_MARGIN } else { x };
             self.cur.y = y + self.offset_y;
             let (cur_x, width) = get_until_x(&self.buf.char_vec_line(y + self.offset_y), x + self.offset_x);
             self.cur.x = cur_x;
             self.cur.disp_x = width;
 
-            self.set_mouse_sel(is_mouse_left_down);
+            self.set_mouse_sel(is_left_down);
             self.scroll_horizontal();
-            if is_mouse_left_down {
+            if is_left_down {
                 if self.sel_org.is_selected() {
                     self.d_range.draw_type = DrawType::All;
                 }
@@ -34,7 +40,7 @@ impl Editor {
             } else {
                 if self.sel.is_selected() {
                     let sy = self.sel.get_diff_y_mouse_drag(self.sel_org, self.cur.y);
-                    self.d_range = DRange::new(sy, sy + 1, DrawType::Target);
+                    self.d_range = DRange::new(sy, min(sy + 1, self.buf.len_lines() - 1), DrawType::Target);
                 }
             }
         }
@@ -42,7 +48,7 @@ impl Editor {
 
     pub fn set_mouse_sel(&mut self, is_mouse_left_down: bool) {
         if is_mouse_left_down {
-            let click_count = self.history.count_multi_click(&self.evt);
+            let click_count = self.history.count_multi_click(&self.keycmd);
             match click_count {
                 1 => {
                     self.sel.clear();

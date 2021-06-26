@@ -237,7 +237,7 @@ impl Default for HeaderBar {
 pub struct HeaderFile {
     pub filenm: String,
     pub filenm_disp: String,
-    // pub ext: String,
+    pub fullpath: String,
     pub is_disp: bool,
     pub is_changed: bool,
     pub filenm_area: (usize, usize),
@@ -254,6 +254,7 @@ impl Default for HeaderFile {
         HeaderFile {
             filenm: String::new(),
             filenm_disp: String::new(),
+            fullpath: String::new(),
             //  ext: String::new(),
             is_disp: false,
             is_changed: false,
@@ -269,9 +270,18 @@ impl Default for HeaderFile {
 
 impl HeaderFile {
     pub fn new(filenm: &String) -> Self {
-        return HeaderFile {
-            filenm: if filenm.is_empty() { LANG.new_file.clone() } else { Path::new(filenm).file_name().unwrap().to_string_lossy().to_string().clone() },
-            ..HeaderFile::default()
-        };
+        let path = Path::new(&filenm);
+        let setting_filenm;
+        let file_fullpath;
+
+        if path.is_absolute() {
+            setting_filenm = Path::new(&filenm).file_name().unwrap().to_string_lossy().to_string().clone();
+            file_fullpath = filenm.clone();
+        } else {
+            setting_filenm = filenm.clone();
+            file_fullpath = Path::new(&*CURT_DIR).join(&filenm).to_string_lossy().to_string();
+        }
+
+        return HeaderFile { filenm: if filenm.is_empty() { LANG.new_file.clone() } else { Path::new(&setting_filenm).file_name().unwrap().to_string_lossy().to_string().clone() }, fullpath: file_fullpath, ..HeaderFile::default() };
     }
 }

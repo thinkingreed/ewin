@@ -1,12 +1,13 @@
 use clap::{App, AppSettings, Arg};
 use crossterm::event::{Event::Mouse, EventStream, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
-use ewin::{_cfg::cfg::*, global::*, log::*, model::*, terminal::*};
+use ewin::{_cfg::cfg::*, _cfg::keys::Keybind, global::*, log::*, model::*, terminal::*};
 use futures::{future::FutureExt, select, StreamExt};
 use std::{
     io::{stdout, BufWriter},
     panic,
     sync::mpsc::*,
-    thread, time,
+    thread::{self},
+    time,
 };
 use tokio_util::codec::{FramedRead, LinesCodec};
 
@@ -39,7 +40,11 @@ async fn main() {
 
     let err_str = Cfg::init();
     if !err_str.is_empty() {
-        println!("{}", err_str);
+        Terminal::exit_file_open(&err_str);
+    }
+    let err_str = Keybind::init();
+    if !err_str.is_empty() {
+        Terminal::exit_file_open(&err_str);
     }
 
     let args = Args::new(&matches);
@@ -137,7 +142,7 @@ async fn main() {
     for job in rx {
         match job.job_type {
             JobType::Event => {
-                if EvtAct::match_event(job.job_evt.unwrap().evt, &mut out, &mut term) {
+                if EvtAct::match_event(Keybind::evt_to_keys(&job.job_evt.unwrap().evt), &mut out, &mut term) {
                     break;
                 }
             }
@@ -148,17 +153,7 @@ async fn main() {
     Terminal::exit();
 }
 
-pub fn send_grep_job(grep_str: String, tx_grep: &mut Sender<Job>, grep_info: &GrepInfo) {
-    let job = Job {
-        job_type: JobType::GrepResult,
-        job_grep: Some(JobGrep {
-            grep_str,
-            is_result: grep_info.is_result,
-            is_cancel: grep_info.is_cancel,
-            is_stdout_end: grep_info.is_stdout_end,
-            is_stderr_end: grep_info.is_stderr_end,
-        }),
-        ..Job::default()
-    };
+pub fn send_grep_job(grep_str: String, tx_grep: &mut Sender<Job>, grep_info: &GrepState) {
+    let job = Job { job_type: JobType::GrepResult, job_grep: Some(JobGrep { grep_str, is_result: grep_info.is_result, is_cancel: grep_info.is_cancel, is_stdout_end: grep_info.is_stdout_end, is_stderr_end: grep_info.is_stderr_end }), ..Job::default() };
     let _ = tx_grep.send(job);
 }

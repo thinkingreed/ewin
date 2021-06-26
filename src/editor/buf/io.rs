@@ -1,4 +1,4 @@
-use crate::{bar::headerbar::HeaderFile, def::*, global::*, log::*, model::*};
+use crate::{bar::headerbar::HeaderFile, def::*, global::*, log::*, model::*, prompt::choice::Choice};
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 use encoding_rs::*;
 use ropey::RopeBuilder;

@@ -1,5 +1,4 @@
-use crate::{def::*, global::CFG, log::*, model::*, util::*};
-use crossterm::event::{Event::*, KeyCode::*};
+use crate::{_cfg::keys::KeyCmd, def::*, global::CFG, log::*, model::*, util::*};
 use std::cmp::min;
 
 impl Editor {
@@ -21,7 +20,7 @@ impl Editor {
             self.d_range.draw_type = DrawType::Not;
             return;
         }
-        Log::debug_s("              c_d start");
+        Log::debug_key("c_d start");
         if self.cur.y + 1 < self.buf.len_lines() {
             self.cur.y += 1;
             self.cur_updown_com();
@@ -35,7 +34,7 @@ impl Editor {
             self.updown_x = self.cur.disp_x;
         }
         // Not set for Left and Right
-        if self.evt == Key(Left.into()) || self.evt == Key(Right.into()) {
+        if self.keycmd == KeyCmd::CursorLeft || self.keycmd == KeyCmd::CursorRight {
         } else {
             let (cur_x, disp_x) = get_until_x(&self.buf.char_vec_line(self.cur.y), self.updown_x);
             self.cur.disp_x = disp_x;
@@ -50,11 +49,11 @@ impl Editor {
         // 行頭の場合
         } else if self.cur.x == 0 {
             self.cur_up();
-            self.set_cur_target_ex(self.cur.y, self.buf.len_line_chars(self.cur.y), false);
+            self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y), false);
         } else {
             let c = self.buf.char(self.cur.y, self.cur.x - 1);
 
-            if c == TAB {
+            if c == TAB_CHAR {
                 let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
                 let (_, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[0..self.cur.x - 1], self.offset_disp_x, false);
                 self.cur.disp_x -= cfg_tab_width - width % cfg_tab_width;
@@ -62,7 +61,7 @@ impl Editor {
             } else {
                 self.cur.x -= 1;
                 self.cur.disp_x -= get_char_width_not_tab(c);
-                if c == NEW_LINE_CR && (self.evt == SHIFT_LEFT || self.evt == LEFT) {
+                if c == NEW_LINE_CR && (self.keycmd == KeyCmd::CursorLeftSelect || self.keycmd == KeyCmd::CursorLeft) {
                     self.cur.disp_x -= 1;
                     self.cur.x -= 1;
                 }
@@ -77,8 +76,8 @@ impl Editor {
     pub fn cur_right(&mut self) {
         let mut is_end_of_line = false;
         let c = self.buf.char(self.cur.y, self.cur.x);
-        if self.evt == RIGHT || self.evt == PASTE {
-            if self.mode == TermMode::Normal {
+        if self.keycmd == KeyCmd::CursorRight || self.keycmd == KeyCmd::Paste {
+            if self.mode == EditerMode::Normal {
                 if is_line_end(c) {
                     is_end_of_line = true;
                 }
@@ -89,10 +88,10 @@ impl Editor {
                     is_end_of_line = true;
                 }
             }
-        } else if self.evt == SHIFT_RIGHT {
+        } else if self.keycmd == KeyCmd::CursorRightSelect {
             let len_line_chars = self.buf.len_line_chars(self.cur.y);
             let x = if c == NEW_LINE_CR { len_line_chars - 1 } else { len_line_chars };
-            if self.cur.x == x {
+            if self.cur.x == x - 1 {
                 is_end_of_line = true;
             }
         }
@@ -106,6 +105,7 @@ impl Editor {
                 self.updown_x = 0;
                 self.cur.disp_x = 0;
                 self.cur.x = 0;
+                self.d_range = DRange::new(self.cur.y, self.cur.y + 1, DrawType::Target);
                 self.cur_down();
             }
         } else {
@@ -113,7 +113,7 @@ impl Editor {
                 return;
             }
 
-            if c == TAB {
+            if c == TAB_CHAR {
                 let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
                 let tab_width = cfg_tab_width - (self.cur.disp_x % cfg_tab_width);
                 self.cur.disp_x += tab_width;
@@ -121,7 +121,7 @@ impl Editor {
             } else {
                 self.cur.disp_x += get_char_width_not_tab(c);
                 self.cur.x = min(self.cur.x + 1, self.buf.len_line_chars(self.cur.y));
-                if self.evt == SHIFT_RIGHT && c == NEW_LINE_CR {
+                if self.keycmd == KeyCmd::CursorRightSelect && c == NEW_LINE_CR {
                     self.cur.disp_x += 1;
                     self.cur.x += 1;
                 }
@@ -134,7 +134,7 @@ impl Editor {
     pub fn enter(&mut self) {
         let nl_str = if self.h_file.nl == NEW_LINE_LF_STR { NEW_LINE_LF.to_string() } else { NEW_LINE_CRLF.to_string() };
         self.buf.insert(self.cur.y, self.cur.x, &nl_str);
-        self.set_cur_target_ex(self.cur.y + 1, 0, false);
+        self.set_cur_target(self.cur.y + 1, 0, false);
         if self.is_enable_syntax_highlight {
             self.d_range.draw_type = DrawType::All;
         } else {
@@ -154,8 +154,8 @@ impl Editor {
         }
     }
 
-    pub fn back_space(&mut self, ep: &mut EvtProc) {
-        Log::debug_s("              back_space");
+    pub fn backspace(&mut self, ep: &mut EvtProc) {
+        Log::debug_key("back_space");
         // beginning of the line
         if self.cur.x == 0 {
             self.cur.y -= 1;
@@ -169,7 +169,7 @@ impl Editor {
             cur_x -= 1;
 
             self.buf.remove_del_bs(EvtType::BS, self.cur.y, self.buf.len_line_chars(self.cur.y) - 1);
-            self.set_cur_target_ex(self.cur.y, cur_x, false);
+            self.set_cur_target(self.cur.y, cur_x, false);
             self.scroll();
             self.scroll_horizontal();
         } else {
@@ -185,14 +185,14 @@ impl Editor {
     }
 
     pub fn delete(&mut self, ep: &mut EvtProc) {
-        Log::debug_s("              delete");
+        Log::debug_key("delete");
         let c = self.buf.char(self.cur.y, self.cur.x);
         ep.str = if c == NEW_LINE_CR { format!("{}{}", c.to_string(), NEW_LINE_LF) } else { c.to_string() };
         self.buf.remove_del_bs(EvtType::Del, self.cur.y, self.cur.x);
         self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
 
         if is_line_end(c) {
-            self.set_cur_target_ex(self.cur.y, self.cur.x, false);
+            self.set_cur_target(self.cur.y, self.cur.x, false);
             self.d_range.draw_type = DrawType::After;
             self.scroll();
             self.scroll_horizontal();
@@ -202,14 +202,14 @@ impl Editor {
         }
     }
 
-    pub fn home(&mut self) {
+    pub fn cur_home(&mut self) {
         self.cur.x = 0;
         self.cur.disp_x = 0;
         self.scroll_horizontal();
     }
 
-    pub fn end(&mut self) {
-        self.set_cur_target_ex(self.cur.y, self.buf.len_line_chars(self.cur.y), false);
+    pub fn cur_end(&mut self) {
+        self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y), false);
         self.scroll();
         self.scroll_horizontal();
     }

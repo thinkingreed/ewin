@@ -1,5 +1,4 @@
-use crate::{global::*, log::*, model::*, tab::Tab, terminal::*, util::get_row_width};
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
+use crate::{_cfg::keys::KeyCmd, global::*, log::*, model::*, tab::Tab, terminal::*};
 use std::io::Write;
 
 impl Editor {
@@ -17,8 +16,7 @@ impl Editor {
                 self.scroll_horizontal();
             }
             EvtType::ShiftEnd => {
-                let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], self.offset_disp_x, true);
-                self.set_cur_target(self.cur.y, cur_x, width);
+                self.set_cur_target(self.cur.y, self.buf.char_vec_line(self.cur.y).len(), false);
 
                 self.scroll();
                 self.scroll_horizontal();
@@ -30,17 +28,17 @@ impl Editor {
         self.sel.check_overlap();
     }
     pub fn shift_right(&mut self) {
-        Log::debug_s("              shift_right");
+        Log::debug_key("shift_right");
         self.shift_move_com(EvtType::ShiftRight);
     }
 
     pub fn shift_left(&mut self) {
-        Log::debug_s("              shift_left");
+        Log::debug_key("shift_left");
         self.shift_move_com(EvtType::ShiftLeft);
     }
 
     pub fn shift_down(&mut self) {
-        Log::debug_s("              shift_down");
+        Log::debug_key("shift_down");
         if self.cur.y == self.buf.len_lines() - 1 {
             self.d_range.draw_type = DrawType::Not;
             return;
@@ -49,7 +47,7 @@ impl Editor {
     }
 
     pub fn shift_up(&mut self) {
-        Log::debug_s("              shift_up");
+        Log::debug_key("shift_up");
         if self.cur.y == 0 {
             self.d_range.draw_type = DrawType::Not;
             return;
@@ -58,44 +56,25 @@ impl Editor {
     }
 
     pub fn shift_home(&mut self) {
-        Log::debug_s("              shift_home");
+        Log::debug_key("s   hift_home");
         self.shift_move_com(EvtType::ShiftHome);
     }
 
     pub fn shift_end(&mut self) {
-        Log::debug_s("              shift_end");
+        Log::debug_key("shift_end");
         self.shift_move_com(EvtType::ShiftEnd);
     }
 
     pub fn record_key(&mut self) {
-        match self.evt {
-            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                Char('c') | Char('x') | Char('a') | Char('v') | Home | End => self.key_record_vec.push(KeyRecord { evt: self.evt.clone(), ..KeyRecord::default() }),
-                Char('w') | Char('s') | Char('f') | Char('r') | Char('g') | Char('z') | Char('y') => {}
-                _ => {}
-            },
-            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                Right | Left | Down | Up | Home | End => self.key_record_vec.push(KeyRecord { evt: self.evt.clone(), ..KeyRecord::default() }),
-                Char(c) => self.key_record_vec.push(KeyRecord {
-                    evt: Key(KeyEvent { code: Char(c.to_ascii_uppercase()), modifiers: KeyModifiers::SHIFT }),
-                    ..KeyRecord::default()
-                }),
-                F(4) => self.key_record_vec.push(KeyRecord {
-                    evt: self.evt.clone(),
-                    search: Search { str: self.search.str.clone(), ..Search::default() },
-                }),
-                F(1) => {}
-                _ => {}
-            },
-            Key(KeyEvent { code, .. }) => match code {
-                Enter | Backspace | Delete | PageDown | PageUp | Home | End | Down | Up | Left | Right => self.key_record_vec.push(KeyRecord { evt: self.evt.clone(), ..KeyRecord::default() }),
-                Char(_) => self.key_record_vec.push(KeyRecord { evt: self.evt.clone(), ..KeyRecord::default() }),
-                F(3) => self.key_record_vec.push(KeyRecord {
-                    evt: self.evt.clone(),
-                    search: Search { str: self.search.str.clone(), ..Search::default() },
-                }),
-                _ => {}
-            },
+        match self.keycmd {
+            // Ctrl
+            KeyCmd::Copy | KeyCmd::CutSelect | KeyCmd::AllSelect | KeyCmd::Paste | KeyCmd::CursorFileHome | KeyCmd::CursorFileEnd => self.key_record_vec.push(KeyRecord { keys: self.keys, ..KeyRecord::default() }),
+            // Shift
+            KeyCmd::InsertChar(_) | KeyCmd::CursorUpSelect | KeyCmd::CursorDownSelect | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect => self.key_record_vec.push(KeyRecord { keys: self.keys, ..KeyRecord::default() }),
+            KeyCmd::FindBack => self.key_record_vec.push(KeyRecord { keys: self.keys, search: Search { str: self.search.str.clone(), ..Search::default() } }),
+            // Raw
+            KeyCmd::InsertLine | KeyCmd::DeletePrevChar | KeyCmd::DeleteNextChar | KeyCmd::CursorPageUp | KeyCmd::CursorPageDown | KeyCmd::Tab | KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd => self.key_record_vec.push(KeyRecord { keys: self.keys, ..KeyRecord::default() }),
+            KeyCmd::FindNext => self.key_record_vec.push(KeyRecord { keys: self.keys, search: Search { str: self.search.str.clone(), ..Search::default() } }),
             _ => {}
         }
     }
@@ -103,35 +82,35 @@ impl Editor {
 
 impl Tab {
     pub fn record_key_start(&mut self) {
-        Log::debug_s("              macro_record_start");
-        if self.state.is_key_record {
-            self.state.is_key_record = false;
+        Log::debug_key("macro_record_start");
+        if self.state.key_record_state.is_record {
+            self.state.key_record_state.is_record = false;
             self.mbar.clear_keyrecord();
             self.editor.d_range.draw_type = DrawType::All;
         } else {
-            self.state.is_key_record = true;
+            self.state.key_record_state.is_record = true;
             self.mbar.set_keyrecord(&LANG.key_recording);
             self.editor.key_record_vec = vec![];
         }
     }
     pub fn exec_record_key<T: Write>(out: &mut T, term: &mut Terminal) {
-        // let rc = Rc::clone(&term.tabs[term.tab_idx]);
-        // let mut tab = term.tabs[term.tab_idx];
+        Log::debug("key_record_vec", &term.curt().editor.key_record_vec);
 
-        if term.tabs[term.idx].editor.key_record_vec.len() > 0 {
-            term.tabs[term.idx].state.is_key_record_exec = true;
-            let macro_vec = term.tabs[term.idx].editor.key_record_vec.clone();
+        if term.curt().editor.key_record_vec.len() > 0 {
+            term.curt().state.key_record_state.is_exec = true;
+
+            let macro_vec = term.curt().editor.key_record_vec.clone();
             for (i, mac) in macro_vec.iter().enumerate() {
-                term.tabs[term.idx].editor.evt = mac.evt;
+                term.curt().editor.keys = mac.keys;
                 if i == macro_vec.len() - 1 {
-                    term.tabs[term.idx].state.is_key_record_exec_draw = true;
+                    term.curt().state.key_record_state.is_exec_end = true;
                 }
-                EvtAct::match_event(term.tabs[term.idx].editor.evt, out, term);
+                EvtAct::match_event(term.curt().editor.keys, out, term);
             }
-            term.tabs[term.idx].state.is_key_record_exec = false;
-            term.tabs[term.idx].state.is_key_record_exec_draw = false;
+            term.curt().state.key_record_state.is_exec = false;
+            term.curt().state.key_record_state.is_exec_end = false;
         } else {
-            term.tabs[term.idx].mbar.set_err(&LANG.no_key_record_exec.to_string());
+            term.curt().mbar.set_err(&LANG.no_key_record_exec.to_string());
         }
     }
 }

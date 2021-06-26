@@ -1,3 +1,5 @@
+use std::usize;
+
 use crate::{def::*, global::*};
 use colors_transform::{Color as transform_Color, Rgb as transform_Rgb};
 use crossterm::style::{Color as CrosstermColor, SetBackgroundColor, SetForegroundColor};
@@ -171,7 +173,6 @@ impl Colors {
     pub fn get_file_dir_inversion_fg_bg() -> String {
         return format!("{}{}", Colors::get_file_dir_inversion_fg(), Colors::get_file_dir_inversion_bg());
     }
-
     pub fn get_file_executable_fg() -> String {
         return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.file.executable_fg);
     }
@@ -194,10 +195,10 @@ impl Colors {
     //
     // eof
     //
-    pub fn set_eof(str_vec: &mut Vec<String>) {
+    pub fn set_eof(str_vec: &mut Vec<String>, rest: usize) {
         let cfg = CFG.get().unwrap().try_lock().unwrap();
         str_vec.push(Colors::fg(cfg.colors.editor.control_char.fg));
-        str_vec.push(EOF_STR.to_string());
+        str_vec.push(EOF_STR.to_string()[..rest].to_string());
         str_vec.push(Colors::fg(cfg.colors.editor.fg));
     }
     pub fn hex2rgb(hex: &str) -> Color {

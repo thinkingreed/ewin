@@ -1,15 +1,23 @@
+use crate::{
+    _cfg::keys::{KeyCmd, Keybind},
+    colors::*,
+    global::*,
+    log::*,
+    model::*,
+    prompt::choice::{Choice, Choices},
+    tab::Tab,
+    util::*,
+};
 use crossterm::cursor::MoveTo;
-
-use crate::{colors::*, global::*, log::*, model::*, util::*};
-use std::{cmp::min, io::Write};
+use std::{cmp::min, collections::HashMap, io::Write, usize};
 
 impl PromptCont {
-    pub fn new_not_edit_type(disp_row_posi: u16) -> Self {
-        PromptCont { disp_row_posi, ..PromptCont::default() }
+    pub fn new_not_edit_type(tab: &mut Tab) -> Self {
+        PromptCont { disp_row_posi: tab.prom.disp_row_posi, keycmd: tab.editor.keycmd, ..PromptCont::default() }
     }
 
-    pub fn new_edit_type(disp_row_posi: u16, prompt_cont_posi: PromptContPosi) -> Self {
-        PromptCont { disp_row_posi, posi: prompt_cont_posi, ..PromptCont::default() }
+    pub fn new_edit_type(tab: &mut Tab, prompt_cont_posi: PromptContPosi) -> Self {
+        PromptCont { disp_row_posi: tab.prom.disp_row_posi, keycmd: tab.editor.keycmd, posi: prompt_cont_posi, ..PromptCont::default() }
     }
 
     pub fn get_draw_buf_str(&self) -> String {
@@ -37,27 +45,21 @@ impl PromptCont {
     }
 
     pub fn set_opt_case_sens(&mut self) {
-        let key_case_sens = format!("{}{}:{}Alt + c", Colors::get_default_fg(), &LANG.case_sens, Colors::get_msg_warning_fg());
-        let sx = get_str_width(&format!("{}:Alt + c", &LANG.case_sens)) as u16;
-        let opt_case_sens = PromptContOpt {
-            key: key_case_sens,
-            is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens,
-            mouse_area: (sx, sx + 3),
-        };
+        let key_str = Keybind::get_key_str(KeyCmd::FindCaseSensitive);
+        let key_case_sens = format!("{}{}:{}{}", Colors::get_default_fg(), &LANG.case_sens, Colors::get_msg_warning_fg(), key_str);
+        let sx = get_str_width(&format!("{}:{}", &LANG.case_sens, key_str)) as u16;
+        let opt_case_sens = PromptContOpt { key: key_case_sens, is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens, mouse_area: (sx, sx + 3) };
         self.opt_1 = opt_case_sens;
     }
 
     pub fn set_opt_regex(&mut self) {
-        let key_regex = format!("{}{}:{}Alt + r", Colors::get_default_fg(), &LANG.regex, Colors::get_msg_warning_fg());
+        let key_str = Keybind::get_key_str(KeyCmd::FindRegex);
+        let key_regex = format!("{}{}:{}{}", Colors::get_default_fg(), &LANG.regex, Colors::get_msg_warning_fg(), key_str);
 
         // +2 is the space between options
-        let sx = self.opt_1.mouse_area.1 + 3 + get_str_width(&format!("{}:Alt + r", &LANG.regex)) as u16 + 1;
+        let sx = self.opt_1.mouse_area.1 + 3 + get_str_width(&format!("{}:{}", &LANG.regex, key_str)) as u16 + 1;
 
-        let opt_regex = PromptContOpt {
-            key: key_regex,
-            is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex,
-            mouse_area: (sx, sx + 3),
-        };
+        let opt_regex = PromptContOpt { key: key_regex, is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex, mouse_area: (sx, sx + 3) };
         self.opt_2 = opt_regex;
     }
 
@@ -71,16 +73,17 @@ impl PromptCont {
         CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.regex = self.opt_2.is_check).unwrap();
     }
 
-    pub fn ctrl_mouse(&mut self, x: u16, y: u16, is_mouse_left_down: bool) {
-        Log::debug_s("              PromptCont.ctrl_mouse");
-        if y != self.buf_row_posi {
+    pub fn ctrl_mouse(&mut self, x: usize, y: usize, is_left_down: bool) {
+        Log::debug_key("PromptCont.ctrl_mouse");
+
+        if y as u16 != self.buf_row_posi {
             return;
         }
         let (cur_x, width) = get_until_x(&self.buf, x as usize);
         self.cur.x = cur_x;
         self.cur.disp_x = width;
 
-        if is_mouse_left_down {
+        if is_left_down {
             self.sel.clear_prompt();
             self.sel.set_s(self.cur.y, self.cur.x, self.cur.disp_x);
             self.sel.set_e(self.cur.y, self.cur.x, self.cur.disp_x);
@@ -89,39 +92,43 @@ impl PromptCont {
         }
     }
     pub fn draw_only<T: Write>(&mut self, out: &mut T) {
-        Log::debug_s("              PromptCont.draw_only");
+        Log::debug_key("PromptCont.draw_only");
         let _ = out.write(&self.get_draw_buf_str().as_bytes());
         out.flush().unwrap();
     }
     /*
      * choice
      */
-    pub fn left_down_choice(&mut self, y: u16, x: usize) {
-        if y == self.buf_row_posi {
-            let mut total_idx = 0;
-            for vec in &self.choices.vec {
-                for item in vec {
-                    if item.area.0 <= x && x <= item.area.1 {
-                        self.choices.idx = total_idx;
+    pub fn left_down_choice(&mut self, y: u16, x: u16) {
+        let (y, x) = (y as usize, x as usize);
+        for (_, choices) in self.choices_map.iter_mut() {
+            if choices.is_show {
+                for (y_idx, vec) in choices.vec.iter().enumerate() {
+                    for (x_idx, item) in vec.iter().enumerate() {
+                        if item.area.0 == y && item.area.1 <= x && x <= item.area.2 {
+                            choices.vec_y = y_idx;
+                            choices.vec_x = x_idx;
+                        }
                     }
-                    total_idx += 1;
                 }
             }
         }
     }
-    pub fn draw_cur_promcont(&self, str_vec: &mut Vec<String>) {
+    pub fn draw_choice_cur(&self, str_vec: &mut Vec<String>) {
         Log::debug_key("draw_cur_promcont");
 
         let (mut y, mut x) = (0, 0);
-        let mut total_idx = 0;
-        for (row_idx, vec) in self.choices.vec.iter().enumerate() {
-            for item in vec {
-                if self.choices.idx == total_idx {
-                    y = self.buf_row_posi + row_idx as u16;
-                    x = item.area.0;
-                    break;
+        'outer: for (_, choices) in self.choices_map.iter() {
+            if choices.is_show {
+                for (y_idx, vec) in choices.vec.iter().enumerate() {
+                    for (x_idx, item) in vec.iter().enumerate() {
+                        if choices.vec_y == y_idx && choices.vec_x == x_idx {
+                            y = self.buf_row_posi + y_idx as u16;
+                            x = item.area.1;
+                            break 'outer;
+                        }
+                    }
                 }
-                total_idx += 1;
             }
         }
         Log::debug("x", &x);
@@ -129,11 +136,44 @@ impl PromptCont {
 
         str_vec.push(MoveTo(x as u16, y as u16).to_string());
     }
+
+    pub fn get_choices(&mut self) -> Option<&mut Choices> {
+        for (_, choices) in self.choices_map.iter_mut() {
+            if choices.is_show {
+                return Some(choices);
+            }
+        }
+        // dummy
+        return None;
+    }
+
+    pub fn get_choice(&self) -> Choice {
+        let dummy = Choice::new(&"".to_string());
+        for (_, choices) in self.choices_map.iter() {
+            if choices.is_show {
+                for (y_idx, v) in choices.vec.iter().enumerate() {
+                    for (x_idx, item) in v.iter().enumerate() {
+                        if choices.vec_y == y_idx && choices.vec_x == x_idx {
+                            return item.clone();
+                        }
+                    }
+                }
+            }
+        }
+        return dummy;
+    }
+    pub fn set_cur_target(&mut self, x: usize) {
+        let (cur_x, width) = get_row_width(&self.buf[..x], 0, false);
+        self.cur.x = cur_x;
+        self.cur.disp_x = width;
+    }
 }
 
 #[derive(Debug, Clone)]
 pub struct PromptCont {
+    pub keycmd: KeyCmd,
     pub disp_row_posi: u16,
+    pub row_len: u16,
     pub posi: PromptContPosi,
     pub guide_row_posi: u16,
     pub key_desc_row_posi: u16,
@@ -150,16 +190,19 @@ pub struct PromptCont {
     // For 1-line input
     pub buf: Vec<char>,
     pub updown_x: usize,
+    pub history: History,
     // For list display
     pub file_list_vec: Vec<File>,
-    // For multi-line selection items
-    pub choices: Choices,
+    // <(Parent choices posi y, Parent choices posi y), Self Choices>
+    pub choices_map: HashMap<(usize, usize), Choices>,
 }
 
 impl Default for PromptCont {
     fn default() -> Self {
         PromptCont {
+            keycmd: KeyCmd::Null,
             disp_row_posi: 0,
+            row_len: 0,
             posi: PromptContPosi::First,
             guide_row_posi: 0,
             key_desc_row_posi: 0,
@@ -174,9 +217,10 @@ impl Default for PromptCont {
             buf: vec![],
             cur: Cur::default(),
             updown_x: 0,
+            history: History::default(),
             sel: SelRange::default(),
             file_list_vec: vec![],
-            choices: Choices::default(),
+            choices_map: HashMap::new(),
         }
     }
 }
@@ -204,7 +248,7 @@ impl PromptContOpt {
         }
     }
 }
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, PartialOrd, Eq, Ord, Copy, Debug, Clone)]
 pub enum PromptContPosi {
     First,
     Second,

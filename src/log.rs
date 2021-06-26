@@ -1,6 +1,5 @@
 use crate::{_cfg::cfg::CfgLog, global::*};
 use chrono::{DateTime, Local};
-use crossterm::style::ResetColor;
 use std::{
     env,
     fmt::{self, Debug},
@@ -102,7 +101,7 @@ impl Log {
     }
     #[track_caller]
     pub fn error<T: Debug>(m: &str, v: &T) {
-        let s = &format!("{}{}: {:?}", ResetColor, m, v);
+        let s = &format!("{}: {:?}", m, v);
         Log::write(s, LogLevel::Error);
     }
     #[track_caller]

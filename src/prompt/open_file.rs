@@ -1,10 +1,5 @@
-use crate::{colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, tab::Tab, terminal::*, util::*};
-use crossterm::{
-    cursor::MoveTo,
-    event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind},
-    terminal::ClearType::*,
-    terminal::*,
-};
+use crate::{_cfg::keys::*, colors::*, def::*, global::*, log::*, model::*, prompt::cont::promptcont::*, prompt::prompt::prompt::*, tab::Tab, terminal::*, util::*};
+use crossterm::{cursor::MoveTo, terminal::ClearType::*, terminal::*};
 use std::{
     cmp::min,
     env,
@@ -16,13 +11,24 @@ impl EvtAct {
     pub fn open_file(term: &mut Terminal) -> EvtActType {
         Log::debug_s("Process.open_file");
 
-        match term.curt().editor.evt {
-            Resize(_, _) => {
+        match term.curt().editor.keycmd {
+            KeyCmd::Resize => {
+                term.set_disp_size();
                 PromOpenFile::set_file_list(&mut term.curt().prom);
                 return EvtActType::Next;
             }
-            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => {
-                let (x, y) = (x as usize, y as usize);
+            KeyCmd::InsertChar(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::Tab => PromOpenFile::set_file_list(&mut term.curt().prom),
+            KeyCmd::CursorUp => PromOpenFile::move_vec(term, CurDirection::Up),
+            KeyCmd::CursorDown => PromOpenFile::move_vec(term, CurDirection::Down),
+            KeyCmd::CursorLeft | KeyCmd::CursorRight => {
+                if term.curt().prom.prom_open_file.vec_y == PromOpenFile::PATH_INPUT_FIELD {
+                    PromOpenFile::set_file_list(&mut term.curt().prom);
+                } else {
+                    let cur_direction = if term.curt().editor.keycmd == KeyCmd::CursorLeft { CurDirection::Left } else { CurDirection::Right };
+                    PromOpenFile::move_vec(term, cur_direction);
+                }
+            }
+            KeyCmd::MouseDownLeft(y, x) => {
                 if y != term.curt().prom.cont_1.buf_row_posi as usize && !(term.curt().prom.cont_2.buf_row_posi as usize <= y && y <= term.curt().prom.cont_2.buf_row_posi as usize + term.curt().prom.disp_row_num - Prompt::OPEN_FILE_FIXED_PHRASE_ROW_NUM) {
                     return EvtActType::Hold;
                 } else {
@@ -67,42 +73,42 @@ impl EvtAct {
                     }
                 }
             }
-            Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => PromOpenFile::move_vec(term, CurDirection::Down),
-            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => PromOpenFile::move_vec(term, CurDirection::Up),
-            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                Char(_) => PromOpenFile::set_file_list(&mut term.curt().prom),
-                _ => return EvtActType::Hold,
-            },
-            Key(KeyEvent { code, .. }) => match code {
-                Up => PromOpenFile::move_vec(term, CurDirection::Up),
-                Down => PromOpenFile::move_vec(term, CurDirection::Down),
-                Left => PromOpenFile::move_vec(term, CurDirection::Left),
-                Right => PromOpenFile::move_vec(term, CurDirection::Right),
-                Char(_) | Delete | Backspace | Home | End | Tab => PromOpenFile::set_file_list(&mut term.curt().prom),
-                Enter => {
-                    let path_str = term.curt().prom.cont_1.buf.iter().collect::<String>();
-                    let full_path_str = term.curt().prom.prom_open_file.select_open_file(&path_str);
-                    let path = Path::new(&full_path_str);
+            KeyCmd::MouseScrollUp => PromOpenFile::move_vec(term, CurDirection::Up),
+            KeyCmd::MouseScrollDown => PromOpenFile::move_vec(term, CurDirection::Down),
+            KeyCmd::InsertLine => {
+                let path_str = term.curt().prom.cont_1.buf.iter().collect::<String>();
+                let full_path_str = term.curt().prom.prom_open_file.select_open_file(&path_str);
+                let path = Path::new(&full_path_str);
 
-                    if path_str.len() == 0 {
-                        term.curt().mbar.set_err(&LANG.not_entered_filenm);
-                    } else if !path.exists() {
-                        term.curt().mbar.set_err(&LANG.file_not_found);
-                    } else if !File::is_readable(&full_path_str) {
-                        term.curt().mbar.set_err(&LANG.no_read_permission);
-                    } else if path.metadata().unwrap().is_dir() {
-                        PromOpenFile::set_file_list(&mut term.curt().prom);
-                    } else {
+                if path_str.len() == 0 {
+                    term.curt().mbar.set_err(&LANG.not_entered_filenm);
+                } else if !path.exists() {
+                    term.curt().mbar.set_err(&LANG.file_not_found);
+                } else if !File::is_readable(&full_path_str) {
+                    term.curt().mbar.set_err(&LANG.no_read_permission);
+                } else if path.metadata().unwrap().is_dir() {
+                    PromOpenFile::set_file_list(&mut term.curt().prom);
+                } else {
+                    let mut tgt_idx = USIZE_UNDEFINED;
+                    // Check if the file is already open
+                    for (idx, h_file) in term.hbar.file_vec.iter().enumerate() {
+                        if full_path_str == h_file.fullpath {
+                            tgt_idx = idx;
+                        }
+                    }
+                    if tgt_idx == USIZE_UNDEFINED {
                         if term.open(&path.display().to_string(), &mut Tab::new()) {
                             term.clear_pre_tab_status();
                         }
-                        return EvtActType::DrawOnly;
+                    } else {
+                        term.idx = tgt_idx;
+                        term.curt().editor.keys = Keys::Null;
                     }
-                    term.curt().editor.d_range.draw_type = DrawType::All;
                     return EvtActType::DrawOnly;
                 }
-                _ => return EvtActType::Hold,
-            },
+                term.curt().editor.d_range.draw_type = DrawType::All;
+                return EvtActType::DrawOnly;
+            }
             _ => return EvtActType::Hold,
         }
         return EvtActType::Hold;
@@ -113,23 +119,24 @@ impl Prompt {
     pub const OPEN_FILE_FIXED_PHRASE_ROW_NUM: usize = 5;
 
     pub fn open_file(term: &mut Terminal) {
+        Log::debug_key("open_file");
         term.curt().state.is_open_file = true;
         let is_disp = term.set_disp_size();
         if !is_disp {
-            term.curt().mbar.set_err(&LANG.increase_height_terminal);
-            term.curt().prom.clear();
-            term.curt().state.clear();
+            term.clear_curt_tab();
+            term.curt().mbar.set_err(&LANG.increase_height_width_terminal);
             return;
         }
-        term.curt().prom.cont_1 = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::First).get_open_file(&mut term.curt().prom);
-        term.curt().prom.cont_2 = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::Second).get_open_file(&mut term.curt().prom);
+
+        term.curt().prom.cont_1 = PromptCont::new_edit_type(term.curt(), PromptContPosi::First).get_open_file(&mut term.curt().prom);
+        term.curt().prom.cont_2 = PromptCont::new_edit_type(term.curt(), PromptContPosi::Second).get_open_file(&mut term.curt().prom);
         PromOpenFile::set_file_list(&mut term.curt().prom);
 
         term.curt().prom.prom_open_file.base_path = get_dir_path(&term.curt().prom.cont_1.buf.iter().collect::<String>().replace(CONTINUE_STR, &term.curt().prom.prom_open_file.omitted_path_str));
     }
 
-    pub fn draw_open_file(&self, str_vec: &mut Vec<String>) {
-        Log::debug_s("                draw_open_file");
+    pub fn draw_open_file(&mut self, str_vec: &mut Vec<String>) {
+        Log::debug_key("  draw_open_file");
 
         Prompt::set_draw_vec(str_vec, self.cont_1.buf_desc_row_posi, &self.cont_1.buf_desc.clone());
         Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
@@ -139,6 +146,7 @@ impl Prompt {
         Prompt::set_draw_vec(str_vec, self.cont_2.buf_desc_row_posi, &cont_2_buf_desc);
 
         // cont_2.buf
+        let mut file_disp_str_org = String::new();
         for y in 0..self.prom_open_file.disp_row_len {
             str_vec.push(format!("{}{}", MoveTo(0, self.cont_2.buf_row_posi + y as u16), Clear(CurrentLine)));
             let mut row_str = String::new();
@@ -146,30 +154,39 @@ impl Prompt {
             if let Some(vec) = self.prom_open_file.vec.get(vec_y) {
                 for (x, op_file) in vec.iter().enumerate() {
                     let file_disp_str = &self.prom_open_file.get_file_disp_str(&op_file, vec_y, x);
-                    row_str.push_str(&format!("{}{}{}", file_disp_str, op_file.filenm_disp, Colors::get_default_fg_bg()));
+
+                    if file_disp_str != &file_disp_str_org {
+                        row_str.push_str(&format!("{}{}", file_disp_str, op_file.filenm_disp));
+                    } else {
+                        row_str.push_str(&format!("{}", op_file.filenm_disp));
+                    }
+                    file_disp_str_org = file_disp_str.clone();
                 }
             }
             if !row_str.is_empty() {
                 str_vec.push(format!("{}{}", MoveTo(0, self.cont_2.buf_row_posi + y as u16), row_str));
             }
+            str_vec.push(format!("{}", Colors::get_default_fg_bg()));
         }
     }
 }
 
 impl PromptCont {
     pub fn get_open_file(&mut self, prom: &mut Prompt) -> PromptCont {
-        let base_posi = self.disp_row_posi - 1;
+        let base_posi = self.disp_row_posi;
 
         if self.posi == PromptContPosi::First {
             self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.set_open_filenm);
             self.key_desc = format!(
-                "{}{}:{}Enter  {}{}:{}Esc  {}{}:{}Tab  {}{}:{}Click  {}{}:{}↑↓←→",
+                "{}{}:{}{}  {}{}:{}{}  {}{}:{}Tab  {}{}:{}Click  {}{}:{}↑↓←→",
                 Colors::get_default_fg(),
                 &LANG.open,
                 Colors::get_msg_highlight_fg(),
+                Keybind::get_key_str(KeyCmd::ConfirmPrompt),
                 Colors::get_default_fg(),
                 &LANG.close,
                 Colors::get_msg_highlight_fg(),
+                Keybind::get_key_str(KeyCmd::EscPrompt),
                 Colors::get_default_fg(),
                 &LANG.complement,
                 Colors::get_msg_highlight_fg(),
@@ -293,6 +310,8 @@ impl PromOpenFile {
     }
 
     pub fn set_file_list(prom: &mut Prompt) {
+        Log::debug_s("set_file_list");
+
         // Initialize
         prom.prom_open_file.offset = 0;
         prom.prom_open_file.vec_x = 0;
@@ -335,11 +354,11 @@ impl PromOpenFile {
 
     pub fn move_vec(term: &mut Terminal, cur_direction: CurDirection) {
         if term.curt().prom.prom_open_file.vec_y == PromOpenFile::PATH_INPUT_FIELD {
-            if cur_direction == CurDirection::Up {
-                return;
-            } else if cur_direction == CurDirection::Down {
-                term.curt().prom.prom_open_file.base_path = get_dir_path(&term.curt().prom.cont_1.buf.iter().collect::<String>().replace(CONTINUE_STR, &term.curt().prom.prom_open_file.omitted_path_str));
-            }
+            match cur_direction {
+                CurDirection::Up => return,
+                CurDirection::Down => term.curt().prom.prom_open_file.base_path = get_dir_path(&term.curt().prom.cont_1.buf.iter().collect::<String>().replace(CONTINUE_STR, &term.curt().prom.prom_open_file.omitted_path_str)),
+                _ => {}
+            };
         }
         term.curt().prom.prom_open_file.set_vec_posi(cur_direction);
         if term.curt().prom.prom_open_file.vec_y == PromOpenFile::PATH_INPUT_FIELD {
@@ -550,19 +569,7 @@ pub struct PromOpenFile {
 
 impl Default for PromOpenFile {
     fn default() -> Self {
-        PromOpenFile {
-            vec: vec![],
-            file_all_count: 0,
-            offset: 0,
-            disp_row_len: 0,
-            cache_disp_filenm: String::new(),
-            cache_full_filenm: String::new(),
-            tab_comp: TabComp::default(),
-            vec_y: PromOpenFile::PATH_INPUT_FIELD,
-            vec_x: 0,
-            base_path: String::new(),
-            omitted_path_str: String::new(),
-        }
+        PromOpenFile { vec: vec![], file_all_count: 0, offset: 0, disp_row_len: 0, cache_disp_filenm: String::new(), cache_full_filenm: String::new(), tab_comp: TabComp::default(), vec_y: PromOpenFile::PATH_INPUT_FIELD, vec_x: 0, base_path: String::new(), omitted_path_str: String::new() }
     }
 }
 
@@ -575,10 +582,6 @@ pub struct OpenFile {
 
 impl Default for OpenFile {
     fn default() -> Self {
-        OpenFile {
-            file: File::default(),
-            filenm_disp: String::new(),
-            filenm_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
-        }
+        OpenFile { file: File::default(), filenm_disp: String::new(), filenm_area: (USIZE_UNDEFINED, USIZE_UNDEFINED) }
     }
 }

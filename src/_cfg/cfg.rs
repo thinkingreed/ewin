@@ -65,6 +65,7 @@ pub struct CfgColorTheme {
 pub struct CfgColorEditor {
     background: String,
     foreground: String,
+    // #[serde(rename = "background", serialize_with = "str_2_color")]
     #[serde(skip_deserializing, skip_serializing)]
     pub bg: Color,
     #[serde(skip_deserializing, skip_serializing)]
@@ -168,28 +169,26 @@ pub struct Syntax {
 
 impl Default for Syntax {
     fn default() -> Self {
-        Syntax {
-            syntax_set: SyntaxSet::load_defaults_newlines(),
-            theme_set: ThemeSet::load_defaults(),
-            theme: Theme::default(),
-            fg: Color::default(),
-            bg: Color::default(),
-        }
+        Syntax { syntax_set: SyntaxSet::load_defaults_newlines(), theme_set: ThemeSet::load_defaults(), theme: Theme::default(), fg: Color::default(), bg: Color::default() }
     }
 }
 impl Cfg {
     pub fn init() -> String {
+        Log::info_key("Cfg.init");
+
         let mut cfg: Cfg = toml::from_str(include_str!("../../setting.toml")).unwrap();
         let mut err_str = "".to_string();
+        let mut read_str = String::new();
 
         if let Some(base_dirs) = BaseDirs::new() {
             let config_dir = base_dirs.config_dir();
             let config_file = &config_dir.join(env!("CARGO_PKG_NAME")).join(SETTING_FILE);
 
             if config_file.exists() {
-                let mut read_str = String::new();
                 match fs::read_to_string(config_file) {
-                    Ok(str) => read_str = str,
+                    Ok(str) => {
+                        read_str = str;
+                    }
                     Err(e) => {
                         err_str = format!("{} {} {}", LANG.file_loading_failed, config_file.to_string_lossy().to_string(), e);
                     }
@@ -255,7 +254,9 @@ impl Cfg {
         }
 
         Log::set_logger(&cfg.general.log);
-
+        if !read_str.is_empty() {
+            Log::info("read setting.toml", &read_str);
+        }
         let _ = CFG.set(Mutex::new(cfg));
 
         return err_str;

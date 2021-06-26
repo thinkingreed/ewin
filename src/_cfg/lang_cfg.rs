@@ -29,7 +29,8 @@ pub struct LangCfg {
     pub open: String,
     pub movement: String,
     pub file: String,
-    pub edit: String,
+    pub edit_search: String,
+    pub convert: String,
     pub filenm: String,
     pub file_list: String,
     pub presence_or_absence: String,
@@ -53,6 +54,7 @@ pub struct LangCfg {
     pub replace: String,
     pub all_replace: String,
     pub select: String,
+    pub menu_select: String,
     pub move_setting_location: String,
     pub replace_char: String,
     pub save_confirmation_to_close: String,
@@ -69,16 +71,30 @@ pub struct LangCfg {
     pub unable_to_edit: String,
     pub complement: String,
     pub open_target_file: String,
-    pub key_record_start: String,
-    pub key_record_stop: String,
+    pub key_record_start_stop: String,
+    pub key_record_exec: String,
     pub key_recording: String,
     pub help: String,
     pub candidate_change: String,
     pub encoding: String,
     pub new_line_code: String,
+    // menu
     pub menu: String,
-    pub new_tab: String,
+    pub contents: String,
+    pub create_new: String,
     pub save_as: String,
+
+    pub encode: String,
+    pub end_of_all_save: String,
+
+    pub to_uppercase: String,
+    pub to_lowercase: String,
+    pub to_half_width: String,
+    pub to_full_width: String,
+    pub to_space: String,
+    pub to_tab: String,
+
+    pub column_select_mode: String,
 
     /// Long msg
     pub not_entered_filenm: String,
@@ -92,10 +108,15 @@ pub struct LangCfg {
     pub show_search_result: String,
     pub show_search_no_result: String,
     pub no_undo_operation: String,
-    pub no_operation_re_exec: String,
+    pub no_redo_operation: String,
     pub number_within_current_number_of_rows: String,
     pub cannot_convert_encoding: String,
-    pub select_menu_and_work: String,
+    pub select_menu: String,
+    pub processing_canceled: String,
+    // Keybind
+    pub specification_err_key: String,
+    pub specification_err_keycmd: String,
+    pub specification_err_keywhen: String,
     // File
     pub no_read_permission: String,
     pub no_write_permission: String,
@@ -115,7 +136,7 @@ pub struct LangCfg {
     pub no_key_record_exec: String,
     // other
     pub unsupported_operation: String,
-    pub increase_height_terminal: String,
+    pub increase_height_width_terminal: String,
 
     // editor info
     pub simple_help_desc: String,
@@ -131,6 +152,9 @@ pub struct LangMulti {
 impl LangCfg {
     pub fn read_lang_cfg() -> LangCfg {
         let lang_multi: LangMulti = toml::from_str(&LANG_CONFIG.to_string()).unwrap();
+
+        // return lang_multi.en;
+
         let lang = env::var("LANG").unwrap_or("en_US".to_string());
         return if lang.starts_with("ja_JP") { lang_multi.ja } else { lang_multi.en };
     }
@@ -140,6 +164,7 @@ impl LangCfg {
 impl LangCfg {
     pub fn read_lang_cfg() -> LangCfg {
         let lang_multi: LangMulti = toml::from_str(&LANG_CONFIG.to_string()).unwrap();
+
         let lang = match Command::new("powershell.exe").args(&["(Get-WinUserLanguageList)[0].LanguageTag"]).output() {
             Ok(output) => String::from_utf8_lossy(&output.stdout).trim().to_string(),
             Err(_) => "en_US".to_string(),

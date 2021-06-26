@@ -1,0 +1,315 @@
+[
+  /* key
+     // Raw
+         left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, esc, F1～F12
+     // Ctrl
+         ctrl+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12)
+     // Shit
+         shit+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12)
+     // Alt
+         alt+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12)
+  /* cmd
+     // cursor move
+         cursorLeft, cursorRight, cursorUp, cursorDown, cursorRowHome, cursorRowEnd, cursorFileHome, cursorFileEnd, cursorPageUp, cursorPageDown
+     // select
+         cursorLeftSelect, cursorRightSelect, cursorUpSelect, cursorDownSelect, cursorRowHomeSelect, cursorRowEndSelect, allSelect
+     // edit
+         insertLine, deletePrevChar, deleteNextChar, cutSelect, copySelect, paste, undo, redo
+     // find
+         find, findNext, findBack, replace, moveLine, grep
+     // file
+         newTab, nextTab, openFile, encoding, closeFile, closeAllFile, saveFile
+     // key record・mouse
+         startEndRecordKey, execRecordKey, mouseOpeSwitch
+     // menu
+         help, openMenu, openMenuFile, openMenuConvert, openMenuEdit, openMenuSelect
+     // prompt
+         escPrompt, confirmPrompt, findCaseSensitive, findRegex                             
+  /* when
+     allFocus, inputFocus, editorFocus, promptFocus         
+  
+   /*
+   * cursor move
+   */
+  {
+    key: 'left',
+    cmd: 'cursorLef',
+    when: 'inputFocus'
+  },
+  {
+    key: 'right',
+    cmd: 'cursorRight',
+    when: 'inputFocus'
+  },
+  {
+    key: 'down',
+    cmd: 'cursorDown',
+    when: 'inputFocus'
+  },
+  {
+    key: 'up',
+    cmd: 'cursorUp',
+    when: 'inputFocus'
+  },
+  {
+    key: 'home',
+    cmd: 'cursorRowHome',
+    when: 'inputFocus'
+  },
+  {
+    key: 'end',
+    cmd: 'cursorRowEnd',
+    when: 'inputFocus'
+  },
+  {
+    key: 'ctrl+home',
+    cmd: 'cursorFileHome',
+    when: 'inputFocus'
+  },
+  {
+    key: 'ctrl+end',
+    cmd: 'cursorFileEnd',
+    when: 'inputFocus'
+  },
+  {
+    key: 'pagedown',
+    cmd: 'cursorPageDown',
+    when: 'editorFocus'
+  },
+  {
+    key: 'pageup',
+    cmd: 'cursorPageUp',
+    when: 'editorFocus'
+  },
+  /*
+   * select
+   */
+  {
+    key: 'shift+left',
+    cmd: 'cursorLeftSelect',
+    when: 'inputFocus'
+  },
+  {
+    key: 'shift+right',
+    cmd: 'cursorRightSelect',
+    when: 'inputFocus'
+  },
+  {
+    key: 'shift+down',
+    cmd: 'cursorDownSelect',
+    when: 'inputFocus'
+  },
+  {
+    key: 'shift+up',
+    cmd: 'cursorUpSelect',
+    when: 'inputFocus'
+  },
+  {
+    key: 'shift+home',
+    cmd: 'cursorRowHomeSelect',
+    when: 'inputFocus'
+  },
+  {
+    key: 'shift+end',
+    cmd: 'cursorRowEndSelect',
+    when: 'editorFocus'
+  },
+  {
+    key: 'ctrl+a',
+    cmd: 'allSelect',
+    when: 'inputFocus'
+  },
+  /*
+   * edit
+   */
+  {
+    key: 'enter',
+    cmd: 'insertLine',
+    when: 'editorFocus'
+  },
+  {
+    key: 'backspace',
+    cmd: 'deletePrevChar',
+    when: 'inputFocus'
+  },
+  {
+    key: 'delete',
+    cmd: 'deleteNextChar',
+    when: 'inputFocus'
+  },
+  {
+    key: 'ctrl+x',
+    cmd: 'cutSelect',
+    when: 'inputFocus'
+  },
+  {
+    key: 'ctrl+c',
+    cmd: 'copySelect',
+    when: 'inputFocus'
+  },
+  {
+    key: 'ctrl+v',
+    cmd: 'paste',
+    when: 'inputFocus'
+  },
+  {
+    key: 'ctrl+z',
+    cmd: 'undo',
+    when: 'inputFocus'
+  },
+  {
+    key: 'ctrl+y',
+    cmd: 'redo',
+    when: 'inputFocus'
+  },
+  /*
+   * find
+   */
+  {
+    key: 'ctrl+f',
+    cmd: 'find',
+    when: 'editorFocus'
+  },
+  {
+    key: 'F3',
+    cmd: 'findNext',
+    when: 'editorFocus'
+  },
+  {
+    key: 'shift+F4',
+    cmd: 'findBack',
+    when: 'editorFocus'
+  },
+  {
+    key: 'ctrl+r',
+    cmd: 'replace',
+    when: 'editorFocus'
+  },
+  {
+    key: 'ctrl+l',
+    cmd: 'moveLine',
+    when: 'editorFocus'
+  },
+  {
+    key: 'ctrl+g',
+    cmd: 'grep',
+    when: 'editorFocus'
+  },
+  /*
+   * filSe
+   */
+  {
+    key: 'ctrl+w',
+    cmd: 'closeFile',
+    when: 'allFocus'
+  },
+  {
+    key: 'ctrl+n',
+    cmd: 'newTab',
+    when: 'editorFocus'
+  },
+  {
+    key: 'ctrl+o',
+    cmd: 'openFile',
+    when: 'editorFocus'
+  },
+  {
+    key: 'ctrl+q',
+    cmd: 'nextTab',
+    when: 'editorFocus'
+  },
+  {
+    key: 'ctrl+e',
+    cmd: 'encoding',
+    when: 'editorFocus'
+  },
+
+  {
+    key: 'alt+w',
+    cmd: 'closeAllFile',
+    when: 'editorFocus'
+  },
+  {
+    key: 'ctrl+s',
+    cmd: 'saveFile',
+    when: 'editorFocus'
+  },
+  /*
+   * key record
+   */
+  {
+    key: 'shift+F1',
+    cmd: 'startEndRecordKey',
+    when: 'editorFocus'
+  },
+  {
+    key: 'shift+F2',
+    cmd: 'execRecordKey',
+    when: 'editorFocus'
+  },
+  /*
+   * mouse
+   */
+  {
+    key: 'F12',
+    cmd: 'mouseOpeSwitch',
+    when: 'editorFocus'
+  },
+  /*
+   * menu
+   */
+  {
+    key: 'F1',
+    cmd: 'help',
+    when: 'editorFocus'
+  },
+  {
+    key: 'alt+m',
+    cmd: 'openMenu',
+    when: 'editorFocus'
+  },
+  {
+    key: 'alt+f',
+    cmd: 'openMenuFile',
+    when: 'editorFocus'
+  },
+  {
+    key: 'alt+c',
+    cmd: 'openMenuConvert',
+    when: 'editorFocus'
+  },
+  {
+    key: 'alt+e',
+    cmd: 'openMenuEdit',
+    when: 'editorFocus'
+  },
+  {
+    key: 'alt+s',
+    cmd: 'openMenuSelect',
+    when: 'editorFocus'
+  },
+
+  /*
+   * prompt
+   */
+  {
+    key: 'esc',
+    cmd: 'escPrompt',
+    when: 'promptFocus'
+  },
+  {
+    key: 'enter',
+    cmd: 'confirmPrompt',
+    when: 'promptFocus'
+  },
+  {
+    key: 'alt+c',
+    cmd: 'findCaseSensitive',
+    when: 'promptFocus'
+  },
+  {
+    key: 'alt+r',
+    cmd: 'findRegex',
+    when: 'promptFocus'
+  }
+]

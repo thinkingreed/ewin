@@ -1,25 +1,40 @@
 pub mod global {
     use crate::{
-        _cfg::{cfg::*, lang_cfg::*},
+        _cfg::{
+            cfg::*,
+            keys::KeyWhen,
+            keys::{KeyCmd, Keys},
+            lang_cfg::*,
+        },
         model::*,
         util::*,
     };
     use once_cell::sync::Lazy;
     use once_cell::sync::OnceCell;
-    use std::{collections::BTreeSet, sync::Mutex};
+    use std::{
+        collections::{BTreeSet, HashMap},
+        env,
+        sync::Mutex,
+    };
 
     pub static LANG: Lazy<LangCfg> = Lazy::new(|| LangCfg::read_lang_cfg());
     pub static ENV: Lazy<Env> = Lazy::new(|| get_env_platform());
     pub static CFG: OnceCell<Mutex<Cfg>> = OnceCell::new();
     pub static LOG: OnceCell<crate::log::Log> = OnceCell::new();
+    pub static KEY_CMD_MAP: OnceCell<HashMap<(Keys, KeyWhen), KeyCmd>> = OnceCell::new();
+    pub static CMD_KEY_MAP: OnceCell<HashMap<KeyCmd, Keys>> = OnceCell::new();
 
-    pub static GREP_INFO_VEC: OnceCell<tokio::sync::Mutex<Vec<GrepInfo>>> = OnceCell::new();
+    pub static GREP_INFO_VEC: OnceCell<tokio::sync::Mutex<Vec<GrepState>>> = OnceCell::new();
     // Cancel is defined independently. Because it needs to be obtained when GREP_INFO_VEC is locked
     pub static GREP_CANCEL_VEC: OnceCell<tokio::sync::Mutex<Vec<bool>>> = OnceCell::new();
 
+    pub static CURT_DIR: Lazy<String> = Lazy::new(|| env::current_dir().unwrap().to_string_lossy().to_string());
+
     pub static IS_POWERSHELL_ENABLE: Lazy<bool> = Lazy::new(|| is_powershell_enable());
-    pub static REPLACE_SEARCH_RANGE: OnceCell<Mutex<BTreeSet<(usize, usize)>>> = OnceCell::new();
-    pub static REPLACE_REPLACE_RANGE: OnceCell<Mutex<BTreeSet<(usize, usize)>>> = OnceCell::new();
+    pub static REPLACE_SEARCH_RANGE: OnceCell<Mutex<Vec<BTreeSet<(usize, usize)>>>> = OnceCell::new();
+    pub static REPLACE_REPLACE_RANGE: OnceCell<Mutex<Vec<BTreeSet<(usize, usize)>>>> = OnceCell::new();
+    // Clipboard on memory
+    pub static CLIPBOARD: OnceCell<String> = OnceCell::new();
 }
 pub mod colors;
 pub mod def;
@@ -44,24 +59,31 @@ pub mod editor {
         pub mod char_style;
         pub mod draw;
     }
-    pub mod clipboard;
+    pub mod convert;
+    pub mod draw_range;
     pub mod editor;
     pub mod evt_proc;
     pub mod history;
     pub mod key;
     pub mod key_ctrl;
     pub mod key_shift;
+
     pub mod mouse;
 }
 
 pub mod model;
 pub mod prompt {
-    pub mod promptcont {
+    pub mod cont {
+        pub mod evt_proc;
         pub mod key;
         pub mod key_ctrl;
         pub mod key_shift;
         pub mod promptcont;
     }
+    pub mod prompt {
+        pub mod prompt;
+    }
+    pub mod choice;
     pub mod close;
     pub mod enc_nl;
     pub mod grep;
@@ -69,11 +91,11 @@ pub mod prompt {
     pub mod menu;
     pub mod move_row;
     pub mod open_file;
-    pub mod prompt;
     pub mod replace;
     pub mod save_new_file;
     pub mod search;
 }
+pub mod clipboard;
 pub mod help;
 pub mod log;
 pub mod tab;
@@ -81,6 +103,8 @@ pub mod terminal;
 pub mod util;
 pub mod _cfg {
     pub mod cfg;
+    pub mod keybind;
+    pub mod keys;
     pub mod lang;
     pub mod lang_cfg;
     pub mod theme_loader;

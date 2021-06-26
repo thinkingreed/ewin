@@ -1,7 +1,13 @@
 extern crate ropey;
-use crate::{bar::headerbar::HeaderFile, def::*, editor::view::char_style::*};
+use crate::{
+    _cfg::keys::{KeyCmd, Keys},
+    bar::headerbar::HeaderFile,
+    def::*,
+    editor::view::char_style::*,
+    log::Log,
+};
 use chrono::NaiveDateTime;
-use crossterm::event::{Event, Event::Key, KeyCode::Null};
+use crossterm::event::{Event, KeyCode::Null};
 use encoding_rs::Encoding;
 use faccess::PathExt;
 #[cfg(target_os = "windows")]
@@ -12,12 +18,13 @@ use std::path::MAIN_SEPARATOR;
 use std::{
     cmp::{max, min},
     collections::VecDeque,
+    usize,
 };
 use std::{fmt, path::Path};
 use syntect::parsing::{ParseState, ScopeStackOp};
 use syntect::{highlighting::HighlightState, parsing::SyntaxReference};
 
-/// Event後のEditor以外の操作
+/// Event action
 #[derive(Debug, Clone)]
 pub struct EvtAct {}
 
@@ -54,15 +61,7 @@ pub struct EvtProc {
 }
 impl Default for EvtProc {
     fn default() -> Self {
-        EvtProc {
-            cur_s: Cur::default(),
-            cur_e: Cur::default(),
-            str: String::new(),
-            str_replace: String::new(),
-            evt_type: EvtType::None,
-            sel: SelRange::default(),
-            d_range: DRange::default(),
-        }
+        EvtProc { cur_s: Cur::default(), cur_e: Cur::default(), str: String::new(), str_replace: String::new(), evt_type: EvtType::None, sel: SelRange::default(), d_range: DRange::default() }
     }
 }
 impl fmt::Display for EvtProc {
@@ -79,7 +78,7 @@ impl EvtProc {
 /// All edit history including undo and redo
 /// History
 pub struct History {
-    pub mouse_click_vec: VecDeque<(NaiveDateTime, Event)>,
+    pub mouse_click_vec: VecDeque<(NaiveDateTime, KeyCmd)>,
     pub undo_vec: Vec<EvtProc>,
     pub redo_vec: Vec<EvtProc>,
 }
@@ -154,26 +153,32 @@ impl Search {
 }
 impl Default for Search {
     fn default() -> Self {
-        Search {
-            str: String::new(),
-            idx: USIZE_UNDEFINED,
-            ranges: vec![],
-            filenm: String::new(),
-            folder: String::new(),
-            row_num: USIZE_UNDEFINED,
-        }
+        Search { str: String::new(), idx: USIZE_UNDEFINED, ranges: vec![], filenm: String::new(), folder: String::new(), row_num: USIZE_UNDEFINED }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeyRecord {
-    pub evt: Event,
+    pub keys: Keys,
     pub search: Search,
 }
 
 impl Default for KeyRecord {
     fn default() -> Self {
-        KeyRecord { evt: Event::Resize(0, 0), search: Search::default() }
+        KeyRecord { keys: Keys::Null, search: Search::default() }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct KeyRecordState {
+    pub is_record: bool,
+    pub is_exec: bool,
+    pub is_exec_end: bool,
+}
+
+impl Default for KeyRecordState {
+    fn default() -> Self {
+        KeyRecordState { is_record: false, is_exec: false, is_exec_end: false }
     }
 }
 
@@ -217,7 +222,7 @@ impl Default for SelRange {
 
 impl SelRange {
     pub fn clear(&mut self) {
-        //  Log::ep_s("SelRange.clear");
+        Log::debug_key("SelRange.clear");
         self.sy = 0;
         self.ey = 0;
         self.sx = 0;
@@ -345,7 +350,7 @@ impl fmt::Display for Cur {
 // エディタの内部状態
 #[derive(Debug, Clone)]
 pub struct Editor {
-    pub mode: TermMode,
+    pub mode: EditerMode,
     pub buf: TextBuffer,
     pub buf_cache: Vec<Vec<char>>,
     /// current cursor position
@@ -363,9 +368,10 @@ pub struct Editor {
     pub rnw_org: usize,
     pub sel: SelRange,
     pub sel_org: SelRange,
-    pub evt: Event,
+    pub keys: Keys,
+    pub keycmd: KeyCmd,
     // Clipboard on memory
-    pub clipboard: String,
+    // pub clipboard: String,
     /// number displayed on the terminal
     pub disp_row_num: usize,
     pub disp_row_posi: usize,
@@ -386,7 +392,7 @@ impl Editor {
 
     pub fn new() -> Self {
         Editor {
-            mode: TermMode::Normal,
+            mode: EditerMode::Normal,
             buf: TextBuffer::default(),
             buf_cache: vec![],
             cur: Cur::default(),
@@ -401,8 +407,8 @@ impl Editor {
             rnw_org: 0,
             sel: SelRange::default(),
             sel_org: SelRange::default(),
-            evt: Key(Null.into()),
-            clipboard: String::new(),
+            keys: Keys::Null,
+            keycmd: KeyCmd::Null,
             // for UT set
             disp_row_num: 5,
             disp_row_posi: 1,
@@ -538,13 +544,7 @@ pub struct JobGrep {
 
 impl Default for JobGrep {
     fn default() -> Self {
-        JobGrep {
-            grep_str: String::new(),
-            is_result: false,
-            is_stdout_end: false,
-            is_stderr_end: false,
-            is_cancel: false,
-        }
+        JobGrep { grep_str: String::new(), is_result: false, is_stdout_end: false, is_stderr_end: false, is_cancel: false }
     }
 }
 
@@ -698,7 +698,7 @@ impl fmt::Display for EvtType {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct GrepInfo {
+pub struct GrepState {
     pub is_grep: bool,
     pub is_result: bool,
     pub is_stdout_end: bool,
@@ -711,9 +711,9 @@ pub struct GrepInfo {
     pub search_filenm: String,
 }
 
-impl Default for GrepInfo {
+impl Default for GrepState {
     fn default() -> Self {
-        GrepInfo {
+        GrepState {
             is_grep: false,
             is_result: false,
             is_cancel: false,
@@ -728,7 +728,7 @@ impl Default for GrepInfo {
     }
 }
 
-impl GrepInfo {
+impl GrepState {
     pub fn clear(&mut self) {
         self.is_grep = false;
         self.is_stdout_end = false;
@@ -739,9 +739,8 @@ impl GrepInfo {
         self.search_filenm = String::new();
     }
 }
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TermMode {
+pub enum EditerMode {
     Normal,
     Mouse,
 }
@@ -820,76 +819,8 @@ impl fmt::Display for Encode {
         }
     }
 }
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-// DrawRange
-pub struct Choice {
-    pub name: String,
-    pub y: usize,
-    pub area: (usize, usize),
-}
-
-impl Default for Choice {
-    fn default() -> Self {
-        Choice { name: String::new(), y: 0, area: (USIZE_UNDEFINED, USIZE_UNDEFINED) }
-    }
-}
-
-impl Choice {
-    pub fn new(name: &String) -> Self {
-        return Choice { name: name.clone(), ..Choice::default() };
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Choices {
-    pub vec: Vec<Vec<Choice>>,
-    pub idx: usize,
-}
-
-impl Default for Choices {
-    fn default() -> Self {
-        Choices { vec: vec![], idx: USIZE_UNDEFINED }
-    }
-}
-
-impl Choices {
-    pub fn set_next_back_choice(&mut self, is_asc: bool) {
-        // count item
-        let mut total_idx = 0;
-        for v in self.vec.iter_mut() {
-            total_idx += v.len();
-        }
-        self.idx = if is_asc {
-            if total_idx == self.idx + 1 {
-                0
-            } else {
-                self.idx + 1
-            }
-        } else {
-            if self.idx == 0 {
-                total_idx - 1
-            } else {
-                self.idx - 1
-            }
-        };
-    }
-    pub fn get_choice(&self) -> Choice {
-        let dummy_item = Choice::new(&"".to_string());
-        let mut total_idx = 0;
-        for v in self.vec.iter() {
-            for item in v {
-                if self.idx == total_idx {
-                    return item.clone();
-                }
-                total_idx += 1;
-            }
-        }
-        return dummy_item;
-    }
-}
 // Cursor direction
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CurDirection {
     Right,
     Left,

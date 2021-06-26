@@ -11,6 +11,8 @@ keywords = ["text", "editor", "terminal", "cli", "tui"]
 categories = ["command-line-utilities"]
 build = "build.rs"
 
+[profile.dev]
+debug = 0
 
 [package.metadata.deb]
 extended-description = """\
@@ -37,11 +39,11 @@ anyhow = "1"
 clap = "2"
 unicode-width = "0.1.8"
 clipboard = "0.5.0"
-crossterm  = {version ="0.19.0", features = ["event-stream"]} 
+crossterm  = {version ="0.20.0", features = ["event-stream"]} 
 serde = { version = "1.0.123", features = ["derive"] }
 toml = "0.5.8"
 cargo-deb = "1.28.3"
-tokio = { version = "1.4.0", features = ["full"] }
+tokio = { version = "1.4.0", features = ["process", "macros", "rt-multi-thread"] }
 tokio-util = { version = "0.6.3", features = ["codec"] }
 futures = "0.3"
 futures-util = "0.3.12"
@@ -52,10 +54,11 @@ chrono="0.4.19"
 colors-transform = "0.2.11"
 directories = "3.0.1"
 regex = "1.4.3"
-ripgrep = "12.1.1"
 encoding_rs= "0.8.28"
 byteorder = "1.4.3"
 faccess = "0.2.3"
+json5 = "0.3.0"
+unicode-jp= "0.4.0"
 
 [target.'cfg(windows)'.build-dependencies]
 windres = "0.2.2"

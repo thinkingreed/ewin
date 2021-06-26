@@ -1,17 +1,23 @@
-use crate::{def::*, global::*, help::Help, log::*, model::*, prompt::prompt::Prompt, tab::Tab, terminal::*};
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind, *};
-use std::{
-    cmp::{max, min},
-    io::Write,
+use crate::{
+    _cfg::keys::{KeyCmd, KeyWhen, Keybind, Keys},
+    def::TAB_CHAR,
+    global::*,
+    help::Help,
+    log::*,
+    model::*,
+    prompt::prompt::prompt::*,
+    tab::Tab,
+    terminal::*,
 };
 
-impl EvtAct {
-    pub fn match_event<T: Write>(event: Event, out: &mut T, term: &mut Terminal) -> bool {
-        Terminal::hide_cur();
-        Log::info("event", &event);
+use std::io::Write;
 
-        let evt_act_type = EvtAct::check_next_process(event, out, term);
-        Log::debug("check_next_process evt_act_type", &evt_act_type);
+impl EvtAct {
+    pub fn match_event<T: Write>(keys: Keys, out: &mut T, term: &mut Terminal) -> bool {
+        Terminal::hide_cur();
+        Log::info("Pressed key", &keys);
+
+        let evt_act_type = EvtAct::check_next_process(keys, out, term);
 
         match evt_act_type {
             EvtActType::Exit => return true,
@@ -20,108 +26,106 @@ impl EvtAct {
                 if evt_act_type == EvtActType::DrawOnly {
                     term.curt().editor.d_range.draw_type = DrawType::All;
                 }
-
                 if evt_act_type == EvtActType::Next && !EvtAct::check_err(term) {
                     EvtAct::init(term);
-                    Editor::set_org(term);
-                    let evt = term.curt().editor.evt;
+                    Editor::set_state_org(term);
 
-                    match &evt {
-                        Resize(_, _) => term.resize(),
-                        Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                            Char('w') => {
-                                if Prompt::close(term) == true {
-                                    return true;
-                                }
+                    let keycmd = Keybind::get_keycmd(&keys, KeyWhen::EditorFocus);
+
+                    Log::debug("keybindcmd", &keycmd);
+
+                    match keycmd {
+                        // cursor move
+                        KeyCmd::CursorLeft => term.curt().editor.cur_left(),
+                        KeyCmd::CursorRight => term.curt().editor.cur_right(),
+                        KeyCmd::CursorUp | KeyCmd::MouseScrollUp => term.curt().editor.cur_up(),
+                        KeyCmd::CursorDown | KeyCmd::MouseScrollDown => term.curt().editor.cur_down(),
+                        KeyCmd::CursorRowHome => term.curt().editor.cur_home(),
+                        KeyCmd::CursorRowEnd => term.curt().editor.cur_end(),
+                        KeyCmd::CursorFileHome => term.curt().editor.ctrl_home(),
+                        KeyCmd::CursorFileEnd => term.curt().editor.ctrl_end(),
+                        KeyCmd::CursorPageUp => term.curt().editor.page_up(),
+                        KeyCmd::CursorPageDown => term.curt().editor.page_down(),
+                        // select
+                        KeyCmd::CursorLeftSelect => term.curt().editor.shift_left(),
+                        KeyCmd::CursorRightSelect => term.curt().editor.shift_right(),
+                        KeyCmd::CursorUpSelect => term.curt().editor.shift_up(),
+                        KeyCmd::CursorDownSelect => term.curt().editor.shift_down(),
+                        KeyCmd::CursorRowHomeSelect => term.curt().editor.shift_home(),
+                        KeyCmd::CursorRowEndSelect => term.curt().editor.shift_end(),
+                        KeyCmd::AllSelect => term.curt().editor.all_select(),
+                        // edit
+                        KeyCmd::InsertChar(c) => term.curt().editor.exec_edit_proc(EvtType::InsertChar, &c.to_string(), ""),
+                        KeyCmd::Tab => term.curt().editor.exec_edit_proc(EvtType::InsertChar, &TAB_CHAR.to_string(), ""),
+                        KeyCmd::InsertLine => term.curt().editor.exec_edit_proc(EvtType::Enter, "", ""),
+                        KeyCmd::DeletePrevChar => term.curt().editor.exec_edit_proc(EvtType::BS, "", ""),
+                        KeyCmd::DeleteNextChar => term.curt().editor.exec_edit_proc(EvtType::Del, "", ""),
+                        KeyCmd::CutSelect => term.curt().editor.exec_edit_proc(EvtType::Cut, "", ""),
+                        KeyCmd::Paste => term.curt().editor.exec_edit_proc(EvtType::Paste, "", ""),
+                        KeyCmd::Copy => term.curt().editor.copy(),
+                        KeyCmd::Undo => term.curt().editor.undo(),
+                        KeyCmd::Redo => term.curt().editor.redo(),
+                        // find
+                        KeyCmd::Find => Prompt::search(term),
+                        KeyCmd::FindNext => term.curt().editor.search_str(true, false),
+                        KeyCmd::FindBack => term.curt().editor.search_str(false, false),
+                        KeyCmd::Replace => Prompt::replace(term),
+                        KeyCmd::MoveRow => Prompt::move_row(term),
+                        KeyCmd::Grep => Prompt::grep(term),
+                        // file
+                        KeyCmd::NewTab => term.new_tab(),
+                        KeyCmd::NextTab => term.next_tab(),
+                        KeyCmd::OpenFile => Prompt::open_file(term),
+                        KeyCmd::Encoding => Prompt::enc_nl(term),
+                        KeyCmd::CloseFile => {
+                            if Prompt::close(term) == true {
+                                return true;
                             }
-                            Char('s') => {
-                                let _ = Tab::save(term);
+                        }
+                        KeyCmd::CloseAllFile => {
+                            if term.close_all_tab() == true {
+                                return true;
                             }
-                            Char('c') => term.curt().editor.copy(),
-                            Char('x') => term.curt().editor.exec_edit_proc(EvtType::Cut, "", ""),
-                            Char('v') => term.curt().editor.exec_edit_proc(EvtType::Paste, "", ""),
-                            Char('a') => term.curt().editor.all_select(),
-                            Char('f') => Prompt::search(term),
-                            Char('r') => Prompt::replace(term),
-                            Char('g') => Prompt::grep(term),
-                            Char('z') => term.curt().editor.undo(),
-                            Char('y') => term.curt().editor.redo(),
-                            Char('l') => Prompt::move_row(term),
-                            Char('t') => term.new_tab(),
-                            Char('q') => term.next_tab(),
-                            Char('o') => Prompt::open_file(term),
-                            Home => term.curt().editor.ctrl_home(),
-                            End => term.curt().editor.ctrl_end(),
-                            Char('e') => Prompt::enc_nl(term),
-                            Char('h') => Prompt::menu(term),
-                            _ => term.curt().mbar.set_err(&LANG.unsupported_operation),
-                        },
+                        }
+                        KeyCmd::SaveFile => {
+                            let _ = Tab::save(term);
+                        }
+                        // key record
+                        KeyCmd::StartEndRecordKey => term.curt().record_key_start(),
+                        KeyCmd::ExecRecordKey => {
+                            Tab::exec_record_key(out, term);
+                            return false;
+                        }
+                        // mouse
+                        KeyCmd::MouseDownLeft(y, x) => term.curt().editor.ctrl_mouse(y as usize, x as usize, true),
+                        KeyCmd::MouseDragLeft(y, x) => term.curt().editor.ctrl_mouse(y as usize, x as usize, false),
+                        KeyCmd::MouseOpeSwitch => term.ctrl_mouse_capture(),
+                        // menu
+                        KeyCmd::Help => Help::disp_toggle(term),
+                        KeyCmd::OpenMenu | KeyCmd::OpenMenuFile | KeyCmd::OpenMenuConvert | KeyCmd::OpenMenuEdit | KeyCmd::OpenMenuSelect => Prompt::menu(term),
 
-                        Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                            Right => term.curt().editor.shift_right(),
-                            Left => term.curt().editor.shift_left(),
-                            Down => term.curt().editor.shift_down(),
-                            Up => term.curt().editor.shift_up(),
-                            Home => term.curt().editor.shift_home(),
-                            End => term.curt().editor.shift_end(),
-                            Char(c) => term.curt().editor.exec_edit_proc(EvtType::InsertChar, &c.to_ascii_uppercase().to_string(), ""),
-                            F(1) => term.curt().record_key_start(),
-                            F(2) => Tab::exec_record_key(out, term),
-                            F(4) => term.curt().editor.search_str(false, false),
-                            _ => term.curt().mbar.set_err(&LANG.unsupported_operation),
-                        },
-                        Key(KeyEvent { modifiers: KeyModifiers::ALT, code }) => match code {
-                            Char('w') => {
-                                term.close_all_tab();
-                                if term.tabs.is_empty() {
-                                    return true;
-                                }
-                            }
-                            _ => term.curt().mbar.set_err(&LANG.unsupported_operation),
-                        },
-                        Key(KeyEvent { code, .. }) => match code {
-                            Char(c) => term.curt().editor.exec_edit_proc(EvtType::InsertChar, &c.to_string(), ""),
-                            Tab => term.curt().editor.exec_edit_proc(EvtType::InsertChar, &TAB.to_string(), ""),
-                            Enter => term.curt().editor.exec_edit_proc(EvtType::Enter, "", ""),
-                            Backspace => term.curt().editor.exec_edit_proc(EvtType::BS, "", ""),
-                            Delete => term.curt().editor.exec_edit_proc(EvtType::Del, "", ""),
-                            PageDown => term.curt().editor.page_down(),
-                            PageUp => term.curt().editor.page_up(),
-                            Up => term.curt().editor.cur_up(),
-                            Down => term.curt().editor.cur_down(),
-                            Left => term.curt().editor.cur_left(),
-                            Right => term.curt().editor.cur_right(),
-                            Home => term.curt().editor.home(),
-                            End => term.curt().editor.end(),
-                            F(1) => Help::disp_toggle(term),
-                            F(3) => term.curt().editor.search_str(true, false),
-                            F(12) => term.ctrl_mouse_capture(),
-                            // Initial display etc
-                            Null => term.curt().editor.d_range.draw_type = DrawType::All,
-                            _ => term.curt().mbar.set_err(&LANG.unsupported_operation),
-                        },
-
-                        Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => term.curt().editor.cur_up(),
-                        Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => term.curt().editor.cur_down(),
-                        Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), column: x, row: y, .. }) => term.curt().editor.ctrl_mouse(*x as usize, *y as usize, true),
-                        Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), column: x, row: y, .. }) => term.curt().editor.ctrl_mouse(*x as usize, *y as usize, false),
-
-                        _ => term.curt().mbar.set_err(&LANG.unsupported_operation),
+                        KeyCmd::Resize => term.resize(),
+                        // empty
+                        KeyCmd::Null => {
+                            term.curt().editor.d_range.draw_type = DrawType::All;
+                        }
+                        // EscPrompt is when Prompt
+                        KeyCmd::Unsupported | KeyCmd::NoBind | KeyCmd::BackTab | KeyCmd::EscPrompt | KeyCmd::ConfirmPrompt | KeyCmd::FindCaseSensitive | KeyCmd::FindRegex => {
+                            term.curt().mbar.set_err(&LANG.unsupported_operation);
+                        }
                     }
 
-                    if term.curt().state.is_key_record {
+                    if term.curt().state.key_record_state.is_record {
                         term.curt().editor.record_key();
                     }
-                    EvtAct::finalize(&mut term.curt().editor);
-                    term.curt().editor.set_draw_range();
                 }
+                EvtAct::finalize(term);
 
-                // Redraw in case of msg change
-                if term.tabs[term.idx].mbar.is_msg_changed() {
-                    term.curt().editor.d_range.draw_type = DrawType::All;
-                }
                 // When key_record is executed, redraw only at the end
-                if term.curt().editor.d_range.draw_type != DrawType::Not || (term.curt().state.is_key_record_exec == false || term.curt().state.is_key_record_exec == true && term.curt().state.is_key_record_exec_draw == true) {
+                if term.curt().state.key_record_state.is_exec == true && term.curt().state.key_record_state.is_exec_end == false {
+                    return false;
+                }
+                if term.curt().editor.d_range.draw_type != DrawType::Not {
                     term.draw(out);
                 }
             }
@@ -130,18 +134,30 @@ impl EvtAct {
         return false;
     }
 
-    pub fn check_next_process<T: Write>(evt: Event, out: &mut T, term: &mut Terminal) -> EvtActType {
-        match &evt {
-            Resize(_, _) => {
+    pub fn check_next_process<T: Write>(keys: Keys, out: &mut T, term: &mut Terminal) -> EvtActType {
+        // term.curt().editor.evt = evt.clone();
+
+        term.curt().editor.keys = keys;
+        let keywhen = if term.curt().state.is_nomal() { KeyWhen::EditorFocus } else { KeyWhen::PromptFocus };
+        term.curt().editor.keycmd = Keybind::get_keycmd(&keys, keywhen);
+
+        Log::info("term.curt().editor.keycmd", &term.curt().editor.keycmd);
+        term.curt().prom.set_keys(keys);
+
+        match &term.curt().editor.keycmd {
+            KeyCmd::Resize => {
                 if !Terminal::check_displayable() {
                     term.state.is_displayable = false;
                     Terminal::clear_display();
-                    println!("{}", &LANG.increase_height_terminal);
+                    println!("{}", &LANG.increase_height_width_terminal);
                     return EvtActType::Hold;
                 } else {
                     term.state.is_displayable = true;
+                    if term.curt().state.is_open_file {
+                    } else {
+                        return EvtActType::Next;
+                    }
                 }
-                term.set_disp_size();
             }
             _ => {
                 if !term.state.is_displayable {
@@ -149,8 +165,6 @@ impl EvtAct {
                 }
             }
         }
-
-        term.curt().editor.evt = evt;
 
         let evt_act = EvtAct::check_statusbar(term);
         Log::debug("EvtAct::check_statusbar", &evt_act);
@@ -167,17 +181,16 @@ impl EvtAct {
         if EvtAct::check_err_prompt(term) {
             return EvtActType::DrawOnly;
         }
-
         EvtAct::clear_mag(&mut term.tabs[term.idx]);
         EvtAct::clear_tab_comp(&mut term.tabs[term.idx]);
 
-        let evt_act = EvtAct::check_prom(out, term);
+        let evt_act = EvtAct::check_prom(term);
         Log::debug("EvtAct::check_prom", &evt_act);
 
-        if evt_act == EvtActType::Hold && !term.curt().state.grep_info.is_result {
+        if evt_act == EvtActType::Hold && !term.curt().state.grep_state.is_result {
             term.set_disp_size();
             term.curt().mbar.draw_only(out);
-            Prompt::draw_only(out, &term.curt());
+            Prompt::draw_only(out, &mut term.curt());
         }
         return evt_act;
     }
@@ -185,180 +198,95 @@ impl EvtAct {
     pub fn init(term: &mut Terminal) {
         Log::debug_key("EvtAct.init");
 
-        let tab = term.tabs.get_mut(term.idx).unwrap();
-
-        // Initialize of updown_x
-        match tab.editor.evt {
-            //  Down | Up | ShiftDown | ShiftUp
-            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                Down | Up => {}
-                _ => tab.editor.updown_x = 0,
-            },
-            Key(KeyEvent { code, .. }) => match code {
-                Down | Up => {}
-                _ => tab.editor.updown_x = 0,
-            },
-            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => {}
-            Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {}
-            _ => tab.editor.updown_x = 0,
+        // let tab = term.tabs.get_mut(term.idx).unwrap();
+        match term.curt().editor.keycmd {
+            // Up, Down
+            KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorUpSelect | KeyCmd::CursorDownSelect | KeyCmd::MouseScrollUp | KeyCmd::MouseScrollDown => {}
+            _ => term.curt().editor.updown_x = 0,
         }
-        // judgment redraw
-        tab.editor.d_range.draw_type = DrawType::Not;
-        match tab.editor.evt {
-            //  Resize(_, _) => tab.editor.d_range.draw_type = DrawType::All,
-            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                Home | End | Char('c') => tab.editor.d_range.draw_type = DrawType::Not,
-                _ => tab.editor.d_range.draw_type = DrawType::All,
-            },
-            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                Down | Up | Left | Right | Home | End | F(4) => {}
-                _ => tab.editor.d_range.draw_type = DrawType::All,
-            },
-            Key(KeyEvent { modifiers: KeyModifiers::ALT, code }) => match code {
-                Char('w') => tab.editor.d_range.draw_type = DrawType::Not,
-                _ => tab.editor.d_range.draw_type = DrawType::All,
-            },
-            Key(KeyEvent { code, .. }) => match code {
-                Down | Up | Left | Right | Home | End => {
-                    if tab.editor.sel.is_selected() {
-                        tab.editor.d_range.draw_type = DrawType::All;
-                    } else {
-                        if tab.editor.evt == DOWN || tab.editor.evt == UP {
-                            let (y, y_after) = EvtAct::get_up_down_tgt(&tab.editor);
-                            tab.editor.d_range = DRange::new(min(y, y_after), max(y, y_after), DrawType::Target);
-                        } else {
-                            tab.editor.d_range.draw_type = DrawType::MoveCur;
-                        }
-                    };
-                }
-                F(1) => tab.editor.d_range.draw_type = DrawType::All,
-                F(3) => tab.editor.d_range.draw_type = DrawType::All,
-                _ => tab.editor.d_range.draw_type = DrawType::All,
-            },
 
-            // for err msg or selected
-            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) => {
-                if tab.editor.sel.is_selected() {
-                    tab.editor.d_range.draw_type = DrawType::Target;
-                }
-            }
-            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {
-                if tab.editor.sel.is_selected() {
-                    let sel = tab.editor.sel.get_range();
-                    tab.editor.d_range = DRange::new(max(sel.sy, tab.editor.offset_y), sel.ey, DrawType::Target);
-                } else {
-                    let (y, y_after) = EvtAct::get_up_down_tgt(&tab.editor);
-                    tab.editor.d_range = DRange::new(min(y, y_after), max(y, y_after), DrawType::Target);
-                }
-            }
-            _ => tab.editor.d_range.draw_type = DrawType::Not,
-        }
+        Editor::set_draw_range_init(term.curt());
 
         // Edit is_change=true, Clear redo_vec,
-        if term.curt().editor.is_edit_evt(false) {
+        if Keybind::is_edit(term.curt().editor.keycmd, false) {
             term.hbar.file_vec[term.idx].is_changed = true;
-            // FILE_VEC.get().unwrap().try_lock().unwrap()[term.term.tabs[term.tab_idx]_idx].is_changed = true;
             term.curt().editor.history.clear_redo_vec();
         }
 
-        // clear_redo_vec
-        match term.curt().editor.evt {
-            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                Char('x') | Char('v') => term.curt().editor.history.clear_redo_vec(),
-                _ => {}
-            },
-            Key(KeyEvent { code, .. }) => match code {
-                Char(_) | Enter | Backspace | Delete => term.curt().editor.history.clear_redo_vec(),
-                _ => {}
-            },
-            _ => {}
-        }
-        // Msg clear  Other than cursor move
-        match term.curt().editor.evt {
-            Resize(_, _) => {}
-            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, .. }) => term.curt().mbar.clear_mag(),
-            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, .. }) => term.curt().mbar.clear_mag(),
-            Key(KeyEvent { code, .. }) => match code {
-                Down | Up | Left | Right | Home | End => {}
-                _ => term.curt().mbar.clear_mag(),
-            },
-            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => {}
-            Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {}
-            _ => term.curt().mbar.clear_mag(),
-        }
+        term.curt().mbar.clear_mag();
     }
 
-    pub fn finalize(editor: &mut Editor) {
+    pub fn finalize(term: &mut Terminal) {
         Log::debug_key("EvtAct.finalize");
 
         // set sel draw range, Clear sel range
-        match editor.evt {
-            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                Down | Up | Left | Right | Home | End | F(4) => {}
-                _ => editor.sel.clear(),
-            },
-            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                Char('a') | Char('c') => {}
-                _ => editor.sel.clear(),
-            },
-            Key(KeyEvent { code, .. }) => match code {
-                F(3) => {}
-                _ => editor.sel.clear(),
-            },
-            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), .. }) | Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => {}
-            _ => editor.sel.clear(),
+        match term.curt().editor.keycmd {
+            // Shift
+            KeyCmd::CursorUpSelect | KeyCmd::CursorDownSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorLeftSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect | KeyCmd::FindBack => {}
+            // Ctrl
+            KeyCmd::AllSelect => {}
+            // Alt
+            KeyCmd::OpenMenu | KeyCmd::OpenMenuFile | KeyCmd::OpenMenuConvert | KeyCmd::OpenMenuEdit | KeyCmd::OpenMenuSelect => {}
+            // Non modifiers
+            KeyCmd::FindNext => {}
+            // mouse
+            KeyCmd::MouseScrollUp | KeyCmd::MouseScrollDown | KeyCmd::MouseDownLeft(_, _) | KeyCmd::MouseDragLeft(_, _) => {}
+            // other
+            KeyCmd::Resize => {}
+            _ => term.curt().editor.sel.clear(),
         }
 
-        // Refresh search results
-        if editor.is_edit_evt(true) && editor.search.ranges.len() > 0 {
-            editor.search.ranges = editor.get_search_ranges(&editor.search.str, 0, editor.buf.len_chars(), 0);
+        if Keybind::is_edit(term.curt().editor.keycmd, true) && term.curt().editor.search.ranges.len() > 0 {
+            let len_chars = term.curt().editor.buf.len_chars();
+            let search_str = &term.curt().editor.search.str.clone();
+            term.curt().editor.search.ranges = term.curt().editor.get_search_ranges(search_str, 0, len_chars, 0);
+        }
+
+        term.curt().editor.set_draw_range_finalize();
+
+        // Msg changed or
+        if term.curt().mbar.is_msg_changed() {
+            term.set_disp_size();
+
+            // When displaying a message on the cursor line
+            if !term.curt().mbar.msg.str.is_empty() && term.hbar.disp_row_num + term.curt().editor.cur.y - term.curt().editor.offset_y == term.curt().mbar.disp_row_posi {
+                term.curt().editor.scroll();
+            }
+            term.curt().editor.d_range.draw_type = DrawType::All;
+        }
+        // All draw at the end of key record
+        if term.curt().state.key_record_state.is_exec_end == true {
+            term.curt().editor.d_range.draw_type = DrawType::All;
         }
     }
     pub fn check_err(term: &mut Terminal) -> bool {
-        let is_return = false;
-
-        match term.curt().editor.evt {
-            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                // Check if sel range is set
-                Char('x') | Char('c') => {
-                    if !term.curt().editor.sel.is_selected() {
-                        term.curt().mbar.set_err(&LANG.no_sel_range.to_string());
-                        return true;
-                    }
-                }
-                Char('z') => {
-                    if term.curt().editor.history.len_undo() == 0 {
-                        term.curt().mbar.set_err(&LANG.no_undo_operation.to_string());
-                        return true;
-                    }
-                }
-                Char('y') => {
-                    if term.curt().editor.history.len_redo() == 0 {
-                        term.curt().mbar.set_err(&LANG.no_operation_re_exec.to_string());
-                        return true;
-                    }
-                }
-                _ => {}
-            },
-            _ => {}
+        if term.curt().editor.keys == Keys::Unsupported {
+            term.curt().mbar.set_err(&LANG.unsupported_operation.to_string());
+            return true;
         }
 
-        return is_return;
-    }
-
-    fn get_up_down_tgt(editor: &Editor) -> (usize, usize) {
-        let y = editor.cur.y;
-        let y_after = match editor.evt {
-            DOWN | Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => min(y + 1, editor.buf.len_lines() - 1),
-            // UP・ScrollUp
-            _ => {
-                if y == 0 {
-                    0
-                } else {
-                    y - 1
+        match term.curt().editor.keycmd {
+            KeyCmd::CutSelect | KeyCmd::Copy => {
+                if !term.curt().editor.sel.is_selected() {
+                    term.curt().mbar.set_err(&LANG.no_sel_range.to_string());
+                    return true;
                 }
             }
-        };
-        return (y, y_after);
+            KeyCmd::Undo => {
+                if term.curt().editor.history.len_undo() == 0 {
+                    term.curt().mbar.set_err(&LANG.no_undo_operation.to_string());
+                    return true;
+                }
+            }
+            KeyCmd::Redo => {
+                if term.curt().editor.history.len_redo() == 0 {
+                    term.curt().mbar.set_err(&LANG.no_redo_operation.to_string());
+                    return true;
+                }
+            }
+
+            _ => {}
+        }
+        return false;
     }
 }

@@ -1,47 +1,37 @@
-use crate::{colors::*, def::*, global::*, log::*, model::*, prompt::prompt::*, prompt::promptcont::promptcont::*, terminal::*};
-use crossterm::event::{Event::*, KeyCode::*, KeyEvent, KeyModifiers};
+use crate::{
+    _cfg::keys::{KeyCmd, Keybind},
+    colors::*,
+    def::*,
+    global::*,
+    log::*,
+    model::*,
+    prompt::cont::promptcont::*,
+    prompt::prompt::prompt::*,
+    terminal::*,
+};
 use std::cmp::min;
 
 impl EvtAct {
     pub fn search(term: &mut Terminal) -> EvtActType {
-        match term.curt().editor.evt {
-            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, code }) => match code {
-                Char('v') => {
-                    EvtAct::exec_search_incremental(term);
-                    return EvtActType::DrawOnly;
-                }
-                _ => return EvtActType::Hold,
-            },
-            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, code }) => match code {
-                Char(_) => {
-                    EvtAct::exec_search_incremental(term);
-                    return EvtActType::DrawOnly;
-                }
-                F(4) => return EvtAct::exec_search_confirm(term, term.tabs[term.idx].prom.cont_1.buf.iter().collect::<String>()),
-                _ => return EvtActType::Hold,
-            },
-            Key(KeyEvent { code, .. }) => match code {
-                Char(_) | Delete | Backspace => {
-                    EvtAct::exec_search_incremental(term);
-
-                    return EvtActType::DrawOnly;
-                }
-                F(3) => return EvtAct::exec_search_confirm(term, term.tabs[term.idx].prom.cont_1.buf.iter().collect::<String>()),
-                _ => return EvtActType::Hold,
-            },
+        match term.curt().editor.keycmd {
+            KeyCmd::InsertChar(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::Paste | KeyCmd::Undo | KeyCmd::Redo => {
+                EvtAct::exec_search_incremental(term);
+                return EvtActType::DrawOnly;
+            }
+            KeyCmd::FindNext | KeyCmd::FindBack => return EvtAct::exec_search_confirm(term),
             _ => return EvtActType::Hold,
-        }
+        };
     }
 
-    pub fn exec_search_confirm(term: &mut Terminal, search_str: String) -> EvtActType {
+    pub fn exec_search_confirm(term: &mut Terminal) -> EvtActType {
         Log::debug_s("exec_search_confirm");
         let tab = term.tabs.get_mut(term.idx).unwrap();
 
+        let search_str = tab.prom.cont_1.buf.iter().collect::<String>();
         if search_str.len() == 0 {
             tab.mbar.set_err(&LANG.not_entered_search_str);
             return EvtActType::DrawOnly;
         }
-
         let search_vec = tab.editor.get_search_ranges(&search_str.clone(), 0, tab.editor.buf.len_chars(), 0);
         if search_vec.len() == 0 {
             tab.mbar.set_err(&LANG.cannot_find_char_search_for);
@@ -53,8 +43,7 @@ impl EvtAct {
 
             // Set index to initial value
             tab.editor.search.idx = USIZE_UNDEFINED;
-
-            term.clear_curt_tab_status();
+            term.clear_curt_tab();
             return EvtActType::Next;
         }
     }
@@ -67,13 +56,11 @@ impl EvtAct {
         let search_org = term.curt().editor.search.clone();
 
         term.curt().editor.search.ranges = if term.curt().editor.search.str.len() == 0 { vec![] } else { term.tabs[term.idx].editor.get_search_ranges(&term.tabs[term.idx].editor.search.str, s_idx, term.tabs[term.idx].editor.buf.line_to_char(ey), 0) };
-
         if !search_org.ranges.is_empty() || !term.curt().editor.search.ranges.is_empty() {
             // Search in advance for drawing
             if !term.curt().editor.search.ranges.is_empty() {
                 term.curt().editor.search_str(true, true);
             }
-
             term.curt().editor.d_range.draw_type = DrawType::After;
             term.curt().editor.d_range.sy = term.curt().editor.offset_y;
         }
@@ -85,7 +72,7 @@ impl Prompt {
         term.curt().state.is_search = true;
         term.curt().prom.disp_row_num = 4;
         term.set_disp_size();
-        let mut cont = PromptCont::new_edit_type(term.curt().prom.disp_row_posi as u16, PromptContPosi::First);
+        let mut cont = PromptCont::new_edit_type(term.curt(), PromptContPosi::First);
         cont.set_search();
         term.curt().prom.cont_1 = cont;
     }
@@ -98,27 +85,30 @@ impl Prompt {
 impl PromptCont {
     pub fn set_search(&mut self) {
         self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), LANG.set_search);
-        self.key_desc = format!("{}{}:{}F3  {}{}:{}Shift + F4  {}{}:{}Esc{}", Colors::get_default_fg(), &LANG.search_bottom, Colors::get_msg_highlight_fg(), Colors::get_default_fg(), &LANG.search_top, Colors::get_msg_highlight_fg(), Colors::get_default_fg(), &LANG.close, Colors::get_msg_highlight_fg(), Colors::get_default_fg(),);
+        self.key_desc = format!(
+            "{}{}:{}{}  {}{}:{}{}  {}{}:{}{}{}",
+            Colors::get_default_fg(),
+            &LANG.search_bottom,
+            Colors::get_msg_highlight_fg(),
+            Keybind::get_key_str(KeyCmd::FindNext),
+            Colors::get_default_fg(),
+            &LANG.search_top,
+            Colors::get_msg_highlight_fg(),
+            Keybind::get_key_str(KeyCmd::FindBack),
+            Colors::get_default_fg(),
+            &LANG.close,
+            Colors::get_msg_highlight_fg(),
+            Keybind::get_key_str(KeyCmd::EscPrompt),
+            Colors::get_default_fg(),
+        );
 
         self.set_opt_case_sens();
         self.set_opt_regex();
 
-        let base_posi = self.disp_row_posi - 1;
+        let base_posi = self.disp_row_posi;
         self.guide_row_posi = base_posi;
         self.key_desc_row_posi = base_posi + 1;
         self.opt_row_posi = base_posi + 2;
         self.buf_row_posi = base_posi + 3;
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PromSearch {
-    pub cache_search_filenm: String,
-    pub cache_search_folder: String,
-}
-
-impl Default for PromSearch {
-    fn default() -> Self {
-        PromSearch { cache_search_filenm: String::new(), cache_search_folder: String::new() }
     }
 }

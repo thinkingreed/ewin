@@ -24,7 +24,7 @@ impl StatusBar {
         tab.sbar.cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
 
         let sbar_ctr = format!("{}{}{}{}{}", tab.sbar.other_str, tab.sbar.cur_str, Colors::get_sbar_inversion_fg_bg(), &enc_nl, Colors::get_sbar_fg_bg());
-        let sber_all_str = format!("{}{}{}{}{}", MoveTo(0, (tab.sbar.disp_row_posi) as u16), Clear(ClearType::CurrentLine), Colors::get_sbar_fg_bg(), sbar_ctr, Colors::get_default_fg(),);
+        let sber_all_str = format!("{}{}{}{}{}", MoveTo(0, tab.sbar.disp_row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_sbar_fg_bg(), sbar_ctr, Colors::get_default_fg_bg(),);
 
         str_vec.push(sber_all_str);
         Colors::set_text_color(str_vec);
@@ -61,6 +61,7 @@ pub struct StatusBar {
     pub other_str: String,
     // Position on the terminal
     pub disp_row_num: usize,
+    // 0 index
     pub disp_row_posi: usize,
     pub disp_col_num: usize,
     pub cur_area: (usize, usize),

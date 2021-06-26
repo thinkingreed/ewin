@@ -92,6 +92,13 @@ impl TextBuffer {
 
         self.text.slice(s..e).to_string()
     }
+    /*
+    pub fn slice_idx<'a>(&'a self, sel: SelRange) -> (usize, usize) {
+        let s = self.text.line_to_char(sel.sy) + sel.sx;
+        let e = self.text.line_to_char(sel.ey) + sel.ex;
+        (s, e)
+    }
+     */
 
     pub fn chars<'a>(&'a self) -> Chars<'a> {
         self.text.chars()
@@ -112,10 +119,6 @@ impl TextBuffer {
         self.text.char_to_line(i)
     }
 
-    pub fn char_to_byte<'a>(&'a self, i: usize) -> usize {
-        self.text.char_to_byte(i)
-    }
-
     pub fn byte_to_line<'a>(&'a self, i: usize) -> usize {
         self.text.byte_to_line(i)
     }
@@ -128,10 +131,18 @@ impl TextBuffer {
         self.text.byte_to_char(i) - self.text.line_to_char(self.text.byte_to_line(i))
     }
 
-    pub fn search(&self, search_pattern: &str, start_idx: usize, end_idx: usize) -> BTreeSet<(usize, usize)> {
+    /*
+        pub fn convert_range(&mut self, sel: SelRange, func: fn(char) -> char) {
+            let i_s = self.text.line_to_char(sel.sy) + sel.sx;
+            let i_e = self.text.line_to_char(sel.ey) + sel.ex;
+
+            self.text.slice(i_s..i_e).chars().map(func);
+        }
+    */
+    pub fn search(&self, search_pattern: &str, s_idx: usize, e_idx: usize) -> BTreeSet<(usize, usize)> {
         const BATCH_SIZE: usize = 256;
 
-        let mut head = start_idx; // Keep track of where we are between searches
+        let mut head = s_idx; // Keep track of where we are between searches
         let mut rtn_set: BTreeSet<(usize, usize)> = BTreeSet::new();
 
         let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
@@ -141,7 +152,7 @@ impl TextBuffer {
             let mut next_head = 0;
             loop {
                 let mut is_end = true;
-                for (sx, ex) in SearchIter::from_rope_slice(&self.text.slice(head..end_idx), &search_pattern, &cfg_search).take(BATCH_SIZE) {
+                for (sx, ex) in SearchIter::from_rope_slice(&self.text.slice(head..e_idx), &search_pattern, &cfg_search).take(BATCH_SIZE) {
                     rtn_set.insert((sx + head, ex + head));
                     next_head = ex + head;
                     is_end = false;
@@ -158,10 +169,10 @@ impl TextBuffer {
                 Ok(re) => re,
                 Err(_) => return rtn_set,
             };
-            let s_line_idx = self.text.byte_to_line(start_idx);
-            let e_line_idx = self.text.byte_to_line(end_idx);
+            let s_line_idx = self.text.byte_to_line(s_idx);
+            let e_line_idx = self.text.byte_to_line(e_idx);
             let lines = self.text.lines_at(s_line_idx);
-            let mut len_chars_sum = start_idx;
+            let mut len_chars_sum = s_idx;
 
             for (i, line) in lines.enumerate() {
                 let str = String::from(line);
@@ -177,6 +188,14 @@ impl TextBuffer {
         }
 
         rtn_set
+    }
+    pub fn replace_onece(&mut self, replace_str: &str, sel: &SelRange) -> usize {
+        let i_s = self.text.line_to_char(sel.sy) + sel.sx;
+        let i_e = self.text.line_to_char(sel.ey) + sel.ex;
+        let mut set = BTreeSet::new();
+        set.insert((i_s, i_e));
+        let end_char_idx = self.replace(replace_str, &set);
+        return end_char_idx;
     }
 
     pub fn replace(&mut self, replace_str: &str, search_set: &BTreeSet<(usize, usize)>) -> usize {
@@ -196,7 +215,7 @@ impl TextBuffer {
             let match_len = (end - start) as isize;
             idx_diff = idx_diff - match_len + replace_str_len as isize;
 
-            if i == search_set.len() - 1 {
+            if i == search_set.len() - 1 && start + replace_str_len > 0 {
                 end_char_idx = start + replace_str_len - 1;
             }
         }
@@ -207,14 +226,7 @@ impl TextBuffer {
 impl<'a> SearchIter<'a> {
     fn from_rope_slice<'b>(slice: &'b RopeSlice, search_pattern: &'b str, cfg_search: &'b CfgSearch) -> SearchIter<'b> {
         assert!(!search_pattern.is_empty(), "Can't search using an empty search pattern.");
-        SearchIter {
-            char_iter: slice.chars(),
-            search_pattern: search_pattern,
-            search_pattern_char_len: search_pattern.chars().count(),
-            cur_index: 0,
-            possible_matches: Vec::new(),
-            cfg_search: cfg_search,
-        }
+        SearchIter { char_iter: slice.chars(), search_pattern: search_pattern, search_pattern_char_len: search_pattern.chars().count(), cur_index: 0, possible_matches: Vec::new(), cfg_search: cfg_search }
     }
 }
 

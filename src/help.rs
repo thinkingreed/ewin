@@ -1,13 +1,22 @@
-use crate::{colors::*, def::*, global::*, log::*, model::*, terminal::Terminal, util::*};
+use crate::{
+    _cfg::keys::{KeyCmd, Keybind},
+    colors::*,
+    def::*,
+    global::*,
+    log::*,
+    model::*,
+    terminal::Terminal,
+    util::*,
+};
 use crossterm::{cursor::*, terminal::*};
 use unicode_width::UnicodeWidthChar;
 
 impl Help {
     pub const DISP_ROW_NUM: usize = 5;
-    const KEY_WIDTH: usize = 9;
-    const KEY_WIDTH_WIDE: usize = 11;
+    const KEY_WIDTH: usize = 7;
+    const KEY_WIDTH_WIDE: usize = 9;
     const KEY_FUNC_WIDTH: usize = 9;
-    const KEY_FUNC_WIDTH_WIDE: usize = 12;
+    const KEY_FUNC_WIDTH_WIDE: usize = 14;
 
     pub fn new() -> Self {
         return Help { ..Help::default() };
@@ -39,37 +48,39 @@ impl Help {
             return;
         }
         if self.key_bind_vec.is_empty() {
-            let mut vec: Vec<KeyBind> = vec![];
+            let mut vec: Vec<HelpKeybind> = vec![];
 
             // 1st line
-            self.set_key_bind(&mut vec, KEY_CLOSE, &LANG.end);
-            self.set_key_bind(&mut vec, KEY_SAVE, &LANG.save);
-            self.set_key_bind_wide(&mut vec, KEY_COPY, &LANG.copy);
-            self.set_key_bind_wide(&mut vec, KEY_PASTE, &LANG.paste);
+            self.set_key_bind(&mut vec, Keybind::get_key_str(KeyCmd::CloseFile), &LANG.end);
+            self.set_key_bind(&mut vec, Keybind::get_key_str(KeyCmd::SaveFile), &LANG.save);
+            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::Copy), &LANG.copy);
+            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::Paste), &LANG.paste);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 2nd line
-            self.set_key_bind(&mut vec, KEY_UNDO, &LANG.undo);
-            self.set_key_bind(&mut vec, KEY_REDO, &LANG.redo);
-            self.set_key_bind_wide(&mut vec, KEY_SEARCH, &LANG.search);
-            self.set_key_bind_wide(&mut vec, KEY_REPLACE, &LANG.replace);
+            self.set_key_bind(&mut vec, Keybind::get_key_str(KeyCmd::Undo), &LANG.undo);
+            self.set_key_bind(&mut vec, Keybind::get_key_str(KeyCmd::Redo), &LANG.redo);
+            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::Find), &LANG.search);
+            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::Replace), &LANG.replace);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 3rd line
-            self.set_key_bind(&mut vec, KEY_CUT, &LANG.cut);
-            self.set_key_bind(&mut vec, KEY_GREP, &LANG.grep);
-            self.set_key_bind_wide(&mut vec, KEY_RECORD_START, &LANG.key_record_start);
-            self.set_key_bind_wide(&mut vec, KEY_RECORD_STOP, &LANG.key_record_stop);
+            self.set_key_bind(&mut vec, Keybind::get_key_str(KeyCmd::CutSelect), &LANG.cut);
+            self.set_key_bind(&mut vec, Keybind::get_key_str(KeyCmd::Grep), &LANG.grep);
+            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::StartEndRecordKey), &LANG.key_record_start_stop);
+            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::ExecRecordKey), &LANG.key_record_exec);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 4th line
-            self.set_key_bind_ex(&mut vec, KEY_SELECT, &LANG.range_select, KEY_SELECT.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (KEY_SELECT.chars().count() + 1));
-            self.set_key_bind_ex(&mut vec, KEY_MOUSE_SWITCH, &LANG.mouse_switch, KEY_MOUSE_SWITCH.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (KEY_MOUSE_SWITCH.chars().count() + 1));
+            self.set_key_bind_ex(&mut vec, KEY_SELECT.to_string(), &LANG.range_select, KEY_SELECT.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (KEY_SELECT.chars().count() + 1));
+            // self.set_key_bind_ex(&mut vec, KEY_MOUSE_SWITCH, &LANG.mouse_switch, KEY_MOUSE_SWITCH.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (KEY_MOUSE_SWITCH.chars().count() + 1));
+            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::MouseOpeSwitch), &LANG.mouse_switch);
+            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::OpenMenu), &LANG.menu);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 5th line
-            self.set_key_bind_ex(&mut vec, KEY_HELP, &format!("{}{}", &LANG.help, &LANG.end), Help::KEY_FUNC_WIDTH, Help::KEY_WIDTH);
-            self.set_key_bind_ex(&mut vec, HELP_DETAIL, &env!("CARGO_PKG_REPOSITORY").to_string(), HELP_DETAIL.chars().count() + 1, Help::KEY_FUNC_WIDTH_WIDE - HELP_DETAIL.chars().count() + 1);
+            self.set_key_bind_ex(&mut vec, Keybind::get_key_str(KeyCmd::Help), &format!("{}{}", &LANG.help, &LANG.end), Help::KEY_FUNC_WIDTH, Help::KEY_WIDTH);
+            self.set_key_bind_ex(&mut vec, HELP_DETAIL.to_string(), &env!("CARGO_PKG_REPOSITORY").to_string(), HELP_DETAIL.chars().count() + 1, Help::KEY_FUNC_WIDTH_WIDE - HELP_DETAIL.chars().count() + 1);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
         }
@@ -105,14 +116,15 @@ impl Help {
         }
     }
 
-    pub fn set_key_bind(&mut self, vec: &mut Vec<KeyBind>, key: &'static str, func: &String) {
+    pub fn set_key_bind(&mut self, vec: &mut Vec<HelpKeybind>, key: String, func: &String) {
         self.set_key_bind_ex(vec, key, func, Help::KEY_WIDTH, Help::KEY_FUNC_WIDTH);
     }
-    pub fn set_key_bind_wide(&mut self, vec: &mut Vec<KeyBind>, key: &'static str, func: &String) {
+
+    pub fn set_key_bind_wide(&mut self, vec: &mut Vec<HelpKeybind>, key: String, func: &String) {
         self.set_key_bind_ex(vec, key, func, Help::KEY_WIDTH_WIDE, Help::KEY_FUNC_WIDTH_WIDE);
     }
 
-    pub fn set_key_bind_ex(&mut self, vec: &mut Vec<KeyBind>, key: &'static str, func: &String, key_width: usize, key_func_width: usize) {
+    pub fn set_key_bind_ex(&mut self, vec: &mut Vec<HelpKeybind>, key: String, func: &String, key_width: usize, key_func_width: usize) {
         let key = format!("{s:<w$}", s = key, w = key_width);
         let func = format!("{s:^w$}", s = func, w = key_func_width - (get_str_width(&func) - func.chars().count()));
 
@@ -129,12 +141,7 @@ impl Help {
             row_w += key_bind.key_bind_len;
         }
 
-        let key_bind = KeyBind {
-            key: key,
-            funcnm: func,
-            key_bind_len: key_w + func_w,
-            mouse_area: (row_w, row_w + key_w - 1),
-        };
+        let key_bind = HelpKeybind { key: key, funcnm: func, key_bind_len: key_w + func_w, mouse_area: (row_w, row_w + key_w - 1) };
 
         // Log::ep("key_bind", &key_bind.clone());
 
@@ -148,18 +155,13 @@ pub struct Help {
     // Number displayed on the terminal
     pub disp_row_num: usize,
     pub disp_col_num: usize,
+    // 0 index
     pub disp_row_posi: usize,
-    pub key_bind_vec: Vec<Vec<KeyBind>>,
+    pub key_bind_vec: Vec<Vec<HelpKeybind>>,
 }
 impl Default for Help {
     fn default() -> Self {
-        Help {
-            mode: HelpMode::None,
-            disp_col_num: 0,
-            disp_row_num: 0,
-            disp_row_posi: 0,
-            key_bind_vec: vec![],
-        }
+        Help { mode: HelpMode::None, disp_col_num: 0, disp_row_num: 0, disp_row_posi: 0, key_bind_vec: vec![] }
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -170,7 +172,7 @@ pub enum HelpMode {
     None,
 }
 #[derive(Debug, Clone)]
-pub struct KeyBind {
+pub struct HelpKeybind {
     pub key: String,
     pub funcnm: String,
     pub key_bind_len: usize,

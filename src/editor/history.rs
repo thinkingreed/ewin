@@ -1,14 +1,13 @@
-use crate::{def::*, log::*, model::*};
+use crate::{_cfg::keys::KeyCmd, def::*, log::*, model::*};
 use chrono::prelude::Local;
-use crossterm::event::Event;
 
 impl History {
-    pub fn regist_edit(&mut self, evt: Event, ep: &EvtProc) {
-        if evt == UNDO {
+    pub fn regist_edit(&mut self, keydmd: KeyCmd, ep: &EvtProc) {
+        if keydmd == KeyCmd::Undo {
             if let Some(undo_ep) = self.pop_undo() {
                 self.redo_vec.push(undo_ep);
             }
-        } else if evt == REDO {
+        } else if keydmd == KeyCmd::Redo {
             if let Some(redo_ep) = self.pop_redo() {
                 self.undo_vec.push(redo_ep);
             }
@@ -57,7 +56,7 @@ impl History {
         self.redo_vec.len()
     }
 
-    pub fn  count_multi_click(&mut self, evt: &Event) -> usize {
+    pub fn count_multi_click(&mut self, keycmd: &KeyCmd) -> usize {
         let mut click_count = 1;
 
         Log::debug("mouse_click_vec", &self.mouse_click_vec);
@@ -69,8 +68,8 @@ impl History {
         let now = Local::now().naive_local();
 
         if self.mouse_click_vec.len() > 0 {
-            if let Some((one_before, one_before_evt)) = self.mouse_click_vec.get(self.mouse_click_vec.len() - 1) {
-                if evt != one_before_evt || (now - *one_before).num_milliseconds() > MULTI_CLICK_MILLISECONDS {
+            if let Some((one_before, one_before_keycmd)) = self.mouse_click_vec.get(self.mouse_click_vec.len() - 1) {
+                if keycmd != one_before_keycmd || (now - *one_before).num_milliseconds() > MULTI_CLICK_MILLISECONDS {
                     self.mouse_click_vec.clear();
                 }
             }
@@ -79,19 +78,19 @@ impl History {
         if self.mouse_click_vec.len() == 1 {
             if let Some((one_before, _)) = self.mouse_click_vec.get(self.mouse_click_vec.len() - 1) {
                 if (now - *one_before).num_milliseconds() <= MULTI_CLICK_MILLISECONDS {
-                    Log::debug_s("                                           double_click");
+                    Log::debug_key("                             double_click");
                     click_count = 2;
                 }
             }
         } else if self.mouse_click_vec.len() == 2 {
             if let Some((two_before, _)) = self.mouse_click_vec.get(self.mouse_click_vec.len() - 2) {
                 if (now - *two_before).num_milliseconds() <= MULTI_CLICK_MILLISECONDS * 2 {
-                    Log::debug_s("                                           triple_click");
+                    Log::debug_key("                             triple_click");
                     click_count = 3;
                 }
             }
         }
-        self.mouse_click_vec.push_back((now, *evt));
+        self.mouse_click_vec.push_back((now, *keycmd));
 
         return click_count;
     }

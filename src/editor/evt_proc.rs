@@ -9,7 +9,7 @@ impl Editor {
         let mut ep_org = EvtProc::default();
         // selected range delete
         if self.sel.is_selected() {
-            ep_org = EvtProc { evt_type: EvtType::Del, ..EvtProc::default() };
+            ep_org = EvtProc { evt_type: if evt == EvtType::Del { EvtType::Del } else { EvtType::BS }, ..EvtProc::default() };
             ep_org.cur_s = Cur { y: self.sel.sy, x: self.sel.sx, disp_x: self.sel.disp_x_s };
             ep_org.cur_e = self.cur;
             ep_org.str = self.buf.slice(self.sel.get_range());
@@ -17,8 +17,7 @@ impl Editor {
             self.del_sel_range();
             self.sel.clear();
             ep_org.d_range = self.d_range;
-            let evt = self.evt.clone();
-            self.history.regist_edit(evt, &ep_org);
+            self.history.regist_edit(self.keycmd, &ep_org);
         }
 
         // not selected Del, BS, Cut or InsertChar, Paste, Enter
@@ -35,7 +34,7 @@ impl Editor {
 
             match evt {
                 EvtType::Del => self.delete(&mut ep),
-                EvtType::BS => self.back_space(&mut ep),
+                EvtType::BS => self.backspace(&mut ep),
                 EvtType::Enter => self.enter(),
                 EvtType::Cut => self.cut(ep_org.str),
                 EvtType::InsertChar => self.insert_char(str.chars().nth(0).unwrap_or(' ')),
@@ -47,8 +46,7 @@ impl Editor {
             if evt != EvtType::Cut {
                 ep.cur_e = self.cur;
                 ep.d_range = self.d_range;
-                let evt = self.evt.clone();
-                self.history.regist_edit(evt, &ep);
+                self.history.regist_edit(self.keycmd, &ep);
             }
         }
         self.scroll();

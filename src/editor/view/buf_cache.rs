@@ -17,17 +17,19 @@ impl Editor {
         match d_range.draw_type {
             DrawType::Target | DrawType::After | DrawType::ScrollDown | DrawType::ScrollUp => {
                 self.draw.sy = d_range.sy;
-                self.draw.ey = if d_range.draw_type == DrawType::After { min(self.offset_y + self.disp_row_num - 1, self.buf.len_lines() - 1) } else { d_range.ey };
+                self.draw.ey = if d_range.draw_type == DrawType::After { min(self.offset_y + self.disp_row_num - 1, self.buf.len_lines() - 1) } else { min(d_range.ey,self.buf.len_lines() - 1) };
             }
             DrawType::All | DrawType::None => {
                 self.draw.sy = self.offset_y;
-                self.draw.ey = if self.disp_row_num == 0 { 0 } else { min(self.buf.len_lines() - 1, self.offset_y + self.disp_row_num - 1) };
+                self.draw.ey = if self.disp_row_num == 0 { 0 } else { min(self.offset_y + self.disp_row_num - 1,self.buf.len_lines() - 1 ) };
             }
             _ => {}
         }
 
+        let mut is_syntax_highlight_first_draw = false;
         // If highlight is enabled, read the full text first
         if self.is_enable_syntax_highlight && self.draw.syntax_state_vec.len() == 0 {
+            is_syntax_highlight_first_draw = true;
             self.draw.sy = 0;
             self.draw.ey = self.buf.len_lines() - 1;
         }
@@ -38,6 +40,11 @@ impl Editor {
             DrawType::None | DrawType::Target | DrawType::After | DrawType::All | DrawType::ScrollDown | DrawType::ScrollUp => self.set_draw_regions(),
             DrawType::Not | DrawType::MoveCur => {}
         }
+
+        // Correspondence of offset_y > 0 or more in file selection with "grep result"
+        if is_syntax_highlight_first_draw && self.offset_y > 0 {
+            self.draw.sy =  self.offset_y ;
+        }
     }
     fn set_draw_regions(&mut self) {
         let cfg = CFG.get().unwrap().try_lock().unwrap();
@@ -46,7 +53,7 @@ impl Editor {
         for y in self.draw.sy..=self.draw.ey {
             let row_vec = self.buf.char_vec_line(y);
             let sx = if y == self.cur.y { self.offset_x } else { 0 };
-            let ex = min(sx + self.disp_col_num - self.get_rnw() - Editor::RNW_MARGIN, self.buf.len_line_chars(y));
+            let ex = min(sx + self.disp_col_num , self.buf.len_line_chars(y));
 
             if self.is_enable_syntax_highlight {
                 self.set_regions_highlight(&cfg, y, row_vec, sel_ranges, sx, ex);
@@ -86,15 +93,13 @@ impl Editor {
 
         // If the target is highlight at the first display, all lines are read for highlight_state, but Style is only the display line.
         for (style, string) in style_vec {
-            // Log::ep("style ", &style);
-            // Log::ep("string ", &string);
-
+            
             let mut style = CharStyle::from_syntect_style(cfg, style);
 
             for c in string.chars() {
                 width += match c {
                     NEW_LINE_LF | NEW_LINE_CR => 1,
-                    TAB => get_char_width_exec(&c, width, cfg.general.editor.tab.width),
+                    TAB_CHAR => get_char_width_exec(&c, width, cfg.general.editor.tab.width),
                     _ => c.width().unwrap_or(0),
                 };
                 self.set_style(cfg, c, width, y, x, &mut style, &mut style_org, &mut style_type_org, sel_ranges, &mut cells);
@@ -119,11 +124,12 @@ impl Editor {
         for c in row {
             width += match c {
                 NEW_LINE_LF | NEW_LINE_CR => 1,
-                TAB => get_char_width_exec(&c, width, cfg.general.editor.tab.width),
+                TAB_CHAR => get_char_width_exec(&c, width, cfg.general.editor.tab.width),
                 _ => c.width().unwrap_or(0),
             };
             let offset_x = if y == self.cur.y { self.offset_x } else { 0 };
-            self.set_style(cfg, c, width, y, offset_x + x, &CharStyle::normal(cfg), &mut style_org, &mut style_type_org, sel_ranges, &mut cells);
+            let offset_disp_x = if y == self.cur.y { self.offset_disp_x } else { 0 };
+            self.set_style(cfg, c,offset_disp_x + width, y, offset_x + x, &CharStyle::normal(cfg), &mut style_org, &mut style_type_org, sel_ranges, &mut cells);
             x += 1;
         }
         self.draw.cells[y] = cells;
@@ -154,7 +160,7 @@ impl Draw {
     pub fn ctrl_style_type(&self, c: char, width: usize, sel_range: &SelRange, search_ranges: &Vec<SearchRange>, y: usize, x: usize) -> CharStyleType {
         if sel_range.is_selected() && sel_range.sy <= y && y <= sel_range.ey {
             // Lines with the same start and end
-            if (sel_range.sy == sel_range.ey &&  sel_range.disp_x_s < width && width <= sel_range.disp_x_e) 
+            if (sel_range.sy == sel_range.ey &&  sel_range.disp_x_s < width && width <= sel_range.disp_x_e && c != EOF_MARK) 
             // Start line
             || (sel_range.sy == y && sel_range.ey != y && sel_range.disp_x_s < width) 
             // End line
@@ -172,7 +178,7 @@ impl Draw {
             }
         }
         match c {
-            NEW_LINE_LF | TAB => return CharStyleType::CtrlChar,
+            NEW_LINE_LF | TAB_CHAR => return CharStyleType::CtrlChar,
             _ => return CharStyleType::Nomal,
         }
     }

@@ -1,74 +1,53 @@
-use crate::{def::*, global::*, log::*, model::*, prompt::prompt::Prompt, tab::Tab, terminal::*, util::*};
-use std::{collections::BTreeSet, iter::FromIterator, sync::Mutex};
+use crate::{_cfg::keys::KeyCmd, clipboard::*, def::*, global::*, log::*, model::*, prompt::prompt::prompt::*, tab::Tab, terminal::*, util::*};
+use std::collections::BTreeSet;
 
 impl Editor {
     pub fn all_select(&mut self) {
         self.sel.clear();
         self.sel.set_s(0, 0, 0);
         let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.buf.len_lines() - 1)[..], self.offset_disp_x, false);
+        // -1 for EOF
         self.sel.set_e(self.buf.len_lines() - 1, cur_x, width);
         self.d_range.draw_type = DrawType::All;
     }
 
     pub fn cut(&mut self, cut_str: String) {
-        Log::debug_s("              cut");
+        Log::debug_key("cut");
         // self.sel = ep.sel.clone();
-        self.copy_str(cut_str.clone());
+        set_clipboard(cut_str.clone());
         // self.sel.clear();
         self.d_range.draw_type = DrawType::All;
     }
 
-    pub fn copy_str(&mut self, str: String) {
-        let copy_string = if *ENV == Env::WSL && *IS_POWERSHELL_ENABLE { self.get_wsl_str(&str) } else { str };
-
-        self.set_clipboard(&copy_string);
-    }
-
     pub fn copy(&mut self) {
-        Log::debug_s("              copy");
+        Log::debug_key("copy");
 
         let str = self.buf.slice(self.sel.get_range());
-        self.copy_str(str)
-    }
-
-    // WSL:powershell.clipboard
-    // enclose the string in "’ "
-    // new line are ","
-    // Empty line is an empty string
-    fn get_wsl_str(&mut self, str: &String) -> String {
-        let mut copy_str: String = String::new();
-        let str = str.replace(NEW_LINE_CRLF, &NEW_LINE_LF.to_string());
-        let vec = Vec::from_iter(str.split(NEW_LINE_LF).map(String::from));
-        for (i, s) in vec.iter().enumerate() {
-            let ss = if *s == "" { "''".to_string() } else { format!("'{}'", s) };
-            copy_str.push_str(ss.as_str());
-            if i != vec.len() - 1 {
-                copy_str.push_str(",");
-            }
-        }
-        copy_str
+        set_clipboard(str);
     }
 
     pub fn paste(&mut self, ep: &mut EvtProc) {
-        Log::debug_s("              paste");
+        Log::debug_key("paste");
 
         if self.is_enable_syntax_highlight {
             self.d_range.draw_type = DrawType::All;
         } else {
             self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::After);
         }
-        // if self.evt == PASTE {
-        let mut clipboard = self.get_clipboard().unwrap_or("".to_string());
-        change_nl(&mut clipboard, &self.h_file);
-        ep.str = clipboard;
-        // }
+
+        // for Not Undo
+        if self.keycmd == KeyCmd::Paste {
+            let mut clipboard = get_clipboard().unwrap_or("".to_string());
+            change_nl(&mut clipboard, &self.h_file);
+            ep.str = clipboard;
+        }
         ep.sel.set_s(self.cur.y, self.cur.x, self.cur.disp_x);
         self.insert_str(&ep.str);
         ep.sel.set_e(self.cur.y, self.cur.x, self.cur.disp_x);
     }
 
     pub fn insert_str(&mut self, str: &str) {
-        Log::debug_s("              insert_str");
+        Log::debug_key("insert_str");
 
         self.buf.insert(self.cur.y, self.cur.x, str);
         let insert_strs: Vec<&str> = str.split(NEW_LINE_LF).collect();
@@ -77,7 +56,7 @@ impl Editor {
         self.cur.y += insert_strs.len() - 1;
 
         let x = if insert_strs.len() == 1 { self.cur.x + last_str_len } else { last_str_len };
-        self.set_cur_target_ex(self.cur.y, x, false);
+        self.set_cur_target(self.cur.y, x, false);
 
         self.scroll();
         self.scroll_horizontal();
@@ -93,7 +72,7 @@ impl Editor {
     pub fn ctrl_end(&mut self) {
         let y = self.buf.len_lines() - 1;
         let len_line_chars = self.buf.len_line_chars(y);
-        self.set_cur_target_ex(y, len_line_chars, false);
+        self.set_cur_target(y, len_line_chars, false);
         self.scroll();
         self.scroll_horizontal();
         if self.updown_x == 0 {
@@ -119,7 +98,7 @@ impl Editor {
 
             if !is_incremental {
                 let range = self.search.ranges[self.search.idx];
-                self.set_cur_target_ex(range.y, range.sx, false);
+                self.set_cur_target(range.y, range.sx, false);
             }
 
             self.scroll();
@@ -190,26 +169,15 @@ impl Editor {
     }
 
     pub fn replace(&mut self, ep: &mut EvtProc) {
-        Log::debug_s("              replace");
-
-        // Nomal REPLACE
-        let search_set = if self.evt == ENTER {
-            REPLACE_SEARCH_RANGE.get().unwrap().try_lock().unwrap().clone()
-        } else if self.evt == UNDO {
-            REPLACE_REPLACE_RANGE.get().unwrap().try_lock().unwrap().clone()
-        // REDO
-        } else {
-            REPLACE_SEARCH_RANGE.get().unwrap().try_lock().unwrap().clone()
-        };
-
+        let search_set = if self.keycmd == KeyCmd::InsertLine || self.keycmd == KeyCmd::Redo { REPLACE_SEARCH_RANGE.get().unwrap().try_lock().unwrap().pop().unwrap() } else { REPLACE_REPLACE_RANGE.get().unwrap().try_lock().unwrap().pop().unwrap() };
         let end_char_idx = self.buf.replace(&ep.str_replace, &search_set);
-        if self.evt == ENTER {
-            let diff: isize = (ep.str_replace.chars().count() - ep.str.chars().count()) as isize;
-            let mut replace_set: BTreeSet<(usize, usize)> = BTreeSet::new();
-            for (sx, ex) in &search_set {
-                replace_set.insert((*sx, (*ex as isize + diff) as usize));
-            }
-            let _ = REPLACE_REPLACE_RANGE.set(Mutex::new(replace_set));
+
+        let replace_set = self.get_replace_set(&ep.str, &ep.str_replace, &search_set);
+
+        if self.keycmd == KeyCmd::InsertLine || self.keycmd == KeyCmd::Redo {
+            REPLACE_REPLACE_RANGE.get().unwrap().try_lock().unwrap().push(replace_set);
+        } else if self.keycmd == KeyCmd::Undo {
+            REPLACE_SEARCH_RANGE.get().unwrap().try_lock().unwrap().push(replace_set);
         }
 
         if self.is_enable_syntax_highlight {
@@ -219,70 +187,44 @@ impl Editor {
         }
         let y = self.buf.char_to_line(end_char_idx);
         let x = end_char_idx - self.buf.line_to_char(y) + 1;
-        self.set_cur_target_ex(y, x, false);
+        self.set_cur_target(y, x, false);
         self.scroll();
         self.scroll_horizontal();
     }
 
-    pub fn set_grep_result(&mut self) {
-        self.rnw = if self.mode == TermMode::Normal { self.buf.len_lines().to_string().len() } else { 0 };
-        self.cur = Cur { y: self.buf.len_lines() - 1, x: 0, disp_x: 0 };
-
-        self.scroll();
-
-        // -2 is a line break for each line
-        let line_str = self.buf.char_vec_line(self.buf.len_lines() - 2).iter().collect::<String>();
-
-        // Pattern
-        //   text.txt:100:string
-        //   grep:text.txt:No permission
-        let vec: Vec<&str> = line_str.splitn(3, ":").collect();
-
-        if vec.len() > 2 && vec[0] != "grep" {
-            let ignore_prefix_str = format!("{}:{}:", vec[0], vec[1]);
-
-            let regex = CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex;
-            let row = self.buf.len_lines() - 2;
-
-            let (start_idx, end_idx, ignore_prefix_len) = match regex {
-                true => (self.buf.line_to_byte(row), self.buf.len_bytes(), ignore_prefix_str.len()),
-                false => (self.buf.line_to_char(row), self.buf.len_chars(), ignore_prefix_str.chars().count()),
-            };
-
-            let mut search_vec: Vec<SearchRange> = self.get_search_ranges(&self.search.str, start_idx, end_idx, ignore_prefix_len);
-
-            self.search.ranges.append(&mut search_vec);
+    pub fn get_replace_set(&mut self, search_str: &String, replace_str: &String, org_set: &BTreeSet<(usize, usize)>) -> BTreeSet<(usize, usize)> {
+        let diff: isize = replace_str.chars().count() as isize - search_str.chars().count() as isize;
+        let replace_str_len = replace_str.chars().count();
+        let mut replace_set: BTreeSet<(usize, usize)> = BTreeSet::new();
+        let mut total = 0;
+        for (i, (sx, _)) in org_set.iter().enumerate() {
+            let sx = if i == 0 { *sx as isize } else { *sx as isize + total };
+            replace_set.insert((sx as usize, sx as usize + replace_str_len));
+            total += diff;
         }
-
-        if vec.len() > 1 {
-            let result: Result<usize, _> = vec[1].parse();
-
-            let grep_result = match result {
-                // text.txt:100:string
-                Ok(row_num) => GrepResult::new(vec[0].to_string(), row_num),
-                // grep:text.txt:No permission
-                Err(_) => GrepResult::new(vec[1].to_string().as_str().trim().to_string(), USIZE_UNDEFINED),
-            };
-            self.grep_result_vec.push(grep_result);
-        }
+        return replace_set;
     }
 
     pub fn undo(&mut self) {
-        Log::debug_s("              undo");
+        Log::debug_key("undo");
 
         if let Some(ep) = self.history.get_undo_last() {
             Log::debug("EvtProc", &ep);
             // initial cursor posi set
             match ep.evt_type {
-                EvtType::Cut | EvtType::Del | EvtType::InsertChar | EvtType::Paste | EvtType::Replace => self.set_evtproc(&ep, &ep.cur_s),
-                EvtType::BS => {
+                EvtType::Cut | EvtType::InsertChar | EvtType::Paste | EvtType::Replace => self.set_evtproc(&ep, &ep.cur_s),
+                EvtType::Enter => self.set_evtproc(&ep, &ep.cur_s),
+                EvtType::Del | EvtType::BS => {
                     if ep.sel.is_selected() {
-                        self.set_evtproc(&ep, &ep.cur_s);
+                        self.set_evtproc(&ep, if ep.cur_s.x > ep.cur_e.x { &ep.cur_e } else { &ep.cur_s });
                     } else {
-                        self.set_evtproc(&ep, &ep.cur_e);
+                        if ep.evt_type == EvtType::Del {
+                            self.set_evtproc(&ep, &ep.cur_s);
+                        } else {
+                            self.set_evtproc(&ep, &ep.cur_e);
+                        }
                     }
                 }
-                EvtType::Enter => self.set_evtproc(&ep, &ep.cur_e),
                 _ => {}
             }
             // exec
@@ -293,7 +235,7 @@ impl Editor {
                     self.sel = ep.sel;
                     self.exec_edit_proc(EvtType::Del, "", "");
                 }
-                EvtType::Enter => self.exec_edit_proc(EvtType::BS, "", ""),
+                EvtType::Enter => self.exec_edit_proc(EvtType::Del, "", ""),
                 EvtType::Del | EvtType::BS | EvtType::Cut => self.exec_edit_proc(EvtType::Paste, &ep.str, ""),
                 EvtType::Replace => {
                     self.exec_edit_proc(EvtType::Replace, &ep.str_replace, &ep.str);
@@ -303,13 +245,30 @@ impl Editor {
                 _ => {}
             }
 
+            match ep.evt_type {
+                EvtType::Del => {
+                    if ep.sel.is_selected() {
+                        self.set_evtproc(&ep, if ep.cur_s.x > ep.cur_e.x { &ep.cur_s } else { &ep.cur_e });
+                    } else {
+                        self.set_evtproc(&ep, &ep.cur_s);
+                    }
+                }
+                EvtType::BS => {
+                    if ep.sel.is_selected() {
+                        self.set_evtproc(&ep, &ep.cur_e);
+                    }
+                }
+
+                _ => {}
+            }
+
             self.scroll();
             self.scroll_horizontal();
         }
     }
 
     pub fn redo(&mut self) {
-        Log::debug_s("              　redo");
+        Log::debug_key("　redo");
 
         if let Some(ep) = self.history.get_redo_last() {
             Log::debug("EvtProc", &ep);
@@ -334,9 +293,6 @@ impl Editor {
 
 impl Tab {
     pub fn save(term: &mut Terminal) -> bool {
-        if term.curt().prom.cont_1.buf.len() > 0 {
-            term.hbar.file_vec[term.idx].filenm = term.curt().prom.cont_1.buf.iter().collect::<String>();
-        }
         let filenm = term.hbar.file_vec[term.idx].filenm.clone();
         if filenm == LANG.new_file {
             Prompt::save_new_file(term);
@@ -344,13 +300,12 @@ impl Tab {
         } else {
             let h_file = &term.hbar.file_vec[term.idx];
             Log::info_s(&format!("Save {}, file info {:?}", &filenm, &h_file));
-            let result = term.tabs[term.idx].editor.buf.write_to(&filenm, &h_file);
+            let result = term.tabs[term.idx].editor.buf.write_to(&h_file.fullpath, &h_file);
             match result {
                 Ok(enc_errors) => {
                     if enc_errors {
                         Log::info("Encoding errors", &enc_errors);
                         term.curt().mbar.set_err(&LANG.cannot_convert_encoding);
-                        return true;
                     } else {
                         term.hbar.file_vec[term.idx].is_changed = false;
                         term.curt().prom.clear();
@@ -359,8 +314,7 @@ impl Tab {
                             term.curt().state.clear();
                         }
                         Log::info("Saved file", &filenm.as_str());
-
-                        return false;
+                        return true;
                     }
                 }
                 Err(err) => {

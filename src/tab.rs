@@ -1,4 +1,4 @@
-use crate::{bar::msgbar::*, bar::statusbar::*, model::*, prompt::prompt::*};
+use crate::{bar::msgbar::*, bar::statusbar::*, model::*, prompt::prompt::prompt::*};
 use std::fmt;
 
 impl Tab {
@@ -19,25 +19,44 @@ impl TabState {
         self.is_search = false;
         self.is_replace = false;
         self.is_save_new_file = false;
-        self.is_move_line = false;
+        self.is_move_row = false;
         self.is_open_file = false;
         self.is_enc_nl = false;
+        self.is_menu = false;
     }
+
     pub fn clear_grep_info(&mut self) {
-        self.grep_info.clear();
+        self.grep_state.clear();
     }
-    pub fn is_normal(&self) -> bool {
-        if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_line || self.is_key_record || self.is_key_record_exec || self.is_key_record_exec_draw || self.is_read_only || self.is_open_file || self.grep_info.is_grep || self.grep_info.is_result || self.is_enc_nl || self.is_menu {
+
+    pub fn is_nomal(&self) -> bool {
+        if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_row || self.is_read_only || self.is_open_file || self.grep_state.is_grep || self.grep_state.is_result || self.is_enc_nl || self.is_menu {
             return false;
         }
         return true;
     }
-    pub fn is_exists_input_field(&self) -> bool {
-        if self.is_save_new_file || self.is_search || self.is_replace || self.grep_info.is_grep || self.is_move_line || self.is_open_file {
+
+    pub fn is_editor_cur(&self) -> bool {
+        if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_row || self.is_open_file || self.grep_state.is_grep || self.is_enc_nl || self.is_menu {
+            return false;
+        }
+        return true;
+    }
+
+    pub fn is_prom_show_cur(&self) -> bool {
+        if self.is_exists_input_field() || self.is_exists_choice() {
             return true;
         }
         return false;
     }
+
+    pub fn is_exists_input_field(&self) -> bool {
+        if self.is_save_new_file || self.is_search || self.is_replace || self.grep_state.is_grep || self.is_move_row || self.is_open_file {
+            return true;
+        }
+        return false;
+    }
+
     pub fn is_exists_choice(&self) -> bool {
         if self.is_enc_nl || self.is_menu {
             return true;
@@ -60,14 +79,13 @@ pub struct TabState {
     pub is_search: bool,
     pub is_replace: bool,
     pub is_save_new_file: bool,
-    pub is_move_line: bool,
-    pub is_key_record: bool,
-    pub is_key_record_exec: bool,
-    pub is_key_record_exec_draw: bool,
+    pub is_move_row: bool,
+    //  pub is_key_record: bool,
     pub is_read_only: bool,
     pub is_open_file: bool,
     pub is_enc_nl: bool,
-    pub grep_info: GrepInfo,
+    pub grep_state: GrepState,
+    pub key_record_state: KeyRecordState,
     pub is_menu: bool,
 }
 
@@ -78,14 +96,12 @@ impl Default for TabState {
             is_search: false,
             is_replace: false,
             is_save_new_file: false,
-            is_move_line: false,
-            is_key_record: false,
-            is_key_record_exec: false,
-            is_key_record_exec_draw: false,
+            is_move_row: false,
             is_read_only: false,
             is_open_file: false,
             is_enc_nl: false,
-            grep_info: GrepInfo::default(),
+            key_record_state: KeyRecordState::default(),
+            grep_state: GrepState::default(),
             is_menu: false,
         }
     }

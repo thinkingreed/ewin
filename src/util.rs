@@ -59,7 +59,7 @@ pub fn get_until_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
 
 // Everything including tab
 pub fn get_char_width(c: &char, width: usize) -> usize {
-    if c == &TAB {
+    if c == &TAB_CHAR {
         let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
         return get_char_width_exec(c, width, cfg_tab_width);
     } else {
@@ -68,7 +68,7 @@ pub fn get_char_width(c: &char, width: usize) -> usize {
 }
 // Everything including tab
 pub fn get_char_width_exec(c: &char, width: usize, cfg_tab_width: usize) -> usize {
-    if c == &TAB {
+    if c == &TAB_CHAR {
         return cfg_tab_width - width % cfg_tab_width;
     } else {
         return c.width().unwrap_or(0);
@@ -89,11 +89,8 @@ pub fn get_env_platform() -> Env {
     let mut buf = String::new();
     stdout.read_to_string(&mut buf).unwrap();
 
-    if buf.to_ascii_lowercase().contains("microsoft") {
-        return Env::WSL;
-    } else {
-        return Env::Linux;
-    }
+    let env = if buf.to_ascii_lowercase().contains("microsoft") { Env::WSL } else { Env::Linux };
+    return env;
 }
 #[cfg(target_os = "windows")]
 pub fn get_env_platform() -> Env {
@@ -110,6 +107,11 @@ pub fn is_powershell_enable() -> bool {
         };
     }
     return rtn;
+}
+
+pub fn change_output_encoding() {
+    let result = Command::new("powershell.exe").arg("chcp 65001").stdout(Stdio::null()).stdin(Stdio::null()).stderr(Stdio::null()).spawn();
+    Log::debug("change_output_encoding result", &result);
 }
 
 pub fn is_line_end(c: char) -> bool {
@@ -183,7 +185,7 @@ pub fn split_inclusive(target: &str, split_char: char) -> Vec<String> {
     return vec;
 }
 pub fn get_tab_comp_files(target_path: String, is_dir_only: bool, is_full_path_filenm: bool) -> Vec<File> {
-    Log::debug_s("              get_tab_comp_files");
+    Log::debug_key("get_tab_comp_files");
 
     // Search target dir
     let mut base_dir = ".".to_string();
@@ -210,7 +212,8 @@ pub fn get_tab_comp_files(target_path: String, is_dir_only: bool, is_full_path_f
                     if !is_full_path_filenm {
                         filenm = path.path().file_name().unwrap().to_string_lossy().to_string();
                     }
-                    rtn_vec.push(File { name: filenm, is_dir: path.metadata().unwrap().is_dir() });
+                    let is_dir = if path.metadata().is_ok() { path.metadata().unwrap().is_dir() } else { true };
+                    rtn_vec.push(File { name: filenm, is_dir: is_dir });
                 }
             }
         }
@@ -221,7 +224,8 @@ pub fn get_tab_comp_files(target_path: String, is_dir_only: bool, is_full_path_f
 pub fn get_dir_path(path_str: &String) -> String {
     let mut vec = split_inclusive(path_str, MAIN_SEPARATOR);
     // Deleted when characters were entered
-    if vec.last().unwrap() != &MAIN_SEPARATOR.to_string() {
+
+    if !vec.is_empty() && vec.last().unwrap() != &MAIN_SEPARATOR.to_string() {
         vec.pop();
     }
     return vec.join("");

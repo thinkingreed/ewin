@@ -1,37 +1,42 @@
-use super::{grep::PromGrep, open_file::PromOpenFile, search::PromSearch};
-use crate::{def::*, log::*, model::*, prompt::promptcont::promptcont::PromptContPosi::*, prompt::promptcont::promptcont::*, tab::TabState, tab::*, util::*};
-use crossterm::{cursor::*, event::*, terminal::ClearType::*, terminal::*};
+use crate::{
+    _cfg::keys::{KeyCmd, KeyWhen, Keybind, Keys},
+    def::*,
+    log::*,
+    model::*,
+    prompt::{
+        cont::{promptcont::PromptContPosi::*, promptcont::*},
+        grep::*,
+        menu::*,
+        open_file::*,
+        save_new_file::*,
+    },
+    tab::*,
+    util::*,
+};
+use crossterm::{cursor::*, terminal::ClearType::*, terminal::*};
 use std::{
     fmt,
     io::{stdout, BufWriter, Write},
     path::{self, Path},
+    u16,
 };
 
 impl Prompt {
-    pub const CHOICE_ITEM_MARGIN: usize = 2;
-
-    pub fn draw(&self, str_vec: &mut Vec<String>, tab_state: &TabState) {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>, tab_state: &TabState) {
         Log::info_key("Prompt.draw");
 
         if self.cont_1.guide.len() > 0 {
             Prompt::set_draw_vec(str_vec, self.cont_1.guide_row_posi, &self.cont_1.guide);
             Prompt::set_draw_vec(str_vec, self.cont_1.key_desc_row_posi, &self.cont_1.key_desc);
 
-            if tab_state.is_save_new_file || tab_state.is_move_line {
+            if tab_state.is_save_new_file || tab_state.is_move_row {
                 Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
             } else if tab_state.is_search {
                 self.draw_search(str_vec);
-            } else if tab_state.is_replace || tab_state.grep_info.is_grep {
-                Prompt::set_draw_vec(str_vec, self.cont_1.opt_row_posi, &self.get_serach_opt());
-                Prompt::set_draw_vec(str_vec, self.cont_1.buf_desc_row_posi, &self.cont_1.buf_desc.clone());
-                Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
-                Prompt::set_draw_vec(str_vec, self.cont_2.buf_desc_row_posi, &self.cont_2.buf_desc);
-                Prompt::set_draw_vec(str_vec, self.cont_2.buf_row_posi, &self.cont_2.get_draw_buf_str());
-
-                if tab_state.grep_info.is_grep {
-                    Prompt::set_draw_vec(str_vec, self.cont_3.buf_desc_row_posi, &self.cont_3.buf_desc);
-                    Prompt::set_draw_vec(str_vec, self.cont_3.buf_row_posi, &self.cont_3.get_draw_buf_str());
-                }
+            } else if tab_state.grep_state.is_grep {
+                self.draw_grep(str_vec);
+            } else if tab_state.is_replace {
+                self.draw_replace(str_vec);
             } else if tab_state.is_open_file {
                 self.draw_open_file(str_vec);
             } else if tab_state.is_enc_nl {
@@ -39,7 +44,6 @@ impl Prompt {
             } else if tab_state.is_menu {
                 self.draw_menu(str_vec);
             }
-
             let out = stdout();
             let mut out = BufWriter::new(out.lock());
             let _ = out.write(&str_vec.concat().as_bytes());
@@ -58,7 +62,7 @@ impl Prompt {
         str_vec.push(format!("{}{}{}", MoveTo(0, posi), Clear(CurrentLine), str));
     }
 
-    pub fn draw_only<T: Write>(out: &mut T, tab: &Tab) {
+    pub fn draw_only<T: Write>(out: &mut T, tab: &mut Tab) {
         Log::debug_key("Prompt.draw_only");
         let mut v: Vec<String> = vec![];
         tab.prom.draw(&mut v, &tab.state);
@@ -90,14 +94,14 @@ impl Prompt {
         }
     }
 
-    pub fn cursor_down(&mut self, tab_state: &TabState) {
-        Log::debug_s("              cursor_down");
-        if tab_state.is_replace {
+    pub fn cursor_down(&mut self, state: &TabState) {
+        Log::debug_key("cursor_down");
+        if state.is_replace {
             if self.prom_cont_posi == PromptContPosi::First {
                 self.prom_cont_posi = PromptContPosi::Second;
                 Prompt::set_cur(&self.cont_1, &mut self.cont_2)
             }
-        } else if tab_state.grep_info.is_grep {
+        } else if state.grep_state.is_grep {
             if self.prom_cont_posi == PromptContPosi::First {
                 self.prom_cont_posi = PromptContPosi::Second;
                 Prompt::set_cur(&self.cont_1, &mut self.cont_2)
@@ -108,13 +112,13 @@ impl Prompt {
         }
     }
 
-    pub fn cursor_up(&mut self, tab_state: &TabState) {
-        if tab_state.is_replace {
+    pub fn cursor_up(&mut self, state: &TabState) {
+        if state.is_replace {
             if self.prom_cont_posi == PromptContPosi::Second {
                 self.prom_cont_posi = PromptContPosi::First;
                 Prompt::set_cur(&self.cont_2, &mut self.cont_1)
             }
-        } else if tab_state.grep_info.is_grep {
+        } else if state.grep_state.is_grep {
             if self.prom_cont_posi == PromptContPosi::Second {
                 self.prom_cont_posi = PromptContPosi::First;
                 Prompt::set_cur(&self.cont_2, &mut self.cont_1)
@@ -138,22 +142,22 @@ impl Prompt {
         self.cont_3.sel.clear();
     }
 
-    pub fn ctrl_mouse(&mut self, x: u16, y: u16, state: &TabState, is_mouse_left_down: bool) {
-        Log::debug_s("              PromptCont.ctrl_mouse");
+    pub fn ctrl_mouse(&mut self, state: &TabState, y: usize, x: usize, is_left_down: bool) {
+        Log::debug_key("PromptCont.ctrl_mouse");
 
-        if y == self.cont_1.buf_row_posi {
+        if y as u16 == self.cont_1.buf_row_posi {
             self.prom_cont_posi = PromptContPosi::First;
             if !state.is_open_file {
-                self.cont_1.ctrl_mouse(x, y, is_mouse_left_down);
+                self.cont_1.ctrl_mouse(x, y, is_left_down);
             }
-        } else if y == self.cont_2.buf_row_posi {
+        } else if y as u16 == self.cont_2.buf_row_posi {
             if !state.is_open_file {
                 self.prom_cont_posi = PromptContPosi::Second;
-                self.cont_2.ctrl_mouse(x, y, is_mouse_left_down);
+                self.cont_2.ctrl_mouse(x, y, is_left_down);
             }
-        } else if y == self.cont_3.buf_row_posi {
+        } else if y as u16 == self.cont_3.buf_row_posi {
             self.prom_cont_posi = PromptContPosi::Third;
-            self.cont_3.ctrl_mouse(x, y, is_mouse_left_down);
+            self.cont_3.ctrl_mouse(x, y, is_left_down);
         }
     }
 
@@ -189,49 +193,69 @@ impl Prompt {
             _ => {}
         }
     }
-    pub fn insert_char(&mut self, c: char, rnw: usize, state: &TabState) {
+    pub fn insert_char(&mut self, c: char) {
         match self.prom_cont_posi {
-            First => self.cont_1.insert_char(c, state.is_move_line, rnw),
-            Second => self.cont_2.insert_char(c, state.is_move_line, rnw),
-            Third => self.cont_3.insert_char(c, state.is_move_line, rnw),
-            _ => {}
-        }
-    }
-    pub fn paste(&mut self, clipboard: &String) {
-        match &self.prom_cont_posi {
-            First => self.cont_1.paste(clipboard),
-            Second => self.cont_2.paste(clipboard),
-            Third => self.cont_3.paste(clipboard),
+            First => self.cont_1.exec_edit_proc(EvtType::InsertChar, &c.to_string()),
+            Second => self.cont_2.exec_edit_proc(EvtType::InsertChar, &c.to_string()),
+            Third => self.cont_3.exec_edit_proc(EvtType::InsertChar, &c.to_string()),
             _ => {}
         }
     }
 
-    pub fn operation(&mut self, code: KeyCode) {
+    pub fn undo(&mut self) {
+        match self.prom_cont_posi {
+            First => self.cont_1.undo(),
+            Second => self.cont_2.undo(),
+            Third => self.cont_3.undo(),
+            _ => {}
+        }
+    }
+    pub fn redo(&mut self) {
+        match self.prom_cont_posi {
+            First => self.cont_1.redo(),
+            Second => self.cont_2.redo(),
+            Third => self.cont_3.redo(),
+            _ => {}
+        }
+    }
+
+    pub fn operation(&mut self) {
+        Log::debug_s("PromptCont.operation");
+
+        let cont = match &self.prom_cont_posi {
+            First => &mut self.cont_1,
+            Second => &mut self.cont_2,
+            Third => &mut self.cont_3,
+            Fourth => &mut self.cont_4,
+        };
         if self.prom_open_file.vec_y != PromOpenFile::PATH_INPUT_FIELD {
-            if code == KeyCode::Left || code == KeyCode::Right {
+            if cont.keycmd == KeyCmd::CursorLeft || cont.keycmd == KeyCmd::CursorRight {
                 return;
             }
         }
-        match &self.prom_cont_posi {
-            First => self.cont_1.operation(code),
-            Second => self.cont_2.operation(code),
-            Third => self.cont_3.operation(code),
+
+        match cont.keycmd {
+            KeyCmd::Paste => cont.exec_edit_proc(EvtType::Paste, ""),
+            KeyCmd::CutSelect => cont.exec_edit_proc(EvtType::Cut, ""),
+            KeyCmd::DeleteNextChar => cont.exec_edit_proc(EvtType::Del, ""),
+            KeyCmd::DeletePrevChar => cont.exec_edit_proc(EvtType::BS, ""),
+            KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd => cont.operation(),
             _ => {}
         }
     }
 
-    pub fn tab(&mut self, is_asc: bool, tab_state: &TabState) {
-        if tab_state.is_replace {
+    pub fn tab(&mut self, is_asc: bool, state: &TabState) {
+        if state.is_replace {
             match self.prom_cont_posi {
-                PromptContPosi::First => self.cursor_down(tab_state),
-                PromptContPosi::Second => self.cursor_up(tab_state),
+                PromptContPosi::First => self.cursor_down(state),
+                PromptContPosi::Second => self.cursor_up(state),
                 _ => {}
             }
-        } else if tab_state.grep_info.is_grep {
+        } else if state.grep_state.is_grep {
             match self.prom_cont_posi {
                 PromptContPosi::First => {
                     if is_asc {
-                        self.cursor_down(tab_state);
+                        self.cursor_down(state);
                     } else {
                         self.prom_cont_posi = PromptContPosi::Third;
                         Prompt::set_cur(&self.cont_1, &mut self.cont_3);
@@ -239,9 +263,9 @@ impl Prompt {
                 }
                 PromptContPosi::Second => {
                     if is_asc {
-                        self.cursor_down(tab_state);
+                        self.cursor_down(state);
                     } else {
-                        self.cursor_up(tab_state);
+                        self.cursor_up(state);
                     }
                 }
                 PromptContPosi::Third => {
@@ -254,18 +278,36 @@ impl Prompt {
                 }
                 _ => {}
             }
-        } else if tab_state.is_open_file {
+        } else if state.is_save_new_file {
             let str = self.cont_1.buf[..self.cont_1.cur.x].iter().collect::<String>();
+            self.cont_1.buf = self.prom_save_new_file.tab_comp.get_tab_candidate(is_asc, str, false).chars().collect();
 
-            Log::debug("str", &str);
+            self.cont_1.set_cur_target(self.cont_1.buf.len());
+        } else if state.is_open_file {
+            let str = self.cont_1.buf[..self.cont_1.cur.x].iter().collect::<String>();
 
             self.cont_1.buf = self.prom_open_file.tab_comp.get_tab_candidate(is_asc, str, false).chars().collect();
 
             let (cur_x, width) = get_row_width(&self.cont_1.buf[..], 0, false);
             self.cont_1.cur.x = cur_x;
             self.cont_1.cur.disp_x = width;
-        } else if tab_state.is_enc_nl {
-            self.tab_enc_nl(is_asc);
+        } else if state.is_enc_nl {
+            self.move_enc_nl(CurDirection::Right);
+        } else if state.is_menu {
+            match self.prom_cont_posi {
+                PromptContPosi::First => self.prom_cont_posi = PromptContPosi::Second,
+                PromptContPosi::Second => self.prom_cont_posi = PromptContPosi::First,
+                _ => {}
+            }
+        }
+    }
+    pub fn set_keys(&mut self, keys: Keys) {
+        let keycmd = Keybind::get_keycmd(&keys, KeyWhen::PromptFocus);
+        match self.prom_cont_posi {
+            PromptContPosi::First => self.cont_1.keycmd = keycmd,
+            PromptContPosi::Second => self.cont_2.keycmd = keycmd,
+            PromptContPosi::Third => self.cont_3.keycmd = keycmd,
+            PromptContPosi::Fourth => self.cont_4.keycmd = keycmd,
         }
     }
 
@@ -273,7 +315,7 @@ impl Prompt {
         Prompt { ..Prompt::default() }
     }
     pub fn clear(&mut self) {
-        Log::debug_s("              Prompt.clear");
+        Log::debug_key("Prompt.clear");
         self.disp_row_num = 0;
         self.disp_row_posi = 0;
         self.disp_col_num = 0;
@@ -288,7 +330,8 @@ impl Prompt {
 #[derive(Debug, Clone)]
 pub struct Prompt {
     pub disp_row_num: usize,
-    pub disp_row_posi: usize,
+    // 0 index
+    pub disp_row_posi: u16,
     pub disp_col_num: usize,
     // Prompt Content_Sequence number
     pub cont_1: PromptCont,
@@ -298,7 +341,8 @@ pub struct Prompt {
     pub prom_cont_posi: PromptContPosi,
     pub prom_open_file: PromOpenFile,
     pub prom_grep: PromGrep,
-    pub prom_search: PromSearch,
+    pub prom_save_new_file: PromSaveNewFile,
+    pub prom_menu: PromMenu,
 }
 
 impl Default for Prompt {
@@ -316,7 +360,8 @@ impl Default for Prompt {
             prom_cont_posi: PromptContPosi::First,
             prom_open_file: PromOpenFile::default(),
             prom_grep: PromGrep::default(),
-            prom_search: PromSearch::default(),
+            prom_save_new_file: PromSaveNewFile::default(),
+            prom_menu: PromMenu::default(),
         }
     }
 }
@@ -333,6 +378,7 @@ impl TabComp {
         if self.files.len() == 0 {
             self.files = get_tab_comp_files(target_path.clone(), is_dir_only, true);
         }
+        Log::debug_s("　　One candidate");
 
         let mut rtn_string = target_path;
 
