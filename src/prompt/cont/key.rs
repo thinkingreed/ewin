@@ -1,12 +1,15 @@
 use crate::{_cfg::keys::KeyCmd, model::EvtProc, prompt::cont::promptcont::*, util::*};
 use std::cmp::{max, min};
-use unicode_width::UnicodeWidthChar;
 
 impl PromptCont {
-    pub fn insert_char(&mut self, c: char) {
-        self.buf.insert(self.cur.x, c);
-        self.cur.disp_x += c.width().unwrap_or(0);
-        self.cur.x += 1;
+    pub fn insert_str(&mut self, ep: &mut EvtProc) {
+        //  let chars: Vec<char> = ep.str.chars().collect();
+        ep.sel.set_s(self.cur.y, self.cur.x, self.cur.disp_x);
+
+        self.buf.append(&mut ep.str.chars().collect());
+        self.cur_end();
+
+        ep.sel.set_e(self.cur.y, self.cur.x, self.cur.disp_x);
     }
 
     pub fn cur_left(&mut self) {
@@ -36,13 +39,13 @@ impl PromptCont {
             self.buf.remove(self.cur.x);
         }
     }
-    pub fn end(&mut self) {
+    pub fn cur_end(&mut self) {
         self.cur.x = self.buf.len();
         let (_, width) = get_row_width(&self.buf[..], 0, false);
         self.cur.disp_x = width;
     }
 
-    pub fn home(&mut self) {
+    pub fn cur_home(&mut self) {
         self.cur.x = 0;
         self.cur.disp_x = 0;
     }
@@ -51,8 +54,8 @@ impl PromptCont {
         match self.keycmd {
             KeyCmd::CursorLeft => self.cur_left(),
             KeyCmd::CursorRight => self.cur_right(),
-            KeyCmd::CursorRowHome => self.home(),
-            KeyCmd::CursorRowEnd => self.end(),
+            KeyCmd::CursorRowHome => self.cur_home(),
+            KeyCmd::CursorRowEnd => self.cur_end(),
             _ => {}
         }
     }

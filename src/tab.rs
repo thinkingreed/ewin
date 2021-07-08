@@ -3,13 +3,7 @@ use std::fmt;
 
 impl Tab {
     pub fn new() -> Self {
-        Tab {
-            editor: Editor::new(),
-            mbar: MsgBar::new(),
-            prom: Prompt::new(),
-            sbar: StatusBar::new(),
-            state: TabState::default(),
-        }
+        Tab { editor: Editor::new(), mbar: MsgBar::new(), prom: Prompt::new(), sbar: StatusBar::new(), state: TabState::default() }
     }
 }
 
@@ -91,19 +85,7 @@ pub struct TabState {
 
 impl Default for TabState {
     fn default() -> Self {
-        TabState {
-            is_close_confirm: false,
-            is_search: false,
-            is_replace: false,
-            is_save_new_file: false,
-            is_move_row: false,
-            is_read_only: false,
-            is_open_file: false,
-            is_enc_nl: false,
-            key_record_state: KeyRecordState::default(),
-            grep_state: GrepState::default(),
-            is_menu: false,
-        }
+        TabState { is_close_confirm: false, is_search: false, is_replace: false, is_save_new_file: false, is_move_row: false, is_read_only: false, is_open_file: false, is_enc_nl: false, key_record_state: KeyRecordState::default(), grep_state: GrepState::default(), is_menu: false }
     }
 }
 

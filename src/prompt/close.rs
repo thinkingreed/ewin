@@ -11,9 +11,9 @@ use crate::{
 
 impl EvtAct {
     pub fn close(term: &mut Terminal) -> EvtActType {
-        match term.curt().editor.keycmd {
-            KeyCmd::InsertChar(c) => {
-                if c == 'y' {
+        match &term.curt().editor.keycmd {
+            KeyCmd::InsertStr(str) => {
+                if str == &'y'.to_string() {
                     // save成否判定
                     if Tab::save(term) {
                         return EvtAct::check_exit_close(term);
@@ -21,7 +21,7 @@ impl EvtAct {
                         term.curt().editor.d_range.draw_type = DrawType::All;
                         return EvtActType::DrawOnly;
                     }
-                } else if c == 'n' {
+                } else if str == &'n'.to_string() {
                     return EvtAct::check_exit_close(term);
                 } else {
                     return EvtActType::Hold;

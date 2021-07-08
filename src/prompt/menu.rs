@@ -242,12 +242,14 @@ impl PromptCont {
                     choices.vec = vec![vec_1, vec_2];
                     self.choices_map.insert((0, 1), choices);
 
-                    let vec_1 = vec![Choice::new(&LANG.move_row)];
+                    let move_row = Keybind::get_menu_str(&LANG.move_row, KeyCmd::MoveRow);
+                    let vec_1 = vec![Choice::new(&move_row)];
                     let mut choices = Choices::default();
                     choices.vec = vec![vec_1];
                     self.choices_map.insert((0, 2), choices);
 
-                    let vec_1 = vec![Choice::new(&LANG.column_select_mode)];
+                    let box_select_mode = Keybind::get_menu_str(&LANG.box_select_mode, KeyCmd::BoxSelectMode);
+                    let vec_1 = vec![Choice::new(&box_select_mode)];
                     let mut choices = Choices::default();
                     choices.vec = vec![vec_1];
                     self.choices_map.insert((0, 3), choices);

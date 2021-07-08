@@ -51,36 +51,37 @@ impl Help {
             let mut vec: Vec<HelpKeybind> = vec![];
 
             // 1st line
-            self.set_key_bind(&mut vec, Keybind::get_key_str(KeyCmd::CloseFile), &LANG.end);
-            self.set_key_bind(&mut vec, Keybind::get_key_str(KeyCmd::SaveFile), &LANG.save);
-            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::Copy), &LANG.copy);
-            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::Paste), &LANG.paste);
+            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::CloseFile), &LANG.end);
+            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::SaveFile), &LANG.save);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Copy), &LANG.copy);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::InsertStr("".to_string())), &LANG.paste);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 2nd line
-            self.set_key_bind(&mut vec, Keybind::get_key_str(KeyCmd::Undo), &LANG.undo);
-            self.set_key_bind(&mut vec, Keybind::get_key_str(KeyCmd::Redo), &LANG.redo);
-            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::Find), &LANG.search);
-            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::Replace), &LANG.replace);
+            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::Undo), &LANG.undo);
+            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::Redo), &LANG.redo);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Find), &LANG.search);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::ReplacePrompt), &LANG.replace);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 3rd line
-            self.set_key_bind(&mut vec, Keybind::get_key_str(KeyCmd::CutSelect), &LANG.cut);
-            self.set_key_bind(&mut vec, Keybind::get_key_str(KeyCmd::Grep), &LANG.grep);
-            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::StartEndRecordKey), &LANG.key_record_start_stop);
-            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::ExecRecordKey), &LANG.key_record_exec);
+            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::CutSelect), &LANG.cut);
+            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::Grep), &LANG.grep);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::StartEndRecordKey), &LANG.key_record_start_stop);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::ExecRecordKey), &LANG.key_record_exec);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 4th line
-            self.set_key_bind_ex(&mut vec, KEY_SELECT.to_string(), &LANG.range_select, KEY_SELECT.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (KEY_SELECT.chars().count() + 1));
+            let key_select_str = &format!("{}{}", Keybind::get_key_str(KeyCmd::CursorLeftSelect).split("+").collect::<Vec<&str>>()[0], KEY_SELECT_KEY);
+            self.set_key_bind_ex(&mut vec, key_select_str, &LANG.range_select, key_select_str.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (key_select_str.chars().count() + 1));
             // self.set_key_bind_ex(&mut vec, KEY_MOUSE_SWITCH, &LANG.mouse_switch, KEY_MOUSE_SWITCH.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (KEY_MOUSE_SWITCH.chars().count() + 1));
-            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::MouseOpeSwitch), &LANG.mouse_switch);
-            self.set_key_bind_wide(&mut vec, Keybind::get_key_str(KeyCmd::OpenMenu), &LANG.menu);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::MouseOpeSwitch), &LANG.mouse_switch);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::OpenMenu), &LANG.menu);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 5th line
-            self.set_key_bind_ex(&mut vec, Keybind::get_key_str(KeyCmd::Help), &format!("{}{}", &LANG.help, &LANG.end), Help::KEY_FUNC_WIDTH, Help::KEY_WIDTH);
-            self.set_key_bind_ex(&mut vec, HELP_DETAIL.to_string(), &env!("CARGO_PKG_REPOSITORY").to_string(), HELP_DETAIL.chars().count() + 1, Help::KEY_FUNC_WIDTH_WIDE - HELP_DETAIL.chars().count() + 1);
+            self.set_key_bind_ex(&mut vec, &Keybind::get_key_str(KeyCmd::Help), &format!("{}{}", &LANG.help, &LANG.end), Help::KEY_FUNC_WIDTH, Help::KEY_WIDTH);
+            self.set_key_bind_ex(&mut vec, &HELP_DETAIL.to_string(), &env!("CARGO_PKG_REPOSITORY").to_string(), HELP_DETAIL.chars().count() + 1, Help::KEY_FUNC_WIDTH_WIDE - HELP_DETAIL.chars().count() + 1);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
         }
@@ -116,15 +117,15 @@ impl Help {
         }
     }
 
-    pub fn set_key_bind(&mut self, vec: &mut Vec<HelpKeybind>, key: String, func: &String) {
+    pub fn set_key_bind(&mut self, vec: &mut Vec<HelpKeybind>, key: &String, func: &String) {
         self.set_key_bind_ex(vec, key, func, Help::KEY_WIDTH, Help::KEY_FUNC_WIDTH);
     }
 
-    pub fn set_key_bind_wide(&mut self, vec: &mut Vec<HelpKeybind>, key: String, func: &String) {
+    pub fn set_key_bind_wide(&mut self, vec: &mut Vec<HelpKeybind>, key: &String, func: &String) {
         self.set_key_bind_ex(vec, key, func, Help::KEY_WIDTH_WIDE, Help::KEY_FUNC_WIDTH_WIDE);
     }
 
-    pub fn set_key_bind_ex(&mut self, vec: &mut Vec<HelpKeybind>, key: String, func: &String, key_width: usize, key_func_width: usize) {
+    pub fn set_key_bind_ex(&mut self, vec: &mut Vec<HelpKeybind>, key: &String, func: &String, key_width: usize, key_func_width: usize) {
         let key = format!("{s:<w$}", s = key, w = key_width);
         let func = format!("{s:^w$}", s = func, w = key_func_width - (get_str_width(&func) - func.chars().count()));
 

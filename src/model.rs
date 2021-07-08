@@ -3,8 +3,9 @@ use crate::{
     _cfg::keys::{KeyCmd, Keys},
     bar::headerbar::HeaderFile,
     def::*,
-    editor::view::char_style::*,
-    log::Log,
+    editor::{buf::edit::TextBuffer, view::char_style::*},
+    global::LANG,
+    sel_range::{SelMode, SelRange},
 };
 use chrono::NaiveDateTime;
 use crossterm::event::{Event, KeyCode::Null};
@@ -12,7 +13,6 @@ use encoding_rs::Encoding;
 use faccess::PathExt;
 #[cfg(target_os = "windows")]
 use regex::Regex;
-use ropey::Rope;
 #[cfg(target_os = "linux")]
 use std::path::MAIN_SEPARATOR;
 use std::{
@@ -50,28 +50,29 @@ pub enum Env {
 /// undo,redo範囲
 /// EvtProcess
 pub struct EvtProc {
-    pub evt_type: EvtType,
+    pub keycmd: KeyCmd,
     // not include lnw
     pub cur_s: Cur,
     pub cur_e: Cur,
     pub str: String,
-    pub str_replace: String,
+    pub box_sel_vec: Vec<(SelRange, String)>,
+    pub box_sel_redo_vec: Vec<(SelRange, String)>,
     pub sel: SelRange,
     pub d_range: DRange,
 }
 impl Default for EvtProc {
     fn default() -> Self {
-        EvtProc { cur_s: Cur::default(), cur_e: Cur::default(), str: String::new(), str_replace: String::new(), evt_type: EvtType::None, sel: SelRange::default(), d_range: DRange::default() }
+        EvtProc { cur_s: Cur::default(), cur_e: Cur::default(), str: String::new(), keycmd: KeyCmd::Null, sel: SelRange::default(), d_range: DRange::default(), box_sel_vec: vec![], box_sel_redo_vec: vec![] }
     }
 }
 impl fmt::Display for EvtProc {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "EvtProc cur_s:{}, cur_e:{}, str:{}, do_type:{}, sel:{}, d_range:{}", self.cur_s, self.cur_e, self.str, self.evt_type, self.sel, self.d_range)
+        write!(f, "EvtProc cur_s:{}, cur_e:{}, str:{}, keycmd:{:?}, sel:{}, d_range:{}", self.cur_s, self.cur_e, self.str, self.keycmd, self.sel, self.d_range)
     }
 }
 impl EvtProc {
-    pub fn new(do_type: EvtType, cur_s: Cur, cur_e: Cur, d_range: DRange) -> Self {
-        return EvtProc { evt_type: do_type, cur_s: cur_s, cur_e: cur_e, d_range: d_range, ..EvtProc::default() };
+    pub fn new(keycmd: KeyCmd, cur_s: Cur, cur_e: Cur, d_range: DRange) -> Self {
+        return EvtProc { keycmd, cur_s, cur_e, d_range, ..EvtProc::default() };
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -201,128 +202,6 @@ impl fmt::Display for SearchRange {
         write!(f, "SearchRange y:{}, sx:{}, ex:{},", self.y, self.sx, self.ex,)
     }
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// SelectRange
-pub struct SelRange {
-    // y 0-indexed
-    pub sy: usize,
-    pub ey: usize,
-    // x 0-indexed (Not included row width)
-    pub sx: usize,
-    pub ex: usize,
-    // 0-indexed
-    pub disp_x_s: usize,
-    pub disp_x_e: usize,
-}
-impl Default for SelRange {
-    fn default() -> Self {
-        SelRange { sy: 0, ey: 0, sx: 0, ex: 0, disp_x_s: 0, disp_x_e: 0 }
-    }
-}
-
-impl SelRange {
-    pub fn clear(&mut self) {
-        Log::debug_key("SelRange.clear");
-        self.sy = 0;
-        self.ey = 0;
-        self.sx = 0;
-        self.ex = 0;
-        self.disp_x_s = 0;
-        self.disp_x_e = 0;
-    }
-
-    // For prompt buf
-    pub fn clear_prompt(&mut self) {
-        //  Log::ep_s("SelRange.clear");
-        self.sx = USIZE_UNDEFINED;
-        self.ex = USIZE_UNDEFINED;
-        self.disp_x_s = USIZE_UNDEFINED;
-        self.disp_x_e = USIZE_UNDEFINED;
-    }
-
-    pub fn is_selected(&self) -> bool {
-        return !(self.sy == 0 && self.ey == 0 && self.disp_x_s == 0 && self.disp_x_e == 0);
-    }
-
-    // Convert to start position < end position
-    pub fn get_range(&self) -> Self {
-        let mut sy = self.sy;
-        let mut ey = self.ey;
-        let mut sx = self.sx;
-        let mut ex = self.ex;
-        let mut s_disp_x = self.disp_x_s;
-        let mut e_disp_x = self.disp_x_e;
-        if sy > ey || (sy == ey && s_disp_x > e_disp_x) {
-            sy = self.ey;
-            ey = self.sy;
-            sx = self.ex;
-            ex = self.sx;
-            s_disp_x = self.disp_x_e;
-            e_disp_x = self.disp_x_s;
-        }
-        SelRange { sy: sy, ey: ey, sx: sx, ex: ex, disp_x_s: s_disp_x, disp_x_e: e_disp_x }
-    }
-
-    pub fn set_s(&mut self, y: usize, x: usize, disp_x: usize) {
-        self.sy = y;
-        self.sx = x;
-        self.disp_x_s = disp_x;
-    }
-
-    pub fn set_e(&mut self, y: usize, x: usize, disp_x: usize) {
-        self.ey = y;
-        self.ex = x;
-        self.disp_x_e = disp_x;
-    }
-
-    pub fn check_overlap(&mut self) {
-        // selectio start position and cursor overlap
-        if self.sy == self.ey && self.disp_x_s == self.disp_x_e {
-            self.clear();
-        }
-    }
-    pub fn set_sel_posi(&mut self, is_start: bool, y: usize, x: usize, disp_x: usize) {
-        if is_start {
-            if !self.is_selected() {
-                self.set_s(y, x, disp_x);
-            }
-        } else {
-            self.set_e(y, x, disp_x);
-        }
-    }
-    pub fn is_another_select(&mut self, sel_org: SelRange) -> bool {
-        if self.sy == sel_org.sy && self.disp_x_s == sel_org.disp_x_s {
-            return false;
-        }
-        return true;
-    }
-    pub fn get_diff_y_mouse_drag(&mut self, sel_org: SelRange, cur_y: usize) -> usize {
-        let sel = self.get_range();
-        let sel_org = sel_org.get_range();
-
-        if sel.sy < sel_org.sy {
-            return sel.sy;
-        } else if sel.sy > sel_org.sy {
-            return sel.sy - 1;
-        } else if sel.ey > sel_org.ey {
-            return sel.ey - 1;
-        } else if sel.ey < sel_org.ey {
-            return sel.ey;
-        } else if sel.sy == cur_y {
-            return sel.sy;
-        //sel.ey == cur_y
-        } else {
-            return sel.ey - 1;
-        }
-    }
-}
-
-impl fmt::Display for SelRange {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SelRange sy:{}, ey:{}, sx:{}, ex:{}, s_disp_x:{}, e_disp_x:{},", self.sy, self.ey, self.sx, self.ex, self.disp_x_s, self.disp_x_e)
-    }
-}
-
 /// Cursor 　0-indexed
 /// Editor, Prompt
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -350,7 +229,8 @@ impl fmt::Display for Cur {
 // エディタの内部状態
 #[derive(Debug, Clone)]
 pub struct Editor {
-    pub mode: EditerMode,
+    pub mouse_mode: MouseMode,
+
     pub buf: TextBuffer,
     pub buf_cache: Vec<Vec<char>>,
     /// current cursor position
@@ -366,6 +246,7 @@ pub struct Editor {
     // row_number_width
     pub rnw: usize,
     pub rnw_org: usize,
+    //  pub sel_range: SelRange,
     pub sel: SelRange,
     pub sel_org: SelRange,
     pub keys: Keys,
@@ -385,6 +266,8 @@ pub struct Editor {
     pub key_record_vec: Vec<KeyRecord>,
     pub is_enable_syntax_highlight: bool,
     pub h_file: HeaderFile,
+    // Internal clipboard
+    pub box_sel: BoxSel,
 }
 
 impl Editor {
@@ -392,7 +275,7 @@ impl Editor {
 
     pub fn new() -> Self {
         Editor {
-            mode: EditerMode::Normal,
+            mouse_mode: MouseMode::Normal,
             buf: TextBuffer::default(),
             buf_cache: vec![],
             cur: Cur::default(),
@@ -405,6 +288,7 @@ impl Editor {
             updown_x: 0,
             rnw: 0,
             rnw_org: 0,
+            //  sel_range: SelRange::default(),
             sel: SelRange::default(),
             sel_org: SelRange::default(),
             keys: Keys::Null,
@@ -421,13 +305,54 @@ impl Editor {
             key_record_vec: vec![],
             is_enable_syntax_highlight: false,
             h_file: HeaderFile::default(),
+            box_sel: BoxSel::default(),
         }
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TextBuffer {
-    pub text: Rope,
+pub struct BoxSel {
+    pub mode: BoxInsertMode,
+    pub insert_vec: Vec<(SelRange, String)>,
+
+    // pub ins_str_x: usize,
+    pub clipboard_str: String,
+    pub clipboard_box_sel_vec: Vec<(SelRange, String)>,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BoxInsertMode {
+    Nomal,
+    Insert,
+}
+
+impl Default for BoxSel {
+    fn default() -> Self {
+        BoxSel {
+            clipboard_str: String::new(),
+            clipboard_box_sel_vec: vec![],
+            mode: BoxInsertMode::Nomal,
+            insert_vec: vec![],
+            // ins_str_x: USIZE_UNDEFINED
+        }
+    }
+}
+
+impl fmt::Display for BoxInsertMode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            BoxInsertMode::Nomal => write!(f, ""),
+            BoxInsertMode::Insert => write!(f, "{}", LANG.box_insert),
+        }
+    }
+}
+impl BoxSel {
+    pub fn clear(&mut self) {
+        self.clipboard_str = String::new();
+        self.clipboard_box_sel_vec = vec![]
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct File {
     pub name: String,
@@ -600,18 +525,20 @@ impl Default for DRange {
 
 impl DRange {
     pub fn new(sy: usize, ey: usize, d_type: DrawType) -> Self {
-        return DRange { sy: sy, ey: ey, draw_type: d_type };
+        return DRange { sy, ey, draw_type: d_type };
     }
 
-    /*
-    pub fn get_range(&mut self) -> Self {
-        return DRange { sy: self.sy, ey: self.ey, draw_type: self.draw_type };
-    }
-     */
-    pub fn set_target(&mut self, sy: usize, ey: usize) {
-        self.draw_type = DrawType::Target;
-        self.sy = min(sy, ey);
-        self.ey = max(sy, ey);
+    pub fn set_target(&mut self, sel_mode: SelMode, sy: usize, ey: usize) {
+        match sel_mode {
+            SelMode::Normal => {
+                self.draw_type = DrawType::Target;
+                self.sy = min(sy, ey);
+                self.ey = max(sy, ey);
+            }
+            SelMode::BoxSelect => {
+                self.draw_type = DrawType::All;
+            }
+        }
     }
     pub fn set_after(&mut self, sy: usize) {
         self.draw_type = DrawType::After;
@@ -654,45 +581,6 @@ impl fmt::Display for DrawType {
             DrawType::ScrollUp => write!(f, "ScrollUp"),
             DrawType::MoveCur => write!(f, "MoveCur"),
             DrawType::Not => write!(f, "Not"),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// UnDo ReDo Type
-pub enum EvtType {
-    Del,
-    Enter,
-    BS,
-    Cut,
-    Paste,
-    InsertChar,
-    Replace,
-    ShiftDown,
-    ShiftUp,
-    ShiftRight,
-    ShiftLeft,
-    ShiftHome,
-    ShiftEnd,
-    None,
-}
-impl fmt::Display for EvtType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            EvtType::Del => write!(f, "Del"),
-            EvtType::Enter => write!(f, "Enter"),
-            EvtType::BS => write!(f, "BS"),
-            EvtType::Cut => write!(f, "Cut"),
-            EvtType::Paste => write!(f, "Paste"),
-            EvtType::InsertChar => write!(f, "InsertChar"),
-            EvtType::Replace => write!(f, "Replace"),
-            EvtType::ShiftDown => write!(f, "ShiftDown"),
-            EvtType::ShiftUp => write!(f, "ShiftUp"),
-            EvtType::ShiftRight => write!(f, "ShiftRight"),
-            EvtType::ShiftLeft => write!(f, "ShiftLeft"),
-            EvtType::ShiftHome => write!(f, "ShiftHome"),
-            EvtType::ShiftEnd => write!(f, "ShiftEnd"),
-            EvtType::None => write!(f, "None"),
         }
     }
 }
@@ -740,10 +628,19 @@ impl GrepState {
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum EditerMode {
+pub enum MouseMode {
     Normal,
     Mouse,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MouseProc {
+    DownLeft,
+    DragLeft,
+    DownLeftBox,
+    DragLeftBox,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Encode {
     UTF8,
@@ -816,6 +713,16 @@ impl fmt::Display for Encode {
             Encode::EucJp => write!(f, "EUC-JP"),
             Encode::GBK => write!(f, "GBK"),
             Encode::Unknown => write!(f, "Unknown"),
+        }
+    }
+}
+pub struct NL {}
+impl NL {
+    pub fn get_nl(nl_str: &str) -> String {
+        if nl_str == NEW_LINE_LF_STR {
+            return NEW_LINE_LF.to_string();
+        } else {
+            return NEW_LINE_CRLF.to_string();
         }
     }
 }

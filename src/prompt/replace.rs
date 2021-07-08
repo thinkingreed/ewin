@@ -2,6 +2,7 @@ use crate::{
     _cfg::keys::{KeyCmd, Keybind},
     colors::*,
     global::*,
+    log::Log,
     model::*,
     prompt::cont::promptcont::*,
     prompt::prompt::prompt::*,
@@ -10,8 +11,9 @@ use crate::{
 
 impl EvtAct {
     pub fn replace(term: &mut Terminal) -> EvtActType {
+        Log::info_key("EvtAct.replace");
         match term.curt().editor.keycmd {
-            KeyCmd::InsertLine => {
+            KeyCmd::ConfirmPrompt => {
                 let search_str = term.curt().prom.cont_1.buf.iter().collect::<String>();
                 let replace_str = term.curt().prom.cont_2.buf.iter().collect::<String>();
 
@@ -29,7 +31,7 @@ impl EvtAct {
                     REPLACE_SEARCH_RANGE.get().unwrap().try_lock().unwrap().push(search_set);
 
                     term.clear_curt_tab();
-                    term.curt().editor.exec_edit_proc(EvtType::Replace, &search_str, &replace_str);
+                    term.curt().editor.edit_proc(KeyCmd::ReplaceExec(search_str, replace_str));
 
                     term.hbar.file_vec[term.idx].is_changed = true;
                 }

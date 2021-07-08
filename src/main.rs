@@ -63,6 +63,7 @@ async fn main() {
             if let Some(Ok(event)) = reader.next().fuse().await {
                 match event {
                     Mouse(M_Event { kind: M_Kind::Moved, .. }) => continue,
+                    //   Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), modifiers: KeyModifiers::NONE, column: _, row: _, .. }) => continue,
                     Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: _, row: _, .. }) => continue,
                     _ => {}
                 }
@@ -142,6 +143,7 @@ async fn main() {
     for job in rx {
         match job.job_type {
             JobType::Event => {
+                Log::debug("Raw evt", &job.job_evt.clone().unwrap().evt);
                 if EvtAct::match_event(Keybind::evt_to_keys(&job.job_evt.unwrap().evt), &mut out, &mut term) {
                     break;
                 }

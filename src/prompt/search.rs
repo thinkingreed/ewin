@@ -14,7 +14,7 @@ use std::cmp::min;
 impl EvtAct {
     pub fn search(term: &mut Terminal) -> EvtActType {
         match term.curt().editor.keycmd {
-            KeyCmd::InsertChar(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::Paste | KeyCmd::Undo | KeyCmd::Redo => {
+            KeyCmd::InsertStr(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::Undo | KeyCmd::Redo => {
                 EvtAct::exec_search_incremental(term);
                 return EvtActType::DrawOnly;
             }

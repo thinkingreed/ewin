@@ -49,7 +49,7 @@ impl EvtAct {
                     tab_grep.editor.search.str = search_str.clone();
                     tab_grep.editor.search.filenm = path.to_string_lossy().to_string();
                     tab_grep.editor.search.folder = search_folder.clone();
-                    tab_grep.editor.mouse_mode = term.mouse_mode;
+                    tab_grep.editor.mouse_mode = term.mode;
 
                     tab_grep.mbar.set_info(&LANG.searching);
 

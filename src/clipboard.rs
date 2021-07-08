@@ -8,11 +8,11 @@ use std::iter::FromIterator;
 use std::process;
 use std::process::Command;
 
-pub fn set_clipboard(copy_string: String) {
+pub fn set_clipboard(copy_string: &String) {
     Log::debug_s("set_clipboard ");
     if *ENV == Env::WSL {
         if *IS_POWERSHELL_ENABLE {
-            if let Err(err) = set_win_clipboard(&copy_string) {
+            if let Err(err) = set_win_clipboard(copy_string) {
                 Log::error("set_win_clipboard err", &err.to_string());
                 let _ = CLIPBOARD.set(copy_string.to_string());
             }
@@ -99,6 +99,8 @@ fn get_win_clipboard() -> anyhow::Result<String> {
     let mut stdout = p.stdout.context("take stdout")?;
     let mut buf = String::new();
     stdout.read_to_string(&mut buf)?;
+
+    Log::debug_s("buf");
 
     // Remove new line(CRLF) for automatic insertion at the end
     buf = buf.chars().take(buf.chars().count() - 2).collect::<String>();

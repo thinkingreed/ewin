@@ -94,7 +94,9 @@ pub struct LangCfg {
     pub to_space: String,
     pub to_tab: String,
 
-    pub column_select_mode: String,
+    pub box_select: String,
+    pub box_insert: String,
+    pub box_select_mode: String,
 
     /// Long msg
     pub not_entered_filenm: String,

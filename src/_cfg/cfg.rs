@@ -41,8 +41,32 @@ pub struct CfgSearch {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgTab {
     pub width: usize,
+    pub tab_input_type: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub tab_type: TabType,
 }
 
+#[derive(Debug)]
+pub enum TabType {
+    Tab,
+    HalfWidthBlank,
+}
+
+impl Default for TabType {
+    fn default() -> Self {
+        TabType::Tab
+    }
+}
+impl TabType {
+    fn from_str(s: &str) -> TabType {
+        match s {
+            //
+            "tab" => TabType::Tab,
+            "half_width_blank" => TabType::HalfWidthBlank,
+            _ => TabType::Tab,
+        }
+    }
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgColors {
     pub theme: CfgColorTheme,
@@ -174,8 +198,6 @@ impl Default for Syntax {
 }
 impl Cfg {
     pub fn init() -> String {
-        Log::info_key("Cfg.init");
-
         let mut cfg: Cfg = toml::from_str(include_str!("../../setting.toml")).unwrap();
         let mut err_str = "".to_string();
         let mut read_str = String::new();
@@ -203,6 +225,8 @@ impl Cfg {
                 }
             }
         }
+
+        cfg.general.editor.tab.tab_type = TabType::from_str(&cfg.general.editor.tab.tab_input_type);
 
         cfg.colors.header_bar.fg = Colors::hex2rgb(&cfg.colors.header_bar.foreground);
 

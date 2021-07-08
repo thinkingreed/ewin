@@ -1,4 +1,4 @@
-use crate::{_cfg::keys::KeyCmd, model::*, tab::Tab};
+use crate::{_cfg::keys::KeyCmd, model::*, sel_range::SelMode, tab::Tab};
 use std::{
     cmp::{max, min},
     usize,
@@ -14,7 +14,11 @@ impl Editor {
         match tab.editor.keycmd {
             KeyCmd::Resize => tab.editor.d_range.draw_type = DrawType::None,
             KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd => {
-                if tab.editor.sel.is_selected() {
+                if tab.editor.sel.mode == SelMode::BoxSelect {
+                    tab.editor.d_range = DRange::new(min(tab.editor.sel.sy, tab.editor.sel.ey), max(tab.editor.sel.sy, tab.editor.sel.ey), DrawType::Target);
+
+                    // When moving after overlap
+                } else if tab.editor.sel.is_selected() {
                     tab.editor.d_range.draw_type = DrawType::All;
                 } else {
                     if tab.editor.keycmd == KeyCmd::CursorDown || tab.editor.keycmd == KeyCmd::CursorUp {
@@ -28,6 +32,11 @@ impl Editor {
             KeyCmd::MouseDragLeft(_, _) => {
                 if tab.editor.sel.is_selected() {
                     tab.editor.d_range.draw_type = DrawType::Target;
+                }
+            }
+            KeyCmd::MouseDragBoxLeft(_, _) => {
+                if tab.editor.sel.is_selected() {
+                    tab.editor.d_range.draw_type = DrawType::All;
                 }
             }
             KeyCmd::MouseScrollDown | KeyCmd::MouseScrollUp => {
@@ -45,14 +54,13 @@ impl Editor {
 
     pub fn set_draw_range_finalize(&mut self) {
         if self.d_range.draw_type != DrawType::All {
-            if (self.offset_x > 0 && self.cur_y_org != self.cur.y) || self.offset_x_org != self.offset_x {
-                self.d_range = DRange::new(min(self.cur_y_org, self.cur.y), max(self.cur_y_org, self.cur.y), DrawType::Target);
-            }
             if self.rnw_org != self.get_rnw() {
                 self.d_range.draw_type = DrawType::All;
-            }
-
-            if self.offset_y_org != self.offset_y {
+            } else if (self.offset_x > 0 && self.cur_y_org != self.cur.y) || self.offset_x_org != self.offset_x {
+                //  self.d_range = DRange::new(min(self.cur_y_org, self.cur.y), max(self.cur_y_org, self.cur.y), DrawType::Target);
+                // For undo, redo
+                self.d_range.draw_type = DrawType::All;
+            } else if self.offset_y_org != self.offset_y {
                 match self.keycmd {
                     KeyCmd::CursorUp | KeyCmd::MouseScrollUp => self.set_draw_range_scroll(self.offset_y, DrawType::ScrollUp),
                     KeyCmd::CursorDown | KeyCmd::MouseScrollDown => self.set_draw_range_scroll(self.offset_y + self.disp_row_num - 1, DrawType::ScrollDown),

@@ -8,6 +8,7 @@
          shit+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12)
      // Alt
          alt+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12)
+  */
   /* cmd
      // cursor move
          cursorLeft, cursorRight, cursorUp, cursorDown, cursorRowHome, cursorRowEnd, cursorFileHome, cursorFileEnd, cursorPageUp, cursorPageDown
@@ -25,10 +26,12 @@
          help, openMenu, openMenuFile, openMenuConvert, openMenuEdit, openMenuSelect
      // prompt
          escPrompt, confirmPrompt, findCaseSensitive, findRegex                             
+  */
   /* when
      allFocus, inputFocus, editorFocus, promptFocus         
-  
-   /*
+  */
+
+  /*
    * cursor move
    */
   {
@@ -112,12 +115,25 @@
   {
     key: 'shift+end',
     cmd: 'cursorRowEndSelect',
-    when: 'editorFocus'
+    when: 'inputFocus'
   },
   {
     key: 'ctrl+a',
     cmd: 'allSelect',
     when: 'inputFocus'
+  },
+  {
+    key: 'shift+F6',
+    cmd: 'boxSelectModeStart',
+    when: 'editorFocus'
+  },
+  /*
+   * mode
+   */
+  {
+    key: 'esc',
+    cmd: 'cancelMode',
+    when: 'editorFocus'
   },
   /*
    * edit

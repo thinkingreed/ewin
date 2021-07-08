@@ -12,16 +12,16 @@ use crate::{
 impl EvtAct {
     pub fn move_row(term: &mut Terminal) -> EvtActType {
         Log::debug_key("EvtAct.move_row");
-        match term.curt().editor.keycmd {
-            KeyCmd::InsertChar(c) => {
-                if !c.is_ascii_digit() {
+        match &term.curt().editor.keycmd {
+            KeyCmd::InsertStr(str) => {
+                if !str.chars().nth(0).unwrap().is_ascii_digit() {
                     return EvtActType::Hold;
                 }
                 let str: String = term.curt().prom.cont_1.buf.iter().collect::<String>();
                 if str.chars().count() == term.curt().editor.get_rnw() {
                     return EvtActType::Hold;
                 }
-                term.curt().prom.insert_char(c);
+                term.curt().prom.insert_str(str);
 
                 return EvtActType::DrawOnly;
             }

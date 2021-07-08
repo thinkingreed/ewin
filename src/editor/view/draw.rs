@@ -4,7 +4,7 @@ use std::io::Write;
 use unicode_width::UnicodeWidthChar;
 
 impl Editor {
-    pub fn draw<T: Write>(&mut self, out: &mut T, term_mode: EditerMode) {
+    pub fn draw<T: Write>(&mut self, out: &mut T, term_mode: MouseMode) {
         Log::info_key("Editor.draw");
         Log::debug("editor.d_range", &self.d_range);
 
@@ -67,7 +67,7 @@ impl Editor {
                 }
                 x_width += width;
 
-                if term_mode == EditerMode::Normal {
+                if term_mode == MouseMode::Normal {
                     match c {
                         EOF_MARK => {
                             // EOF_STR.len() - 1 is rest 2 char
@@ -105,8 +105,8 @@ impl Editor {
         self.sel_org.clear();
     }
 
-    fn set_row_num(&mut self, i: usize, str_vec: &mut Vec<String>, term_mode: EditerMode) {
-        if term_mode == EditerMode::Normal {
+    fn set_row_num(&mut self, i: usize, str_vec: &mut Vec<String>, term_mode: MouseMode) {
+        if term_mode == MouseMode::Normal {
             if i == self.cur.y {
                 Colors::set_rownum_curt_color(str_vec);
             } else {

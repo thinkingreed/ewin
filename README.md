@@ -112,20 +112,27 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 * **Select text**
 
-| Mapping                    | Motion                                                                         | Key recording |
-| -------------------------- | ------------------------------------------------------------------------------ | ------------- |
-| `Shift` + `↑`              | Select from the beginning of the current line and the end of the line above    | target        |
-| `Shift` + `↓`              | Select from the end of the current line and the beginning of the line below    | target        |
-| `Shift` + `→`              | Select the next character.　　　　　　　　　　　　　　　　　　　　　　　　　　 | target        |
-| `Shift` + `←`              | Select the previous character.                                                 | target        |
-| `Shift` + `HOME`           | Select the head of line.                                                       | target        |
-| `Shift` + `END`            | Select the end of line.                                                        | target        |
-| `Ctrl` + `a`               | Select all.                                                                    | target        |
-| `F3`                       | Search for characters below. 　　　　　                                        | target        |
-| `Shift` + `F4`             | Search for above characters below.　　　　　                                   | target        |
-| `Mouse Left.Down` + `Drag` | Select a range.                                                                | ―             |
-| `Mouse Double click`       | Select a range.Delimiter is `` ! "\#$%&()*+-',./:;<=>?@[]^`{|}~ ``             | ―             |
-| `Mouse Triple click`       | Select a line.                                                                 | ―             |
+| Mapping                    | Motion                                                                                        | Key recording |
+| -------------------------- | --------------------------------------------------------------------------------------------- | ------------- |
+| `Shift` + `↑`              | Select from the beginning of the current line and the end of the line above                   | target        |
+| `Shift` + `↓`              | Select from the end of the current line and the beginning of the line below                   | target        |
+| `Shift` + `→`              | Select the next character.　　　　　　　　　　　　　　　　　　　　　　　　　　                | target        |
+| `Shift` + `←`              | Select the previous character.                                                                | target        |
+| `Shift` + `HOME`           | Select the head of line.                                                                      | target        |
+| `Shift` + `END`            | Select the end of line.                                                                       | target        |
+| `Ctrl` + `a`               | Select all.                                                                                   | target        |
+| `F3`                       | Search for characters below. 　　　　　                                                       | target        |
+| `Shift` + `F4`             | Search for above characters below.　　　　　                                                  | target        |
+| `Mouse Left.Down` + `Drag` | Select a range.                                                                               | ―             |
+| `Mouse Double click`       | Select a range.Delimiter is `` ! "\#$%&()*+-',./:;<=>?@[]^`{|}~ ``                            | ―             |
+| `Mouse Triple click`       | Select a line.                                                                                | ―             |
+| `Shift` + `F6`             | Box(rectangle) Select mode Start or Stop.                                                     | ―             |
+| `Alt` + `↑`                | Box(rectangle) Select from the beginning of the current line and the end of the line above    | target        |
+| `Alt` + `↓`                | Box(rectangle) Select from the end of the current line and the beginning of the line below    | target        |
+| `Alt` + `→`                | Box(rectangle) Select the next character.　　　　　　　　　　　　　　　　　　　　　　　　　　 | target        |
+| `Alt` + `←`                | Box(rectangle) Select the previous character.                                                 | target        |
+| `Alt` + `HOME`             | Box(rectangle) Select the head of line.                                                       | target        |
+| `Alt` + `END`              | Box(rectangle) Select the end of line.                                                        | target        |
 
 ## Operation restrictions
 
@@ -149,11 +156,21 @@ Please edit the contents of setting.toml(initial setting) below and put it in th
 
 ```
 #################################################################
+[general.log] # option
+# "info" or "debug"
+level = "debug"
+
+[general.editor.tab]
+width = 4
+# tab or half_width_blank
+tab_input_type = "tab"
+
 [general.editor.search]
-case_sens = false
+case_sens = true
+regex = false
 
 # If theme is set, theme color has the highest priority
-[colors.theme]
+[colors.theme] # option
 # theme_path = "tmTheme.tmTheme"
 # theme_background_enable = true
 
@@ -162,28 +179,36 @@ background = "#000000"
 foreground = "#ffffff"
 
 [colors.editor.line_number]
-background = "#000000"
-foreground = "#6e6e6e"
+background = "#282828"
+foreground = "#c0c0c0"
 
 [colors.editor.selection]
-background = "#dd4814"
+background = "#ff4500"
 foreground = "#000000"
 
 [colors.editor.search]
-background = "#dd4814"
+background = "#ff4500"
 foreground = "#000000"
 
 [colors.editor.control_char]
 foreground = "#6e6e6e"
 
+[colors.header_bar]
+foreground = "#c0c0c0"
+
 [colors.status_bar]
-foreground = "#87411f"
+foreground = "#c0c0c0"
 
 [colors.msg]
 normal_foreground = "#ffffff"
 highlight_foreground = "#00c800"
-warning_foreground = "#ffa500"
+warning_foreground = "#aa6400"
 err_foreground = "#ff0000"
+
+[colors.file]
+normal_foreground = "#c0c0c0"
+directory_foreground = "#1e90ff"
+executable_foreground = "#00c800"
 #################################################################
 ```
 
@@ -211,11 +236,15 @@ Please edit the contents of keybind.json5(initial setting) below and put it in t
          shit+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12)
      // Alt
          alt+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12)
+  */
   /* cmd
      // cursor move
-         cursorLeft, cursorRight, cursorUp, cursorDown, cursorRowHome, cursorRowEnd, cursorFileHome, cursorFileEnd, cursorPageUp, cursorPageDown
+         cursorLeft, cursorRight, cursorUp, cursorDown, cursorRowHome, cursorRowEnd,
+         cursorFileHome, cursorFileEnd, cursorPageUp, cursorPageDown
      // select
-         cursorLeftSelect, cursorRightSelect, cursorUpSelect, cursorDownSelect, cursorRowHomeSelect, cursorRowEndSelect, allSelect
+         cursorLeftSelect, cursorRightSelect, cursorUpSelect, cursorDownSelect,
+         cursorRowHomeSelect, cursorRowEndSelect
+         allSelect
      // edit
          insertLine, deletePrevChar, deleteNextChar, cutSelect, copySelect, paste, undo, redo
      // find
@@ -228,11 +257,10 @@ Please edit the contents of keybind.json5(initial setting) below and put it in t
          help, openMenu, openMenuFile, openMenuConvert, openMenuEdit, openMenuSelect
      // prompt
          escPrompt, confirmPrompt, findCaseSensitive, findRegex
+  */
   /* when
      allFocus, inputFocus, editorFocus, promptFocus
-  /****************
-   * editorFocus
-   ****************/
+  */
 
   /* cursor move */
   { key: 'left',       cmd: 'cursorLeft',          when: 'inputFocus'},
@@ -297,63 +325,13 @@ Please edit the contents of keybind.json5(initial setting) below and put it in t
   { key: 'alt+e',      cmd: 'openMenuEdit',        when: 'editorFocus'},
   { key: 'alt+s',      cmd: 'openMenuSelect',      when: 'editorFocus'},
 
-  /****************
-   * promptFocus
-   ****************/
-
   /* prompt */
   { key: 'esc',        cmd: 'escPrompt',           when: 'promptFocus'},
   { key: 'enter',      cmd: 'confirmPrompt',       when: 'promptFocus'}
-  { key: 'alt+c',      cmd: 'findCaseSensitive',       when: 'promptFocus'}
-  { key: 'alt+r',      cmd: 'findRegex',       when: 'promptFocus'}
+  { key: 'alt+c',      cmd: 'findCaseSensitive',   when: 'promptFocus'}
+  { key: 'alt+r',      cmd: 'findRegex',           when: 'promptFocus'}
 ]
 #################################################################
-```
-
-### Key
-
-```
-// Base key
-    left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, esc, F1～F12
-// Modifiers key
-    ctrl, shift, alt
-// Modifiers key + Base key
-    ctrl or shift or alt + Base key
-// Modifiers key + char
-    ctrl or alt + char key
-```
-
-### Command
-
-```
-// Cursor move
-    CursorLeft, CursorRight, CursorUp, CursorDown, CursorRowHome, CursorRowEnd,
-    CursorFileHome, CursorFileEnd, CursorPageDown, CursorPageUp,
-// Select
-    CursorLeftSelect, CursorRightSelect, CursorUpSelect, CursorDownSelect,
-    CursorRowHomeSelect, CursorRowEndSelect, AllSelect,
-// Edit
-    BackTab, InsertLine, DeletePrevChar, DeleteNextChar, CutSelect, Copy, Paste, Undo, Redo,
-// Find
-    Find, FindNext, FindBack, Replace, MoveRow, Grep,
-// File
-    NewTab, NextTab, OpenFile, CloseFile, CloseAllFile, SaveFile, Encoding,
-// Key record
-    StartEndRecordKey, ExecRecordKey,
-// Mouse
-    MouseOpeSwitch
-// Menu
-    Help, OpenMenu, OpenMenuFile, OpenMenuConvert, OpenMenuEdit, OpenMenuSelect,
-// prompt
-    EscPrompt, ConfirmPrompt,
-// Other
-    Resize, NoBind,
-```
-
-### When
-
-```
-    editorFocus, promptFocus,
 ```
 
 ## Maintenance

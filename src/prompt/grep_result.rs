@@ -160,7 +160,7 @@ impl EvtAct {
                     tab_grep.editor.search.str = term.tabs[term.idx].state.grep_state.search_str.clone();
                     tab_grep.editor.search.row_num = grep_result.row_num - 1;
                     tab_grep.editor.keys = Keys::Null;
-                    tab_grep.editor.mode = term.mode;
+                    tab_grep.editor.mouse_mode = term.mouse_mode;
 
                     Log::debug("grep_result.filenm", &grep_result.filenm);
                     Log::debug("term.curt().editor.search.folder", &term.curt().editor.search.folder);
@@ -225,7 +225,7 @@ impl PromptCont {
 
 impl Editor {
     pub fn set_grep_result(&mut self, line_str: String) {
-        self.rnw = if self.mode == EditerMode::Normal { self.buf.len_lines().to_string().len() } else { 0 };
+        self.rnw = if self.mouse_mode == MouseMode::Normal { self.buf.len_lines().to_string().len() } else { 0 };
         self.cur = Cur { y: self.buf.len_lines() - 1, x: 0, disp_x: 0 };
 
         self.scroll();

@@ -20,6 +20,28 @@ pub fn get_str_width(msg: &str) -> usize {
     }
     return width;
 }
+pub fn get_row_x(vec: &[char], disp_x: usize, offset_disp_x: usize, is_ctrlchar_incl: bool) -> Option<usize> {
+    let (mut cur_x, mut width) = (0, 0);
+
+    for c in vec {
+        if c == &EOF_MARK || c == &NEW_LINE_LF || c == &NEW_LINE_CR {
+            if is_ctrlchar_incl && (c == &NEW_LINE_LF || c == &NEW_LINE_CR) {
+                width += 1;
+                cur_x += 1;
+            } else {
+                break;
+            }
+        }
+        let c_len = get_char_width(c, width + offset_disp_x);
+        if width + c_len > disp_x {
+            return Some(cur_x);
+        }
+        width += c_len;
+        cur_x += 1;
+    }
+    return None;
+}
+
 pub fn get_row_width(vec: &[char], offset_disp_x: usize, is_ctrlchar_incl: bool) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
 
@@ -61,13 +83,13 @@ pub fn get_until_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
 pub fn get_char_width(c: &char, width: usize) -> usize {
     if c == &TAB_CHAR {
         let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
-        return get_char_width_exec(c, width, cfg_tab_width);
+        return get_char_width_tab(c, width, cfg_tab_width);
     } else {
         return c.width().unwrap_or(0);
     }
 }
 // Everything including tab
-pub fn get_char_width_exec(c: &char, width: usize, cfg_tab_width: usize) -> usize {
+pub fn get_char_width_tab(c: &char, width: usize, cfg_tab_width: usize) -> usize {
     if c == &TAB_CHAR {
         return cfg_tab_width - width % cfg_tab_width;
     } else {
@@ -240,5 +262,15 @@ pub fn change_nl(string: &mut String, h_file: &HeaderFile) {
         // convert it to LF and then convert it to CRLF.
         *string = string.replace(NEW_LINE_CRLF, &NEW_LINE_LF.to_string());
         *string = string.replace(&NEW_LINE_LF.to_string(), NEW_LINE_CRLF);
+    }
+}
+
+pub fn ordinal_suffix(number: usize) -> &'static str {
+    match (number % 10, number % 100) {
+        (_, 11..=13) => "th",
+        (1, _) => "st",
+        (2, _) => "nd",
+        (3, _) => "rd",
+        _ => "th",
     }
 }

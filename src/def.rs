@@ -31,5 +31,5 @@ pub const FULL_SPACE: &'static str = "　";
 pub const ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE: u64 = 1048576;
 
 // Key
-pub const KEY_SELECT: &'static str = "Shift+↑↓←→/Mouse";
+pub const KEY_SELECT_KEY: &'static str = "+↑↓←→/Mouse";
 pub const HELP_DETAIL: &'static str = "Help detail";

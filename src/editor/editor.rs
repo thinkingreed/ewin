@@ -73,28 +73,32 @@ impl Editor {
             self.add_extra_offset(&vec);
         } else {
             match self.keycmd {
-                KeyCmd::CursorRowEnd | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect | KeyCmd::Paste | KeyCmd::Undo | KeyCmd::Redo | KeyCmd::FindNext | KeyCmd::FindBack | KeyCmd::Null => {
+                KeyCmd::CursorRowEnd | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect | KeyCmd::InsertStr(_) | KeyCmd::Undo | KeyCmd::Redo | KeyCmd::FindNext | KeyCmd::FindBack | KeyCmd::Null => {
                     self.offset_x = self.get_x_offset(self.cur.y, self.cur.x);
 
-                    if self.keycmd == KeyCmd::Paste || self.keycmd == KeyCmd::CursorRowEnd || self.keycmd == KeyCmd::CursorRowEndSelect || self.keycmd == KeyCmd::Undo || self.keycmd == KeyCmd::Redo {
-                        self.add_extra_offset(&vec);
-                    } else if self.keycmd == KeyCmd::FindNext || self.keycmd == KeyCmd::FindBack || self.keycmd == KeyCmd::Null {
-                        let str_width = get_str_width(&self.search.str);
-                        if self.keycmd == KeyCmd::FindNext || self.keycmd == KeyCmd::Null {
-                            // Offset setting to display a few characters to the right of the search character for easier viewing
-                            if self.cur.disp_x + str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA > self.offset_disp_x + self.disp_col_num {
-                                self.offset_x += str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA;
-                            }
-                        } else if self.keycmd == KeyCmd::FindBack {
-                            // Calc offset_disp_x once to judge the display position
-                            let offset_disp_x = get_row_width(&vec[..self.offset_x], self.offset_disp_x, false).1;
-                            if self.cur.disp_x + str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA > offset_disp_x + self.disp_col_num {
-                                self.offset_x += str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA;
+                    match self.keycmd {
+                        KeyCmd::InsertStr(_) | KeyCmd::CursorRowEnd | KeyCmd::CursorRowEndSelect | KeyCmd::Undo | KeyCmd::Redo => {
+                            self.add_extra_offset(&vec);
+                        }
+                        KeyCmd::FindNext | KeyCmd::FindBack | KeyCmd::Null => {
+                            let str_width = get_str_width(&self.search.str);
+                            if self.keycmd == KeyCmd::FindNext || self.keycmd == KeyCmd::Null {
+                                // Offset setting to display a few characters to the right of the search character for easier viewing
+                                if self.cur.disp_x + str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA > self.offset_disp_x + self.disp_col_num {
+                                    self.offset_x += str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA;
+                                }
+                            } else if self.keycmd == KeyCmd::FindBack {
+                                // Calc offset_disp_x once to judge the display position
+                                let offset_disp_x = get_row_width(&vec[..self.offset_x], self.offset_disp_x, false).1;
+                                if self.cur.disp_x + str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA > offset_disp_x + self.disp_col_num {
+                                    self.offset_x += str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA;
+                                }
                             }
                         }
+                        _ => {}
                     }
                 }
-                KeyCmd::InsertChar(_) | KeyCmd::CursorRight => {
+                KeyCmd::CursorRight => {
                     if self.offset_disp_x + self.disp_col_num < self.cur.disp_x + Editor::LEFT_RIGHT_JUDGE_EXTRA {
                         // Judgment whether the end fits in the width
                         let width = get_row_width(&self.buf.char_vec_line(self.cur.y)[self.offset_x..], self.offset_disp_x, true).1;
@@ -111,6 +115,9 @@ impl Editor {
                 _ => {}
             }
         }
+        self.offset_disp_x = get_row_width(&vec[..self.offset_x], self.offset_disp_x, false).1;
+
+        /*
         //// Calc offset_disp_x
         if self.cur_y_org != self.cur.y {
             self.offset_disp_x = get_row_width(&vec[..self.offset_x], self.offset_disp_x, false).1;
@@ -121,10 +128,12 @@ impl Editor {
                 self.offset_disp_x += get_row_width(&vec[self.offset_x_org..self.offset_x], self.offset_disp_x, false).1;
             }
         }
+         */
     }
 
     pub fn add_extra_offset(&mut self, vec: &Vec<char>) {
         let offset_disp_x = get_row_width(&vec[..self.offset_x], self.offset_disp_x, false).1;
+
         if self.cur.disp_x > offset_disp_x + self.disp_col_num - Editor::LEFT_RIGHT_JUDGE_EXTRA {
             self.offset_x += Editor::ADD_EXTRA_END_LINE;
         }
@@ -137,7 +146,7 @@ impl Editor {
         for c in char_vec.iter().rev() {
             width += get_char_width(c, width);
 
-            let rnw_margin = if self.mode == EditerMode::Normal { self.get_rnw() + Editor::RNW_MARGIN + 1 } else { 0 };
+            let rnw_margin = if self.mouse_mode == MouseMode::Normal { self.get_rnw() + Editor::RNW_MARGIN + 1 } else { 0 };
             if width > self.disp_col_num - rnw_margin {
                 break;
             }
@@ -146,16 +155,8 @@ impl Editor {
         return x - cur_x;
     }
 
-    pub fn del_sel_range(&mut self) {
-        let sel = self.sel.get_range();
-        self.buf.remove_range(sel);
-        self.set_cur_target(sel.sy, sel.sx, false);
-        self.scroll();
-        self.scroll_horizontal();
-    }
-
     pub fn set_cur_default(&mut self) {
-        if self.mode == EditerMode::Normal {
+        if self.mouse_mode == MouseMode::Normal {
             self.rnw = self.buf.len_lines().to_string().len();
         } else {
             self.rnw = 0;
@@ -166,7 +167,7 @@ impl Editor {
     pub fn set_cur_target(&mut self, y: usize, x: usize, is_ctrlchar_incl: bool) {
         self.cur.y = y;
         let (cur_x, width) = get_row_width(&self.buf.char_vec_range(y, x), self.offset_disp_x, is_ctrlchar_incl);
-        self.rnw = if self.mode == EditerMode::Normal { self.buf.len_lines().to_string().len() } else { 0 };
+        self.rnw = if self.mouse_mode == MouseMode::Normal { self.buf.len_lines().to_string().len() } else { 0 };
         self.cur.disp_x = width;
         self.cur.x = cur_x;
     }

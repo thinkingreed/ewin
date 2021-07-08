@@ -37,35 +37,23 @@ impl CharStyle {
 
     pub fn normal(cfg: &Cfg) -> CharStyle {
         let editor = &cfg.colors.editor;
-        CharStyle {
-            fg: Color { rgb: Rgb { r: editor.fg.rgb.r, g: editor.fg.rgb.g, b: editor.fg.rgb.b } },
-            bg: Color { rgb: Rgb { r: editor.bg.rgb.r, g: editor.bg.rgb.g, b: editor.bg.rgb.b } },
-        }
+        CharStyle { fg: Color { rgb: Rgb { r: editor.fg.rgb.r, g: editor.fg.rgb.g, b: editor.fg.rgb.b } }, bg: Color { rgb: Rgb { r: editor.bg.rgb.r, g: editor.bg.rgb.g, b: editor.bg.rgb.b } } }
     }
 
     pub fn none() -> CharStyle {
         // The set value has no meaning and is used as the initial value.
-        CharStyle {
-            fg: Color { rgb: Rgb { r: 99, g: 99, b: 99 } },
-            bg: Color { rgb: Rgb { r: 99, g: 99, b: 99 } },
-        }
+        CharStyle { fg: Color { rgb: Rgb { r: 99, g: 99, b: 99 } }, bg: Color { rgb: Rgb { r: 99, g: 99, b: 99 } } }
     }
 
     pub fn control_char(cfg: &Cfg) -> CharStyle {
         let control_char = &cfg.colors.editor.control_char;
         let editor = &cfg.colors.editor;
-        CharStyle {
-            fg: Color { rgb: Rgb { r: control_char.fg.rgb.r, g: control_char.fg.rgb.g, b: control_char.fg.rgb.b } },
-            bg: Color { rgb: Rgb { r: editor.bg.rgb.r, g: editor.bg.rgb.g, b: editor.bg.rgb.b } },
-        }
+        CharStyle { fg: Color { rgb: Rgb { r: control_char.fg.rgb.r, g: control_char.fg.rgb.g, b: control_char.fg.rgb.b } }, bg: Color { rgb: Rgb { r: editor.bg.rgb.r, g: editor.bg.rgb.g, b: editor.bg.rgb.b } } }
     }
 
     pub fn selected(cfg: &Cfg) -> CharStyle {
         let selection = &cfg.colors.editor.selection;
-        CharStyle {
-            fg: Color { rgb: Rgb { r: selection.fg.rgb.r, g: selection.fg.rgb.g, b: selection.fg.rgb.b } },
-            bg: Color { rgb: Rgb { r: selection.bg.rgb.r, g: selection.bg.rgb.g, b: selection.bg.rgb.b } },
-        }
+        CharStyle { fg: Color { rgb: Rgb { r: selection.fg.rgb.r, g: selection.fg.rgb.g, b: selection.fg.rgb.b } }, bg: Color { rgb: Rgb { r: selection.bg.rgb.r, g: selection.bg.rgb.g, b: selection.bg.rgb.b } } }
     }
 }
 

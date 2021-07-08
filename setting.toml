@@ -1,11 +1,16 @@
 [general.log] # option
 # "info" or "debug"
 level = "debug"
+
 [general.editor.tab]
 width = 4
+# tab or half_width_blank
+tab_input_type = "tab"
+
 [general.editor.search]
 case_sens = true
 regex = false
+
 # If theme is set, theme color has the highest priority
 [colors.theme] # option
 # theme_path = "tmTheme.tmTheme"

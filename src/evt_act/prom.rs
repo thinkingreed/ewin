@@ -56,20 +56,18 @@ impl EvtAct {
         if term.curt().state.is_exists_input_field() {
             let state = &term.curt().state.clone();
             match term.curt().editor.keycmd {
-                KeyCmd::CursorLeftSelect => term.curt().prom.shift_left(),
-                KeyCmd::CursorRightSelect => term.curt().prom.shift_right(),
-                KeyCmd::CursorRowHomeSelect => term.curt().prom.shift_home(),
-                KeyCmd::CursorRowEndSelect => term.curt().prom.shift_end(),
+                KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect => term.curt().prom.shift_move_com(),
                 KeyCmd::BackTab => {
                     term.curt().prom.tab(false, state);
                     term.curt().prom.clear_sels()
                 }
-                KeyCmd::InsertChar(c) => {
+                KeyCmd::InsertStr(_) => {
                     if !state.is_move_row {
-                        term.curt().prom.insert_char(c);
+                        // term.curt().prom.insert_char(c);
+                        term.curt().prom.operation()
                     }
                 }
-                KeyCmd::Paste | KeyCmd::CutSelect => term.curt().prom.operation(),
+                KeyCmd::CutSelect => term.curt().prom.operation(),
                 KeyCmd::Undo => term.curt().prom.undo(),
                 KeyCmd::Redo => term.curt().prom.redo(),
                 KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => term.curt().prom.operation(),
@@ -82,7 +80,7 @@ impl EvtAct {
             }
             // clear_sels
             match term.curt().editor.keycmd {
-                KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::Tab | KeyCmd::InsertChar(_) => term.curt().prom.clear_sels(),
+                KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::Tab => term.curt().prom.clear_sels(),
                 _ => {}
             }
         }
@@ -116,7 +114,7 @@ impl EvtAct {
         if term.curt().state.grep_state.is_result || term.curt().state.is_read_only {
             if term.curt().state.is_search || term.curt().state.is_move_row {
             } else {
-                if Keybind::is_edit(term.curt().editor.keycmd, true) {
+                if Keybind::is_edit(&term.curt().editor.keycmd, true) {
                     if term.curt().state.grep_state.is_result {
                         if term.curt().editor.keycmd != KeyCmd::InsertLine {
                             return EvtActType::Hold;
@@ -132,7 +130,7 @@ impl EvtAct {
                     KeyCmd::CursorUpSelect | KeyCmd::CursorDownSelect | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect | KeyCmd::FindBack => return EvtActType::Next,
                     //
                     KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::CursorPageUp | KeyCmd::CursorPageDown | KeyCmd::Help => return EvtActType::Next,
-                    KeyCmd::InsertChar(_) | KeyCmd::InsertLine => return EvtActType::Hold,
+                    KeyCmd::InsertLine => return EvtActType::Hold,
                     KeyCmd::FindNext | KeyCmd::EscPrompt => {}
                     // mouse
                     KeyCmd::MouseScrollUp | KeyCmd::MouseScrollDown | KeyCmd::MouseDownLeft(_, _) | KeyCmd::MouseDragLeft(_, _) => return EvtActType::Next,
@@ -189,7 +187,7 @@ impl EvtAct {
         if tab.state.grep_state.is_grep || tab.state.is_open_file || tab.state.is_save_new_file {
             // Check clear tab candidate
             match tab.editor.keycmd {
-                KeyCmd::InsertChar(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect => {
+                KeyCmd::InsertStr(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect => {
                     if tab.state.grep_state.is_grep {
                         tab.prom.prom_grep.tab_comp.clear_tab_comp()
                     } else if tab.state.is_open_file {
@@ -205,7 +203,7 @@ impl EvtAct {
     pub fn check_err_prompt(term: &mut Terminal) -> bool {
         // Check if sel range is set
         if term.curt().state.is_exists_input_field() {
-            match term.curt().editor.keycmd {
+            match &term.curt().editor.keycmd {
                 KeyCmd::Copy | KeyCmd::CutSelect => {
                     let is_selected = match term.curt().prom.prom_cont_posi {
                         PromptContPosi::First => term.curt().prom.cont_1.sel.is_selected(),
@@ -218,10 +216,12 @@ impl EvtAct {
                         return true;
                     }
                 }
-                KeyCmd::Paste => {
-                    if EvtAct::check_clipboard(term) {
-                        term.curt().mbar.set_err(&LANG.cannot_paste_multi_rows.clone());
-                        return true;
+                KeyCmd::InsertStr(str) => {
+                    if str.is_empty() {
+                        if EvtAct::check_clipboard(term) {
+                            term.curt().mbar.set_err(&LANG.cannot_paste_multi_rows.clone());
+                            return true;
+                        }
                     }
                 }
                 KeyCmd::Undo => {

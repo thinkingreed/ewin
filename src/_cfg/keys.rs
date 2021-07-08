@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 
+use crate::sel_range::SelRange;
+
 impl fmt::Display for Keys {
     fn fmt(&self, ff: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -114,6 +116,9 @@ impl fmt::Display for Keys {
             Keys::Resize => todo!(),
             Keys::MouseDownLeft(_, _) => todo!(),
             Keys::MouseDragLeft(_, _) => todo!(),
+            Keys::MouseAltDownLeft(_, _) => todo!(),
+            Keys::MouseAltDragLeft(_, _) => todo!(),
+            Keys::MouseAltUpLeft() => todo!(),
             Keys::MouseScrollUp => todo!(),
             Keys::MouseScrollDown => todo!(),
             Keys::Unsupported => todo!(),
@@ -133,6 +138,9 @@ pub enum Keys {
     Resize,
     MouseDownLeft(u16, u16),
     MouseDragLeft(u16, u16),
+    MouseAltDownLeft(u16, u16),
+    MouseAltDragLeft(u16, u16),
+    MouseAltUpLeft(),
     MouseScrollUp,
     MouseScrollDown,
     Unsupported,
@@ -162,7 +170,7 @@ pub enum Key {
     Null,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum KeyCmd {
     // cursor move
     CursorLeft,
@@ -182,9 +190,21 @@ pub enum KeyCmd {
     CursorDownSelect,
     CursorRowHomeSelect,
     CursorRowEndSelect,
+    // box
+    // CursorLeftBoxSelect,
+    //  CursorRightBoxSelect,
+    //  CursorUpBoxSelect,
+    //  CursorDownBoxSelect,
+    //  CursorRowHomeBoxSelect,
+    //  CursorRowEndBoxSelect,
     AllSelect,
     // edit
-    InsertChar(char),
+    // InsertChar(char),
+    // Internal use as an alternative to paste
+    InsertStr(String),
+    InsertBox(Vec<(SelRange, String)>),
+    DelBox(Vec<(SelRange, String)>),
+    // InsertTab,
     Tab,
     BackTab,
     InsertLine,
@@ -192,14 +212,14 @@ pub enum KeyCmd {
     DeleteNextChar,
     CutSelect,
     Copy,
-    Paste,
     Undo,
     Redo,
     // find
     Find,
     FindNext,
     FindBack,
-    Replace,
+    ReplaceExec(String, String),
+    ReplacePrompt,
     MoveRow,
     Grep,
     Encoding,
@@ -218,6 +238,8 @@ pub enum KeyCmd {
     MouseScrollDown,
     MouseDownLeft(usize, usize),
     MouseDragLeft(usize, usize),
+    MouseDownBoxLeft(usize, usize),
+    MouseDragBoxLeft(usize, usize),
     MouseOpeSwitch,
     // menu
     Help,
@@ -231,6 +253,9 @@ pub enum KeyCmd {
     ConfirmPrompt,
     FindCaseSensitive,
     FindRegex,
+    // mode
+    BoxSelectMode,
+    CancelMode,
     //
     Resize,
     NoBind,
@@ -390,6 +415,7 @@ impl FromStr for Keys {
             // Alt
             "alt+left" => Ok(Keys::Alt(Key::Left)),
             "alt+right" => Ok(Keys::Alt(Key::Right)),
+            "alt+up" => Ok(Keys::Alt(Key::Up)),
             "alt+down" => Ok(Keys::Alt(Key::Down)),
             "alt+home" => Ok(Keys::Alt(Key::Home)),
             "alt+end" => Ok(Keys::Alt(Key::End)),
@@ -465,20 +491,21 @@ impl FromStr for KeyCmd {
             "cursorRowHomeSelect" => Ok(KeyCmd::CursorRowHomeSelect),
             "cursorRowEndSelect" => Ok(KeyCmd::CursorRowEndSelect),
             "allSelect" => Ok(KeyCmd::AllSelect),
+            "boxSelectModeStart" => Ok(KeyCmd::BoxSelectMode),
             // edit
             "insertLine" => Ok(KeyCmd::InsertLine),
             "deletePrevChar" => Ok(KeyCmd::DeletePrevChar),
             "deleteNextChar" => Ok(KeyCmd::DeleteNextChar),
             "cutSelect" => Ok(KeyCmd::CutSelect),
             "copySelect" => Ok(KeyCmd::Copy),
-            "paste" => Ok(KeyCmd::Paste),
+            "paste" => Ok(KeyCmd::InsertStr("".to_string())),
             "undo" => Ok(KeyCmd::Undo),
             "redo" => Ok(KeyCmd::Redo),
             // find
             "find" => Ok(KeyCmd::Find),
             "findNext" => Ok(KeyCmd::FindNext),
             "findBack" => Ok(KeyCmd::FindBack),
-            "replace" => Ok(KeyCmd::Replace),
+            "replace" => Ok(KeyCmd::ReplacePrompt),
             "moveLine" => Ok(KeyCmd::MoveRow),
             "grep" => Ok(KeyCmd::Grep),
             // file
@@ -506,6 +533,8 @@ impl FromStr for KeyCmd {
             "confirmPrompt" => Ok(KeyCmd::ConfirmPrompt),
             "findCaseSensitive" => Ok(KeyCmd::FindCaseSensitive),
             "findRegex" => Ok(KeyCmd::FindRegex),
+            // mode
+            "cancelMode" => Ok(KeyCmd::CancelMode),
             _ => Err(()),
         }
     }

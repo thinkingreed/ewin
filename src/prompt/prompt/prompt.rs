@@ -161,43 +161,20 @@ impl Prompt {
         }
     }
 
-    pub fn shift_right(&mut self) {
+    pub fn shift_move_com(&mut self) {
         match &self.prom_cont_posi {
-            First => self.cont_1.shift_right(),
-            Second => self.cont_2.shift_right(),
-            Third => self.cont_3.shift_right(),
+            First => self.cont_1.shift_move_com(),
+            Second => self.cont_2.shift_move_com(),
+            Third => self.cont_3.shift_move_com(),
             _ => {}
         }
     }
-    pub fn shift_left(&mut self) {
-        match &self.prom_cont_posi {
-            First => self.cont_1.shift_left(),
-            Second => self.cont_2.shift_left(),
-            Third => self.cont_3.shift_left(),
-            _ => {}
-        }
-    }
-    pub fn shift_home(&mut self) {
-        match &self.prom_cont_posi {
-            First => self.cont_1.shift_home(),
-            Second => self.cont_2.shift_home(),
-            Third => self.cont_3.shift_home(),
-            _ => {}
-        }
-    }
-    pub fn shift_end(&mut self) {
-        match &self.prom_cont_posi {
-            First => self.cont_1.shift_end(),
-            Second => self.cont_2.shift_end(),
-            Third => self.cont_3.shift_end(),
-            _ => {}
-        }
-    }
-    pub fn insert_char(&mut self, c: char) {
+
+    pub fn insert_str(&mut self, str: String) {
         match self.prom_cont_posi {
-            First => self.cont_1.exec_edit_proc(EvtType::InsertChar, &c.to_string()),
-            Second => self.cont_2.exec_edit_proc(EvtType::InsertChar, &c.to_string()),
-            Third => self.cont_3.exec_edit_proc(EvtType::InsertChar, &c.to_string()),
+            First => self.cont_1.edit_proc(KeyCmd::InsertStr(str)),
+            Second => self.cont_2.edit_proc(KeyCmd::InsertStr(str)),
+            Third => self.cont_3.edit_proc(KeyCmd::InsertStr(str)),
             _ => {}
         }
     }
@@ -234,11 +211,8 @@ impl Prompt {
             }
         }
 
-        match cont.keycmd {
-            KeyCmd::Paste => cont.exec_edit_proc(EvtType::Paste, ""),
-            KeyCmd::CutSelect => cont.exec_edit_proc(EvtType::Cut, ""),
-            KeyCmd::DeleteNextChar => cont.exec_edit_proc(EvtType::Del, ""),
-            KeyCmd::DeletePrevChar => cont.exec_edit_proc(EvtType::BS, ""),
+        match &cont.keycmd {
+            KeyCmd::InsertStr(_) | KeyCmd::CutSelect | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => cont.edit_proc(cont.keycmd.clone()),
             KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd => cont.operation(),
             _ => {}
         }

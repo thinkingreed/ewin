@@ -17,7 +17,7 @@ impl EvtAct {
                 PromOpenFile::set_file_list(&mut term.curt().prom);
                 return EvtActType::Next;
             }
-            KeyCmd::InsertChar(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::Tab => PromOpenFile::set_file_list(&mut term.curt().prom),
+            KeyCmd::InsertStr(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::Tab => PromOpenFile::set_file_list(&mut term.curt().prom),
             KeyCmd::CursorUp => PromOpenFile::move_vec(term, CurDirection::Up),
             KeyCmd::CursorDown => PromOpenFile::move_vec(term, CurDirection::Down),
             KeyCmd::CursorLeft | KeyCmd::CursorRight => {

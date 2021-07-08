@@ -5,6 +5,7 @@ use crate::{
     log::*,
     model::*,
     prompt::choice::{Choice, Choices},
+    sel_range::SelRange,
     tab::Tab,
     util::*,
 };
@@ -13,11 +14,11 @@ use std::{cmp::min, collections::HashMap, io::Write, usize};
 
 impl PromptCont {
     pub fn new_not_edit_type(tab: &mut Tab) -> Self {
-        PromptCont { disp_row_posi: tab.prom.disp_row_posi, keycmd: tab.editor.keycmd, ..PromptCont::default() }
+        PromptCont { disp_row_posi: tab.prom.disp_row_posi, keycmd: tab.editor.keycmd.clone(), ..PromptCont::default() }
     }
 
     pub fn new_edit_type(tab: &mut Tab, prompt_cont_posi: PromptContPosi) -> Self {
-        PromptCont { disp_row_posi: tab.prom.disp_row_posi, keycmd: tab.editor.keycmd, posi: prompt_cont_posi, ..PromptCont::default() }
+        PromptCont { disp_row_posi: tab.prom.disp_row_posi, keycmd: tab.editor.keycmd.clone(), posi: prompt_cont_posi, ..PromptCont::default() }
     }
 
     pub fn get_draw_buf_str(&self) -> String {
@@ -40,7 +41,7 @@ impl PromptCont {
     pub fn del_sel_range(&mut self) {
         let sel = self.sel.get_range();
         self.buf.drain(sel.sx..sel.ex);
-        self.cur.disp_x = min(sel.disp_x_s, sel.disp_x_e);
+        self.cur.disp_x = min(sel.s_disp_x, sel.e_disp_x);
         self.cur.x = min(sel.sx, sel.ex);
     }
 

@@ -1,13 +1,15 @@
-use crate::{_cfg::cfg::CfgSearch, def::*, global::*, model::*};
+use crate::{
+    _cfg::{cfg::CfgSearch, keys::KeyCmd},
+    def::*,
+    global::*,
+    log::Log,
+    model::*,
+    sel_range::{SelMode, SelRange},
+};
 use regex::RegexBuilder;
 use ropey::{iter::Chars, Rope, RopeSlice};
 use std::collections::BTreeSet;
 
-impl Default for TextBuffer {
-    fn default() -> Self {
-        TextBuffer { text: Rope::default() }
-    }
-}
 impl TextBuffer {
     pub fn line<'a>(&'a self, i: usize) -> RopeSlice<'a> {
         self.text.line(i)
@@ -32,10 +34,11 @@ impl TextBuffer {
         self.line(y).slice(..x).chars().collect()
     }
 
+    /*
     pub fn insert_char(&mut self, y: usize, x: usize, c: char) {
         let i = self.text.line_to_char(y) + x;
         self.text.insert_char(i, c);
-    }
+    } */
     pub fn insert(&mut self, y: usize, x: usize, s: &str) {
         let i = self.text.line_to_char(y) + x;
         self.text.insert(i, s);
@@ -47,17 +50,17 @@ impl TextBuffer {
     pub fn remove(&mut self, s_idx: usize, e_idx: usize) {
         self.text.remove(s_idx..e_idx);
     }
-    pub fn remove_del_bs(&mut self, do_type: EvtType, y: usize, x: usize) {
+    pub fn remove_del_bs(&mut self, keycmd: KeyCmd, y: usize, x: usize) {
         let mut i = self.text.line_to_char(y) + x;
 
         let mut del_num = 1;
         let c = self.char(y, x);
         // not select del
-        if do_type == EvtType::Del {
+        if keycmd == KeyCmd::DeleteNextChar {
             if NEW_LINE_CR == c && NEW_LINE_LF == self.char(y, x + 1) {
                 del_num = 2;
             }
-        } else if do_type == EvtType::BS {
+        } else if keycmd == KeyCmd::DeletePrevChar {
             if x > 0 {
                 if NEW_LINE_LF == c && NEW_LINE_CR == self.char(y, x - 1) {
                     i -= 1;
@@ -68,11 +71,24 @@ impl TextBuffer {
         self.text.remove(i..i + del_num);
     }
 
-    pub fn remove_range(&mut self, sel: SelRange) {
-        let i_s = self.text.line_to_char(sel.sy) + sel.sx;
-        let i_e = self.text.line_to_char(sel.ey) + sel.ex;
-
-        self.text.remove(i_s..i_e);
+    pub fn remove_range(&mut self, sel: SelRange, ep: &EvtProc) {
+        match sel.mode {
+            SelMode::Normal => {
+                let i_s = self.text.line_to_char(sel.sy) + sel.sx;
+                let i_e = self.text.line_to_char(sel.ey) + sel.ex;
+                self.text.remove(i_s..i_e);
+            }
+            SelMode::BoxSelect => {
+                for (sel, _) in &ep.box_sel_vec {
+                    if sel.sy > self.text.len_lines() - 1 {
+                        break;
+                    }
+                    let i_s = self.text.line_to_char(sel.sy) + sel.sx;
+                    let i_e = self.text.line_to_char(sel.ey) + sel.ex;
+                    self.text.remove(i_s..i_e);
+                }
+            }
+        }
     }
 
     pub fn char<'a>(&'a self, y: usize, x: usize) -> char {
@@ -87,18 +103,13 @@ impl TextBuffer {
     }
 
     pub fn slice<'a>(&'a self, sel: SelRange) -> String {
+        Log::debug("slice sel", &sel);
+
         let s = self.text.line_to_char(sel.sy) + sel.sx;
         let e = self.text.line_to_char(sel.ey) + sel.ex;
 
-        self.text.slice(s..e).to_string()
+        return self.text.slice(s..e).to_string();
     }
-    /*
-    pub fn slice_idx<'a>(&'a self, sel: SelRange) -> (usize, usize) {
-        let s = self.text.line_to_char(sel.sy) + sel.sx;
-        let e = self.text.line_to_char(sel.ey) + sel.ex;
-        (s, e)
-    }
-     */
 
     pub fn chars<'a>(&'a self) -> Chars<'a> {
         self.text.chars()
@@ -131,14 +142,10 @@ impl TextBuffer {
         self.text.byte_to_char(i) - self.text.line_to_char(self.text.byte_to_line(i))
     }
 
-    /*
-        pub fn convert_range(&mut self, sel: SelRange, func: fn(char) -> char) {
-            let i_s = self.text.line_to_char(sel.sy) + sel.sx;
-            let i_e = self.text.line_to_char(sel.ey) + sel.ex;
+    pub fn append(&mut self, rope: Rope) {
+        self.text.append(rope);
+    }
 
-            self.text.slice(i_s..i_e).chars().map(func);
-        }
-    */
     pub fn search(&self, search_pattern: &str, s_idx: usize, e_idx: usize) -> BTreeSet<(usize, usize)> {
         const BATCH_SIZE: usize = 256;
 
@@ -223,6 +230,16 @@ impl TextBuffer {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TextBuffer {
+    pub text: Rope,
+}
+
+impl Default for TextBuffer {
+    fn default() -> Self {
+        TextBuffer { text: Rope::default() }
+    }
+}
 impl<'a> SearchIter<'a> {
     fn from_rope_slice<'b>(slice: &'b RopeSlice, search_pattern: &'b str, cfg_search: &'b CfgSearch) -> SearchIter<'b> {
         assert!(!search_pattern.is_empty(), "Can't search using an empty search pattern.");

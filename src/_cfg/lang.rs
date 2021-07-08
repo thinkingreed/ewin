@@ -74,7 +74,9 @@ to_half_width = ">半角"
 to_full_width = ">全角"
 to_space  = "Tab > 半角空白"
 to_tab = "半角空白 > Tab"
-column_select_mode= "列選択モード"
+box_select = "Box選択"
+box_insert = "Box挿入"
+box_select_mode= "Box選択モード"
 
 ## Msg ##
 save_confirmation_to_close = "保存して終了しますか？"
@@ -199,8 +201,10 @@ menu_select = "select"
 create_new = "create new"
 save_as = "save as"
 encode = "encode" 
-end_of_all_save = "end of all save" 
-column_select_mode= "column select mode"
+end_of_all_save = "end of all save"
+box_select = "box select"
+box_insert = "box insert"
+box_select_mode= "box select mode"
 
 
 to_uppercase = "to Uppercase"

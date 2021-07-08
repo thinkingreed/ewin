@@ -4,6 +4,7 @@ use crate::{
     def::*,
     global::*,
     log::Log,
+    util::ordinal_suffix,
 };
 use crossterm::event::{Event::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind, *};
 use directories::BaseDirs;
@@ -68,7 +69,8 @@ impl Keybind {
             cmd_key_map.insert(KeyCmd::from_str(&keybind.cmd).unwrap(), Keys::from_str(&keybind.key).unwrap());
         }
 
-        key_cmd_map.insert((Keys::Raw(Key::Tab), KeyWhen::EditorFocus), KeyCmd::Tab);
+        key_cmd_map.insert((Keys::Raw(Key::Tab), KeyWhen::EditorFocus), KeyCmd::InsertStr(TAB_CHAR.to_string()));
+        key_cmd_map.insert((Keys::Raw(Key::Tab), KeyWhen::PromptFocus), KeyCmd::Tab);
         key_cmd_map.insert((Keys::Raw(Key::BackTab), KeyWhen::PromptFocus), KeyCmd::BackTab);
 
         key_cmd_map.insert((Keys::MouseScrollDown, KeyWhen::EditorFocus), KeyCmd::MouseScrollDown);
@@ -77,6 +79,7 @@ impl Keybind {
         key_cmd_map.insert((Keys::Unsupported, KeyWhen::EditorFocus), KeyCmd::Null);
         key_cmd_map.insert((Keys::Null, KeyWhen::EditorFocus), KeyCmd::Null);
 
+        // For key display etc
         cmd_key_map.insert(KeyCmd::Tab, Keys::Raw(Key::Tab));
         cmd_key_map.insert(KeyCmd::MouseScrollDown, Keys::MouseScrollDown);
         cmd_key_map.insert(KeyCmd::MouseScrollUp, Keys::MouseScrollUp);
@@ -90,8 +93,10 @@ impl Keybind {
 
     pub fn get_keycmd(keys: &Keys, keywhen: KeyWhen) -> KeyCmd {
         match &keys {
-            Keys::Shift(Key::Char(c)) => return KeyCmd::InsertChar(c.to_ascii_uppercase()),
-            Keys::Raw(Key::Char(c)) => return KeyCmd::InsertChar(*c),
+            Keys::Shift(Key::Char(c)) => return KeyCmd::InsertStr(c.to_ascii_uppercase().to_string()),
+            Keys::Raw(Key::Char(c)) => return KeyCmd::InsertStr(c.to_string()),
+            Keys::MouseAltDownLeft(y, x) => return KeyCmd::MouseDownBoxLeft(*y as usize, *x as usize),
+            Keys::MouseAltDragLeft(y, x) => return KeyCmd::MouseDragBoxLeft(*y as usize, *x as usize),
             Keys::MouseDownLeft(y, x) => return KeyCmd::MouseDownLeft(*y as usize, *x as usize),
             Keys::MouseDragLeft(y, x) => return KeyCmd::MouseDragLeft(*y as usize, *x as usize),
             _ => {}
@@ -99,8 +104,8 @@ impl Keybind {
 
         let result = KEY_CMD_MAP.get().unwrap().get(&(*keys, KeyWhen::AllFocus)).or_else(|| KEY_CMD_MAP.get().unwrap().get(&(*keys, keywhen)));
         let keybindcmd = match result {
-            Some(cmd) => *cmd,
-            None => *KEY_CMD_MAP.get().unwrap().get(&(*keys, KeyWhen::InputFocus)).unwrap_or(&KeyCmd::Unsupported),
+            Some(cmd) => cmd.clone(),
+            None => KEY_CMD_MAP.get().unwrap().get(&(*keys, KeyWhen::InputFocus)).unwrap_or(&KeyCmd::Unsupported).clone(),
         };
         return keybindcmd;
     }
@@ -136,6 +141,9 @@ impl Keybind {
                     _ => Keys::Unsupported,
                 }
             }
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), modifiers: KeyModifiers::ALT, row: y, column: x, .. }) => return Keys::MouseAltDownLeft(*y, *x),
+            Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), modifiers: KeyModifiers::ALT, row: y, column: x, .. }) => return Keys::MouseAltDragLeft(*y, *x),
+            // Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), modifiers: KeyModifiers::ALT, .. }) => return Keys::MouseAltUpLeft,
             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), row: y, column: x, .. }) => return Keys::MouseDownLeft(*y, *x),
             Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), row: y, column: x, .. }) => return Keys::MouseDragLeft(*y, *x),
             Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => return Keys::MouseScrollUp,
@@ -145,9 +153,9 @@ impl Keybind {
         }
     }
 
-    pub fn is_edit(keybindcmd: KeyCmd, is_incl_unredo: bool) -> bool {
+    pub fn is_edit(keybindcmd: &KeyCmd, is_incl_unredo: bool) -> bool {
         match keybindcmd {
-            KeyCmd::InsertChar(_) | KeyCmd::Tab | KeyCmd::InsertLine | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::Paste | KeyCmd::CutSelect => return true,
+            KeyCmd::InsertStr(_) | KeyCmd::Tab | KeyCmd::InsertLine | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::CutSelect => return true,
             KeyCmd::Undo | KeyCmd::Redo => {
                 if is_incl_unredo {
                     return true;
@@ -158,12 +166,17 @@ impl Keybind {
             _ => return false,
         }
     }
-    pub fn get_menu_str(str: &str, cmd: KeyCmd) -> String {
-        return format!("{}({})", str, Keybind::get_key_str(cmd));
+    pub fn get_menu_str(menunm: &str, cmd: KeyCmd) -> String {
+        let str = Keybind::get_key_str(cmd);
+        let key_str = if str.is_empty() { "".to_string() } else { format!("({})", str) };
+        return format!("{}{}", menunm, key_str);
     }
     pub fn get_key_str(cmd: KeyCmd) -> String {
-        let key = CMD_KEY_MAP.get().unwrap().get(&cmd).unwrap();
-        return key.to_string();
+        let result = CMD_KEY_MAP.get().unwrap().get(&cmd);
+        return match result {
+            Some(key) => key.to_string(),
+            None => "".to_string(),
+        };
     }
     pub fn get_keys(keycmd: KeyCmd) -> Keys {
         return *CMD_KEY_MAP.get().unwrap().get(&(keycmd.clone())).unwrap();
@@ -189,15 +202,5 @@ impl Keybind {
             err_str = format!("{} {} {} setting {}{} {}", LANG.file_parsing_failed, KEYBINDING_FILE, msg, (i + 1).to_string(), ordinal_suffix(i + 1), err_key);
         }
         return err_str;
-    }
-}
-
-fn ordinal_suffix(number: usize) -> &'static str {
-    match (number % 10, number % 100) {
-        (_, 11..=13) => "th",
-        (1, _) => "st",
-        (2, _) => "nd",
-        (3, _) => "rd",
-        _ => "th",
     }
 }

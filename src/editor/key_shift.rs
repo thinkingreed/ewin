@@ -1,76 +1,40 @@
-use crate::{_cfg::keys::KeyCmd, global::*, log::*, model::*, tab::Tab, terminal::*};
+use crate::{_cfg::keys::KeyCmd, global::*, log::*, model::*, sel_range::SelMode, tab::Tab, terminal::*};
 use std::io::Write;
 
 impl Editor {
-    fn shift_move_com(&mut self, do_type: EvtType) {
+    pub fn shift_move_com(&mut self) {
         self.sel.set_sel_posi(true, self.cur.y, self.cur.x, self.cur.disp_x);
 
-        match do_type {
-            EvtType::ShiftRight => self.cur_right(),
-            EvtType::ShiftLeft => self.cur_left(),
-            EvtType::ShiftUp => self.cur_up(),
-            EvtType::ShiftDown => self.cur_down(),
-            EvtType::ShiftHome => {
-                self.cur.x = 0;
-                self.cur.disp_x = 0;
-                self.scroll_horizontal();
-            }
-            EvtType::ShiftEnd => {
-                self.set_cur_target(self.cur.y, self.buf.char_vec_line(self.cur.y).len(), false);
-
-                self.scroll();
-                self.scroll_horizontal();
-            }
+        match self.keycmd {
+            KeyCmd::CursorUpSelect => self.cur_up(),
+            KeyCmd::CursorDownSelect => self.cur_down(),
+            KeyCmd::CursorLeftSelect => self.cur_left(),
+            KeyCmd::CursorRightSelect => self.cur_right(),
+            KeyCmd::CursorRowHomeSelect => self.cur_home(),
+            KeyCmd::CursorRowEndSelect => self.cur_end(),
             _ => {}
         }
+
         self.sel.set_sel_posi(false, self.cur.y, self.cur.x, self.cur.disp_x);
-        self.d_range.set_target(self.cur_y_org, self.cur.y);
+        self.d_range.set_target(self.sel.mode, self.cur_y_org, self.cur.y);
         self.sel.check_overlap();
     }
-    pub fn shift_right(&mut self) {
-        Log::debug_key("shift_right");
-        self.shift_move_com(EvtType::ShiftRight);
-    }
 
-    pub fn shift_left(&mut self) {
-        Log::debug_key("shift_left");
-        self.shift_move_com(EvtType::ShiftLeft);
-    }
-
-    pub fn shift_down(&mut self) {
-        Log::debug_key("shift_down");
-        if self.cur.y == self.buf.len_lines() - 1 {
-            self.d_range.draw_type = DrawType::Not;
-            return;
-        }
-        self.shift_move_com(EvtType::ShiftDown);
-    }
-
-    pub fn shift_up(&mut self) {
-        Log::debug_key("shift_up");
-        if self.cur.y == 0 {
-            self.d_range.draw_type = DrawType::Not;
-            return;
-        }
-        self.shift_move_com(EvtType::ShiftUp);
-    }
-
-    pub fn shift_home(&mut self) {
-        Log::debug_key("s   hift_home");
-        self.shift_move_com(EvtType::ShiftHome);
-    }
-
-    pub fn shift_end(&mut self) {
-        Log::debug_key("shift_end");
-        self.shift_move_com(EvtType::ShiftEnd);
+    pub fn box_select_mode(&mut self) {
+        self.sel.clear();
+        self.sel.mode = match self.sel.mode {
+            SelMode::Normal => SelMode::BoxSelect,
+            SelMode::BoxSelect => SelMode::Normal,
+        };
+        // self.sel_range.sel_mode =
     }
 
     pub fn record_key(&mut self) {
         match self.keycmd {
             // Ctrl
-            KeyCmd::Copy | KeyCmd::CutSelect | KeyCmd::AllSelect | KeyCmd::Paste | KeyCmd::CursorFileHome | KeyCmd::CursorFileEnd => self.key_record_vec.push(KeyRecord { keys: self.keys, ..KeyRecord::default() }),
+            KeyCmd::Copy | KeyCmd::CutSelect | KeyCmd::AllSelect | KeyCmd::InsertStr(_) | KeyCmd::CursorFileHome | KeyCmd::CursorFileEnd => self.key_record_vec.push(KeyRecord { keys: self.keys, ..KeyRecord::default() }),
             // Shift
-            KeyCmd::InsertChar(_) | KeyCmd::CursorUpSelect | KeyCmd::CursorDownSelect | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect => self.key_record_vec.push(KeyRecord { keys: self.keys, ..KeyRecord::default() }),
+            KeyCmd::CursorUpSelect | KeyCmd::CursorDownSelect | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect => self.key_record_vec.push(KeyRecord { keys: self.keys, ..KeyRecord::default() }),
             KeyCmd::FindBack => self.key_record_vec.push(KeyRecord { keys: self.keys, search: Search { str: self.search.str.clone(), ..Search::default() } }),
             // Raw
             KeyCmd::InsertLine | KeyCmd::DeletePrevChar | KeyCmd::DeleteNextChar | KeyCmd::CursorPageUp | KeyCmd::CursorPageDown | KeyCmd::Tab | KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd => self.key_record_vec.push(KeyRecord { keys: self.keys, ..KeyRecord::default() }),

@@ -90,7 +90,7 @@ impl History {
                 }
             }
         }
-        self.mouse_click_vec.push_back((now, *keycmd));
+        self.mouse_click_vec.push_back((now, keycmd.clone()));
 
         return click_count;
     }

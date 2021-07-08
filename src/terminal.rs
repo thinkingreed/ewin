@@ -3,6 +3,7 @@ use crate::{
     bar::headerbar::*,
     bar::statusbar::StatusBar,
     def::*,
+    editor::buf::edit::TextBuffer,
     global::*,
     help::{Help, HelpMode},
     log::*,
@@ -38,10 +39,11 @@ impl Terminal {
         self.set_disp_size();
 
         let d_range = self.curt().editor.d_range;
+        Log::debug("d_range", &d_range);
 
         if !(d_range.draw_type == DrawType::Not || d_range.draw_type == DrawType::MoveCur) {
             self.curt().editor.draw_cache();
-            self.tabs[self.idx].editor.draw(out, self.mode);
+            self.tabs[self.idx].editor.draw(out, self.mouse_mode);
         }
         HeaderBar::draw(out, &self);
         let mut str_vec: Vec<String> = vec![];
@@ -78,7 +80,8 @@ impl Terminal {
         Log::debug("offset_y_org", &self.curt().editor.offset_y_org);
         // Log::debug("self.curt().state.key_record_state", &self.curt().state.key_record_state);
         // Log::debug("self.curt().state", &self.curt().state);
-        Log::debug("", &self.curt().editor.sel);
+        Log::debug("d_range.draw_type", &self.curt().editor.d_range.draw_type);
+        Log::debug("sel_range", &self.curt().editor.sel);
 
         let _ = out.write(&str_vec.concat().as_bytes());
         out.flush().unwrap();
@@ -91,7 +94,7 @@ impl Terminal {
         let mut str_vec: Vec<String> = vec![];
 
         if term.curt().state.is_editor_cur() {
-            let rnw_margin = if &term.mode == &EditerMode::Normal { term.curt().editor.get_rnw() + Editor::RNW_MARGIN } else { 0 };
+            let rnw_margin = if &term.mouse_mode == &MouseMode::Normal { term.curt().editor.get_rnw() + Editor::RNW_MARGIN } else { 0 };
             let editor = &term.curt().editor;
             str_vec.push(MoveTo((editor.cur.disp_x - editor.offset_disp_x + rnw_margin) as u16, (editor.cur.y - editor.offset_y + editor.disp_row_posi) as u16).to_string());
             Terminal::show_cur();
@@ -162,7 +165,7 @@ impl Terminal {
         self.curt().mbar.disp_keyrecord_row_posi = rows - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.disp_row_num - 1;
         self.curt().mbar.disp_readonly_row_posi = rows - self.curt().mbar.disp_keyrecord_row_num - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.disp_row_num - 1;
 
-        self.curt().editor.disp_col_num = if self.mode == EditerMode::Normal { cols - self.curt().editor.get_rnw() - Editor::RNW_MARGIN } else { cols };
+        self.curt().editor.disp_col_num = if self.mouse_mode == MouseMode::Normal { cols - self.curt().editor.get_rnw() - Editor::RNW_MARGIN } else { cols };
         self.curt().editor.disp_row_num = rows - self.hbar.disp_row_num - self.curt().mbar.disp_readonly_row_num - self.curt().mbar.disp_keyrecord_row_num - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.disp_row_num;
 
         return true;
@@ -374,21 +377,21 @@ impl Terminal {
     }
 
     pub fn ctrl_mouse_capture(&mut self) {
-        match self.mode {
-            EditerMode::Normal => {
+        match self.mouse_mode {
+            MouseMode::Normal => {
                 for tab in self.tabs.iter_mut() {
                     tab.editor.rnw = 0;
-                    tab.editor.mode = EditerMode::Mouse;
+                    tab.editor.mouse_mode = MouseMode::Mouse;
                 }
-                self.mode = EditerMode::Mouse;
+                self.mouse_mode = MouseMode::Mouse;
                 execute!(stdout(), DisableMouseCapture).unwrap();
             }
-            EditerMode::Mouse => {
+            MouseMode::Mouse => {
                 for tab in self.tabs.iter_mut() {
                     tab.editor.rnw = tab.editor.buf.len_lines().to_string().len();
-                    tab.editor.mode = EditerMode::Normal;
+                    tab.editor.mouse_mode = MouseMode::Normal;
                 }
-                self.mode = EditerMode::Normal;
+                self.mouse_mode = MouseMode::Normal;
                 execute!(stdout(), EnableMouseCapture).unwrap();
             }
         };
@@ -448,7 +451,7 @@ impl Terminal {
 }
 #[derive(Debug, Clone)]
 pub struct Terminal {
-    pub mode: EditerMode,
+    pub mouse_mode: MouseMode,
     pub hbar: HeaderBar,
     pub help: Help,
     pub tabs: Vec<Tab>,
@@ -465,7 +468,7 @@ impl Terminal {
 
 impl Default for Terminal {
     fn default() -> Self {
-        Terminal { mode: EditerMode::Normal, hbar: HeaderBar::new(), tabs: vec![], idx: 0, help: Help::new(), state: TerminalState::default() }
+        Terminal { mouse_mode: MouseMode::Normal, hbar: HeaderBar::new(), tabs: vec![], idx: 0, help: Help::new(), state: TerminalState::default() }
     }
 }
 #[derive(Debug, Clone)]

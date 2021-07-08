@@ -1,3 +1,4 @@
+use super::edit::TextBuffer;
 use crate::{bar::headerbar::HeaderFile, def::*, global::*, log::*, model::*, prompt::choice::Choice};
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 use encoding_rs::*;
@@ -181,17 +182,9 @@ impl TextBuffer {
         return bom;
     }
 
-    pub fn convert_nl(&mut self, nl_str: &str) -> String {
-        if nl_str == NEW_LINE_LF_STR {
-            return NEW_LINE_LF.to_string();
-        } else {
-            return NEW_LINE_CRLF.to_string();
-        }
-    }
-
     pub fn change_nl(&mut self, from_nl_str: &str, to_nl_str: &str) {
-        let from_nl = &self.convert_nl(from_nl_str);
-        let to_nl = &self.convert_nl(to_nl_str);
+        let from_nl = &NL::get_nl(from_nl_str);
+        let to_nl = &NL::get_nl(to_nl_str);
 
         let search_set = self.search(from_nl, 0, self.text.len_chars());
         self.replace(to_nl, &search_set);

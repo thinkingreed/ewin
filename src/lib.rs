@@ -38,6 +38,7 @@ pub mod global {
 }
 pub mod colors;
 pub mod def;
+pub mod sel_range;
 pub mod evt_act {
     pub mod evt_act;
     pub mod headerbar;
@@ -62,7 +63,7 @@ pub mod editor {
     pub mod convert;
     pub mod draw_range;
     pub mod editor;
-    pub mod evt_proc;
+    pub mod edit_proc;
     pub mod history;
     pub mod key;
     pub mod key_ctrl;
@@ -74,7 +75,7 @@ pub mod editor {
 pub mod model;
 pub mod prompt {
     pub mod cont {
-        pub mod evt_proc;
+        pub mod edit_proc;
         pub mod key;
         pub mod key_ctrl;
         pub mod key_shift;

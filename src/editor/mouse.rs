@@ -1,53 +1,86 @@
-use crate::{log::*, model::*, util::*};
+use crate::{log::*, model::*, sel_range::SelMode, util::*};
 use std::cmp::min;
 
 impl Editor {
-    pub fn ctrl_mouse(&mut self, y: usize, x: usize, is_left_down: bool) {
+    pub fn ctrl_mouse(&mut self, y: usize, x: usize, mouse_proc: MouseProc) {
         Log::debug_key("ctrl_mouse");
-        if y < self.disp_row_posi || y > self.disp_row_num || y > self.buf.len_lines() {
-            if self.sel.is_selected() {
-                self.sel.clear();
-                self.d_range.draw_type = DrawType::All;
-            } else {
-                self.d_range.draw_type = DrawType::Not;
-            }
-            return;
+        Log::debug("y 111", &y);
+        Log::debug("x 111", &x);
+
+        let (mut y, mut x) = (y, x);
+
+        if mouse_proc == MouseProc::DownLeftBox || mouse_proc == MouseProc::DragLeftBox {
+            self.sel.mode = SelMode::BoxSelect;
         }
-        Log::debug("y", &y);
-        Log::debug("x", &x);
+        // y, x range check
+        if y < self.disp_row_posi || y > self.disp_row_num || y > self.buf.len_lines() {
+            if self.sel.mode == SelMode::BoxSelect {
+                self.d_range.draw_type = DrawType::All;
+                if y > self.buf.len_lines() {
+                    y = self.buf.len_lines();
+                } else {
+                    return;
+                }
+            } else {
+                if self.sel.is_selected() {
+                    self.sel.clear();
+                    self.d_range.draw_type = DrawType::All;
+                } else {
+                    self.d_range.draw_type = DrawType::Not;
+                }
+                return;
+            }
+        }
 
         let y = y - self.disp_row_posi;
-        if x < self.get_rnw() + Editor::RNW_MARGIN {
+        if mouse_proc == MouseProc::DownLeft && x < self.get_rnw() + Editor::RNW_MARGIN {
             self.sel.set_s(y, 0, 0);
             let (cur_x, width) = get_row_width(&self.buf.char_vec_line(y)[..], 0, true);
             self.sel.set_e(y, cur_x, width);
             self.set_cur_target(y + self.offset_y, 0, false);
             self.d_range.draw_type = DrawType::All;
         } else {
-            let x = if self.mode == EditerMode::Normal { x - self.get_rnw() - Editor::RNW_MARGIN } else { x };
+            if x < self.get_rnw() + Editor::RNW_MARGIN {
+                x = self.get_rnw() + Editor::RNW_MARGIN;
+            }
+            let x = x - self.get_rnw() - Editor::RNW_MARGIN;
             self.cur.y = y + self.offset_y;
-            let (cur_x, width) = get_until_x(&self.buf.char_vec_line(y + self.offset_y), x + self.offset_x);
-            self.cur.x = cur_x;
-            self.cur.disp_x = width;
 
-            self.set_mouse_sel(is_left_down);
-            self.scroll_horizontal();
-            if is_left_down {
-                if self.sel_org.is_selected() {
-                    self.d_range.draw_type = DrawType::All;
-                }
-            // Drag
+            Log::debug("y 222", &y);
+            Log::debug("x 222", &x);
+
+            let vec = self.buf.char_vec_line(self.cur.y);
+
+            if self.sel.mode == SelMode::BoxSelect && self.offset_x + x > vec.len() - 1 {
+                self.cur.x = x;
+                self.cur.disp_x = x;
             } else {
-                if self.sel.is_selected() {
-                    let sy = self.sel.get_diff_y_mouse_drag(self.sel_org, self.cur.y);
-                    self.d_range = DRange::new(sy, min(sy + 1, self.buf.len_lines() - 1), DrawType::Target);
+                let (cur_x, width) = get_until_x(&vec, x + self.offset_x);
+                self.cur.x = cur_x;
+                self.cur.disp_x = width;
+                self.scroll_horizontal();
+            }
+
+            self.set_mouse_sel(mouse_proc);
+
+            if self.sel.is_selected() {
+                match mouse_proc {
+                    MouseProc::DownLeft | MouseProc::DownLeftBox | MouseProc::DragLeftBox => self.d_range.draw_type = DrawType::All,
+                    MouseProc::DragLeft => {
+                        if self.sel.mode == SelMode::Normal {
+                            let sy = self.sel.get_diff_y_mouse_drag(self.sel_org, self.cur.y);
+                            self.d_range = DRange::new(sy, min(sy + 1, self.buf.len_lines() - 1), DrawType::Target);
+                        } else {
+                            self.d_range.draw_type = DrawType::All;
+                        }
+                    }
                 }
             }
         }
     }
 
-    pub fn set_mouse_sel(&mut self, is_mouse_left_down: bool) {
-        if is_mouse_left_down {
+    pub fn set_mouse_sel(&mut self, mouse_proc: MouseProc) {
+        if mouse_proc == MouseProc::DownLeft || mouse_proc == MouseProc::DownLeftBox {
             let click_count = self.history.count_multi_click(&self.keycmd);
             match click_count {
                 1 => {
@@ -63,17 +96,17 @@ impl Editor {
                     self.sel.ex = ex;
                     let (_, s_disp_x) = get_row_width(&row[..sx], self.offset_disp_x, false);
                     let (_, e_disp_x) = get_row_width(&row[..ex], self.offset_disp_x, false);
-                    self.sel.disp_x_s = s_disp_x;
-                    self.sel.disp_x_e = e_disp_x;
+                    self.sel.s_disp_x = s_disp_x;
+                    self.sel.e_disp_x = e_disp_x;
                 }
                 // One line
                 3 => {
                     self.sel.ey = self.cur.y;
                     self.sel.sx = 0;
-                    self.sel.disp_x_s = 0;
+                    self.sel.s_disp_x = 0;
                     let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], self.offset_disp_x, true);
                     self.sel.ex = cur_x;
-                    self.sel.disp_x_e = width;
+                    self.sel.e_disp_x = width;
                 }
                 _ => {}
             }

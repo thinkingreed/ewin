@@ -1,11 +1,11 @@
 use crate::{
     _cfg::keys::{KeyCmd, KeyWhen, Keybind, Keys},
-    def::TAB_CHAR,
     global::*,
     help::Help,
     log::*,
     model::*,
     prompt::prompt::prompt::*,
+    sel_range::SelMode,
     tab::Tab,
     terminal::*,
 };
@@ -36,32 +36,21 @@ impl EvtAct {
 
                     match keycmd {
                         // cursor move
-                        KeyCmd::CursorLeft => term.curt().editor.cur_left(),
-                        KeyCmd::CursorRight => term.curt().editor.cur_right(),
-                        KeyCmd::CursorUp | KeyCmd::MouseScrollUp => term.curt().editor.cur_up(),
-                        KeyCmd::CursorDown | KeyCmd::MouseScrollDown => term.curt().editor.cur_down(),
-                        KeyCmd::CursorRowHome => term.curt().editor.cur_home(),
-                        KeyCmd::CursorRowEnd => term.curt().editor.cur_end(),
+                        KeyCmd::CursorUp | KeyCmd::MouseScrollUp | KeyCmd::CursorDown | KeyCmd::MouseScrollDown | KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd => term.curt().editor.cur_move_com(),
                         KeyCmd::CursorFileHome => term.curt().editor.ctrl_home(),
                         KeyCmd::CursorFileEnd => term.curt().editor.ctrl_end(),
                         KeyCmd::CursorPageUp => term.curt().editor.page_up(),
                         KeyCmd::CursorPageDown => term.curt().editor.page_down(),
                         // select
-                        KeyCmd::CursorLeftSelect => term.curt().editor.shift_left(),
-                        KeyCmd::CursorRightSelect => term.curt().editor.shift_right(),
-                        KeyCmd::CursorUpSelect => term.curt().editor.shift_up(),
-                        KeyCmd::CursorDownSelect => term.curt().editor.shift_down(),
-                        KeyCmd::CursorRowHomeSelect => term.curt().editor.shift_home(),
-                        KeyCmd::CursorRowEndSelect => term.curt().editor.shift_end(),
+                        KeyCmd::CursorUpSelect | KeyCmd::CursorDownSelect | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect => term.curt().editor.shift_move_com(),
                         KeyCmd::AllSelect => term.curt().editor.all_select(),
                         // edit
-                        KeyCmd::InsertChar(c) => term.curt().editor.exec_edit_proc(EvtType::InsertChar, &c.to_string(), ""),
-                        KeyCmd::Tab => term.curt().editor.exec_edit_proc(EvtType::InsertChar, &TAB_CHAR.to_string(), ""),
-                        KeyCmd::InsertLine => term.curt().editor.exec_edit_proc(EvtType::Enter, "", ""),
-                        KeyCmd::DeletePrevChar => term.curt().editor.exec_edit_proc(EvtType::BS, "", ""),
-                        KeyCmd::DeleteNextChar => term.curt().editor.exec_edit_proc(EvtType::Del, "", ""),
-                        KeyCmd::CutSelect => term.curt().editor.exec_edit_proc(EvtType::Cut, "", ""),
-                        KeyCmd::Paste => term.curt().editor.exec_edit_proc(EvtType::Paste, "", ""),
+                        // KeyCmd::InsertChar(c) => term.curt().editor.edit_proc(KeyCmd::InsertChar(c)),
+                        KeyCmd::InsertStr(str) => term.curt().editor.edit_proc(KeyCmd::InsertStr(str)),
+                        KeyCmd::InsertLine => term.curt().editor.edit_proc(KeyCmd::InsertLine),
+                        KeyCmd::DeletePrevChar => term.curt().editor.edit_proc(KeyCmd::DeletePrevChar),
+                        KeyCmd::DeleteNextChar => term.curt().editor.edit_proc(KeyCmd::DeleteNextChar),
+                        KeyCmd::CutSelect => term.curt().editor.edit_proc(KeyCmd::CutSelect),
                         KeyCmd::Copy => term.curt().editor.copy(),
                         KeyCmd::Undo => term.curt().editor.undo(),
                         KeyCmd::Redo => term.curt().editor.redo(),
@@ -69,7 +58,6 @@ impl EvtAct {
                         KeyCmd::Find => Prompt::search(term),
                         KeyCmd::FindNext => term.curt().editor.search_str(true, false),
                         KeyCmd::FindBack => term.curt().editor.search_str(false, false),
-                        KeyCmd::Replace => Prompt::replace(term),
                         KeyCmd::MoveRow => Prompt::move_row(term),
                         KeyCmd::Grep => Prompt::grep(term),
                         // file
@@ -97,22 +85,38 @@ impl EvtAct {
                             return false;
                         }
                         // mouse
-                        KeyCmd::MouseDownLeft(y, x) => term.curt().editor.ctrl_mouse(y as usize, x as usize, true),
-                        KeyCmd::MouseDragLeft(y, x) => term.curt().editor.ctrl_mouse(y as usize, x as usize, false),
+                        KeyCmd::MouseDownLeft(y, x) => term.curt().editor.ctrl_mouse(y as usize, x as usize, MouseProc::DownLeft),
+                        KeyCmd::MouseDragLeft(y, x) => term.curt().editor.ctrl_mouse(y as usize, x as usize, MouseProc::DragLeft),
+                        KeyCmd::MouseDownBoxLeft(y, x) => term.curt().editor.ctrl_mouse(y as usize, x as usize, MouseProc::DownLeftBox),
+                        KeyCmd::MouseDragBoxLeft(y, x) => term.curt().editor.ctrl_mouse(y as usize, x as usize, MouseProc::DragLeftBox),
                         KeyCmd::MouseOpeSwitch => term.ctrl_mouse_capture(),
                         // menu
                         KeyCmd::Help => Help::disp_toggle(term),
                         KeyCmd::OpenMenu | KeyCmd::OpenMenuFile | KeyCmd::OpenMenuConvert | KeyCmd::OpenMenuEdit | KeyCmd::OpenMenuSelect => Prompt::menu(term),
+
+                        // Mode
+                        KeyCmd::CancelMode => term.curt().editor.cancel_mode(),
+                        KeyCmd::BoxSelectMode => term.curt().editor.box_select_mode(),
 
                         KeyCmd::Resize => term.resize(),
                         // empty
                         KeyCmd::Null => {
                             term.curt().editor.d_range.draw_type = DrawType::All;
                         }
+                        // Prompt
+                        KeyCmd::ReplacePrompt => Prompt::replace(term),
+                        KeyCmd::BackTab | KeyCmd::EscPrompt | KeyCmd::ConfirmPrompt | KeyCmd::FindCaseSensitive | KeyCmd::FindRegex | KeyCmd::Tab => {}
                         // EscPrompt is when Prompt
-                        KeyCmd::Unsupported | KeyCmd::NoBind | KeyCmd::BackTab | KeyCmd::EscPrompt | KeyCmd::ConfirmPrompt | KeyCmd::FindCaseSensitive | KeyCmd::FindRegex => {
+                        KeyCmd::Unsupported => {
                             term.curt().mbar.set_err(&LANG.unsupported_operation);
                         }
+                        KeyCmd::NoBind => {}
+
+                        // Internal use
+                        KeyCmd::ReplaceExec(_, _) => {}
+                        KeyCmd::DelBox(_) => {}
+                        //  KeyCmd::InsertStr(_) => {}
+                        KeyCmd::InsertBox(_) => {}
                     }
 
                     if term.curt().state.key_record_state.is_record {
@@ -141,7 +145,7 @@ impl EvtAct {
         let keywhen = if term.curt().state.is_nomal() { KeyWhen::EditorFocus } else { KeyWhen::PromptFocus };
         term.curt().editor.keycmd = Keybind::get_keycmd(&keys, keywhen);
 
-        Log::info("term.curt().editor.keycmd", &term.curt().editor.keycmd);
+        Log::info("KeyCmd", &term.curt().editor.keycmd);
         term.curt().prom.set_keys(keys);
 
         match &term.curt().editor.keycmd {
@@ -208,12 +212,22 @@ impl EvtAct {
         Editor::set_draw_range_init(term.curt());
 
         // Edit is_change=true, Clear redo_vec,
-        if Keybind::is_edit(term.curt().editor.keycmd, false) {
+        if Keybind::is_edit(&term.curt().editor.keycmd, false) {
             term.hbar.file_vec[term.idx].is_changed = true;
             term.curt().editor.history.clear_redo_vec();
         }
 
         term.curt().mbar.clear_mag();
+
+        // Box Mode cancel
+        match term.curt().editor.keycmd {
+            KeyCmd::InsertStr(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => {
+                if term.curt().editor.sel.mode == SelMode::BoxSelect {
+                    term.curt().editor.box_sel.mode = BoxInsertMode::Insert;
+                }
+            }
+            _ => term.curt().editor.box_sel.mode = BoxInsertMode::Nomal,
+        }
     }
 
     pub fn finalize(term: &mut Terminal) {
@@ -227,16 +241,29 @@ impl EvtAct {
             KeyCmd::AllSelect => {}
             // Alt
             KeyCmd::OpenMenu | KeyCmd::OpenMenuFile | KeyCmd::OpenMenuConvert | KeyCmd::OpenMenuEdit | KeyCmd::OpenMenuSelect => {}
-            // Non modifiers
+            // Raw
             KeyCmd::FindNext => {}
             // mouse
-            KeyCmd::MouseScrollUp | KeyCmd::MouseScrollDown | KeyCmd::MouseDownLeft(_, _) | KeyCmd::MouseDragLeft(_, _) => {}
+            KeyCmd::MouseScrollUp | KeyCmd::MouseScrollDown | KeyCmd::MouseDownLeft(_, _) | KeyCmd::MouseDragLeft(_, _) | KeyCmd::MouseDownBoxLeft(_, _) | KeyCmd::MouseDragBoxLeft(_, _) => {}
             // other
-            KeyCmd::Resize => {}
-            _ => term.curt().editor.sel.clear(),
+            KeyCmd::Resize | KeyCmd::BoxSelectMode => {}
+            _ => {
+                if term.curt().editor.sel.mode == SelMode::BoxSelect {
+                    match term.curt().editor.keycmd {
+                        KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorLeft | KeyCmd::CursorRight => {}
+                        _ => {
+                            term.curt().editor.sel.clear();
+                            term.curt().editor.sel.mode = SelMode::Normal;
+                        }
+                    }
+                } else {
+                    term.curt().editor.sel.clear();
+                    term.curt().editor.sel.mode = SelMode::Normal;
+                }
+            }
         }
 
-        if Keybind::is_edit(term.curt().editor.keycmd, true) && term.curt().editor.search.ranges.len() > 0 {
+        if Keybind::is_edit(&term.curt().editor.keycmd, true) && term.curt().editor.search.ranges.len() > 0 {
             let len_chars = term.curt().editor.buf.len_chars();
             let search_str = &term.curt().editor.search.str.clone();
             term.curt().editor.search.ranges = term.curt().editor.get_search_ranges(search_str, 0, len_chars, 0);
@@ -258,6 +285,8 @@ impl EvtAct {
         if term.curt().state.key_record_state.is_exec_end == true {
             term.curt().editor.d_range.draw_type = DrawType::All;
         }
+
+        // sel mode cancel
     }
     pub fn check_err(term: &mut Terminal) -> bool {
         if term.curt().editor.keys == Keys::Unsupported {
