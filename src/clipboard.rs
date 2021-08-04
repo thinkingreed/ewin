@@ -1,4 +1,4 @@
-use crate::def::{NEW_LINE_CRLF, NEW_LINE_LF};
+use crate::def::*;
 use crate::{global::*, log::*, model::*};
 use anyhow::Context;
 use clipboard::{ClipboardContext, ClipboardProvider};

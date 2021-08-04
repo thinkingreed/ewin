@@ -33,17 +33,17 @@ impl EvtAct {
                 let replace_folder = term.curt().editor.search.filenm.replace(&filenm, "");
 
                 let line_str = job_grep.grep_str.replace(&replace_folder, "");
-                // Log::debug("line_str", &line_str);
 
+                // New line code is fixed to LF because it is a non-editable file
                 term.curt().editor.buf.insert_end(&format!("{}{}", line_str, NEW_LINE_LF));
 
                 let rnw_org = term.curt().editor.rnw;
                 term.curt().editor.set_grep_result(line_str);
                 if term.curt().editor.buf.len_lines() > term.curt().editor.disp_row_num && rnw_org == term.curt().editor.rnw {
                     let y = term.curt().editor.offset_y + term.curt().editor.disp_row_num - 2;
-                    term.curt().editor.d_range = DRange::new(y - 2, y, DrawType::ScrollDown);
+                    term.curt().editor.draw_type = DrawType::ScrollDown(y - 2, y);
                 } else {
-                    term.curt().editor.d_range.draw_type = DrawType::All;
+                    term.curt().editor.draw_type = DrawType::All;
                 }
                 term.draw(out);
             } else {
@@ -68,7 +68,7 @@ impl EvtAct {
         term.curt().editor.set_cur_default();
         term.curt().editor.scroll();
         term.curt().editor.scroll_horizontal();
-        term.curt().editor.d_range.draw_type = DrawType::All;
+        term.curt().editor.draw_type = DrawType::All;
         term.draw(out);
         Terminal::draw_cur(out, term);
     }
@@ -151,7 +151,7 @@ impl EvtAct {
             KeyCmd::CloseFile | KeyCmd::SaveFile | KeyCmd::Copy | KeyCmd::AllSelect | KeyCmd::Find | KeyCmd::CursorFileHome | KeyCmd::CursorFileEnd => return EvtActType::Next,
             //
             KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorDown | KeyCmd::CursorUp | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::FindNext | KeyCmd::CursorPageUp | KeyCmd::CursorPageDown => return EvtActType::Next,
-            KeyCmd::InsertLine => {
+            KeyCmd::ConfirmPrompt => {
                 let y = term.tabs[term.idx].editor.cur.y;
                 let grep_result = term.tabs[term.idx].editor.grep_result_vec[y].clone();
 

@@ -1,4 +1,13 @@
-use crate::{bar::headerbar::*, colors::*, def::*, global::*, log::*, model::BoxInsertMode, sel_range::SelMode, tab::*, util::*};
+use crate::{
+    bar::headerbar::*,
+    colors::*,
+    def::*,
+    global::*,
+    log::*,
+    sel_range::{BoxInsertMode, SelMode},
+    tab::*,
+    util::*,
+};
 use crossterm::{cursor::*, terminal::*};
 use std::io::{stdout, BufWriter, Write};
 
@@ -15,22 +24,43 @@ impl StatusBar {
         let cur_s = StatusBar::get_cur_str(tab);
 
         let enc_nl = format!("{}({})", h_file.enc, h_file.nl);
-        let (other_w, box_sel_mode_w, select_mode_w, cur_w) = StatusBar::get_areas_width(tab, &enc_nl, get_str_width(&cur_s));
-        tab.sbar.select_mode_area = (other_w + 1, other_w + select_mode_w - 1);
-        tab.sbar.cur_area = (other_w + select_mode_w, other_w + select_mode_w - 1);
-        tab.sbar.enc_nl_area = (other_w + select_mode_w + cur_w, other_w + select_mode_w + cur_w + enc_nl.len() - 1);
+        let (other_w, search_w, box_sel_mode_w, select_mode_w, cur_w) = StatusBar::get_areas_width(tab, &enc_nl, get_str_width(&cur_s));
+        tab.sbar.search_area = (other_w + 1, other_w + search_w - 1);
 
+        tab.sbar.select_mode_area = (other_w + search_w + 1, other_w + search_w + select_mode_w - 1);
+        tab.sbar.cur_area = (other_w + search_w + select_mode_w, other_w + search_w + select_mode_w + cur_w - 1);
+        tab.sbar.enc_nl_area = (other_w + select_mode_w + cur_w, other_w + select_mode_w + cur_w + enc_nl.len() - 1);
         tab.sbar.other_str = " ".repeat(other_w);
+
+        let search_idx = if tab.editor.search.idx == USIZE_UNDEFINED { 1 } else { tab.editor.search.idx + 1 };
+        let search_str = if search_w == 0 { "".to_string() } else { format!("{}({}/{})", &LANG.search, search_idx, tab.editor.search.ranges.len()) };
+        let search_disp_str = format!("{search:>w$}", search = search_str, w = search_w - (get_str_width(&search_str) - search_str.chars().count()));
+
         let select_mode_str = tab.editor.sel.mode.to_string();
         let select_mode_disp_str = format!("{select:>w$}", select = select_mode_str, w = select_mode_w - (get_str_width(&select_mode_str) - select_mode_str.chars().count()));
-
-        let box_mode_str = tab.editor.box_sel.mode.to_string();
+        let box_mode_str = tab.editor.box_insert.mode.to_string();
         let box_mode_disp_str = format!("{select:>w$}", select = box_mode_str, w = box_sel_mode_w - (get_str_width(&box_mode_str) - box_mode_str.chars().count()));
 
         // Adjusted by the difference between the character width and the number of characters
         tab.sbar.cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
 
-        let sbar_ctr = format!("{}{}{}{}{}{}{}{}{}{}{}", tab.sbar.other_str, Colors::get_sbar_inversion_fg_bg(), &box_mode_disp_str, Colors::get_sbar_fg_bg(), Colors::get_sbar_inversion_fg_bg(), &select_mode_disp_str, Colors::get_sbar_fg_bg(), tab.sbar.cur_str, Colors::get_sbar_inversion_fg_bg(), &enc_nl, Colors::get_sbar_fg_bg());
+        let sbar_ctr = format!(
+            "{}{}{}{}{}{}{}{}{}{}{}{}{}{}",
+            tab.sbar.other_str,
+            Colors::get_sbar_inversion_fg_bg(),
+            &search_disp_str,
+            Colors::get_sbar_fg_bg(),
+            Colors::get_sbar_inversion_fg_bg(),
+            &box_mode_disp_str,
+            Colors::get_sbar_fg_bg(),
+            Colors::get_sbar_inversion_fg_bg(),
+            &select_mode_disp_str,
+            Colors::get_sbar_fg_bg(),
+            tab.sbar.cur_str,
+            Colors::get_sbar_inversion_fg_bg(),
+            &enc_nl,
+            Colors::get_sbar_fg_bg()
+        );
         let sber_all_str = format!("{}{}{}{}{}", MoveTo(0, tab.sbar.disp_row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_sbar_fg_bg(), sbar_ctr, Colors::get_default_fg_bg(),);
 
         str_vec.push(sber_all_str);
@@ -57,19 +87,22 @@ impl StatusBar {
         return cur_posi;
     }
 
-    fn get_areas_width(tab: &mut Tab, enc_nl: &String, cur_str_w: usize) -> (usize, usize, usize, usize) {
+    fn get_areas_width(tab: &mut Tab, enc_nl: &String, cur_str_w: usize) -> (usize, usize, usize, usize, usize) {
         let cols_w = tab.sbar.disp_col_num;
 
         let select_mode_w = match tab.editor.sel.mode {
             SelMode::Normal => 0,
             SelMode::BoxSelect => get_str_width(&LANG.box_select),
         };
-        let box_sel_mode_w = match tab.editor.box_sel.mode {
-            BoxInsertMode::Nomal => 0,
+        let box_sel_mode_w = match tab.editor.box_insert.mode {
+            BoxInsertMode::Normal => 0,
             BoxInsertMode::Insert => get_str_width(&LANG.box_insert),
         };
 
-        return (cols_w - enc_nl.len() - box_sel_mode_w - select_mode_w - cur_str_w, box_sel_mode_w, select_mode_w, cur_str_w);
+        let search_idx = if tab.editor.search.idx == USIZE_UNDEFINED { 1 } else { tab.editor.search.idx + 1 };
+        let search_w = if !tab.state.is_nomal() || tab.editor.search.ranges.len() == 0 { 0 } else { get_str_width(&format!("{}({}/{})", &LANG.search, search_idx, tab.editor.search.ranges.len())) };
+
+        return (cols_w - enc_nl.len() - box_sel_mode_w - select_mode_w - search_w - cur_str_w, search_w, box_sel_mode_w, select_mode_w, cur_str_w);
     }
 }
 
@@ -82,6 +115,7 @@ pub struct StatusBar {
     // 0 index
     pub disp_row_posi: usize,
     pub disp_col_num: usize,
+    pub search_area: (usize, usize),
     pub select_mode_area: (usize, usize),
     pub cur_area: (usize, usize),
     pub enc_nl_area: (usize, usize),
@@ -89,6 +123,6 @@ pub struct StatusBar {
 
 impl Default for StatusBar {
     fn default() -> Self {
-        StatusBar { cur_str: String::new(), other_str: String::new(), disp_row_num: 1, disp_row_posi: 0, disp_col_num: 0, select_mode_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), cur_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), enc_nl_area: (USIZE_UNDEFINED, USIZE_UNDEFINED) }
+        StatusBar { cur_str: String::new(), other_str: String::new(), disp_row_num: 1, disp_row_posi: 0, disp_col_num: 0, search_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), select_mode_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), cur_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), enc_nl_area: (USIZE_UNDEFINED, USIZE_UNDEFINED) }
     }
 }

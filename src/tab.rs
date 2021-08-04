@@ -62,6 +62,7 @@ impl TabState {
 #[derive(Debug, Clone)]
 pub struct Tab {
     pub editor: Editor,
+    // pub editor_draw: Draw,
     pub mbar: MsgBar,
     pub prom: Prompt,
     pub sbar: StatusBar,
@@ -79,13 +80,13 @@ pub struct TabState {
     pub is_open_file: bool,
     pub is_enc_nl: bool,
     pub grep_state: GrepState,
-    pub key_record_state: KeyRecordState,
+    pub key_macro_state: KeyMacroState,
     pub is_menu: bool,
 }
 
 impl Default for TabState {
     fn default() -> Self {
-        TabState { is_close_confirm: false, is_search: false, is_replace: false, is_save_new_file: false, is_move_row: false, is_read_only: false, is_open_file: false, is_enc_nl: false, key_record_state: KeyRecordState::default(), grep_state: GrepState::default(), is_menu: false }
+        TabState { is_close_confirm: false, is_search: false, is_replace: false, is_save_new_file: false, is_move_row: false, is_read_only: false, is_open_file: false, is_enc_nl: false, key_macro_state: KeyMacroState::default(), grep_state: GrepState::default(), is_menu: false }
     }
 }
 

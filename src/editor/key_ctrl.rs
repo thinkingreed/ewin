@@ -1,5 +1,5 @@
 use crate::{_cfg::keys::KeyCmd, clipboard::*, def::*, global::*, log::*, model::*, prompt::prompt::prompt::*, sel_range::SelMode, tab::Tab, terminal::*, util::*};
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 
 impl Editor {
     pub fn all_select(&mut self) {
@@ -7,15 +7,15 @@ impl Editor {
         self.sel.set_s(0, 0, 0);
         let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.buf.len_lines() - 1)[..], self.offset_disp_x, false);
         self.sel.set_e(self.buf.len_lines() - 1, cur_x, width);
-        self.d_range.draw_type = DrawType::All;
+        self.draw_type = DrawType::All;
     }
 
-    pub fn cut(&mut self, ep: EvtProc) {
+    pub fn cut(&mut self, ep: Proc) {
         Log::debug_key("cut");
         // self.sel = ep.sel.clone();
         set_clipboard(&ep.str);
         // self.sel.clear();
-        self.d_range.draw_type = DrawType::All;
+        self.draw_type = DrawType::All;
     }
 
     pub fn copy(&mut self) {
@@ -27,23 +27,11 @@ impl Editor {
             SelMode::BoxSelect => {
                 let (str, box_sel_vec) = self.slice_box_sel();
                 copy_str = str.clone();
-                self.box_sel.clipboard_str = str;
-                self.box_sel.clipboard_box_sel_vec = box_sel_vec;
+                self.box_insert.vec = box_sel_vec;
             }
         };
         set_clipboard(&copy_str);
     }
-
-    /*
-    pub fn insert_char(&mut self, c: char) {
-        self.buf.insert_char(self.cur.y, self.cur.x, c);
-        self.cur_right();
-        if self.is_enable_syntax_highlight {
-            self.d_range.draw_type = DrawType::All;
-        } else {
-            self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::After);
-        }
-    } */
 
     pub fn ctrl_home(&mut self) {
         self.updown_x = 0;
@@ -89,14 +77,14 @@ impl Editor {
         }
     }
 
-    pub fn get_search_ranges(&self, search_str: &String, start_idx: usize, end_idx: usize, ignore_prefix_len: usize) -> Vec<SearchRange> {
+    pub fn get_search_ranges(&self, search_str: &String, s_idx: usize, e_idx: usize, ignore_prefix_len: usize) -> Vec<SearchRange> {
         let regex = CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex;
-        let search_set = self.buf.search(&search_str, start_idx, end_idx);
+        let search_map = self.buf.search(&search_str, s_idx, e_idx);
         let mut rtn_vec = vec![];
 
         // Case regex: Use the number of bytes
         //      normal: Use the number of characters
-        for (sx, ex) in search_set {
+        for ((sx, ex), _) in search_map {
             // Ignore file name and line number match when grep
             if ignore_prefix_len != 0 {
                 let line_s_idx = if regex { self.buf.line_to_byte(self.buf.byte_to_line(sx)) } else { self.buf.line_to_char(self.buf.char_to_line(sx)) };
@@ -119,6 +107,12 @@ impl Editor {
 
         if is_asc {
             for (i, range) in self.search.ranges.iter().enumerate() {
+                // When the cursor position is the target in the first search
+                if self.search.idx == USIZE_UNDEFINED {
+                    if self.cur.y <= range.y || (self.cur.y == range.y && cur_x <= range.sx) {
+                        return i;
+                    }
+                }
                 if self.cur.y < range.y || (self.cur.y == range.y && cur_x < range.sx) {
                     return i;
                 }
@@ -151,153 +145,189 @@ impl Editor {
         return index;
     }
 
-    pub fn replace(&mut self, ep: &mut EvtProc, search_str: &String, replace_str: &String) {
-        let search_set = match self.keycmd {
-            KeyCmd::ConfirmPrompt | KeyCmd::Redo => REPLACE_SEARCH_RANGE.get().unwrap().try_lock().unwrap().pop().unwrap(),
-            KeyCmd::Undo => REPLACE_REPLACE_RANGE.get().unwrap().try_lock().unwrap().pop().unwrap(),
-            _ => BTreeSet::new(),
-        };
-        let (s_idx, _) = *search_set.iter().min().unwrap();
-        let (y, x) = (self.buf.char_to_line(s_idx), self.buf.char_to_line_char_idx(s_idx));
+    pub fn replace(&mut self, ep: &mut Proc, is_regex: bool, replace_str: String, replace_map: BTreeMap<(usize, usize), String>) {
+        let ((s_idx, _), _) = replace_map.iter().min().unwrap();
+        let (y, x) = if is_regex { (self.buf.byte_to_line(*s_idx), self.buf.byte_to_line_char_idx(*s_idx)) } else { (self.buf.char_to_line(*s_idx), self.buf.char_to_line_char_idx(*s_idx)) };
         self.set_cur_target(y, x, false);
         ep.cur_s = self.cur;
 
-        let end_char_idx = self.buf.replace(replace_str, &search_set);
-        let replace_set = self.get_replace_set(search_str, replace_str, &search_set);
+        Log::debug("replace is_regex", &is_regex);
+        Log::debug("replace replace_str", &replace_str);
+        Log::debug("replace search_map", &replace_map);
 
-        if self.keycmd == KeyCmd::ConfirmPrompt || self.keycmd == KeyCmd::Redo {
-            REPLACE_REPLACE_RANGE.get().unwrap().try_lock().unwrap().push(replace_set);
-        } else if self.keycmd == KeyCmd::Undo {
-            REPLACE_SEARCH_RANGE.get().unwrap().try_lock().unwrap().push(replace_set);
-        }
+        let end_char_idx = self.buf.replace(is_regex, &replace_str, &replace_map);
 
-        if self.is_enable_syntax_highlight {
-            self.d_range.draw_type = DrawType::All;
-        } else {
-            self.d_range = DRange::new(self.offset_y, self.offset_y, DrawType::After);
-        }
+        self.set_draw_range_each_process(DrawType::After(self.offset_y));
+
         let y = self.buf.char_to_line(end_char_idx);
-        let x = end_char_idx - self.buf.line_to_char(y) + 1;
+        let x = end_char_idx - self.buf.line_to_char(y);
         self.set_cur_target(y, x, false);
         ep.cur_e = self.cur;
-
-        self.scroll();
-        self.scroll_horizontal();
     }
 
-    pub fn get_replace_set(&mut self, search_str: &String, replace_str: &String, org_set: &BTreeSet<(usize, usize)>) -> BTreeSet<(usize, usize)> {
-        let diff: isize = replace_str.chars().count() as isize - search_str.chars().count() as isize;
-        let replace_str_len = replace_str.chars().count();
-        let mut replace_set: BTreeSet<(usize, usize)> = BTreeSet::new();
+    pub fn get_replace_map(&mut self, is_regex: bool, replace_str: &String, org_map: &BTreeMap<(usize, usize), String>) -> BTreeMap<(usize, usize), String> {
+        let mut replace_map: BTreeMap<(usize, usize), String> = BTreeMap::new();
         let mut total = 0;
-        for (i, (sx, _)) in org_set.iter().enumerate() {
-            let sx = if i == 0 { *sx as isize } else { *sx as isize + total };
-            replace_set.insert((sx as usize, sx as usize + replace_str_len));
+
+        for (i, ((sx, _), search_str)) in org_map.iter().enumerate() {
+            let replace_str_len = if is_regex { replace_str.len() } else { replace_str.chars().count() };
+            let diff: isize = if is_regex { replace_str.len() as isize - search_str.len() as isize } else { replace_str.chars().count() as isize - search_str.chars().count() as isize };
+            let sx = if i == 0 {
+                *sx
+            } else {
+                if is_regex {
+                    *sx
+                } else {
+                    (*sx as isize + total) as usize
+                }
+            };
+            replace_map.insert((sx as usize, sx as usize + replace_str_len), search_str.clone());
             total += diff;
         }
-        return replace_set;
+        return replace_map;
     }
 
     pub fn undo(&mut self) {
         Log::debug_key("undo");
 
-        if let Some(ep) = self.history.get_undo_last() {
-            Log::debug("EvtProc", &ep);
+        if let Some(evt_proc) = self.history.get_undo_last() {
+            Log::debug("evt_proc", &evt_proc);
 
-            // initial cursor posi set
-            match &ep.keycmd {
-                KeyCmd::InsertLine | KeyCmd::CutSelect | KeyCmd::InsertStr(_) | KeyCmd::ReplaceExec(_, _) => self.set_evtproc(&ep, &ep.cur_s),
-                KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => {
-                    if ep.sel.is_selected() {
-                        self.set_evtproc(&ep, if ep.cur_s.x > ep.cur_e.x { &ep.cur_e } else { &ep.cur_s });
-                    } else {
-                        if ep.keycmd == KeyCmd::DeleteNextChar {
-                            self.set_evtproc(&ep, &ep.cur_s);
-                        } else {
-                            self.set_evtproc(&ep, &ep.cur_e);
-                        }
-                    }
-                }
-                _ => {}
+            if let Some(ep) = evt_proc.evt_proc {
+                self.undo_init(&ep);
+                self.undo_exec(&ep);
+                self.undo_finalize(&ep);
             }
-            // exec
-            match &ep.keycmd {
-                // KeyCmd::InsertChar(_) => self.edit_proc(KeyCmd::DeleteNextChar),
-                KeyCmd::InsertLine => self.edit_proc(KeyCmd::DeleteNextChar),
-                KeyCmd::InsertStr(_) => {
-                    if ep.box_sel_vec.is_empty() {
-                        // Set paste target with sel
-                        self.sel = ep.sel;
-                        self.edit_proc(KeyCmd::DeleteNextChar);
-                    } else {
-                        self.edit_proc(KeyCmd::DelBox(ep.box_sel_vec.clone()));
-                    }
-                }
-                KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => {
-                    if ep.box_sel_vec.is_empty() {
-                        self.edit_proc(KeyCmd::InsertStr(ep.str.clone()));
-                    } else {
-                        self.edit_proc(KeyCmd::InsertBox(ep.box_sel_vec.clone()));
-                    }
-                }
-                KeyCmd::ReplaceExec(search_str, replace_str) => {
-                    self.edit_proc(KeyCmd::ReplaceExec(replace_str.clone(), search_str.clone()));
-                    // Return cursor position
-                    self.set_evtproc(&ep, &ep.cur_s);
-                }
-
-                _ => {}
+            if let Some(sp) = evt_proc.sel_proc {
+                self.undo_init(&sp);
+                self.undo_exec(&sp);
+                self.undo_finalize(&sp);
             }
-            // last cursor posi set
-            match &ep.keycmd {
-                KeyCmd::DeleteNextChar => {
-                    if ep.sel.is_selected() {
-                        self.set_evtproc(&ep, if ep.cur_s.x > ep.cur_e.x { &ep.cur_s } else { &ep.cur_e });
-                    } else {
-                        self.set_evtproc(&ep, &ep.cur_s);
-                    }
-                }
-                KeyCmd::DeletePrevChar => {
-                    if ep.sel.is_selected() {
-                        self.set_evtproc(&ep, &ep.cur_e);
-                    } else if !ep.box_sel_vec.is_empty() {
-                        self.set_evtproc(&ep, &ep.cur_s);
-                    }
-                }
-                _ => {}
-            }
-
             self.scroll();
             self.scroll_horizontal();
+
+            if let Some(undo_ep) = self.history.pop_undo() {
+                self.history.redo_vec.push(undo_ep);
+            }
+        }
+    }
+    // initial cursor posi set
+    pub fn undo_init(&mut self, proc: &Proc) {
+        match &proc.keycmd {
+            KeyCmd::InsertStr(_) | KeyCmd::InsertLine | KeyCmd::CutSelect | KeyCmd::ReplaceExec(_, _, _) => self.set_evtproc(&proc, &proc.cur_s),
+            KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => {
+                if proc.sel.is_selected() {
+                    self.set_evtproc(&proc, if proc.cur_s.x > proc.cur_e.x { &proc.cur_e } else { &proc.cur_s });
+                } else {
+                    if proc.keycmd == KeyCmd::DeleteNextChar {
+                        self.set_evtproc(&proc, &proc.cur_s);
+                    } else {
+                        self.set_evtproc(&proc, &proc.cur_e);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    pub fn undo_exec(&mut self, proc: &Proc) {
+        match &proc.keycmd {
+            KeyCmd::InsertLine => self.edit_proc(KeyCmd::DeleteNextChar),
+            KeyCmd::InsertStr(_) => {
+                if proc.box_sel_vec.is_empty() {
+                    // Set paste target with sel
+                    self.sel = proc.sel;
+                    self.edit_proc(KeyCmd::DeleteNextChar);
+                } else {
+                    self.edit_proc(KeyCmd::DelBox(proc.box_sel_vec.clone()));
+                }
+            }
+            KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => {
+                if proc.box_sel_vec.is_empty() {
+                    self.edit_proc(KeyCmd::InsertStr(proc.str.clone()));
+                } else {
+                    self.edit_proc(KeyCmd::InsertBox(proc.box_sel_vec.clone()));
+                }
+            }
+            KeyCmd::ReplaceExec(is_regex, replace_str, search_map) => {
+                let replace_map = self.get_replace_map(*is_regex, replace_str, &search_map);
+
+                if *is_regex {
+                    for ((s, e), org_str) in replace_map {
+                        let mut map = BTreeMap::new();
+                        map.insert((s, e), "".to_string());
+                        self.edit_proc(KeyCmd::ReplaceExec(*is_regex, org_str.clone(), map));
+                    }
+                } else {
+                    let search_str = search_map.iter().min().unwrap().1;
+                    self.edit_proc(KeyCmd::ReplaceExec(*is_regex, search_str.clone(), replace_map.clone()));
+                }
+            }
+
+            _ => {}
+        }
+    }
+    // last cursor posi set
+    pub fn undo_finalize(&mut self, proc: &Proc) {
+        match &proc.keycmd {
+            KeyCmd::DeleteNextChar => {
+                if proc.sel.is_selected() {
+                    self.set_evtproc(&proc, if proc.cur_s.x > proc.cur_e.x { &proc.cur_s } else { &proc.cur_e });
+                } else {
+                    self.set_evtproc(&proc, &proc.cur_s);
+                }
+            }
+            KeyCmd::DeletePrevChar => {
+                if proc.sel.is_selected() {
+                    self.set_evtproc(&proc, &proc.cur_e);
+                } else if !proc.box_sel_vec.is_empty() {
+                    self.set_evtproc(&proc, &proc.cur_s);
+                }
+            }
+            KeyCmd::ReplaceExec(_, _, _) => {
+                // Return cursor position
+                self.set_evtproc(&proc, &proc.cur_s);
+            }
+            _ => {}
         }
     }
 
     pub fn redo(&mut self) {
         Log::debug_key("　redo");
 
-        if let Some(ep) = self.history.get_redo_last() {
-            Log::debug("EvtProc", &ep);
-            self.set_evtproc(&ep, &ep.cur_s);
+        if let Some(evt_proc) = self.history.get_redo_last() {
+            Log::debug("evt_proc", &evt_proc);
+            if let Some(sp) = evt_proc.sel_proc {
+                self.redo_exec(sp);
+            }
+            if let Some(ep) = evt_proc.evt_proc {
+                self.redo_exec(ep);
+            }
+            if let Some(redo_ep) = self.history.pop_redo() {
+                self.history.undo_vec.push(redo_ep);
+            }
+        }
+    }
+    pub fn redo_exec(&mut self, proc: Proc) {
+        self.set_evtproc(&proc, &proc.cur_s);
 
-            match ep.keycmd {
-                KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::CutSelect => self.sel = ep.sel,
-                _ => {}
-            }
-            match ep.keycmd {
-                KeyCmd::DeleteNextChar => self.edit_proc(KeyCmd::DeleteNextChar),
-                KeyCmd::DeletePrevChar => self.edit_proc(KeyCmd::DeletePrevChar),
-                KeyCmd::CutSelect => self.edit_proc(KeyCmd::CutSelect),
-                KeyCmd::InsertLine => self.edit_proc(KeyCmd::InsertLine),
-                KeyCmd::InsertStr(_) => {
-                    if ep.box_sel_vec.is_empty() {
-                        self.edit_proc(KeyCmd::InsertStr(ep.str.clone()));
-                    } else {
-                        self.edit_proc(KeyCmd::InsertBox(ep.box_sel_redo_vec.clone()));
-                    }
+        match &proc.keycmd {
+            KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::CutSelect => self.sel = proc.sel,
+            _ => {}
+        }
+        match &proc.keycmd {
+            KeyCmd::DeleteNextChar => self.edit_proc(KeyCmd::DeleteNextChar),
+            KeyCmd::DeletePrevChar => self.edit_proc(KeyCmd::DeletePrevChar),
+            KeyCmd::CutSelect => self.edit_proc(KeyCmd::CutSelect),
+            KeyCmd::InsertLine => self.edit_proc(KeyCmd::InsertLine),
+            KeyCmd::InsertStr(_) => {
+                if proc.box_sel_vec.is_empty() {
+                    self.edit_proc(KeyCmd::InsertStr(proc.str.clone()));
+                } else {
+                    self.edit_proc(KeyCmd::InsertBox(proc.box_sel_redo_vec.clone()));
                 }
-                KeyCmd::ReplaceExec(search_str, replace_str) => self.edit_proc(KeyCmd::ReplaceExec(search_str, replace_str)),
-                _ => {}
             }
+            KeyCmd::ReplaceExec(is_regex, replace_str, search_map) => self.edit_proc(KeyCmd::ReplaceExec(*is_regex, replace_str.clone(), search_map.clone())),
+            _ => {}
         }
     }
 }

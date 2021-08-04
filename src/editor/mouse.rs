@@ -1,33 +1,41 @@
-use crate::{log::*, model::*, sel_range::SelMode, util::*};
+use crate::{_cfg::keys::KeyCmd, log::*, model::*, sel_range::*, util::*};
 use std::cmp::min;
 
 impl Editor {
-    pub fn ctrl_mouse(&mut self, y: usize, x: usize, mouse_proc: MouseProc) {
+    pub fn ctrl_mouse(&mut self) {
         Log::debug_key("ctrl_mouse");
-        Log::debug("y 111", &y);
-        Log::debug("x 111", &x);
-
-        let (mut y, mut x) = (y, x);
+        let (mut y, mut x, mouse_proc) = match self.keycmd {
+            KeyCmd::MouseDownLeft(y, x) => (y, x, MouseProc::DownLeft),
+            KeyCmd::MouseDragLeft(y, x) => (y, x, MouseProc::DragLeft),
+            KeyCmd::MouseDownBoxLeft(y, x) => (y, x, MouseProc::DownLeftBox),
+            KeyCmd::MouseDragBoxLeft(y, x) => (y, x, MouseProc::DragLeftBox),
+            // dummy
+            _ => (0, 0, MouseProc::DownLeft),
+        };
+        Log::debug("Mouse y", &y);
+        Log::debug("Mouse x", &x);
 
         if mouse_proc == MouseProc::DownLeftBox || mouse_proc == MouseProc::DragLeftBox {
             self.sel.mode = SelMode::BoxSelect;
         }
         // y, x range check
-        if y < self.disp_row_posi || y > self.disp_row_num || y > self.buf.len_lines() {
+        if y < self.disp_row_posi || self.disp_row_num < y || self.buf.len_lines() < y {
             if self.sel.mode == SelMode::BoxSelect {
-                self.d_range.draw_type = DrawType::All;
+                self.draw_type = DrawType::All;
                 if y > self.buf.len_lines() {
                     y = self.buf.len_lines();
                 } else {
+                    self.ctrl_end();
                     return;
                 }
             } else {
                 if self.sel.is_selected() {
                     self.sel.clear();
-                    self.d_range.draw_type = DrawType::All;
+                    self.draw_type = DrawType::All;
                 } else {
-                    self.d_range.draw_type = DrawType::Not;
+                    self.draw_type = DrawType::Not;
                 }
+                self.ctrl_end();
                 return;
             }
         }
@@ -38,7 +46,7 @@ impl Editor {
             let (cur_x, width) = get_row_width(&self.buf.char_vec_line(y)[..], 0, true);
             self.sel.set_e(y, cur_x, width);
             self.set_cur_target(y + self.offset_y, 0, false);
-            self.d_range.draw_type = DrawType::All;
+            self.draw_type = DrawType::All;
         } else {
             if x < self.get_rnw() + Editor::RNW_MARGIN {
                 x = self.get_rnw() + Editor::RNW_MARGIN;
@@ -65,13 +73,13 @@ impl Editor {
 
             if self.sel.is_selected() {
                 match mouse_proc {
-                    MouseProc::DownLeft | MouseProc::DownLeftBox | MouseProc::DragLeftBox => self.d_range.draw_type = DrawType::All,
+                    MouseProc::DownLeft | MouseProc::DownLeftBox | MouseProc::DragLeftBox => self.draw_type = DrawType::All,
                     MouseProc::DragLeft => {
                         if self.sel.mode == SelMode::Normal {
                             let sy = self.sel.get_diff_y_mouse_drag(self.sel_org, self.cur.y);
-                            self.d_range = DRange::new(sy, min(sy + 1, self.buf.len_lines() - 1), DrawType::Target);
+                            self.draw_type = DrawType::Target(sy, min(sy + 1, self.buf.len_lines() - 1));
                         } else {
-                            self.d_range.draw_type = DrawType::All;
+                            self.draw_type = DrawType::All;
                         }
                     }
                 }

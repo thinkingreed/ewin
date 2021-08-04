@@ -1,7 +1,6 @@
 use crate::{
     _cfg::keys::{KeyCmd, Keybind},
     clipboard::get_clipboard,
-    def::NEW_LINE_LF,
     global::*,
     log::*,
     model::*,
@@ -32,7 +31,7 @@ impl EvtAct {
                             if term.curt().state.is_search {
                                 term.curt().prom.clear();
                                 term.curt().state.is_search = false;
-                                term.curt().editor.d_range.draw_type = DrawType::All;
+                                term.curt().editor.draw_type = DrawType::All;
                             }
                         } else {
                             GREP_CANCEL_VEC.get().unwrap().try_lock().map(|mut vec| *vec.last_mut().unwrap() = true).unwrap();
@@ -63,10 +62,10 @@ impl EvtAct {
                 }
                 KeyCmd::InsertStr(_) => {
                     if !state.is_move_row {
-                        // term.curt().prom.insert_char(c);
                         term.curt().prom.operation()
                     }
                 }
+                KeyCmd::Copy => term.curt().prom.copy(),
                 KeyCmd::CutSelect => term.curt().prom.operation(),
                 KeyCmd::Undo => term.curt().prom.undo(),
                 KeyCmd::Redo => term.curt().prom.redo(),
@@ -125,7 +124,7 @@ impl EvtAct {
                 }
                 match term.curt().editor.keycmd {
                     // Ctrl
-                    KeyCmd::CursorFileHome | KeyCmd::CursorFileEnd | KeyCmd::AllSelect | KeyCmd::Copy | KeyCmd::Find | KeyCmd::NewTab | KeyCmd::OpenFile | KeyCmd::MoveRow => return EvtActType::Next,
+                    KeyCmd::CursorFileHome | KeyCmd::CursorFileEnd | KeyCmd::AllSelect | KeyCmd::Copy | KeyCmd::Find | KeyCmd::NewTab | KeyCmd::OpenFile(_) | KeyCmd::MoveRow => return EvtActType::Next,
                     // Shift
                     KeyCmd::CursorUpSelect | KeyCmd::CursorDownSelect | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect | KeyCmd::FindBack => return EvtActType::Next,
                     //
@@ -205,7 +204,7 @@ impl EvtAct {
         if term.curt().state.is_exists_input_field() {
             match &term.curt().editor.keycmd {
                 KeyCmd::Copy | KeyCmd::CutSelect => {
-                    let is_selected = match term.curt().prom.prom_cont_posi {
+                    let is_selected = match term.curt().prom.cont_posi {
                         PromptContPosi::First => term.curt().prom.cont_1.sel.is_selected(),
                         PromptContPosi::Second => term.curt().prom.cont_2.sel.is_selected(),
                         PromptContPosi::Third => term.curt().prom.cont_3.sel.is_selected(),
@@ -225,7 +224,7 @@ impl EvtAct {
                     }
                 }
                 KeyCmd::Undo => {
-                    let is_empty_undo = match term.curt().prom.prom_cont_posi {
+                    let is_empty_undo = match term.curt().prom.cont_posi {
                         PromptContPosi::First => term.curt().prom.cont_1.history.undo_vec.is_empty(),
                         PromptContPosi::Second => term.curt().prom.cont_2.history.undo_vec.is_empty(),
                         PromptContPosi::Third => term.curt().prom.cont_3.history.undo_vec.is_empty(),
@@ -237,7 +236,7 @@ impl EvtAct {
                     }
                 }
                 KeyCmd::Redo => {
-                    let is_empty_redo = match term.curt().prom.prom_cont_posi {
+                    let is_empty_redo = match term.curt().prom.cont_posi {
                         PromptContPosi::First => term.curt().prom.cont_1.history.redo_vec.is_empty(),
                         PromptContPosi::Second => term.curt().prom.cont_2.history.redo_vec.is_empty(),
                         PromptContPosi::Third => term.curt().prom.cont_3.history.redo_vec.is_empty(),
@@ -263,7 +262,7 @@ impl EvtAct {
         }
         // Do not paste multiple lines for Prompt
         if term.curt().state.is_save_new_file || term.curt().state.is_search || term.curt().state.is_replace || term.curt().state.grep_state.is_grep || term.curt().state.is_move_row {
-            if clipboard.match_indices(NEW_LINE_LF).count() > 0 {
+            if clipboard.match_indices(&NL::get_nl(&term.curt().editor.h_file.nl)).count() > 0 {
                 return true;
             };
         }

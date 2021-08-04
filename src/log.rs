@@ -1,4 +1,4 @@
-use crate::{_cfg::cfg::CfgLog, global::*};
+use crate::{_cfg::cfg::CfgLog, editor::macros::js_macro::MacrosFunc, global::*};
 use chrono::{DateTime, Local};
 use std::{
     env,
@@ -107,6 +107,11 @@ impl Log {
     #[track_caller]
     pub fn error_s(m: &str) {
         Log::write(m, LogLevel::Error);
+    }
+    #[track_caller]
+    pub fn macros<T: Debug>(macro_func: MacrosFunc, arg: &T) {
+        let s = &format!("{}: {:?}", macro_func, arg);
+        Log::write(s, LogLevel::Info);
     }
 }
 

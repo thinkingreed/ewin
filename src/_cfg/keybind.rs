@@ -47,7 +47,7 @@ impl Keybind {
                             }
                         }
                         Err(e) => {
-                            err_str = format!("{} {} {}", LANG.file_parsing_failed, keybind_file.to_string_lossy().to_string(), e);
+                            err_str = format!("{}{} {} {}", LANG.file, LANG.parsing_failed, keybind_file.to_string_lossy().to_string(), e);
                         }
                     };
                 }
@@ -65,17 +65,18 @@ impl Keybind {
         let mut cmd_key_map: HashMap<KeyCmd, Keys> = HashMap::new();
 
         for keybind in keybind_vec {
+            Log::debug("keybind", &keybind);
             key_cmd_map.insert((Keys::from_str(&keybind.key).unwrap(), KeyWhen::from_str(&keybind.when).unwrap()), KeyCmd::from_str(&keybind.cmd).unwrap());
             cmd_key_map.insert(KeyCmd::from_str(&keybind.cmd).unwrap(), Keys::from_str(&keybind.key).unwrap());
         }
 
         key_cmd_map.insert((Keys::Raw(Key::Tab), KeyWhen::EditorFocus), KeyCmd::InsertStr(TAB_CHAR.to_string()));
         key_cmd_map.insert((Keys::Raw(Key::Tab), KeyWhen::PromptFocus), KeyCmd::Tab);
-        key_cmd_map.insert((Keys::Raw(Key::BackTab), KeyWhen::PromptFocus), KeyCmd::BackTab);
+        key_cmd_map.insert((Keys::Shift(Key::BackTab), KeyWhen::PromptFocus), KeyCmd::BackTab);
 
         key_cmd_map.insert((Keys::MouseScrollDown, KeyWhen::EditorFocus), KeyCmd::MouseScrollDown);
         key_cmd_map.insert((Keys::MouseScrollUp, KeyWhen::EditorFocus), KeyCmd::MouseScrollUp);
-        key_cmd_map.insert((Keys::Resize, KeyWhen::EditorFocus), KeyCmd::Resize);
+        key_cmd_map.insert((Keys::Resize, KeyWhen::AllFocus), KeyCmd::Resize);
         key_cmd_map.insert((Keys::Unsupported, KeyWhen::EditorFocus), KeyCmd::Null);
         key_cmd_map.insert((Keys::Null, KeyWhen::EditorFocus), KeyCmd::Null);
 
@@ -98,7 +99,9 @@ impl Keybind {
             Keys::MouseAltDownLeft(y, x) => return KeyCmd::MouseDownBoxLeft(*y as usize, *x as usize),
             Keys::MouseAltDragLeft(y, x) => return KeyCmd::MouseDragBoxLeft(*y as usize, *x as usize),
             Keys::MouseDownLeft(y, x) => return KeyCmd::MouseDownLeft(*y as usize, *x as usize),
+            Keys::MouseDownRight(y, x) => return KeyCmd::MouseDownRight(*y as usize, *x as usize),
             Keys::MouseDragLeft(y, x) => return KeyCmd::MouseDragLeft(*y as usize, *x as usize),
+            Keys::MouseMove(y, x) => return KeyCmd::MouseMove(*y as usize, *x as usize),
             _ => {}
         };
 
@@ -145,9 +148,11 @@ impl Keybind {
             Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), modifiers: KeyModifiers::ALT, row: y, column: x, .. }) => return Keys::MouseAltDragLeft(*y, *x),
             // Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), modifiers: KeyModifiers::ALT, .. }) => return Keys::MouseAltUpLeft,
             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), row: y, column: x, .. }) => return Keys::MouseDownLeft(*y, *x),
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Right), row: y, column: x, .. }) => return Keys::MouseDownRight(*y, *x),
             Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), row: y, column: x, .. }) => return Keys::MouseDragLeft(*y, *x),
             Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => return Keys::MouseScrollUp,
             Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => return Keys::MouseScrollDown,
+            Mouse(M_Event { kind: M_Kind::Moved, row: y, column: x, .. }) => return Keys::MouseMove(*y, *x),
             Resize(_, _) => return Keys::Resize,
             _ => Keys::Null,
         }
@@ -199,7 +204,7 @@ impl Keybind {
         }
 
         if !msg.is_empty() {
-            err_str = format!("{} {} {} setting {}{} {}", LANG.file_parsing_failed, KEYBINDING_FILE, msg, (i + 1).to_string(), ordinal_suffix(i + 1), err_key);
+            err_str = format!("{}{} {} {} setting {}{} {}", LANG.file, LANG.parsing_failed, KEYBINDING_FILE, msg, (i + 1).to_string(), ordinal_suffix(i + 1), err_key);
         }
         return err_str;
     }

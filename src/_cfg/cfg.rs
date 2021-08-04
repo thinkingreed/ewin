@@ -73,6 +73,7 @@ pub struct CfgColors {
     pub header_bar: CfgColorHeaderBar,
     pub editor: CfgColorEditor,
     pub status_bar: CfgColorStatusBar,
+    pub ctx_menu: CfgColorCtxMenu,
     pub msg: CfgColorMsg,
     pub file: CfgColorFile,
 }
@@ -151,6 +152,23 @@ pub struct CfgColorStatusBar {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename = "CtxMenu")]
+pub struct CfgColorCtxMenu {
+    background_non_select: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub bg_non_sel: Color,
+    background_select: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub bg_sel: Color,
+    foreground_non_select: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub fg_non_sel: Color,
+    foreground_select: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub fg_sel: Color,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename = "Msg")]
 pub struct CfgColorMsg {
     normal_foreground: String,
@@ -219,7 +237,7 @@ impl Cfg {
                     match toml::from_str(&read_str) {
                         Ok(c) => cfg = c,
                         Err(e) => {
-                            err_str = format!("{} {} {}", LANG.file_parsing_failed, config_file.to_string_lossy().to_string(), e);
+                            err_str = format!("{}{} {} {}", LANG.file, LANG.parsing_failed, config_file.to_string_lossy().to_string(), e);
                         }
                     };
                 }
@@ -245,6 +263,11 @@ impl Cfg {
         cfg.colors.msg.warning_fg = Colors::hex2rgb(&cfg.colors.msg.warning_foreground);
         cfg.colors.msg.err_fg = Colors::hex2rgb(&cfg.colors.msg.err_foreground);
         cfg.colors.status_bar.fg = Colors::hex2rgb(&cfg.colors.status_bar.foreground);
+
+        cfg.colors.ctx_menu.fg_sel = Colors::hex2rgb(&cfg.colors.ctx_menu.foreground_select);
+        cfg.colors.ctx_menu.fg_non_sel = Colors::hex2rgb(&cfg.colors.ctx_menu.foreground_non_select);
+        cfg.colors.ctx_menu.bg_sel = Colors::hex2rgb(&cfg.colors.ctx_menu.background_select);
+        cfg.colors.ctx_menu.bg_non_sel = Colors::hex2rgb(&cfg.colors.ctx_menu.background_non_select);
 
         cfg.colors.file.normal_fg = Colors::hex2rgb(&cfg.colors.file.normal_foreground);
         cfg.colors.file.directory_fg = Colors::hex2rgb(&cfg.colors.file.directory_foreground);

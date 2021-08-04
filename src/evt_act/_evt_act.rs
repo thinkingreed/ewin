@@ -5,26 +5,27 @@ use crate::{
     log::*,
     model::*,
     prompt::prompt::prompt::*,
-    sel_range::SelMode,
+    sel_range::{BoxInsertMode, SelMode},
     tab::Tab,
     terminal::*,
 };
-
 use std::io::Write;
 
 impl EvtAct {
     pub fn match_event<T: Write>(keys: Keys, out: &mut T, term: &mut Terminal) -> bool {
         Terminal::hide_cur();
-        Log::info("Pressed key", &keys);
 
-        let evt_act_type = EvtAct::check_next_process(keys, out, term);
+        EvtAct::set_keycmd(keys, term);
+        let evt_act_type = EvtAct::check_next_process(out, term);
 
         match evt_act_type {
             EvtActType::Exit => return true,
-            EvtActType::Hold => {}
+            EvtActType::Hold | EvtActType::None => {}
             EvtActType::DrawOnly | EvtActType::Next => {
+                Log::info("Pressed key", &keys);
+
                 if evt_act_type == EvtActType::DrawOnly {
-                    term.curt().editor.d_range.draw_type = DrawType::All;
+                    term.curt().editor.draw_type = DrawType::All;
                 }
                 if evt_act_type == EvtActType::Next && !EvtAct::check_err(term) {
                     EvtAct::init(term);
@@ -63,7 +64,7 @@ impl EvtAct {
                         // file
                         KeyCmd::NewTab => term.new_tab(),
                         KeyCmd::NextTab => term.next_tab(),
-                        KeyCmd::OpenFile => Prompt::open_file(term),
+                        KeyCmd::OpenFile(_) => Prompt::open_file(term),
                         KeyCmd::Encoding => Prompt::enc_nl(term),
                         KeyCmd::CloseFile => {
                             if Prompt::close(term) == true {
@@ -79,21 +80,17 @@ impl EvtAct {
                             let _ = Tab::save(term);
                         }
                         // key record
-                        KeyCmd::StartEndRecordKey => term.curt().record_key_start(),
+                        KeyCmd::StartEndRecordKey => term.curt().record_key_macro_start(),
                         KeyCmd::ExecRecordKey => {
-                            Tab::exec_record_key(out, term);
+                            Tab::exec_macro_key(out, term);
                             return false;
                         }
                         // mouse
-                        KeyCmd::MouseDownLeft(y, x) => term.curt().editor.ctrl_mouse(y as usize, x as usize, MouseProc::DownLeft),
-                        KeyCmd::MouseDragLeft(y, x) => term.curt().editor.ctrl_mouse(y as usize, x as usize, MouseProc::DragLeft),
-                        KeyCmd::MouseDownBoxLeft(y, x) => term.curt().editor.ctrl_mouse(y as usize, x as usize, MouseProc::DownLeftBox),
-                        KeyCmd::MouseDragBoxLeft(y, x) => term.curt().editor.ctrl_mouse(y as usize, x as usize, MouseProc::DragLeftBox),
+                        KeyCmd::MouseDownLeft(_, _) | KeyCmd::MouseDragLeft(_, _) | KeyCmd::MouseDownBoxLeft(_, _) | KeyCmd::MouseDragBoxLeft(_, _) => term.curt().editor.ctrl_mouse(),
                         KeyCmd::MouseOpeSwitch => term.ctrl_mouse_capture(),
                         // menu
                         KeyCmd::Help => Help::disp_toggle(term),
-                        KeyCmd::OpenMenu | KeyCmd::OpenMenuFile | KeyCmd::OpenMenuConvert | KeyCmd::OpenMenuEdit | KeyCmd::OpenMenuSelect => Prompt::menu(term),
-
+                        KeyCmd::OpenMenu | KeyCmd::OpenMenuFile | KeyCmd::OpenMenuConvert | KeyCmd::OpenMenuEdit | KeyCmd::OpenMenuSearch | KeyCmd::OpenMenuMacro => Prompt::menu(term),
                         // Mode
                         KeyCmd::CancelMode => term.curt().editor.cancel_mode(),
                         KeyCmd::BoxSelectMode => term.curt().editor.box_select_mode(),
@@ -101,7 +98,7 @@ impl EvtAct {
                         KeyCmd::Resize => term.resize(),
                         // empty
                         KeyCmd::Null => {
-                            term.curt().editor.d_range.draw_type = DrawType::All;
+                            term.curt().editor.draw_type = DrawType::All;
                         }
                         // Prompt
                         KeyCmd::ReplacePrompt => Prompt::replace(term),
@@ -110,26 +107,32 @@ impl EvtAct {
                         KeyCmd::Unsupported => {
                             term.curt().mbar.set_err(&LANG.unsupported_operation);
                         }
+                        //
                         KeyCmd::NoBind => {}
 
-                        // Internal use
-                        KeyCmd::ReplaceExec(_, _) => {}
+                        //// Internal use
+                        KeyCmd::ReplaceExec(_, _, _) => {}
                         KeyCmd::DelBox(_) => {}
-                        //  KeyCmd::InsertStr(_) => {}
                         KeyCmd::InsertBox(_) => {}
+                        KeyCmd::Format(_) => {}
+                        KeyCmd::ExecMacro => {}
+                        // ctx_menu
+                        KeyCmd::MouseDownRight(_, _) => {}
+                        KeyCmd::MouseMove(_, _) => {}
                     }
 
-                    if term.curt().state.key_record_state.is_record {
+                    if term.curt().state.key_macro_state.is_record {
                         term.curt().editor.record_key();
                     }
+                    EvtAct::finalize(term);
                 }
-                EvtAct::finalize(term);
+                EvtAct::check_msg(term);
 
                 // When key_record is executed, redraw only at the end
-                if term.curt().state.key_record_state.is_exec == true && term.curt().state.key_record_state.is_exec_end == false {
+                if term.curt().state.key_macro_state.is_exec == true && term.curt().state.key_macro_state.is_exec_end == false {
                     return false;
                 }
-                if term.curt().editor.d_range.draw_type != DrawType::Not {
+                if term.curt().editor.draw_type != DrawType::Not {
                     term.draw(out);
                 }
             }
@@ -137,17 +140,17 @@ impl EvtAct {
         Terminal::draw_cur(out, term);
         return false;
     }
-
-    pub fn check_next_process<T: Write>(keys: Keys, out: &mut T, term: &mut Terminal) -> EvtActType {
-        // term.curt().editor.evt = evt.clone();
-
-        term.curt().editor.keys = keys;
+    pub fn set_keycmd(keys: Keys, term: &mut Terminal) {
         let keywhen = if term.curt().state.is_nomal() { KeyWhen::EditorFocus } else { KeyWhen::PromptFocus };
-        term.curt().editor.keycmd = Keybind::get_keycmd(&keys, keywhen);
+        let keycmd = Keybind::get_keycmd(&keys, keywhen);
 
-        Log::info("KeyCmd", &term.curt().editor.keycmd);
+        term.keycmd = keycmd.clone();
+        term.curt().editor.keys = keys;
+        term.curt().editor.keycmd = keycmd;
         term.curt().prom.set_keys(keys);
+    }
 
+    pub fn check_next_process<T: Write>(out: &mut T, term: &mut Terminal) -> EvtActType {
         match &term.curt().editor.keycmd {
             KeyCmd::Resize => {
                 if !Terminal::check_displayable() {
@@ -163,23 +166,35 @@ impl EvtAct {
                     }
                 }
             }
+            KeyCmd::MouseMove(_, _) => {
+                if !term.state.is_ctx_menu {
+                    return EvtActType::Hold;
+                }
+            }
             _ => {
                 if !term.state.is_displayable {
                     return EvtActType::Hold;
                 }
             }
         }
+        Log::info("KeyCmd", &term.curt().editor.keycmd);
 
-        let evt_act = EvtAct::check_statusbar(term);
-        Log::debug("EvtAct::check_statusbar", &evt_act);
-        if evt_act == EvtActType::Next || evt_act == EvtActType::DrawOnly {
-            return evt_act;
+        // ctx_menu
+        let evt_act_type = EvtAct::check_ctx_menu(term);
+        if EvtActType::check_next_process_type(&evt_act_type) {
+            return evt_act_type;
         }
 
-        let evt_act = EvtAct::check_headerbar(term);
-        Log::debug("EvtAct::check_headerbar", &evt_act);
-        if evt_act == EvtActType::Next || evt_act == EvtActType::DrawOnly || evt_act == EvtActType::Exit {
-            return evt_act;
+        // statusbar
+        let evt_act_type = EvtAct::check_statusbar(term);
+        if EvtActType::check_next_process_type(&evt_act_type) {
+            return evt_act_type;
+        }
+
+        // headerbar
+        let evt_act_type = EvtAct::check_headerbar(term);
+        if EvtActType::check_next_process_type(&evt_act_type) {
+            return evt_act_type;
         }
 
         if EvtAct::check_err_prompt(term) {
@@ -201,14 +216,11 @@ impl EvtAct {
 
     pub fn init(term: &mut Terminal) {
         Log::debug_key("EvtAct.init");
-
-        // let tab = term.tabs.get_mut(term.idx).unwrap();
         match term.curt().editor.keycmd {
             // Up, Down
             KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorUpSelect | KeyCmd::CursorDownSelect | KeyCmd::MouseScrollUp | KeyCmd::MouseScrollDown => {}
             _ => term.curt().editor.updown_x = 0,
         }
-
         Editor::set_draw_range_init(term.curt());
 
         // Edit is_change=true, Clear redo_vec,
@@ -216,17 +228,17 @@ impl EvtAct {
             term.hbar.file_vec[term.idx].is_changed = true;
             term.curt().editor.history.clear_redo_vec();
         }
-
         term.curt().mbar.clear_mag();
 
-        // Box Mode cancel
-        match term.curt().editor.keycmd {
-            KeyCmd::InsertStr(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => {
+        // Box Mode
+        match &term.curt().editor.keycmd {
+            KeyCmd::InsertStr(_) => {
                 if term.curt().editor.sel.mode == SelMode::BoxSelect {
-                    term.curt().editor.box_sel.mode = BoxInsertMode::Insert;
+                    term.curt().editor.box_insert.mode = BoxInsertMode::Insert;
                 }
             }
-            _ => term.curt().editor.box_sel.mode = BoxInsertMode::Nomal,
+            KeyCmd::Undo | KeyCmd::Redo | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => {}
+            _ => term.curt().editor.box_insert.mode = BoxInsertMode::Normal,
         }
     }
 
@@ -238,13 +250,13 @@ impl EvtAct {
             // Shift
             KeyCmd::CursorUpSelect | KeyCmd::CursorDownSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorLeftSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect | KeyCmd::FindBack => {}
             // Ctrl
-            KeyCmd::AllSelect => {}
+            KeyCmd::AllSelect | KeyCmd::OpenFile(_) => {}
             // Alt
-            KeyCmd::OpenMenu | KeyCmd::OpenMenuFile | KeyCmd::OpenMenuConvert | KeyCmd::OpenMenuEdit | KeyCmd::OpenMenuSelect => {}
+            KeyCmd::OpenMenu | KeyCmd::OpenMenuFile | KeyCmd::OpenMenuConvert | KeyCmd::OpenMenuEdit | KeyCmd::OpenMenuSearch => {}
             // Raw
             KeyCmd::FindNext => {}
             // mouse
-            KeyCmd::MouseScrollUp | KeyCmd::MouseScrollDown | KeyCmd::MouseDownLeft(_, _) | KeyCmd::MouseDragLeft(_, _) | KeyCmd::MouseDownBoxLeft(_, _) | KeyCmd::MouseDragBoxLeft(_, _) => {}
+            KeyCmd::MouseScrollUp | KeyCmd::MouseScrollDown | KeyCmd::MouseDownLeft(_, _) | KeyCmd::MouseDownRight(_, _) | KeyCmd::MouseDragLeft(_, _) | KeyCmd::MouseDownBoxLeft(_, _) | KeyCmd::MouseDragBoxLeft(_, _) | KeyCmd::MouseMove(_, _) => {}
             // other
             KeyCmd::Resize | KeyCmd::BoxSelectMode => {}
             _ => {
@@ -270,23 +282,12 @@ impl EvtAct {
         }
 
         term.curt().editor.set_draw_range_finalize();
+        term.set_draw_range_ctx_menu();
 
-        // Msg changed or
-        if term.curt().mbar.is_msg_changed() {
-            term.set_disp_size();
-
-            // When displaying a message on the cursor line
-            if !term.curt().mbar.msg.str.is_empty() && term.hbar.disp_row_num + term.curt().editor.cur.y - term.curt().editor.offset_y == term.curt().mbar.disp_row_posi {
-                term.curt().editor.scroll();
-            }
-            term.curt().editor.d_range.draw_type = DrawType::All;
-        }
         // All draw at the end of key record
-        if term.curt().state.key_record_state.is_exec_end == true {
-            term.curt().editor.d_range.draw_type = DrawType::All;
+        if term.curt().state.key_macro_state.is_exec_end == true {
+            term.curt().editor.draw_type = DrawType::All;
         }
-
-        // sel mode cancel
     }
     pub fn check_err(term: &mut Terminal) -> bool {
         if term.curt().editor.keys == Keys::Unsupported {
@@ -302,7 +303,11 @@ impl EvtAct {
                 }
             }
             KeyCmd::Undo => {
+                Log::debug_s("check_err KeyCmd::Undo");
+
                 if term.curt().editor.history.len_undo() == 0 {
+                    Log::debug_s("check_err KeyCmd::Undo 1111111111111");
+
                     term.curt().mbar.set_err(&LANG.no_undo_operation.to_string());
                     return true;
                 }
@@ -313,9 +318,21 @@ impl EvtAct {
                     return true;
                 }
             }
-
             _ => {}
         }
         return false;
+    }
+
+    pub fn check_msg(term: &mut Terminal) {
+        // Msg changed or
+        if term.curt().mbar.is_msg_changed() {
+            term.set_disp_size();
+
+            // When displaying a message on the cursor line
+            if !term.curt().mbar.msg.str.is_empty() && term.hbar.disp_row_num + term.curt().editor.cur.y - term.curt().editor.offset_y == term.curt().mbar.disp_row_posi {
+                term.curt().editor.scroll();
+            }
+            term.curt().editor.draw_type = DrawType::All;
+        }
     }
 }

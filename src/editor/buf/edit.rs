@@ -8,7 +8,7 @@ use crate::{
 };
 use regex::RegexBuilder;
 use ropey::{iter::Chars, Rope, RopeSlice};
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 
 impl TextBuffer {
     pub fn line<'a>(&'a self, i: usize) -> RopeSlice<'a> {
@@ -71,7 +71,7 @@ impl TextBuffer {
         self.text.remove(i..i + del_num);
     }
 
-    pub fn remove_range(&mut self, sel: SelRange, ep: &EvtProc) {
+    pub fn remove_range(&mut self, sel: SelRange, ep: &Proc) {
         match sel.mode {
             SelMode::Normal => {
                 let i_s = self.text.line_to_char(sel.sy) + sel.sx;
@@ -109,6 +109,24 @@ impl TextBuffer {
         let e = self.text.line_to_char(sel.ey) + sel.ex;
 
         return self.text.slice(s..e).to_string();
+        //  return format!(r#"{}"#, self.text.slice(s..e));
+    }
+    pub fn slice_rope<'a>(&'a self, sel: SelRange) -> RopeSlice {
+        Log::debug("slice sel", &sel);
+
+        let s = self.text.line_to_char(sel.sy) + sel.sx;
+        let e = self.text.line_to_char(sel.ey) + sel.ex;
+
+        return self.text.slice(s..e);
+    }
+
+    pub fn slice_chars<'a>(&'a self, sel: SelRange) -> Vec<char> {
+        Log::debug("slice sel", &sel);
+
+        let s = self.text.line_to_char(sel.sy) + sel.sx;
+        let e = self.text.line_to_char(sel.ey) + sel.ex;
+
+        return self.text.slice(s..e).chars().collect::<Vec<char>>();
     }
 
     pub fn chars<'a>(&'a self) -> Chars<'a> {
@@ -146,11 +164,11 @@ impl TextBuffer {
         self.text.append(rope);
     }
 
-    pub fn search(&self, search_pattern: &str, s_idx: usize, e_idx: usize) -> BTreeSet<(usize, usize)> {
+    pub fn search(&self, search_pattern: &str, s_idx: usize, e_idx: usize) -> BTreeMap<(usize, usize), String> {
         const BATCH_SIZE: usize = 256;
 
         let mut head = s_idx; // Keep track of where we are between searches
-        let mut rtn_set: BTreeSet<(usize, usize)> = BTreeSet::new();
+        let mut rtn_map: BTreeMap<(usize, usize), String> = BTreeMap::new();
 
         let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
 
@@ -160,7 +178,7 @@ impl TextBuffer {
             loop {
                 let mut is_end = true;
                 for (sx, ex) in SearchIter::from_rope_slice(&self.text.slice(head..e_idx), &search_pattern, &cfg_search).take(BATCH_SIZE) {
-                    rtn_set.insert((sx + head, ex + head));
+                    rtn_map.insert((sx + head, ex + head), self.text.slice(sx..ex).to_string());
                     next_head = ex + head;
                     is_end = false;
                 }
@@ -174,10 +192,10 @@ impl TextBuffer {
             let result = RegexBuilder::new(&search_pattern).case_insensitive(!cfg_search.case_sens).build();
             let re = match result {
                 Ok(re) => re,
-                Err(_) => return rtn_set,
+                Err(_) => return rtn_map,
             };
-            let s_line_idx = self.text.byte_to_line(s_idx);
-            let e_line_idx = self.text.byte_to_line(e_idx);
+
+            let (s_line_idx, e_line_idx) = (self.text.byte_to_line(s_idx), self.text.byte_to_line(e_idx));
             let lines = self.text.lines_at(s_line_idx);
             let mut len_chars_sum = s_idx;
 
@@ -185,8 +203,9 @@ impl TextBuffer {
                 let str = String::from(line);
 
                 for m in re.find_iter(&str) {
-                    rtn_set.insert((len_chars_sum + m.start(), len_chars_sum + m.end()));
+                    rtn_map.insert((len_chars_sum + m.start(), len_chars_sum + m.end()), str[m.start()..m.end()].to_string());
                 }
+
                 len_chars_sum += line.len_bytes();
                 if i + s_line_idx == e_line_idx {
                     break;
@@ -194,8 +213,9 @@ impl TextBuffer {
             }
         }
 
-        rtn_set
+        rtn_map
     }
+    /*
     pub fn replace_onece(&mut self, replace_str: &str, sel: &SelRange) -> usize {
         let i_s = self.text.line_to_char(sel.sy) + sel.sx;
         let i_e = self.text.line_to_char(sel.ey) + sel.ex;
@@ -203,29 +223,29 @@ impl TextBuffer {
         set.insert((i_s, i_e));
         let end_char_idx = self.replace(replace_str, &set);
         return end_char_idx;
-    }
+    } */
 
-    pub fn replace(&mut self, replace_str: &str, search_set: &BTreeSet<(usize, usize)>) -> usize {
-        let replace_str_len = replace_str.chars().count();
-        // let search_set = self.search(search_pattern, 0, self.text.len_chars());
-
+    pub fn replace(&mut self, is_regex: bool, replace_str: &String, map: &BTreeMap<(usize, usize), String>) -> usize {
         let mut idx_diff: isize = 0;
         let mut end_char_idx: usize = 0;
-        for (i, &(start, end)) in search_set.iter().enumerate() {
-            let start = (start as isize + idx_diff) as usize;
-            let end = (end as isize + idx_diff) as usize;
+        let replace_str_len = replace_str.chars().count();
+
+        for (i, ((s_idx, e_idx), string)) in map.into_iter().enumerate() {
+            let start = if is_regex { self.text.byte_to_char((*s_idx as isize + idx_diff) as usize) } else { (*s_idx as isize + idx_diff) as usize };
+            let end = if is_regex { self.text.byte_to_char((*e_idx as isize + idx_diff) as usize) } else { (*e_idx as isize + idx_diff) as usize };
 
             self.text.remove(start..end);
             self.text.insert(start, &replace_str);
 
             // Update the index offset.
-            let match_len = (end - start) as isize;
-            idx_diff = idx_diff - match_len + replace_str_len as isize;
+            let match_len = if is_regex { string.len() } else { end - start };
+            idx_diff = idx_diff - match_len as isize + replace_str_len as isize;
 
-            if i == search_set.len() - 1 && start + replace_str_len > 0 {
-                end_char_idx = start + replace_str_len - 1;
+            if i == map.len() - 1 && start + replace_str_len > 0 {
+                end_char_idx = start + replace_str_len;
             }
         }
+
         return end_char_idx;
     }
 }

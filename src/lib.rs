@@ -4,20 +4,18 @@ pub mod global {
             cfg::*,
             keys::KeyWhen,
             keys::{KeyCmd, Keys},
-            lang_cfg::*,
+            lang::lang_cfg::LangCfg,
         },
         model::*,
+        tab::Tab,
         util::*,
     };
     use once_cell::sync::Lazy;
     use once_cell::sync::OnceCell;
-    use std::{
-        collections::{BTreeSet, HashMap},
-        env,
-        sync::Mutex,
-    };
+    use std::{collections::HashMap, env, sync::Mutex};
 
     pub static LANG: Lazy<LangCfg> = Lazy::new(|| LangCfg::read_lang_cfg());
+    pub static LANG_MAP: Lazy<HashMap<String, String>> = Lazy::new(|| LangCfg::get_lang_map());
     pub static ENV: Lazy<Env> = Lazy::new(|| get_env_platform());
     pub static CFG: OnceCell<Mutex<Cfg>> = OnceCell::new();
     pub static LOG: OnceCell<crate::log::Log> = OnceCell::new();
@@ -31,16 +29,16 @@ pub mod global {
     pub static CURT_DIR: Lazy<String> = Lazy::new(|| env::current_dir().unwrap().to_string_lossy().to_string());
 
     pub static IS_POWERSHELL_ENABLE: Lazy<bool> = Lazy::new(|| is_powershell_enable());
-    pub static REPLACE_SEARCH_RANGE: OnceCell<Mutex<Vec<BTreeSet<(usize, usize)>>>> = OnceCell::new();
-    pub static REPLACE_REPLACE_RANGE: OnceCell<Mutex<Vec<BTreeSet<(usize, usize)>>>> = OnceCell::new();
     // Clipboard on memory
     pub static CLIPBOARD: OnceCell<String> = OnceCell::new();
+    pub static TAB: OnceCell<tokio::sync::Mutex<Tab>> = OnceCell::new();
 }
 pub mod colors;
 pub mod def;
 pub mod sel_range;
 pub mod evt_act {
-    pub mod evt_act;
+    pub mod _evt_act;
+    pub mod ctx_menu;
     pub mod headerbar;
     pub mod prom;
     pub mod statusbar;
@@ -50,11 +48,20 @@ pub mod bar {
     pub mod msgbar;
     pub mod statusbar;
 }
+pub mod ctx_menu {
+    pub mod ctx_menu;
+}
 pub mod editor {
     pub mod buf {
         pub mod edit;
         pub mod io;
     }
+    pub mod macros {
+        pub mod js_func;
+        pub mod js_macro;
+        pub mod key_macro;
+    }
+
     pub mod view {
         pub mod buf_cache;
         pub mod char_style;
@@ -62,8 +69,9 @@ pub mod editor {
     }
     pub mod convert;
     pub mod draw_range;
-    pub mod editor;
     pub mod edit_proc;
+    pub mod editor;
+    pub mod format;
     pub mod history;
     pub mod key;
     pub mod key_ctrl;
@@ -106,7 +114,8 @@ pub mod _cfg {
     pub mod cfg;
     pub mod keybind;
     pub mod keys;
-    pub mod lang;
-    pub mod lang_cfg;
+    pub mod lang {
+        pub mod lang_cfg;
+    }
     pub mod theme_loader;
 }

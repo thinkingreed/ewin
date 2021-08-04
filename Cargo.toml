@@ -41,6 +41,7 @@ unicode-width = "0.1.8"
 clipboard = "0.5.0"
 crossterm  = {version ="0.20.0", features = ["event-stream"]} 
 serde = { version = "1.0.123", features = ["derive"] }
+serde_json = "1.0"
 toml = "0.5.8"
 cargo-deb = "1.28.3"
 tokio = { version = "1.4.0", features = ["process", "macros", "rt-multi-thread"] }
@@ -59,6 +60,7 @@ byteorder = "1.4.3"
 faccess = "0.2.3"
 json5 = "0.3.0"
 unicode-jp= "0.4.0"
+rusty_v8= "0.25.3"
 
 [target.'cfg(windows)'.build-dependencies]
 windres = "0.2.2"

@@ -1,7 +1,6 @@
+use crate::{model::FmtType, sel_range::SelRange};
 use serde::{Deserialize, Serialize};
-use std::{fmt, str::FromStr};
-
-use crate::sel_range::SelRange;
+use std::{collections::BTreeMap, fmt, str::FromStr};
 
 impl fmt::Display for Keys {
     fn fmt(&self, ff: &mut fmt::Formatter) -> fmt::Result {
@@ -121,6 +120,7 @@ impl fmt::Display for Keys {
             Keys::MouseAltUpLeft() => todo!(),
             Keys::MouseScrollUp => todo!(),
             Keys::MouseScrollDown => todo!(),
+            Keys::MouseMove(_, _) => todo!(),
             Keys::Unsupported => todo!(),
             Keys::Null => todo!(),
             _ => write!(ff, ""),
@@ -137,12 +137,14 @@ pub enum Keys {
     Raw(Key),
     Resize,
     MouseDownLeft(u16, u16),
+    MouseDownRight(u16, u16),
     MouseDragLeft(u16, u16),
     MouseAltDownLeft(u16, u16),
     MouseAltDragLeft(u16, u16),
     MouseAltUpLeft(),
     MouseScrollUp,
     MouseScrollDown,
+    MouseMove(u16, u16),
     Unsupported,
     Null,
 }
@@ -190,13 +192,6 @@ pub enum KeyCmd {
     CursorDownSelect,
     CursorRowHomeSelect,
     CursorRowEndSelect,
-    // box
-    // CursorLeftBoxSelect,
-    //  CursorRightBoxSelect,
-    //  CursorUpBoxSelect,
-    //  CursorDownBoxSelect,
-    //  CursorRowHomeBoxSelect,
-    //  CursorRowEndBoxSelect,
     AllSelect,
     // edit
     // InsertChar(char),
@@ -212,13 +207,14 @@ pub enum KeyCmd {
     DeleteNextChar,
     CutSelect,
     Copy,
+    Format(FmtType),
     Undo,
     Redo,
     // find
     Find,
     FindNext,
     FindBack,
-    ReplaceExec(String, String),
+    ReplaceExec(bool, String, BTreeMap<(usize, usize), String>),
     ReplacePrompt,
     MoveRow,
     Grep,
@@ -226,7 +222,7 @@ pub enum KeyCmd {
     // file
     NewTab,
     NextTab,
-    OpenFile,
+    OpenFile(OpenFileType),
     CloseFile,
     CloseAllFile,
     SaveFile,
@@ -237,9 +233,11 @@ pub enum KeyCmd {
     MouseScrollUp,
     MouseScrollDown,
     MouseDownLeft(usize, usize),
+    MouseDownRight(usize, usize),
     MouseDragLeft(usize, usize),
     MouseDownBoxLeft(usize, usize),
     MouseDragBoxLeft(usize, usize),
+    MouseMove(usize, usize),
     MouseOpeSwitch,
     // menu
     Help,
@@ -247,7 +245,9 @@ pub enum KeyCmd {
     OpenMenuFile,
     OpenMenuConvert,
     OpenMenuEdit,
-    OpenMenuSelect,
+    OpenMenuSearch,
+    OpenMenuMacro,
+    // CtxMenu(usize, usize),
     // prompt
     EscPrompt,
     ConfirmPrompt,
@@ -256,6 +256,8 @@ pub enum KeyCmd {
     // mode
     BoxSelectMode,
     CancelMode,
+    // macro
+    ExecMacro,
     //
     Resize,
     NoBind,
@@ -372,7 +374,7 @@ impl FromStr for Keys {
             "shift+delete" => Ok(Keys::Shift(Key::Delete)),
             "shift+pageup" => Ok(Keys::Shift(Key::PageUp)),
             "shift+pagedown" => Ok(Keys::Shift(Key::PageDown)),
-            "shift+tab" => Ok(Keys::Shift(Key::Tab)),
+            "shift+tab" => Ok(Keys::Shift(Key::BackTab)),
             "shift+esc" => Ok(Keys::Shift(Key::Esc)),
             "shift+a" => Ok(Keys::Shift(Key::Char('a'))),
             "shift+b" => Ok(Keys::Shift(Key::Char('b'))),
@@ -501,6 +503,7 @@ impl FromStr for KeyCmd {
             "paste" => Ok(KeyCmd::InsertStr("".to_string())),
             "undo" => Ok(KeyCmd::Undo),
             "redo" => Ok(KeyCmd::Redo),
+            "formatJson" => Ok(KeyCmd::Format(FmtType::JSON)),
             // find
             "find" => Ok(KeyCmd::Find),
             "findNext" => Ok(KeyCmd::FindNext),
@@ -511,12 +514,12 @@ impl FromStr for KeyCmd {
             // file
             "newTab" => Ok(KeyCmd::NewTab),
             "nextTab" => Ok(KeyCmd::NextTab),
-            "openFile" => Ok(KeyCmd::OpenFile),
+            "openFile" => Ok(KeyCmd::OpenFile(OpenFileType::Normal)),
             "encoding" => Ok(KeyCmd::Encoding),
             "closeFile" => Ok(KeyCmd::CloseFile),
             "closeAllFile" => Ok(KeyCmd::CloseAllFile),
             "saveFile" => Ok(KeyCmd::SaveFile),
-            // key record
+            // key macro
             "startEndRecordKey" => Ok(KeyCmd::StartEndRecordKey),
             "execRecordKey" => Ok(KeyCmd::ExecRecordKey),
             // mouse
@@ -527,7 +530,7 @@ impl FromStr for KeyCmd {
             "openMenuFile" => Ok(KeyCmd::OpenMenuFile),
             "openMenuConvert" => Ok(KeyCmd::OpenMenuConvert),
             "openMenuEdit" => Ok(KeyCmd::OpenMenuEdit),
-            "openMenuSelect" => Ok(KeyCmd::OpenMenuSelect),
+            "openMenuSearch" => Ok(KeyCmd::OpenMenuSearch),
             // prompt
             "escPrompt" => Ok(KeyCmd::EscPrompt),
             "confirmPrompt" => Ok(KeyCmd::ConfirmPrompt),
@@ -535,6 +538,8 @@ impl FromStr for KeyCmd {
             "findRegex" => Ok(KeyCmd::FindRegex),
             // mode
             "cancelMode" => Ok(KeyCmd::CancelMode),
+            // macro
+            "openFileJsMacro" => Ok(KeyCmd::OpenFile(OpenFileType::JsMacro)),
             _ => Err(()),
         }
     }
@@ -551,4 +556,11 @@ impl FromStr for KeyWhen {
             _ => Err(()),
         }
     }
+}
+
+// Keys without modifiers
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+pub enum OpenFileType {
+    Normal,
+    JsMacro,
 }

@@ -2,21 +2,6 @@ use crate::{_cfg::keys::KeyCmd, def::*, log::*, model::*};
 use chrono::prelude::Local;
 
 impl History {
-    pub fn regist_edit(&mut self, keydmd: KeyCmd, ep: &EvtProc) {
-        if keydmd == KeyCmd::Undo {
-            if let Some(undo_ep) = self.pop_undo() {
-                self.redo_vec.push(undo_ep);
-            }
-        } else if keydmd == KeyCmd::Redo {
-            if let Some(redo_ep) = self.pop_redo() {
-                self.undo_vec.push(redo_ep);
-            }
-        // Normal
-        } else {
-            self.undo_vec.push(ep.clone());
-        }
-    }
-
     pub fn pop_redo(&mut self) -> Option<EvtProc> {
         self.redo_vec.pop()
     }

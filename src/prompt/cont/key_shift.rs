@@ -1,4 +1,4 @@
-use crate::{_cfg::keys::KeyCmd, prompt::cont::promptcont::*, util::*};
+use crate::{_cfg::keys::KeyCmd, prompt::cont::promptcont::*};
 
 impl PromptCont {
     pub fn shift_move_com(&mut self) {
@@ -7,15 +7,8 @@ impl PromptCont {
         match self.keycmd {
             KeyCmd::CursorLeftSelect => self.cur_left(),
             KeyCmd::CursorRightSelect => self.cur_right(),
-            KeyCmd::CursorRowHomeSelect => {
-                self.cur.x = 0;
-                self.cur.disp_x = 0;
-            }
-            KeyCmd::CursorRowEndSelect => {
-                let (cur_x, width) = get_row_width(&self.buf[..], 0, false);
-                self.cur.x = cur_x;
-                self.cur.disp_x = width;
-            }
+            KeyCmd::CursorRowHomeSelect => self.set_cur_target(0),
+            KeyCmd::CursorRowEndSelect => self.set_cur_target(self.buf.len()),
             _ => {}
         }
 

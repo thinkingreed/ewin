@@ -7,7 +7,7 @@ use std::{cmp::min, fs::File, io::*, option::Option, *};
 
 impl TextBuffer {
     pub fn from_path(path: &str) -> io::Result<(TextBuffer, Encode, String, Option<Encode>)> {
-        let (mut read_str, mut enc, bom) = TextBuffer::read_encode(path)?;
+        let (mut read_str, mut enc, bom) = TextBuffer::read(path)?;
 
         if read_str.is_empty() {
             enc = Encode::UTF8;
@@ -71,7 +71,7 @@ impl TextBuffer {
         return Ok((vec, bom));
     }
 
-    pub fn read_encode(path: &str) -> io::Result<(String, Encode, Option<Encode>)> {
+    pub fn read(path: &str) -> io::Result<(String, Encode, Option<Encode>)> {
         let (vec, bom) = TextBuffer::read_file(path)?;
 
         // UTF8
@@ -186,8 +186,10 @@ impl TextBuffer {
         let from_nl = &NL::get_nl(from_nl_str);
         let to_nl = &NL::get_nl(to_nl_str);
 
-        let search_set = self.search(from_nl, 0, self.text.len_chars());
-        self.replace(to_nl, &search_set);
+        let search_map = self.search(from_nl, 0, self.text.len_chars());
+        let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
+
+        self.replace(cfg_search.regex, to_nl, &search_map);
     }
 
     pub fn write_to(&mut self, path: &str, h_file: &HeaderFile) -> io::Result<bool> {

@@ -1,11 +1,12 @@
 extern crate ropey;
 use crate::{
     _cfg::keys::{KeyCmd, Keys},
-    bar::headerbar::HeaderFile,
+    bar::{headerbar::HeaderFile, msgbar::MsgBar},
     def::*,
     editor::{buf::edit::TextBuffer, view::char_style::*},
     global::LANG,
-    sel_range::{SelMode, SelRange},
+    log::Log,
+    sel_range::{BoxInsert, SelMode, SelRange},
 };
 use chrono::NaiveDateTime;
 use crossterm::event::{Event, KeyCode::Null};
@@ -18,6 +19,7 @@ use std::path::MAIN_SEPARATOR;
 use std::{
     cmp::{max, min},
     collections::VecDeque,
+    io::ErrorKind,
     usize,
 };
 use std::{fmt, path::Path};
@@ -30,13 +32,24 @@ pub struct EvtAct {}
 
 #[derive(Debug, PartialEq)]
 pub enum EvtActType {
-    // Promt Process only
+    // Check next Process
     Hold,
+    // Cancel process
+    None,
     Exit,
     // Editor Event Process
     Next,
     // Do not Editor key Process
     DrawOnly,
+}
+
+impl EvtActType {
+    pub fn check_next_process_type(evt_act_type: &EvtActType) -> bool {
+        return match evt_act_type {
+            EvtActType::Next | EvtActType::DrawOnly | EvtActType::None | EvtActType::Exit => true,
+            EvtActType::Hold => false,
+        };
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -45,11 +58,22 @@ pub enum Env {
     Linux,
     Windows,
 }
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// undo,redo範囲
-/// EvtProcess
+/// EventProcess
 pub struct EvtProc {
+    pub sel_proc: Option<Proc>,
+    pub evt_proc: Option<Proc>,
+}
+impl Default for EvtProc {
+    fn default() -> Self {
+        EvtProc { sel_proc: None, evt_proc: None }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+// Process
+pub struct Proc {
     pub keycmd: KeyCmd,
     // not include lnw
     pub cur_s: Cur,
@@ -58,21 +82,21 @@ pub struct EvtProc {
     pub box_sel_vec: Vec<(SelRange, String)>,
     pub box_sel_redo_vec: Vec<(SelRange, String)>,
     pub sel: SelRange,
-    pub d_range: DRange,
+    pub draw_type: DrawType,
 }
-impl Default for EvtProc {
+impl Default for Proc {
     fn default() -> Self {
-        EvtProc { cur_s: Cur::default(), cur_e: Cur::default(), str: String::new(), keycmd: KeyCmd::Null, sel: SelRange::default(), d_range: DRange::default(), box_sel_vec: vec![], box_sel_redo_vec: vec![] }
+        Proc { cur_s: Cur::default(), cur_e: Cur::default(), str: String::new(), keycmd: KeyCmd::Null, sel: SelRange::default(), draw_type: DrawType::default(), box_sel_vec: vec![], box_sel_redo_vec: vec![] }
     }
 }
-impl fmt::Display for EvtProc {
+impl fmt::Display for Proc {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "EvtProc cur_s:{}, cur_e:{}, str:{}, keycmd:{:?}, sel:{}, d_range:{}", self.cur_s, self.cur_e, self.str, self.keycmd, self.sel, self.d_range)
+        write!(f, "EvtProc cur_s:{}, cur_e:{}, str:{}, keycmd:{:?}, sel:{}, d_range:{}", self.cur_s, self.cur_e, self.str, self.keycmd, self.sel, self.draw_type)
     }
 }
-impl EvtProc {
-    pub fn new(keycmd: KeyCmd, cur_s: Cur, cur_e: Cur, d_range: DRange) -> Self {
-        return EvtProc { keycmd, cur_s, cur_e, d_range, ..EvtProc::default() };
+impl Proc {
+    pub fn new(keycmd: KeyCmd, cur_s: Cur, cur_e: Cur, draw_type: DrawType) -> Self {
+        return Proc { keycmd, cur_s, cur_e, draw_type, ..Proc::default() };
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -97,7 +121,7 @@ impl fmt::Display for History {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HistoryInfo {
     pub ope_type: Opetype,
-    pub evt_proc: EvtProc,
+    pub evt_proc: Proc,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -159,27 +183,39 @@ impl Default for Search {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct KeyRecord {
+
+pub struct Macros {
+    pub key_macro_vec: Vec<KeyMacro>,
+}
+
+impl Default for Macros {
+    fn default() -> Self {
+        Macros { key_macro_vec: vec![] }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KeyMacro {
     pub keys: Keys,
     pub search: Search,
 }
 
-impl Default for KeyRecord {
+impl Default for KeyMacro {
     fn default() -> Self {
-        KeyRecord { keys: Keys::Null, search: Search::default() }
+        KeyMacro { keys: Keys::Null, search: Search::default() }
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct KeyRecordState {
+pub struct KeyMacroState {
     pub is_record: bool,
     pub is_exec: bool,
     pub is_exec_end: bool,
 }
 
-impl Default for KeyRecordState {
+impl Default for KeyMacroState {
     fn default() -> Self {
-        KeyRecordState { is_record: false, is_exec: false, is_exec_end: false }
+        KeyMacroState { is_record: false, is_exec: false, is_exec_end: false }
     }
 }
 
@@ -258,16 +294,15 @@ pub struct Editor {
     pub disp_row_posi: usize,
     pub disp_col_num: usize,
     pub search: Search,
-    pub draw: Draw,
-    // draw_ranges
-    pub d_range: DRange,
+    // pub draw: Draw,
+    pub draw_type: DrawType,
     pub history: History,
     pub grep_result_vec: Vec<GrepResult>,
-    pub key_record_vec: Vec<KeyRecord>,
+    pub macros: Macros,
     pub is_enable_syntax_highlight: bool,
     pub h_file: HeaderFile,
-    // Internal clipboard
-    pub box_sel: BoxSel,
+    // Have sy・ey, or Copy vec
+    pub box_insert: BoxInsert,
 }
 
 impl Editor {
@@ -298,58 +333,15 @@ impl Editor {
             disp_row_posi: 1,
             disp_col_num: 5,
             search: Search::default(),
-            draw: Draw::default(),
-            d_range: DRange::default(),
+            //  draw: Draw::default(),
+            draw_type: DrawType::default(),
             history: History::default(),
             grep_result_vec: vec![],
-            key_record_vec: vec![],
+            macros: Macros::default(),
             is_enable_syntax_highlight: false,
             h_file: HeaderFile::default(),
-            box_sel: BoxSel::default(),
+            box_insert: BoxInsert::default(),
         }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BoxSel {
-    pub mode: BoxInsertMode,
-    pub insert_vec: Vec<(SelRange, String)>,
-
-    // pub ins_str_x: usize,
-    pub clipboard_str: String,
-    pub clipboard_box_sel_vec: Vec<(SelRange, String)>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BoxInsertMode {
-    Nomal,
-    Insert,
-}
-
-impl Default for BoxSel {
-    fn default() -> Self {
-        BoxSel {
-            clipboard_str: String::new(),
-            clipboard_box_sel_vec: vec![],
-            mode: BoxInsertMode::Nomal,
-            insert_vec: vec![],
-            // ins_str_x: USIZE_UNDEFINED
-        }
-    }
-}
-
-impl fmt::Display for BoxInsertMode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            BoxInsertMode::Nomal => write!(f, ""),
-            BoxInsertMode::Insert => write!(f, "{}", LANG.box_insert),
-        }
-    }
-}
-impl BoxSel {
-    pub fn clear(&mut self) {
-        self.clipboard_str = String::new();
-        self.clipboard_box_sel_vec = vec![]
     }
 }
 
@@ -370,19 +362,19 @@ impl fmt::Display for File {
     }
 }
 impl File {
-    pub fn is_readable(path: &String) -> bool {
-        if path.is_empty() {
+    pub fn is_readable(path_str: &str) -> bool {
+        if path_str.is_empty() {
             return true;
         } else {
-            let path = Path::new(path);
+            let path = Path::new(path_str);
             return path.readable();
         }
     }
-    pub fn is_readable_writable(path: &String) -> (bool, bool) {
-        if path.is_empty() {
+    pub fn is_readable_writable(path_str: &str) -> (bool, bool) {
+        if path_str.is_empty() {
             return (true, true);
         } else {
-            let path = Path::new(path);
+            let path = Path::new(path_str);
             return (path.readable(), path.writable());
         }
     }
@@ -404,6 +396,27 @@ impl File {
         // C:\ or D:\ ...
         let re = Regex::new(r"[a-zA-Z]:\\").unwrap();
         return re.is_match(path) && path.chars().count() == 3;
+    }
+    pub fn read_file(filepath: &str, mbar: &mut MsgBar) -> Option<String> {
+        let is_readable = File::is_readable(&filepath);
+
+        match TextBuffer::read(filepath) {
+            Ok((string, _, _)) => return Some(string),
+            Err(err) => {
+                let filenm = Path::new(&filepath).file_name().unwrap().to_string_lossy().to_string();
+                Log::error_s(&err.to_string());
+                match err.kind() {
+                    ErrorKind::PermissionDenied => {
+                        if !is_readable {
+                            mbar.set_err(&format!("{} {}", &filenm, &LANG.no_read_permission.clone()))
+                        }
+                    }
+                    ErrorKind::NotFound => mbar.set_err(&format!("{} {}", &filenm, &LANG.file_not_found.clone())),
+                    _ => mbar.set_err(&format!("{} {}", &filenm, &LANG.file_opening_problem.clone())),
+                }
+                return None;
+            }
+        };
     }
 }
 
@@ -480,10 +493,9 @@ pub enum JobType {
 }
 
 #[derive(Debug, Clone)]
-pub struct Draw {
+pub struct EditorDraw {
     pub sy: usize,
     pub ey: usize,
-    // pub x_vec: Vec<(usize, usize)>,
     // Caching the drawing string because ropey takes a long time to access char
     pub cells: Vec<Vec<Cell>>,
     pub syntax_state_vec: Vec<SyntaxState>,
@@ -497,88 +509,59 @@ pub struct SyntaxState {
     pub parse_state: ParseState,
 }
 
-impl Default for Draw {
+impl Default for EditorDraw {
     fn default() -> Self {
-        Draw { sy: 0, ey: 0, cells: vec![], syntax_state_vec: vec![], syntax_reference: None }
+        EditorDraw { sy: 0, ey: 0, cells: vec![], syntax_state_vec: vec![], syntax_reference: None }
     }
 }
 
-impl fmt::Display for Draw {
+impl fmt::Display for EditorDraw {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Draw y_s:{}, y_e:{}, ", self.sy, self.ey)
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-// DrawRange
-pub struct DRange {
-    pub sy: usize,
-    pub ey: usize,
-    pub draw_type: DrawType,
+/// DrawType
+pub enum DrawType {
+    Target(usize, usize), // Target row only redraw
+    After(usize),         // Redraw after the specified line
+    None,                 // First time
+    All,
+    ScrollDown(usize, usize),
+    ScrollUp(usize, usize),
+    MoveCur,
+    Not,
 }
 
-impl Default for DRange {
+impl Default for DrawType {
     fn default() -> Self {
-        DRange { sy: 0, ey: 0, draw_type: DrawType::None }
+        DrawType::None
     }
 }
 
-impl DRange {
-    pub fn new(sy: usize, ey: usize, d_type: DrawType) -> Self {
-        return DRange { sy, ey, draw_type: d_type };
-    }
-
-    pub fn set_target(&mut self, sel_mode: SelMode, sy: usize, ey: usize) {
+impl DrawType {
+    pub fn get_type(sel_mode: SelMode, sy: usize, ey: usize) -> DrawType {
         match sel_mode {
             SelMode::Normal => {
-                self.draw_type = DrawType::Target;
-                self.sy = min(sy, ey);
-                self.ey = max(sy, ey);
+                return DrawType::Target(min(sy, ey), max(sy, ey));
             }
             SelMode::BoxSelect => {
-                self.draw_type = DrawType::All;
+                return DrawType::All;
             }
         }
     }
-    pub fn set_after(&mut self, sy: usize) {
-        self.draw_type = DrawType::After;
-        self.sy = sy;
-    }
-
-    pub fn clear(&mut self) {
-        self.sy = 0;
-        self.ey = 0;
-        self.draw_type = DrawType::Not;
-    }
-}
-impl fmt::Display for DRange {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "DRnage sy:{}, ey:{}, d_type:{}, ", self.sy, self.ey, self.draw_type)
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// DrawType
-pub enum DrawType {
-    Target, // Target row only redraw
-    After,  // Redraw after the specified line
-    None,   // First time
-    All,
-    ScrollDown,
-    ScrollUp,
-    MoveCur,
-    Not,
 }
 
 impl fmt::Display for DrawType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            DrawType::Target => write!(f, "Target"),
-            DrawType::After => write!(f, "After"),
+            DrawType::Target(_, _) => write!(f, "Target"),
+            DrawType::After(_) => write!(f, "After"),
             DrawType::None => write!(f, "None"),
             DrawType::All => write!(f, "All"),
-            DrawType::ScrollDown => write!(f, "ScrollDown"),
-            DrawType::ScrollUp => write!(f, "ScrollUp"),
+            DrawType::ScrollDown(_, _) => write!(f, "ScrollDown"),
+            DrawType::ScrollUp(_, _) => write!(f, "ScrollUp"),
             DrawType::MoveCur => write!(f, "MoveCur"),
             DrawType::Not => write!(f, "Not"),
         }
@@ -734,5 +717,59 @@ pub enum CurDirection {
     Up,
     Down,
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+// ConvertType
+pub enum ConvType {
+    Lowercase,
+    Uppercase,
+    HalfWidth,
+    FullWidth,
+    Space,
+    Tab,
+}
+impl ConvType {
+    pub fn from_str(s: &str) -> ConvType {
+        if s == &LANG.to_lowercase {
+            return ConvType::Lowercase;
+        } else if s == &LANG.to_uppercase {
+            return ConvType::Uppercase;
+        } else if s == &LANG.to_half_width {
+            return ConvType::HalfWidth;
+        } else if s == &LANG.to_full_width {
+            return ConvType::FullWidth;
+        } else if s == &LANG.to_space {
+            return ConvType::Space;
+        } else {
+            return ConvType::Tab;
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+// FormatType
+pub enum FmtType {
+    JSON,
+    XML,
+}
+
+impl fmt::Display for FmtType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            FmtType::JSON => write!(f, "JSON"),
+            FmtType::XML => write!(f, "XML"),
+        }
+    }
+}
+impl FmtType {
+    pub fn from_str(s: &str) -> FmtType {
+        if s == LANG.json {
+            return FmtType::JSON;
+        } else {
+            return FmtType::XML;
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UT {}

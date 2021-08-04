@@ -18,7 +18,7 @@ impl EvtAct {
                     if Tab::save(term) {
                         return EvtAct::check_exit_close(term);
                     } else {
-                        term.curt().editor.d_range.draw_type = DrawType::All;
+                        term.curt().editor.draw_type = DrawType::All;
                         return EvtActType::DrawOnly;
                     }
                 } else if str == &'n'.to_string() {
@@ -69,7 +69,7 @@ impl Prompt {
             term.idx = if term.idx == term.hbar.file_vec.len() - 1 { term.idx - 1 } else { term.idx };
             term.del_tab(tab_idx);
             // Redraw the previous tab
-            term.curt().editor.d_range.draw_type = DrawType::All;
+            term.curt().editor.draw_type = DrawType::All;
             term.curt().editor.keys = Keybind::get_keys(KeyCmd::CloseFile);
             return false;
         }

@@ -5,16 +5,14 @@ use crate::{
     global::CFG,
     log::*,
     model::*,
-    sel_range::{SelMode, SelRange},
+    sel_range::{BoxInsertMode, SelMode, SelRange},
     util::*,
 };
 use std::cmp::min;
 
 impl Editor {
     pub fn cur_move_com(&mut self) {
-        if self.sel.mode == SelMode::BoxSelect {
-            self.sel.set_sel_posi(true, self.cur.y, self.cur.x, self.cur.disp_x);
-        }
+        Log::debug("self.sel.mode", &self.sel.mode);
 
         match self.keycmd {
             KeyCmd::CursorUp | KeyCmd::MouseScrollUp => self.cur_up(),
@@ -27,17 +25,15 @@ impl Editor {
         }
 
         if self.sel.mode == SelMode::BoxSelect {
-            Log::debug("self.sel_range 111", &self.sel);
             self.sel.set_sel_posi(false, self.cur.y, self.cur.x, self.cur.disp_x);
-            Log::debug("self.sel_range 222", &self.sel);
-            self.d_range.set_target(self.sel.mode, self.cur_y_org, self.cur.y);
-            self.sel.check_overlap();
+            self.draw_type = DrawType::get_type(self.sel.mode, self.cur_y_org, self.cur.y);
+            self.box_insert.vec = self.slice_box_sel().1;
         }
     }
 
     pub fn cur_up(&mut self) {
         if self.cur.y == 0 {
-            self.d_range.draw_type = DrawType::Not;
+            self.draw_type = DrawType::Not;
             return;
         }
         if self.cur.y > 0 {
@@ -51,7 +47,7 @@ impl Editor {
     pub fn cur_down(&mut self) {
         Log::debug_key("c_d start");
         if self.cur.y == self.buf.len_lines() {
-            self.d_range.draw_type = DrawType::Not;
+            self.draw_type = DrawType::Not;
             return;
         }
         if self.cur.y + 1 < self.buf.len_lines() {
@@ -94,7 +90,7 @@ impl Editor {
                 self.cur.x -= 1;
             } else {
                 self.cur.x -= 1;
-                self.cur.disp_x -= get_char_width_not_tab(c);
+                self.cur.disp_x -= get_char_width_not_tab(&c);
                 if c == NEW_LINE_CR && (self.keycmd == KeyCmd::CursorLeftSelect || self.keycmd == KeyCmd::CursorLeft) {
                     self.cur.disp_x -= 1;
                     self.cur.x -= 1;
@@ -140,7 +136,7 @@ impl Editor {
                 self.updown_x = 0;
                 self.cur.disp_x = 0;
                 self.cur.x = 0;
-                self.d_range = DRange::new(self.cur.y, self.cur.y + 1, DrawType::Target);
+                self.draw_type = DrawType::Target(self.cur.y, self.cur.y + 1);
                 self.cur_down();
             }
         } else {
@@ -153,7 +149,7 @@ impl Editor {
                 self.cur.disp_x += tab_width;
                 self.cur.x += 1;
             } else {
-                self.cur.disp_x += get_char_width_not_tab(c);
+                self.cur.disp_x += get_char_width_not_tab(&c);
                 self.cur.x = min(self.cur.x + 1, self.buf.len_line_chars(self.cur.y));
                 if self.keycmd == KeyCmd::CursorRightSelect && c == NEW_LINE_CR {
                     self.cur.disp_x += 1;
@@ -164,53 +160,29 @@ impl Editor {
         self.scroll();
         self.scroll_horizontal();
     }
-    pub fn insert_str(&mut self, ep: &mut EvtProc) {
+    pub fn insert_str(&mut self, ep: &mut Proc) {
         Log::debug_key("insert_str");
         Log::debug("ep", &ep);
 
-
-        0幅inset後のBSの不具合から
-
         if self.is_enable_syntax_highlight {
-            self.d_range.draw_type = DrawType::All;
+            self.draw_type = DrawType::All;
         } else {
-            if self.box_sel.mode == BoxInsertMode::Insert {
-                self.d_range.draw_type = DrawType::All;
-            } else {
-                self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::After);
-            }
+            self.draw_type = if self.box_insert.mode == BoxInsertMode::Insert { DrawType::All } else { DrawType::After(self.cur.y) };
         }
-        // for Paste
-        if self.keycmd == KeyCmd::InsertStr("".to_string()) {
-            let mut clipboard = get_clipboard().unwrap_or("".to_string());
-            change_nl(&mut clipboard, &self.h_file);
-
-            Log::debug("clipboard", &clipboard);
-            Log::debug("self.box_sel_clipboard.str", &self.box_sel.clipboard_str);
-
-            if self.box_sel.clipboard_str == clipboard {
-                ep.box_sel_vec = self.box_sel.clipboard_box_sel_vec.clone();
-                ep.str = self.box_sel.clipboard_str.clone();
-            } else {
-                self.box_sel.clear();
-                ep.str = clipboard;
-            }
-        }
-
+        ep.draw_type = self.draw_type;
         ep.sel.set_s(self.cur.y, self.cur.x, self.cur.disp_x);
         if ep.box_sel_vec.is_empty() {
             self.ins_str(&ep.str);
             ep.sel.set_e(self.cur.y, self.cur.x, self.cur.disp_x);
+            ep.cur_e = self.cur;
         } else {
             let first_sel = ep.box_sel_vec.first().unwrap().0;
             if self.sel.is_selected() {
-                if ep.str.is_empty() {
-                    // このルートは基本無い
-                } else {
+                if !ep.str.is_empty() {
                     self.insert_box(ep, first_sel.sy, first_sel.sx, first_sel.s_disp_x)
                 }
             } else {
-                if self.box_sel.mode == BoxInsertMode::Insert {
+                if self.box_insert.mode == BoxInsertMode::Insert {
                     self.insert_box(ep, first_sel.sy, first_sel.sx, first_sel.s_disp_x)
                 } else {
                     self.insert_box(ep, self.cur.y, self.cur.x, self.cur.disp_x)
@@ -219,98 +191,124 @@ impl Editor {
         }
     }
 
-    pub fn insert_box(&mut self, ep: &mut EvtProc, sy: usize, sx: usize, s_disp_x: usize) {
-        let (mut ex, mut e_disp_x) = (0, 0);
+    pub fn get_clipboard(&mut self, ep: &mut Proc) -> bool {
+        // for Paste
+        if self.keycmd == KeyCmd::InsertStr("".to_string()) {
+            let mut clipboard = get_clipboard().unwrap_or("".to_string());
+            change_nl(&mut clipboard, &self.h_file);
 
-        let mut box_sel_redo_vec: Vec<(SelRange, String)> = vec![];
-        let mut box_sel_undo_vec: Vec<(SelRange, String)> = vec![];
+            if self.box_insert.mode == BoxInsertMode::Normal {
+                if self.box_insert.get_str(&NL::get_nl(&self.h_file.nl)) == clipboard {
+                    ep.box_sel_vec = self.box_insert.vec.clone();
+                    ep.str = self.box_insert.get_str(&NL::get_nl(&self.h_file.nl));
+                } else {
+                    self.clear_box_sel(ep, clipboard);
+                }
+            } else {
+                let row_vec = clipboard.split(&NL::get_nl(&self.h_file.nl)).collect::<Vec<&str>>();
+
+                if row_vec.len() == 1 {
+                    for i in 0..ep.box_sel_vec.len() {
+                        ep.box_sel_vec[i].1 = clipboard.clone();
+                    }
+                } else {
+                    self.clear_box_sel(ep, clipboard);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    pub fn clear_box_sel(&mut self, ep: &mut Proc, clipboard: String) {
+        self.box_insert.clear_clipboard();
+        ep.str = clipboard;
+        ep.box_sel_vec.clear();
+    }
+
+    pub fn insert_box(&mut self, ep: &mut Proc, sy: usize, sx: usize, s_disp_x: usize) {
+        Log::debug_key("insert_box");
+        Log::debug("ep.box_sel_vec", &ep.box_sel_vec);
+        let (mut ex, mut box_sel_redo_vec, mut box_sel_undo_vec) = (0, vec![], vec![]);
 
         let vec_len = ep.box_sel_vec.len() - 1;
         for (i, (_, sel_str)) in ep.box_sel_vec.iter().enumerate() {
-            Log::debug("iii", &i);
-            Log::debug("sel_str", &sel_str);
-
             // Exist row
             if sy + i <= self.buf.len_lines() - 1 {
                 // If there are characters up to the column to insert
                 if let Some(cur_x) = get_row_x(&self.buf.char_vec_line(sy + i)[..], s_disp_x, self.offset_disp_x, false) {
                     self.buf.insert(sy + i, cur_x, &sel_str);
-                    let (sel, string) = (SelRange { sy: sy + i, sx: cur_x, ex: sx + sel_str.chars().count(), ..SelRange::default() }, sel_str.to_string());
-                    box_sel_undo_vec.push((sel, string.clone()));
-                    box_sel_redo_vec.push((sel, string));
-                    if i == vec_len {
+                    let sel = SelRange { sy: sy + i, sx: cur_x, ex: cur_x + sel_str.chars().count(), s_disp_x: s_disp_x, e_disp_x: s_disp_x + get_str_width(sel_str), ..SelRange::default() };
+                    box_sel_undo_vec.push((sel, sel_str.clone()));
+                    box_sel_redo_vec.push((sel, sel_str.clone()));
+                    if i == 0 {
                         ex = cur_x + sel_str.chars().count();
-                        e_disp_x = s_disp_x + get_str_width(&sel_str);
                     }
                 } else {
                     let (cur_x, width) = get_row_width(&self.buf.char_vec_line(sy + i)[..], self.offset_disp_x, false);
-                    Log::debug("cur_x", &cur_x);
-                    Log::debug("width", &width);
 
                     let insert_str = format!("{}{}", " ".repeat(s_disp_x - width), &sel_str);
                     self.buf.insert(sy + i, cur_x, &insert_str);
-
-                    box_sel_undo_vec.push((SelRange { sy: sy + i, sx: cur_x, ex: sx + insert_str.chars().count(), ..SelRange::default() }, sel_str.to_string()));
-                    box_sel_redo_vec.push((SelRange { sy: sy + i, sx: cur_x + s_disp_x - width, ex: sx + sel_str.chars().count(), ..SelRange::default() }, sel_str.to_string()));
-
-                    if i == vec_len {
-                        let space = " ".repeat(s_disp_x - width);
-                        ex = space.chars().count() + sel_str.chars().count();
-                        e_disp_x = space.chars().count() + get_str_width(&sel_str);
+                    box_sel_undo_vec.push((SelRange { sy: sy + i, sx: cur_x, ex: cur_x + insert_str.chars().count(), s_disp_x: width, e_disp_x: width + get_str_width(&insert_str), ..SelRange::default() }, sel_str.to_string()));
+                    box_sel_redo_vec.push((SelRange { sy: sy + i, sx: cur_x + s_disp_x - width, s_disp_x: s_disp_x, ex: sx + insert_str.chars().count(), ..SelRange::default() }, sel_str.to_string()));
+                    if i == 0 {
+                        ex = " ".repeat(s_disp_x - width).chars().count() + sel_str.chars().count();
                     }
                 }
             } else {
                 //// Not exist row, Create new row
-                Log::debug("ins_str", &sel_str);
-
                 // Delete EOF_MARK once
                 self.buf.remove(self.buf.len_chars() - 1, self.buf.len_chars());
 
-                // last row
-                let insert_str_1 = &NL::get_nl(&self.h_file.nl);
+                // Insert a new line at the end of the current last line
+                let nl_code = &NL::get_nl(&self.h_file.nl);
                 let end_idx = self.buf.len_line_chars(self.buf.len_lines() - 1);
-                self.buf.insert_end(insert_str_1);
-                box_sel_undo_vec.push((SelRange { sy: sy + i - 1, sx: end_idx, ex: end_idx + insert_str_1.chars().count(), ..SelRange::default() }, "".to_string()));
+                let (_, width) = get_row_width(&self.buf.char_vec_line(self.buf.len_lines() - 1)[..], self.offset_disp_x, false);
 
-                // add new rowy
-                let insert_str_2 = &format!("{}{}", " ".repeat(s_disp_x), &sel_str);
-                self.buf.insert_end(insert_str_2);
-                box_sel_undo_vec.push((SelRange { sy: sy + i - 1, sx: end_idx, ex: end_idx + insert_str_2.chars().count(), ..SelRange::default() }, sel_str.to_string()));
-                box_sel_redo_vec.push((SelRange { sy: sy + i, sx: s_disp_x, ex: sx + sel_str.chars().count(), ..SelRange::default() }, sel_str.to_string()));
+                self.buf.insert_end(nl_code);
+                box_sel_undo_vec.push((SelRange { sy: sy + i - 1, sx: end_idx, ex: end_idx + nl_code.chars().count(), s_disp_x: width, e_disp_x: width + get_str_width(&nl_code), ..SelRange::default() }, "".to_string()));
+
+                // add new row
+                let new_row_str = &format!("{}{}", " ".repeat(s_disp_x), &sel_str);
+                self.buf.insert_end(new_row_str);
+                box_sel_undo_vec.push((SelRange { sy: sy + i, sx: 0, ex: new_row_str.chars().count(), s_disp_x: 0, e_disp_x: get_str_width(new_row_str), ..SelRange::default() }, sel_str.to_string()));
+                box_sel_redo_vec.push((SelRange { sy: sy + i, sx: s_disp_x, s_disp_x: s_disp_x, ex: sx + sel_str.chars().count(), ..SelRange::default() }, sel_str.to_string()));
 
                 self.buf.insert_end(&EOF_MARK.to_string());
-                if i == vec_len {
-                    let space = " ".repeat(s_disp_x);
-                    ex = space.chars().count() + sel_str.chars().count();
-                    e_disp_x = space.chars().count() + get_str_width(&sel_str);
+                if i == 0 {
+                    ex = " ".repeat(s_disp_x).chars().count() + sel_str.chars().count();
                 }
             }
 
             if i == vec_len {
                 let ey = sy + i;
-                if self.box_sel.mode == BoxInsertMode::Nomal {
+                let e_disp_x;
+                if self.box_insert.mode == BoxInsertMode::Normal {
+                    e_disp_x = get_row_width(&self.buf.char_vec_line(sy)[..ex], self.offset_disp_x, false).1;
                     self.set_cur_target(sy, sx, false);
                 } else {
                     // BoxSelMode::InsertStr
-                    Log::debug("exexexexexexexexexexex", &ex);
-
+                    e_disp_x = get_row_width(&self.buf.char_vec_line(sy)[..ex], self.offset_disp_x, false).1;
                     self.set_cur_target(sy, ex, false);
                 }
+                ep.cur_e = self.cur;
                 ep.sel.set_e(ey, ex, e_disp_x);
             }
         }
         ep.box_sel_vec = box_sel_undo_vec;
+
         ep.box_sel_redo_vec = box_sel_redo_vec;
+        if self.box_insert.mode == BoxInsertMode::Insert {
+            self.box_insert.vec = ep.box_sel_vec.clone();
+        }
     }
 
     pub fn undo_del_box(&mut self, box_sel_vec: &Vec<(SelRange, String)>) {
-        Log::debug_key("undo_box");
-        Log::debug("box_sel_vec", &box_sel_vec);
-
+        Log::debug_key("undo_del_box");
         for (sel, _) in box_sel_vec.iter().rev() {
+            Log::debug("sel", &sel);
+
             let s_idx = self.buf.line_to_char(sel.sy) + sel.sx;
             let e_idx = self.buf.line_to_char(sel.sy) + sel.ex;
-
             self.buf.remove(s_idx, e_idx);
         }
         self.scroll();
@@ -321,42 +319,36 @@ impl Editor {
         Log::debug_key("ins_str");
 
         self.buf.insert(self.cur.y, self.cur.x, str);
-        let insert_strs: Vec<&str> = str.split(NEW_LINE_LF).collect();
+        let insert_strs: Vec<&str> = str.split(&NL::get_nl(&self.h_file.nl)).collect();
 
-        let last_str_len = insert_strs.last().unwrap().chars().count();
         self.cur.y += insert_strs.len() - 1;
 
+        let last_str_len = insert_strs.last().unwrap().chars().count();
         let x = if insert_strs.len() == 1 { self.cur.x + last_str_len } else { last_str_len };
         self.set_cur_target(self.cur.y, x, false);
-
-        self.scroll();
-        self.scroll_horizontal();
     }
 
     pub fn enter(&mut self) {
-        let nl_str = if self.h_file.nl == NEW_LINE_LF_STR { NEW_LINE_LF.to_string() } else { NEW_LINE_CRLF.to_string() };
-        self.buf.insert(self.cur.y, self.cur.x, &nl_str);
+        self.buf.insert(self.cur.y, self.cur.x, &NL::get_nl(&self.h_file.nl));
         self.set_cur_target(self.cur.y + 1, 0, false);
-        if self.is_enable_syntax_highlight {
-            self.d_range.draw_type = DrawType::All;
-        } else {
-            self.d_range = DRange::new(self.cur.y - 1, 0, DrawType::After);
-        }
+
+        self.set_draw_range_each_process(DrawType::After(self.cur.y - 1));
+
         self.scroll();
         self.scroll_horizontal();
     }
 
-    pub fn backspace(&mut self, ep: &mut EvtProc) {
+    pub fn backspace(&mut self, ep: &mut Proc) {
         Log::debug_key("back_space");
         // beginning of the line
         if self.cur.x == 0 {
             self.cur.y -= 1;
-            self.d_range = DRange::new(self.cur.y, 0, DrawType::After);
+            self.draw_type = DrawType::After(self.cur.y);
             let (mut cur_x, _) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], self.offset_disp_x, true);
             // ' ' is meaningless value
             let c = if cur_x > 0 { self.buf.char(self.cur.y, cur_x - 1) } else { ' ' };
             ep.str = if c == NEW_LINE_CR { NEW_LINE_CRLF.to_string() } else { NEW_LINE_LF.to_string() };
-            // Minus for newline code
+            // Minus for new line code
             cur_x -= 1;
 
             self.buf.remove_del_bs(KeyCmd::DeletePrevChar, self.cur.y, self.buf.len_line_chars(self.cur.y) - 1);
@@ -366,45 +358,47 @@ impl Editor {
         } else {
             self.cur_left();
 
-            if self.box_sel.mode == BoxInsertMode::Nomal {
+            if self.box_insert.mode == BoxInsertMode::Normal {
                 ep.str = self.buf.char(self.cur.y, self.cur.x).to_string();
                 self.buf.remove_del_bs(KeyCmd::DeletePrevChar, self.cur.y, self.cur.x);
                 if self.is_enable_syntax_highlight {
-                    self.d_range.draw_type = DrawType::All;
+                    self.draw_type = DrawType::All;
                 } else {
-                    self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
+                    self.draw_type = DrawType::Target(self.cur.y, self.cur.y);
                 }
                 //BoxSelMode::Insert
             } else {
                 Log::debug("ep.box_sel_vec", &ep.box_sel_vec);
                 for i in 0..=ep.box_sel_vec.len() - 1 {
-                    let s = self.buf.line_to_char(ep.box_sel_vec[i].0.sy) + ep.box_sel_vec[i].0.sx;
-                    let e = self.buf.line_to_char(ep.box_sel_vec[i].0.sy) + ep.box_sel_vec[i].0.ex;
+                    let s = self.buf.line_to_char(ep.box_sel_vec[i].0.sy) + self.cur.x;
+                    let e = self.buf.line_to_char(ep.box_sel_vec[i].0.sy) + self.cur.x + 1;
                     let c = self.buf.char_idx(s);
                     ep.box_sel_vec[i].1 = c.to_string().clone();
-                    self.buf.remove(s, e)
+                    self.buf.remove(s, e);
+                    let (_, width) = get_row_width(&self.buf.char_vec_line(ep.box_sel_vec[i].0.sy)[..self.cur.x], self.offset_disp_x, false);
+                    ep.box_sel_vec[i].0.sx = self.cur.x;
+                    ep.box_sel_vec[i].0.s_disp_x = width;
+                    ep.box_sel_vec[i].0.ex = self.cur.x + 1;
+                    ep.box_sel_vec[i].0.e_disp_x = width + get_char_width(&c, width);
                 }
                 ep.cur_e = self.cur;
             }
         }
     }
 
-    pub fn delete(&mut self, ep: &mut EvtProc) {
+    pub fn delete(&mut self, ep: &mut Proc) {
         Log::debug_key("delete");
         let c = self.buf.char(self.cur.y, self.cur.x);
         ep.str = if c == NEW_LINE_CR { format!("{}{}", c.to_string(), NEW_LINE_LF) } else { c.to_string() };
         self.buf.remove_del_bs(KeyCmd::DeleteNextChar, self.cur.y, self.cur.x);
-        self.d_range = DRange::new(self.cur.y, self.cur.y, DrawType::Target);
-
+        let mut draw_type = DrawType::Target(self.cur.y, self.cur.y);
         if is_line_end(c) {
             self.set_cur_target(self.cur.y, self.cur.x, false);
-            self.d_range.draw_type = DrawType::After;
             self.scroll();
             self.scroll_horizontal();
+            draw_type = DrawType::After(self.cur.y);
         }
-        if self.is_enable_syntax_highlight {
-            self.d_range.draw_type = DrawType::All;
-        }
+        self.set_draw_range_each_process(draw_type);
     }
 
     pub fn cur_home(&mut self) {
@@ -434,6 +428,7 @@ impl Editor {
     pub fn cancel_mode(&mut self) {
         self.sel.clear();
         self.sel.mode = SelMode::Normal;
+        self.box_insert.mode = BoxInsertMode::Normal;
     }
 }
 

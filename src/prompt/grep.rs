@@ -16,7 +16,7 @@ impl EvtAct {
     pub fn grep(term: &mut Terminal) -> EvtActType {
         Log::debug_s("Process.grep");
         match term.curt().editor.keycmd {
-            KeyCmd::InsertLine => {
+            KeyCmd::ConfirmPrompt => {
                 let search_str = term.curt().prom.cont_1.buf.iter().collect::<String>();
                 let search_filenm = term.curt().prom.cont_2.buf.iter().collect::<String>();
                 let mut search_folder = term.curt().prom.cont_3.buf.iter().collect::<String>();
@@ -67,11 +67,11 @@ impl EvtAct {
 
                     term.add_tab(tab_grep, HeaderFile::new(&format!(r#"{} "{}""#, &LANG.grep, &search_str)));
                     Prompt::set_grep_working(term);
-                    term.curt().editor.d_range.draw_type = DrawType::All;
+                    term.curt().editor.draw_type = DrawType::All;
 
                     return EvtActType::DrawOnly;
                 }
-                term.curt().editor.d_range.draw_type = DrawType::All;
+                term.curt().editor.draw_type = DrawType::All;
                 return EvtActType::DrawOnly;
             }
             _ => return EvtActType::Hold,

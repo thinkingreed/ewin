@@ -2,11 +2,13 @@ extern crate ropey;
 use crate::{def::*, log::Log, model::CurDirection, prompt::cont::promptcont::*, util::get_str_width};
 use std::{cmp::max, collections::HashMap, usize};
 
+use super::prompt::prompt::Prompt;
+
 impl Choices {
     pub const ITEM_MARGIN: usize = 1;
 
     pub fn set_vec_posi(&mut self, cur_direction: CurDirection) -> bool {
-        let mut is_move_cont = false;
+        let mut is_updown_contposi = false;
         match cur_direction {
             CurDirection::Right | CurDirection::Left => {
                 if let Some(vec) = self.vec.get(self.vec_y) {
@@ -25,16 +27,16 @@ impl Choices {
             }
             CurDirection::Up => {
                 if self.vec_y == 0 {
-                    is_move_cont = true;
+                    is_updown_contposi = true;
                 } else {
                     if let Some(vec) = self.vec.get(self.vec_y - 1) {
                         if let Some(_) = vec.get(self.vec_x) {
                             self.vec_y -= 1;
                         } else {
-                            is_move_cont = true;
+                            is_updown_contposi = true;
                         }
                     } else {
-                        is_move_cont = true;
+                        is_updown_contposi = true;
                     }
                 }
             }
@@ -43,14 +45,14 @@ impl Choices {
                     if let Some(_) = vec.get(self.vec_x) {
                         self.vec_y += 1;
                     } else {
-                        is_move_cont = true;
+                        is_updown_contposi = true;
                     }
                 } else {
-                    is_move_cont = true;
+                    is_updown_contposi = true;
                 }
             }
         }
-        return is_move_cont;
+        return is_updown_contposi;
     }
 
     pub fn get_y_x(prompt_cont: &PromptCont) -> (usize, usize) {
@@ -69,7 +71,7 @@ impl Choices {
         }
         return (dummy_y, dummy_x);
     }
-    pub fn set_choice_area(buf_row_posi: u16, choices_map: &mut HashMap<(usize, usize), Choices>) {
+    pub fn set_choice_area(buf_row_posi: u16, choices_map: &mut HashMap<((usize, usize), (usize, usize)), Choices>) {
         for (_, choices) in choices_map.iter_mut() {
             for (y_idx, v) in choices.vec.iter_mut().enumerate() {
                 let mut row_width = 1;
@@ -82,13 +84,20 @@ impl Choices {
             }
         }
     }
-    pub fn set_show_choice(p_y: usize, p_x: usize, choices_map: &mut HashMap<(usize, usize), Choices>) {
-        for ((y, x), choices) in choices_map.iter_mut() {
-            choices.is_show = if p_y == *y && p_x == *x { true } else { false };
+    pub fn change_show_choice(prom: &mut Prompt) {
+        let (first_y, first_x) = Choices::get_y_x(&prom.cont_1);
+        Choices::set_show_choice(USIZE_UNDEFINED, USIZE_UNDEFINED, first_y, first_x, &mut prom.cont_2.choices_map);
+        let (second_y, second_x) = Choices::get_y_x(&prom.cont_2);
+        Choices::set_show_choice(first_y, first_x, second_y, second_x, &mut prom.cont_3.choices_map);
+    }
+
+    pub fn set_show_choice(grandparents_y: usize, grandparents_x: usize, parent_y: usize, parent_x: usize, choices_map: &mut HashMap<((usize, usize), (usize, usize)), Choices>) {
+        for (((gp_y, gp_x), (p_y, p_x)), choices) in choices_map.iter_mut() {
+            choices.is_show = if grandparents_y == *gp_y && grandparents_x == *gp_x && parent_y == *p_y && parent_x == *p_x { true } else { false };
         }
     }
 
-    pub fn set_shaping_choice_list(choices_map: &mut HashMap<(usize, usize), Choices>) {
+    pub fn set_shaping_choice_list(choices_map: &mut HashMap<((usize, usize), (usize, usize)), Choices>) {
         Log::debug_key("set_shaping_choice_list");
 
         for (_, choices) in choices_map.iter_mut() {
@@ -132,6 +141,9 @@ impl Default for Choice {
 impl Choice {
     pub fn new(name: &String) -> Self {
         return Choice { name: name.clone(), ..Choice::default() };
+    }
+    pub fn is_none(&self) -> bool {
+        return self.name.is_empty();
     }
 }
 

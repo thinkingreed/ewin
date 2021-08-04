@@ -13,7 +13,7 @@ use std::path::Path;
 impl EvtAct {
     pub fn save_new_filenm(term: &mut Terminal) -> EvtActType {
         match term.curt().editor.keycmd {
-            KeyCmd::InsertLine => {
+            KeyCmd::ConfirmPrompt => {
                 if term.curt().prom.cont_1.buf.len() == 0 {
                     term.curt().mbar.set_err(&LANG.not_entered_filenm);
                 } else {
@@ -35,9 +35,10 @@ impl EvtAct {
                             return EvtAct::check_exit_close(term);
                         }
                     }
-                    Terminal::enable_syntax_highlight(&Path::new(&filenm), term.curt());
+                    term.enable_syntax_highlight(&Path::new(&filenm));
+                    // Terminal::enable_syntax_highlight(&Path::new(&filenm), term.curt());
                 }
-                term.curt().editor.d_range.draw_type = DrawType::All;
+                term.curt().editor.draw_type = DrawType::All;
                 return EvtActType::DrawOnly;
             }
             _ => return EvtActType::Hold,

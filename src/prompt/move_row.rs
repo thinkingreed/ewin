@@ -25,7 +25,7 @@ impl EvtAct {
 
                 return EvtActType::DrawOnly;
             }
-            KeyCmd::InsertLine => {
+            KeyCmd::ConfirmPrompt => {
                 let str = term.curt().prom.cont_1.buf.iter().collect::<String>();
                 if str.is_empty() {
                     term.curt().mbar.set_err(&LANG.not_entered_row_number_to_move);

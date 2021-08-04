@@ -14,6 +14,7 @@ It provides basic features as a minimal text editor:
 - Key binding support
 - Mouse support
 - Tab support
+- Box select support
 
 ## Installation
 

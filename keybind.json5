@@ -26,6 +26,8 @@
          help, openMenu, openMenuFile, openMenuConvert, openMenuEdit, openMenuSelect
      // prompt
          escPrompt, confirmPrompt, findCaseSensitive, findRegex                             
+     // macro
+         openFileJsMacro
   */
   /* when
      allFocus, inputFocus, editorFocus, promptFocus         
@@ -36,7 +38,7 @@
    */
   {
     key: 'left',
-    cmd: 'cursorLef',
+    cmd: 'cursorLeft',
     when: 'inputFocus'
   },
   {
@@ -189,12 +191,12 @@
   {
     key: 'F3',
     cmd: 'findNext',
-    when: 'editorFocus'
+    when: 'allFocus'
   },
   {
     key: 'shift+F4',
     cmd: 'findBack',
-    when: 'editorFocus'
+    when: 'allFocus'
   },
   {
     key: 'ctrl+r',
@@ -301,7 +303,7 @@
   },
   {
     key: 'alt+s',
-    cmd: 'openMenuSelect',
+    cmd: 'openMenuSearch',
     when: 'editorFocus'
   },
 
@@ -327,5 +329,13 @@
     key: 'alt+r',
     cmd: 'findRegex',
     when: 'promptFocus'
+  },
+  /*
+   * dummy
+   */
+  {
+    key: 'ctrl+d',
+    cmd: 'openFileJsMacro',
+    when: 'editorFocus'
   }
 ]

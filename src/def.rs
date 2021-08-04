@@ -1,5 +1,7 @@
 pub const SETTING_FILE: &str = "setting.toml";
 pub const KEYBINDING_FILE: &str = "keybind.json5";
+pub const MACROS_DIR: &str = "macros";
+
 pub const STR_UNDEFINED: &str = "STR_UNDEFINED";
 pub const USIZE_UNDEFINED: usize = usize::MAX;
 // Corresponding alternative character that cannot set a newline at the end in WSL

@@ -31,7 +31,7 @@ impl EvtAct {
                 term.curt().prom.move_enc_nl(CurDirection::Left);
                 return EvtActType::Hold;
             }
-            KeyCmd::InsertLine => {
+            KeyCmd::ConfirmPrompt => {
                 let (apply_item, enc_item, nl_item, bom_item) = (term.curt().prom.cont_1.get_choice(), term.curt().prom.cont_2.get_choice(), term.curt().prom.cont_3.get_choice(), term.curt().prom.cont_4.get_choice());
                 let result = term.tabs[term.idx].editor.buf.set_encoding(&mut term.hbar.file_vec[term.idx], &enc_item, &nl_item, &apply_item, &bom_item);
                 match result {
@@ -58,23 +58,23 @@ impl Prompt {
         match y {
             y if self.cont_1.buf_row_posi == y => {
                 self.cont_1.left_down_choice(y, x);
-                self.prom_cont_posi = PromptContPosi::First;
+                self.cont_posi = PromptContPosi::First;
             }
             y if self.cont_2.buf_row_posi == y => {
                 self.cont_2.left_down_choice(y, x);
                 self.enter_enc_ctrl_bom();
-                self.prom_cont_posi = PromptContPosi::Second;
+                self.cont_posi = PromptContPosi::Second;
             }
             y if self.cont_3.buf_row_posi == y => {
                 self.cont_3.left_down_choice(y, x);
-                self.prom_cont_posi = PromptContPosi::Third;
+                self.cont_posi = PromptContPosi::Third;
             }
             y if self.cont_4.buf_row_posi == y => {
                 let item = self.cont_2.get_choice();
                 if item.name == Encode::UTF8.to_string() {
                     self.cont_4.left_down_choice(y, x);
                 }
-                self.prom_cont_posi = PromptContPosi::Fourth;
+                self.cont_posi = PromptContPosi::Fourth;
             }
             _ => {}
         }
@@ -121,7 +121,7 @@ impl Prompt {
         }
     }
     pub fn draw_cur_enc_nl(&self, str_vec: &mut Vec<String>) {
-        match self.prom_cont_posi {
+        match self.cont_posi {
             PromptContPosi::First => self.cont_1.draw_choice_cur(str_vec),
             PromptContPosi::Second => self.cont_2.draw_choice_cur(str_vec),
             PromptContPosi::Third => self.cont_3.draw_choice_cur(str_vec),
@@ -140,15 +140,15 @@ impl Prompt {
         }
     }
     pub fn move_enc_nl(&mut self, cur_direction: CurDirection) {
-        match self.prom_cont_posi {
+        match self.cont_posi {
             PromptContPosi::First => {
                 let is_move_cont = self.cont_1.get_choices().unwrap().set_vec_posi(cur_direction);
                 if is_move_cont {
                     if cur_direction == CurDirection::Down {
-                        self.prom_cont_posi = PromptContPosi::Second;
+                        self.cont_posi = PromptContPosi::Second;
                     } else if cur_direction == CurDirection::Up {
                         let item = self.cont_1.get_choice();
-                        self.prom_cont_posi = if *item.name == LANG.file_reload { PromptContPosi::Second } else { PromptContPosi::Fourth };
+                        self.cont_posi = if *item.name == LANG.file_reload { PromptContPosi::Second } else { PromptContPosi::Fourth };
                     }
                 }
             }
@@ -157,9 +157,9 @@ impl Prompt {
                 if is_move_cont {
                     if cur_direction == CurDirection::Down {
                         let item = self.cont_1.get_choice();
-                        self.prom_cont_posi = if *item.name == LANG.file_reload { PromptContPosi::First } else { PromptContPosi::Third };
+                        self.cont_posi = if *item.name == LANG.file_reload { PromptContPosi::First } else { PromptContPosi::Third };
                     } else if cur_direction == CurDirection::Up {
-                        self.prom_cont_posi = PromptContPosi::First;
+                        self.cont_posi = PromptContPosi::First;
                     }
                 }
                 self.enter_enc_ctrl_bom();
@@ -168,9 +168,9 @@ impl Prompt {
                 let is_move_cont = self.cont_3.get_choices().unwrap().set_vec_posi(cur_direction);
                 if is_move_cont {
                     if cur_direction == CurDirection::Down {
-                        self.prom_cont_posi = PromptContPosi::Fourth;
+                        self.cont_posi = PromptContPosi::Fourth;
                     } else if cur_direction == CurDirection::Up {
-                        self.prom_cont_posi = PromptContPosi::Second;
+                        self.cont_posi = PromptContPosi::Second;
                     }
                 }
             }
@@ -179,7 +179,7 @@ impl Prompt {
                 CurDirection::Up | CurDirection::Down => {
                     let is_move_cont = self.cont_4.get_choices().unwrap().set_vec_posi(cur_direction);
                     if is_move_cont {
-                        self.prom_cont_posi = if cur_direction == CurDirection::Down { PromptContPosi::First } else { PromptContPosi::Third };
+                        self.cont_posi = if cur_direction == CurDirection::Down { PromptContPosi::First } else { PromptContPosi::Third };
                     }
                 }
                 CurDirection::Left | CurDirection::Right => {
@@ -273,7 +273,7 @@ impl PromptCont {
                 let vec = vec![vec![Choice::new(&LANG.file_reload.clone()), Choice::new(&LANG.keep_and_apply_string)]];
                 choices.vec = vec;
                 choices.is_show = true;
-                self.choices_map.insert((USIZE_UNDEFINED, USIZE_UNDEFINED), choices);
+                self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (USIZE_UNDEFINED, USIZE_UNDEFINED)), choices);
                 self.set_default_choice_enc_nl(h_file, self.buf_row_posi);
             }
             PromptContPosi::Second => {
@@ -290,7 +290,7 @@ impl PromptCont {
                 let mut choices = Choices::default();
                 choices.is_show = true;
                 choices.vec = enc_vec;
-                self.choices_map.insert((0, 0), choices);
+                self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 0)), choices);
                 self.set_default_choice_enc_nl(h_file, self.buf_row_posi);
             }
             PromptContPosi::Third => {
@@ -303,7 +303,7 @@ impl PromptCont {
                 let mut choices = Choices::default();
                 choices.is_show = true;
                 choices.vec = nl_vec;
-                self.choices_map.insert((0, 0), choices);
+                self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 0)), choices);
                 self.set_default_choice_enc_nl(h_file, self.buf_row_posi);
             }
             PromptContPosi::Fourth => {
@@ -316,7 +316,7 @@ impl PromptCont {
                 let mut choices = Choices::default();
                 choices.is_show = true;
                 choices.vec = bom_vec;
-                self.choices_map.insert((0, 0), choices);
+                self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 0)), choices);
                 self.set_default_choice_enc_nl(h_file, self.buf_row_posi);
             }
         };

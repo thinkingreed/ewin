@@ -1,46 +1,52 @@
-use crate::{_cfg::keys::KeyCmd, model::*, prompt::cont::promptcont::PromptCont};
+use crate::{_cfg::keys::KeyCmd, log::Log, model::*, prompt::cont::promptcont::PromptCont};
 
 impl PromptCont {
     pub fn edit_proc(&mut self, keycmd: KeyCmd) {
+        Log::debug("PromptCont.keycmd", &keycmd);
         if keycmd == KeyCmd::DeleteNextChar {
-            if !self.sel.is_selected() && self.cur.x == self.buf.len() {
+            if !self.sel.is_selected_width() && self.cur.x == self.buf.len() {
                 return;
             }
         } else if keycmd == KeyCmd::DeletePrevChar {
-            if !self.sel.is_selected() && self.cur.x == 0 {
+            if !self.sel.is_selected_width() && self.cur.x == 0 {
                 return;
             }
         }
-        let is_selected_org = self.sel.is_selected();
-        let mut ep_org = EvtProc::default();
+
+        let is_selected_org = self.sel.is_selected_width();
+        let mut ep_del = Proc::default();
+        let mut evt_proc = EvtProc::default();
+
         // selected range delete
-        if self.sel.is_selected() {
-            ep_org = EvtProc { keycmd: if keycmd == KeyCmd::DeleteNextChar { KeyCmd::DeleteNextChar } else { KeyCmd::DeletePrevChar }, ..EvtProc::default() };
-            ep_org.cur_s = Cur { y: self.sel.sy, x: self.sel.sx, disp_x: self.sel.s_disp_x };
-            ep_org.cur_e = self.cur;
+        if self.sel.is_selected_width() {
+            ep_del = Proc { keycmd: if keycmd == KeyCmd::DeleteNextChar { KeyCmd::DeleteNextChar } else { KeyCmd::DeletePrevChar }, ..Proc::default() };
+            ep_del.cur_s = Cur { y: self.sel.sy, x: self.sel.sx, disp_x: self.sel.s_disp_x };
+            ep_del.cur_e = self.cur;
             let sel = self.sel.get_range();
-            ep_org.str = self.buf[sel.sx..sel.ex].iter().collect::<String>();
-            ep_org.sel = self.sel;
+
+            Log::debug("self.cur 111", &self.cur);
+
+            ep_del.str = self.buf[sel.sx..sel.ex].iter().collect::<String>();
+            ep_del.sel = self.sel;
             self.del_sel_range();
+            Log::debug("self.cur 222", &self.cur);
             self.sel.clear();
-            self.history.regist_edit(self.keycmd.clone(), &ep_org);
+            evt_proc.sel_proc = Some(ep_del.clone());
         }
 
         // not selected Del, BS, Cut or InsertChar, Paste, Enter
         if !(is_selected_org && (keycmd == KeyCmd::DeleteNextChar || keycmd == KeyCmd::DeletePrevChar)) {
-            let mut ep = EvtProc { keycmd: keycmd.clone(), ..EvtProc::default() };
+            let mut ep = Proc { keycmd: keycmd.clone(), ..Proc::default() };
 
             ep.cur_s = self.cur;
             match &keycmd {
-                // KeyCmd::InsertChar(c) => ep.str = c.to_string(),
                 KeyCmd::InsertStr(str) => ep.str = str.clone(),
                 _ => {}
             }
             match &keycmd {
                 KeyCmd::DeleteNextChar => self.delete(&mut ep),
                 KeyCmd::DeletePrevChar => self.backspace(&mut ep),
-                KeyCmd::CutSelect => self.cut(ep_org.str),
-                //  KeyCmd::InsertChar(c) => self.insert_char(*c),
+                KeyCmd::CutSelect => self.cut(ep_del.str),
                 KeyCmd::InsertStr(str) => {
                     if str.is_empty() {
                         self.paste(&mut ep);
@@ -50,10 +56,15 @@ impl PromptCont {
                 }
                 _ => {}
             }
+            ep.cur_e = self.cur;
             if keycmd != KeyCmd::CutSelect {
-                ep.cur_e = self.cur;
-                self.history.regist_edit(self.keycmd.clone(), &ep);
+                evt_proc.evt_proc = Some(ep.clone());
             }
+        }
+
+        // Register edit history
+        if self.keycmd != KeyCmd::Undo && self.keycmd != KeyCmd::Redo {
+            self.history.undo_vec.push(evt_proc);
         }
     }
 }

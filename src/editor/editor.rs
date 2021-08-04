@@ -28,14 +28,16 @@ impl Editor {
             }
         }
 
-        if self.cur.y + Editor::UP_DOWN_EXTRA >= self.disp_row_num {
-            if self.keycmd == KeyCmd::CursorPageDown {
-                self.offset_y = if self.buf.len_lines() - 1 > self.offset_y + self.disp_row_num * 2 { self.offset_y + self.disp_row_num } else { self.buf.len_lines() - self.disp_row_num };
-            } else {
-                self.offset_y = max(self.offset_y, self.cur.y + 1 + Editor::UP_DOWN_EXTRA - self.disp_row_num);
-                // offset_y decreases
-                if self.offset_y + self.disp_row_num > self.buf.len_lines() {
-                    self.offset_y = self.buf.len_lines() - self.disp_row_num;
+        if self.keycmd == KeyCmd::CursorDown || self.keycmd == KeyCmd::CursorUp || self.keycmd == KeyCmd::CursorDownSelect || self.keycmd == KeyCmd::CursorUpSelect || self.keycmd == KeyCmd::MouseScrollUp || self.keycmd == KeyCmd::MouseScrollDown || self.keycmd == KeyCmd::MouseScrollUp || self.keycmd == KeyCmd::CursorPageDown || self.keycmd == KeyCmd::CursorPageUp {
+            if self.cur.y + Editor::UP_DOWN_EXTRA >= self.disp_row_num {
+                if self.keycmd == KeyCmd::CursorPageDown {
+                    self.offset_y = if self.buf.len_lines() - 1 > self.offset_y + self.disp_row_num * 2 { self.offset_y + self.disp_row_num } else { self.buf.len_lines() - self.disp_row_num };
+                } else {
+                    self.offset_y = max(self.offset_y, self.cur.y + 1 + Editor::UP_DOWN_EXTRA - self.disp_row_num);
+                    // offset_y decreases
+                    if self.offset_y + self.disp_row_num > self.buf.len_lines() {
+                        self.offset_y = self.buf.len_lines() - self.disp_row_num;
+                    }
                 }
             }
         }
@@ -98,7 +100,7 @@ impl Editor {
                         _ => {}
                     }
                 }
-                KeyCmd::CursorRight => {
+                KeyCmd::CursorRight | KeyCmd::CursorRightSelect => {
                     if self.offset_disp_x + self.disp_col_num < self.cur.disp_x + Editor::LEFT_RIGHT_JUDGE_EXTRA {
                         // Judgment whether the end fits in the width
                         let width = get_row_width(&self.buf.char_vec_line(self.cur.y)[self.offset_x..], self.offset_disp_x, true).1;
@@ -107,7 +109,7 @@ impl Editor {
                         }
                     }
                 }
-                KeyCmd::CursorLeft => {
+                KeyCmd::CursorLeft | KeyCmd::CursorLeftSelect => {
                     if self.cur.disp_x >= Editor::LEFT_RIGHT_JUDGE_EXTRA && self.offset_disp_x >= self.cur.disp_x - Editor::LEFT_RIGHT_JUDGE_EXTRA {
                         self.offset_x = if self.offset_x >= Editor::ADD_EXTRA_NUM { self.offset_x - Editor::ADD_EXTRA_NUM } else { 0 };
                     }

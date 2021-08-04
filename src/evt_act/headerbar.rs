@@ -14,6 +14,7 @@ impl EvtAct {
             KeyCmd::Resize => return EvtActType::Hold,
             KeyCmd::MouseDownLeft(y, x) => {
                 let (x, y) = (x as usize, y as usize);
+
                 if y != term.hbar.disp_row_posi {
                     return EvtActType::Hold;
                 }
@@ -50,17 +51,20 @@ impl EvtAct {
                             term.new_tab();
                             return EvtActType::DrawOnly;
                         }
-                        return EvtActType::Hold;
                     }
                 }
                 if term.hbar.is_left_arrow_disp {
                     if term.hbar.left_arrow_area.0 <= x && x <= term.hbar.left_arrow_area.1 {
-                        term.hbar.disp_base_idx -= 1;
+                        if term.hbar.disp_base_idx > 0 {
+                            term.hbar.disp_base_idx -= 1;
+                            return EvtActType::DrawOnly;
+                        }
                     }
                 }
                 if term.hbar.is_right_arrow_disp {
                     if term.hbar.right_arrow_area.0 <= x && x <= term.hbar.right_arrow_area.1 {
                         term.hbar.disp_base_idx += 1;
+                        return EvtActType::DrawOnly;
                     }
                 }
                 if term.hbar.plus_btn_area.0 <= x && x <= term.hbar.plus_btn_area.1 {

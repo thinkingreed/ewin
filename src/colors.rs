@@ -134,6 +134,27 @@ impl Colors {
         return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.msg.err_fg);
     }
     //
+    // CtxMenu
+    //
+    pub fn get_ctx_menu_bg_sel() -> String {
+        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.ctx_menu.bg_sel);
+    }
+    pub fn get_ctx_menu_bg_non_sel() -> String {
+        return Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.ctx_menu.bg_non_sel);
+    }
+    pub fn get_ctx_menu_fg_sel() -> String {
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.ctx_menu.fg_sel);
+    }
+    pub fn get_ctx_menu_fg_non_sel() -> String {
+        return Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.ctx_menu.fg_non_sel);
+    }
+    pub fn get_ctx_menu_fg_bg_sel() -> String {
+        return format!("{}{}", Colors::get_ctx_menu_bg_sel(), Colors::get_ctx_menu_fg_sel());
+    }
+    pub fn get_ctx_menu_fg_bg_non_sel() -> String {
+        return format!("{}{}", Colors::get_ctx_menu_bg_non_sel(), Colors::get_ctx_menu_fg_non_sel());
+    }
+    //
     // File
     //
     pub fn get_file_normal_fg() -> String {

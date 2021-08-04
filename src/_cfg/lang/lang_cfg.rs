@@ -1,5 +1,7 @@
-use super::lang::LANG_CONFIG;
+use crate::global::LANG;
+
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 #[cfg(target_os = "linux")]
 use std::env;
 #[cfg(target_os = "windows")]
@@ -29,7 +31,7 @@ pub struct LangCfg {
     pub open: String,
     pub movement: String,
     pub file: String,
-    pub edit_search: String,
+    pub edit: String,
     pub convert: String,
     pub filenm: String,
     pub file_list: String,
@@ -41,6 +43,7 @@ pub struct LangCfg {
     pub mouse_switch: String,
     // pub all_select: String,
     pub move_row: String,
+    pub format: String,
     pub search: String,
     pub search_bottom: String,
     pub search_top: String,
@@ -54,7 +57,6 @@ pub struct LangCfg {
     pub replace: String,
     pub all_replace: String,
     pub select: String,
-    pub menu_select: String,
     pub move_setting_location: String,
     pub replace_char: String,
     pub save_confirmation_to_close: String,
@@ -83,6 +85,7 @@ pub struct LangCfg {
     pub contents: String,
     pub create_new: String,
     pub save_as: String,
+    pub macros: String,
 
     pub encode: String,
     pub end_of_all_save: String,
@@ -93,6 +96,9 @@ pub struct LangCfg {
     pub to_full_width: String,
     pub to_space: String,
     pub to_tab: String,
+    pub html: String,
+    pub xml: String,
+    pub json: String,
 
     pub box_select: String,
     pub box_insert: String,
@@ -115,6 +121,7 @@ pub struct LangCfg {
     pub cannot_convert_encoding: String,
     pub select_menu: String,
     pub processing_canceled: String,
+    pub parsing_failed: String,
     // Keybind
     pub specification_err_key: String,
     pub specification_err_keycmd: String,
@@ -126,7 +133,6 @@ pub struct LangCfg {
     pub file_saving_problem: String,
     pub file_not_found: String,
     pub file_loading_failed: String,
-    pub file_parsing_failed: String,
     pub file_already_exists: String,
     pub log_file_create_failed: String,
     // Not sel range
@@ -136,41 +142,48 @@ pub struct LangCfg {
     pub cannot_paste_multi_rows: String,
     // key record
     pub no_key_record_exec: String,
-    // other
-    pub unsupported_operation: String,
-    pub increase_height_width_terminal: String,
-
     // editor info
     pub simple_help_desc: String,
     pub detailed_help_desc: String,
-}
-#[derive(Debug, Deserialize, Serialize)]
-pub struct LangMulti {
-    en: LangCfg,
-    ja: LangCfg,
+    // macro
+    pub script_run_error: String,
+    pub script_compile_error: String,
+    pub specify_file_and_exec_macro: String,
+    // other
+    pub unsupported_operation: String,
+    pub increase_height_width_terminal: String,
 }
 
+impl LangCfg {
+    pub fn get_lang_map() -> HashMap<String, String> {
+        let lang_map: HashMap<String, String> = serde_json::from_str(&serde_json::to_string(&*LANG).unwrap()).unwrap();
+
+        return lang_map;
+    }
+}
 #[cfg(target_os = "linux")]
 impl LangCfg {
     pub fn read_lang_cfg() -> LangCfg {
-        let lang_multi: LangMulti = toml::from_str(&LANG_CONFIG.to_string()).unwrap();
+        let env_lang = env::var("LANG").unwrap_or("en_US".to_string());
 
-        // return lang_multi.en;
+        // TODO File read dynamic generation
+        let lang_str = if env_lang.starts_with("ja_JP") { include_str!("ja_JP.toml") } else { include_str!("en_US.toml") };
+        let lang_cfg: LangCfg = toml::from_str(&lang_str).unwrap();
 
-        let lang = env::var("LANG").unwrap_or("en_US".to_string());
-        return if lang.starts_with("ja_JP") { lang_multi.ja } else { lang_multi.en };
+        return lang_cfg;
     }
 }
 
 #[cfg(target_os = "windows")]
 impl LangCfg {
     pub fn read_lang_cfg() -> LangCfg {
-        let lang_multi: LangMulti = toml::from_str(&LANG_CONFIG.to_string()).unwrap();
-
-        let lang = match Command::new("powershell.exe").args(&["(Get-WinUserLanguageList)[0].LanguageTag"]).output() {
+        let env_lang = match Command::new("powershell.exe").args(&["(Get-WinUserLanguageList)[0].LanguageTag"]).output() {
             Ok(output) => String::from_utf8_lossy(&output.stdout).trim().to_string(),
             Err(_) => "en_US".to_string(),
         };
-        return if lang.starts_with("ja") { lang_multi.ja } else { lang_multi.en };
+        let lang_str = if env_lang.starts_with("ja_JP") { include_str!("ja_JP.toml") } else { include_str!("en_US.toml") };
+        let lang_cfg: LangCfg = toml::from_str(&lang_str).unwrap();
+
+        return lang_cfg;
     }
 }

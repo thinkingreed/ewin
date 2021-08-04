@@ -1,32 +1,32 @@
-use crate::{def::TAB_CHAR, global::*, log::*, model::*};
+use crate::{_cfg::keys::KeyCmd, def::TAB_CHAR, log::*, model::*};
 use kana::*;
 
 impl Editor {
-    pub fn convert(&mut self, convert_type: &str) {
+    pub fn convert(&mut self, conv_type: ConvType) {
         Log::debug_key("Editor.convert");
-        let tgt_str = self.buf.slice(self.sel.get_range());
 
-        let convert_str = if &LANG.to_lowercase == convert_type {
+        let sel = self.sel.get_range();
+
+        let tgt_str = self.buf.slice(sel);
+        let convert_str = if ConvType::Lowercase == conv_type {
             tgt_str.chars().map(to_lowercase).collect::<String>()
-        } else if &LANG.to_uppercase == convert_type {
+        } else if ConvType::Uppercase == conv_type {
             tgt_str.chars().map(to_uppercase).collect::<String>()
-        } else if &LANG.to_half_width == convert_type {
+        } else if ConvType::HalfWidth == conv_type {
             to_half_width(&tgt_str)
-        } else if &LANG.to_full_width == convert_type {
+        } else if ConvType::FullWidth == conv_type {
             to_full_width(&tgt_str)
-        } else if &LANG.to_space == convert_type {
+        } else if ConvType::Space == conv_type {
             tgt_str.replace(&TAB_CHAR.to_string(), " ").clone()
-        } else if &LANG.to_tab == convert_type {
+        } else if ConvType::Tab == conv_type {
             tgt_str.replace(" ", &TAB_CHAR.to_string()).clone()
         } else {
             todo!()
         };
-        self.buf.replace_onece(&convert_str, &self.sel);
-        if !(&LANG.to_lowercase == convert_type || &LANG.to_uppercase == convert_type) {
-            self.set_cur_target(self.cur.y, self.cur.x, false);
-        }
+        self.edit_proc(KeyCmd::InsertStr(convert_str));
     }
 }
+
 fn to_half_width(str: &str) -> String {
     let str = wide2ascii(str);
     let str = nowidespace(&str);

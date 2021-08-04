@@ -16,7 +16,7 @@ pub fn get_str_width(msg: &str) -> usize {
     let mut width = 0;
     for i in 0..msg_chars.len() {
         // Because the width varies depending on the environment
-        width += &msg_chars[i].width().unwrap_or(0);
+        width += get_char_width_not_tab(&msg_chars[i]);
     }
     return width;
 }
@@ -29,7 +29,11 @@ pub fn get_row_x(vec: &[char], disp_x: usize, offset_disp_x: usize, is_ctrlchar_
                 width += 1;
                 cur_x += 1;
             } else {
-                break;
+                if width > disp_x {
+                    return Some(cur_x);
+                } else {
+                    break;
+                }
             }
         }
         let c_len = get_char_width(c, width + offset_disp_x);
@@ -85,7 +89,7 @@ pub fn get_char_width(c: &char, width: usize) -> usize {
         let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
         return get_char_width_tab(c, width, cfg_tab_width);
     } else {
-        return c.width().unwrap_or(0);
+        return get_char_width_not_tab(c);
     }
 }
 // Everything including tab
@@ -93,12 +97,12 @@ pub fn get_char_width_tab(c: &char, width: usize, cfg_tab_width: usize) -> usize
     if c == &TAB_CHAR {
         return cfg_tab_width - width % cfg_tab_width;
     } else {
-        return c.width().unwrap_or(0);
+        return get_char_width_not_tab(c);
     }
 }
 
-pub fn get_char_width_not_tab(c: char) -> usize {
-    if c == NEW_LINE_LF {
+pub fn get_char_width_not_tab(c: &char) -> usize {
+    if c == &NEW_LINE_LF {
         return 1;
     }
     return c.width().unwrap_or(0);
@@ -167,7 +171,7 @@ pub fn cut_str(str: String, limit_width: usize, is_from_before: bool, is_add_con
     let limit_width = if is_add_continue_str { limit_width - get_str_width(CONTINUE_STR) } else { limit_width };
     for i in 0..chars.len() {
         if let Some(c) = chars.get(i) {
-            let w = c.width().unwrap_or(0);
+            let w = get_char_width_not_tab(c);
             if width + w > limit_width {
                 let mut rtn_str: String = if is_from_before { chars.drain(0..i).rev().collect() } else { chars.drain(0..i).collect() };
                 if is_add_continue_str {
@@ -273,4 +277,22 @@ pub fn ordinal_suffix(number: usize) -> &'static str {
         (3, _) => "rd",
         _ => "th",
     }
+}
+
+pub fn change_regex(replace_str: String) -> String {
+    let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
+
+    Log::debug("replace_strreplace_strreplace_strreplace_str", &replace_str);
+    Log::debug("replace_str == ", &(replace_str == "\\\""));
+
+    if cfg_search.regex {
+        let replace_str = replace_str.replace("\\n", &'\n'.to_string());
+        let replace_str = replace_str.replace("\\t", &'\t'.to_string());
+        let replace_str = replace_str.replace("\\r", &'\r'.to_string());
+        let replace_str = replace_str.replace("\\", &r"\".to_string());
+        let replace_str = replace_str.replace("\\'", &"\'".to_string());
+        let replace_str = replace_str.replace("\\\"", &"\"".to_string());
+        return replace_str;
+    }
+    return replace_str;
 }

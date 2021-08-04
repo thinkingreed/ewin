@@ -49,7 +49,7 @@ impl PromptCont {
         let key_str = Keybind::get_key_str(KeyCmd::FindCaseSensitive);
         let key_case_sens = format!("{}{}:{}{}", Colors::get_default_fg(), &LANG.case_sens, Colors::get_msg_warning_fg(), key_str);
         let sx = get_str_width(&format!("{}:{}", &LANG.case_sens, key_str)) as u16;
-        let opt_case_sens = PromptContOpt { key: key_case_sens, is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens, mouse_area: (sx, sx + 3) };
+        let opt_case_sens = PromptContOpt { key: key_case_sens, is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens, mouse_area: (sx, sx + 2) };
         self.opt_1 = opt_case_sens;
     }
 
@@ -58,9 +58,9 @@ impl PromptCont {
         let key_regex = format!("{}{}:{}{}", Colors::get_default_fg(), &LANG.regex, Colors::get_msg_warning_fg(), key_str);
 
         // +2 is the space between options
-        let sx = self.opt_1.mouse_area.1 + 3 + get_str_width(&format!("{}:{}", &LANG.regex, key_str)) as u16 + 1;
+        let sx = self.opt_1.mouse_area.1 + 2 + get_str_width(&format!("{}:{}", &LANG.regex, key_str)) as u16 + 1;
 
-        let opt_regex = PromptContOpt { key: key_regex, is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex, mouse_area: (sx, sx + 3) };
+        let opt_regex = PromptContOpt { key: key_regex, is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex, mouse_area: (sx, sx + 2) };
         self.opt_2 = opt_regex;
     }
 
@@ -174,7 +174,7 @@ impl PromptCont {
 pub struct PromptCont {
     pub keycmd: KeyCmd,
     pub disp_row_posi: u16,
-    pub row_len: u16,
+    pub buf_row_len: u16,
     pub posi: PromptContPosi,
     pub guide_row_posi: u16,
     pub key_desc_row_posi: u16,
@@ -194,8 +194,8 @@ pub struct PromptCont {
     pub history: History,
     // For list display
     pub file_list_vec: Vec<File>,
-    // <(Parent choices posi y, Parent choices posi y), Self Choices>
-    pub choices_map: HashMap<(usize, usize), Choices>,
+    // <((Grandparents choices posi y, Grandparents choices posi x)(Parent choices posi y, Parent choices posi x)), Self Choices>
+    pub choices_map: HashMap<((usize, usize), (usize, usize)), Choices>,
 }
 
 impl Default for PromptCont {
@@ -203,7 +203,7 @@ impl Default for PromptCont {
         PromptCont {
             keycmd: KeyCmd::Null,
             disp_row_posi: 0,
-            row_len: 0,
+            buf_row_len: 0,
             posi: PromptContPosi::First,
             guide_row_posi: 0,
             key_desc_row_posi: 0,

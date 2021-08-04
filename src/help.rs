@@ -38,7 +38,7 @@ impl Help {
                 tab.editor.cur.disp_x = 0;
             }
         }
-        tab.editor.d_range.draw_type = DrawType::All;
+        tab.editor.draw_type = DrawType::All;
     }
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {

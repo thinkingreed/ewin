@@ -36,8 +36,6 @@ async fn main() {
         default_hook(panic_info);
     }));
 
-    Terminal::init();
-
     let err_str = Cfg::init();
     if !err_str.is_empty() {
         Terminal::exit_file_open(&err_str);
@@ -50,6 +48,8 @@ async fn main() {
     let args = Args::new(&matches);
     let out = stdout();
     let mut out = BufWriter::new(out.lock());
+
+    Terminal::init();
     let mut term = Terminal::new();
     term.activate(&args, &mut out);
 
@@ -62,9 +62,9 @@ async fn main() {
         loop {
             if let Some(Ok(event)) = reader.next().fuse().await {
                 match event {
-                    Mouse(M_Event { kind: M_Kind::Moved, .. }) => continue,
-                    //   Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), modifiers: KeyModifiers::NONE, column: _, row: _, .. }) => continue,
-                    Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), column: _, row: _, .. }) => continue,
+                    // Mouse(M_Event { kind: M_Kind::Moved, .. }) => continue,
+                    Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) => continue,
+                    Mouse(M_Event { kind: M_Kind::Up(M_Btn::Right), .. }) => continue,
                     _ => {}
                 }
                 let job = Job { job_type: JobType::Event, job_evt: Some(JobEvent { evt: event }), ..Job::default() };
@@ -143,7 +143,7 @@ async fn main() {
     for job in rx {
         match job.job_type {
             JobType::Event => {
-                Log::debug("Raw evt", &job.job_evt.clone().unwrap().evt);
+                // Log::debug("Raw evt", &job.job_evt.clone().unwrap().evt);
                 if EvtAct::match_event(Keybind::evt_to_keys(&job.job_evt.unwrap().evt), &mut out, &mut term) {
                     break;
                 }

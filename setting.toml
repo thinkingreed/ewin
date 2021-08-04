@@ -21,7 +21,7 @@ background = "#000000"
 foreground = "#ffffff"
 
 [colors.editor.line_number]
-background = "#282828"
+background = "#505050"
 foreground = "#c0c0c0"
 
 [colors.editor.selection]
@@ -40,6 +40,12 @@ foreground = "#c0c0c0"
 
 [colors.status_bar]
 foreground = "#c0c0c0"
+
+[colors.ctx_menu]
+background_non_select = "#c0c0c0"
+background_select = "#6495ed"
+foreground_non_select = "#000000"
+foreground_select = "#ffffff"
 
 [colors.msg]
 normal_foreground = "#ffffff"

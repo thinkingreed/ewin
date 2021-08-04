@@ -30,12 +30,10 @@ impl EvtAct {
         let search_str = tab.prom.cont_1.buf.iter().collect::<String>();
         if search_str.len() == 0 {
             tab.mbar.set_err(&LANG.not_entered_search_str);
-            return EvtActType::DrawOnly;
         }
         let search_vec = tab.editor.get_search_ranges(&search_str.clone(), 0, tab.editor.buf.len_chars(), 0);
         if search_vec.len() == 0 {
             tab.mbar.set_err(&LANG.cannot_find_char_search_for);
-            return EvtActType::DrawOnly;
         } else {
             tab.editor.search.clear();
             tab.editor.search.ranges = search_vec;
@@ -46,23 +44,25 @@ impl EvtAct {
             term.clear_curt_tab();
             return EvtActType::Next;
         }
+        return EvtActType::DrawOnly;
     }
     pub fn exec_search_incremental(term: &mut Terminal) {
         Log::debug_s("exec_search_incremental");
         term.curt().editor.search.str = term.curt().prom.cont_1.buf.iter().collect::<String>();
+        let regex = CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex;
 
-        let s_idx = term.tabs[term.idx].editor.buf.line_to_char(term.tabs[term.idx].editor.offset_y);
+        let s_row_idx = if regex { term.tabs[term.idx].editor.buf.line_to_byte(term.tabs[term.idx].editor.offset_y) } else { term.tabs[term.idx].editor.buf.line_to_char(term.tabs[term.idx].editor.offset_y) };
         let ey = min(term.curt().editor.offset_y + term.curt().editor.disp_row_num, term.curt().editor.buf.len_lines());
+        let e_row_idx = if regex { term.tabs[term.idx].editor.buf.line_to_byte(ey) } else { term.tabs[term.idx].editor.buf.line_to_char(ey) };
         let search_org = term.curt().editor.search.clone();
 
-        term.curt().editor.search.ranges = if term.curt().editor.search.str.len() == 0 { vec![] } else { term.tabs[term.idx].editor.get_search_ranges(&term.tabs[term.idx].editor.search.str, s_idx, term.tabs[term.idx].editor.buf.line_to_char(ey), 0) };
+        term.curt().editor.search.ranges = if term.curt().editor.search.str.len() == 0 { vec![] } else { term.tabs[term.idx].editor.get_search_ranges(&term.tabs[term.idx].editor.search.str, s_row_idx, e_row_idx, 0) };
         if !search_org.ranges.is_empty() || !term.curt().editor.search.ranges.is_empty() {
             // Search in advance for drawing
             if !term.curt().editor.search.ranges.is_empty() {
                 term.curt().editor.search_str(true, true);
             }
-            term.curt().editor.d_range.draw_type = DrawType::After;
-            term.curt().editor.d_range.sy = term.curt().editor.offset_y;
+            term.curt().editor.draw_type = DrawType::After(term.curt().editor.offset_y);
         }
     }
 }

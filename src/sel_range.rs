@@ -5,13 +5,6 @@ use std::{
 };
 
 impl SelRange {
-    pub fn overlap_box_sel(&mut self) {
-        self.sx = USIZE_UNDEFINED;
-        self.ex = USIZE_UNDEFINED;
-        self.s_disp_x = USIZE_UNDEFINED;
-        self.e_disp_x = USIZE_UNDEFINED;
-    }
-
     pub fn clear(&mut self) {
         Log::debug_key("SelRange.clear");
 
@@ -35,12 +28,22 @@ impl SelRange {
     pub fn is_selected(&self) -> bool {
         if self.mode == SelMode::Normal {
             return !(self.sy == USIZE_UNDEFINED && self.ey == USIZE_UNDEFINED && self.s_disp_x == USIZE_UNDEFINED && self.e_disp_x == USIZE_UNDEFINED);
-            // SelMode::BoxSelect
-            // In the case of BoxSelect, y is not considered and it is judged only by disp_x
         } else {
-            return !(self.s_disp_x == USIZE_UNDEFINED && self.e_disp_x == USIZE_UNDEFINED);
+            // SelMode::BoxSelect
+            // return !(self.s_disp_x == USIZE_UNDEFINED && self.e_disp_x == USIZE_UNDEFINED);
+            return !(self.sy == USIZE_UNDEFINED && self.ey == USIZE_UNDEFINED);
         }
     }
+
+    pub fn is_selected_width(&self) -> bool {
+        if self.mode == SelMode::Normal {
+            return self.is_selected();
+        } else {
+            // SelMode::BoxSelect
+            return self.is_selected() && !(self.s_disp_x == self.e_disp_x);
+        }
+    }
+
     // Convert to start position < end position
     pub fn get_range(&self) -> Self {
         let mut sy = self.sy;
@@ -98,10 +101,12 @@ impl SelRange {
                 self.clear();
             }
         } else {
+            /*
             if self.s_disp_x == self.e_disp_x {
                 Log::debug_s("sel overlap_box_sel");
                 self.overlap_box_sel();
             }
+            */
         }
     }
     pub fn set_sel_posi(&mut self, is_start: bool, y: usize, x: usize, disp_x: usize) {
@@ -181,5 +186,45 @@ impl fmt::Display for SelMode {
             SelMode::Normal => write!(f, ""),
             SelMode::BoxSelect => write!(f, "{}", LANG.box_select),
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BoxInsert {
+    pub mode: BoxInsertMode,
+    pub vec: Vec<(SelRange, String)>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BoxInsertMode {
+    Normal,
+    Insert,
+}
+
+impl Default for BoxInsert {
+    fn default() -> Self {
+        BoxInsert { vec: vec![], mode: BoxInsertMode::Normal }
+    }
+}
+
+impl fmt::Display for BoxInsertMode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            BoxInsertMode::Normal => write!(f, ""),
+            BoxInsertMode::Insert => write!(f, "{}", LANG.box_insert),
+        }
+    }
+}
+impl BoxInsert {
+    pub fn clear_clipboard(&mut self) {
+        self.vec = vec![]
+    }
+    pub fn get_str(&mut self, nl: &String) -> String {
+        let mut str = String::new();
+        for (_, s) in self.vec.iter() {
+            str.push_str(&s);
+            str.push_str(&nl);
+        }
+        return str;
     }
 }
