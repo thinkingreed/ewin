@@ -52,7 +52,7 @@ impl PromptCont {
     // initial cursor posi set
     pub fn undo_init(&mut self, proc: &Proc) {
         match proc.keycmd {
-            KeyCmd::InsertStr(_) | KeyCmd::CutSelect => self.set_evtproc(&proc.cur_s),
+            KeyCmd::InsertStr(_) | KeyCmd::Cut => self.set_evtproc(&proc.cur_s),
             KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => {
                 if proc.sel.is_selected() {
                     self.set_evtproc(if proc.cur_s.x > proc.cur_e.x { &proc.cur_e } else { &proc.cur_s });
@@ -74,7 +74,7 @@ impl PromptCont {
                 self.sel = proc.sel;
                 self.edit_proc(KeyCmd::DeleteNextChar);
             }
-            KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::CutSelect => self.edit_proc(KeyCmd::InsertStr(proc.str.clone())),
+            KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::Cut => self.edit_proc(KeyCmd::InsertStr(proc.str.clone())),
             _ => {}
         }
     }
@@ -117,13 +117,13 @@ impl PromptCont {
     pub fn redo_exec(&mut self, proc: Proc) {
         self.set_evtproc(&proc.cur_s);
         match proc.keycmd {
-            KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::CutSelect => self.sel = proc.sel,
+            KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::Cut => self.sel = proc.sel,
             _ => {}
         }
         match proc.keycmd {
             KeyCmd::DeleteNextChar => self.edit_proc(KeyCmd::DeleteNextChar),
             KeyCmd::DeletePrevChar => self.edit_proc(KeyCmd::DeletePrevChar),
-            KeyCmd::CutSelect => self.edit_proc(KeyCmd::CutSelect),
+            KeyCmd::Cut => self.edit_proc(KeyCmd::Cut),
             KeyCmd::InsertStr(_) => {
                 self.sel.clear();
                 self.edit_proc(KeyCmd::InsertStr(proc.str));

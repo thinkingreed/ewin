@@ -49,7 +49,8 @@ pub mod bar {
     pub mod statusbar;
 }
 pub mod ctx_menu {
-    pub mod ctx_menu;
+    pub mod evt;
+    pub mod init;
 }
 pub mod editor {
     pub mod buf {
@@ -67,11 +68,14 @@ pub mod editor {
         pub mod char_style;
         pub mod draw;
     }
+    pub mod format {
+        pub mod format;
+        pub mod xml_html;
+    }
     pub mod convert;
     pub mod draw_range;
     pub mod edit_proc;
     pub mod editor;
-    pub mod format;
     pub mod history;
     pub mod key;
     pub mod key_ctrl;

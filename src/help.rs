@@ -51,7 +51,7 @@ impl Help {
             let mut vec: Vec<HelpKeybind> = vec![];
 
             // 1st line
-            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::CloseFile), &LANG.end);
+            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::CloseFile), &LANG.close);
             self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::SaveFile), &LANG.save);
             self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Copy), &LANG.copy);
             self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::InsertStr("".to_string())), &LANG.paste);
@@ -65,7 +65,7 @@ impl Help {
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 3rd line
-            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::CutSelect), &LANG.cut);
+            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::Cut), &LANG.cut);
             self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::Grep), &LANG.grep);
             self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::StartEndRecordKey), &LANG.key_record_start_stop);
             self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::ExecRecordKey), &LANG.key_record_exec);

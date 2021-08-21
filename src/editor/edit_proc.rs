@@ -1,7 +1,6 @@
 use crate::{
-    _cfg::{cfg::TabType, keys::KeyCmd},
+    _cfg::keys::KeyCmd,
     def::*,
-    global::*,
     log::Log,
     model::*,
     sel_range::{BoxInsertMode, SelMode, SelRange},
@@ -53,14 +52,14 @@ impl Editor {
                     KeyCmd::DeleteNextChar => self.delete(&mut ep),
                     KeyCmd::DeletePrevChar => self.backspace(&mut ep),
                     KeyCmd::InsertLine => self.enter(),
-                    KeyCmd::CutSelect => self.cut(ep_del),
+                    KeyCmd::Cut => self.cut(ep_del),
                     KeyCmd::InsertStr(_) | KeyCmd::InsertBox(_) => self.insert_str(&mut ep),
                     KeyCmd::DelBox(box_sel_vec) => self.undo_del_box(&box_sel_vec),
                     // In case of replace, only registration of Evt process
                     KeyCmd::ReplaceExec(is_regex, replace_str, search_map) => self.replace(&mut ep, *is_regex, replace_str.clone(), search_map.clone()),
                     _ => {}
                 }
-                if keycmd != KeyCmd::CutSelect {
+                if keycmd != KeyCmd::Cut {
                     ep.cur_e = self.cur;
                     ep.draw_type = self.draw_type;
                     evt_proc.evt_proc = Some(ep.clone());
@@ -147,7 +146,7 @@ impl Editor {
     }
     pub fn is_edit_del_keycmd(&mut self, keycmd: &KeyCmd) -> bool {
         match keycmd {
-            KeyCmd::InsertStr(_) | KeyCmd::Tab | KeyCmd::InsertLine | KeyCmd::CutSelect | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => return true,
+            KeyCmd::InsertStr(_) | KeyCmd::Tab | KeyCmd::InsertLine | KeyCmd::Cut | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => return true,
             _ => return false,
         }
     }
@@ -181,7 +180,7 @@ impl Editor {
             if str.is_empty() {
                 self.get_clipboard(ep);
             } else {
-                ep.str = if str == &TAB_CHAR.to_string() { self.get_tab_str() } else { str.to_string() };
+                ep.str = if str == &TAB_CHAR.to_string() { get_tab_str() } else { str.to_string() };
             }
         }
     }
@@ -218,16 +217,6 @@ impl Editor {
         self.set_cur_target(sel.sy, sel.sx, false);
         self.scroll();
         self.scroll_horizontal();
-    }
-
-    pub fn get_tab_str(&mut self) -> String {
-        let cfg = &CFG.get().unwrap().try_lock().unwrap();
-        let tab_type: &TabType = &cfg.general.editor.tab.tab_type;
-        let tab_width: usize = cfg.general.editor.tab.width;
-        return match tab_type {
-            TabType::Tab => TAB_CHAR.to_string(),
-            TabType::HalfWidthBlank => " ".repeat(tab_width),
-        };
     }
 
     pub fn set_box_sel(&mut self, ep: &mut Proc) {

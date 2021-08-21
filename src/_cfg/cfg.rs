@@ -1,4 +1,4 @@
-use crate::{_cfg::*, colors::*, def::*, global::*, log::*};
+use crate::{_cfg::*, colors::*, def::*, global::*, log::*, terminal::Args};
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
 use std::{env, fs, fs::File, io::Write, sync::Mutex};
@@ -21,6 +21,7 @@ pub struct Cfg {
 pub struct CfgGeneral {
     pub log: Option<CfgLog>,
     pub editor: CfgEditor,
+    pub ctx_menu: CfgCtxMenu,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -31,6 +32,12 @@ pub struct CfgLog {
 pub struct CfgEditor {
     pub search: CfgSearch,
     pub tab: CfgTab,
+    pub format: CfgFormat,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CfgCtxMenu {
+    pub content: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -40,13 +47,25 @@ pub struct CfgSearch {
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgTab {
-    pub width: usize,
+    pub size: usize,
     pub tab_input_type: String,
     #[serde(skip_deserializing, skip_serializing)]
     pub tab_type: TabType,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub tab: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CfgFormat {
+    pub indent_type: String,
+    pub indent_size: usize,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub tab_type: TabType,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub indent: String,
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum TabType {
     Tab,
     HalfWidthBlank,
@@ -215,36 +234,57 @@ impl Default for Syntax {
     }
 }
 impl Cfg {
-    pub fn init() -> String {
-        let mut cfg: Cfg = toml::from_str(include_str!("../../setting.toml")).unwrap();
+    pub fn init(args: &Args) -> String {
+        let cfg_str = include_str!("../../setting.toml");
+        let mut cfg: Cfg = toml::from_str(cfg_str).unwrap();
         let mut err_str = "".to_string();
         let mut read_str = String::new();
 
         if let Some(base_dirs) = BaseDirs::new() {
             let config_dir = base_dirs.config_dir();
-            let config_file = &config_dir.join(env!("CARGO_PKG_NAME")).join(SETTING_FILE);
+            if !config_dir.exists() {
+                let _ = fs::create_dir(&config_dir);
+            }
+            let app_dir = config_dir.join(env!("CARGO_PKG_NAME"));
+
+            if !app_dir.exists() {
+                let _ = fs::create_dir(&app_dir);
+            }
+            let config_file = &app_dir.join(SETTING_FILE);
 
             if config_file.exists() {
                 match fs::read_to_string(config_file) {
-                    Ok(str) => {
-                        read_str = str;
-                    }
-                    Err(e) => {
-                        err_str = format!("{} {} {}", LANG.file_loading_failed, config_file.to_string_lossy().to_string(), e);
-                    }
+                    Ok(str) => read_str = str,
+                    Err(e) => err_str = format!("{} {} {}", LANG.file_loading_failed, config_file.to_string_lossy().to_string(), e),
                 }
                 if err_str.is_empty() {
                     match toml::from_str(&read_str) {
                         Ok(c) => cfg = c,
-                        Err(e) => {
-                            err_str = format!("{}{} {} {}", LANG.file, LANG.parsing_failed, config_file.to_string_lossy().to_string(), e);
-                        }
+                        Err(e) => err_str = format!("{}{} {} {}", LANG.file, LANG.parsing_failed, config_file.to_string_lossy().to_string(), e),
                     };
+                }
+            } else {
+                if args.out_config_flg {
+                    if let Ok(mut file) = File::create(config_file) {
+                        let _ = write!(&mut file, "{}", cfg_str);
+                        let _ = &mut file.flush().unwrap();
+                    }
                 }
             }
         }
 
         cfg.general.editor.tab.tab_type = TabType::from_str(&cfg.general.editor.tab.tab_input_type);
+
+        cfg.general.editor.tab.tab = match cfg.general.editor.tab.tab_type {
+            TabType::Tab => TAB_CHAR.to_string(),
+            TabType::HalfWidthBlank => " ".repeat(cfg.general.editor.tab.size),
+        };
+
+        cfg.general.editor.format.tab_type = TabType::from_str(&cfg.general.editor.format.indent_type);
+        cfg.general.editor.format.indent = match cfg.general.editor.format.tab_type {
+            TabType::Tab => TAB_CHAR.to_string(),
+            TabType::HalfWidthBlank => " ".repeat(cfg.general.editor.format.indent_size),
+        };
 
         cfg.colors.header_bar.fg = Colors::hex2rgb(&cfg.colors.header_bar.foreground);
 
@@ -291,13 +331,6 @@ impl Cfg {
             }
             // Even if the set theme fails to read, the internal theme is read, so the theme is surely read.
             Err(_) => {}
-        }
-
-        if cfg!(debug_assertions) {
-            let mut file = File::create(SETTING_FILE).unwrap();
-            let s = toml::to_string(&cfg).unwrap();
-            write!(file, "{}", s).unwrap();
-            file.flush().unwrap();
         }
 
         Log::set_logger(&cfg.general.log);

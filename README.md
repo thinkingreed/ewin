@@ -13,6 +13,8 @@ It provides basic features as a minimal text editor:
 - Resizing terminal window supported. Screen size is responsible
 - Key binding support
 - Mouse support
+- Mocro support at Javascript
+- Context menu support
 - Tab support
 - Box select support
 
@@ -32,25 +34,34 @@ Download the latest .rpm package from the [release page](https://github.com/thin
 rpm -ivh ewin_0.0.0.x86_64.rpm
 ```
 
-### Via Snap
+### On Windows
 
-Please install Snap Store or Command
-
-```
-$ sudo snap install --edge ewin
-```
+Download the latest .exe package from the [release page](https://github.com/thinkingreed/ewin/releases) and install it via:
 
 ## Usage
 
 ### CLI
+Please see `ewin --help` for command usage.
 
+#### File edit
 Installing package introduces `ewin` command in your system.
 
 ```sh
-$ ewin file         # Open files to edit
+$ ewin [file]         # Open files to edit
 ```
 
-Please see `ewin --help` for command usage.
+#### Output config file
+Configuration file output.
+```sh
+$ ewin -o, --output-config 
+```
+The output location of the config file is as follows.
+
+#### On Linux
+\$HOME/.config/ewin/
+
+#### On Windows
+%USERPROFILE%\AppData\Roaming\ewin\
 
 ## Operation
 
@@ -78,8 +89,9 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 |                | In case of Windows, it will not be recognized unless you double-click slowly                                        |               |
 | `Ctrl` + `q`   | Change next tab.                                                                                                    | ―             |
 | `Ctrl` + `e`   | Specify the character code and reload. Or set the character code line feed code and BOM.                            | ―             |
-| `F12`          | Mouse capture changes.Used for clipboard access via terminal app                                                    | ―             |
-|                | when connecting to a remote terminal                                                                                | ―             |
+| `F12`| Mouse capture changes.Used for clipboard access via terminal app| ―|
+|| when connecting to a remote terminal| ― |
+| `F10`| Display Context menu.                | ―        |
 
 - **Moving cursor**
 
@@ -137,11 +149,10 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 ## Operation restrictions
 
-| motion          | Mapping           | environment | Contents                                                                                                                         |
-| --------------- | ----------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `Key record`    | `Ctrl` + `F1`     | WSL         | keybindings.command."copy" and "paste" needs to be changed to something other than Ctrl+c, Ctrl+v. Ex)Ctrl+Shift+c, Ctrl+Shift+v |
-| `Save` 　       | `Ctrl` + `s`      | All         | Forcibly convert CR + LF of line feed code to LF                                                                                 |
-| `Copy`・`Paste` | `Ctrl` + `c`・`v` | WSL         | Need path to powershell.exe. Try \$PSHOME at PowerShell terminal                                                                 |
+| motion                 | Mapping                | environment | Contents                                                                                                                         |
+| ---------------------- | ---------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `Key record`           | `Ctrl` + `F1`          | WSL         | keybindings.command."copy" and "paste" needs to be changed to something other than Ctrl+c, Ctrl+v. Ex)Ctrl+Shift+c, Ctrl+Shift+v |
+| `Copy`・`Paste`・`Cut` | `Ctrl` + `c`・`v`・`x` | WSL         | If you want to copy it to the clipboard, you need the path to powershell.exe. Try \$ PSHOME in a PowerShell terminal             |
 
 ## Setting file
 
@@ -170,6 +181,32 @@ tab_input_type = "tab"
 case_sens = true
 regex = false
 
+# context menu
+[general.ctx_menu]
+content = """
+{
+  "editor": {
+    "range_selected": [
+      {"cut": []},
+      {"copy": []},
+      {"paste": []},
+      {"convert": ["to_uppercase", "to_lowercase", "to_full_width", "to_half_width", "to_space", "to_tab"]},
+      {"format": ["json", "xml"]}
+    ],
+    "range_non_selected": [
+      {"paste": []},
+      {"all_select": []}
+    ]
+  },
+  "header_bar": {
+    "": [
+      {"close": []},
+      {"close_other_than_this_tab": []}
+    ]
+  }
+}
+"""
+
 # If theme is set, theme color has the highest priority
 [colors.theme] # option
 # theme_path = "tmTheme.tmTheme"
@@ -180,7 +217,7 @@ background = "#000000"
 foreground = "#ffffff"
 
 [colors.editor.line_number]
-background = "#282828"
+background = "#505050"
 foreground = "#c0c0c0"
 
 [colors.editor.selection]
@@ -200,6 +237,12 @@ foreground = "#c0c0c0"
 [colors.status_bar]
 foreground = "#c0c0c0"
 
+[colors.ctx_menu]
+background_non_select = "#969696"
+background_select = "#6495ed"
+foreground_non_select = "#000000"
+foreground_select = "#ffffff"
+
 [colors.msg]
 normal_foreground = "#ffffff"
 highlight_foreground = "#00c800"
@@ -213,9 +256,9 @@ executable_foreground = "#00c800"
 #################################################################
 ```
 
-## Key binding file
+## Key binding
 
-Please edit the contents of keybind.json5(initial setting) below and put it in this location.
+When [Output config file command](#Output-config-file) is executed, the keybind configuration file is output to the following location, so it can be edited.
 
 ### On Linux
 
@@ -225,115 +268,10 @@ Please edit the contents of keybind.json5(initial setting) below and put it in t
 
 %USERPROFILE%\AppData\Roaming\ewin\keybind.json5
 
-```
-#################################################################
-[
-  /* key
-     // Raw
-         left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, esc, F1～F12
-     // Ctrl
-         ctrl+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12)
-     // Shit
-         shit+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12)
-     // Alt
-         alt+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12)
-  */
-  /* cmd
-     // cursor move
-         cursorLeft, cursorRight, cursorUp, cursorDown, cursorRowHome, cursorRowEnd,
-         cursorFileHome, cursorFileEnd, cursorPageUp, cursorPageDown
-     // select
-         cursorLeftSelect, cursorRightSelect, cursorUpSelect, cursorDownSelect,
-         cursorRowHomeSelect, cursorRowEndSelect
-         allSelect
-     // edit
-         insertLine, deletePrevChar, deleteNextChar, cutSelect, copySelect, paste, undo, redo
-     // find
-         find, findNext, findBack, replace, moveLine, grep
-     // file
-         newTab, nextTab, openFile, encoding, closeFile, closeAllFile, saveFile
-     // key record・mouse
-         startEndRecordKey, execRecordKey, mouseOpeSwitch
-     // menu
-         help, openMenu, openMenuFile, openMenuConvert, openMenuEdit, openMenuSelect
-     // prompt
-         escPrompt, confirmPrompt, findCaseSensitive, findRegex
-  */
-  /* when
-     allFocus, inputFocus, editorFocus, promptFocus
-  */
+### Initial key bind
+The initial key bind settings are as follows.
 
-  /* cursor move */
-  { key: 'left',       cmd: 'cursorLeft',          when: 'inputFocus'},
-  { key: 'right',      cmd: 'cursorRight',         when: 'inputFocus'},
-  { key: 'down',       cmd: 'cursorDown',          when: 'inputFocus'},
-  { key: 'up',         cmd: 'cursorUp',            when: 'inputFocus'},
-  { key: 'home',       cmd: 'cursorRowHome',       when: 'inputFocus'},
-  { key: 'end',        cmd: 'cursorRowEnd',        when: 'inputFocus'},
-  { key: 'ctrl+home',  cmd: 'cursorFileHome',      when: 'inputFocus'},
-  { key: 'ctrl+end',   cmd: 'cursorFileEnd',       when: 'inputFocus'},
-  { key: 'pagedown',   cmd: 'cursorPageDown',      when: 'inputFocus'},
-  { key: 'pageup',     cmd: 'cursorPageUp',        when: 'inputFocus'},
-
-  /* select */
-  { key: 'shift+left', cmd: 'cursorLeftSelect',    when: 'inputFocus'},
-  { key: 'shift+right',cmd: 'cursorRightSelect',   when: 'inputFocus'},
-  { key: 'shift+down', cmd: 'cursorDownSelect',    when: 'inputFocus'},
-  { key: 'shift+up',   cmd: 'cursorUpSelect',      when: 'inputFocus'},
-  { key: 'shift+home', cmd: 'cursorRowHomeSelect', when: 'inputFocus'},
-  { key: 'shift+end',  cmd: 'cursorRowEndSelect',  when: 'inputFocus'},
-  { key: 'ctrl+a',     cmd: 'allSelect',           when: 'inputFocus'},
-
-  /* edit */
-  { key: 'enter',      cmd: 'insertLine',          when: 'editorFocus'},
-  { key: 'backspace',  cmd: 'deletePrevChar',      when: 'inputFocus'},
-  { key: 'delete',     cmd: 'deleteNextChar',      when: 'inputFocus'},
-  { key: 'ctrl+x',     cmd: 'cutSelect',           when: 'inputFocus'},
-  { key: 'ctrl+c',     cmd: 'copySelect',          when: 'inputFocus'},
-  { key: 'ctrl+v',     cmd: 'paste',               when: 'inputFocus'},
-  { key: 'ctrl+z',     cmd: 'undo',                when: 'inputFocus'},
-  { key: 'ctrl+y',     cmd: 'redo',                when: 'inputFocus'},
-
-  /* find */
-  { key: 'ctrl+f',     cmd: 'find',                when: 'editorFocus'},
-  { key: 'F3',         cmd: 'findNext',            when: 'editorFocus'},
-  { key: 'shift+F4',   cmd: 'findBack',            when: 'editorFocus'},
-  { key: 'ctrl+r',     cmd: 'replace',             when: 'editorFocus'},
-  { key: 'ctrl+l',     cmd: 'moveLine',            when: 'editorFocus'},
-  { key: 'ctrl+g',     cmd: 'grep',                when: 'editorFocus'},
-
-  /* file */
-  { key: 'ctrl+w',     cmd: 'closeFile',           when: 'allFocus'},
-  { key: 'ctrl+n',     cmd: 'newTab',              when: 'editorFocus'},
-  { key: 'ctrl+o',     cmd: 'openFile',            when: 'editorFocus'},
-  { key: 'ctrl+q',     cmd: 'nextTab',             when: 'editorFocus'},
-  { key: 'ctrl+e',     cmd: 'encoding',            when: 'editorFocus'},
-  { key: 'alt+w',      cmd: 'closeAllFile',        when: 'editorFocus'},
-  { key: 'ctrl+s',     cmd: 'saveFile',            when: 'editorFocus'},
-
-  /* key record */
-  { key: 'shift+F1',   cmd: 'startEndRecordKey',   when: 'editorFocus'},
-  { key: 'shift+F2',   cmd: 'execRecordKey',       when: 'editorFocus'},
-
-  /* mouse */
-  { key: 'F12',        cmd: 'mouseOpeSwitch',      when: 'editorFocus'},
-
-  /* menu */
-  { key: 'F1',         cmd: 'help',                when: 'editorFocus'},
-  { key: 'alt+m',      cmd: 'openMenu',            when: 'editorFocus'},
-  { key: 'alt+f',      cmd: 'openMenuFile',        when: 'editorFocus'},
-  { key: 'alt+c',      cmd: 'openMenuConvert',     when: 'editorFocus'},
-  { key: 'alt+e',      cmd: 'openMenuEdit',        when: 'editorFocus'},
-  { key: 'alt+s',      cmd: 'openMenuSelect',      when: 'editorFocus'},
-
-  /* prompt */
-  { key: 'esc',        cmd: 'escPrompt',           when: 'promptFocus'},
-  { key: 'enter',      cmd: 'confirmPrompt',       when: 'promptFocus'}
-  { key: 'alt+c',      cmd: 'findCaseSensitive',   when: 'promptFocus'}
-  { key: 'alt+r',      cmd: 'findRegex',           when: 'promptFocus'}
-]
-#################################################################
-```
+[Initial key bind](https://github.com/thinkingreed/ewin/wiki/Key-binding)
 
 ## Maintenance
 
@@ -432,6 +370,12 @@ Operation / Unexpected error log is output below.
    User11=1351,0,$1B[5H
    User12=1359,0,$1B[5F
 ```
+## Public functions for Javascript macros
+Below is a list of published Javascript functions. 
+Built-in v8 engine using rusty_v8.
+
+[Public functions for macros](https://github.com/thinkingreed/ewin/wiki/Public-functions-for-macros)
+
 
 ## Future Works
 

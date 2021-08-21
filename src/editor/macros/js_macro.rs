@@ -21,7 +21,8 @@ impl Macros {
         inspector.context_created(context, 1, StringView::empty());
 
         // Store tab information in global variable
-        let _ = TAB.set(tokio::sync::Mutex::new(term.tabs[term.idx].clone()));
+        let _ = TAB.get().unwrap().try_lock().map(|mut tab| *tab = term.tabs[term.idx].clone());
+
         Macros::regist_js_func(scope, context);
 
         if let Some(script_str) = File::read_file(js_filenm, &mut term.curt().mbar) {
@@ -132,15 +133,22 @@ impl V8InspectorClientImpl for InspectorClient {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(non_camel_case_types)]
+
 pub enum MacrosFunc {
-    InsText,
-    GetSelectedString,
+    insertString,
+    getSelectedString,
+    getAllString,
+    searchAll,
 }
+
 impl fmt::Display for MacrosFunc {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            MacrosFunc::InsText => write!(f, "InsText"),
-            MacrosFunc::GetSelectedString => write!(f, "GetSelectedString"),
+            MacrosFunc::insertString => write!(f, "insertString"),
+            MacrosFunc::getSelectedString => write!(f, "getSelectedString"),
+            MacrosFunc::getAllString => write!(f, "getAllString"),
+            MacrosFunc::searchAll => write!(f, "searchAll"),
         }
     }
 }

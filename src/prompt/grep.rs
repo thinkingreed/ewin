@@ -1,21 +1,14 @@
-use crate::{
-    _cfg::keys::{KeyCmd, Keybind},
-    bar::headerbar::HeaderFile,
-    colors::*,
-    global::*,
-    log::*,
-    model::*,
-    prompt::cont::promptcont::*,
-    prompt::prompt::prompt::*,
-    tab::Tab,
-    terminal::*,
-};
+use crate::{_cfg::keys::*, bar::headerbar::*, colors::*, global::*, log::*, model::*, prompt::cont::promptcont::*, prompt::prompt::prompt::*, tab::Tab, terminal::*};
 use std::{env, path::Path};
 
 impl EvtAct {
     pub fn grep(term: &mut Terminal) -> EvtActType {
         Log::debug_s("Process.grep");
-        match term.curt().editor.keycmd {
+        match term.curt().prom.keycmd {
+            KeyCmd::Resize => {
+                Prompt::grep(term);
+                return EvtActType::Next;
+            }
             KeyCmd::ConfirmPrompt => {
                 let search_str = term.curt().prom.cont_1.buf.iter().collect::<String>();
                 let search_filenm = term.curt().prom.cont_2.buf.iter().collect::<String>();

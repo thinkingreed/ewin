@@ -1,4 +1,16 @@
-use crate::{_cfg::keys::KeyCmd, clipboard::*, def::*, global::*, log::*, model::*, prompt::prompt::prompt::*, sel_range::SelMode, tab::Tab, terminal::*, util::*};
+use crate::{
+    _cfg::{cfg::*, keys::*},
+    clipboard::*,
+    def::*,
+    global::*,
+    log::*,
+    model::*,
+    prompt::prompt::prompt::*,
+    sel_range::*,
+    tab::Tab,
+    terminal::*,
+    util::*,
+};
 use std::collections::BTreeMap;
 
 impl Editor {
@@ -12,9 +24,7 @@ impl Editor {
 
     pub fn cut(&mut self, ep: Proc) {
         Log::debug_key("cut");
-        // self.sel = ep.sel.clone();
         set_clipboard(&ep.str);
-        // self.sel.clear();
         self.draw_type = DrawType::All;
     }
 
@@ -31,6 +41,7 @@ impl Editor {
             }
         };
         set_clipboard(&copy_str);
+        self.sel.clear();
     }
 
     pub fn ctrl_home(&mut self) {
@@ -51,10 +62,27 @@ impl Editor {
         }
     }
 
+    pub fn search(&mut self, search_str: &String, cfg_search: &CfgSearch) -> Vec<SearchRange> {
+        Log::debug_key("search");
+
+        let search_vec = self.get_search_ranges(search_str, 0, self.buf.len_chars(), 0, cfg_search);
+        if search_vec.len() == 0 {
+            return search_vec;
+        } else {
+            self.search.clear();
+            self.search.ranges = search_vec.clone();
+            self.search.str = search_str.clone();
+            // Set index to initial value
+            self.search.idx = USIZE_UNDEFINED;
+        }
+        return search_vec;
+    }
+
     pub fn search_str(&mut self, is_asc: bool, is_incremental: bool) {
         if self.search.str.len() > 0 {
             if self.search.ranges.len() == 0 {
-                self.search.ranges = self.get_search_ranges(&self.search.str, 0, self.buf.len_chars(), 0);
+                let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
+                self.search.ranges = self.get_search_ranges(&self.search.str, 0, self.buf.len_chars(), 0, cfg_search);
             }
             if self.search.ranges.len() == 0 {
                 return;
@@ -77,9 +105,8 @@ impl Editor {
         }
     }
 
-    pub fn get_search_ranges(&self, search_str: &String, s_idx: usize, e_idx: usize, ignore_prefix_len: usize) -> Vec<SearchRange> {
-        let regex = CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex;
-        let search_map = self.buf.search(&search_str, s_idx, e_idx);
+    pub fn get_search_ranges(&self, search_str: &String, s_idx: usize, e_idx: usize, ignore_prefix_len: usize, cfg_search: &CfgSearch) -> Vec<SearchRange> {
+        let search_map = self.buf.search(&search_str, s_idx, e_idx, cfg_search);
         let mut rtn_vec = vec![];
 
         // Case regex: Use the number of bytes
@@ -87,14 +114,14 @@ impl Editor {
         for ((sx, ex), _) in search_map {
             // Ignore file name and line number match when grep
             if ignore_prefix_len != 0 {
-                let line_s_idx = if regex { self.buf.line_to_byte(self.buf.byte_to_line(sx)) } else { self.buf.line_to_char(self.buf.char_to_line(sx)) };
+                let line_s_idx = if cfg_search.regex { self.buf.line_to_byte(self.buf.byte_to_line(sx)) } else { self.buf.line_to_char(self.buf.char_to_line(sx)) };
                 if sx - line_s_idx < ignore_prefix_len {
                     continue;
                 }
             }
-            let y = if regex { self.buf.byte_to_line(sx) } else { self.buf.char_to_line(sx) };
-            let sx = if regex { self.buf.byte_to_line_char_idx(sx) } else { self.buf.char_to_line_char_idx(sx) };
-            let ex = if regex { self.buf.byte_to_line_char_idx(ex) } else { self.buf.char_to_line_char_idx(ex) };
+            let y = if cfg_search.regex { self.buf.byte_to_line(sx) } else { self.buf.char_to_line(sx) };
+            let sx = if cfg_search.regex { self.buf.byte_to_line_char_idx(sx) } else { self.buf.char_to_line_char_idx(sx) };
+            let ex = if cfg_search.regex { self.buf.byte_to_line_char_idx(ex) } else { self.buf.char_to_line_char_idx(ex) };
 
             rtn_vec.push(SearchRange { y: y, sx: sx, ex: ex });
         }
@@ -214,7 +241,7 @@ impl Editor {
     // initial cursor posi set
     pub fn undo_init(&mut self, proc: &Proc) {
         match &proc.keycmd {
-            KeyCmd::InsertStr(_) | KeyCmd::InsertLine | KeyCmd::CutSelect | KeyCmd::ReplaceExec(_, _, _) => self.set_evtproc(&proc, &proc.cur_s),
+            KeyCmd::InsertStr(_) | KeyCmd::InsertLine | KeyCmd::Cut | KeyCmd::ReplaceExec(_, _, _) => self.set_evtproc(&proc, &proc.cur_s),
             KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => {
                 if proc.sel.is_selected() {
                     self.set_evtproc(&proc, if proc.cur_s.x > proc.cur_e.x { &proc.cur_e } else { &proc.cur_s });
@@ -311,13 +338,13 @@ impl Editor {
         self.set_evtproc(&proc, &proc.cur_s);
 
         match &proc.keycmd {
-            KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::CutSelect => self.sel = proc.sel,
+            KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::Cut => self.sel = proc.sel,
             _ => {}
         }
         match &proc.keycmd {
             KeyCmd::DeleteNextChar => self.edit_proc(KeyCmd::DeleteNextChar),
             KeyCmd::DeletePrevChar => self.edit_proc(KeyCmd::DeletePrevChar),
-            KeyCmd::CutSelect => self.edit_proc(KeyCmd::CutSelect),
+            KeyCmd::Cut => self.edit_proc(KeyCmd::Cut),
             KeyCmd::InsertLine => self.edit_proc(KeyCmd::InsertLine),
             KeyCmd::InsertStr(_) => {
                 if proc.box_sel_vec.is_empty() {
@@ -348,7 +375,7 @@ impl Tab {
                         Log::info("Encoding errors", &enc_errors);
                         term.curt().mbar.set_err(&LANG.cannot_convert_encoding);
                     } else {
-                        term.hbar.file_vec[term.idx].is_changed = false;
+                        term.tabs[term.idx].editor.is_changed = false;
                         term.curt().prom.clear();
                         term.curt().mbar.clear();
                         if !term.curt().state.is_close_confirm {

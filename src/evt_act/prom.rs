@@ -1,20 +1,11 @@
-use crate::{
-    _cfg::keys::{KeyCmd, Keybind},
-    clipboard::get_clipboard,
-    global::*,
-    log::*,
-    model::*,
-    prompt::cont::promptcont::PromptContPosi,
-    tab::Tab,
-    terminal::*,
-};
+use crate::{_cfg::keys::*, clipboard::*, global::*, log::*, model::*, prompt::cont::promptcont::*, tab::Tab, terminal::*};
 impl EvtAct {
     pub fn check_prom(term: &mut Terminal) -> EvtActType {
         Log::debug_key("check_prom");
 
         // Close・Esc
         if !term.curt().state.is_nomal() {
-            match term.curt().editor.keycmd {
+            match term.curt().prom.keycmd {
                 KeyCmd::CloseFile => {
                     if term.curt().state.grep_state.is_result && !(term.curt().state.grep_state.is_stdout_end && term.curt().state.grep_state.is_stderr_end) && !term.curt().state.grep_state.is_cancel {
                         return EvtActType::Hold;
@@ -25,8 +16,9 @@ impl EvtAct {
                 KeyCmd::EscPrompt => {
                     if term.state.is_all_close_confirm {
                         term.cancel_close_all_tab();
-                    }
-                    if term.curt().state.grep_state.is_result {
+                    } else if term.state.is_all_save {
+                        term.cancel_save_all_tab();
+                    } else if term.curt().state.grep_state.is_result {
                         if (term.curt().state.grep_state.is_stdout_end && term.curt().state.grep_state.is_stderr_end) || term.curt().state.grep_state.is_cancel {
                             if term.curt().state.is_search {
                                 term.curt().prom.clear();
@@ -54,7 +46,7 @@ impl EvtAct {
         // contents operation
         if term.curt().state.is_exists_input_field() {
             let state = &term.curt().state.clone();
-            match term.curt().editor.keycmd {
+            match term.curt().prom.keycmd {
                 KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect => term.curt().prom.shift_move_com(),
                 KeyCmd::BackTab => {
                     term.curt().prom.tab(false, state);
@@ -66,7 +58,7 @@ impl EvtAct {
                     }
                 }
                 KeyCmd::Copy => term.curt().prom.copy(),
-                KeyCmd::CutSelect => term.curt().prom.operation(),
+                KeyCmd::Cut => term.curt().prom.operation(),
                 KeyCmd::Undo => term.curt().prom.undo(),
                 KeyCmd::Redo => term.curt().prom.redo(),
                 KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => term.curt().prom.operation(),
@@ -78,7 +70,7 @@ impl EvtAct {
                 _ => {}
             }
             // clear_sels
-            match term.curt().editor.keycmd {
+            match term.curt().prom.keycmd {
                 KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::Tab => term.curt().prom.clear_sels(),
                 _ => {}
             }
@@ -86,7 +78,7 @@ impl EvtAct {
 
         // Search・replace・grep option
         if term.curt().state.is_search || term.curt().state.is_replace || term.curt().state.grep_state.is_grep {
-            match term.curt().editor.keycmd {
+            match term.curt().prom.keycmd {
                 KeyCmd::FindCaseSensitive => {
                     term.curt().prom.cont_1.change_opt_case_sens();
                     return EvtActType::Hold;
@@ -113,26 +105,30 @@ impl EvtAct {
         if term.curt().state.grep_state.is_result || term.curt().state.is_read_only {
             if term.curt().state.is_search || term.curt().state.is_move_row {
             } else {
-                if Keybind::is_edit(&term.curt().editor.keycmd, true) {
+                if Keybind::is_edit(&term.curt().prom.keycmd, true) {
+                    /*
                     if term.curt().state.grep_state.is_result {
-                        if term.curt().editor.keycmd != KeyCmd::InsertLine {
+                        if term.curt().prom.keycmd != KeyCmd::ConfirmPrompt {
                             return EvtActType::Hold;
                         }
                     } else {
                         return EvtActType::Hold;
                     }
+                     */
+                    return EvtActType::Hold;
                 }
-                match term.curt().editor.keycmd {
+                match term.curt().prom.keycmd {
                     // Ctrl
                     KeyCmd::CursorFileHome | KeyCmd::CursorFileEnd | KeyCmd::AllSelect | KeyCmd::Copy | KeyCmd::Find | KeyCmd::NewTab | KeyCmd::OpenFile(_) | KeyCmd::MoveRow => return EvtActType::Next,
                     // Shift
                     KeyCmd::CursorUpSelect | KeyCmd::CursorDownSelect | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect | KeyCmd::FindBack => return EvtActType::Next,
                     //
                     KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::CursorPageUp | KeyCmd::CursorPageDown | KeyCmd::Help => return EvtActType::Next,
-                    KeyCmd::InsertLine => return EvtActType::Hold,
-                    KeyCmd::FindNext | KeyCmd::EscPrompt => {}
+                    //  KeyCmd::ConfirmPrompt => return EvtActType::Hold,
+                    KeyCmd::ConfirmPrompt | KeyCmd::FindNext | KeyCmd::EscPrompt => {}
                     // mouse
                     KeyCmd::MouseScrollUp | KeyCmd::MouseScrollDown | KeyCmd::MouseDownLeft(_, _) | KeyCmd::MouseDragLeft(_, _) => return EvtActType::Next,
+                    KeyCmd::Resize => {}
                     _ => return EvtActType::Hold,
                 }
             }
@@ -185,7 +181,7 @@ impl EvtAct {
 
         if tab.state.grep_state.is_grep || tab.state.is_open_file || tab.state.is_save_new_file {
             // Check clear tab candidate
-            match tab.editor.keycmd {
+            match tab.prom.keycmd {
                 KeyCmd::InsertStr(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect => {
                     if tab.state.grep_state.is_grep {
                         tab.prom.prom_grep.tab_comp.clear_tab_comp()
@@ -202,8 +198,8 @@ impl EvtAct {
     pub fn check_err_prompt(term: &mut Terminal) -> bool {
         // Check if sel range is set
         if term.curt().state.is_exists_input_field() {
-            match &term.curt().editor.keycmd {
-                KeyCmd::Copy | KeyCmd::CutSelect => {
+            match &term.curt().prom.keycmd {
+                KeyCmd::Copy | KeyCmd::Cut => {
                     let is_selected = match term.curt().prom.cont_posi {
                         PromptContPosi::First => term.curt().prom.cont_1.sel.is_selected(),
                         PromptContPosi::Second => term.curt().prom.cont_2.sel.is_selected(),

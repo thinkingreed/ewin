@@ -6,7 +6,7 @@ impl EvtAct {
 
         let tab = term.curt();
 
-        match tab.editor.keycmd {
+        match tab.prom.keycmd {
             KeyCmd::MouseDownLeft(y, x) => {
                 let (x, y) = (x as usize, y as usize);
                 if y != tab.sbar.disp_row_posi {

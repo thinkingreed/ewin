@@ -14,11 +14,11 @@ use std::{cmp::min, collections::HashMap, io::Write, usize};
 
 impl PromptCont {
     pub fn new_not_edit_type(tab: &mut Tab) -> Self {
-        PromptCont { disp_row_posi: tab.prom.disp_row_posi, keycmd: tab.editor.keycmd.clone(), ..PromptCont::default() }
+        PromptCont { disp_row_posi: tab.prom.disp_row_posi, keycmd: tab.prom.keycmd.clone(), ..PromptCont::default() }
     }
 
     pub fn new_edit_type(tab: &mut Tab, prompt_cont_posi: PromptContPosi) -> Self {
-        PromptCont { disp_row_posi: tab.prom.disp_row_posi, keycmd: tab.editor.keycmd.clone(), posi: prompt_cont_posi, ..PromptCont::default() }
+        PromptCont { disp_row_posi: tab.prom.disp_row_posi, keycmd: tab.prom.keycmd.clone(), posi: prompt_cont_posi, ..PromptCont::default() }
     }
 
     pub fn get_draw_buf_str(&self) -> String {
@@ -100,7 +100,7 @@ impl PromptCont {
     /*
      * choice
      */
-    pub fn left_down_choice(&mut self, y: u16, x: u16) {
+    pub fn left_down_choice(&mut self, y: u16, x: u16) -> bool {
         let (y, x) = (y as usize, x as usize);
         for (_, choices) in self.choices_map.iter_mut() {
             if choices.is_show {
@@ -109,11 +109,13 @@ impl PromptCont {
                         if item.area.0 == y && item.area.1 <= x && x <= item.area.2 {
                             choices.vec_y = y_idx;
                             choices.vec_x = x_idx;
+                            return true;
                         }
                     }
                 }
             }
         }
+        return false;
     }
     pub fn draw_choice_cur(&self, str_vec: &mut Vec<String>) {
         Log::debug_key("draw_cur_promcont");

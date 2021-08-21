@@ -1,5 +1,6 @@
 use crate::{
     _cfg::keys::{KeyCmd, Keybind, Keys},
+    def::USIZE_UNDEFINED,
     log::*,
     model::*,
     prompt::prompt::prompt::*,
@@ -10,7 +11,7 @@ impl EvtAct {
     pub fn check_headerbar(term: &mut Terminal) -> EvtActType {
         Log::debug_key("check_headerbar");
 
-        match term.curt().editor.keycmd {
+        match term.keycmd {
             KeyCmd::Resize => return EvtActType::Hold,
             KeyCmd::MouseDownLeft(y, x) => {
                 let (x, y) = (x as usize, y as usize);
@@ -18,20 +19,25 @@ impl EvtAct {
                 if y != term.hbar.disp_row_posi {
                     return EvtActType::Hold;
                 }
+
+                Log::debug("xxx", &x);
+
                 if term.hbar.all_filenm_space_w >= x {
                     for (idx, h_file) in term.hbar.file_vec.iter().enumerate() {
                         if !h_file.is_disp {
                             continue;
                         }
+                        Log::debug("h_file.close_area", &h_file.close_area);
+
                         if h_file.close_area.0 <= x && x <= h_file.close_area.1 {
-                            if term.hbar.file_vec[idx].is_changed {
+                            if term.curt().editor.is_changed {
                                 term.idx = idx;
-                                term.curt().editor.keys = Keybind::get_keys(KeyCmd::CloseFile);
+                                term.keys = Keybind::get_keys(KeyCmd::CloseFile);
+                                term.keycmd = KeyCmd::CloseFile;
                                 return EvtActType::Next;
                             } else {
                                 if term.tabs.len() == 1 {
-                                    term.curt().editor.keys = Keybind::get_keys(KeyCmd::CloseFile);
-                                    return EvtActType::Next;
+                                    return EvtActType::Exit;
                                 } else {
                                     term.idx = if idx == term.hbar.file_vec.len() - 1 { idx - 1 } else { idx };
                                     term.del_tab(idx);
@@ -46,7 +52,7 @@ impl EvtAct {
                         }
                     }
                     if term.hbar.all_filenm_rest_area.0 <= x && x <= term.hbar.all_filenm_rest_area.1 {
-                        let keycmd = &term.curt().editor.keycmd.clone();
+                        let keycmd = &term.keycmd.clone();
                         if term.hbar.history.count_multi_click(keycmd) == 2 {
                             term.new_tab();
                             return EvtActType::DrawOnly;
@@ -82,7 +88,7 @@ impl EvtAct {
                     }
                     return EvtActType::DrawOnly;
                 } else if term.hbar.close_btn_area.0 <= x && x <= term.hbar.close_btn_area.1 {
-                    if term.close_all_tab() {
+                    if term.close_tabs(USIZE_UNDEFINED) {
                         return EvtActType::Exit;
                     }
                     return EvtActType::DrawOnly;

@@ -1,61 +1,47 @@
-use crate::{_cfg::keys::KeyCmd, log::*, model::*, sel_range::*, util::*};
-use std::cmp::min;
+use crate::{_cfg::keys::KeyCmd, def::USIZE_UNDEFINED, log::*, model::*, sel_range::*, util::*};
+use std::cmp::{max, min};
 
 impl Editor {
     pub fn ctrl_mouse(&mut self) {
         Log::debug_key("ctrl_mouse");
-        let (mut y, mut x, mouse_proc) = match self.keycmd {
+        let (y, mut x, mouse_proc) = match self.keycmd {
             KeyCmd::MouseDownLeft(y, x) => (y, x, MouseProc::DownLeft),
             KeyCmd::MouseDragLeft(y, x) => (y, x, MouseProc::DragLeft),
             KeyCmd::MouseDownBoxLeft(y, x) => (y, x, MouseProc::DownLeftBox),
             KeyCmd::MouseDragBoxLeft(y, x) => (y, x, MouseProc::DragLeftBox),
-            // dummy
-            _ => (0, 0, MouseProc::DownLeft),
+            _ => return,
         };
-        Log::debug("Mouse y", &y);
-        Log::debug("Mouse x", &x);
-
         if mouse_proc == MouseProc::DownLeftBox || mouse_proc == MouseProc::DragLeftBox {
             self.sel.mode = SelMode::BoxSelect;
+        } else if mouse_proc == MouseProc::DownLeft {
+            self.sel.mode = SelMode::Normal;
         }
         // y, x range check
         if y < self.disp_row_posi || self.disp_row_num < y || self.buf.len_lines() < y {
-            if self.sel.mode == SelMode::BoxSelect {
-                self.draw_type = DrawType::All;
-                if y > self.buf.len_lines() {
-                    y = self.buf.len_lines();
-                } else {
-                    self.ctrl_end();
-                    return;
-                }
-            } else {
-                if self.sel.is_selected() {
-                    self.sel.clear();
-                    self.draw_type = DrawType::All;
-                } else {
-                    self.draw_type = DrawType::Not;
-                }
-                self.ctrl_end();
-                return;
+            if self.buf.len_lines() < y {
+                // In case of MouseMode::Mouse, this function is not executed, so ignore it.
+                self.set_cur_target(self.buf.len_lines() - 1, get_until_x(&self.buf.char_vec_line(self.buf.len_lines() - 1), x - self.get_rnw_and_margin()).0, false)
             }
+            self.draw_type = DrawType::All;
+            if mouse_proc != MouseProc::DragLeft {
+                self.sel.clear();
+            }
+            return;
         }
 
         let y = y - self.disp_row_posi;
-        if mouse_proc == MouseProc::DownLeft && x < self.get_rnw() + Editor::RNW_MARGIN {
+        if mouse_proc == MouseProc::DownLeft && x < self.get_rnw_and_margin() {
             self.sel.set_s(y, 0, 0);
             let (cur_x, width) = get_row_width(&self.buf.char_vec_line(y)[..], 0, true);
             self.sel.set_e(y, cur_x, width);
             self.set_cur_target(y + self.offset_y, 0, false);
             self.draw_type = DrawType::All;
         } else {
-            if x < self.get_rnw() + Editor::RNW_MARGIN {
-                x = self.get_rnw() + Editor::RNW_MARGIN;
+            if x < self.get_rnw_and_margin() {
+                x = self.get_rnw_and_margin();
             }
-            let x = x - self.get_rnw() - Editor::RNW_MARGIN;
+            let x = x - self.get_rnw_and_margin();
             self.cur.y = y + self.offset_y;
-
-            Log::debug("y 222", &y);
-            Log::debug("x 222", &x);
 
             let vec = self.buf.char_vec_line(self.cur.y);
 
@@ -76,8 +62,9 @@ impl Editor {
                     MouseProc::DownLeft | MouseProc::DownLeftBox | MouseProc::DragLeftBox => self.draw_type = DrawType::All,
                     MouseProc::DragLeft => {
                         if self.sel.mode == SelMode::Normal {
-                            let sy = self.sel.get_diff_y_mouse_drag(self.sel_org, self.cur.y);
-                            self.draw_type = DrawType::Target(sy, min(sy + 1, self.buf.len_lines() - 1));
+                            let sel = self.sel.get_range();
+                            let sel_org = self.sel_org.get_range();
+                            self.draw_type = DrawType::Target(min(sel.sy, sel_org.sy), max(sel.ey, if sel_org.ey == USIZE_UNDEFINED { sel.ey } else { sel_org.ey }));
                         } else {
                             self.draw_type = DrawType::All;
                         }
@@ -90,6 +77,7 @@ impl Editor {
     pub fn set_mouse_sel(&mut self, mouse_proc: MouseProc) {
         if mouse_proc == MouseProc::DownLeft || mouse_proc == MouseProc::DownLeftBox {
             let click_count = self.history.count_multi_click(&self.keycmd);
+            Log::debug("click_count", &click_count);
             match click_count {
                 1 => {
                     self.sel.clear();

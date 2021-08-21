@@ -46,7 +46,7 @@ impl PromptCont {
             match &keycmd {
                 KeyCmd::DeleteNextChar => self.delete(&mut ep),
                 KeyCmd::DeletePrevChar => self.backspace(&mut ep),
-                KeyCmd::CutSelect => self.cut(ep_del.str),
+                KeyCmd::Cut => self.cut(ep_del.str),
                 KeyCmd::InsertStr(str) => {
                     if str.is_empty() {
                         self.paste(&mut ep);
@@ -57,7 +57,7 @@ impl PromptCont {
                 _ => {}
             }
             ep.cur_e = self.cur;
-            if keycmd != KeyCmd::CutSelect {
+            if keycmd != KeyCmd::Cut {
                 evt_proc.evt_proc = Some(ep.clone());
             }
         }

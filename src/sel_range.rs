@@ -18,7 +18,6 @@ impl SelRange {
 
     // For prompt buf
     pub fn clear_prompt(&mut self) {
-        //  Log::ep_s("SelRange.clear");
         self.sx = USIZE_UNDEFINED;
         self.ex = USIZE_UNDEFINED;
         self.s_disp_x = USIZE_UNDEFINED;
@@ -27,10 +26,9 @@ impl SelRange {
 
     pub fn is_selected(&self) -> bool {
         if self.mode == SelMode::Normal {
-            return !(self.sy == USIZE_UNDEFINED && self.ey == USIZE_UNDEFINED && self.s_disp_x == USIZE_UNDEFINED && self.e_disp_x == USIZE_UNDEFINED);
+            return self.sy != self.ey || self.s_disp_x != self.e_disp_x;
         } else {
             // SelMode::BoxSelect
-            // return !(self.s_disp_x == USIZE_UNDEFINED && self.e_disp_x == USIZE_UNDEFINED);
             return !(self.sy == USIZE_UNDEFINED && self.ey == USIZE_UNDEFINED);
         }
     }
@@ -123,25 +121,6 @@ impl SelRange {
             return false;
         }
         return true;
-    }
-    pub fn get_diff_y_mouse_drag(&mut self, sel_org: SelRange, cur_y: usize) -> usize {
-        let sel = self.get_range();
-        let sel_org = sel_org.get_range();
-
-        if sel.sy < sel_org.sy {
-            return sel.sy;
-        } else if sel.sy > sel_org.sy {
-            return sel.sy - 1;
-        } else if sel.ey > sel_org.ey {
-            return sel.ey - 1;
-        } else if sel.ey < sel_org.ey {
-            return sel.ey;
-        } else if sel.sy == cur_y {
-            return sel.sy;
-        //sel.ey == cur_y
-        } else {
-            return sel.ey - 1;
-        }
     }
 }
 

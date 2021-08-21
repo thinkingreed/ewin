@@ -1,17 +1,23 @@
-use crate::_cfg::keys::{KeyCmd, Keybind, OpenFileType};
-use crate::{colors::*, def::*, global::*, log::*, model::*, prompt::choice::*, prompt::cont::promptcont::*, prompt::prompt::prompt::*, terminal::*, util::*};
+use crate::{_cfg::keys::*, colors::*, def::*, global::*, log::*, model::*, prompt::choice::*, prompt::cont::promptcont::*, prompt::prompt::prompt::*, terminal::*, util::*};
 use crossterm::{cursor::*, terminal::ClearType::*, terminal::*};
-use std::collections::{BTreeMap, HashMap};
-use std::io::stdout;
+use std::{collections::*, io::stdout};
 
 impl EvtAct {
     pub fn menu(term: &mut Terminal) -> EvtActType {
+        Log::debug_key("EvtAct.menu");
+
         let state = term.curt().state.clone();
 
-        match term.curt().editor.keycmd {
+        match term.curt().prom.keycmd {
+            KeyCmd::Resize => {
+                Prompt::menu(term);
+                return EvtActType::Next;
+            }
             KeyCmd::MouseDownLeft(y, x) => {
-                term.curt().prom.left_down_choice_menu(y as u16, x as u16);
-                return Prompt::confirm_menu(term, true);
+                if term.curt().prom.left_down_choice_menu(y as u16, x as u16) {
+                    return Prompt::confirm_menu(term, true);
+                }
+                return EvtActType::None;
             }
             KeyCmd::BackTab => {
                 term.curt().prom.tab(false, &state);
@@ -32,7 +38,7 @@ impl EvtAct {
                 return EvtActType::Hold;
             }
             KeyCmd::CursorLeft | KeyCmd::CursorRight => {
-                if term.curt().editor.keycmd == KeyCmd::CursorRight {
+                if term.curt().prom.keycmd == KeyCmd::CursorRight {
                     term.curt().prom.change_choice_vec_menu(CurDirection::Right);
                 } else {
                     term.curt().prom.change_choice_vec_menu(CurDirection::Left);
@@ -73,25 +79,38 @@ impl Prompt {
         term.curt().prom.cont_3 = cont_3;
     }
 
-    pub fn left_down_choice_menu(&mut self, y: u16, x: u16) {
-        if (self.cont_1.buf_row_posi <= y && y <= self.cont_1.buf_row_posi + self.cont_1.buf_row_len) || (self.cont_2.buf_row_posi <= y && y <= self.cont_2.buf_row_posi + self.cont_2.buf_row_len) || (self.cont_3.buf_row_posi <= y && y <= self.cont_3.buf_row_posi + self.cont_3.buf_row_len) {
-            match y {
-                y if self.cont_1.buf_row_posi <= y && y <= self.cont_1.buf_row_posi + self.cont_1.buf_row_len => {
-                    self.cont_1.left_down_choice(y, x);
+    pub fn left_down_choice_menu(&mut self, y: u16, x: u16) -> bool {
+        let is_menu_select = match y {
+            y if self.cont_1.buf_row_posi <= y && y <= self.cont_1.buf_row_posi + self.cont_1.buf_row_len => {
+                if self.cont_1.left_down_choice(y, x) {
                     self.cont_posi = PromptContPosi::First;
+                    true
+                } else {
+                    false
                 }
-                y if self.cont_2.buf_row_posi <= y && y <= self.cont_2.buf_row_posi + self.cont_2.buf_row_len => {
-                    self.cont_2.left_down_choice(y, x);
-                    self.cont_posi = PromptContPosi::Second;
-                }
-                y if self.cont_3.buf_row_posi <= y && y <= self.cont_3.buf_row_posi + self.cont_3.buf_row_len => {
-                    self.cont_3.left_down_choice(y, x);
-                    self.cont_posi = PromptContPosi::Third;
-                }
-                _ => {}
             }
+            y if self.cont_2.buf_row_posi <= y && y <= self.cont_2.buf_row_posi + self.cont_2.buf_row_len => {
+                if self.cont_2.left_down_choice(y, x) {
+                    self.cont_posi = PromptContPosi::Second;
+                    true
+                } else {
+                    false
+                }
+            }
+            y if self.cont_3.buf_row_posi <= y && y <= self.cont_3.buf_row_posi + self.cont_3.buf_row_len => {
+                if self.cont_3.left_down_choice(y, x) {
+                    self.cont_posi = PromptContPosi::Third;
+                    true
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        };
+        if is_menu_select {
             Choices::change_show_choice(self);
         }
+        return is_menu_select;
     }
     pub fn confirm_menu(term: &mut Terminal, is_click: bool) -> EvtActType {
         let choice_1 = term.curt().prom.cont_1.get_choice();
@@ -132,11 +151,7 @@ impl Prompt {
                     if choice_2.name.contains(&LANG.convert) {
                         term.curt().editor.convert(ConvType::from_str(&choice_3.name));
                     } else if choice_2.name.contains(&LANG.format) {
-                        term.curt().editor.format(FmtType::JSON).unwrap_or_else(|err| {
-                            let err_str = format!("{}{}", FmtType::JSON, LANG.parsing_failed);
-                            Log::error(&err_str, &err);
-                            term.curt().mbar.set_err(&err_str);
-                        });
+                        Editor::format(term, FmtType::JSON);
                     }
                 } else {
                     term.curt().mbar.set_err(&LANG.no_sel_range)
@@ -183,20 +198,22 @@ impl Prompt {
     }
 
     pub fn change_choice_vec_menu(&mut self, cur_direction: CurDirection) {
+        Log::debug_key("Prompt.change_choice_vec_menu");
         match self.cont_posi {
             PromptContPosi::First => {
                 if self.cont_1.get_choices().unwrap().set_vec_posi(cur_direction) {
                     if cur_direction == CurDirection::Down {
                         self.cont_posi = PromptContPosi::Second;
                     } else if cur_direction == CurDirection::Up {
-                        self.cont_posi = PromptContPosi::Third;
+                        Log::debug("self.cont_3.choices_map", &self.cont_3.choices_map);
+                        self.cont_posi = if self.cont_3.is_show_choices_map() { PromptContPosi::Third } else { PromptContPosi::Second }
                     }
                 }
             }
             PromptContPosi::Second => {
                 if self.cont_2.get_choices().unwrap().set_vec_posi(cur_direction) {
                     if cur_direction == CurDirection::Down {
-                        self.cont_posi = PromptContPosi::Third;
+                        self.cont_posi = if self.cont_3.is_show_choices_map() { PromptContPosi::Third } else { PromptContPosi::First }
                     } else if cur_direction == CurDirection::Up {
                         self.cont_posi = PromptContPosi::First;
                     }
@@ -248,7 +265,7 @@ impl PromptCont {
 
                 self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.menu, Colors::get_default_fg());
 
-                if term.curt().editor.keycmd == KeyCmd::OpenMenu && term.curt().prom.prom_menu.choices_map_cache.get(&PromptContPosi::First).is_some() {
+                if term.curt().prom.keycmd == KeyCmd::OpenMenu && term.curt().prom.prom_menu.choices_map_cache.get(&PromptContPosi::First).is_some() {
                     self.choices_map = term.curt().prom.prom_menu.choices_map_cache.get(&PromptContPosi::First).unwrap().clone();
                     term.curt().prom.cont_posi = term.curt().prom.prom_menu.cont_posi_cache;
                 } else {
@@ -275,7 +292,7 @@ impl PromptCont {
 
                 self.buf_desc = format!("{}{} 1{}", Colors::get_msg_highlight_fg(), &LANG.contents, Colors::get_default_fg());
 
-                if term.curt().editor.keycmd == KeyCmd::OpenMenu && term.curt().prom.prom_menu.choices_map_cache.get(&PromptContPosi::Second).is_some() {
+                if term.curt().prom.keycmd == KeyCmd::OpenMenu && term.curt().prom.prom_menu.choices_map_cache.get(&PromptContPosi::Second).is_some() {
                     self.choices_map = term.curt().prom.prom_menu.choices_map_cache.get(&PromptContPosi::Second).unwrap().clone();
                 } else {
                     // file
@@ -322,7 +339,7 @@ impl PromptCont {
 
                 self.buf_desc = format!("{}{} 2{}", Colors::get_msg_highlight_fg(), &LANG.contents, Colors::get_default_fg());
 
-                if term.curt().editor.keycmd == KeyCmd::OpenMenu && term.curt().prom.prom_menu.choices_map_cache.get(&PromptContPosi::Third).is_some() {
+                if term.curt().prom.keycmd == KeyCmd::OpenMenu && term.curt().prom.prom_menu.choices_map_cache.get(&PromptContPosi::Third).is_some() {
                     self.choices_map = term.curt().prom.prom_menu.choices_map_cache.get(&PromptContPosi::Third).unwrap().clone();
                 } else {
                     let vec_1 = vec![Choice::new(&LANG.to_lowercase), Choice::new(&LANG.to_half_width), Choice::new(&LANG.to_space)];
@@ -411,6 +428,14 @@ impl PromptCont {
                 }
             }
         }
+    }
+    pub fn is_show_choices_map(&mut self) -> bool {
+        for (_, choices) in self.choices_map.iter() {
+            if choices.is_show {
+                return true;
+            }
+        }
+        return false;
     }
 }
 

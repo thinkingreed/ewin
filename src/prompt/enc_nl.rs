@@ -10,7 +10,11 @@ use super::choice::Choice;
 
 impl EvtAct {
     pub fn enc_nl(term: &mut Terminal) -> EvtActType {
-        match term.curt().editor.keycmd {
+        match term.curt().prom.keycmd {
+            KeyCmd::Resize => {
+                Prompt::enc_nl(term);
+                return EvtActType::Next;
+            }
             KeyCmd::MouseDownLeft(y, x) => {
                 term.curt().prom.left_down_choice_enc_nl(y as u16, x as u16);
                 return EvtActType::Hold;

@@ -26,8 +26,8 @@
          help, openMenu, openMenuFile, openMenuConvert, openMenuEdit, openMenuSelect
      // prompt
          escPrompt, confirmPrompt, findCaseSensitive, findRegex                             
-     // macro
-         openFileJsMacro
+     // ContextMenu
+         contextMenu
   */
   /* when
      allFocus, inputFocus, editorFocus, promptFocus         
@@ -334,8 +334,8 @@
    * dummy
    */
   {
-    key: 'ctrl+d',
-    cmd: 'openFileJsMacro',
+    key: 'F10',
+    cmd: 'contextMenu',
     when: 'editorFocus'
   }
 ]

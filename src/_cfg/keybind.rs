@@ -1,27 +1,30 @@
-use super::keys::{KeyWhen, Keybind};
 use crate::{
-    _cfg::keys::{Key, KeyCmd, Keys},
+    _cfg::keys::{Key, *},
     def::*,
     global::*,
     log::Log,
-    util::ordinal_suffix,
+    terminal::*,
+    util::*,
 };
 use crossterm::event::{Event::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind, *};
 use directories::BaseDirs;
 use json5;
-use std::{collections::HashMap, fs, fs::File, io::Write, str::FromStr};
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+    io::Write,
+    str::FromStr,
+};
 
 impl Keybind {
-    pub fn init() -> String {
-        Log::info_key("Keybind.init");
-
-        let mut keybind_vec: Vec<Keybind> = json5::from_str(include_str!("../../keybind.json5")).unwrap();
+    pub fn init(args: &Args) -> String {
+        let keybind_str = include_str!("../../keybind.json5");
+        let mut keybind_vec: Vec<Keybind> = json5::from_str(keybind_str).unwrap();
 
         let mut err_str = "".to_string();
 
         if let Some(base_dirs) = BaseDirs::new() {
-            let keybind_dir = base_dirs.config_dir();
-            let keybind_file = &keybind_dir.join(env!("CARGO_PKG_NAME")).join(KEYBINDING_FILE);
+            let keybind_file = &base_dirs.config_dir().join(env!("CARGO_PKG_NAME")).join(KEYBINDING_FILE);
 
             if keybind_file.exists() {
                 let mut read_str = String::new();
@@ -31,9 +34,7 @@ impl Keybind {
                         read_str = str;
                         Log::info("read keybind.json5", &read_str);
                     }
-                    Err(e) => {
-                        err_str = format!("{} {} {}", LANG.file_loading_failed, keybind_file.to_string_lossy().to_string(), e);
-                    }
+                    Err(e) => err_str = format!("{} {} {}", LANG.file_loading_failed, keybind_file.to_string_lossy().to_string(), e),
                 }
                 if err_str.is_empty() {
                     match json5::from_str(&read_str) {
@@ -46,19 +47,17 @@ impl Keybind {
                                 }
                             }
                         }
-                        Err(e) => {
-                            err_str = format!("{}{} {} {}", LANG.file, LANG.parsing_failed, keybind_file.to_string_lossy().to_string(), e);
-                        }
+                        Err(e) => err_str = format!("{}{} {} {}", LANG.file, LANG.parsing_failed, keybind_file.to_string_lossy().to_string(), e),
                     };
                 }
+            } else {
+                if args.out_config_flg {
+                    if let Ok(mut file) = File::create(keybind_file) {
+                        let _ = write!(&mut file, "{}", keybind_str);
+                        let _ = &mut file.flush().unwrap();
+                    }
+                }
             }
-        }
-
-        if cfg!(debug_assertions) {
-            let mut file = File::create(KEYBINDING_FILE).unwrap();
-            let s = json5::to_string(&keybind_vec).unwrap();
-            write!(file, "{}", s).unwrap();
-            file.flush().unwrap();
         }
 
         let mut key_cmd_map: HashMap<(Keys, KeyWhen), KeyCmd> = HashMap::new();
@@ -74,8 +73,8 @@ impl Keybind {
         key_cmd_map.insert((Keys::Raw(Key::Tab), KeyWhen::PromptFocus), KeyCmd::Tab);
         key_cmd_map.insert((Keys::Shift(Key::BackTab), KeyWhen::PromptFocus), KeyCmd::BackTab);
 
-        key_cmd_map.insert((Keys::MouseScrollDown, KeyWhen::EditorFocus), KeyCmd::MouseScrollDown);
-        key_cmd_map.insert((Keys::MouseScrollUp, KeyWhen::EditorFocus), KeyCmd::MouseScrollUp);
+        key_cmd_map.insert((Keys::MouseScrollDown, KeyWhen::AllFocus), KeyCmd::MouseScrollDown);
+        key_cmd_map.insert((Keys::MouseScrollUp, KeyWhen::AllFocus), KeyCmd::MouseScrollUp);
         key_cmd_map.insert((Keys::Resize, KeyWhen::AllFocus), KeyCmd::Resize);
         key_cmd_map.insert((Keys::Unsupported, KeyWhen::EditorFocus), KeyCmd::Null);
         key_cmd_map.insert((Keys::Null, KeyWhen::EditorFocus), KeyCmd::Null);
@@ -101,6 +100,7 @@ impl Keybind {
             Keys::MouseDownLeft(y, x) => return KeyCmd::MouseDownLeft(*y as usize, *x as usize),
             Keys::MouseDownRight(y, x) => return KeyCmd::MouseDownRight(*y as usize, *x as usize),
             Keys::MouseDragLeft(y, x) => return KeyCmd::MouseDragLeft(*y as usize, *x as usize),
+            Keys::MouseDragRight(y, x) => return KeyCmd::MouseDragRight(*y as usize, *x as usize),
             Keys::MouseMove(y, x) => return KeyCmd::MouseMove(*y as usize, *x as usize),
             _ => {}
         };
@@ -150,6 +150,7 @@ impl Keybind {
             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), row: y, column: x, .. }) => return Keys::MouseDownLeft(*y, *x),
             Mouse(M_Event { kind: M_Kind::Down(M_Btn::Right), row: y, column: x, .. }) => return Keys::MouseDownRight(*y, *x),
             Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), row: y, column: x, .. }) => return Keys::MouseDragLeft(*y, *x),
+            Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Right), row: y, column: x, .. }) => return Keys::MouseDragRight(*y, *x),
             Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => return Keys::MouseScrollUp,
             Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => return Keys::MouseScrollDown,
             Mouse(M_Event { kind: M_Kind::Moved, row: y, column: x, .. }) => return Keys::MouseMove(*y, *x),
@@ -160,7 +161,7 @@ impl Keybind {
 
     pub fn is_edit(keybindcmd: &KeyCmd, is_incl_unredo: bool) -> bool {
         match keybindcmd {
-            KeyCmd::InsertStr(_) | KeyCmd::Tab | KeyCmd::InsertLine | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::CutSelect => return true,
+            KeyCmd::InsertStr(_) | KeyCmd::Tab | KeyCmd::InsertLine | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::Cut => return true,
             KeyCmd::Undo | KeyCmd::Redo => {
                 if is_incl_unredo {
                     return true;

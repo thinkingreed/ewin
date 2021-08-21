@@ -84,7 +84,7 @@ impl Editor {
             let c = self.buf.char(self.cur.y, self.cur.x - 1);
 
             if c == TAB_CHAR {
-                let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
+                let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.size;
                 let (_, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[0..self.cur.x - 1], self.offset_disp_x, false);
                 self.cur.disp_x -= cfg_tab_width - width % cfg_tab_width;
                 self.cur.x -= 1;
@@ -144,7 +144,7 @@ impl Editor {
                 return;
             }
             if c == TAB_CHAR {
-                let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
+                let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.size;
                 let tab_width = cfg_tab_width - (self.cur.disp_x % cfg_tab_width);
                 self.cur.disp_x += tab_width;
                 self.cur.x += 1;
@@ -192,34 +192,36 @@ impl Editor {
     }
 
     pub fn get_clipboard(&mut self, ep: &mut Proc) -> bool {
+        Log::debug_key("get_clipboard");
         // for Paste
-        if self.keycmd == KeyCmd::InsertStr("".to_string()) {
-            let mut clipboard = get_clipboard().unwrap_or("".to_string());
-            change_nl(&mut clipboard, &self.h_file);
+        let mut clipboard = get_clipboard().unwrap_or("".to_string());
 
-            if self.box_insert.mode == BoxInsertMode::Normal {
-                if self.box_insert.get_str(&NL::get_nl(&self.h_file.nl)) == clipboard {
-                    ep.box_sel_vec = self.box_insert.vec.clone();
-                    ep.str = self.box_insert.get_str(&NL::get_nl(&self.h_file.nl));
-                } else {
-                    self.clear_box_sel(ep, clipboard);
+        change_nl(&mut clipboard, &self.h_file);
+
+        if self.box_insert.mode == BoxInsertMode::Normal {
+            // Paste of the string copied in box insert mode
+            if self.box_insert.get_str(&NL::get_nl(&self.h_file.nl)) == clipboard {
+                ep.box_sel_vec = self.box_insert.vec.clone();
+                ep.str = self.box_insert.get_str(&NL::get_nl(&self.h_file.nl));
+            } else {
+                self.set_clipboard_and_clear_box_sel(ep, clipboard);
+            }
+        } else {
+            let row_vec = clipboard.split(&NL::get_nl(&self.h_file.nl)).collect::<Vec<&str>>();
+
+            if row_vec.len() == 1 {
+                for i in 0..ep.box_sel_vec.len() {
+                    ep.box_sel_vec[i].1 = clipboard.clone();
                 }
             } else {
-                let row_vec = clipboard.split(&NL::get_nl(&self.h_file.nl)).collect::<Vec<&str>>();
-
-                if row_vec.len() == 1 {
-                    for i in 0..ep.box_sel_vec.len() {
-                        ep.box_sel_vec[i].1 = clipboard.clone();
-                    }
-                } else {
-                    self.clear_box_sel(ep, clipboard);
-                    return true;
-                }
+                self.set_clipboard_and_clear_box_sel(ep, clipboard);
+                return true;
             }
         }
+
         return false;
     }
-    pub fn clear_box_sel(&mut self, ep: &mut Proc, clipboard: String) {
+    pub fn set_clipboard_and_clear_box_sel(&mut self, ep: &mut Proc, clipboard: String) {
         self.box_insert.clear_clipboard();
         ep.str = clipboard;
         ep.box_sel_vec.clear();
@@ -323,9 +325,15 @@ impl Editor {
 
         self.cur.y += insert_strs.len() - 1;
 
+        Log::debug("insert_strs", &insert_strs);
+
+        Log::debug("self.cur 111", &self.cur);
+
         let last_str_len = insert_strs.last().unwrap().chars().count();
         let x = if insert_strs.len() == 1 { self.cur.x + last_str_len } else { last_str_len };
         self.set_cur_target(self.cur.y, x, false);
+
+        Log::debug("self.cur 222", &self.cur);
     }
 
     pub fn enter(&mut self) {

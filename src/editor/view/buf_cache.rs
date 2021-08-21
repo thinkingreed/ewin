@@ -104,7 +104,7 @@ impl EditorDraw {
             for c in string.chars() {
                 width += match c {
                     NEW_LINE_LF | NEW_LINE_CR => 1,
-                    TAB_CHAR => get_char_width_tab(&c, width, cfg.general.editor.tab.width),
+                    TAB_CHAR => get_char_width_tab(&c, width, cfg.general.editor.tab.size),
                     _ => c.width().unwrap_or(0),
                 };
                 self.set_style(cfg, editor, c, width, y, x, &mut style, &mut style_org, &mut style_type_org, &mut cells);
@@ -112,7 +112,7 @@ impl EditorDraw {
             }
         }
         self.syntax_state_vec.insert(y, SyntaxState { highlight_state, parse_state: parse, ops });
-      self.cells[y] = cells.drain(sx..ex).collect();
+        self.cells[y] = cells.drain(sx..ex).collect();
     }
 
     fn set_regions(&mut self, cfg: &Cfg,editor:& Editor, y: usize, row_vec: Vec<char>, sx: usize, ex: usize) {
@@ -129,7 +129,7 @@ impl EditorDraw {
         for c in row {
             width += match c {
                 NEW_LINE_LF | NEW_LINE_CR => 1,
-                TAB_CHAR => get_char_width_tab(&c, width, cfg.general.editor.tab.width),
+                TAB_CHAR => get_char_width_tab(&c, width, cfg.general.editor.tab.size),
                 _ => c.width().unwrap_or(0),
             };
             let offset_x = if y == editor.cur.y { editor.offset_x } else { 0 };

@@ -1,24 +1,21 @@
-use crate::{
-    _cfg::keys::{KeyCmd, Keybind},
-    colors::*,
-    global::*,
-    log::*,
-    model::*,
-    prompt::cont::promptcont::*,
-    prompt::prompt::prompt::*,
-    terminal::Terminal,
-};
+use crate::{_cfg::keys::*, colors::*, global::*, log::*, model::*, prompt::cont::promptcont::*, prompt::prompt::prompt::*, terminal::*};
 
 impl EvtAct {
     pub fn move_row(term: &mut Terminal) -> EvtActType {
         Log::debug_key("EvtAct.move_row");
-        match &term.curt().editor.keycmd {
+
+        match &term.curt().prom.keycmd {
+            KeyCmd::Resize => {
+                Prompt::move_row(term);
+                return EvtActType::Next;
+            }
             KeyCmd::InsertStr(str) => {
+                let str = str.clone();
                 if !str.chars().nth(0).unwrap().is_ascii_digit() {
                     return EvtActType::Hold;
                 }
-                let str: String = term.curt().prom.cont_1.buf.iter().collect::<String>();
-                if str.chars().count() == term.curt().editor.get_rnw() {
+                let entered_str: String = term.curt().prom.cont_1.buf.iter().collect::<String>();
+                if entered_str.chars().count() == term.curt().editor.get_rnw() {
                     return EvtActType::Hold;
                 }
                 term.curt().prom.insert_str(str);

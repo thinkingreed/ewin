@@ -115,6 +115,7 @@ impl fmt::Display for Keys {
             Keys::Resize => todo!(),
             Keys::MouseDownLeft(_, _) => todo!(),
             Keys::MouseDragLeft(_, _) => todo!(),
+            Keys::MouseDragRight(_, _) => todo!(),
             Keys::MouseAltDownLeft(_, _) => todo!(),
             Keys::MouseAltDragLeft(_, _) => todo!(),
             Keys::MouseAltUpLeft() => todo!(),
@@ -139,6 +140,7 @@ pub enum Keys {
     MouseDownLeft(u16, u16),
     MouseDownRight(u16, u16),
     MouseDragLeft(u16, u16),
+    MouseDragRight(u16, u16),
     MouseAltDownLeft(u16, u16),
     MouseAltDragLeft(u16, u16),
     MouseAltUpLeft(),
@@ -205,7 +207,7 @@ pub enum KeyCmd {
     InsertLine,
     DeletePrevChar,
     DeleteNextChar,
-    CutSelect,
+    Cut,
     Copy,
     Format(FmtType),
     Undo,
@@ -235,6 +237,7 @@ pub enum KeyCmd {
     MouseDownLeft(usize, usize),
     MouseDownRight(usize, usize),
     MouseDragLeft(usize, usize),
+    MouseDragRight(usize, usize),
     MouseDownBoxLeft(usize, usize),
     MouseDragBoxLeft(usize, usize),
     MouseMove(usize, usize),
@@ -247,7 +250,7 @@ pub enum KeyCmd {
     OpenMenuEdit,
     OpenMenuSearch,
     OpenMenuMacro,
-    // CtxMenu(usize, usize),
+    CtxtMenu,
     // prompt
     EscPrompt,
     ConfirmPrompt,
@@ -498,7 +501,7 @@ impl FromStr for KeyCmd {
             "insertLine" => Ok(KeyCmd::InsertLine),
             "deletePrevChar" => Ok(KeyCmd::DeletePrevChar),
             "deleteNextChar" => Ok(KeyCmd::DeleteNextChar),
-            "cutSelect" => Ok(KeyCmd::CutSelect),
+            "cutSelect" => Ok(KeyCmd::Cut),
             "copySelect" => Ok(KeyCmd::Copy),
             "paste" => Ok(KeyCmd::InsertStr("".to_string())),
             "undo" => Ok(KeyCmd::Undo),
@@ -538,8 +541,8 @@ impl FromStr for KeyCmd {
             "findRegex" => Ok(KeyCmd::FindRegex),
             // mode
             "cancelMode" => Ok(KeyCmd::CancelMode),
-            // macro
-            "openFileJsMacro" => Ok(KeyCmd::OpenFile(OpenFileType::JsMacro)),
+            // ContextMenu
+            "contextMenu" => Ok(KeyCmd::CtxtMenu),
             _ => Err(()),
         }
     }

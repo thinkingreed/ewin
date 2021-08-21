@@ -48,7 +48,7 @@ impl Editor {
                     tab.editor.draw_type = DrawType::Target(min(y, y_after), max(y, y_after));
                 }
             }
-            KeyCmd::MouseDownRight(_, _) => tab.editor.draw_type = DrawType::All,
+            KeyCmd::MouseDownRight(_, _) | KeyCmd::MouseDragRight(_, _) => tab.editor.draw_type = DrawType::All,
             _ => tab.editor.draw_type = DrawType::All,
         };
     }

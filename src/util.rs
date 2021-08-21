@@ -1,15 +1,10 @@
-use crate::{bar::headerbar::HeaderFile, def::*, global::*, log::Log, model::*};
+use crate::{bar::headerbar::*, def::*, global::*, log::Log, model::*};
 #[cfg(target_os = "linux")]
 use anyhow::Context;
 #[cfg(target_os = "linux")]
 use std::io::Read;
-use std::{
-    fs, path,
-    path::MAIN_SEPARATOR,
-    process::{Command, Stdio},
-    usize,
-};
-use unicode_width::UnicodeWidthChar;
+use std::{fs, path, path::*, process::*, usize};
+use unicode_width::*;
 
 pub fn get_str_width(msg: &str) -> usize {
     let msg_chars = msg.chars().collect::<Vec<char>>();
@@ -86,7 +81,7 @@ pub fn get_until_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
 // Everything including tab
 pub fn get_char_width(c: &char, width: usize) -> usize {
     if c == &TAB_CHAR {
-        let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
+        let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.size;
         return get_char_width_tab(c, width, cfg_tab_width);
     } else {
         return get_char_width_not_tab(c);
@@ -169,21 +164,26 @@ pub fn cut_str(str: String, limit_width: usize, is_from_before: bool, is_add_con
     let mut chars: Vec<char> = if is_from_before { str.chars().rev().collect() } else { str.chars().collect() };
     let mut width = 0;
     let limit_width = if is_add_continue_str { limit_width - get_str_width(CONTINUE_STR) } else { limit_width };
-    for i in 0..chars.len() {
-        if let Some(c) = chars.get(i) {
-            let w = get_char_width_not_tab(c);
-            if width + w > limit_width {
-                let mut rtn_str: String = if is_from_before { chars.drain(0..i).rev().collect() } else { chars.drain(0..i).collect() };
-                if is_add_continue_str {
-                    if is_from_before {
-                        rtn_str = format!("{}{}", &CONTINUE_STR, rtn_str);
-                    } else {
-                        rtn_str.push_str(&CONTINUE_STR);
+
+    if limit_width > get_str_width(&str) {
+        return str;
+    } else {
+        for i in 0..chars.len() {
+            if let Some(c) = chars.get(i) {
+                let w = get_char_width_not_tab(c);
+                if width + w > limit_width {
+                    let mut rtn_str: String = if is_from_before { chars.drain(0..i).rev().collect() } else { chars.drain(0..i).collect() };
+                    if is_add_continue_str {
+                        if is_from_before {
+                            rtn_str = format!("{}{}", &CONTINUE_STR, rtn_str);
+                        } else {
+                            rtn_str.push_str(&CONTINUE_STR);
+                        }
                     }
+                    return rtn_str;
                 }
-                return rtn_str;
+                width += w;
             }
-            width += w;
         }
     }
     return str;
@@ -295,4 +295,7 @@ pub fn change_regex(replace_str: String) -> String {
         return replace_str;
     }
     return replace_str;
+}
+pub fn get_tab_str() -> String {
+    return CFG.get().unwrap().try_lock().unwrap().general.editor.tab.tab.clone();
 }

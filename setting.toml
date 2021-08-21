@@ -3,13 +3,47 @@
 level = "debug"
 
 [general.editor.tab]
-width = 4
+size = 2
 # tab or half_width_blank
 tab_input_type = "tab"
 
 [general.editor.search]
 case_sens = true
 regex = false
+
+[general.editor.format]
+# tab or half_width_blank
+indent_type = "half_width_blank"
+# Valid only for half_width_blank
+indent_size = 2
+
+# context menu
+[general.ctx_menu]
+content = """
+{
+  "editor": {
+    "range_selected": [
+      {"cut": []},
+      {"copy": []},
+      {"paste": []},
+      {"convert": ["to_uppercase", "to_lowercase", "to_full_width", "to_half_width", "to_space", "to_tab"]},
+      {"format": ["json", "xml", "html"]},
+      {"macros": ["insert_text.js", "switch_upper_lower.js"]}
+    ],
+    "range_non_selected": [
+      {"paste": []},
+      {"all_select": []},
+      {"macros": ["insert_text.js"]}
+    ]
+  },
+  "header_bar": {
+    "": [
+      {"close": []},
+      {"close_other_than_this_tab": []}
+    ]
+  }
+}
+"""
 
 # If theme is set, theme color has the highest priority
 [colors.theme] # option
@@ -42,7 +76,7 @@ foreground = "#c0c0c0"
 foreground = "#c0c0c0"
 
 [colors.ctx_menu]
-background_non_select = "#c0c0c0"
+background_non_select = "#969696"
 background_select = "#6495ed"
 foreground_non_select = "#000000"
 foreground_select = "#ffffff"

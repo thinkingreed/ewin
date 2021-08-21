@@ -41,7 +41,7 @@ pub struct LangCfg {
     pub keep_and_apply_string: String,
     pub range_select: String,
     pub mouse_switch: String,
-    // pub all_select: String,
+    pub all_select: String,
     pub move_row: String,
     pub format: String,
     pub search: String,
@@ -63,6 +63,7 @@ pub struct LangCfg {
     pub terminal_size_small: String,
     pub set_new_filenm: String,
     pub set_open_filenm: String,
+    pub set_exec_mocro_filenm: String,
     pub set_search: String,
     pub set_replace: String,
     pub set_grep: String,
@@ -135,6 +136,7 @@ pub struct LangCfg {
     pub file_loading_failed: String,
     pub file_already_exists: String,
     pub log_file_create_failed: String,
+    pub close_other_than_this_tab: String,
     // Not sel range
     pub no_sel_range: String,
     // Paste

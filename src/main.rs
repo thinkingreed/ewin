@@ -13,14 +13,6 @@ use tokio_util::codec::{FramedRead, LinesCodec};
 
 #[tokio::main]
 async fn main() {
-    let matches = App::new(env!("CARGO_PKG_NAME"))
-        .version(env!("CARGO_PKG_VERSION"))
-        .bin_name(env!("CARGO_PKG_NAME"))
-        .setting(AppSettings::DeriveDisplayOrder)
-        .arg(Arg::with_name("file").required(false))
-        // .arg(Arg::from_usage("-e --encoding [OPTION] 'encoding option'").possible_values(&["sjis", "euc", "utf8"]).default_value("utf8"))
-        .get_matches();
-
     // Processing ends when the terminal size is small
     if !Terminal::check_displayable() {
         println!("{:?}", &LANG.terminal_size_small);
@@ -36,16 +28,21 @@ async fn main() {
         default_hook(panic_info);
     }));
 
-    let err_str = Cfg::init();
+    let matches = App::new(env!("CARGO_PKG_NAME")).version(env!("CARGO_PKG_VERSION")).bin_name(env!("CARGO_PKG_NAME")).setting(AppSettings::DeriveDisplayOrder).arg(Arg::with_name("file").required(false)).arg(Arg::from_usage("[output-config] -o --output-config 'output config file'")).get_matches();
+
+    let args = Args::new(&matches);
+
+    eprintln!("args {:?}", &args);
+
+    let err_str = Cfg::init(&args);
     if !err_str.is_empty() {
         Terminal::exit_file_open(&err_str);
     }
-    let err_str = Keybind::init();
+    let err_str = Keybind::init(&args);
     if !err_str.is_empty() {
         Terminal::exit_file_open(&err_str);
     }
 
-    let args = Args::new(&matches);
     let out = stdout();
     let mut out = BufWriter::new(out.lock());
 
@@ -62,7 +59,6 @@ async fn main() {
         loop {
             if let Some(Ok(event)) = reader.next().fuse().await {
                 match event {
-                    // Mouse(M_Event { kind: M_Kind::Moved, .. }) => continue,
                     Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) => continue,
                     Mouse(M_Event { kind: M_Kind::Up(M_Btn::Right), .. }) => continue,
                     _ => {}
@@ -151,7 +147,6 @@ async fn main() {
             JobType::GrepResult => EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap()),
         }
     }
-    Terminal::finalize();
     Terminal::exit();
 }
 

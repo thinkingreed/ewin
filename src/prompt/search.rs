@@ -1,19 +1,13 @@
-use crate::{
-    _cfg::keys::{KeyCmd, Keybind},
-    colors::*,
-    def::*,
-    global::*,
-    log::*,
-    model::*,
-    prompt::cont::promptcont::*,
-    prompt::prompt::prompt::*,
-    terminal::*,
-};
+use crate::{_cfg::keys::*, colors::*, def::*, global::*, log::*, model::*, prompt::cont::promptcont::*, prompt::prompt::prompt::*, terminal::*};
 use std::cmp::min;
 
 impl EvtAct {
     pub fn search(term: &mut Terminal) -> EvtActType {
-        match term.curt().editor.keycmd {
+        match term.curt().prom.keycmd {
+            KeyCmd::Resize => {
+                Prompt::search(term);
+                return EvtActType::Next;
+            }
             KeyCmd::InsertStr(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::Undo | KeyCmd::Redo => {
                 EvtAct::exec_search_incremental(term);
                 return EvtActType::DrawOnly;
@@ -28,12 +22,17 @@ impl EvtAct {
         let tab = term.tabs.get_mut(term.idx).unwrap();
 
         let search_str = tab.prom.cont_1.buf.iter().collect::<String>();
-        if search_str.len() == 0 {
+        if &search_str.len() == &0 {
             tab.mbar.set_err(&LANG.not_entered_search_str);
+            return EvtActType::DrawOnly;
         }
-        let search_vec = tab.editor.get_search_ranges(&search_str.clone(), 0, tab.editor.buf.len_chars(), 0);
+
+        let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
+        let search_vec = tab.editor.search(&search_str, cfg_search);
+
         if search_vec.len() == 0 {
             tab.mbar.set_err(&LANG.cannot_find_char_search_for);
+            return EvtActType::DrawOnly;
         } else {
             tab.editor.search.clear();
             tab.editor.search.ranges = search_vec;
@@ -44,8 +43,10 @@ impl EvtAct {
             term.clear_curt_tab();
             return EvtActType::Next;
         }
-        return EvtActType::DrawOnly;
     }
+}
+
+impl EvtAct {
     pub fn exec_search_incremental(term: &mut Terminal) {
         Log::debug_s("exec_search_incremental");
         term.curt().editor.search.str = term.curt().prom.cont_1.buf.iter().collect::<String>();
@@ -56,7 +57,8 @@ impl EvtAct {
         let e_row_idx = if regex { term.tabs[term.idx].editor.buf.line_to_byte(ey) } else { term.tabs[term.idx].editor.buf.line_to_char(ey) };
         let search_org = term.curt().editor.search.clone();
 
-        term.curt().editor.search.ranges = if term.curt().editor.search.str.len() == 0 { vec![] } else { term.tabs[term.idx].editor.get_search_ranges(&term.tabs[term.idx].editor.search.str, s_row_idx, e_row_idx, 0) };
+        let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
+        term.curt().editor.search.ranges = if term.curt().editor.search.str.len() == 0 { vec![] } else { term.tabs[term.idx].editor.get_search_ranges(&term.tabs[term.idx].editor.search.str, s_row_idx, e_row_idx, 0, cfg_search) };
         if !search_org.ranges.is_empty() || !term.curt().editor.search.ranges.is_empty() {
             // Search in advance for drawing
             if !term.curt().editor.search.ranges.is_empty() {

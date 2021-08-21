@@ -266,7 +266,6 @@ impl fmt::Display for Cur {
 #[derive(Debug, Clone)]
 pub struct Editor {
     pub mouse_mode: MouseMode,
-
     pub buf: TextBuffer,
     pub buf_cache: Vec<Vec<char>>,
     /// current cursor position
@@ -277,6 +276,7 @@ pub struct Editor {
     pub offset_x_org: usize,
     pub offset_disp_x: usize,
     pub cur_y_org: usize,
+    pub is_changed: bool,
     // Basic x position when moving the cursor up and down  line_num_width + 1 over initial:0
     pub updown_x: usize,
     // row_number_width
@@ -320,6 +320,7 @@ impl Editor {
             offset_x_org: 0,
             offset_disp_x: 0,
             cur_y_org: 0,
+            is_changed: false,
             updown_x: 0,
             rnw: 0,
             rnw_org: 0,
@@ -500,6 +501,12 @@ pub struct EditorDraw {
     pub cells: Vec<Vec<Cell>>,
     pub syntax_state_vec: Vec<SyntaxState>,
     pub syntax_reference: Option<SyntaxReference>,
+}
+
+impl EditorDraw {
+    pub fn clear(&mut self) {
+        self.syntax_state_vec.clear();
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -702,10 +709,10 @@ impl fmt::Display for Encode {
 pub struct NL {}
 impl NL {
     pub fn get_nl(nl_str: &str) -> String {
-        if nl_str == NEW_LINE_LF_STR {
-            return NEW_LINE_LF.to_string();
-        } else {
+        if nl_str == NEW_LINE_CRLF_STR {
             return NEW_LINE_CRLF.to_string();
+        } else {
+            return NEW_LINE_LF.to_string();
         }
     }
 }
@@ -746,11 +753,13 @@ impl ConvType {
     }
 }
 
+pub struct FormatXml {}
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 // FormatType
 pub enum FmtType {
     JSON,
     XML,
+    HTML,
 }
 
 impl fmt::Display for FmtType {
@@ -758,6 +767,7 @@ impl fmt::Display for FmtType {
         match *self {
             FmtType::JSON => write!(f, "JSON"),
             FmtType::XML => write!(f, "XML"),
+            FmtType::HTML => write!(f, "HTML"),
         }
     }
 }
@@ -765,8 +775,10 @@ impl FmtType {
     pub fn from_str(s: &str) -> FmtType {
         if s == LANG.json {
             return FmtType::JSON;
-        } else {
+        } else if s == LANG.xml {
             return FmtType::XML;
+        } else {
+            return FmtType::HTML;
         }
     }
 }

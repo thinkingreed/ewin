@@ -1,20 +1,14 @@
-use crate::{
-    _cfg::keys::{KeyCmd, Keybind},
-    colors::*,
-    global::*,
-    model::*,
-    prompt::cont::promptcont::*,
-    prompt::prompt::prompt::*,
-    tab::Tab,
-    terminal::Terminal,
-};
+use crate::{_cfg::keys::*, colors::*, def::*, global::*, model::*, prompt::cont::promptcont::*, prompt::prompt::prompt::*, tab::*, terminal::*};
 
 impl EvtAct {
     pub fn close(term: &mut Terminal) -> EvtActType {
-        match &term.curt().editor.keycmd {
+        match &term.curt().prom.keycmd {
+            KeyCmd::Resize => {
+                Prompt::close(term);
+                return EvtActType::Next;
+            }
             KeyCmd::InsertStr(str) => {
                 if str == &'y'.to_string() {
-                    // save成否判定
                     if Tab::save(term) {
                         return EvtAct::check_exit_close(term);
                     } else {
@@ -34,13 +28,22 @@ impl EvtAct {
         if term.tabs.len() == 1 {
             return EvtActType::Exit;
         } else {
-            let tmp_idx = term.idx;
-            term.idx = if term.idx == term.tabs.len() - 1 { term.idx - 1 } else { term.idx };
-            term.tabs.remove(tmp_idx);
-            term.hbar.file_vec.remove(tmp_idx);
-            // term.curt().editor.evt=KEY_NULL
-            if term.state.is_all_close_confirm {
-                return EvtActType::Next;
+            term.del_tab(term.idx);
+            if term.state.is_all_close_confirm || term.state.close_other_than_this_tab_idx != USIZE_UNDEFINED {
+                let is_exit = if term.state.is_all_close_confirm {
+                    term.close_tabs(USIZE_UNDEFINED)
+                } else {
+                    if term.tabs.len() == 1 {
+                        false
+                    } else {
+                        term.close_tabs(term.state.close_other_than_this_tab_idx)
+                    }
+                };
+                if is_exit {
+                    return EvtActType::Exit;
+                } else {
+                    return EvtActType::DrawOnly;
+                }
             } else {
                 return EvtActType::DrawOnly;
             }
@@ -50,7 +53,7 @@ impl EvtAct {
 
 impl Prompt {
     pub fn close(term: &mut Terminal) -> bool {
-        if term.hbar.file_vec[term.idx].is_changed == true {
+        if term.tabs[term.idx].editor.is_changed == true {
             if !term.curt().state.is_nomal() {
                 term.clear_curt_tab();
             }
@@ -65,12 +68,9 @@ impl Prompt {
         if term.tabs.len() == 1 {
             return true;
         } else {
-            let tab_idx = term.idx;
-            term.idx = if term.idx == term.hbar.file_vec.len() - 1 { term.idx - 1 } else { term.idx };
-            term.del_tab(tab_idx);
+            term.del_tab(term.idx);
             // Redraw the previous tab
             term.curt().editor.draw_type = DrawType::All;
-            term.curt().editor.keys = Keybind::get_keys(KeyCmd::CloseFile);
             return false;
         }
     }

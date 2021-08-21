@@ -36,7 +36,7 @@ impl Editor {
     pub fn record_key(&mut self) {
         match self.keycmd {
             // Ctrl
-            KeyCmd::Copy | KeyCmd::CutSelect | KeyCmd::AllSelect | KeyCmd::InsertStr(_) | KeyCmd::CursorFileHome | KeyCmd::CursorFileEnd => self.macros.key_macro_vec.push(KeyMacro { keys: self.keys, ..KeyMacro::default() }),
+            KeyCmd::Copy | KeyCmd::Cut | KeyCmd::AllSelect | KeyCmd::InsertStr(_) | KeyCmd::CursorFileHome | KeyCmd::CursorFileEnd => self.macros.key_macro_vec.push(KeyMacro { keys: self.keys, ..KeyMacro::default() }),
             // Shift
             KeyCmd::CursorUpSelect | KeyCmd::CursorDownSelect | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect => self.macros.key_macro_vec.push(KeyMacro { keys: self.keys, ..KeyMacro::default() }),
             KeyCmd::FindBack => self.macros.key_macro_vec.push(KeyMacro { keys: self.keys, search: Search { str: self.search.str.clone(), ..Search::default() } }),

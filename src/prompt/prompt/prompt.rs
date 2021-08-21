@@ -1,10 +1,10 @@
 use crate::{
-    _cfg::keys::{KeyCmd, KeyWhen, Keybind, Keys},
+    _cfg::keys::*,
     def::*,
     log::*,
     model::*,
     prompt::{
-        choice::Choices,
+        choice::*,
         cont::{promptcont::PromptContPosi::*, promptcont::*},
         grep::*,
         menu::*,
@@ -23,10 +23,12 @@ use std::{
 };
 
 impl Prompt {
-    pub fn draw(&mut self, str_vec: &mut Vec<String>, tab_state: &TabState) {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>, tab_state: &TabState, is_exsist_msg: bool) {
         Log::info_key("Prompt.draw");
 
         if self.cont_1.guide.len() > 0 {
+            Log::debug("self.cont_1.guide.len()", &self.cont_1.guide.len());
+
             Prompt::set_draw_vec(str_vec, self.cont_1.guide_row_posi, &self.cont_1.guide);
             Prompt::set_draw_vec(str_vec, self.cont_1.key_desc_row_posi, &self.cont_1.key_desc);
 
@@ -39,7 +41,7 @@ impl Prompt {
             } else if tab_state.is_replace {
                 self.draw_replace(str_vec);
             } else if tab_state.is_open_file {
-                self.draw_open_file(str_vec);
+                self.draw_open_file(str_vec, is_exsist_msg);
             } else if tab_state.is_enc_nl {
                 self.draw_enc_nl(str_vec);
             } else if tab_state.is_menu {
@@ -63,10 +65,10 @@ impl Prompt {
         str_vec.push(format!("{}{}{}", MoveTo(0, posi), Clear(CurrentLine), str));
     }
 
-    pub fn draw_only<T: Write>(out: &mut T, tab: &mut Tab) {
+    pub fn draw_only<T: Write>(out: &mut T, tab: &mut Tab, is_exsist_msg: bool) {
         Log::debug_key("Prompt.draw_only");
         let mut v: Vec<String> = vec![];
-        tab.prom.draw(&mut v, &tab.state);
+        tab.prom.draw(&mut v, &tab.state, is_exsist_msg);
         tab.prom.draw_cur(&mut v, tab);
         let _ = out.write(&v.concat().as_bytes());
         out.flush().unwrap();
@@ -221,7 +223,7 @@ impl Prompt {
         }
 
         match &cont.keycmd {
-            KeyCmd::InsertStr(_) | KeyCmd::CutSelect | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => cont.edit_proc(cont.keycmd.clone()),
+            KeyCmd::InsertStr(_) | KeyCmd::Cut | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => cont.edit_proc(cont.keycmd.clone()),
             KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd => cont.cur_move(),
             _ => {}
         }
@@ -302,6 +304,7 @@ impl Prompt {
     }
     pub fn set_keys(&mut self, keys: Keys) {
         let keycmd = Keybind::get_keycmd(&keys, KeyWhen::PromptFocus);
+        self.keycmd = keycmd.clone();
         match self.cont_posi {
             PromptContPosi::First => self.cont_1.keycmd = keycmd,
             PromptContPosi::Second => self.cont_2.keycmd = keycmd,
@@ -328,6 +331,7 @@ impl Prompt {
 
 #[derive(Debug, Clone)]
 pub struct Prompt {
+    pub keycmd: KeyCmd,
     pub disp_row_num: usize,
     // 0 index
     pub disp_row_posi: u16,
@@ -347,6 +351,7 @@ pub struct Prompt {
 impl Default for Prompt {
     fn default() -> Self {
         Prompt {
+            keycmd: KeyCmd::Null,
             disp_row_num: 0,
             disp_row_posi: 0,
             disp_col_num: 0,

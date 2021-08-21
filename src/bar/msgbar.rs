@@ -22,19 +22,7 @@ pub struct MsgBar {
 
 impl Default for MsgBar {
     fn default() -> Self {
-        MsgBar {
-            msg_readonly: String::new(),
-            msg_keyrecord: String::new(),
-            msg: Msg::default(),
-            msg_org: Msg::default(),
-            disp_readonly_row_posi: 0,
-            disp_keyrecord_row_posi: 0,
-            disp_row_posi: 0,
-            disp_readonly_row_num: 0,
-            disp_keyrecord_row_num: 0,
-            disp_row_num: 0,
-            disp_col_num: 0,
-        }
+        MsgBar { msg_readonly: String::new(), msg_keyrecord: String::new(), msg: Msg::default(), msg_org: Msg::default(), disp_readonly_row_posi: 0, disp_keyrecord_row_posi: 0, disp_row_posi: 0, disp_readonly_row_num: 0, disp_keyrecord_row_num: 0, disp_row_num: 0, disp_col_num: 0 }
     }
 }
 
@@ -161,4 +149,9 @@ impl MsgBar {
             return true;
         }
     }
+    /*
+    pub fn is_exsist_msg(&self) -> bool {
+        return !self.msg.str.is_empty();
+    }
+    */
 }

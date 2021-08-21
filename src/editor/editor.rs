@@ -28,18 +28,26 @@ impl Editor {
             }
         }
 
-        if self.keycmd == KeyCmd::CursorDown || self.keycmd == KeyCmd::CursorUp || self.keycmd == KeyCmd::CursorDownSelect || self.keycmd == KeyCmd::CursorUpSelect || self.keycmd == KeyCmd::MouseScrollUp || self.keycmd == KeyCmd::MouseScrollDown || self.keycmd == KeyCmd::MouseScrollUp || self.keycmd == KeyCmd::CursorPageDown || self.keycmd == KeyCmd::CursorPageUp {
-            if self.cur.y + Editor::UP_DOWN_EXTRA >= self.disp_row_num {
-                if self.keycmd == KeyCmd::CursorPageDown {
-                    self.offset_y = if self.buf.len_lines() - 1 > self.offset_y + self.disp_row_num * 2 { self.offset_y + self.disp_row_num } else { self.buf.len_lines() - self.disp_row_num };
-                } else {
-                    self.offset_y = max(self.offset_y, self.cur.y + 1 + Editor::UP_DOWN_EXTRA - self.disp_row_num);
-                    // offset_y decreases
-                    if self.offset_y + self.disp_row_num > self.buf.len_lines() {
-                        self.offset_y = self.buf.len_lines() - self.disp_row_num;
+        match self.keycmd {
+            KeyCmd::CursorDown | KeyCmd::CursorUp | KeyCmd::CursorDownSelect | KeyCmd::CursorUpSelect | KeyCmd::MouseScrollUp | KeyCmd::MouseScrollDown | KeyCmd::CursorPageDown | KeyCmd::CursorPageUp | KeyCmd::CursorFileEnd | KeyCmd::InsertStr(_) | KeyCmd::InsertLine => {
+                if self.cur.y + Editor::UP_DOWN_EXTRA >= self.disp_row_num {
+                    if self.keycmd == KeyCmd::CursorPageDown {
+                        self.offset_y = if self.buf.len_lines() - 1 > self.offset_y + self.disp_row_num * 2 { self.offset_y + self.disp_row_num } else { self.buf.len_lines() - self.disp_row_num };
+                    } else {
+                        Log::debug("self.offset_y 111", &self.offset_y);
+
+                        self.offset_y = max(self.offset_y, self.cur.y + 1 + Editor::UP_DOWN_EXTRA - self.disp_row_num);
+
+                        Log::debug("self.offset_y 222", &self.offset_y);
+                        // offset_y decreases
+                        if self.offset_y + self.disp_row_num > self.buf.len_lines() {
+                            self.offset_y = self.buf.len_lines() - self.disp_row_num;
+                        }
+                        Log::debug("self.offset_y 333", &self.offset_y);
                     }
                 }
             }
+            _ => {}
         }
     }
 
@@ -148,7 +156,7 @@ impl Editor {
         for c in char_vec.iter().rev() {
             width += get_char_width(c, width);
 
-            let rnw_margin = if self.mouse_mode == MouseMode::Normal { self.get_rnw() + Editor::RNW_MARGIN + 1 } else { 0 };
+            let rnw_margin = if self.mouse_mode == MouseMode::Normal { self.get_rnw_and_margin() + 1 } else { 0 };
             if width > self.disp_col_num - rnw_margin {
                 break;
             }
@@ -177,6 +185,11 @@ impl Editor {
     pub fn get_rnw(&self) -> usize {
         return self.rnw;
     }
+
+    pub fn get_rnw_and_margin(&self) -> usize {
+        return self.rnw + Editor::RNW_MARGIN;
+    }
+
     pub fn set_state_org(term: &mut Terminal) {
         let tab = term.tabs.get_mut(term.idx).unwrap();
 

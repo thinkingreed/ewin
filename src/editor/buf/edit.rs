@@ -1,10 +1,9 @@
 use crate::{
-    _cfg::{cfg::CfgSearch, keys::KeyCmd},
+    _cfg::{cfg::*, keys::*},
     def::*,
-    global::*,
-    log::Log,
+    log::*,
     model::*,
-    sel_range::{SelMode, SelRange},
+    sel_range::*,
 };
 use regex::RegexBuilder;
 use ropey::{iter::Chars, Rope, RopeSlice};
@@ -34,11 +33,6 @@ impl TextBuffer {
         self.line(y).slice(..x).chars().collect()
     }
 
-    /*
-    pub fn insert_char(&mut self, y: usize, x: usize, c: char) {
-        let i = self.text.line_to_char(y) + x;
-        self.text.insert_char(i, c);
-    } */
     pub fn insert(&mut self, y: usize, x: usize, s: &str) {
         let i = self.text.line_to_char(y) + x;
         self.text.insert(i, s);
@@ -164,13 +158,11 @@ impl TextBuffer {
         self.text.append(rope);
     }
 
-    pub fn search(&self, search_pattern: &str, s_idx: usize, e_idx: usize) -> BTreeMap<(usize, usize), String> {
+    pub fn search(&self, search_pattern: &str, s_idx: usize, e_idx: usize, cfg_search: &CfgSearch) -> BTreeMap<(usize, usize), String> {
         const BATCH_SIZE: usize = 256;
 
         let mut head = s_idx; // Keep track of where we are between searches
         let mut rtn_map: BTreeMap<(usize, usize), String> = BTreeMap::new();
-
-        let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
 
         if !cfg_search.regex {
             // normal

@@ -131,7 +131,8 @@ impl TextBuffer {
     fn check_nl(&self) -> String {
         let mut new_line = NEW_LINE_CRLF_STR.to_string();
         // 2048 Newline character judgment at a specific size
-        let crlf_len = self.search(&NEW_LINE_CRLF, 0, min(2048, self.len_chars())).len();
+        let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
+        let crlf_len = self.search(&NEW_LINE_CRLF, 0, min(2048, self.len_chars()), cfg_search).len();
         if crlf_len == 0 {
             new_line = NEW_LINE_LF_STR.to_string();
         };
@@ -185,9 +186,9 @@ impl TextBuffer {
     pub fn change_nl(&mut self, from_nl_str: &str, to_nl_str: &str) {
         let from_nl = &NL::get_nl(from_nl_str);
         let to_nl = &NL::get_nl(to_nl_str);
-
-        let search_map = self.search(from_nl, 0, self.text.len_chars());
         let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
+
+        let search_map = self.search(from_nl, 0, self.text.len_chars(), cfg_search);
 
         self.replace(cfg_search.regex, to_nl, &search_map);
     }

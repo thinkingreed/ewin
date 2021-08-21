@@ -1,16 +1,4 @@
-use crate::{
-    _cfg::keys::{KeyCmd, Keybind, Keys},
-    bar::msgbar::*,
-    colors::*,
-    def::*,
-    global::*,
-    log::*,
-    model::*,
-    prompt::cont::promptcont::*,
-    prompt::prompt::prompt::*,
-    tab::Tab,
-    terminal::*,
-};
+use crate::{_cfg::keys::*, bar::msgbar::*, colors::*, def::*, global::*, log::*, model::*, prompt::cont::promptcont::*, prompt::prompt::prompt::*, tab::Tab, terminal::*};
 use std::{ffi::OsStr, io::Write, path::*, process};
 use tokio::process::{Child, Command};
 
@@ -142,9 +130,15 @@ impl EvtAct {
     }
 
     pub fn grep_result(term: &mut Terminal) -> EvtActType {
-        Log::debug_key("　grep_result");
+        Log::debug_key("EvtAct::grep_result");
 
-        match term.curt().editor.keycmd {
+        match term.curt().prom.keycmd {
+            KeyCmd::Resize => {
+                term.set_disp_size();
+                let is_cancel = term.curt().state.grep_state.is_cancel;
+                Prompt::set_grep_result(term, is_cancel);
+                return EvtActType::Next;
+            }
             // Shift
             KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorDownSelect | KeyCmd::CursorUpSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect | KeyCmd::FindBack => return EvtActType::Next,
             // Ctrl
@@ -162,16 +156,11 @@ impl EvtAct {
                     tab_grep.editor.keys = Keys::Null;
                     tab_grep.editor.mouse_mode = term.mouse_mode;
 
-                    Log::debug("grep_result.filenm", &grep_result.filenm);
-                    Log::debug("term.curt().editor.search.folder", &term.curt().editor.search.folder);
-
                     let folder = if term.curt().editor.search.folder.is_empty() { "".to_string() } else { format!("{}{}", &term.curt().editor.search.folder, MAIN_SEPARATOR) };
                     term.open(&format!("{}{}", &folder, &grep_result.filenm), &mut tab_grep);
                     term.curt().editor.search_str(true, false);
-                    return EvtActType::Next;
-                } else {
-                    return EvtActType::DrawOnly;
                 }
+                return EvtActType::DrawOnly;
             }
             _ => return EvtActType::Hold,
         }
@@ -211,10 +200,10 @@ impl PromptCont {
         let cancel_str = if is_cancel { &LANG.processing_canceled } else { "" };
 
         if is_grep_result_empty {
-            self.guide = format!("{}{} {}", Colors::get_msg_highlight_fg(), cancel_str, &LANG.show_search_no_result);
+            self.guide = format!("{}{} {}", Colors::get_msg_highlight_fg(), &LANG.show_search_no_result, cancel_str,);
             self.key_desc = format!("{}{}:{}Ctrl + w", Colors::get_default_fg(), &LANG.close, Colors::get_msg_highlight_fg(),);
         } else {
-            self.guide = format!("{}{} {}", Colors::get_msg_highlight_fg(), cancel_str, &LANG.show_search_result);
+            self.guide = format!("{}{} {}", Colors::get_msg_highlight_fg(), &LANG.show_search_result, cancel_str);
             self.key_desc = format!("{}{}:{}Enter  {}{}:{}Ctrl + f", Colors::get_default_fg(), &LANG.open_target_file, Colors::get_msg_highlight_fg(), Colors::get_default_fg(), &LANG.search, Colors::get_msg_highlight_fg(),);
         }
         let base_posi = self.disp_row_posi;
@@ -246,7 +235,8 @@ impl Editor {
                 false => (self.buf.line_to_char(row), self.buf.len_chars(), ignore_prefix_str.chars().count()),
             };
 
-            let mut search_vec: Vec<SearchRange> = self.get_search_ranges(&self.search.str, start_idx, end_idx, ignore_prefix_len);
+            let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
+            let mut search_vec: Vec<SearchRange> = self.get_search_ranges(&self.search.str, start_idx, end_idx, ignore_prefix_len, cfg_search);
             self.search.ranges.append(&mut search_vec);
         }
 

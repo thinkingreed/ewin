@@ -1,7 +1,7 @@
-use crate::{colors::*, def::*, global::*, log::*, model::*};
+use crate::{_cfg::keys::*, colors::*, def::*, global::*, log::*, model::*};
 use crossterm::{cursor::*, terminal::*};
 use std::io::Write;
-use unicode_width::UnicodeWidthChar;
+use unicode_width::*;
 
 impl Editor {
     pub fn draw<T: Write>(&mut self, out: &mut T, draw: &EditorDraw, mouse_mode: &MouseMode) {
@@ -10,18 +10,12 @@ impl Editor {
 
         let mut str_vec: Vec<String> = vec![];
         let (mut y, mut x_width) = (0, 0);
-
         let d_range = self.draw_type.clone();
 
         match d_range {
             DrawType::Not | DrawType::MoveCur => {}
             DrawType::None => {
-                let cfg = CFG.get().unwrap().try_lock().unwrap();
-                if let Some(color) = cfg.syntax.theme.settings.background {
-                    str_vec.push(if self.is_enable_syntax_highlight && cfg.colors.theme.theme_bg_enable { Colors::bg(Color::from(color)) } else { Colors::bg(cfg.colors.editor.bg) });
-                } else {
-                    str_vec.push(Colors::bg(cfg.colors.editor.bg));
-                }
+                self.set_bg_color(&mut str_vec);
                 str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, self.disp_row_posi as u16).to_string()));
             }
             DrawType::Target(sy, ey) => {
@@ -30,13 +24,18 @@ impl Editor {
                 }
                 str_vec.push(format!("{}", MoveTo(0, (sy - self.offset_y + self.disp_row_posi) as u16)));
             }
-            DrawType::All => str_vec.push(format!("{}{}", MoveTo(0, self.disp_row_posi as u16), Clear(ClearType::FromCursorDown))),
+            DrawType::All => {
+                if self.keycmd == KeyCmd::Resize {
+                    self.set_bg_color(&mut str_vec);
+                }
+                str_vec.push(format!("{}{}", MoveTo(0, self.disp_row_posi as u16), Clear(ClearType::FromCursorDown)));
+            }
             DrawType::After(sy) => str_vec.push(format!("{}{}", MoveTo(0, (sy - self.offset_y + self.disp_row_posi) as u16), Clear(ClearType::FromCursorDown))),
             DrawType::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.disp_row_num - Editor::UP_DOWN_EXTRA - 1) as u16), Clear(ClearType::FromCursorDown))),
             DrawType::ScrollUp(_, _) => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, (self.disp_row_posi) as u16), Clear(ClearType::CurrentLine))),
         }
 
-        let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.width;
+        let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.size;
 
         for i in draw.sy..=draw.ey {
             self.set_row_num(i, &mut str_vec, mouse_mode);
@@ -122,6 +121,14 @@ impl Editor {
             }
             str_vec.push(" ".repeat(Editor::RNW_MARGIN).to_string());
             Colors::set_text_color(str_vec);
+        }
+    }
+    pub fn set_bg_color(&mut self, str_vec: &mut Vec<String>) {
+        let cfg = CFG.get().unwrap().try_lock().unwrap();
+        if let Some(color) = cfg.syntax.theme.settings.background {
+            str_vec.push(if self.is_enable_syntax_highlight && cfg.colors.theme.theme_bg_enable { Colors::bg(Color::from(color)) } else { Colors::bg(cfg.colors.editor.bg) });
+        } else {
+            str_vec.push(Colors::bg(cfg.colors.editor.bg));
         }
     }
 }
