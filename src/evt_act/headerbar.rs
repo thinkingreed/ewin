@@ -1,11 +1,4 @@
-use crate::{
-    _cfg::keys::{KeyCmd, Keybind, Keys},
-    def::USIZE_UNDEFINED,
-    log::*,
-    model::*,
-    prompt::prompt::prompt::*,
-    terminal::Terminal,
-};
+use crate::{_cfg::keys::*, def::*, log::*, model::*, prompt::prompt::prompt::*, terminal::*};
 
 impl EvtAct {
     pub fn check_headerbar(term: &mut Terminal) -> EvtActType {
@@ -35,14 +28,12 @@ impl EvtAct {
                                 term.set_keys(&Keybind::keycmd_to_keys(&KeyCmd::CloseFile));
 
                                 return EvtActType::Next;
+                            } else if term.tabs.len() == 1 {
+                                return EvtActType::Exit;
                             } else {
-                                if term.tabs.len() == 1 {
-                                    return EvtActType::Exit;
-                                } else {
-                                    term.idx = if idx == term.hbar.file_vec.len() - 1 { idx - 1 } else { idx };
-                                    term.del_tab(idx);
-                                    return EvtActType::DrawOnly;
-                                }
+                                term.idx = if idx == term.hbar.file_vec.len() - 1 { idx - 1 } else { idx };
+                                term.del_tab(idx);
+                                return EvtActType::DrawOnly;
                             }
                         }
                         if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 {
@@ -59,19 +50,13 @@ impl EvtAct {
                         }
                     }
                 }
-                if term.hbar.is_left_arrow_disp {
-                    if term.hbar.left_arrow_area.0 <= x && x <= term.hbar.left_arrow_area.1 {
-                        if term.hbar.disp_base_idx > 0 {
-                            term.hbar.disp_base_idx -= 1;
-                            return EvtActType::DrawOnly;
-                        }
-                    }
+                if term.hbar.is_left_arrow_disp && term.hbar.left_arrow_area.0 <= x && x <= term.hbar.left_arrow_area.1 && term.hbar.disp_base_idx > 0 {
+                    term.hbar.disp_base_idx -= 1;
+                    return EvtActType::DrawOnly;
                 }
-                if term.hbar.is_right_arrow_disp {
-                    if term.hbar.right_arrow_area.0 <= x && x <= term.hbar.right_arrow_area.1 {
-                        term.hbar.disp_base_idx += 1;
-                        return EvtActType::DrawOnly;
-                    }
+                if term.hbar.is_right_arrow_disp && term.hbar.right_arrow_area.0 <= x && x <= term.hbar.right_arrow_area.1 {
+                    term.hbar.disp_base_idx += 1;
+                    return EvtActType::DrawOnly;
                 }
                 if term.hbar.plus_btn_area.0 <= x && x <= term.hbar.plus_btn_area.1 {
                     if term.curt().state.is_open_file {

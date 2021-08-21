@@ -100,10 +100,8 @@ impl HeaderBar {
                     break;
                 }
             }
-        } else {
-            if term.hbar.disp_base_idx > 0 {
-                term.hbar.is_left_arrow_disp = true;
-            }
+        } else if term.hbar.disp_base_idx > 0 {
+            term.hbar.is_left_arrow_disp = true;
         }
 
         let mut disp_vec: Vec<(usize, String)> = vec![];
@@ -269,19 +267,19 @@ impl Default for HeaderFile {
 }
 
 impl HeaderFile {
-    pub fn new(filenm: &String) -> Self {
+    pub fn new(filenm: &str) -> Self {
         let path = Path::new(&filenm);
         let setting_filenm;
         let file_fullpath;
 
         if path.is_absolute() {
             setting_filenm = Path::new(&filenm).file_name().unwrap().to_string_lossy().to_string().clone();
-            file_fullpath = filenm.clone();
+            file_fullpath = filenm.to_string();
         } else {
-            setting_filenm = filenm.clone();
-            file_fullpath = Path::new(&*CURT_DIR).join(&filenm).to_string_lossy().to_string();
+            setting_filenm = filenm.to_string();
+            file_fullpath = Path::new(&*CURT_DIR).join(filenm).to_string_lossy().to_string();
         }
 
-        return HeaderFile { filenm: if filenm.is_empty() { LANG.new_file.clone() } else { Path::new(&setting_filenm).file_name().unwrap().to_string_lossy().to_string().clone() }, fullpath: file_fullpath, ..HeaderFile::default() };
+        return HeaderFile { filenm: if filenm.is_empty() { LANG.new_file.clone() } else { Path::new(&setting_filenm).file_name().unwrap().to_string_lossy().to_string().clone() }, fullpath: file_fullpath.to_string(), ..HeaderFile::default() };
     }
 }

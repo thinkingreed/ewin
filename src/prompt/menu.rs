@@ -136,26 +136,22 @@ impl Prompt {
                 EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::OpenFile(OpenFileType::Normal)), &mut stdout(), term);
             } else if choice_2.name.contains(&LANG.save_as) {
                 Prompt::save_new_file(term);
-            } else if choice_2.name.contains(&LANG.end_of_all_save) {
-                if term.save_all_tab() {
-                    return EvtActType::Exit;
-                }
+            } else if choice_2.name.contains(&LANG.end_of_all_save) && term.save_all_tab() {
+                return EvtActType::Exit;
             }
             // edit
         } else if choice_1.name.contains(&LANG.edit) {
             term.clear_curt_tab();
             if choice_2.name.contains(&LANG.box_select) {
                 term.curt().editor.box_select_mode();
-            } else {
-                if term.curt().editor.sel.is_selected() {
-                    if choice_2.name.contains(&LANG.convert) {
-                        term.curt().editor.convert(ConvType::from_str(&choice_3.name));
-                    } else if choice_2.name.contains(&LANG.format) {
-                        Editor::format(term, FmtType::JSON);
-                    }
-                } else {
-                    term.curt().mbar.set_err(&LANG.no_sel_range)
+            } else if term.curt().editor.sel.is_selected() {
+                if choice_2.name.contains(&LANG.convert) {
+                    term.curt().editor.convert(ConvType::from_str(&choice_3.name));
+                } else if choice_2.name.contains(&LANG.format) {
+                    Editor::format(term, FmtType::JSON);
                 }
+            } else {
+                term.curt().mbar.set_err(&LANG.no_sel_range)
             }
             // macros
         } else if choice_1.name.contains(&LANG.macros) {

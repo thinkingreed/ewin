@@ -138,7 +138,7 @@ pub struct GrepResult {
 }
 impl GrepResult {
     pub fn new(filenm: String, row_num: usize) -> Self {
-        return GrepResult { filenm: filenm, row_num: row_num };
+        return GrepResult { filenm, row_num };
     }
 }
 impl fmt::Display for GrepResult {

@@ -50,12 +50,10 @@ impl Keybind {
                         Err(e) => err_str = format!("{}{} {} {}", LANG.file, LANG.parsing_failed, keybind_file.to_string_lossy().to_string(), e),
                     };
                 }
-            } else {
-                if args.out_config_flg {
-                    if let Ok(mut file) = File::create(keybind_file) {
-                        let _ = write!(&mut file, "{}", keybind_str);
-                        let _ = &mut file.flush().unwrap();
-                    }
+            } else if args.out_config_flg {
+                if let Ok(mut file) = File::create(keybind_file) {
+                    let _ = write!(&mut file, "{}", keybind_str);
+                    let _ = &mut file.flush().unwrap();
                 }
             }
         }

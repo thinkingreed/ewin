@@ -212,11 +212,9 @@ impl EvtAct {
                     }
                 }
                 KeyCmd::InsertStr(str) => {
-                    if str.is_empty() {
-                        if EvtAct::check_clipboard(term) {
-                            term.curt().mbar.set_err(&LANG.cannot_paste_multi_rows.clone());
-                            return true;
-                        }
+                    if str.is_empty() && EvtAct::check_clipboard(term) {
+                        term.curt().mbar.set_err(&LANG.cannot_paste_multi_rows.clone());
+                        return true;
                     }
                 }
                 KeyCmd::Undo => {
@@ -256,8 +254,11 @@ impl EvtAct {
             term.curt().mbar.set_err(&LANG.no_value_in_clipboard.to_string());
             return true;
         }
+
         // Do not paste multiple lines for Prompt
+
         if term.curt().state.is_save_new_file || term.curt().state.is_search || term.curt().state.is_replace || term.curt().state.grep_state.is_grep || term.curt().state.is_move_row {
+            // Check multiple lines
             if clipboard.match_indices(&NL::get_nl(&term.curt().editor.h_file.nl)).count() > 0 {
                 return true;
             };

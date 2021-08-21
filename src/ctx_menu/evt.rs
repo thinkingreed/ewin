@@ -14,11 +14,9 @@ impl CtxMenuGroup {
     pub fn select_ctx_menu(term: &mut Terminal) {
         if let Some(ctx_menu) = term.ctx_menu_group.curt_child_menu() {
             CtxMenuGroup::check_func(term, &term.ctx_menu_group.curt_parent_menu().unwrap().0.name, &ctx_menu.name);
-        } else {
-            if !term.ctx_menu_group.is_exist_child_curt_parent() {
-                if let Some((parent_ctx_menu, _)) = term.ctx_menu_group.curt_parent_menu() {
-                    CtxMenuGroup::check_func(term, &parent_ctx_menu.name, "");
-                }
+        } else if !term.ctx_menu_group.is_exist_child_curt_parent() {
+            if let Some((parent_ctx_menu, _)) = term.ctx_menu_group.curt_parent_menu() {
+                CtxMenuGroup::check_func(term, &parent_ctx_menu.name, "");
             }
         }
     }
@@ -35,17 +33,13 @@ impl CtxMenuGroup {
                         term.curt().mbar.set_err(&LANG.file_not_found);
                     }
                 }
-            } else {
-                if LANG_MAP.get(child_name).is_some() {
-                    CtxMenuGroup::exec_func(term, child_name);
-                } else {
-                    CtxMenuGroup::exec_func(term, parent_name);
-                }
-            }
-        } else {
-            if LANG_MAP.get(child_name).is_some() {
+            } else if LANG_MAP.get(child_name).is_some() {
                 CtxMenuGroup::exec_func(term, child_name);
+            } else {
+                CtxMenuGroup::exec_func(term, parent_name);
             }
+        } else if LANG_MAP.get(child_name).is_some() {
+            CtxMenuGroup::exec_func(term, child_name);
         }
         term.clear_ctx_menu();
         term.curt().editor.draw_type = DrawType::All;
@@ -272,10 +266,8 @@ impl CtxMenuGroup {
         return Some((min(sy, ey), min(max(sy, ey), editor_disp_row_num)));
     }
     pub fn is_menu_change(&mut self) -> bool {
-        if self.parent_sel_y != USIZE_UNDEFINED {
-            if self.parent_sel_y == self.parent_sel_y_cache && self.child_sel_y == self.child_sel_y_cache {
-                return false;
-            }
+        if self.parent_sel_y != USIZE_UNDEFINED && self.parent_sel_y == self.parent_sel_y_cache && self.child_sel_y == self.child_sel_y_cache {
+            return false;
         }
         return true;
     }

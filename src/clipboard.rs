@@ -64,10 +64,10 @@ fn get_wsl_str(str: &String) -> String {
                 _ => tmp_str.push(c),
             }
         }
-        let ss = if tmp_str == "" { "''".to_string() } else { format!("'{}'", tmp_str) };
+        let ss = if tmp_str.is_empty() { "''".to_string() } else { format!("'{}'", tmp_str) };
         copy_str.push_str(ss.as_str());
         if i != vec.len() - 1 {
-            copy_str.push_str(",");
+            copy_str.push(',');
         }
     }
     return copy_str;
@@ -77,14 +77,14 @@ pub fn get_clipboard() -> anyhow::Result<String> {
     Log::debug_s("get_win_clipboard");
     if *ENV == Env::WSL {
         if *IS_POWERSHELL_ENABLE {
-            return get_win_clipboard();
+            get_win_clipboard()
         } else {
-            return Ok(CLIPBOARD.get().unwrap_or(&"".to_string()).clone());
+            Ok(CLIPBOARD.get().unwrap_or(&"".to_string()).clone())
         }
     } else {
         let provider: Result<ClipboardContext, Box<_>> = ClipboardProvider::new();
         match provider {
-            Ok(mut ctx) => return Ok(ctx.get_contents().unwrap_or("".to_string())),
+            Ok(mut ctx) => return Ok(ctx.get_contents().unwrap_or_else(|_| "".to_string())),
             Err(_) => {
                 Log::debug_s("get memory");
                 //       return Ok(self.clipboard.clone());

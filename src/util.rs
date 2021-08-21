@@ -25,12 +25,10 @@ pub fn get_row_x(char_arr: &[char], disp_x: usize, offset_disp_x: usize, is_ctrl
             if is_ctrlchar_incl && (c == &NEW_LINE_LF || c == &NEW_LINE_CR) {
                 width += 1;
                 cur_x += 1;
+            } else if width >= disp_x {
+                return Some(cur_x);
             } else {
-                if width >= disp_x {
-                    return Some(cur_x);
-                } else {
-                    break;
-                }
+                break;
             }
         }
         let c_len = get_char_width(c, width + offset_disp_x);
@@ -241,7 +239,7 @@ pub fn get_tab_comp_files(target_path: String, is_dir_only: bool, is_full_path_f
                         filenm = path.path().file_name().unwrap().to_string_lossy().to_string();
                     }
                     let is_dir = if path.metadata().is_ok() { path.metadata().unwrap().is_dir() } else { true };
-                    rtn_vec.push(File { name: filenm, is_dir: is_dir });
+                    rtn_vec.push(File { name: filenm, is_dir });
                 }
             }
         }

@@ -75,7 +75,7 @@ impl Editor {
     }
 
     pub fn slice_box_sel(&mut self) -> (String, Vec<(SelRange, String)>) {
-        let (sy, ey) = if *&self.sel.is_selected() { (self.sel.sy, self.sel.ey) } else { (self.box_insert.vec.first().unwrap().0.sy, self.box_insert.vec.last().unwrap().0.sy) };
+        let (sy, ey) = if self.sel.is_selected() { (self.sel.sy, self.sel.ey) } else { (self.box_insert.vec.first().unwrap().0.sy, self.box_insert.vec.last().unwrap().0.sy) };
 
         let mut string = String::new();
         let mut vec: Vec<(SelRange, String)> = vec![];
@@ -195,19 +195,15 @@ impl Editor {
     pub fn check_evtproc(&mut self, keycmd: &KeyCmd) -> bool {
         if keycmd == &KeyCmd::DeleteNextChar {
             // End of last line
-            if !self.sel.is_selected() {
-                if self.cur.y == self.buf.len_lines() - 1 && self.cur.x == self.buf.len_line_chars(self.cur.y) - 1 {
-                    self.draw_type = DrawType::Not;
-                    return true;
-                }
+            if !self.sel.is_selected() && self.cur.y == self.buf.len_lines() - 1 && self.cur.x == self.buf.len_line_chars(self.cur.y) - 1 {
+                self.draw_type = DrawType::Not;
+                return true;
             }
         } else if keycmd == &KeyCmd::DeletePrevChar {
             // For the starting point
-            if !self.sel.is_selected() {
-                if self.cur.y == 0 && self.cur.x == 0 {
-                    self.draw_type = DrawType::Not;
-                    return true;
-                }
+            if !self.sel.is_selected() && self.cur.y == 0 && self.cur.x == 0 {
+                self.draw_type = DrawType::Not;
+                return true;
             }
         }
         return false;

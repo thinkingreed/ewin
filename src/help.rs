@@ -19,7 +19,7 @@ impl Help {
     const KEY_FUNC_WIDTH_WIDE: usize = 14;
 
     pub fn new() -> Self {
-        return Help { ..Help::default() };
+        Help { ..Help::default() }
     }
 
     pub fn disp_toggle(term: &mut Terminal) {
@@ -72,7 +72,7 @@ impl Help {
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 4th line
-            let key_select_str = &format!("{}{}", Keybind::get_key_str(KeyCmd::CursorLeftSelect).split("+").collect::<Vec<&str>>()[0], KEY_SELECT_KEY);
+            let key_select_str = &format!("{}{}", Keybind::get_key_str(KeyCmd::CursorLeftSelect).split('+').collect::<Vec<&str>>()[0], KEY_SELECT_KEY);
             self.set_key_bind_ex(&mut vec, key_select_str, &LANG.range_select, key_select_str.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (key_select_str.chars().count() + 1));
             // self.set_key_bind_ex(&mut vec, KEY_MOUSE_SWITCH, &LANG.mouse_switch, KEY_MOUSE_SWITCH.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (KEY_MOUSE_SWITCH.chars().count() + 1));
             self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::MouseOpeSwitch), &LANG.mouse_switch);
@@ -117,17 +117,17 @@ impl Help {
         }
     }
 
-    pub fn set_key_bind(&mut self, vec: &mut Vec<HelpKeybind>, key: &String, func: &String) {
+    pub fn set_key_bind(&mut self, vec: &mut Vec<HelpKeybind>, key: &str, func: &str) {
         self.set_key_bind_ex(vec, key, func, Help::KEY_WIDTH, Help::KEY_FUNC_WIDTH);
     }
 
-    pub fn set_key_bind_wide(&mut self, vec: &mut Vec<HelpKeybind>, key: &String, func: &String) {
+    pub fn set_key_bind_wide(&mut self, vec: &mut Vec<HelpKeybind>, key: &str, func: &str) {
         self.set_key_bind_ex(vec, key, func, Help::KEY_WIDTH_WIDE, Help::KEY_FUNC_WIDTH_WIDE);
     }
 
-    pub fn set_key_bind_ex(&mut self, vec: &mut Vec<HelpKeybind>, key: &String, func: &String, key_width: usize, key_func_width: usize) {
+    pub fn set_key_bind_ex(&mut self, vec: &mut Vec<HelpKeybind>, key: &str, func: &str, key_width: usize, key_func_width: usize) {
         let key = format!("{s:<w$}", s = key, w = key_width);
-        let func = format!("{s:^w$}", s = func, w = key_func_width - (get_str_width(&func) - func.chars().count()));
+        let func = format!("{s:^w$}", s = func, w = key_func_width - (get_str_width(func) - func.chars().count()));
 
         let mut key_w = 0;
         for c in key.chars() {
@@ -142,7 +142,7 @@ impl Help {
             row_w += key_bind.key_bind_len;
         }
 
-        let key_bind = HelpKeybind { key: key, funcnm: func, key_bind_len: key_w + func_w, mouse_area: (row_w, row_w + key_w - 1) };
+        let key_bind = HelpKeybind { key, funcnm: func, key_bind_len: key_w + func_w, mouse_area: (row_w, row_w + key_w - 1) };
 
         // Log::ep("key_bind", &key_bind.clone());
 

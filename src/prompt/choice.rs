@@ -14,30 +14,26 @@ impl Choices {
                 if let Some(vec) = self.vec.get(self.vec_y) {
                     if cur_direction == CurDirection::Right {
                         self.vec_x = if vec.get(self.vec_x + 1).is_some() { self.vec_x + 1 } else { 0 };
+                    } else if self.vec_x == 0 {
+                        if let Some(_) = vec.get(vec.len() - 1) {
+                            self.vec_x = vec.len() - 1;
+                        };
                     } else {
-                        if self.vec_x == 0 {
-                            if let Some(_) = vec.get(vec.len() - 1) {
-                                self.vec_x = vec.len() - 1;
-                            };
-                        } else {
-                            self.vec_x = if vec.get(self.vec_x - 1).is_some() { self.vec_x - 1 } else { 0 };
-                        }
+                        self.vec_x = if vec.get(self.vec_x - 1).is_some() { self.vec_x - 1 } else { 0 };
                     }
                 }
             }
             CurDirection::Up => {
                 if self.vec_y == 0 {
                     is_updown_contposi = true;
-                } else {
-                    if let Some(vec) = self.vec.get(self.vec_y - 1) {
-                        if let Some(_) = vec.get(self.vec_x) {
-                            self.vec_y -= 1;
-                        } else {
-                            is_updown_contposi = true;
-                        }
+                } else if let Some(vec) = self.vec.get(self.vec_y - 1) {
+                    if let Some(_) = vec.get(self.vec_x) {
+                        self.vec_y -= 1;
                     } else {
                         is_updown_contposi = true;
                     }
+                } else {
+                    is_updown_contposi = true;
                 }
             }
             CurDirection::Down => {

@@ -67,10 +67,8 @@ impl FormatXml {
                 string = if in_comment { format!("{}{}", string, node) } else { format!("{}{}{}", string, indent[deep], node) };
 
                 FormatXml::memorize_tag(str_array[idx].trim(), &mut start_tag_map, deep);
-                if !in_comment {
-                    if FormatXml::is_exist_end_tag(str_array[idx].trim(), &edit_text_non_comment) {
-                        deep += 1;
-                    }
+                if !in_comment && FormatXml::is_exist_end_tag(str_array[idx].trim(), &edit_text_non_comment) {
+                    deep += 1;
                 }
                 // </elm>
             } else if Regex::new("</").unwrap().is_match(str_array[idx]) {
@@ -78,11 +76,10 @@ impl FormatXml {
                     if !in_comment {
                         deep = if deep < start_tag_indent_deep { deep - 1 } else { start_tag_indent_deep };
                     }
-                } else {
-                    if !in_comment {
-                        deep = if deep == 0 { 0 } else { deep - 1 };
-                    }
+                } else if !in_comment {
+                    deep = if deep == 0 { 0 } else { deep - 1 };
                 }
+
                 string = if in_comment { format!("{}{}", string, str_array[idx]) } else { format!("{}{}{}", string, indent[deep], str_array[idx].trim()) };
 
                 // <elm/>

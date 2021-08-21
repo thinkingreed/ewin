@@ -56,12 +56,10 @@ impl PromptCont {
             KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => {
                 if proc.sel.is_selected() {
                     self.set_evtproc(if proc.cur_s.x > proc.cur_e.x { &proc.cur_e } else { &proc.cur_s });
+                } else if proc.keycmd == KeyCmd::DeleteNextChar {
+                    self.set_evtproc(&proc.cur_s);
                 } else {
-                    if proc.keycmd == KeyCmd::DeleteNextChar {
-                        self.set_evtproc(&proc.cur_s);
-                    } else {
-                        self.set_evtproc(&proc.cur_e);
-                    }
+                    self.set_evtproc(&proc.cur_e);
                 }
             }
             _ => {}

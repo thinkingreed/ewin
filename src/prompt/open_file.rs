@@ -433,26 +433,22 @@ impl PromOpenFile {
                         if let Some(_) = vec.get(self.vec_x + 1) {
                             self.vec_x += 1;
                         };
-                    } else {
-                        if self.vec_x != 0 {
-                            if let Some(_) = vec.get(self.vec_x - 1) {
-                                self.vec_x -= 1;
-                            };
-                        }
+                    } else if self.vec_x != 0 {
+                        if let Some(_) = vec.get(self.vec_x - 1) {
+                            self.vec_x -= 1;
+                        };
                     }
                 }
             }
             CurDirection::Up => {
                 if self.vec_y == 0 {
                     self.vec_y = PromOpenFile::PATH_INPUT_FIELD;
-                } else {
-                    if let Some(vec) = self.vec.get(self.vec_y - 1) {
-                        if let Some(_) = vec.get(self.vec_x) {
-                            self.vec_y -= 1;
-                        };
-                        if self.vec_y < self.offset {
-                            self.offset -= 1;
-                        }
+                } else if let Some(vec) = self.vec.get(self.vec_y - 1) {
+                    if let Some(_) = vec.get(self.vec_x) {
+                        self.vec_y -= 1;
+                    };
+                    if self.vec_y < self.offset {
+                        self.offset -= 1;
                     }
                 }
             }
@@ -469,15 +465,13 @@ impl PromOpenFile {
                     } else {
                         self.vec_y = 0;
                     }
-                } else {
-                    if let Some(vec) = self.vec.get(self.vec_y + 1) {
-                        if let Some(_) = vec.get(self.vec_x) {
-                            if self.vec_y >= self.offset + self.disp_row_len - 1 {
-                                self.offset += 1;
-                            }
-                            self.vec_y += 1;
-                        };
-                    }
+                } else if let Some(vec) = self.vec.get(self.vec_y + 1) {
+                    if let Some(_) = vec.get(self.vec_x) {
+                        if self.vec_y >= self.offset + self.disp_row_len - 1 {
+                            self.offset += 1;
+                        }
+                        self.vec_y += 1;
+                    };
                 }
             }
         }
@@ -487,23 +481,17 @@ impl PromOpenFile {
         return if y == self.vec_y && x == self.vec_x {
             if op_file.file.is_dir {
                 Colors::get_file_dir_inversion_fg_bg()
+            } else if File::is_executable(&op_file.file.name) {
+                Colors::get_file_executable_inversion_fg_bg()
             } else {
-                if File::is_executable(&op_file.file.name) {
-                    Colors::get_file_executable_inversion_fg_bg()
-                } else {
-                    Colors::get_file_normal_inversion_fg_bg()
-                }
+                Colors::get_file_normal_inversion_fg_bg()
             }
+        } else if op_file.file.is_dir {
+            Colors::get_file_dir_fg_bg()
+        } else if File::is_executable(&op_file.file.name) {
+            Colors::get_file_executable_fg_bg()
         } else {
-            if op_file.file.is_dir {
-                Colors::get_file_dir_fg_bg()
-            } else {
-                if File::is_executable(&op_file.file.name) {
-                    Colors::get_file_executable_fg_bg()
-                } else {
-                    Colors::get_file_normal_fg_bg()
-                }
-            }
+            Colors::get_file_normal_fg_bg()
         };
     }
 }
@@ -577,7 +565,7 @@ pub fn get_shaping_file_list(file_vec: &mut Vec<File>, cols: usize) -> (Vec<Vec<
     let mut all_row_vec: Vec<Vec<OpenFile>> = vec![];
     let mut all_count = 0;
 
-    if column_len_file_vec.len() > 0 {
+    if !column_len_file_vec.is_empty() {
         let row_len = column_len_file_vec.first().unwrap().1.len();
         let colum_len = column_len_file_vec.len();
 

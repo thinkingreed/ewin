@@ -7,10 +7,8 @@ impl PromptCont {
             if !self.sel.is_selected_width() && self.cur.x == self.buf.len() {
                 return;
             }
-        } else if keycmd == KeyCmd::DeletePrevChar {
-            if !self.sel.is_selected_width() && self.cur.x == 0 {
-                return;
-            }
+        } else if keycmd == KeyCmd::DeletePrevChar && !self.sel.is_selected_width() && self.cur.x == 0 {
+            return;
         }
 
         let is_selected_org = self.sel.is_selected_width();

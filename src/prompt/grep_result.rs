@@ -9,35 +9,30 @@ impl EvtAct {
         if job_grep.is_cancel {
             Log::debug_s("grep is canceled");
             EvtAct::exit_grep_result(out, term, job_grep, true);
-        } else {
-            if !(job_grep.is_stdout_end && job_grep.is_stderr_end) {
-                if job_grep.grep_str.trim().len() == 0 {
-                    return;
-                }
-                let path = PathBuf::from(&term.curt().editor.search.filenm);
-
-                let filenm = path.file_name().unwrap_or(OsStr::new("")).to_string_lossy().to_string();
-
-                let replace_folder = term.curt().editor.search.filenm.replace(&filenm, "");
-
-                let line_str = job_grep.grep_str.replace(&replace_folder, "");
-
-                // New line code is fixed to LF because it is a non-editable file
-                term.curt().editor.buf.insert_end(&format!("{}{}", line_str, NEW_LINE_LF));
-
-                let rnw_org = term.curt().editor.rnw;
-                term.curt().editor.set_grep_result(line_str);
-                if term.curt().editor.buf.len_lines() > term.curt().editor.disp_row_num && rnw_org == term.curt().editor.rnw {
-                    let y = term.curt().editor.offset_y + term.curt().editor.disp_row_num - 2;
-                    term.curt().editor.draw_type = DrawType::ScrollDown(y - 2, y);
-                } else {
-                    term.curt().editor.draw_type = DrawType::All;
-                }
-                term.draw(out);
-            } else {
-                Log::debug_s("grep is end");
-                EvtAct::exit_grep_result(out, term, job_grep, false);
+        } else if !(job_grep.is_stdout_end && job_grep.is_stderr_end) {
+            if job_grep.grep_str.trim().len() == 0 {
+                return;
             }
+            let path = PathBuf::from(&term.curt().editor.search.filenm);
+            let filenm = path.file_name().unwrap_or(OsStr::new("")).to_string_lossy().to_string();
+            let replace_folder = term.curt().editor.search.filenm.replace(&filenm, "");
+            let line_str = job_grep.grep_str.replace(&replace_folder, "");
+
+            // New line code is fixed to LF because it is a non-editable file
+            term.curt().editor.buf.insert_end(&format!("{}{}", line_str, NEW_LINE_LF));
+
+            let rnw_org = term.curt().editor.rnw;
+            term.curt().editor.set_grep_result(line_str);
+            if term.curt().editor.buf.len_lines() > term.curt().editor.disp_row_num && rnw_org == term.curt().editor.rnw {
+                let y = term.curt().editor.offset_y + term.curt().editor.disp_row_num - 2;
+                term.curt().editor.draw_type = DrawType::ScrollDown(y - 2, y);
+            } else {
+                term.curt().editor.draw_type = DrawType::All;
+            }
+            term.draw(out);
+        } else {
+            Log::debug_s("grep is end");
+            EvtAct::exit_grep_result(out, term, job_grep, false);
         }
     }
 

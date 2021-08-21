@@ -9,11 +9,9 @@ impl EvtAct {
                 term.ctx_menu_group.clear();
                 if CtxMenuGroup::is_ctx_menu_displayed_area(term, y, x) {
                     CtxMenuGroup::show_init(term, y, x);
-                } else {
-                    if term.state.is_ctx_menu {
-                        term.state.is_ctx_menu = false;
-                        return EvtActType::DrawOnly;
-                    }
+                } else if term.state.is_ctx_menu {
+                    term.state.is_ctx_menu = false;
+                    return EvtActType::DrawOnly;
                 }
                 return EvtActType::Hold;
             }

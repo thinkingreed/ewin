@@ -216,10 +216,8 @@ impl Prompt {
             Third => &mut self.cont_3,
             Fourth => &mut self.cont_4,
         };
-        if self.prom_open_file.vec_y != PromOpenFile::PATH_INPUT_FIELD {
-            if cont.keycmd == KeyCmd::CursorLeft || cont.keycmd == KeyCmd::CursorRight {
-                return;
-            }
+        if self.prom_open_file.vec_y != PromOpenFile::PATH_INPUT_FIELD && cont.keycmd == KeyCmd::CursorLeft || cont.keycmd == KeyCmd::CursorRight {
+            return;
         }
 
         match &cont.keycmd {

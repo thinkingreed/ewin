@@ -124,10 +124,8 @@ fn get_delim(target: &Vec<char>, x: usize, is_forward: bool) -> usize {
         if char_type != char_type_org {
             rtn_x = if is_forward { x - i + 1 } else { x + i };
             break;
-        } else {
-            if i == target.len() - 1 {
-                rtn_x = if is_forward { x - i } else { x + i + 1 };
-            }
+        } else if i == target.len() - 1 {
+            rtn_x = if is_forward { x - i } else { x + i + 1 };
         }
         char_type_org = char_type;
     }

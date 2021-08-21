@@ -181,12 +181,10 @@ impl Editor {
                 if !ep.str.is_empty() {
                     self.insert_box(ep, first_sel.sy, first_sel.sx, first_sel.s_disp_x)
                 }
+            } else if self.box_insert.mode == BoxInsertMode::Insert {
+                self.insert_box(ep, first_sel.sy, first_sel.sx, first_sel.s_disp_x)
             } else {
-                if self.box_insert.mode == BoxInsertMode::Insert {
-                    self.insert_box(ep, first_sel.sy, first_sel.sx, first_sel.s_disp_x)
-                } else {
-                    self.insert_box(ep, self.cur.y, self.cur.x, self.cur.disp_x)
-                }
+                self.insert_box(ep, self.cur.y, self.cur.x, self.cur.disp_x)
             }
         }
     }
@@ -239,7 +237,7 @@ impl Editor {
                 // If there are characters up to the column to insert
                 if let Some(cur_x) = get_row_x(&self.buf.char_vec_line(sy + i)[..], s_disp_x, self.offset_disp_x, false) {
                     self.buf.insert(sy + i, cur_x, &sel_str);
-                    let sel = SelRange { sy: sy + i, sx: cur_x, ex: cur_x + sel_str.chars().count(), s_disp_x: s_disp_x, e_disp_x: s_disp_x + get_str_width(sel_str), ..SelRange::default() };
+                    let sel = SelRange { sy: sy + i, sx: cur_x, ex: cur_x + sel_str.chars().count(), s_disp_x, e_disp_x: s_disp_x + get_str_width(sel_str), ..SelRange::default() };
                     box_sel_undo_vec.push((sel, sel_str.clone()));
                     box_sel_redo_vec.push((sel, sel_str.clone()));
                     if i == 0 {
@@ -251,7 +249,7 @@ impl Editor {
                     let insert_str = format!("{}{}", " ".repeat(s_disp_x - width), &sel_str);
                     self.buf.insert(sy + i, cur_x, &insert_str);
                     box_sel_undo_vec.push((SelRange { sy: sy + i, sx: cur_x, ex: cur_x + insert_str.chars().count(), s_disp_x: width, e_disp_x: width + get_str_width(&insert_str), ..SelRange::default() }, sel_str.to_string()));
-                    box_sel_redo_vec.push((SelRange { sy: sy + i, sx: cur_x + s_disp_x - width, s_disp_x: s_disp_x, ex: sx + insert_str.chars().count(), ..SelRange::default() }, sel_str.to_string()));
+                    box_sel_redo_vec.push((SelRange { sy: sy + i, sx: cur_x + s_disp_x - width, s_disp_x, ex: sx + insert_str.chars().count(), ..SelRange::default() }, sel_str.to_string()));
                     if i == 0 {
                         ex = " ".repeat(s_disp_x - width).chars().count() + sel_str.chars().count();
                     }
@@ -273,7 +271,7 @@ impl Editor {
                 let new_row_str = &format!("{}{}", " ".repeat(s_disp_x), &sel_str);
                 self.buf.insert_end(new_row_str);
                 box_sel_undo_vec.push((SelRange { sy: sy + i, sx: 0, ex: new_row_str.chars().count(), s_disp_x: 0, e_disp_x: get_str_width(new_row_str), ..SelRange::default() }, sel_str.to_string()));
-                box_sel_redo_vec.push((SelRange { sy: sy + i, sx: s_disp_x, s_disp_x: s_disp_x, ex: sx + sel_str.chars().count(), ..SelRange::default() }, sel_str.to_string()));
+                box_sel_redo_vec.push((SelRange { sy: sy + i, sx: s_disp_x, s_disp_x, ex: sx + sel_str.chars().count(), ..SelRange::default() }, sel_str.to_string()));
 
                 self.buf.insert_end(&EOF_MARK.to_string());
                 if i == 0 {

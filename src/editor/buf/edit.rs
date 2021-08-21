@@ -54,13 +54,9 @@ impl TextBuffer {
             if NEW_LINE_CR == c && NEW_LINE_LF == self.char(y, x + 1) {
                 del_num = 2;
             }
-        } else if keycmd == KeyCmd::DeletePrevChar {
-            if x > 0 {
-                if NEW_LINE_LF == c && NEW_LINE_CR == self.char(y, x - 1) {
-                    i -= 1;
-                    del_num = 2;
-                }
-            }
+        } else if keycmd == KeyCmd::DeletePrevChar && x > 0 && NEW_LINE_LF == c && NEW_LINE_CR == self.char(y, x - 1) {
+            i -= 1;
+            del_num = 2;
         }
         self.text.remove(i..i + del_num);
     }
@@ -255,7 +251,7 @@ impl Default for TextBuffer {
 impl<'a> SearchIter<'a> {
     fn from_rope_slice<'b>(slice: &'b RopeSlice, search_pattern: &'b str, cfg_search: &'b CfgSearch) -> SearchIter<'b> {
         assert!(!search_pattern.is_empty(), "Can't search using an empty search pattern.");
-        SearchIter { char_iter: slice.chars(), search_pattern: search_pattern, search_pattern_char_len: search_pattern.chars().count(), cur_index: 0, possible_matches: Vec::new(), cfg_search: cfg_search }
+        SearchIter { char_iter: slice.chars(), search_pattern, search_pattern_char_len: search_pattern.chars().count(), cur_index: 0, possible_matches: Vec::new(), cfg_search }
     }
 }
 

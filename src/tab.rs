@@ -27,35 +27,35 @@ impl TabState {
         if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_row || self.is_read_only || self.is_open_file || self.grep_state.is_grep || self.grep_state.is_result || self.is_enc_nl || self.is_menu {
             return false;
         }
-        return true;
+        true
     }
 
     pub fn is_editor_cur(&self) -> bool {
         if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_row || self.is_open_file || self.grep_state.is_grep || self.is_enc_nl || self.is_menu {
             return false;
         }
-        return true;
+        true
     }
 
     pub fn is_prom_show_cur(&self) -> bool {
         if self.is_exists_input_field() || self.is_exists_choice() {
             return true;
         }
-        return false;
+        false
     }
 
     pub fn is_exists_input_field(&self) -> bool {
         if self.is_save_new_file || self.is_search || self.is_replace || self.grep_state.is_grep || self.is_move_row || self.is_open_file {
             return true;
         }
-        return false;
+        false
     }
 
     pub fn is_exists_choice(&self) -> bool {
         if self.is_enc_nl || self.is_menu {
             return true;
         }
-        return false;
+        false
     }
 }
 

@@ -142,10 +142,8 @@ impl PromptCont {
             self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.search_folder, Colors::get_default_fg());
             if prom.prom_grep.cache_search_folder.len() > 0 {
                 self.buf = prom.prom_grep.cache_search_folder.chars().collect();
-            } else {
-                if let Ok(path) = env::current_dir() {
-                    self.buf = path.to_string_lossy().to_string().chars().collect();
-                }
+            } else if let Ok(path) = env::current_dir() {
+                self.buf = path.to_string_lossy().to_string().chars().collect();
             };
             self.buf_desc_row_posi = base_posi + 7;
             self.buf_row_posi = base_posi + 8;

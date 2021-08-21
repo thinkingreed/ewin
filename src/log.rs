@@ -38,7 +38,7 @@ impl Log {
                 _ => "info",
             };
 
-            let log = Log { file, level: Log::set_log_level(&log_level) };
+            let log = Log { file, level: Log::set_log_level(log_level) };
 
             let _ = LOG.set(log);
         } else {

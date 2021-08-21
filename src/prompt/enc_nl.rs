@@ -353,11 +353,9 @@ impl PromptCont {
                                     choices.vec_y = y_idx;
                                     choices.vec_x = x_idx;
                                 }
-                            } else {
-                                if choice.name == format!("BOM{}", &LANG.with) {
-                                    choices.vec_y = y_idx;
-                                    choices.vec_x = x_idx;
-                                }
+                            } else if choice.name == format!("BOM{}", &LANG.with) {
+                                choices.vec_y = y_idx;
+                                choices.vec_x = x_idx;
                             }
                         }
                     }

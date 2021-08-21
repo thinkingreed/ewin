@@ -29,10 +29,8 @@ impl Editor {
             self.offset_y = 0;
         } else if self.keycmd == KeyCmd::CursorPageUp {
             self.offset_y = if self.offset_y >= self.disp_row_num { self.offset_y - self.disp_row_num } else { 0 };
-        } else {
-            if self.cur.y >= Editor::UP_DOWN_EXTRA {
-                self.offset_y = min(self.offset_y, self.cur.y - Editor::UP_DOWN_EXTRA);
-            }
+        } else if self.cur.y >= Editor::UP_DOWN_EXTRA {
+            self.offset_y = min(self.offset_y, self.cur.y - Editor::UP_DOWN_EXTRA);
         }
 
         match self.keycmd {

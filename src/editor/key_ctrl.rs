@@ -125,7 +125,7 @@ impl Editor {
             let sx = if cfg_search.regex { self.buf.byte_to_line_char_idx(sx) } else { self.buf.char_to_line_char_idx(sx) };
             let ex = if cfg_search.regex { self.buf.byte_to_line_char_idx(ex) } else { self.buf.char_to_line_char_idx(ex) };
 
-            rtn_vec.push(SearchRange { y: y, sx: sx, ex: ex });
+            rtn_vec.push(SearchRange { y, sx, ex });
         }
 
         return rtn_vec;
@@ -137,10 +137,8 @@ impl Editor {
         if is_asc {
             for (i, range) in self.search.ranges.iter().enumerate() {
                 // When the cursor position is the target in the first search
-                if self.search.idx == USIZE_UNDEFINED {
-                    if self.cur.y <= range.y || (self.cur.y == range.y && cur_x <= range.sx) {
-                        return i;
-                    }
+                if self.search.idx == USIZE_UNDEFINED && self.cur.y <= range.y || (self.cur.y == range.y && cur_x <= range.sx) {
+                    return i;
                 }
                 if self.cur.y < range.y || (self.cur.y == range.y && cur_x < range.sx) {
                     return i;
@@ -203,12 +201,10 @@ impl Editor {
             let diff: isize = if is_regex { replace_str.len() as isize - search_str.len() as isize } else { replace_str.chars().count() as isize - search_str.chars().count() as isize };
             let sx = if i == 0 {
                 *sx
+            } else if is_regex {
+                *sx
             } else {
-                if is_regex {
-                    *sx
-                } else {
-                    (*sx as isize + total) as usize
-                }
+                (*sx as isize + total) as usize
             };
             replace_map.insert((sx as usize, sx as usize + replace_str_len), search_str.clone());
             total += diff;
@@ -247,12 +243,10 @@ impl Editor {
             KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => {
                 if proc.sel.is_selected() {
                     self.set_evtproc(&proc, if proc.cur_s.x > proc.cur_e.x { &proc.cur_e } else { &proc.cur_s });
+                } else if proc.keycmd == KeyCmd::DeleteNextChar {
+                    self.set_evtproc(&proc, &proc.cur_s);
                 } else {
-                    if proc.keycmd == KeyCmd::DeleteNextChar {
-                        self.set_evtproc(&proc, &proc.cur_s);
-                    } else {
-                        self.set_evtproc(&proc, &proc.cur_e);
-                    }
+                    self.set_evtproc(&proc, &proc.cur_e);
                 }
             }
             _ => {}

@@ -76,10 +76,8 @@ impl SelRange {
             self.sy = y;
 
             // SelMode::BoxSelect
-        } else {
-            if self.sy == USIZE_UNDEFINED {
-                self.sy = y;
-            }
+        } else if self.sy == USIZE_UNDEFINED {
+            self.sy = y;
         }
         self.sx = x;
         self.s_disp_x = disp_x;

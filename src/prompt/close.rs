@@ -32,12 +32,10 @@ impl EvtAct {
             if term.state.is_all_close_confirm || term.state.close_other_than_this_tab_idx != USIZE_UNDEFINED {
                 let is_exit = if term.state.is_all_close_confirm {
                     term.close_tabs(USIZE_UNDEFINED)
+                } else if term.tabs.len() == 1 {
+                    false
                 } else {
-                    if term.tabs.len() == 1 {
-                        false
-                    } else {
-                        term.close_tabs(term.state.close_other_than_this_tab_idx)
-                    }
+                    term.close_tabs(term.state.close_other_than_this_tab_idx)
                 };
                 if is_exit {
                     return EvtActType::Exit;

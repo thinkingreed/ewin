@@ -20,14 +20,12 @@ impl Editor {
                     // When moving after overlap
                 } else if tab.editor.sel.is_selected() {
                     tab.editor.draw_type = DrawType::All;
+                } else if tab.editor.keycmd == KeyCmd::CursorDown || tab.editor.keycmd == KeyCmd::CursorUp {
+                    let (y, y_after) = tab.editor.get_up_down_draw_range();
+                    tab.editor.draw_type = DrawType::Target(min(y, y_after), max(y, y_after));
                 } else {
-                    if tab.editor.keycmd == KeyCmd::CursorDown || tab.editor.keycmd == KeyCmd::CursorUp {
-                        let (y, y_after) = tab.editor.get_up_down_draw_range();
-                        tab.editor.draw_type = DrawType::Target(min(y, y_after), max(y, y_after));
-                    } else {
-                        tab.editor.draw_type = DrawType::MoveCur;
-                    }
-                };
+                    tab.editor.draw_type = DrawType::MoveCur;
+                }
             }
             KeyCmd::MouseDragLeft(y, _) => {
                 if tab.editor.sel.is_selected() {
@@ -95,13 +93,11 @@ impl Editor {
     pub fn set_draw_range_each_process(&mut self, draw_type: DrawType) {
         if self.is_enable_syntax_highlight {
             self.draw_type = DrawType::All;
+        } else if self.sel.is_selected() {
+            let sel = self.sel.get_range();
+            self.draw_type = DrawType::After(sel.sy);
         } else {
-            if self.sel.is_selected() {
-                let sel = self.sel.get_range();
-                self.draw_type = DrawType::After(sel.sy);
-            } else {
-                self.draw_type = draw_type;
-            }
+            self.draw_type = draw_type;
         }
     }
 }

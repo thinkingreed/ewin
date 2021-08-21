@@ -35,7 +35,7 @@ impl EvtAct {
                     }
                     let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
 
-                    let search_map = term.curt().editor.buf.search(&search_str.clone(), 0, end_idx, cfg_search);
+                    let search_map = term.curt().editor.buf.search(&search_str, 0, end_idx, cfg_search);
                     if search_map.len() == 0 {
                         term.curt().mbar.set_err(&LANG.cannot_find_char_search_for);
                         return EvtActType::DrawOnly;
