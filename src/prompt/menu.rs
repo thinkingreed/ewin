@@ -129,11 +129,11 @@ impl Prompt {
         if choice_1.name.contains(&LANG.file) {
             term.clear_curt_tab();
             if choice_2.name.contains(&LANG.encode) {
-                EvtAct::match_event(Keybind::get_keys(KeyCmd::Encoding), &mut stdout(), term);
+                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Encoding), &mut stdout(), term);
             } else if choice_2.name.contains(&LANG.create_new) {
-                EvtAct::match_event(Keybind::get_keys(KeyCmd::NewTab), &mut stdout(), term);
+                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::NewTab), &mut stdout(), term);
             } else if choice_2.name.contains(&LANG.open) {
-                EvtAct::match_event(Keybind::get_keys(KeyCmd::OpenFile(OpenFileType::Normal)), &mut stdout(), term);
+                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::OpenFile(OpenFileType::Normal)), &mut stdout(), term);
             } else if choice_2.name.contains(&LANG.save_as) {
                 Prompt::save_new_file(term);
             } else if choice_2.name.contains(&LANG.end_of_all_save) {
@@ -161,7 +161,7 @@ impl Prompt {
         } else if choice_1.name.contains(&LANG.macros) {
             term.clear_curt_tab();
             if choice_2.name.contains(&LANG.specify_file_and_exec_macro) {
-                EvtAct::match_event(Keybind::get_keys(KeyCmd::OpenFile(OpenFileType::JsMacro)), &mut stdout(), term);
+                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::OpenFile(OpenFileType::JsMacro)), &mut stdout(), term);
             }
         }
         return EvtActType::DrawOnly;

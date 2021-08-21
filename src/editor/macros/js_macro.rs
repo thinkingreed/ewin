@@ -64,7 +64,7 @@ impl Macros {
             return;
         };
 
-        // Print (filename):(line number): (message).
+        // Output (filename):(line number): (message).
         let filepath = message.get_script_resource_name(&mut try_catch).map_or_else(|| "(unknown)".into(), |s| s.to_string(&mut try_catch).unwrap().to_rust_string_lossy(&mut try_catch));
         let line_number = message.get_line_number(&mut try_catch).unwrap_or_default();
 
@@ -72,17 +72,17 @@ impl Macros {
         Log::error_s(&format!("{} {}:{}:{}", msg, filenm, line_number, exception_string));
         mbar.set_err(&format!("{}:{}:{}", filenm, line_number, exception_string));
 
-        // Print line of source code.
+        // Output line of source code.
         let source_line = message.get_source_line(&mut try_catch).map(|s| s.to_string(&mut try_catch).unwrap().to_rust_string_lossy(&mut try_catch)).unwrap();
         Log::error_s(&source_line);
 
-        // Print wavy underline (GetUnderline is deprecated).
+        // Output wavy underline (GetUnderline is deprecated).
         let start_column = message.get_start_column();
         let end_column = message.get_end_column();
 
         Log::error_s(&format!("{}{}", &" ".repeat(if start_column == 0 { 0 } else { start_column }), &"^".repeat(end_column - start_column)));
 
-        // Print stack trace
+        // Output stack trace
         let stack_trace = if let Some(stack_trace) = try_catch.stack_trace() {
             stack_trace
         } else {
@@ -128,7 +128,7 @@ impl V8InspectorClientImpl for InspectorClient {
     }
     fn console_api_message(&mut self, _context_group_id: i32, _level: i32, message: &StringView, _url: &StringView, _line_number: u32, _column_number: u32, _stack_trace: &mut V8StackTrace) {
         // Log message output
-        println!("{}", message);
+        Log::debug("console.message", &message);
     }
 }
 

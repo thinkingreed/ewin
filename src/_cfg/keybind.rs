@@ -91,7 +91,7 @@ impl Keybind {
         return err_str;
     }
 
-    pub fn get_keycmd(keys: &Keys, keywhen: KeyWhen) -> KeyCmd {
+    pub fn keys_to_keycmd(keys: &Keys, keywhen: KeyWhen) -> KeyCmd {
         match &keys {
             Keys::Shift(Key::Char(c)) => return KeyCmd::InsertStr(c.to_ascii_uppercase().to_string()),
             Keys::Raw(Key::Char(c)) => return KeyCmd::InsertStr(c.to_string()),
@@ -184,8 +184,8 @@ impl Keybind {
             None => "".to_string(),
         };
     }
-    pub fn get_keys(keycmd: KeyCmd) -> Keys {
-        return *CMD_KEY_MAP.get().unwrap().get(&(keycmd.clone())).unwrap();
+    pub fn keycmd_to_keys(keycmd: &KeyCmd) -> Keys {
+        return *CMD_KEY_MAP.get().unwrap().get(&(&keycmd)).unwrap();
     }
 
     pub fn check_keybind_file(keybind: &Keybind, i: usize) -> String {

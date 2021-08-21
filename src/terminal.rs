@@ -406,7 +406,7 @@ impl Terminal {
         self.state.is_all_close_confirm = false;
         for tab in self.tabs.iter_mut() {
             if tab.editor.is_changed {
-                tab.editor.keys = Keys::Null;
+                tab.editor.set_keys(&Keys::Null);
                 tab.state.clear();
             }
         }
@@ -438,7 +438,7 @@ impl Terminal {
 
     pub fn new_tab(&mut self) {
         // Disable the event in case of the next display
-        self.curt().editor.keys = Keys::Null;
+        self.curt().editor.set_keys(&Keys::Null);
 
         let mut new_tab = Tab::new();
         new_tab.editor.set_cur_default();
@@ -453,7 +453,7 @@ impl Terminal {
 
     pub fn next_tab(&mut self) {
         self.idx = if self.tabs.len() - 1 == self.idx { 0 } else { self.idx + 1 };
-        self.curt().editor.keys = Keys::Null;
+        self.curt().editor.set_keys(&Keys::Null);
         self.curt().editor.draw_type = DrawType::All;
     }
 
@@ -524,7 +524,13 @@ impl Terminal {
             _ => {}
         }
     }
+    pub fn set_keys(&mut self, keys: &Keys) {
+        let keywhen = if self.curt().state.is_nomal() { KeyWhen::EditorFocus } else { KeyWhen::PromptFocus };
+        self.keycmd = Keybind::keys_to_keycmd(&keys, keywhen);
+        self.keys = *keys;
+    }
 }
+
 #[derive(Debug, Clone)]
 pub struct Terminal {
     pub keycmd: KeyCmd,

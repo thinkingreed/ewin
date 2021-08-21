@@ -303,7 +303,7 @@ impl Prompt {
         }
     }
     pub fn set_keys(&mut self, keys: Keys) {
-        let keycmd = Keybind::get_keycmd(&keys, KeyWhen::PromptFocus);
+        let keycmd = Keybind::keys_to_keycmd(&keys, KeyWhen::PromptFocus);
         self.keycmd = keycmd.clone();
         match self.cont_posi {
             PromptContPosi::First => self.cont_1.keycmd = keycmd,

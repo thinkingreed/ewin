@@ -7,24 +7,26 @@ use std::{fs, path, path::*, process::*, usize};
 use unicode_width::*;
 
 pub fn get_str_width(msg: &str) -> usize {
-    let msg_chars = msg.chars().collect::<Vec<char>>();
+    let msg_chars = msg.chars();
     let mut width = 0;
-    for i in 0..msg_chars.len() {
+    for c in msg_chars {
         // Because the width varies depending on the environment
-        width += get_char_width_not_tab(&msg_chars[i]);
+        width += get_char_width_not_tab(&c);
     }
     return width;
 }
-pub fn get_row_x(vec: &[char], disp_x: usize, offset_disp_x: usize, is_ctrlchar_incl: bool) -> Option<usize> {
+
+/// Get cur_x of any x. If there are no characters, return None.
+pub fn get_row_x(char_arr: &[char], disp_x: usize, offset_disp_x: usize, is_ctrlchar_incl: bool) -> Option<usize> {
     let (mut cur_x, mut width) = (0, 0);
 
-    for c in vec {
+    for c in char_arr {
         if c == &EOF_MARK || c == &NEW_LINE_LF || c == &NEW_LINE_CR {
             if is_ctrlchar_incl && (c == &NEW_LINE_LF || c == &NEW_LINE_CR) {
                 width += 1;
                 cur_x += 1;
             } else {
-                if width > disp_x {
+                if width >= disp_x {
                     return Some(cur_x);
                 } else {
                     break;
@@ -41,10 +43,10 @@ pub fn get_row_x(vec: &[char], disp_x: usize, offset_disp_x: usize, is_ctrlchar_
     return None;
 }
 
-pub fn get_row_width(vec: &[char], offset_disp_x: usize, is_ctrlchar_incl: bool) -> (usize, usize) {
+pub fn get_row_width(char_arr: &[char], offset_disp_x: usize, is_ctrlchar_incl: bool) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
 
-    for c in vec {
+    for c in char_arr {
         if c == &EOF_MARK || c == &NEW_LINE_LF || c == &NEW_LINE_CR {
             if is_ctrlchar_incl && (c == &NEW_LINE_LF || c == &NEW_LINE_CR) {
                 width += 1;
@@ -61,9 +63,9 @@ pub fn get_row_width(vec: &[char], offset_disp_x: usize, is_ctrlchar_incl: bool)
 }
 
 /// Calculate disp_x and cursor_x by adding the widths up to x.
-pub fn get_until_x(buf: &Vec<char>, x: usize) -> (usize, usize) {
+pub fn get_until_x(char_vec: &Vec<char>, x: usize) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
-    for c in buf {
+    for c in char_vec {
         if c == &NEW_LINE_LF || c == &EOF_MARK || c == &NEW_LINE_CR {
             break;
         }
@@ -298,4 +300,41 @@ pub fn change_regex(replace_str: String) -> String {
 }
 pub fn get_tab_str() -> String {
     return CFG.get().unwrap().try_lock().unwrap().general.editor.tab.tab.clone();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_str_width_1() {
+        assert_eq!(get_str_width("123"), 3);
+    }
+    #[test]
+    fn test_get_str_width_2() {
+        assert_eq!(get_str_width("あ亜ア"), 6);
+    }
+    #[test]
+    fn test_get_str_width_3() {
+        assert_eq!(get_str_width(""), 0);
+    }
+    #[test]
+    // Case where characters exist
+    // get_row_x(char_arr, disp_x, offset_disp_x, is_ctrlchar_incl)
+    fn test_get_row_x_1() {
+        let arr: [char; 2] = ['a', EOF_MARK];
+        assert_eq!(get_row_x(&arr, 0, 0, false), Some(0));
+    }
+    #[test]
+    // Case where characters exist
+    fn test_get_row_x_2() {
+        let arr: [char; 3] = ['a', 'b', EOF_MARK];
+        assert_eq!(get_row_x(&arr, 2, 0, false), Some(2));
+    }
+    #[test]
+    // Case where characters exist offset_disp_x set
+    fn test_get_row_x_3() {
+        let arr: [char; 6] = ['a', 'b', 'c', 'あ', '亜', EOF_MARK];
+        assert_eq!(get_row_x(&arr, 5, 3, false), Some(4));
+    }
 }

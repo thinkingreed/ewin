@@ -72,18 +72,18 @@ impl CtxMenuGroup {
                 term.curt().editor.sel.clear();
             }
             s if s == &LANG.cut => {
-                EvtAct::match_event(Keybind::get_keys(KeyCmd::Cut), &mut stdout(), term);
+                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Cut), &mut stdout(), term);
                 term.curt().editor.sel.clear();
             }
             s if s == &LANG.copy => {
-                EvtAct::match_event(Keybind::get_keys(KeyCmd::Copy), &mut stdout(), term);
+                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Copy), &mut stdout(), term);
                 term.curt().editor.sel.clear();
             }
             s if s == &LANG.paste => {
-                EvtAct::match_event(Keybind::get_keys(KeyCmd::InsertStr("".to_string())), &mut stdout(), term);
+                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::InsertStr("".to_string())), &mut stdout(), term);
             }
             s if s == &LANG.all_select => {
-                EvtAct::match_event(Keybind::get_keys(KeyCmd::AllSelect), &mut stdout(), term);
+                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::AllSelect), &mut stdout(), term);
             }
 
             //// headerbar

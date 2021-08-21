@@ -32,8 +32,6 @@ async fn main() {
 
     let args = Args::new(&matches);
 
-    eprintln!("args {:?}", &args);
-
     let err_str = Cfg::init(&args);
     if !err_str.is_empty() {
         Terminal::exit_file_open(&err_str);

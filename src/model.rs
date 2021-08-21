@@ -1,12 +1,12 @@
 extern crate ropey;
 use crate::{
-    _cfg::keys::{KeyCmd, Keys},
-    bar::{headerbar::HeaderFile, msgbar::MsgBar},
+    _cfg::keys::*,
+    bar::{headerbar::*, msgbar::*},
     def::*,
-    editor::{buf::edit::TextBuffer, view::char_style::*},
-    global::LANG,
-    log::Log,
-    sel_range::{BoxInsert, SelMode, SelRange},
+    editor::{buf::edit::*, view::char_style::*},
+    global::*,
+    log::*,
+    sel_range::*,
 };
 use chrono::NaiveDateTime;
 use crossterm::event::{Event, KeyCode::Null};

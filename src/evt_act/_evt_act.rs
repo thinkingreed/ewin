@@ -3,7 +3,7 @@ use std::io::Write;
 
 impl EvtAct {
     pub fn match_event<T: Write>(keys: Keys, out: &mut T, term: &mut Terminal) -> bool {
-        EvtAct::set_keycmd(keys, term);
+        EvtAct::set_keys(keys, term);
         let evt_act_type = EvtAct::check_next_process(out, term);
 
         match evt_act_type {
@@ -23,7 +23,7 @@ impl EvtAct {
                     EvtAct::init(term);
                     Editor::set_state_org(term);
 
-                    let keycmd = Keybind::get_keycmd(&term.keys, KeyWhen::EditorFocus);
+                    let keycmd = Keybind::keys_to_keycmd(&term.keys, KeyWhen::EditorFocus);
                     Log::debug("Apply keycmd", &keycmd);
 
                     match keycmd {
@@ -133,16 +133,14 @@ impl EvtAct {
         }
         return false;
     }
-    pub fn set_keycmd(keys: Keys, term: &mut Terminal) {
-        let keywhen = if term.curt().state.is_nomal() { KeyWhen::EditorFocus } else { KeyWhen::PromptFocus };
-        term.keycmd = Keybind::get_keycmd(&keys, keywhen);
-        term.keys = keys;
+    pub fn set_keys(keys: Keys, term: &mut Terminal) {
+        term.set_keys(&keys);
         term.curt().prom.set_keys(keys);
     }
 
     pub fn set_editor_keycmd(term: &mut Terminal) {
-        term.curt().editor.keys = term.keys;
-        term.curt().editor.keycmd = term.keycmd.clone();
+        let key = term.keys;
+        term.curt().editor.set_keys(&key);
     }
 
     pub fn check_next_process<T: Write>(out: &mut T, term: &mut Terminal) -> EvtActType {

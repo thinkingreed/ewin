@@ -153,7 +153,8 @@ impl EvtAct {
                     let mut tab_grep = Tab::new();
                     tab_grep.editor.search.str = term.tabs[term.idx].state.grep_state.search_str.clone();
                     tab_grep.editor.search.row_num = grep_result.row_num - 1;
-                    tab_grep.editor.keys = Keys::Null;
+                    tab_grep.editor.set_keys(&Keybind::keycmd_to_keys(&KeyCmd::Find));
+
                     tab_grep.editor.mouse_mode = term.mouse_mode;
 
                     let folder = if term.curt().editor.search.folder.is_empty() { "".to_string() } else { format!("{}{}", &term.curt().editor.search.folder, MAIN_SEPARATOR) };

@@ -32,8 +32,8 @@ impl EvtAct {
                         if h_file.close_area.0 <= x && x <= h_file.close_area.1 {
                             if term.curt().editor.is_changed {
                                 term.idx = idx;
-                                term.keys = Keybind::get_keys(KeyCmd::CloseFile);
-                                term.keycmd = KeyCmd::CloseFile;
+                                term.set_keys(&Keybind::keycmd_to_keys(&KeyCmd::CloseFile));
+
                                 return EvtActType::Next;
                             } else {
                                 if term.tabs.len() == 1 {
@@ -47,7 +47,7 @@ impl EvtAct {
                         }
                         if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 {
                             term.idx = idx;
-                            term.curt().editor.keys = Keys::Null;
+                            term.curt().editor.set_keys(&Keys::Null);
                             return EvtActType::DrawOnly;
                         }
                     }

@@ -159,6 +159,7 @@ impl Editor {
             // paste
             if str.is_empty() {
                 let is_box_insert_exit = self.get_clipboard(ep);
+                // highlight data reset
                 if is_box_insert_exit {
                     self.exit_box_mode();
                 } else {

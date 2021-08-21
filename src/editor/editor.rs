@@ -1,4 +1,10 @@
-use crate::{_cfg::keys::KeyCmd, log::*, model::*, terminal::*, util::*};
+use crate::{
+    _cfg::keys::{KeyCmd, KeyWhen, Keybind, Keys},
+    log::*,
+    model::*,
+    terminal::*,
+    util::*,
+};
 use std::{
     cmp::{max, min},
     usize,
@@ -17,6 +23,7 @@ impl Editor {
     // adjusting vertical posi of cursor
     pub fn scroll(&mut self) {
         Log::debug_key("scroll");
+        Log::debug("self.keycmd", &self.keycmd);
 
         if self.keycmd == KeyCmd::CursorFileHome || self.cur.y == 0 {
             self.offset_y = 0;
@@ -29,7 +36,7 @@ impl Editor {
         }
 
         match self.keycmd {
-            KeyCmd::CursorDown | KeyCmd::CursorUp | KeyCmd::CursorDownSelect | KeyCmd::CursorUpSelect | KeyCmd::MouseScrollUp | KeyCmd::MouseScrollDown | KeyCmd::CursorPageDown | KeyCmd::CursorPageUp | KeyCmd::CursorFileEnd | KeyCmd::InsertStr(_) | KeyCmd::InsertLine => {
+            KeyCmd::CursorDown | KeyCmd::CursorUp | KeyCmd::CursorDownSelect | KeyCmd::CursorUpSelect | KeyCmd::MouseScrollUp | KeyCmd::MouseScrollDown | KeyCmd::CursorPageDown | KeyCmd::CursorPageUp | KeyCmd::CursorFileEnd | KeyCmd::InsertStr(_) | KeyCmd::InsertLine | KeyCmd::Find => {
                 if self.cur.y + Editor::UP_DOWN_EXTRA >= self.disp_row_num {
                     if self.keycmd == KeyCmd::CursorPageDown {
                         self.offset_y = if self.buf.len_lines() - 1 > self.offset_y + self.disp_row_num * 2 { self.offset_y + self.disp_row_num } else { self.buf.len_lines() - self.disp_row_num };
@@ -126,19 +133,6 @@ impl Editor {
             }
         }
         self.offset_disp_x = get_row_width(&vec[..self.offset_x], self.offset_disp_x, false).1;
-
-        /*
-        //// Calc offset_disp_x
-        if self.cur_y_org != self.cur.y {
-            self.offset_disp_x = get_row_width(&vec[..self.offset_x], self.offset_disp_x, false).1;
-        } else if self.offset_x_org != self.offset_x {
-            if self.offset_x < self.offset_x_org {
-                self.offset_disp_x -= get_row_width(&vec[self.offset_x..self.offset_x_org], self.offset_disp_x, false).1;
-            } else {
-                self.offset_disp_x += get_row_width(&vec[self.offset_x_org..self.offset_x], self.offset_disp_x, false).1;
-            }
-        }
-         */
     }
 
     pub fn add_extra_offset(&mut self, vec: &Vec<char>) {
@@ -198,5 +192,10 @@ impl Editor {
         tab.editor.offset_x_org = tab.editor.offset_x;
         tab.editor.rnw_org = tab.editor.get_rnw();
         tab.editor.sel_org = tab.editor.sel;
+    }
+
+    pub fn set_keys(&mut self, keys: &Keys) {
+        self.keys = *keys;
+        self.keycmd = Keybind::keys_to_keycmd(keys, KeyWhen::EditorFocus);
     }
 }

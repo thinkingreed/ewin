@@ -16,7 +16,7 @@ It provides basic features as a minimal text editor:
 - Mocro support at Javascript
 - Context menu support
 - Tab support
-- Box select support
+- Box select・Inseret support
 
 ## Installation
 
@@ -41,9 +41,11 @@ Download the latest .exe package from the [release page](https://github.com/thin
 ## Usage
 
 ### CLI
+
 Please see `ewin --help` for command usage.
 
 #### File edit
+
 Installing package introduces `ewin` command in your system.
 
 ```sh
@@ -51,16 +53,21 @@ $ ewin [file]         # Open files to edit
 ```
 
 #### Output config file
+
 Configuration file output.
+
 ```sh
-$ ewin -o, --output-config 
+$ ewin -o, --output-config
 ```
+
 The output location of the config file is as follows.
 
 #### On Linux
+
 \$HOME/.config/ewin/
 
 #### On Windows
+
 %USERPROFILE%\AppData\Roaming\ewin\
 
 ## Operation
@@ -89,9 +96,9 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 |                | In case of Windows, it will not be recognized unless you double-click slowly                                        |               |
 | `Ctrl` + `q`   | Change next tab.                                                                                                    | ―             |
 | `Ctrl` + `e`   | Specify the character code and reload. Or set the character code line feed code and BOM.                            | ―             |
-| `F12`| Mouse capture changes.Used for clipboard access via terminal app| ―|
-|| when connecting to a remote terminal| ― |
-| `F10`| Display Context menu.                | ―        |
+| `F12`          | Mouse capture changes.Used for clipboard access via terminal app                                                    | ―             |
+|                | when connecting to a remote terminal                                                                                | ―             |
+| `F10`          | Display Context menu.                                                                                               | ―             |
 
 - **Moving cursor**
 
@@ -155,6 +162,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `Copy`・`Paste`・`Cut` | `Ctrl` + `c`・`v`・`x` | WSL         | If you want to copy it to the clipboard, you need the path to powershell.exe. Try \$ PSHOME in a PowerShell terminal             |
 
 ## Setting file
+
 When [Output config file command](#Output-config-file) is executed, the Setting configuration file is output to the following location, so it can be edited.
 
 ### On Linux
@@ -166,6 +174,7 @@ When [Output config file command](#Output-config-file) is executed, the Setting 
 %USERPROFILE%\AppData\Roaming\ewin\setting.toml
 
 ### Initial Setting
+
 The initial Settings are as follows.
 
 [Initial Setting](https://github.com/thinkingreed/ewin/wiki/setting)
@@ -183,6 +192,7 @@ When [Output config file command](#Output-config-file) is executed, the keybind 
 %USERPROFILE%\AppData\Roaming\ewin\keybind.json5
 
 ### Initial key bind
+
 The initial key bind settings are as follows.
 
 [Initial key bind](https://github.com/thinkingreed/ewin/wiki/Key-binding)
@@ -216,17 +226,17 @@ Operation / Unexpected error log is output below.
    ![grep_result_move_file](assets/img/grep_result_move_file.png 'grep_result_move_file')
 
 ## Settings when using via Tera Term
+
 Settings when using via Tera Term is as follows.
 
 [Using via Tera Term](https://github.com/thinkingreed/ewin/wiki/Using-via-Tera-Term)
 
-
 ## Public functions for Javascript macros
-Below is a list of published Javascript functions. 
+
+Below is a list of published Javascript functions.
 Built-in v8 engine using rusty_v8.
 
 [Public functions for macros](https://github.com/thinkingreed/ewin/wiki/Public-functions-for-macros)
-
 
 ## Future Works
 

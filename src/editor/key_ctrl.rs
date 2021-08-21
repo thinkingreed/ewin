@@ -79,6 +79,8 @@ impl Editor {
     }
 
     pub fn search_str(&mut self, is_asc: bool, is_incremental: bool) {
+        Log::debug_key("search_str");
+
         if self.search.str.len() > 0 {
             if self.search.ranges.len() == 0 {
                 let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;

@@ -142,6 +142,7 @@ pub fn get_delim_x(row: &Vec<char>, x: usize) -> (usize, usize) {
     let ex = get_delim(&backward, x, false);
     return (sx, ex);
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

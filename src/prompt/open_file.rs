@@ -111,7 +111,7 @@ impl EvtAct {
                             }
                         } else {
                             term.idx = tgt_idx;
-                            term.curt().editor.keys = Keys::Null;
+                            term.curt().editor.set_keys(&Keys::Null);
                         }
                     } else if term.curt().prom.prom_open_file.keycmd == KeyCmd::OpenFile(OpenFileType::JsMacro) {
                         Macros::exec_js_macro(term, &full_path_str);
