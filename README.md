@@ -155,8 +155,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `Copy`・`Paste`・`Cut` | `Ctrl` + `c`・`v`・`x` | WSL         | If you want to copy it to the clipboard, you need the path to powershell.exe. Try \$ PSHOME in a PowerShell terminal             |
 
 ## Setting file
-
-Please edit the contents of setting.toml(initial setting) below and put it in this location.
+When [Output config file command](#Output-config-file) is executed, the Setting configuration file is output to the following location, so it can be edited.
 
 ### On Linux
 
@@ -166,95 +165,10 @@ Please edit the contents of setting.toml(initial setting) below and put it in th
 
 %USERPROFILE%\AppData\Roaming\ewin\setting.toml
 
-```
-#################################################################
-[general.log] # option
-# "info" or "debug"
-level = "debug"
+### Initial Setting
+The initial Settings are as follows.
 
-[general.editor.tab]
-width = 4
-# tab or half_width_blank
-tab_input_type = "tab"
-
-[general.editor.search]
-case_sens = true
-regex = false
-
-# context menu
-[general.ctx_menu]
-content = """
-{
-  "editor": {
-    "range_selected": [
-      {"cut": []},
-      {"copy": []},
-      {"paste": []},
-      {"convert": ["to_uppercase", "to_lowercase", "to_full_width", "to_half_width", "to_space", "to_tab"]},
-      {"format": ["json", "xml"]}
-    ],
-    "range_non_selected": [
-      {"paste": []},
-      {"all_select": []}
-    ]
-  },
-  "header_bar": {
-    "": [
-      {"close": []},
-      {"close_other_than_this_tab": []}
-    ]
-  }
-}
-"""
-
-# If theme is set, theme color has the highest priority
-[colors.theme] # option
-# theme_path = "tmTheme.tmTheme"
-# theme_background_enable = true
-
-[colors.editor]
-background = "#000000"
-foreground = "#ffffff"
-
-[colors.editor.line_number]
-background = "#505050"
-foreground = "#c0c0c0"
-
-[colors.editor.selection]
-background = "#ff4500"
-foreground = "#000000"
-
-[colors.editor.search]
-background = "#ff4500"
-foreground = "#000000"
-
-[colors.editor.control_char]
-foreground = "#6e6e6e"
-
-[colors.header_bar]
-foreground = "#c0c0c0"
-
-[colors.status_bar]
-foreground = "#c0c0c0"
-
-[colors.ctx_menu]
-background_non_select = "#969696"
-background_select = "#6495ed"
-foreground_non_select = "#000000"
-foreground_select = "#ffffff"
-
-[colors.msg]
-normal_foreground = "#ffffff"
-highlight_foreground = "#00c800"
-warning_foreground = "#aa6400"
-err_foreground = "#ff0000"
-
-[colors.file]
-normal_foreground = "#c0c0c0"
-directory_foreground = "#1e90ff"
-executable_foreground = "#00c800"
-#################################################################
-```
+[Initial Setting](https://github.com/thinkingreed/ewin/wiki/setting)
 
 ## Key binding
 
@@ -302,74 +216,11 @@ Operation / Unexpected error log is output below.
    ![grep_result_move_file](assets/img/grep_result_move_file.png 'grep_result_move_file')
 
 ## Settings when using via Tera Term
+Settings when using via Tera Term is as follows.
 
-- **Please change the keyboard setting screen opened from 「Settings」>「Keyboard」 as follows**
+[Using via Tera Term](https://github.com/thinkingreed/ewin/wiki/Using-via-Tera-Term)
 
-1. BackSpace key  
-   Check 「BackSpace key」
-2. Delete key  
-   Uncheck「Delete key」
-3. Alt key  
-   Select "on"「Meta key」
 
-- **After backing up KEYBOARD.CNF in the installation directory, make the following changes**
-
-1. Comment out for Shift + F3・F4
-
-```
-   ;Shift + F3 key
-   ;F13=573
-   ;Shift + F4 key
-   ;F14=574
-```
-
-2. Comment out for Ctrl + Home・End
-
-```
-   ; Ctrl + Home
-   ;BuffTop=1351
-   ; Ctrl + End
-   ;BuffBottom=1359
-```
-
-3. Edit for Ctrl + c・v
-
-```
-   ; Ctrl + Insert
-   EditCopy=1362
-   ; Shift + Insert
-   EditPaste=850
-
-        ↓↓↓
-
-   ; Ctrl + Insert
-   EditCopy=off
-   EditCopy=1070
-   ; Shift + Insert
-   EditPaste=off
-   EditPaste=1071
-```
-
-4. Add for Shift + Up・Down・Right・Left・Home・End・F1..F4
-
-```
-   [User keys]
-   ; PC special keys: Shift- Up, Down, Right, Left, Home, End, F1..F4
-   User1=840,0,$1B[2A
-   User2=848,0,$1B[2B
-   User3=845,0,$1B[2C
-   User4=843,0,$1B[2D
-   User5=839,0,$1B[2H
-   User6=847,0,$1B[2F
-   User7=571,0,$1B[2P
-   User8=572,0,$1B[2Q
-   User9=573,0,$1B[2R
-   User10=574,0,$1B[2S
-
-   ; PC special keys: Ctrl- Home, End
-   User11=1351,0,$1B[5H
-   User12=1359,0,$1B[5F
-```
 ## Public functions for Javascript macros
 Below is a list of published Javascript functions. 
 Built-in v8 engine using rusty_v8.
