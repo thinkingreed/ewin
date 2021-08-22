@@ -104,7 +104,7 @@ impl Editor {
                                 }
                             } else if self.keycmd == KeyCmd::FindBack {
                                 // Calc offset_disp_x once to judge the display position
-                                let offset_disp_x = get_row_width(&vec[..self.offset_x], self.offset_disp_x, false).1;
+                                let offset_disp_x = get_row_width(&vec[..self.offset_x], 0, false).1;
                                 if self.cur.disp_x + str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA > offset_disp_x + self.disp_col_num {
                                     self.offset_x += str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA;
                                 }
@@ -130,11 +130,12 @@ impl Editor {
                 _ => {}
             }
         }
-        self.offset_disp_x = get_row_width(&vec[..self.offset_x], self.offset_disp_x, false).1;
+        //     self.offset_disp_x = get_row_width(&vec[..self.offset_x], self.offset_disp_x, false).1;
+        self.offset_disp_x = get_row_width(&vec[..self.offset_x], 0, false).1;
     }
 
     pub fn add_extra_offset(&mut self, vec: &Vec<char>) {
-        let offset_disp_x = get_row_width(&vec[..self.offset_x], self.offset_disp_x, false).1;
+        let offset_disp_x = get_row_width(&vec[..self.offset_x], 0, false).1;
 
         if self.cur.disp_x > offset_disp_x + self.disp_col_num - Editor::LEFT_RIGHT_JUDGE_EXTRA {
             self.offset_x += Editor::ADD_EXTRA_END_LINE;
@@ -147,9 +148,7 @@ impl Editor {
 
         for c in char_vec.iter().rev() {
             width += get_char_width(c, width);
-
-            let rnw_margin = if self.mouse_mode == MouseMode::Normal { self.get_rnw_and_margin() + 1 } else { 0 };
-            if width > self.disp_col_num - rnw_margin {
+            if width > self.disp_col_num {
                 break;
             }
             cur_x += 1;
@@ -168,7 +167,7 @@ impl Editor {
 
     pub fn set_cur_target(&mut self, y: usize, x: usize, is_ctrlchar_incl: bool) {
         self.cur.y = y;
-        let (cur_x, width) = get_row_width(&self.buf.char_vec_range(y, x), self.offset_disp_x, is_ctrlchar_incl);
+        let (cur_x, width) = get_row_width(&self.buf.char_vec_range(y, x), 0, is_ctrlchar_incl);
         self.rnw = if self.mouse_mode == MouseMode::Normal { self.buf.len_lines().to_string().len() } else { 0 };
         self.cur.disp_x = width;
         self.cur.x = cur_x;

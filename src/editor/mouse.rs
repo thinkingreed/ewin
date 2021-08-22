@@ -90,8 +90,8 @@ impl Editor {
                     let (sx, ex) = get_delim_x(&row, self.cur.x);
                     self.sel.sx = sx;
                     self.sel.ex = ex;
-                    let (_, s_disp_x) = get_row_width(&row[..sx], self.offset_disp_x, false);
-                    let (_, e_disp_x) = get_row_width(&row[..ex], self.offset_disp_x, false);
+                    let (_, s_disp_x) = get_row_width(&row[..sx], 0, false);
+                    let (_, e_disp_x) = get_row_width(&row[..ex], 0, false);
                     self.sel.s_disp_x = s_disp_x;
                     self.sel.e_disp_x = e_disp_x;
                 }
@@ -100,7 +100,7 @@ impl Editor {
                     self.sel.ey = self.cur.y;
                     self.sel.sx = 0;
                     self.sel.s_disp_x = 0;
-                    let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], self.offset_disp_x, true);
+                    let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], 0, true);
                     self.sel.ex = cur_x;
                     self.sel.e_disp_x = width;
                 }
@@ -132,7 +132,7 @@ fn get_delim(target: &Vec<char>, x: usize, is_forward: bool) -> usize {
     return rtn_x;
 }
 
-pub fn get_delim_x(row: &Vec<char>, x: usize) -> (usize, usize) {
+pub fn get_delim_x(row: &[char], x: usize) -> (usize, usize) {
     let mut forward = row[..x + 1].to_vec();
     forward.reverse();
     let sx = get_delim(&forward, x, true);
@@ -146,63 +146,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_delim_1() {
-        let vec: Vec<char> = "<12345>".chars().collect();
-        assert_eq!(get_delim_x(&vec, 0), (0, 1));
-    }
-    #[test]
-    fn test_get_delim_2() {
-        let vec: Vec<char> = "<12345>".chars().collect();
-        assert_eq!(get_delim_x(&vec, 1), (1, 6));
-    }
-    #[test]
-    fn test_get_delim_3() {
-        let vec: Vec<char> = "<12345>".chars().collect();
-        assert_eq!(get_delim_x(&vec, 6), (6, 7));
-    }
-    #[test]
-    fn test_get_delim_4() {
-        let vec: Vec<char> = "  12345>".chars().collect();
-        assert_eq!(get_delim_x(&vec, 0), (0, 2));
-    }
-    #[test]
-    fn test_get_delim_5() {
-        let vec: Vec<char> = "  　　12345>".chars().collect();
-        assert_eq!(get_delim_x(&vec, 1), (0, 2));
-    }
-    #[test]
-    fn test_get_delim_6() {
-        let vec: Vec<char> = "<12345>>".chars().collect();
-        assert_eq!(get_delim_x(&vec, 6), (6, 8));
-    }
-    #[test]
-    fn test_get_delim_7() {
-        let vec: Vec<char> = "<12345  ".chars().collect();
-        assert_eq!(get_delim_x(&vec, 6), (6, 8));
-    }
-    #[test]
-    fn test_get_delim_8() {
-        let vec: Vec<char> = "<12345　　".chars().collect();
-        assert_eq!(get_delim_x(&vec, 6), (6, 8));
-    }
-    #[test]
-    fn test_get_delim_9() {
-        let vec: Vec<char> = "<12345".chars().collect();
-        assert_eq!(get_delim_x(&vec, 1), (1, 6));
-    }
-    #[test]
-    fn test_get_delim_10() {
-        let vec: Vec<char> = "<12<<345>".chars().collect();
-        assert_eq!(get_delim_x(&vec, 4), (3, 5));
-    }
-    #[test]
-    fn test_get_delim_11() {
-        let vec: Vec<char> = "<12  345>".chars().collect();
-        assert_eq!(get_delim_x(&vec, 4), (3, 5));
-    }
-    #[test]
-    fn test_get_delim_12() {
-        let vec: Vec<char> = "<12　　345>".chars().collect();
-        assert_eq!(get_delim_x(&vec, 4), (3, 5));
+    fn test_get_delim() {
+        //  let vec: Vec<char> = ;
+
+        assert_eq!(get_delim_x(&"<12345>".chars().collect::<Vec<char>>(), 0), (0, 1));
+        assert_eq!(get_delim_x(&"<12345>".chars().collect::<Vec<char>>(), 1), (1, 6));
+        assert_eq!(get_delim_x(&"<12345>".chars().collect::<Vec<char>>(), 6), (6, 7));
+        assert_eq!(get_delim_x(&"  12345>".chars().collect::<Vec<char>>(), 0), (0, 2));
+        assert_eq!(get_delim_x(&"  　　12345>".chars().collect::<Vec<char>>(), 1), (0, 2));
+        assert_eq!(get_delim_x(&"<12345>>".chars().collect::<Vec<char>>(), 6), (6, 8));
+        assert_eq!(get_delim_x(&"<12345  ".chars().collect::<Vec<char>>(), 6), (6, 8));
+        assert_eq!(get_delim_x(&"<12345　　".chars().collect::<Vec<char>>(), 6), (6, 8));
+        assert_eq!(get_delim_x(&"<12345".chars().collect::<Vec<char>>(), 1), (1, 6));
+        assert_eq!(get_delim_x(&"<12<<345>".chars().collect::<Vec<char>>(), 4), (3, 5));
+        assert_eq!(get_delim_x(&"<12  345>".chars().collect::<Vec<char>>(), 4), (3, 5));
+        assert_eq!(get_delim_x(&"<12　　345>".chars().collect::<Vec<char>>(), 4), (3, 5));
     }
 }

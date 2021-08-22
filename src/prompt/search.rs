@@ -57,8 +57,7 @@ impl EvtAct {
         let e_row_idx = if regex { term.tabs[term.idx].editor.buf.line_to_byte(ey) } else { term.tabs[term.idx].editor.buf.line_to_char(ey) };
         let search_org = term.curt().editor.search.clone();
 
-        let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
-        term.curt().editor.search.ranges = if term.curt().editor.search.str.len() == 0 { vec![] } else { term.tabs[term.idx].editor.get_search_ranges(&term.tabs[term.idx].editor.search.str, s_row_idx, e_row_idx, 0, cfg_search) };
+        term.curt().editor.search.ranges = if term.curt().editor.search.str.len() == 0 { vec![] } else { term.tabs[term.idx].editor.get_search_ranges(&term.tabs[term.idx].editor.search.str, s_row_idx, e_row_idx, 0, &CFG.get().unwrap().try_lock().unwrap().general.editor.search) };
         if !search_org.ranges.is_empty() || !term.curt().editor.search.ranges.is_empty() {
             // Search in advance for drawing
             if !term.curt().editor.search.ranges.is_empty() {

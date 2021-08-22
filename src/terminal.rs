@@ -58,8 +58,9 @@ impl Terminal {
         Log::debug("offset_y_org", &self.curt().editor.offset_y_org);
         Log::debug("history.undo_vec", &self.curt().editor.history.undo_vec);
         // Log::debug("self.curt().state.key_record_state", &self.curt().state.key_record_state);
-        Log::debug("self.curt().state", &self.curt().state);
-        Log::debug("sel_range", &self.curt().editor.sel);
+        //  Log::debug("self.curt().state", &self.curt().state);
+        //  Log::debug("sel_range", &self.curt().editor.sel);
+        Log::debug("", &self.curt().editor.search);
         // Log::debug("box_sel.mode", &self.curt().editor.box_insert.mode);
 
         let _ = out.write(str_vec.concat().as_bytes());

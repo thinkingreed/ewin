@@ -3,7 +3,7 @@ use crate::{bar::headerbar::*, def::*, global::*, log::Log, model::*};
 use anyhow::Context;
 #[cfg(target_os = "linux")]
 use std::io::Read;
-use std::{fs, path, path::*, process::*, usize};
+use std::{self, fs, path::*, process::*, *};
 use unicode_width::*;
 
 pub fn get_str_width(msg: &str) -> usize {
@@ -17,21 +17,23 @@ pub fn get_str_width(msg: &str) -> usize {
 }
 
 /// Get cur_x of any x. If there are no characters, return None.
-pub fn get_row_x(char_arr: &[char], disp_x: usize, offset_disp_x: usize, is_ctrlchar_incl: bool) -> Option<usize> {
+pub fn get_row_x(char_arr: &[char], disp_x: usize, is_ctrlchar_incl: bool) -> Option<usize> {
     let (mut cur_x, mut width) = (0, 0);
 
     for c in char_arr {
         if c == &EOF_MARK || c == &NEW_LINE_LF || c == &NEW_LINE_CR {
             if is_ctrlchar_incl && (c == &NEW_LINE_LF || c == &NEW_LINE_CR) {
-                width += 1;
-                cur_x += 1;
+                if width < disp_x {
+                    width += 1;
+                    cur_x += 1;
+                }
             } else if width >= disp_x {
                 return Some(cur_x);
             } else {
                 break;
             }
         }
-        let c_len = get_char_width(c, width + offset_disp_x);
+        let c_len = get_char_width(c, width);
         if width + c_len > disp_x {
             return Some(cur_x);
         }
@@ -41,6 +43,7 @@ pub fn get_row_x(char_arr: &[char], disp_x: usize, offset_disp_x: usize, is_ctrl
     return None;
 }
 
+/// Get cur_x and disp_x of the target string
 pub fn get_row_width(char_arr: &[char], offset_disp_x: usize, is_ctrlchar_incl: bool) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
 
@@ -61,7 +64,7 @@ pub fn get_row_width(char_arr: &[char], offset_disp_x: usize, is_ctrlchar_incl: 
 }
 
 /// Calculate disp_x and cursor_x by adding the widths up to x.
-pub fn get_until_x(char_vec: &Vec<char>, x: usize) -> (usize, usize) {
+pub fn get_until_x(char_vec: &[char], x: usize) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
     for c in char_vec {
         if c == &NEW_LINE_LF || c == &EOF_MARK || c == &NEW_LINE_CR {
@@ -82,21 +85,17 @@ pub fn get_until_x(char_vec: &Vec<char>, x: usize) -> (usize, usize) {
 pub fn get_char_width(c: &char, width: usize) -> usize {
     if c == &TAB_CHAR {
         let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.size;
-        return get_char_width_tab(c, width, cfg_tab_width);
+        return get_tab_width(width, cfg_tab_width);
     } else {
         return get_char_width_not_tab(c);
     }
 }
-// Everything including tab
-pub fn get_char_width_tab(c: &char, width: usize, cfg_tab_width: usize) -> usize {
-    if c == &TAB_CHAR {
-        return cfg_tab_width - width % cfg_tab_width;
-    } else {
-        return get_char_width_not_tab(c);
-    }
+pub fn get_tab_width(width: usize, cfg_tab_width: usize) -> usize {
+    return cfg_tab_width - width % cfg_tab_width;
 }
 
 pub fn get_char_width_not_tab(c: &char) -> usize {
+    // \r len is 0, \r\n len is 1
     if c == &NEW_LINE_LF {
         return 1;
     }
@@ -132,12 +131,12 @@ pub fn is_powershell_enable() -> bool {
 
 pub fn change_output_encoding() {
     let result = Command::new("powershell.exe").arg("chcp 65001").stdout(Stdio::null()).stdin(Stdio::null()).stderr(Stdio::null()).spawn();
-    Log::debug("change_output_encoding result", &result);
+    Log::debug("change output encoding chcp 65001 ", &result.is_ok());
 }
 
 pub fn is_line_end(c: char) -> bool {
     // LF, CR
-    ['\u{000a}', '\u{000d}'].contains(&c)
+    [NEW_LINE_LF, NEW_LINE_CR].contains(&c)
 }
 
 pub fn is_enable_syntax_highlight(ext: &str) -> bool {
@@ -302,37 +301,76 @@ pub fn get_tab_str() -> String {
 
 #[cfg(test)]
 mod tests {
+    use crate::{_cfg::cfg::Cfg, terminal::Args};
+
     use super::*;
 
     #[test]
-    fn test_get_str_width_1() {
+    fn test_get_str_width() {
         assert_eq!(get_str_width("123"), 3);
-    }
-    #[test]
-    fn test_get_str_width_2() {
         assert_eq!(get_str_width("あ亜ア"), 6);
-    }
-    #[test]
-    fn test_get_str_width_3() {
         assert_eq!(get_str_width(""), 0);
     }
     #[test]
-    // Case where characters exist
-    // get_row_x(char_arr, disp_x, offset_disp_x, is_ctrlchar_incl)
-    fn test_get_row_x_1() {
-        let arr: [char; 2] = ['a', EOF_MARK];
-        assert_eq!(get_row_x(&arr, 0, 0, false), Some(0));
+    fn test_get_row_x() {
+        Cfg::init(&Args { ..Args::default() });
+
+        assert_eq!(get_row_x(&['a'], 0, false), Some(0));
+        assert_eq!(get_row_x(&['a', 'b'], 1, false), Some(1));
+        assert_eq!(get_row_x(&['a', 'あ', NEW_LINE_LF], 3, false), Some(2));
+        assert_eq!(get_row_x(&[TAB_CHAR, 'a'], 5, false), None);
+        assert_eq!(get_row_x(&[TAB_CHAR, 'a', NEW_LINE_LF], 5, true), Some(2));
+        assert_eq!(get_row_x(&[' ', TAB_CHAR, 'a'], 2, false), Some(1));
+        assert_eq!(get_row_x(&['a', NEW_LINE_LF, EOF_MARK], 2, false), None);
+        assert_eq!(get_row_x(&['a', NEW_LINE_LF, EOF_MARK], 2, true), Some(2));
+        assert_eq!(get_row_x(&['a', EOF_MARK], 2, true), None);
+    }
+
+    #[test]
+    fn test_get_row_width() {
+        Cfg::init(&Args { ..Args::default() });
+
+        assert_eq!(get_row_width(&['a'], 0, false), (1, 1));
+        assert_eq!(get_row_width(&['あ'], 0, false), (1, 2));
+        assert_eq!(get_row_width(&['a', NEW_LINE_LF], 0, false), (1, 1));
+        assert_eq!(get_row_width(&['a', NEW_LINE_LF], 0, true), (2, 2));
+        assert_eq!(get_row_width(&[TAB_CHAR, 'a'], 0, false), (2, 5));
+        assert_eq!(get_row_width(&[TAB_CHAR, 'a'], 1, false), (2, 4));
+        assert_eq!(get_row_width(&['a', NEW_LINE_LF], 0, false), (1, 1));
+        assert_eq!(get_row_width(&['a', NEW_LINE_LF], 0, true), (2, 2));
+        assert_eq!(get_row_width(&['a', NEW_LINE_CR], 0, false), (1, 1));
+        assert_eq!(get_row_width(&['a', NEW_LINE_CR], 0, true), (2, 2));
+        assert_eq!(get_row_width(&['a', EOF_MARK], 0, false), (1, 1));
+        assert_eq!(get_row_width(&['a', EOF_MARK], 0, true), (1, 1));
+    }
+
+    #[test]
+    fn test_get_until_x() {
+        Cfg::init(&Args { ..Args::default() });
+        assert_eq!(get_until_x(&['a'], 0), (0, 0));
+        assert_eq!(get_until_x(&['a', 'あ',], 2), (1, 1));
+        assert_eq!(get_until_x(&['a', 'あ',], 2), (1, 1));
+        assert_eq!(get_until_x(&['a', 'あ',], 3), (2, 3));
+        assert_eq!(get_until_x(&['a', TAB_CHAR,], 3), (1, 1));
+        assert_eq!(get_until_x(&['a', TAB_CHAR,], 4), (2, 4));
+        assert_eq!(get_until_x(&['a', 'あ', NEW_LINE_LF], 4), (2, 3));
+        assert_eq!(get_until_x(&['a', 'あ', EOF_MARK], 4), (2, 3));
     }
     #[test]
-    // Case where characters exist
-    fn test_get_row_x_2() {
-        let arr: [char; 3] = ['a', 'b', EOF_MARK];
-        assert_eq!(get_row_x(&arr, 2, 0, false), Some(2));
+    fn test_get_char_width() {
+        Cfg::init(&Args { ..Args::default() });
+        assert_eq!(get_char_width(&'a', 0), 1);
+        assert_eq!(get_char_width(&'あ', 0), 2);
+        assert_eq!(get_char_width(&TAB_CHAR, 1), 3);
+        assert_eq!(get_char_width(&TAB_CHAR, 2), 2);
+        assert_eq!(get_char_width(&TAB_CHAR, 0), 4);
+        assert_eq!(get_char_width(&NEW_LINE_LF, 0), 1);
+        assert_eq!(get_char_width(&NEW_LINE_CR, 0), 0);
+        assert_eq!(get_char_width(&EOF_MARK, 0), 1);
     }
+
     #[test]
-    // Case where characters exist offset_disp_x set
-    fn test_get_row_x_3() {
-        let arr: [char; 6] = ['a', 'b', 'c', 'あ', '亜', EOF_MARK];
-        assert_eq!(get_row_x(&arr, 5, 3, false), Some(4));
+    fn test_1() {
+        Cfg::init(&Args { ..Args::default() });
     }
 }

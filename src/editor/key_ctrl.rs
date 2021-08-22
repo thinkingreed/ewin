@@ -17,7 +17,7 @@ impl Editor {
     pub fn all_select(&mut self) {
         self.sel.clear();
         self.sel.set_s(0, 0, 0);
-        let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.buf.len_lines() - 1)[..], self.offset_disp_x, false);
+        let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.buf.len_lines() - 1)[..], 0, false);
         self.sel.set_e(self.buf.len_lines() - 1, cur_x, width);
         self.draw_type = DrawType::All;
     }
@@ -137,7 +137,7 @@ impl Editor {
         if is_asc {
             for (i, range) in self.search.ranges.iter().enumerate() {
                 // When the cursor position is the target in the first search
-                if self.search.idx == USIZE_UNDEFINED && self.cur.y <= range.y || (self.cur.y == range.y && cur_x <= range.sx) {
+                if self.search.idx == USIZE_UNDEFINED && (self.cur.y <= range.y || (self.cur.y == range.y && cur_x <= range.sx)) {
                     return i;
                 }
                 if self.cur.y < range.y || (self.cur.y == range.y && cur_x < range.sx) {

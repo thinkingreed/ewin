@@ -46,7 +46,7 @@ impl Editor {
                 cell.draw_style(&mut str_vec, x_idx == 0 && self.offset_x > 0);
                 let c = cell.c;
 
-                let tab_width = if c == TAB_CHAR { cfg_tab_width - ((x_width + self.offset_disp_x) % cfg_tab_width) } else { 0 };
+                let tab_width = if c == TAB_CHAR { cfg_tab_width - ((x_width + if y == self.cur.y { self.offset_disp_x } else { 0 }) % cfg_tab_width) } else { 0 };
 
                 let width = match c {
                     TAB_CHAR => tab_width,

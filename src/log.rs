@@ -28,8 +28,6 @@ impl Log {
         path.push(format!("{}_{}{}", env!("CARGO_PKG_NAME"), &dt.format("%Y_%m%d").to_string(), ".log"));
 
         if let Ok(file) = OpenOptions::new().create(true).append(true).open(path) {
-            // let file = OpenOptions::new().create(true).append(true).open(path).unwrap();
-
             let log_level = match cfg_log {
                 Some(cfg_log) => match &cfg_log.level {
                     Some(level) => level,

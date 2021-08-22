@@ -85,8 +85,8 @@ impl Editor {
 
             if c == TAB_CHAR {
                 let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.size;
-                let (_, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[0..self.cur.x - 1], self.offset_disp_x, false);
-                self.cur.disp_x -= cfg_tab_width - width % cfg_tab_width;
+                let (_, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[self.offset_x..self.cur.x - 1], self.offset_disp_x, false);
+                self.cur.disp_x -= cfg_tab_width - ((self.offset_disp_x + width) % cfg_tab_width);
                 self.cur.x -= 1;
             } else {
                 self.cur.x -= 1;
@@ -111,8 +111,7 @@ impl Editor {
                         is_end_of_line = true;
                     }
                 } else {
-                    let vec = self.buf.char_vec_line(self.cur.y);
-                    let (cur_x, _) = get_row_width(&vec[..], self.offset_disp_x, false);
+                    let (cur_x, _) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], 0, false);
                     if self.cur.x == cur_x {
                         is_end_of_line = true;
                     }
@@ -235,7 +234,7 @@ impl Editor {
             // Exist row
             if sy + i <= self.buf.len_lines() - 1 {
                 // If there are characters up to the column to insert
-                if let Some(cur_x) = get_row_x(&self.buf.char_vec_line(sy + i)[..], s_disp_x, self.offset_disp_x, false) {
+                if let Some(cur_x) = get_row_x(&self.buf.char_vec_line(sy + i)[..], s_disp_x, false) {
                     self.buf.insert(sy + i, cur_x, &sel_str);
                     let sel = SelRange { sy: sy + i, sx: cur_x, ex: cur_x + sel_str.chars().count(), s_disp_x, e_disp_x: s_disp_x + get_str_width(sel_str), ..SelRange::default() };
                     box_sel_undo_vec.push((sel, sel_str.clone()));
@@ -244,7 +243,7 @@ impl Editor {
                         ex = cur_x + sel_str.chars().count();
                     }
                 } else {
-                    let (cur_x, width) = get_row_width(&self.buf.char_vec_line(sy + i)[..], self.offset_disp_x, false);
+                    let (cur_x, width) = get_row_width(&self.buf.char_vec_line(sy + i)[..], 0, false);
 
                     let insert_str = format!("{}{}", " ".repeat(s_disp_x - width), &sel_str);
                     self.buf.insert(sy + i, cur_x, &insert_str);
@@ -262,7 +261,7 @@ impl Editor {
                 // Insert a new line at the end of the current last line
                 let nl_code = &NL::get_nl(&self.h_file.nl);
                 let end_idx = self.buf.len_line_chars(self.buf.len_lines() - 1);
-                let (_, width) = get_row_width(&self.buf.char_vec_line(self.buf.len_lines() - 1)[..], self.offset_disp_x, false);
+                let (_, width) = get_row_width(&self.buf.char_vec_line(self.buf.len_lines() - 1)[..], 0, false);
 
                 self.buf.insert_end(nl_code);
                 box_sel_undo_vec.push((SelRange { sy: sy + i - 1, sx: end_idx, ex: end_idx + nl_code.chars().count(), s_disp_x: width, e_disp_x: width + get_str_width(&nl_code), ..SelRange::default() }, "".to_string()));
@@ -283,11 +282,11 @@ impl Editor {
                 let ey = sy + i;
                 let e_disp_x;
                 if self.box_insert.mode == BoxInsertMode::Normal {
-                    e_disp_x = get_row_width(&self.buf.char_vec_line(sy)[..ex], self.offset_disp_x, false).1;
+                    e_disp_x = get_row_width(&self.buf.char_vec_line(sy)[..ex], 0, false).1;
                     self.set_cur_target(sy, sx, false);
                 } else {
                     // BoxSelMode::InsertStr
-                    e_disp_x = get_row_width(&self.buf.char_vec_line(sy)[..ex], self.offset_disp_x, false).1;
+                    e_disp_x = get_row_width(&self.buf.char_vec_line(sy)[..ex], 0, false).1;
                     self.set_cur_target(sy, ex, false);
                 }
                 ep.cur_e = self.cur;
@@ -350,7 +349,7 @@ impl Editor {
         if self.cur.x == 0 {
             self.cur.y -= 1;
             self.draw_type = DrawType::After(self.cur.y);
-            let (mut cur_x, _) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], self.offset_disp_x, true);
+            let (mut cur_x, _) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], 0, true);
             // ' ' is meaningless value
             let c = if cur_x > 0 { self.buf.char(self.cur.y, cur_x - 1) } else { ' ' };
             ep.str = if c == NEW_LINE_CR { NEW_LINE_CRLF.to_string() } else { NEW_LINE_LF.to_string() };
@@ -381,7 +380,7 @@ impl Editor {
                     let c = self.buf.char_idx(s);
                     ep.box_sel_vec[i].1 = c.to_string().clone();
                     self.buf.remove(s, e);
-                    let (_, width) = get_row_width(&self.buf.char_vec_line(ep.box_sel_vec[i].0.sy)[..self.cur.x], self.offset_disp_x, false);
+                    let (_, width) = get_row_width(&self.buf.char_vec_line(ep.box_sel_vec[i].0.sy)[..self.cur.x], 0, false);
                     ep.box_sel_vec[i].0.sx = self.cur.x;
                     ep.box_sel_vec[i].0.s_disp_x = width;
                     ep.box_sel_vec[i].0.ex = self.cur.x + 1;

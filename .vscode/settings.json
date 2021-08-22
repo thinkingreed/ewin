@@ -2,10 +2,11 @@
     "workbench.colorTheme": "Default Light+",
     "window.zoomLevel": 0,
     "editor.suggestFontSize": 14,
-    "terminal.integrated.shell.linux": "/bin/bash",
+    // "terminal.integrated.shell.linux": "/bin/bash",
     "workbench.iconTheme": "vscode-icons",
     "workbench.activityBar.visible": true,
     "editor.formatOnSave": true,
-   
+    "rust-analyzer.checkOnSave.command": "clippy",
+  
     
 }
