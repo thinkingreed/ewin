@@ -2,6 +2,8 @@
 # "info" or "debug"
 level = "debug"
 
+
+
 [general.editor.tab]
 size = 4
 # tab or half_width_blank
@@ -16,6 +18,11 @@ regex = false
 indent_type = "half_width_blank"
 # Valid only for half_width_blank
 indent_size = 2
+
+[general.prompt.open_file]
+# Valid only for Windows
+# "" is Not set or "current_directory"
+directory_init_value = ""
 
 # context menu
 [general.ctx_menu]
@@ -49,6 +56,7 @@ content = """
 [colors.theme] # option
 # theme_path = "tmTheme.tmTheme"
 # theme_background_enable = true
+disable_syntax_highlight_ext = ["txt", "log"] 
 
 [colors.editor]
 background = "#000000"
