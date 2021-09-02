@@ -58,7 +58,6 @@ impl Terminal {
         if draw_type_org != DrawType::Not {
             StatusBar::draw(&mut str_vec, &self.hbar.file_vec[self.idx], &mut self.tabs[self.idx])
         }
-
         self.draw_init_info(&mut str_vec, draw_type_org);
 
         if self.state.is_ctx_menu {
@@ -74,8 +73,8 @@ impl Terminal {
         Log::debug("history.undo_vec", &self.curt().editor.history.undo_vec);
         // Log::debug("self.curt().state.key_record_state", &self.curt().state.key_record_state);
         //  Log::debug("self.curt().state", &self.curt().state);
-        //  Log::debug("sel_range", &self.curt().editor.sel);
-        Log::debug("", &self.curt().editor.search);
+        Log::debug("sel_range", &self.curt().editor.sel);
+        // Log::debug("", &self.curt().editor.search);
         // Log::debug("box_sel.mode", &self.curt().editor.box_insert.mode);
 
         let _ = out.write(str_vec.concat().as_bytes());
@@ -109,7 +108,7 @@ impl Terminal {
 
         if self.curt().editor.buf.len_chars() == 1 && draw_type_org == DrawType::None && self.idx == 0 && self.curt().state.is_nomal() && !self.curt().editor.is_changed {
             let cols = size().unwrap().0 as usize;
-            let pkg_name = env!("CARGO_PKG_NAME");
+            let pkg_name = APP_NAME;
             str_vec.push(format!("{}{}{}", MoveTo(0, 3), Clear(ClearType::CurrentLine), format!("{name:^w$}", name = pkg_name, w = cols - (get_str_width(pkg_name) - pkg_name.chars().count()))));
             let ver_name = format!("{}: {}", "Version", env!("CARGO_PKG_VERSION"));
             str_vec.push(format!("{}{}{}", MoveTo(0, 4), Clear(ClearType::CurrentLine), format!("{ver:^w$}", ver = ver_name, w = cols - (get_str_width(&ver_name) - ver_name.chars().count()))));
@@ -477,7 +476,6 @@ impl Terminal {
     }
 
     pub fn resize(&mut self) {
-        // self.set_disp_size();
         self.curt().editor.draw_type = DrawType::All;
     }
 
@@ -542,7 +540,7 @@ impl Terminal {
         }
     }
     pub fn set_keys(&mut self, keys: &Keys) {
-        let keywhen = if self.curt().state.is_nomal() { KeyWhen::EditorFocus } else { KeyWhen::PromptFocus };
+        let keywhen = if self.curt().state.is_nomal_and_not_read_only() { KeyWhen::EditorFocus } else { KeyWhen::PromptFocus };
         self.keycmd = Keybind::keys_to_keycmd(keys, keywhen);
         self.keys = *keys;
     }

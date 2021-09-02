@@ -124,7 +124,7 @@ impl PromptCont {
                     OpenFileType::JsMacro => {
                         let mut path_str = String::new();
                         if let Some(base_dirs) = BaseDirs::new() {
-                            let macros_dir = base_dirs.config_dir().join(env!("CARGO_PKG_NAME")).join(MACROS_DIR);
+                            let macros_dir = base_dirs.config_dir().join(APP_NAME).join(MACROS_DIR);
                             if macros_dir.exists() {
                                 path_str = macros_dir.to_string_lossy().to_string();
                                 path_str.push(path::MAIN_SEPARATOR);

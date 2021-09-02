@@ -140,8 +140,8 @@ pub fn is_line_end(c: char) -> bool {
 }
 
 pub fn is_enable_syntax_highlight(ext: &str) -> bool {
-    if ext.len() == 0 || ext == "txt" || ext == "log" {
-        // if ext.len() == 0 {
+    let disable_syntax_highlight_ext_vec = &CFG.get().unwrap().try_lock().unwrap().colors.theme.disable_syntax_highlight_ext;
+    if ext.len() == 0 || disable_syntax_highlight_ext_vec.contains(&ext.to_string()) {
         return false;
     } else {
         return true;
@@ -317,6 +317,8 @@ pub fn is_include_path(src: &str, dst: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Mutex;
+
     use crate::{_cfg::cfg::Cfg, model::Args};
 
     use super::*;
@@ -393,6 +395,32 @@ mod tests {
             Env::Windows => assert_eq!(get_env_platform(), Env::Windows),
         };
     }
+
+    #[test]
+    fn test_is_enable_syntax_highlight() {
+        let cfg: Cfg = toml::from_str(include_str!("../../setting.toml")).unwrap();
+        let _ = CFG.set(Mutex::new(cfg));
+
+        assert!(!is_enable_syntax_highlight("txt"));
+        assert!(is_enable_syntax_highlight("rs"));
+        assert!(!is_enable_syntax_highlight(""));
+    }
+
+    #[test]
+    fn test_get_char_type() {
+        assert_eq!(get_char_type('"'), CharType::Delim);
+        assert_eq!(get_char_type('!'), CharType::Delim);
+
+        assert_eq!(get_char_type(' '), CharType::HalfSpace);
+        assert_eq!(get_char_type('　'), CharType::FullSpace);
+        assert_eq!(get_char_type('a'), CharType::Nomal);
+        assert_eq!(get_char_type('z'), CharType::Nomal);
+    }
+    #[test]
+    fn test_cut_str() {
+        //   assert_eq!(cut_str('"'), CharType::Delim);
+    }
+
     #[test]
     fn test_1() {}
 }

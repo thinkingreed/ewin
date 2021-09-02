@@ -8,7 +8,7 @@ impl EvtAct {
     pub fn close(term: &mut Terminal) -> EvtActType {
         match &term.curt().prom.keycmd {
             KeyCmd::Resize => {
-                Tab::prompt_close(term);
+                Tab::prom_close(term);
                 return EvtActType::Next;
             }
             KeyCmd::InsertStr(str) => {

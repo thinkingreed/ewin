@@ -8,7 +8,7 @@ impl EvtAct {
     pub fn search(term: &mut Terminal) -> EvtActType {
         match term.curt().prom.keycmd {
             KeyCmd::Resize => {
-                term.curt().prompt_search();
+                term.curt().prom_search();
                 return EvtActType::Next;
             }
             KeyCmd::InsertStr(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::Undo | KeyCmd::Redo => {

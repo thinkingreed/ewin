@@ -1,10 +1,10 @@
 use crate::{
-    ewin_core::{_cfg::keys::*, def::*, file::*, global::*, log::Log, model::*, util::*},
+    ewin_core::{_cfg::keys::*, def::*, file::*, global::*, log::*, model::*, util::*},
     model::*,
     tab::Tab,
     terminal::*,
 };
-use ewin_prom::{open_file::*, prompt::prompt::Prompt};
+use ewin_prom::{open_file::*, prompt::prompt::*};
 use std::{
     cmp::min,
     path::{self, Path},

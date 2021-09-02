@@ -24,7 +24,7 @@ impl Keybind {
         let mut err_str = "".to_string();
 
         if let Some(base_dirs) = BaseDirs::new() {
-            let keybind_file = &base_dirs.config_dir().join(env!("CARGO_PKG_NAME")).join(KEYBINDING_FILE);
+            let keybind_file = &base_dirs.config_dir().join(APP_NAME).join(KEYBINDING_FILE);
 
             if keybind_file.exists() {
                 let mut read_str = String::new();

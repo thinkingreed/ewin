@@ -10,7 +10,7 @@ impl EvtAct {
     pub fn save_new_filenm(term: &mut Terminal) -> EvtActType {
         match term.curt().prom.keycmd {
             KeyCmd::Resize => {
-                term.curt().prompt_save_new_file();
+                term.curt().prom_save_new_file();
                 return EvtActType::Next;
             }
             KeyCmd::ConfirmPrompt => {

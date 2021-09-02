@@ -1,10 +1,13 @@
-use crate::{ewin_core::_cfg::keys::*, ewin_core::def::*, ewin_core::log::*, ewin_core::model::*, ewin_core::util::*, model::*};
+use crate::{
+    ewin_core::{_cfg::keys::*, def::*, log::*, model::*, util::*},
+    model::*,
+};
 use std::cmp::{max, min};
 
 impl Editor {
     pub fn ctrl_mouse(&mut self) {
         Log::debug_key("ctrl_mouse");
-        let (y, mut x, mouse_proc) = match self.keycmd {
+        let (mut y, mut x, mouse_proc) = match self.keycmd {
             KeyCmd::MouseDownLeft(y, x) => (y, x, MouseProc::DownLeft),
             KeyCmd::MouseDragLeft(y, x) => (y, x, MouseProc::DragLeft),
             KeyCmd::MouseDownBoxLeft(y, x) => (y, x, MouseProc::DownLeftBox),
@@ -18,18 +21,25 @@ impl Editor {
         }
         // y, x range check
         if y < self.disp_row_posi || self.disp_row_num < y || self.buf.len_lines() < y {
-            if self.buf.len_lines() < y {
-                // In case of MouseMode::Mouse, this function is not executed, so ignore it.
-                self.set_cur_target(self.buf.len_lines() - 1, get_until_x(&self.buf.char_vec_line(self.buf.len_lines() - 1), if x > self.get_rnw_and_margin() { x - self.get_rnw_and_margin() } else { 0 }).0, false)
+            let mut set_y = 0;
+            // In case of MouseMode::Mouse, this function is not executed, so ignore it.
+            if self.buf.len_lines() < y || self.disp_row_num < y {
+                set_y = self.buf.len_lines() - 1;
+            } else if y < self.disp_row_posi {
+                set_y = 0;
             }
+            let set_x = get_until_x(&self.buf.char_vec_line(set_y), if x > self.get_rnw_and_margin() { x - self.get_rnw_and_margin() } else { 0 }).0;
+            self.set_cur_target(set_y, set_x, false);
+            y = set_y;
+
             self.draw_type = DrawType::All;
             if mouse_proc != MouseProc::DragLeft {
                 self.sel.clear();
             }
-            return;
+        } else {
+            y = y - self.disp_row_posi;
         }
 
-        let y = y - self.disp_row_posi;
         if mouse_proc == MouseProc::DownLeft && x < self.get_rnw_and_margin() {
             self.sel.set_s(y, 0, 0);
             let (cur_x, width) = get_row_width(&self.buf.char_vec_line(y)[..], 0, true);
@@ -42,7 +52,6 @@ impl Editor {
             }
             let x = x - self.get_rnw_and_margin();
             self.cur.y = y + self.offset_y;
-
             let vec = self.buf.char_vec_line(self.cur.y);
 
             if self.sel.mode == SelMode::BoxSelect && self.offset_x + x > vec.len() - 1 {
@@ -54,7 +63,6 @@ impl Editor {
                 self.cur.disp_x = width;
                 self.scroll_horizontal();
             }
-
             self.set_mouse_sel(mouse_proc);
 
             if self.sel.is_selected() {
@@ -64,7 +72,13 @@ impl Editor {
                         if self.sel.mode == SelMode::Normal {
                             let sel = self.sel.get_range();
                             let sel_org = self.sel_org.get_range();
-                            self.draw_type = DrawType::Target(min(sel.sy, sel_org.sy), max(sel.ey, if sel_org.ey == USIZE_UNDEFINED { sel.ey } else { sel_org.ey }));
+                            // Drag from outside the range
+                            let sy = min(sel.sy, sel_org.sy);
+                            let mut ey = max(sel.ey, if sel_org.ey == USIZE_UNDEFINED { sel.ey } else { sel_org.ey });
+                            if ey == USIZE_UNDEFINED {
+                                ey = sy;
+                            }
+                            self.draw_type = DrawType::Target(sy, ey);
                         } else {
                             self.draw_type = DrawType::All;
                         }

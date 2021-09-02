@@ -1,12 +1,9 @@
 use crate::{
-    ewin_core::{_cfg::keys::*, colors::*, def::*, global::*, log::Log},
+    ewin_core::{_cfg::keys::*, def::*, global::*, log::Log, model::*},
     model::*,
-    prompt::cont::promptcont::*,
-    prompt::prompt::prompt::*,
     tab::Tab,
     terminal::*,
 };
-use ewin_core::model::{DrawType, EvtActType, JobGrep};
 use std::{ffi::OsStr, io::Write, path::*, process};
 use tokio::process::{Child, Command};
 
@@ -54,7 +51,8 @@ impl EvtAct {
         term.curt().mbar.set_readonly(&LANG.unable_to_edit);
         term.curt().state.is_read_only = true;
 
-        Prompt___::set_grep_result(term, is_cancel);
+        let is_grep_result_vec_empty = term.curt().editor.grep_result_vec.is_empty();
+        term.curt().prom.set_grep_result(is_grep_result_vec_empty, is_cancel);
         term.curt().editor.buf.insert_end(&EOF_MARK.to_string());
         term.curt().editor.set_cur_default();
         term.curt().editor.scroll();
@@ -138,15 +136,16 @@ impl EvtAct {
         match term.curt().prom.keycmd {
             KeyCmd::Resize => {
                 term.set_disp_size();
+                let is_grep_result_vec_empty = term.curt().editor.grep_result_vec.is_empty();
                 let is_cancel = term.curt().state.grep_state.is_cancel;
-                Prompt___::set_grep_result(term, is_cancel);
+                term.curt().prom.set_grep_result(is_grep_result_vec_empty, is_cancel);
                 return EvtActType::Next;
             }
             // Shift
             KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorDownSelect | KeyCmd::CursorUpSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect | KeyCmd::FindBack => return EvtActType::Next,
             // Ctrl
             KeyCmd::CloseFile | KeyCmd::SaveFile | KeyCmd::Copy | KeyCmd::AllSelect | KeyCmd::Find | KeyCmd::CursorFileHome | KeyCmd::CursorFileEnd => return EvtActType::Next,
-            //
+            // Raw
             KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorDown | KeyCmd::CursorUp | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::FindNext | KeyCmd::CursorPageUp | KeyCmd::CursorPageDown => return EvtActType::Next,
             KeyCmd::ConfirmPrompt => {
                 let y = term.tabs[term.idx].editor.cur.y;
@@ -168,50 +167,5 @@ impl EvtAct {
             }
             _ => return EvtActType::Hold,
         }
-    }
-}
-
-impl Prompt___ {
-    pub fn set_grep_working(term: &mut Terminal) {
-        term.curt().prom.disp_row_num = 2;
-        term.set_disp_size();
-        let mut cont = PromptCont::new_not_edit_type(term.curt());
-        cont.set_grep_working();
-        term.curt().prom.cont_1 = cont;
-    }
-
-    pub fn set_grep_result(term: &mut Terminal, is_cancel: bool) {
-        term.curt().prom.disp_row_num = 2;
-        term.set_disp_size();
-        let mut cont = PromptCont::new_not_edit_type(term.curt());
-        cont.set_grep_result(term.curt().editor.grep_result_vec.is_empty(), is_cancel);
-
-        term.curt().prom.cont_1 = cont;
-    }
-}
-
-impl PromptCont {
-    pub fn set_grep_working(&mut self) {
-        self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.long_time_to_search);
-        self.key_desc = format!("{}{}:{}{}", Colors::get_default_fg(), &LANG.cancel, Colors::get_msg_highlight_fg(), Keybind::get_key_str(KeyCmd::EscPrompt),);
-
-        let base_posi = self.disp_row_posi;
-        self.guide_row_posi = base_posi;
-        self.key_desc_row_posi = base_posi + 1;
-    }
-
-    pub fn set_grep_result(&mut self, is_grep_result_empty: bool, is_cancel: bool) {
-        let cancel_str = if is_cancel { &LANG.processing_canceled } else { "" };
-
-        if is_grep_result_empty {
-            self.guide = format!("{}{} {}", Colors::get_msg_highlight_fg(), &LANG.show_search_no_result, cancel_str,);
-            self.key_desc = format!("{}{}:{}Ctrl + w", Colors::get_default_fg(), &LANG.close, Colors::get_msg_highlight_fg(),);
-        } else {
-            self.guide = format!("{}{} {}", Colors::get_msg_highlight_fg(), &LANG.show_search_result, cancel_str);
-            self.key_desc = format!("{}{}:{}Enter  {}{}:{}Ctrl + f", Colors::get_default_fg(), &LANG.open_target_file, Colors::get_msg_highlight_fg(), Colors::get_default_fg(), &LANG.search, Colors::get_msg_highlight_fg(),);
-        }
-        let base_posi = self.disp_row_posi;
-        self.guide_row_posi = base_posi;
-        self.key_desc_row_posi = base_posi + 1;
     }
 }

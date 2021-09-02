@@ -259,7 +259,7 @@ impl Cfg {
             if !config_dir.exists() {
                 let _ = fs::create_dir(&config_dir);
             }
-            let app_dir = config_dir.join(env!("CARGO_PKG_NAME"));
+            let app_dir = config_dir.join(APP_NAME);
 
             if !app_dir.exists() {
                 let _ = fs::create_dir(&app_dir);

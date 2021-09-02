@@ -9,7 +9,7 @@ impl EvtAct {
         Log::info_key("EvtAct.replace");
         match term.curt().prom.keycmd {
             KeyCmd::Resize => {
-                term.curt().prompt_replace();
+                term.curt().prom_replace();
                 return EvtActType::Next;
             }
             KeyCmd::ConfirmPrompt => {

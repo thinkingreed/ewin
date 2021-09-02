@@ -5,3 +5,52 @@ members = [
   "ewin-editor",
   "ewin-prom",
 ]
+
+[package]
+name = "ewin"
+version = "0.8.0"
+description = "Simple editor for Window(GUI) users.No need to remember commands."
+authors = ["thinkingreed"]
+edition = "2018"
+readme = "README.md"
+repository = "https://github.com/thinkingreed/ewin"
+license = "MIT"
+keywords = ["text", "editor", "terminal", "cli", "tui"]
+categories = ["command-line-utilities"]
+
+[profile.dev]
+debug = 0
+
+[[bin]]
+name = "ewin"
+path = "ewin-term/src/main.rs"
+
+[package.metadata.deb]
+extended-description = """\
+Simple editor for Window(GUI) users.\ 
+No need to learn new commands.\
+
+It provides basic features as a minimal text editor.\
+depends = "$auto"\
+"""
+assets = [
+    ["target/release/ewin", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/ewin/README", "644"],
+]
+
+[dependencies]
+crossterm  = {version ="0.21.0", features = ["event-stream"]} 
+tokio = { version = "1.4.0", features = ["process", "macros", "rt-multi-thread"] }
+tokio-util = { version = "0.6.3", features = ["codec"] }
+once_cell = "1.5.2"
+futures = "0.3"
+futures-util = "0.3.12"
+clap = "2"
+
+ewin-term = { path = "ewin-term" }
+ewin-core = { path = "ewin-core" }
+ewin-editor = { path = "ewin-editor" }
+ewin-prom = { path = "ewin-prom" }
+
+[target.'cfg(windows)'.build-dependencies]
+windres = "0.2.2"

@@ -1,7 +1,9 @@
 use crate::{
     cont::{promptcont::PromptContPosi::*, promptcont::*},
     ewin_core::{_cfg::keys::*, def::*, file::*, log::Log, model::*, util::*},
-    open_file::PromOpenFile,
+    grep::*,
+    menu::*,
+    open_file::*,
     prompt::choice::*,
     save_new_file::*,
 };
@@ -35,14 +37,12 @@ impl Prompt {
                 self.draw_replace(str_vec);
             } else if tab_state.is_open_file {
                 self.draw_open_file(str_vec, is_exsist_msg);
-                /*
-                } else if tab_state.grep_state.is_grep {
-                    self.draw_grep(str_vec);
-                } else if tab_state.is_enc_nl {
-                    self.draw_enc_nl(str_vec);
-                } else if tab_state.is_menu {
-                    self.draw_menu(str_vec);
-                     */
+            } else if tab_state.is_menu {
+                self.draw_menu(str_vec);
+            } else if tab_state.grep_state.is_grep {
+                self.draw_grep(str_vec);
+            } else if tab_state.is_enc_nl {
+                self.draw_enc_nl(str_vec);
             }
             let out = stdout();
             let mut out = BufWriter::new(out.lock());
@@ -88,12 +88,10 @@ impl Prompt {
                 y = self.cont_3.buf_row_posi;
             }
             str_vec.push(MoveTo(x as u16, y as u16).to_string());
-            /*
-            } else if tab_state.is_enc_nl {
-                self.draw_cur_enc_nl(str_vec);
-            } else if tab_state.is_menu {
-                self.draw_cur_menu(str_vec);
-             */
+        } else if tab_state.is_menu {
+            self.draw_cur_menu(str_vec);
+        } else if tab_state.is_enc_nl {
+            self.draw_cur_enc_nl(str_vec);
         }
     }
 
@@ -257,15 +255,12 @@ impl Prompt {
                     }
                 }
                 PromptContPosi::Third => {
-                    /* TODO workspace
-
                     let str = self.cont_3.buf[..self.cont_3.cur.x].iter().collect::<String>();
 
                     self.cont_3.buf = self.prom_grep.tab_comp.get_tab_candidate(is_asc, str, true).chars().collect();
                     let (cur_x, width) = get_row_width(&self.cont_3.buf[..], 0, false);
                     self.cont_3.cur.x = cur_x;
                     self.cont_3.cur.disp_x = width;
-                    */
                 }
                 _ => {}
             }
@@ -282,11 +277,8 @@ impl Prompt {
             let (cur_x, width) = get_row_width(&self.cont_1.buf[..], 0, false);
             self.cont_1.cur.x = cur_x;
             self.cont_1.cur.disp_x = width;
-        /* TODO workspace
-
         } else if state.is_enc_nl {
             self.move_enc_nl(CurDirection::Right);
-            */
         } else if state.is_menu {
             if is_asc {
                 match self.cont_posi {
@@ -353,11 +345,8 @@ pub struct Prompt {
     pub cont_posi: PromptContPosi,
     pub prom_open_file: PromOpenFile,
     pub prom_save_new_file: PromSaveNewFile,
-    /* TODO workspace
-
-        pub prom_grep: PromGrep,
-        pub prom_menu: PromMenu,
-    */
+    pub prom_menu: PromMenu,
+    pub prom_grep: PromGrep,
 }
 
 impl Default for Prompt {
@@ -376,10 +365,8 @@ impl Default for Prompt {
             cont_posi: PromptContPosi::First,
             prom_open_file: PromOpenFile::default(),
             prom_save_new_file: PromSaveNewFile::default(),
-            /* TODO workspace
-               prom_grep: PromGrep::default(),
-               prom_menu: PromMenu::default(),
-            */
+            prom_menu: PromMenu::default(),
+            prom_grep: PromGrep::default(),
         }
     }
 }

@@ -1,16 +1,16 @@
-use clap::{App, AppSettings, Arg};
+use clap::*;
 use crossterm::event::{Event::Mouse, EventStream, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
-use ewin_core::{_cfg::cfg::*, _cfg::keys::Keybind, global::*, log::*, model::*};
+use ewin_core::{_cfg::cfg::*, _cfg::keys::*, def::*, global::*, log::*, model::*};
 use ewin_term::{model::EvtAct, terminal::Terminal};
 use futures::{future::FutureExt, select, StreamExt};
 use std::{
-    io::{stdout, BufWriter},
+    io::*,
     panic,
     sync::mpsc::*,
     thread::{self},
     time,
 };
-use tokio_util::codec::{FramedRead, LinesCodec};
+use tokio_util::codec::*;
 
 #[tokio::main]
 async fn main() {
@@ -29,7 +29,7 @@ async fn main() {
         default_hook(panic_info);
     }));
 
-    let matches = App::new(env!("CARGO_PKG_NAME")).version(env!("CARGO_PKG_VERSION")).bin_name(env!("CARGO_PKG_NAME")).setting(AppSettings::DeriveDisplayOrder).arg(Arg::with_name("file").required(false)).arg(Arg::from_usage("[output-config] -o --output-config 'output config file'")).get_matches();
+    let matches = App::new(APP_NAME).version(env!("CARGO_PKG_VERSION")).bin_name(APP_NAME).setting(AppSettings::DeriveDisplayOrder).arg(Arg::with_name("file").required(false)).arg(Arg::from_usage("[output-config] -o --output-config 'output config file'")).get_matches();
     let args = Args::new(&matches);
 
     let err_str = Cfg::init(&args);
@@ -72,15 +72,12 @@ async fn main() {
 
     tokio::spawn(async move {
         loop {
-
-            /* TODO workspcae
             thread::sleep(time::Duration::from_millis(1000));
 
             if let Some(Ok(mut grep_info_vec)) = GREP_INFO_VEC.get().map(|vec| vec.try_lock()) {
                 if grep_info_vec.is_empty() {
                     continue;
                 }
-
                 let grep_info_idx = grep_info_vec.len() - 1;
                 if let Some(mut grep_info) = grep_info_vec.get_mut(grep_info_idx) {
                     if grep_info.is_result && !grep_info.is_cancel && !(grep_info.is_stdout_end && grep_info.is_stderr_end) {
@@ -118,8 +115,7 @@ async fn main() {
                                 std_err = read_stderr => {
                                     match std_err {
                                       Some(Ok(grep_str)) => send_grep_job(grep_str, &mut tx_grep, &grep_info),
-                                     //   Some(Ok(grep_str)) => Log::ep("grep_str err", &grep_str),
-                                        None => grep_info.is_stderr_end = true,
+                                      None => grep_info.is_stderr_end = true,
                                         _ => {},
                                     }
                                 }
@@ -136,7 +132,6 @@ async fn main() {
                     }
                 }
             }
-            */
         }
     });
 
@@ -148,10 +143,7 @@ async fn main() {
                     break;
                 }
             }
-            /* TODO workspcae
-                   JobType::GrepResult => EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap()),
-            */
-            JobType::GrepResult => {}
+            JobType::GrepResult => EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap()),
         }
     }
     Terminal::exit();

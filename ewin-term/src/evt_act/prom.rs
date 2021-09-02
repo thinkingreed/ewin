@@ -1,7 +1,11 @@
-use ewin_core::model::{DrawType, EvtActType, NL};
-use ewin_prom::cont::promptcont::PromptContPosi;
+use crate::{
+    ewin_core::{_cfg::keys::*, clipboard::*, global::*, log::*, model::*},
+    ewin_prom::cont::promptcont::*,
+    model::*,
+    tab::Tab,
+    terminal::*,
+};
 
-use crate::{ewin_core::_cfg::keys::*, ewin_core::clipboard::*, ewin_core::global::*, ewin_core::log::*, model::*, tab::Tab, terminal::*};
 impl EvtAct {
     pub fn check_prom(term: &mut Terminal) -> EvtActType {
         Log::debug_key("check_prom");
@@ -109,7 +113,6 @@ impl EvtAct {
             if term.curt().state.is_search || term.curt().state.is_move_row {
             } else {
                 if Keybind::is_edit(&term.curt().prom.keycmd, true) {
-                    /*
                     if term.curt().state.grep_state.is_result {
                         if term.curt().prom.keycmd != KeyCmd::ConfirmPrompt {
                             return EvtActType::Hold;
@@ -117,18 +120,16 @@ impl EvtAct {
                     } else {
                         return EvtActType::Hold;
                     }
-                     */
                     return EvtActType::Hold;
                 }
-                match term.curt().prom.keycmd {
+                match term.keycmd {
                     // Ctrl
                     KeyCmd::CursorFileHome | KeyCmd::CursorFileEnd | KeyCmd::AllSelect | KeyCmd::Copy | KeyCmd::Find | KeyCmd::NewTab | KeyCmd::OpenFile(_) | KeyCmd::MoveRow => return EvtActType::Next,
                     // Shift
                     KeyCmd::CursorUpSelect | KeyCmd::CursorDownSelect | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect | KeyCmd::FindBack => return EvtActType::Next,
-                    //
-                    KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::CursorPageUp | KeyCmd::CursorPageDown | KeyCmd::Help => return EvtActType::Next,
-                    //  KeyCmd::ConfirmPrompt => return EvtActType::Hold,
-                    KeyCmd::ConfirmPrompt | KeyCmd::FindNext | KeyCmd::EscPrompt => {}
+                    // Raw
+                    KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::CursorPageUp | KeyCmd::CursorPageDown | KeyCmd::FindNext | KeyCmd::Help => return EvtActType::Next,
+                    KeyCmd::ConfirmPrompt | KeyCmd::EscPrompt => {}
                     // mouse
                     KeyCmd::MouseScrollUp | KeyCmd::MouseScrollDown | KeyCmd::MouseDownLeft(_, _) | KeyCmd::MouseDragLeft(_, _) => return EvtActType::Next,
                     KeyCmd::Resize => {}
@@ -147,18 +148,16 @@ impl EvtAct {
             return EvtAct::replace(term);
         } else if term.curt().state.is_open_file == true {
             return EvtAct::open_file(term);
-        /* TODO workspace
+        } else if term.curt().state.is_move_row == true {
+            return EvtAct::move_row(term);
+        } else if term.curt().state.is_menu == true {
+            return EvtAct::menu(term);
         } else if term.curt().state.grep_state.is_grep == true {
             return EvtAct::grep(term);
         } else if term.curt().state.grep_state.is_result == true {
             return EvtAct::grep_result(term);
-        } else if term.curt().state.is_move_row == true {
-            return EvtAct::move_row(term);
         } else if term.curt().state.is_enc_nl == true {
             return EvtAct::enc_nl(term);
-        } else if term.curt().state.is_menu == true {
-            return EvtAct::menu(term);
-             */
         } else {
             return EvtActType::Next;
         }
@@ -188,7 +187,6 @@ impl EvtAct {
             // Check clear tab candidate
             match tab.prom.keycmd {
                 KeyCmd::InsertStr(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect => {
-                    /* TODO workspace
                     if tab.state.grep_state.is_grep {
                         tab.prom.prom_grep.tab_comp.clear_tab_comp()
                     } else if tab.state.is_open_file {
@@ -196,7 +194,6 @@ impl EvtAct {
                     } else if tab.state.is_save_new_file {
                         tab.prom.prom_save_new_file.tab_comp.clear_tab_comp()
                     }
-                     */
                 }
                 _ => {}
             }

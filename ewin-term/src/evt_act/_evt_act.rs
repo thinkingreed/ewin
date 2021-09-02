@@ -49,19 +49,21 @@ impl EvtAct {
                         KeyCmd::Undo => term.curt().editor.undo(),
                         KeyCmd::Redo => term.curt().editor.redo(),
                         // find
-                        KeyCmd::Find => term.curt().prompt_search(),
+                        KeyCmd::Find => term.curt().prom_search(),
                         KeyCmd::FindNext => term.curt().editor.search_str(true, false),
                         KeyCmd::FindBack => term.curt().editor.search_str(false, false),
-                        KeyCmd::MoveRow => {} // Prompt___::move_row(term),
-                        KeyCmd::Grep => {}    // Prompt___::grep(term),
+                        KeyCmd::MoveRow => term.curt().prom_move_row(),
+                        KeyCmd::Grep => term.curt().prom_grep(),
                         // file
                         KeyCmd::NewTab => term.new_tab(),
                         KeyCmd::NextTab => term.next_tab(),
-                        KeyCmd::OpenFile(_) => term.curt().prompt_open_file(keycmd),
-                        KeyCmd::Encoding => {} // Prompt___::enc_nl(term),
-
+                        KeyCmd::OpenFile(_) => term.curt().prom_open_file(keycmd),
+                        KeyCmd::Encoding => {
+                            let h_file = term.curt_h_file().clone();
+                            term.curt().prom_enc_nl(&h_file);
+                        }
                         KeyCmd::CloseFile => {
-                            if Tab::prompt_close(term) {
+                            if Tab::prom_close(term) {
                                 return true;
                             }
                         }
@@ -84,7 +86,7 @@ impl EvtAct {
                         KeyCmd::MouseOpeSwitch => term.ctrl_mouse_capture(),
                         // menu
                         KeyCmd::Help => Help::disp_toggle(term),
-                        KeyCmd::OpenMenu | KeyCmd::OpenMenuFile | KeyCmd::OpenMenuConvert | KeyCmd::OpenMenuEdit | KeyCmd::OpenMenuSearch | KeyCmd::OpenMenuMacro => {} //  Prompt___::menu(term),
+                        KeyCmd::OpenMenu | KeyCmd::OpenMenuFile | KeyCmd::OpenMenuConvert | KeyCmd::OpenMenuEdit | KeyCmd::OpenMenuSearch | KeyCmd::OpenMenuMacro => term.curt().prom_menu(),
                         // Mode
                         KeyCmd::CancelMode => term.curt().editor.cancel_mode(),
                         KeyCmd::BoxSelectMode => term.curt().editor.box_select_mode(),
@@ -95,7 +97,7 @@ impl EvtAct {
                             term.curt().editor.draw_type = DrawType::All;
                         }
                         // Prompt
-                        KeyCmd::ReplacePrompt => term.curt().prompt_replace(),
+                        KeyCmd::ReplacePrompt => term.curt().prom_replace(),
                         KeyCmd::BackTab | KeyCmd::EscPrompt | KeyCmd::ConfirmPrompt | KeyCmd::FindCaseSensitive | KeyCmd::FindRegex | KeyCmd::Tab => {}
                         // EscPrompt is when Prompt
                         KeyCmd::Unsupported => {
@@ -144,7 +146,6 @@ impl EvtAct {
     pub fn set_keys_editor(term: &mut Terminal) {
         let key = term.keys;
         term.curt().editor.set_keys(&key);
-        Log::info("editor_keycmd", &term.curt().editor.keycmd);
     }
 
     pub fn check_next_process<T: Write>(out: &mut T, term: &mut Terminal) -> EvtActType {

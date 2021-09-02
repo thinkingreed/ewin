@@ -27,7 +27,7 @@ impl CtxMenuGroup {
         if LANG_MAP.get(parent_name).is_some() {
             if &LANG.macros == LANG_MAP.get(parent_name).unwrap() {
                 if let Some(base_dirs) = BaseDirs::new() {
-                    let full_path_str = base_dirs.config_dir().join(env!("CARGO_PKG_NAME")).join(MACROS_DIR).join(child_name);
+                    let full_path_str = base_dirs.config_dir().join(APP_NAME).join(MACROS_DIR).join(child_name);
                     if full_path_str.exists() {
                         Macros::exec_js_macro(term, &full_path_str.to_string_lossy().to_string());
                     } else {

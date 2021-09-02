@@ -1,6 +1,11 @@
-use crate::{bar::statusbar::*, ewin_core::global::*, ewin_core::log::Log, ewin_core::model::*, ewin_editor::model::*, ewin_prom::prompt::prompt::*, model::MsgBar, terminal::Terminal};
-use ewin_core::_cfg::keys::KeyCmd;
-use ewin_prom::cont::promptcont::PromptCont;
+use crate::{
+    bar::statusbar::*,
+    ewin_core::{_cfg::keys::*, global::*, log::*, model::*},
+    ewin_editor::model::*,
+    ewin_prom::{cont::promptcont::*, prompt::prompt::*},
+    model::*,
+    terminal::*,
+};
 
 impl Tab {
     pub fn new() -> Self {
@@ -8,27 +13,26 @@ impl Tab {
     }
 
     pub fn save(term: &mut Terminal) -> bool {
-        let filenm = term.hbar.file_vec[term.idx].filenm.clone();
-        if filenm == LANG.new_file {
-            term.curt().prompt_save_new_file();
+        let h_file = term.curt_h_file().clone();
+        if h_file.filenm == LANG.new_file {
+            term.curt().prom_save_new_file();
             return false;
         } else {
-            let h_file = &term.hbar.file_vec[term.idx];
-            Log::info_s(&format!("Save {}, file info {:?}", &filenm, &h_file));
-            let result = term.tabs[term.idx].editor.buf.write_to(&h_file.fullpath, &h_file);
+            Log::info_s(&format!("Save {}, file info {:?}", &h_file.filenm, &h_file));
+            let result = term.curt().editor.buf.write_to(&h_file.fullpath, &h_file);
             match result {
                 Ok(enc_errors) => {
                     if enc_errors {
                         Log::info("Encoding errors", &enc_errors);
                         term.curt().mbar.set_err(&LANG.cannot_convert_encoding);
                     } else {
-                        term.tabs[term.idx].editor.is_changed = false;
+                        term.curt().editor.is_changed = false;
                         term.curt().prom.clear();
                         term.curt().mbar.clear();
                         if !term.curt().state.is_close_confirm {
                             term.curt().state.clear();
                         }
-                        Log::info("Saved file", &filenm.as_str());
+                        Log::info("Saved file", &h_file.filenm.as_str());
                         return true;
                     }
                 }
@@ -40,17 +44,17 @@ impl Tab {
         }
         return false;
     }
-    pub fn prompt_search(&mut self) {
+    pub fn prom_search(&mut self) {
         self.state.is_search = true;
         self.prom.search();
     }
 
-    pub fn prompt_save_new_file(&mut self) {
+    pub fn prom_save_new_file(&mut self) {
         self.state.is_save_new_file = true;
         self.prom.save_new_file();
     }
 
-    pub fn prompt_close(term: &mut Terminal) -> bool {
+    pub fn prom_close(term: &mut Terminal) -> bool {
         if term.tabs[term.idx].editor.is_changed == true {
             if !term.curt().state.is_nomal() {
                 term.clear_curt_tab();
@@ -73,13 +77,29 @@ impl Tab {
             return false;
         }
     }
-    pub fn prompt_replace(&mut self) {
+    pub fn prom_replace(&mut self) {
         self.state.is_replace = true;
         self.prom.replace();
     }
-    pub fn prompt_open_file(&mut self, keycmd: KeyCmd) {
+    pub fn prom_open_file(&mut self, keycmd: KeyCmd) {
         self.state.is_open_file = true;
         self.prom.open_file(keycmd);
+    }
+    pub fn prom_move_row(&mut self) {
+        self.state.is_move_row = true;
+        self.prom.move_row();
+    }
+    pub fn prom_menu(&mut self) {
+        self.state.is_menu = true;
+        self.prom.menu();
+    }
+    pub fn prom_grep(&mut self) {
+        self.state.grep_state.is_grep = true;
+        self.prom.grep();
+    }
+    pub fn prom_enc_nl(&mut self, h_file: &HeaderFile) {
+        self.state.is_enc_nl = true;
+        self.prom.enc_nl(h_file);
     }
 }
 

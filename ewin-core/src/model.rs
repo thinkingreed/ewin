@@ -1,5 +1,5 @@
 extern crate ropey;
-use crate::{_cfg::keys::*, char_style::CharStyle, def::*, global::*};
+use crate::{_cfg::keys::*, char_style::*, def::*, global::*};
 use chrono::NaiveDateTime;
 use clap::ArgMatches;
 use crossterm::event::{Event, KeyCode::Null};
@@ -730,15 +730,11 @@ impl FmtType {
 
 #[derive(Debug, PartialEq)]
 pub enum EvtActType {
-    // Check next Process
-    Hold,
-    // Cancel process
-    None,
+    Hold, // Check next Process
+    None, // Cancel process
     Exit,
-    // Editor Event Process
-    Next,
-    // Do not Editor key Process
-    DrawOnly,
+    Next,     // Editor Event Process
+    DrawOnly, // Do not Editor key Process
 }
 
 impl EvtActType {
@@ -796,6 +792,12 @@ impl TabState {
 
     pub fn is_nomal(&self) -> bool {
         if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_row || self.is_read_only || self.is_open_file || self.grep_state.is_grep || self.grep_state.is_result || self.is_enc_nl || self.is_menu {
+            return false;
+        }
+        true
+    }
+    pub fn is_nomal_and_not_read_only(&self) -> bool {
+        if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_row || self.is_open_file || self.grep_state.is_grep || self.is_enc_nl || self.is_menu {
             return false;
         }
         true

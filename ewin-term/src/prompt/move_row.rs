@@ -1,6 +1,8 @@
-use ewin_core::model::EvtActType;
-
-use crate::{ewin_core::_cfg::keys::*, ewin_core::colors::*, ewin_core::global::*, ewin_core::log::*, model::*, prompt::cont::promptcont::*, prompt::prompt::prompt::*, terminal::*};
+use crate::{
+    ewin_core::{_cfg::keys::*, global::*, log::*, model::*},
+    model::*,
+    terminal::*,
+};
 
 impl EvtAct {
     pub fn move_row(term: &mut Terminal) -> EvtActType {
@@ -8,7 +10,7 @@ impl EvtAct {
 
         match &term.curt().prom.keycmd {
             KeyCmd::Resize => {
-                Prompt___::move_row(term);
+                term.curt().prom_move_row();
                 return EvtActType::Next;
             }
             KeyCmd::InsertStr(str) => {
@@ -35,9 +37,7 @@ impl EvtAct {
                     term.curt().mbar.set_err(&LANG.number_within_current_number_of_rows);
                     return EvtActType::Hold;
                 }
-                term.curt().editor.cur.y = row_num - 1;
-                term.curt().editor.cur.x = 0;
-                term.curt().editor.cur.disp_x = 0;
+                term.curt().editor.set_cur_target(row_num - 1, 0, false);
 
                 term.clear_curt_tab();
                 term.curt().editor.move_row();
@@ -46,29 +46,5 @@ impl EvtAct {
             }
             _ => return EvtActType::Hold,
         }
-    }
-}
-
-impl Prompt___ {
-    pub fn move_row(term: &mut Terminal) {
-        term.curt().state.is_move_row = true;
-        term.curt().prom.disp_row_num = 3;
-        term.set_disp_size();
-        let disp_row_posi = term.curt().prom.disp_row_posi;
-
-        let mut cont = PromptCont::new_edit_type(term.curt().prom.keycmd.clone(), PromptContPosi::First);
-        cont.set_move_row();
-        term.curt().prom.cont_1 = cont;
-    }
-}
-
-impl PromptCont {
-    pub fn set_move_row(&mut self) {
-        self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), LANG.set_move_row);
-        self.key_desc = format!("{}{}:{}{}  {}{}:{}{}{}", Colors::get_default_fg(), &LANG.move_to_specified_row, Colors::get_msg_highlight_fg(), Keybind::get_key_str(KeyCmd::ConfirmPrompt), Colors::get_default_fg(), &LANG.close, Colors::get_msg_highlight_fg(), Keybind::get_key_str(KeyCmd::EscPrompt), Colors::get_default_fg(),);
-        let base_posi = self.disp_row_posi;
-        self.guide_row_posi = base_posi;
-        self.key_desc_row_posi = base_posi + 1;
-        self.buf_row_posi = base_posi + 2;
     }
 }
