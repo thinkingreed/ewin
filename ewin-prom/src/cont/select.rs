@@ -1,6 +1,6 @@
 use crate::{
-    cont::promptcont::PromptCont,
     ewin_core::{clipboard::*, log::Log, model::*},
+    model::*,
 };
 
 impl PromptCont {

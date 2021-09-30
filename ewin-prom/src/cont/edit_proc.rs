@@ -1,16 +1,16 @@
 use crate::{
-    cont::promptcont::PromptCont,
-    ewin_core::{_cfg::keys::*, log::Log, model::*},
+    ewin_core::{_cfg::key::keycmd::*, log::Log, model::*},
+    model::PromptCont,
 };
 
 impl PromptCont {
-    pub fn edit_proc(&mut self, keycmd: KeyCmd) {
-        Log::debug("PromptCont.keycmd", &keycmd);
-        if keycmd == KeyCmd::DeleteNextChar {
+    pub fn edit_proc(&mut self, p_cmd: P_Cmd) {
+        Log::debug("PromptCont.keycmd", &p_cmd);
+        if p_cmd == P_Cmd::DelNextChar {
             if !self.sel.is_selected_width() && self.cur.x == self.buf.len() {
                 return;
             }
-        } else if keycmd == KeyCmd::DeletePrevChar && !self.sel.is_selected_width() && self.cur.x == 0 {
+        } else if p_cmd == P_Cmd::DelPrevChar && !self.sel.is_selected_width() && self.cur.x == 0 {
             return;
         }
 
@@ -20,7 +20,7 @@ impl PromptCont {
 
         // selected range delete
         if self.sel.is_selected_width() {
-            ep_del = Proc { keycmd: if keycmd == KeyCmd::DeleteNextChar { KeyCmd::DeleteNextChar } else { KeyCmd::DeletePrevChar }, ..Proc::default() };
+            ep_del = Proc { p_cmd: if p_cmd == P_Cmd::DelNextChar { P_Cmd::DelNextChar } else { P_Cmd::DelPrevChar }, ..Proc::default() };
             ep_del.cur_s = Cur { y: self.sel.sy, x: self.sel.sx, disp_x: self.sel.s_disp_x };
             ep_del.cur_e = self.cur;
             let sel = self.sel.get_range();
@@ -36,19 +36,19 @@ impl PromptCont {
         }
 
         // not selected Del, BS, Cut or InsertChar, Paste, Enter
-        if !(is_selected_org && (keycmd == KeyCmd::DeleteNextChar || keycmd == KeyCmd::DeletePrevChar)) {
-            let mut ep = Proc { keycmd: keycmd.clone(), ..Proc::default() };
+        if !(is_selected_org && (p_cmd == P_Cmd::DelNextChar || p_cmd == P_Cmd::DelPrevChar)) {
+            let mut ep = Proc { p_cmd: p_cmd.clone(), ..Proc::default() };
 
             ep.cur_s = self.cur;
-            match &keycmd {
-                KeyCmd::InsertStr(str) => ep.str = str.clone(),
+            match &p_cmd {
+                P_Cmd::InsertStr(str) => ep.str = str.clone(),
                 _ => {}
             }
-            match &keycmd {
-                KeyCmd::DeleteNextChar => self.delete(&mut ep),
-                KeyCmd::DeletePrevChar => self.backspace(&mut ep),
-                KeyCmd::Cut => self.cut(ep_del.str),
-                KeyCmd::InsertStr(str) => {
+            match &p_cmd {
+                P_Cmd::DelNextChar => self.delete(&mut ep),
+                P_Cmd::DelPrevChar => self.backspace(&mut ep),
+                P_Cmd::Cut => self.cut(ep_del.str),
+                P_Cmd::InsertStr(str) => {
                     if str.is_empty() {
                         self.paste(&mut ep);
                     } else {
@@ -58,13 +58,13 @@ impl PromptCont {
                 _ => {}
             }
             ep.cur_e = self.cur;
-            if keycmd != KeyCmd::Cut {
+            if p_cmd != P_Cmd::Cut {
                 evt_proc.evt_proc = Some(ep.clone());
             }
         }
 
         // Register edit history
-        if self.keycmd != KeyCmd::Undo && self.keycmd != KeyCmd::Redo {
+        if self.p_cmd != P_Cmd::Undo && self.p_cmd != P_Cmd::Redo {
             self.history.undo_vec.push(evt_proc);
         }
     }

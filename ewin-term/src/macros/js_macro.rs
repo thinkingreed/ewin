@@ -4,13 +4,16 @@ use crate::{
     model::*,
     terminal::*,
 };
-use ewin_core::file::File;
+use ewin_core::{
+    file::File,
+    model::{ActType, DParts},
+};
 use rusty_v8::{self as v8, inspector::*, Context, ContextScope, HandleScope, Isolate, Script};
 use std::path::Path;
 use v8::{Function, FunctionCallback, Local, MapFnTo, Object, TryCatch, V8};
 
 impl Macros {
-    pub fn exec_js_macro(term: &mut Terminal, js_filenm: &str) {
+    pub fn exec_js_macro(term: &mut Terminal, js_filenm: &str) -> ActType {
         Log::info_key("exec_js_macro");
         Log::info("exec js file", &js_filenm);
 
@@ -44,8 +47,8 @@ impl Macros {
             let script = if let Some(script) = Script::compile(&mut scope, code, Some(&origin)) {
                 script
             } else {
-                Macros::report_exceptions(scope, &LANG.script_compile_error, &mut term.curt().mbar);
-                return;
+                Macros::log_exceptions(scope);
+                return ActType::Draw(DParts::MsgBar(format!("{} {}", &LANG.script_compile_error, &LANG.check_log_file)));
             };
             if let Some(result) = script.run(&mut scope) {
                 Log::debug("script.run result", &result.to_string(&mut scope).unwrap().to_rust_string_lossy(&mut scope));
@@ -55,15 +58,16 @@ impl Macros {
                     term.tabs[term.idx] = tab.clone();
                 }
             } else {
-                Macros::report_exceptions(scope, &LANG.script_run_error, &mut term.curt().mbar);
-                return;
+                Macros::log_exceptions(scope);
+                return ActType::Draw(DParts::MsgBar(format!("{} {}", &LANG.script_run_error, &LANG.check_log_file)));
             };
+            return ActType::Next;
         } else {
-            term.curt().mbar.set_err(&err_str);
+            return ActType::Draw(DParts::MsgBar(err_str.to_string()));
         }
     }
 
-    fn report_exceptions(mut try_catch: TryCatch<HandleScope>, msg: &str, mbar: &mut MsgBar) {
+    fn log_exceptions(mut try_catch: TryCatch<HandleScope>) {
         let exception = try_catch.exception().unwrap();
         let exception_string = exception.to_string(&mut try_catch).unwrap().to_rust_string_lossy(&mut try_catch);
         let message = if let Some(message) = try_catch.message() {
@@ -78,8 +82,7 @@ impl Macros {
         let line_number = message.get_line_number(&mut try_catch).unwrap_or_default();
 
         let filenm = Path::new(&filepath).file_name().unwrap().to_string_lossy().to_string();
-        Log::error_s(&format!("{} {}:{}:{}", msg, filenm, line_number, exception_string));
-        mbar.set_err(&format!("{}:{}:{}", filenm, line_number, exception_string));
+        Log::error_s(&format!("{}:{}:{}", filenm, line_number, exception_string));
 
         // Output line of source code.
         let source_line = message.get_source_line(&mut try_catch).map(|s| s.to_string(&mut try_catch).unwrap().to_rust_string_lossy(&mut try_catch)).unwrap();

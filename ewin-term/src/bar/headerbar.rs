@@ -1,7 +1,8 @@
-use crate::{ewin_core::colors::*, ewin_core::def::*, ewin_core::log::*, ewin_core::util::*, terminal::*};
+use crate::{
+    ewin_core::{colors::*, def::*, log::*, model::*, util::*},
+    terminal::*,
+};
 use crossterm::{cursor::*, terminal::*};
-use ewin_core::model::{HeaderFile, History};
-use std::io::Write;
 
 impl HeaderBar {
     const ALLOW_BTN_WITH: usize = 2;
@@ -12,17 +13,16 @@ impl HeaderBar {
     // Front and back margins of the file
     const FILENM_MARGIN: usize = 3;
 
-    pub fn draw<T: Write>(out: &mut T, term: &Terminal) {
+    pub fn draw(term: &Terminal, str_vec: &mut Vec<String>) {
         Log::info_key("HeaderBar.draw");
 
         let plus_btn = format!(" {} ", '+');
-        //  let menu_btn = format!(" {} ", "≡");
         let menu_btn = format!(" {} ", "⠇");
         let close_btn = format!(" {} ", 'x');
         let left_arrow_btn = "< ".to_string();
         let right_arrow_btn = " >".to_string();
 
-        let mut hber_str = format!("{}{}{}", MoveTo(0, term.hbar.disp_row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_hbar_fg_bg());
+        let mut hber_str = format!("{}{}{}", MoveTo(0, term.hbar.row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_hbar_fg_bg());
         if term.hbar.is_left_arrow_disp {
             hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_inversion_fg_bg_active(), left_arrow_btn, &Colors::get_hbar_fg_bg()));
         }
@@ -38,14 +38,12 @@ impl HeaderBar {
             hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_inversion_fg_bg_active(), right_arrow_btn, &Colors::get_hbar_fg_bg()));
         }
         hber_str = format!("{}{}{}{} {}{}{} {}{}{}", hber_str, Colors::get_hbar_inversion_fg_bg_active(), plus_btn, Colors::get_default_bg(), Colors::get_hbar_inversion_fg_bg_active(), menu_btn, Colors::get_default_bg(), Colors::get_hbar_inversion_fg_bg_active(), close_btn, Colors::get_default_bg());
-
-        let _ = out.write(&hber_str.as_bytes());
-        out.flush().unwrap();
+        str_vec.push(hber_str);
     }
 
     pub fn set_posi(&mut self, cols_w: usize) {
-        self.disp_col_num = cols_w;
-        self.all_filenm_space_w = self.disp_col_num - HeaderBar::PLUS_BTN_WITH - 1 - HeaderBar::MENU_BTN_WITH - 1 - HeaderBar::CLOSE_BTN_WITH;
+        self.col_num = cols_w;
+        self.all_filenm_space_w = self.col_num - HeaderBar::PLUS_BTN_WITH - 1 - HeaderBar::MENU_BTN_WITH - 1 - HeaderBar::CLOSE_BTN_WITH;
         // +1 is space between
         self.plus_btn_area = (self.all_filenm_space_w, self.all_filenm_space_w + HeaderBar::PLUS_BTN_WITH - 1);
         self.menu_btn_area = (self.plus_btn_area.1 + 2, self.plus_btn_area.1 + 2 + HeaderBar::MENU_BTN_WITH - 1);
@@ -62,7 +60,7 @@ impl HeaderBar {
         term.hbar.init();
 
         let mut max_len = HeaderBar::FILENM_LEN_LIMMIT;
-        let cols = size().unwrap().0 as usize;
+        let cols = get_term_size().0 as usize;
         Log::debug("cols", &cols);
         let left_allow_len = if term.hbar.file_vec.len() == 1 { 0 } else { HeaderBar::ALLOW_BTN_WITH };
 
@@ -80,7 +78,7 @@ impl HeaderBar {
             h_file.filenm_disp = if get_str_width(&h_file.filenm) > max_len { cut_str(h_file.filenm.clone(), max_len, true, true) } else { h_file.filenm.clone() };
 
             let filenm_disp = h_file.filenm_disp.clone();
-            h_file.filenm_disp = if term.tabs[idx].editor.is_changed { format!("* {} x", filenm_disp) } else { format!(" {} x", filenm_disp) };
+            h_file.filenm_disp = if term.tabs[idx].editor.state.is_changed { format!("* {} x", filenm_disp) } else { format!(" {} x", filenm_disp) };
             tmp_all_vec.push((idx, h_file.filenm_disp.clone()));
         }
 
@@ -203,9 +201,9 @@ pub struct HeaderBar {
     pub left_arrow_area: (usize, usize),
 
     // Position on the terminal
-    pub disp_row_num: usize,
-    pub disp_row_posi: usize,
-    pub disp_col_num: usize,
+    pub row_num: usize,
+    pub row_posi: usize,
+    pub col_num: usize,
     pub history: History,
 }
 
@@ -224,9 +222,9 @@ impl Default for HeaderBar {
             is_right_arrow_disp: false,
             right_arrow_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
             left_arrow_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
-            disp_row_num: 1,
-            disp_row_posi: 0,
-            disp_col_num: 0,
+            row_num: 1,
+            row_posi: 0,
+            col_num: 0,
             history: History::default(),
         }
     }

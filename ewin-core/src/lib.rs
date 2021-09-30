@@ -2,9 +2,8 @@ pub mod global {
     use crate::{
         _cfg::{
             cfg::*,
-            keys::KeyWhen,
-            keys::{KeyCmd, Keys},
-            lang::lang_cfg::LangCfg,
+            key::{keycmd::*, keys::*, keywhen::*},
+            lang::lang_cfg::*,
         },
         model::*,
         util::*,
@@ -43,8 +42,12 @@ pub mod sel_range;
 pub mod util;
 pub mod _cfg {
     pub mod cfg;
-    pub mod keybind;
-    pub mod keys;
+    pub mod key {
+        pub mod keybind;
+        pub mod keycmd;
+        pub mod keys;
+        pub mod keywhen;
+    }
     pub mod lang {
         pub mod lang_cfg;
     }

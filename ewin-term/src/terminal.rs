@@ -1,12 +1,22 @@
 use crate::{
-    bar::headerbar::*,
-    bar::statusbar::*,
+    bar::{headerbar::*, statusbar::*},
     ctx_menu::init::*,
-    ewin_core::{_cfg::keys::*, def::*, global::*, log::*, model::*, util::*},
+    ewin_core::{
+        _cfg::key::{keycmd::*, keys::*, keywhen::*},
+        colors::*,
+        def::*,
+        file::*,
+        global::*,
+        log::*,
+        model::*,
+        util::*,
+    },
+    ewin_editor::model::*,
+    ewin_prom::model::*,
     global_term,
     help::*,
-    model::Macros,
-    tab::Tab,
+    model::*,
+    tab::*,
 };
 use crossterm::{
     cursor::*,
@@ -16,12 +26,9 @@ use crossterm::{
     terminal::*,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ewin_core::file::File;
-use ewin_editor::model::{EditorDraw, TextBuffer};
-use ewin_prom::prompt::prompt::Prompt;
-
 use std::{
     ffi::OsStr,
+    fmt,
     fs::metadata,
     io::{stdout, ErrorKind, Write},
     path::Path,
@@ -30,40 +37,61 @@ use std::{
 };
 
 impl Terminal {
-    pub fn draw<T: Write>(&mut self, out: &mut T) {
+    pub fn draw<T: Write>(&mut self, out: &mut T, draw_parts: &DParts) {
         Log::info_key("Terminal.draw start");
+        Log::info("draw_parts", &draw_parts);
+        // let mut draw_parts = draw_parts;
+        self.set_disp_size();
 
-        if !self.set_disp_size() {
-            self.clear_curt_tab();
-            self.curt().mbar.set_err(&LANG.increase_height_width_terminal);
-        }
-
-        let draw_type_org = self.curt().editor.draw_type;
-        Log::debug("d_range", &draw_type_org);
-
-        if !(draw_type_org == DrawType::Not || draw_type_org == DrawType::MoveCur) {
-            self.editor_draw_vec[self.idx].draw_cache(&mut self.tabs[self.idx].editor);
-            self.tabs[self.idx].editor.draw(out, &self.editor_draw_vec[self.idx], &self.mouse_mode)
-        }
-        HeaderBar::draw(out, self);
+        let draw_type_org = self.curt().editor.draw_range;
+        Log::debug("draw_type_org", &draw_type_org);
         let mut str_vec: Vec<String> = vec![];
-        let state = &self.curt().state.clone();
 
-        self.help.draw(&mut str_vec);
-        self.curt().mbar.draw(&mut str_vec);
-        let is_msg_changed = self.curt().mbar.is_msg_changed();
-        let prompt_disp_row_posi = self.curt().prom.disp_row_posi;
-        self.curt().prom.draw(&mut str_vec, prompt_disp_row_posi, state, is_msg_changed);
+        if self.keycmd == KeyCmd::Resize {
+            self.curt().editor.draw_range = EditorDrawRange::None;
+        } else {
+            match draw_parts {
+                DParts::All | DParts::AllMsgBar(_) => self.curt().editor.draw_range = EditorDrawRange::All,
+                _ => {}
+            };
+        };
 
-        if draw_type_org != DrawType::Not {
-            StatusBar::draw(&mut str_vec, &self.hbar.file_vec[self.idx], &mut self.tabs[self.idx])
+        // Editor
+        match self.curt().editor.draw_range {
+            EditorDrawRange::Not => {}
+            _ => {
+                if self.curt().editor.draw_range == EditorDrawRange::MoveCur {
+                    StatusBar::draw_only(out, &mut self.tabs[self.idx], &self.hbar.file_vec[self.idx]);
+                    return;
+                } else {
+                    self.editor_draw_vec[self.idx].draw_cache(&mut self.tabs[self.idx].editor);
+                    self.tabs[self.idx].editor.draw(&mut str_vec, &self.editor_draw_vec[self.idx]);
+                    StatusBar::draw(&mut str_vec, &mut self.tabs[self.idx], &self.hbar.file_vec[self.idx]);
+                }
+            }
+        };
+        //  if let DParts::MsgBar(_) |
+        if let &DParts::ScrollUpDown(_) | &DParts::All = draw_parts {
+            // if draw_parts != &DParts::ScrollUpDown(ScrollUpDownType::Grep) {
+            HeaderBar::draw(self, &mut str_vec);
+            // }
+            self.help.draw(&mut str_vec);
+            self.curt().mbar.draw(&mut str_vec);
+            let is_msg_changed = self.curt().mbar.is_msg_changed();
+            let prom_disp_row_posi = self.curt().prom.disp_row_posi;
+            let h_file = &self.curt_h_file().clone();
+            let state = &self.curt().state.clone();
+            self.curt().prom.draw(&mut str_vec, prom_disp_row_posi, state, is_msg_changed, h_file);
+        }
+        if draw_parts == &DParts::All || draw_parts == &DParts::Editor {
+            Log::info("self.state.is_ctx_menu", &self.state.is_ctx_menu);
+
+            if self.state.is_ctx_menu {
+                self.set_draw_range_ctx_menu();
+                self.ctx_menu_group.draw(&mut str_vec);
+            }
         }
         self.draw_init_info(&mut str_vec, draw_type_org);
-
-        if self.state.is_ctx_menu {
-            self.ctx_menu_group.draw(&mut str_vec);
-        }
-        // for Right click menu
 
         Log::debug("cur", &self.curt().editor.cur);
         Log::debug("offset_x", &self.curt().editor.offset_x);
@@ -83,32 +111,45 @@ impl Terminal {
         Log::info_key("Terminal.draw end");
     }
 
-    pub fn draw_cur<T: Write>(out: &mut T, term: &mut Terminal) {
+    pub fn draw_cur<T: Write>(&mut self, out: &mut T) {
         let mut str_vec: Vec<String> = vec![];
 
-        if term.state.is_ctx_menu {
-            Terminal::hide_cur();
-        } else if term.curt().state.is_editor_cur() {
-            let rnw_margin = if term.mouse_mode == MouseMode::Normal { term.curt().editor.get_rnw_and_margin() } else { 0 };
-            let editor = &term.curt().editor;
+        if self.state.is_ctx_menu {
+            self.ctx_menu_group.draw_cur();
+        } else if self.curt().state.is_editor_cur() {
+            if self.curt().mbar.is_exsist_msg() && self.hbar.row_num + self.curt().editor.cur.y - self.curt().editor.offset_y == self.curt().mbar.disp_row_posi {
+                self.curt().editor.cur_up();
+            }
+            let rnw_margin = if self.curt().editor.state.mouse_mode == MouseMode::Normal { self.curt().editor.get_rnw_and_margin() } else { 0 };
+            let editor = &self.curt().editor;
             str_vec.push(MoveTo((editor.cur.disp_x - editor.offset_disp_x + rnw_margin) as u16, (editor.cur.y - editor.offset_y + editor.disp_row_posi) as u16).to_string());
+
             Terminal::show_cur();
-        } else if term.curt().state.is_prom_show_cur() {
+        } else if self.curt().state.is_prom_show_cur() {
             Terminal::show_cur();
-            term.tabs[term.idx].prom.draw_cur(&mut str_vec, &term.tabs[term.idx].state);
+            self.tabs[self.idx].prom.draw_cur(&mut str_vec, &self.tabs[self.idx].state);
         } else {
             Terminal::hide_cur();
         }
-        let _ = out.write(str_vec.concat().as_bytes());
-        out.flush().unwrap();
+        if !str_vec.is_empty() {
+            let _ = out.write(str_vec.concat().as_bytes());
+            out.flush().unwrap();
+        }
     }
 
-    pub fn draw_init_info(&mut self, str_vec: &mut Vec<String>, draw_type_org: DrawType) {
+    pub fn draw_all<T: Write>(&mut self, out: &mut T, draw_parts: DParts) {
+        self.draw(out, &draw_parts);
+        self.draw_cur(out);
+    }
+
+    pub fn draw_init_info(&mut self, str_vec: &mut Vec<String>, draw_type_org: EditorDrawRange) {
+        Log::debug_key("Terminal.draw_init_info");
         // Information display in the center when a new file is created
 
-        if self.curt().editor.buf.len_chars() == 1 && draw_type_org == DrawType::None && self.idx == 0 && self.curt().state.is_nomal() && !self.curt().editor.is_changed {
-            let cols = size().unwrap().0 as usize;
+        if self.curt().editor.buf.len_chars() == 1 && draw_type_org == EditorDrawRange::None && self.idx == 0 && self.curt().state.is_nomal() && !self.curt().editor.state.is_changed {
+            let cols = get_term_size().0 as usize;
             let pkg_name = APP_NAME;
+            Colors::set_text_color(str_vec);
             str_vec.push(format!("{}{}{}", MoveTo(0, 3), Clear(ClearType::CurrentLine), format!("{name:^w$}", name = pkg_name, w = cols - (get_str_width(pkg_name) - pkg_name.chars().count()))));
             let ver_name = format!("{}: {}", "Version", env!("CARGO_PKG_VERSION"));
             str_vec.push(format!("{}{}{}", MoveTo(0, 4), Clear(ClearType::CurrentLine), format!("{ver:^w$}", ver = ver_name, w = cols - (get_str_width(&ver_name) - ver_name.chars().count()))));
@@ -121,9 +162,9 @@ impl Terminal {
     }
 
     pub fn check_displayable() -> bool {
-        let (cols, rows) = size().unwrap();
+        let (cols, rows) = get_term_size();
         // rows 12 is prompt.open_file
-        if cols <= 40 || rows <= 12 {
+        if cols <= TERM_MINIMUM_WIDTH || rows <= TERM_MINIMUM_HEIGHT {
             return false;
         }
         true
@@ -136,7 +177,7 @@ impl Terminal {
 
     pub fn set_disp_size(&mut self) -> bool {
         Log::debug_s("set_disp_size");
-        let (cols, rows) = size().unwrap();
+        let (cols, rows) = get_term_size();
         let (cols, rows) = (cols as usize, rows as usize);
         Log::debug("rows, cols", &format!("{},{}", &rows, &cols));
 
@@ -147,38 +188,38 @@ impl Terminal {
         self.help.disp_row_num = if self.help.mode == HelpMode::Show { Help::DISP_ROW_NUM } else { 0 };
         self.help.disp_row_posi = if self.help.mode == HelpMode::Show { rows - self.help.disp_row_num } else { 0 };
 
-        self.curt().sbar.disp_row_num = 1;
+        self.curt().sbar.row_num = 1;
         let help_disp_row_num = if self.help.disp_row_num > 0 { self.help.disp_row_num + 1 } else { 0 };
-        self.curt().sbar.disp_row_posi = if help_disp_row_num == 0 { rows - 1 } else { rows - help_disp_row_num };
-        self.curt().sbar.disp_col_num = cols;
+        self.curt().sbar.row_posi = if help_disp_row_num == 0 { rows - 1 } else { rows - help_disp_row_num };
+        self.curt().sbar.col_num = cols;
 
         self.curt().prom.disp_col_num = cols;
 
         if self.curt().state.is_open_file {
             // -1 is MsgBar
-            self.curt().prom.disp_row_num = rows - self.hbar.disp_row_num - self.help.disp_row_num - self.curt().sbar.disp_row_num - 1;
+            self.curt().prom.disp_row_num = rows - self.hbar.row_num - self.help.disp_row_num - self.curt().sbar.row_num - 1;
             if self.curt().prom.disp_row_num < Prompt::OPEN_FILE_FIXED_PHRASE_ROW_NUM + 1 {
                 return false;
             }
         }
-        if rows < self.hbar.disp_row_num + self.curt().prom.disp_row_num + self.help.disp_row_num + self.curt().sbar.disp_row_num {
+        if rows < self.hbar.row_num + self.curt().prom.disp_row_num + self.help.disp_row_num + self.curt().sbar.row_num {
             return false;
         }
-        self.curt().prom.disp_row_posi = (rows - self.curt().prom.disp_row_num + 1 - self.help.disp_row_num - self.curt().sbar.disp_row_num) as u16 - 1;
+        self.curt().prom.disp_row_posi = (rows - self.curt().prom.disp_row_num + 1 - self.help.disp_row_num - self.curt().sbar.row_num) as u16 - 1;
 
         self.curt().mbar.disp_col_num = cols;
-        self.curt().mbar.disp_readonly_row_num = if self.curt().state.is_read_only { 1 } else { 0 };
+        self.curt().mbar.disp_readonly_row_num = if self.curt().editor.state.is_read_only { 1 } else { 0 };
         self.curt().mbar.disp_keyrecord_row_num = if self.curt().mbar.msg_keyrecord.is_empty() { 0 } else { 1 };
         self.curt().mbar.disp_row_num = if self.curt().mbar.msg.str.is_empty() { 0 } else { 1 };
 
-        self.curt().mbar.disp_row_posi = rows - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.disp_row_num - 1;
-        self.curt().mbar.disp_keyrecord_row_posi = rows - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.disp_row_num - 1;
-        self.curt().mbar.disp_readonly_row_posi = rows - self.curt().mbar.disp_keyrecord_row_num - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.disp_row_num - 1;
+        self.curt().mbar.disp_row_posi = rows - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.row_num - 1;
+        self.curt().mbar.disp_keyrecord_row_posi = rows - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.row_num - 1;
+        self.curt().mbar.disp_readonly_row_posi = rows - self.curt().mbar.disp_keyrecord_row_num - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.row_num - 1;
 
-        self.curt().editor.disp_col_num = if self.mouse_mode == MouseMode::Normal { cols - self.curt().editor.get_rnw_and_margin() } else { cols };
-        self.curt().editor.disp_row_num = rows - self.hbar.disp_row_num - self.curt().mbar.disp_readonly_row_num - self.curt().mbar.disp_keyrecord_row_num - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.disp_row_num;
+        self.curt().editor.disp_col_num = if self.curt().editor.state.mouse_mode == MouseMode::Normal { cols - self.curt().editor.get_rnw_and_margin() } else { cols };
+        self.curt().editor.disp_row_num = rows - self.hbar.row_num - self.curt().mbar.disp_readonly_row_num - self.curt().mbar.disp_keyrecord_row_num - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.row_num;
 
-        true
+        return true;
     }
 
     pub fn show_cur() {
@@ -187,11 +228,28 @@ impl Terminal {
     pub fn hide_cur() {
         execute!(stdout(), Hide).unwrap();
     }
+
+    pub fn set_title<T: fmt::Display>(_f: T) {
+        #[cfg(target_os = "windows")]
+        execute!(stdout(), SetTitle(_f)).unwrap();
+    }
+
+    pub fn clear_all() {
+        execute!(stdout(), Clear(ClearType::All)).unwrap();
+    }
     pub fn init() {
         Macros::init_js_engine();
 
         enable_raw_mode().unwrap();
         execute!(stdout(), EnterAlternateScreen, EnableMouseCapture).unwrap();
+
+        #[cfg(target_os = "windows")]
+        change_output_encoding();
+
+        Log::info("Platform", &*ENV);
+        if *ENV == Env::WSL {
+            Log::info("Powershell enable", &*IS_POWERSHELL_ENABLE);
+        }
     }
     pub fn finalize_initial() {
         disable_raw_mode().unwrap();
@@ -209,54 +267,63 @@ impl Terminal {
         exit(0);
     }
 
-    //  pub fn open(&mut self, filenm: &String, encoding: Encoding, tab: &mut Tab) {
-    pub fn open(&mut self, filenm: &str, tab: &mut Tab) -> bool {
+    pub fn open(&mut self, filenm: &str, tab: &mut Tab, is_first_open: bool) -> ActType {
         Log::info("File open start", &filenm);
         let path = Path::new(&filenm);
 
         let (is_readable, is_writable) = File::is_readable_writable(filenm);
-        if !filenm.is_empty() && !path.exists() {
-            Terminal::exit_file_open(&LANG.file_not_found);
-        }
-        // read
-        let result = TextBuffer::from_path(filenm);
-        // Default config
-        let mut enc = Encode::UTF8;
-        let mut new_line = NEW_LINE_LF_STR.to_string();
-        let mut bom_exsist = None;
-        match result {
-            Ok((text_buf, _enc, _new_line, _bom_exsist)) => {
-                enc = _enc;
-                new_line = _new_line;
-                bom_exsist = _bom_exsist;
-                tab.editor.buf = text_buf;
 
-                if !is_writable {
-                    tab.state.is_read_only = true;
-                    tab.mbar.set_readonly(&format!("{}({})", &LANG.unable_to_edit, &LANG.no_write_permission));
+        if !filenm.is_empty() && !path.exists() {
+            if is_first_open {
+                Terminal::exit_file_open(&LANG.file_not_found);
+                return ActType::Exit;
+            } else {
+                return ActType::Draw(DParts::MsgBar(LANG.file_not_found.to_string()));
+            };
+        } else {
+            let mut enc = Encode::UTF8;
+            let mut new_line = NEW_LINE_LF_STR.to_string();
+            let mut bom_exsist = None;
+            if filenm.is_empty() {
+                if is_first_open {
+                    tab.editor.buf.text.insert_char(tab.editor.buf.text.len_chars(), EOF_MARK);
                 }
-            }
-            Err(err) => match err.kind() {
-                ErrorKind::PermissionDenied => {
-                    if !is_readable {
-                        if self.tabs.is_empty() {
-                            Terminal::exit_file_open(&LANG.no_read_permission);
-                        } else {
-                            self.curt().mbar.set_err(&LANG.no_read_permission.clone())
+            } else {
+                // read
+                let result = TextBuffer::from_path(filenm);
+                // Default config
+                match result {
+                    Ok((text_buf, _enc, _new_line, _bom_exsist)) => {
+                        enc = _enc;
+                        new_line = _new_line;
+                        bom_exsist = _bom_exsist;
+                        tab.editor.buf = text_buf;
+
+                        if !is_writable {
+                            tab.editor.state.is_read_only = true;
+                            tab.mbar.set_readonly(&format!("{}({})", &LANG.unable_to_edit, &LANG.no_write_permission));
                         }
                     }
+                    Err(err) => match err.kind() {
+                        _ => {
+                            let err_str = if err.kind() == ErrorKind::PermissionDenied && !is_readable { LANG.no_read_permission.clone() } else { format!("{} {:?}", &LANG.file_opening_problem, err) };
+                            if self.tabs.is_empty() {
+                                Terminal::exit_file_open(&err_str);
+                            } else {
+                                return ActType::Draw(DParts::MsgBar(err_str));
+                            }
+                        }
+                    },
                 }
-                ErrorKind::NotFound => tab.editor.buf.text.insert_char(tab.editor.buf.text.len_chars(), EOF_MARK),
-                _ => Terminal::exit_file_open(&format!("{} {:?}", LANG.file_opening_problem, err)),
-            },
-        }
+            }
 
-        if is_readable {
             let mut h_file = HeaderFile::new(filenm);
             h_file.enc = enc;
             h_file.nl = new_line.clone();
             h_file.nl_org = new_line;
             h_file.bom = bom_exsist;
+
+            Terminal::set_title(&filenm);
 
             Log::info("File info", &h_file);
 
@@ -268,9 +335,9 @@ impl Terminal {
             }
             self.curt().editor.set_cur_default();
             Log::info_s("File open end");
-            return true;
+
+            return ActType::Next;
         }
-        false
     }
 
     pub fn enable_syntax_highlight(&mut self, path: &Path) {
@@ -290,26 +357,20 @@ impl Terminal {
         Terminal::exit();
     }
 
-    pub fn activate<T: Write>(&mut self, args: &Args, out: &mut T) {
+    pub fn activate(&mut self, args: &Args) {
         Log::info_key("activate");
 
         let _ = GREP_INFO_VEC.set(tokio::sync::Mutex::new(vec![GrepState::default()]));
         let _ = GREP_CANCEL_VEC.set(tokio::sync::Mutex::new(vec![]));
         let _ = global_term::TAB.set(tokio::sync::Mutex::new(Tab::new()));
 
-        #[cfg(target_os = "windows")]
-        change_output_encoding();
-
-        Log::info("Platform", &*ENV);
-        if *ENV == Env::WSL {
-            Log::info("Powershell enable", &*IS_POWERSHELL_ENABLE);
-        }
-
         self.ctx_menu_group.init();
+        self.open(&args.filenm, &mut Tab::new(), true);
+    }
 
-        self.open(&args.filenm, &mut Tab::new());
-        self.draw(out);
-        Terminal::draw_cur(out, self);
+    pub fn init_draw<T: Write>(&mut self, out: &mut T) {
+        self.draw(out, &DParts::All);
+        self.draw_cur(out);
     }
 
     pub fn add_tab(&mut self, tab: Tab, h_file: HeaderFile) {
@@ -358,25 +419,20 @@ impl Terminal {
         self.state.close_other_than_this_tab_idx = leave_tab_idx;
         if leave_tab_idx == USIZE_UNDEFINED {
             self.state.is_all_close_confirm = true;
-        } else {
-            self.state.close_other_than_this_tab_idx = leave_tab_idx;
         }
-        // let vec = &self.hbar.file_vec.clone();
         let mut idx = self.tabs.len();
+
         for _ in 0..self.tabs.len() {
             idx -= 1;
             Log::debug("idx", &idx);
-
             if idx == self.state.close_other_than_this_tab_idx {
                 continue;
             }
             self.idx = idx;
-            if self.tabs[idx].editor.is_changed {
-                /* TODO workspcae
-                if !Prompt___::close(self) {
+            if self.tabs[idx].editor.state.is_changed {
+                if !Tab::prom_close(self) {
                     return false;
                 }
-                */
             } else {
                 self.del_tab(idx);
                 if self.state.close_other_than_this_tab_idx != 0 {
@@ -400,30 +456,31 @@ impl Terminal {
                     self.state.close_other_than_this_tab_idx = USIZE_UNDEFINED;
                 }
             }
-            Log::debug("self.idx 222", &self.idx);
-            Log::debug("self.curt().editor.keys", &self.curt().editor.keys);
         }
 
         self.tabs.is_empty()
     }
 
-    pub fn save_all_tab(&mut self) -> bool {
+    pub fn save_all_tab(&mut self) -> ActType {
         Log::debug_key("save_all_tab");
         self.state.is_all_save = true;
         let len = self.tabs.len() - 1;
         for idx in (0..=len).rev() {
             self.idx = idx;
-            if Tab::save(self) {
+            let act_type = Tab::save(self);
+            if let ActType::Draw(_) = act_type {
+                return act_type;
+            } else {
                 self.del_tab(idx);
             }
         }
-        self.tabs.is_empty()
+        return ActType::Next;
     }
 
     pub fn cancel_close_all_tab(&mut self) {
         self.state.is_all_close_confirm = false;
         for tab in self.tabs.iter_mut() {
-            if tab.editor.is_changed {
+            if tab.editor.state.is_changed {
                 tab.editor.set_keys(&Keys::Null);
                 tab.state.clear();
             }
@@ -433,50 +490,48 @@ impl Terminal {
         self.state.is_all_save = false;
     }
 
-    pub fn ctrl_mouse_capture(&mut self) {
-        match self.mouse_mode {
-            MouseMode::Normal => {
-                for tab in self.tabs.iter_mut() {
-                    tab.editor.rnw = 0;
-                    tab.editor.mouse_mode = MouseMode::Mouse;
-                }
-                self.mouse_mode = MouseMode::Mouse;
-                execute!(stdout(), DisableMouseCapture).unwrap();
-            }
-            MouseMode::Mouse => {
-                for tab in self.tabs.iter_mut() {
-                    tab.editor.rnw = tab.editor.buf.len_lines().to_string().len();
-                    tab.editor.mouse_mode = MouseMode::Normal;
-                }
-                self.mouse_mode = MouseMode::Normal;
-                execute!(stdout(), EnableMouseCapture).unwrap();
-            }
-        };
-    }
-
     pub fn new_tab(&mut self) {
         // Disable the event in case of the next display
         self.curt().editor.set_keys(&Keys::Null);
 
         let mut new_tab = Tab::new();
         new_tab.editor.set_cur_default();
-        new_tab.editor.buf.text.insert_char(new_tab.editor.buf.text.len_chars(), EOF_MARK);
-        new_tab.editor.draw_type = DrawType::All;
+        new_tab.editor.buf.insert_end(&EOF_MARK.to_string());
+        new_tab.editor.draw_range = EditorDrawRange::All;
 
         // let dt: DateTime<Local> = Local::now();
         // self.add_tab(new_tab, HeaderFile::new(&dt.format("%M:%S").to_string()));
 
         self.add_tab(new_tab, HeaderFile::new(&LANG.new_file));
+        Terminal::set_title(&self.curt_h_file().fullpath);
     }
 
-    pub fn next_tab(&mut self) {
-        self.idx = if self.tabs.len() - 1 == self.idx { 0 } else { self.idx + 1 };
-        self.curt().editor.set_keys(&Keys::Null);
-        self.curt().editor.draw_type = DrawType::All;
+    pub fn switch_tab(&mut self, direction: Direction) -> ActType {
+        if self.tabs.len() > 1 {
+            self.idx = if direction == Direction::Right {
+                if self.tabs.len() - 1 == self.idx {
+                    0
+                } else {
+                    self.idx + 1
+                }
+            } else {
+                if self.idx == 0 {
+                    self.tabs.len() - 1
+                } else {
+                    self.idx - 1
+                }
+            };
+            Terminal::set_title(&self.curt_h_file().fullpath);
+            return ActType::Draw(DParts::All);
+
+            //   self.curt().editor.set_keys(&Keys::Null);
+        } else {
+            return ActType::Draw(DParts::MsgBar(LANG.no_tab_can_be_switched.to_string()));
+        }
     }
 
     pub fn resize(&mut self) {
-        self.curt().editor.draw_type = DrawType::All;
+        self.curt().editor.draw_range = EditorDrawRange::All;
     }
 
     pub fn curt(&mut self) -> &mut Tab {
@@ -487,23 +542,26 @@ impl Terminal {
         return self.hbar.file_vec.get_mut(self.idx).unwrap();
     }
 
-    pub fn clear_curt_tab(&mut self) {
+    pub fn clear_curt_tab(&mut self, is_clear_grep_info: bool) {
+        Log::debug_key("clear_curt_tab");
         self.curt().prom.clear();
         self.curt().state.clear();
+        if is_clear_grep_info {
+            self.curt().state.clear_grep_info();
+        }
         self.curt().mbar.clear();
         self.set_disp_size();
-        self.curt().editor.draw_type = DrawType::All;
+        self.curt().editor.draw_range = EditorDrawRange::All;
     }
 
     pub fn clear_pre_tab_status(&mut self) {
         self.idx -= 1;
-        self.curt().editor.draw_type = DrawType::All;
 
         self.curt().prom.clear();
         self.curt().state.clear();
         self.curt().mbar.clear();
         self.set_disp_size();
-        self.curt().editor.draw_type = DrawType::All;
+        self.curt().editor.draw_range = EditorDrawRange::All;
         self.idx += 1;
     }
 
@@ -515,24 +573,23 @@ impl Terminal {
     pub fn set_draw_range_ctx_menu(&mut self) {
         Log::debug_key("set_draw_range_ctx_menu");
         match self.keycmd {
-            // TODO area check
-            KeyCmd::MouseDownLeft(y, x) => {
+            KeyCmd::CtxMenu(C_Cmd::MouseDownLeft(y, x)) => {
                 if self.state.is_ctx_menu && !self.ctx_menu_group.is_mouse_within_range(y, x) {
                     self.state.is_ctx_menu = false;
                     self.ctx_menu_group.clear();
-                    self.curt().editor.draw_type = DrawType::All;
+                    self.curt().editor.draw_range = EditorDrawRange::All;
                 }
             }
-            KeyCmd::MouseMove(y, x) => {
-                if self.state.is_ctx_menu && self.ctx_menu_group.is_mouse_within_range(y, x) {
+            KeyCmd::Edit(E_Cmd::MouseDownRight(y, x)) | KeyCmd::CtxMenu(C_Cmd::MouseMove(y, x)) => {
+                if self.state.is_ctx_menu && (self.keycmd == KeyCmd::Edit(E_Cmd::MouseDownRight(y, x)) || self.keycmd == KeyCmd::CtxMenu(C_Cmd::MouseMove(y, x)) && self.ctx_menu_group.is_mouse_within_range(y, x) && self.ctx_menu_group.is_mouse_within_range(y, x)) {
                     let offset_y = self.curt().editor.offset_y;
-                    let hbar_disp_row_num = self.hbar.disp_row_num;
+                    let hbar_disp_row_num = self.hbar.row_num;
                     let editor_disp_row_num = if self.curt().editor.offset_y > 0 { self.curt().editor.disp_row_num + self.curt().editor.offset_y - hbar_disp_row_num } else { self.curt().editor.disp_row_num - hbar_disp_row_num };
 
                     if let Some((sy, ey)) = self.ctx_menu_group.get_draw_range(offset_y, hbar_disp_row_num, editor_disp_row_num) {
-                        self.curt().editor.draw_type = DrawType::Target(sy, ey);
+                        self.curt().editor.draw_range = EditorDrawRange::Target(sy, ey);
                     } else {
-                        self.curt().editor.draw_type = DrawType::Not;
+                        self.curt().editor.draw_range = EditorDrawRange::Not;
                     }
                 }
             }
@@ -540,9 +597,33 @@ impl Terminal {
         }
     }
     pub fn set_keys(&mut self, keys: &Keys) {
-        let keywhen = if self.curt().state.is_nomal_and_not_read_only() { KeyWhen::EditorFocus } else { KeyWhen::PromptFocus };
-        self.keycmd = Keybind::keys_to_keycmd(keys, keywhen);
+        let keywhen = self.get_when(keys);
+        Log::debug("Terminal.set_keys.keywhen", &keywhen);
+        self.keycmd = Keybind::keys_to_keycmd_ex(keys, keywhen, self.hbar.row_posi, self.curt().sbar.row_posi);
+        Log::debug("Terminal.set_keys.keycmd", &self.keycmd);
         self.keys = *keys;
+    }
+
+    pub fn get_when(&mut self, keys: &Keys) -> KeyWhen {
+        Log::debug("self.curt().state", &self.curt().state);
+
+        return if self.curt().state.judge_when(keys) {
+            if self.state.is_ctx_menu {
+                if EvtAct::is_ctrl_ctx_keys(&keys, self) {
+                    KeyWhen::CtxMenuFocus
+                } else {
+                    match keys {
+                        Keys::MouseMove(_, _) => self.ctx_menu_group.clear_select_menu(),
+                        _ => self.clear_ctx_menu(),
+                    }
+                    KeyWhen::EditorFocus
+                }
+            } else {
+                KeyWhen::EditorFocus
+            }
+        } else {
+            KeyWhen::PromptFocus
+        };
     }
 }
 
@@ -550,7 +631,6 @@ impl Terminal {
 pub struct Terminal {
     pub keycmd: KeyCmd,
     pub keys: Keys,
-    pub mouse_mode: MouseMode,
     pub hbar: HeaderBar,
     pub help: Help,
     pub tabs: Vec<Tab>,
@@ -559,6 +639,7 @@ pub struct Terminal {
     pub idx: usize,
     pub state: TerminalState,
     pub ctx_menu_group: CtxMenuGroup,
+    pub draw_parts_org: DParts,
 }
 
 impl Terminal {
@@ -569,7 +650,7 @@ impl Terminal {
 
 impl Default for Terminal {
     fn default() -> Self {
-        Terminal { keycmd: KeyCmd::Null, keys: Keys::Null, mouse_mode: MouseMode::Normal, hbar: HeaderBar::new(), tabs: vec![], editor_draw_vec: vec![], idx: 0, help: Help::new(), state: TerminalState::default(), ctx_menu_group: CtxMenuGroup::default() }
+        Terminal { draw_parts_org: DParts::All, keycmd: KeyCmd::Null, keys: Keys::Null, hbar: HeaderBar::new(), tabs: vec![], editor_draw_vec: vec![], idx: 0, help: Help::new(), state: TerminalState::default(), ctx_menu_group: CtxMenuGroup::default() }
     }
 }
 #[derive(Debug, Clone)]

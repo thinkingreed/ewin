@@ -1,5 +1,4 @@
-use crate::{ewin_core::def::*, ewin_core::global::*, ewin_core::log::Log, ewin_core::util::*};
-use crossterm::terminal::size;
+use crate::ewin_core::{_cfg::key::keycmd::*, def::*, global::*, log::*, util::*};
 use std::{collections::HashMap, hash::Hash, slice::Iter};
 
 impl CtxMenuGroup {
@@ -11,7 +10,7 @@ impl CtxMenuGroup {
 
     pub fn set_internal_struct(&mut self, map: &mut HashMap<String, HashMap<String, Vec<HashMap<String, Vec<String>>>>>) {
         let mut ctx_menu_map = HashMap::new();
-        let (cols, _) = size().unwrap();
+        let (cols, _) = get_term_size();
         // Dividing by 2 is parent, child
         // -8 is extra
         let menunm_max_len = cols as usize / 2 - 8;
@@ -115,6 +114,7 @@ impl CtxMenuGroup {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CtxMenuGroup {
+    pub c_cmd: C_Cmd,
     pub curt_cont: CtxMenuCont,
     pub parent_sel_y: usize,
     pub parent_sel_y_cache: usize,
@@ -127,7 +127,7 @@ pub struct CtxMenuGroup {
 
 impl Default for CtxMenuGroup {
     fn default() -> Self {
-        CtxMenuGroup { parent_sel_y: USIZE_UNDEFINED, parent_sel_y_cache: USIZE_UNDEFINED, child_sel_y: USIZE_UNDEFINED, child_sel_y_cache: USIZE_UNDEFINED, ctx_menu_place_map: HashMap::new(), curt_cont: CtxMenuCont::default(), disp_sy: USIZE_UNDEFINED, disp_ey: 0 }
+        CtxMenuGroup { c_cmd: C_Cmd::Null, parent_sel_y: USIZE_UNDEFINED, parent_sel_y_cache: USIZE_UNDEFINED, child_sel_y: USIZE_UNDEFINED, child_sel_y_cache: USIZE_UNDEFINED, ctx_menu_place_map: HashMap::new(), curt_cont: CtxMenuCont::default(), disp_sy: USIZE_UNDEFINED, disp_ey: 0 }
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

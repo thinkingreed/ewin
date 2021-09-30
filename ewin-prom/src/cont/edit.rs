@@ -1,5 +1,5 @@
-use crate::cont::promptcont::PromptCont;
-use ewin_core::{clipboard::get_clipboard, log::*, model::*};
+use crate::model::PromptCont;
+use ewin_core::{clipboard::*, log::*, model::*};
 
 impl PromptCont {
     pub fn insert_str(&mut self, ep: &mut Proc) {

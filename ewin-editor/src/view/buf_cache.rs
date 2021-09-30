@@ -1,5 +1,7 @@
-
-use crate::{ewin_core::_cfg::cfg::Cfg, ewin_core::_cfg::keys::*, ewin_core::char_style::*, ewin_core::def::*, ewin_core::global::*, ewin_core::log::*, ewin_core::model::*, ewin_core::util::*, model::*};
+use crate::{
+    ewin_core::{_cfg::cfg::Cfg, _cfg::key::keycmd::*, char_style::*, def::*, global::*, log::*, model::*, util::*},
+    model::*,
+};
 use std::cmp::min;
 use syntect::highlighting::{HighlightIterator, HighlightState, Highlighter, Style};
 use syntect::parsing::{ParseState, ScopeStack};
@@ -13,23 +15,23 @@ impl EditorDraw {
             self.cells.resize_with(editor.buf.len_lines() as usize, || vec![]);
 
             // When there is a change to offset_y in paste for highlight target
-            if editor.is_enable_syntax_highlight && editor.offset_y != editor.offset_y_org && editor.keycmd == KeyCmd::InsertStr("".to_string()) {
+            if editor.is_enable_syntax_highlight && editor.offset_y != editor.offset_y_org && editor.e_cmd == E_Cmd::InsertStr("".to_string()) {
                 self.syntax_state_vec.clear();
             }
         }
-        let d_range = editor.draw_type.clone();
+        let d_range = editor.draw_range.clone();
 
         Log::debug("draw_cache.d_range", &d_range);
         match d_range {
-            DrawType::After(sy) => {
+            EditorDrawRange::After(sy) => {
                 self.sy = sy;
                 self.ey = min(editor.offset_y + editor.disp_row_num - 1, editor.buf.len_lines() - 1);
             }
-            DrawType::Target(sy, ey) | DrawType::ScrollDown(sy, ey) | DrawType::ScrollUp(sy, ey) => {
+            EditorDrawRange::Target(sy, ey) | EditorDrawRange::ScrollDown(sy, ey) | EditorDrawRange::ScrollUp(sy, ey) => {
                 self.sy = sy;
                 self.ey = min(ey, editor.buf.len_lines() - 1);
             }
-            DrawType::All | DrawType::None => {
+            EditorDrawRange::All | EditorDrawRange::None => {
                 self.sy = editor.offset_y;
                 self.ey = if editor.disp_row_num == 0 { 0 } else { min(editor.offset_y + editor.disp_row_num - 1, editor.buf.len_lines() - 1) };
             }
@@ -39,9 +41,9 @@ impl EditorDraw {
         Log::debug("draw.sy", &self.sy);
         Log::debug("draw.ey", &self.ey);
 
-        match editor.draw_type {
-            DrawType::None | DrawType::Target(_, _) | DrawType::After(_) | DrawType::All | DrawType::ScrollDown(_, _) | DrawType::ScrollUp(_, _) => self.set_draw_regions(&editor),
-            DrawType::Not | DrawType::MoveCur => {}
+        match editor.draw_range {
+            EditorDrawRange::None | EditorDrawRange::Target(_, _) | EditorDrawRange::After(_) | EditorDrawRange::All | EditorDrawRange::ScrollDown(_, _) | EditorDrawRange::ScrollUp(_, _) => self.set_draw_regions(&editor),
+            EditorDrawRange::Not | EditorDrawRange::MoveCur => {}
         }
     }
     fn set_draw_regions(&mut self, editor: &Editor) {

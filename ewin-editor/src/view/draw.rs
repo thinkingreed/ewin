@@ -1,49 +1,52 @@
-use crate::{ewin_core::_cfg::keys::*, ewin_core::colors::*, ewin_core::def::*, ewin_core::global::*, ewin_core::log::*, ewin_core::model::*, model::*};
+use crate::{
+    ewin_core::{colors::*, def::*, global::*, log::*, model::*},
+    model::*,
+};
 use crossterm::{cursor::*, terminal::*};
-use std::io::Write;
 use unicode_width::*;
 
 impl Editor {
-    pub fn draw<T: Write>(&mut self, out: &mut T, draw: &EditorDraw, mouse_mode: &MouseMode) {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>, draw: &EditorDraw) {
         Log::info_key("Editor.draw");
-        Log::debug("editor.d_range", &self.draw_type);
 
-        let mut str_vec: Vec<String> = vec![];
+        // let mut str_vec: Vec<String> = vec![];
         let (mut y, mut x_width) = (0, 0);
-        let d_range = self.draw_type.clone();
+        let d_range = self.draw_range.clone();
 
         match d_range {
-            DrawType::Not | DrawType::MoveCur => {}
-            DrawType::None => {
-                self.set_bg_color(&mut str_vec);
+            EditorDrawRange::Not | EditorDrawRange::MoveCur => {}
+            EditorDrawRange::None => {
+                self.set_bg_color(str_vec);
                 str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, self.disp_row_posi as u16).to_string()));
             }
-            DrawType::Target(sy, ey) => {
+            EditorDrawRange::Target(sy, ey) => {
                 for i in sy - self.offset_y..=ey - self.offset_y {
                     str_vec.push(format!("{}{}", MoveTo(0, (i + self.disp_row_posi) as u16), Clear(ClearType::CurrentLine)));
                 }
                 str_vec.push(format!("{}", MoveTo(0, (sy - self.offset_y + self.disp_row_posi) as u16)));
             }
-            DrawType::All => {
-                if self.keycmd == KeyCmd::Resize {
-                    self.set_bg_color(&mut str_vec);
+            EditorDrawRange::All => {
+                if self.disp_row_num > 0 {
+                    for i in self.disp_row_posi - 1..=self.disp_row_posi + self.disp_row_num - 2 {
+                        str_vec.push(format!("{}{}", MoveTo(0, (i + self.disp_row_posi) as u16), Clear(ClearType::CurrentLine)));
+                    }
+                    str_vec.push(format!("{}", MoveTo(0, self.disp_row_posi as u16)));
                 }
-                str_vec.push(format!("{}{}", MoveTo(0, self.disp_row_posi as u16), Clear(ClearType::FromCursorDown)));
             }
-            DrawType::After(sy) => str_vec.push(format!("{}{}", MoveTo(0, (sy - self.offset_y + self.disp_row_posi) as u16), Clear(ClearType::FromCursorDown))),
-            DrawType::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.disp_row_num - Editor::UP_DOWN_EXTRA - 1) as u16), Clear(ClearType::FromCursorDown))),
-            DrawType::ScrollUp(_, _) => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, (self.disp_row_posi) as u16), Clear(ClearType::CurrentLine))),
+            EditorDrawRange::After(sy) => str_vec.push(format!("{}{}", MoveTo(0, (sy - self.offset_y + self.disp_row_posi) as u16), Clear(ClearType::FromCursorDown))),
+            EditorDrawRange::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.disp_row_num - Editor::UP_DOWN_EXTRA - 1) as u16), Clear(ClearType::FromCursorDown))),
+            EditorDrawRange::ScrollUp(_, _) => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, (self.disp_row_posi) as u16), Clear(ClearType::CurrentLine))),
         }
 
         let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.size;
 
         for i in draw.sy..=draw.ey {
-            self.set_row_num(i, &mut str_vec, mouse_mode);
+            self.set_row_num(i, str_vec);
             let row_cell = &draw.cells[i];
 
             let mut c_org = ' ';
             for (x_idx, cell) in (0_usize..).zip(row_cell) {
-                cell.draw_style(&mut str_vec, x_idx == 0 && self.offset_x > 0);
+                cell.draw_style(str_vec, x_idx == 0 && self.offset_x > 0);
                 let c = cell.c;
 
                 let tab_width = if c == TAB_CHAR { cfg_tab_width - ((x_width + if y == self.cur.y { self.offset_disp_x } else { 0 }) % cfg_tab_width) } else { 0 };
@@ -66,12 +69,12 @@ impl Editor {
                 }
                 x_width += width;
 
-                if mouse_mode == &MouseMode::Normal {
+                if self.state.mouse_mode == MouseMode::Normal {
                     match c {
                         EOF_MARK => {
                             // EOF_STR.len() - 1 is rest 2 char
                             let disp_len = if EOF_STR.len() - 1 + x_width > self.disp_col_num { EOF_STR.len() - (EOF_STR.len() - 1 + x_width - self.disp_col_num) } else { EOF_STR.len() };
-                            Colors::set_eof(&mut str_vec, disp_len)
+                            Colors::set_eof(str_vec, disp_len)
                         }
                         NEW_LINE_LF => str_vec.push(if c_org == NEW_LINE_CR { NEW_LINE_CRLF_MARK.to_string() } else { NEW_LINE_LF_MARK.to_string() }),
                         NEW_LINE_CR => {}
@@ -97,15 +100,12 @@ impl Editor {
             }
         }
 
-        let _ = out.write(&str_vec.concat().as_bytes());
-        out.flush().unwrap();
-
-        self.draw_type = DrawType::Not;
+        self.draw_range = EditorDrawRange::Not;
         self.sel_org.clear();
     }
 
-    fn set_row_num(&mut self, i: usize, str_vec: &mut Vec<String>, term_mode: &MouseMode) {
-        if term_mode == &MouseMode::Normal {
+    fn set_row_num(&mut self, i: usize, str_vec: &mut Vec<String>) {
+        if self.state.mouse_mode == MouseMode::Normal {
             if i == self.cur.y {
                 Colors::set_rownum_curt_color(str_vec);
             } else {

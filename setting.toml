@@ -1,8 +1,6 @@
 [general.log] # option
-# "info" or "debug"
+# "info" or "debug" or "error"
 level = "debug"
-
-
 
 [general.editor.tab]
 size = 4
@@ -35,12 +33,12 @@ content = """
       {"paste": []},
       {"convert": ["to_uppercase", "to_lowercase", "to_full_width", "to_half_width", "to_space", "to_tab"]},
       {"format": ["json", "xml", "html"]},
-      {"macros": ["insert_text.js", "switch_upper_lower.js"]}
+      {"macros": ["insertString.js", "switch_upper_lower.js"]}
     ],
     "range_non_selected": [
       {"paste": []},
       {"all_select": []},
-      {"macros": ["insert_text.js"]}
+      {"macros": ["insertString.js"]}
     ]
   },
   "header_bar": {

@@ -1,0 +1,80 @@
+use crate::{ewin_core::_cfg::key::keycmd::*, model::*};
+
+impl Editor {
+    pub fn proc(&mut self) {
+        let e_cmd = self.e_cmd.clone();
+        match e_cmd {
+            // cursor move
+            E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::CursorDown | E_Cmd::MouseScrollDown | E_Cmd::CursorLeft | E_Cmd::CursorRight | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd => self.cur_move_com(),
+            E_Cmd::CursorFileHome => self.ctrl_home(),
+            E_Cmd::CursorFileEnd => self.ctrl_end(),
+            E_Cmd::CursorPageUp => self.page_up(),
+            E_Cmd::CursorPageDown => self.page_down(),
+            // select
+            E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::CursorLeftSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect => self.shift_move_com(),
+            E_Cmd::AllSelect => self.all_select(),
+            // edit
+            E_Cmd::InsertStr(str) => self.edit_proc(E_Cmd::InsertStr(str)),
+            E_Cmd::InsertLine => self.edit_proc(E_Cmd::InsertLine),
+            E_Cmd::DelPrevChar => self.edit_proc(E_Cmd::DelPrevChar),
+            E_Cmd::DelNextChar => self.edit_proc(E_Cmd::DelNextChar),
+            E_Cmd::Cut => self.edit_proc(E_Cmd::Cut),
+            E_Cmd::Copy => self.copy(),
+            E_Cmd::Undo => self.undo(),
+            E_Cmd::Redo => self.redo(),
+            // Search
+            E_Cmd::FindNext => self.search_str(true, false),
+            E_Cmd::FindBack => self.search_str(false, false),
+            // mouse
+            E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeft(_, _) | E_Cmd::MouseDownBoxLeft(_, _) | E_Cmd::MouseDragBoxLeft(_, _) => self.ctrl_mouse(),
+            E_Cmd::MouseOpeSwitch => self.ctrl_mouse_capture(),
+            // Mode
+            E_Cmd::CancelMode => self.cancel_mode(),
+            E_Cmd::BoxSelectMode => self.box_select_mode(),
+            // empty
+            E_Cmd::Null => {}
+            //// Internal use
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ewin_core::{_cfg::cfg::*, clipboard::*, log::*, model::*};
+
+    use super::*;
+
+    #[test]
+    fn test_editor_proc() {
+        Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
+
+        // InsertStr
+        let mut e = Editor::new();
+        e.e_cmd = E_Cmd::InsertStr("a".to_string());
+        e.proc();
+        assert_eq!(e.buf.text.to_string(), "a");
+        assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
+
+        // Copy
+        e.sel.set_s(0, 0, 0);
+        e.sel.set_e(0, 1, 1);
+        e.e_cmd = E_Cmd::Copy;
+        e.proc();
+        let clipboard = get_clipboard().unwrap_or("".to_string());
+        assert_eq!(clipboard, "a");
+
+        // Paste
+        e.e_cmd = E_Cmd::InsertStr("".to_string());
+        e.proc();
+        assert_eq!(e.buf.text.to_string(), "aa");
+        assert_eq!(e.cur, Cur { y: 0, x: 2, disp_x: 2 });
+
+        // InsertLine
+        e.e_cmd = E_Cmd::InsertLine;
+        e.proc();
+
+        // assert_eq!(e.buf.text.to_string(),"aa" NEW_LINE_LF.to_string());
+        // assert_eq!(e.cur, Cur { y: 1, x: 0, disp_x: 0 });
+    }
+}

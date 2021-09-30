@@ -1,45 +1,37 @@
-use ewin_core::model::EvtActType;
-
-use crate::{ewin_core::_cfg::keys::KeyCmd, ewin_core::log::*, model::*, terminal::*};
+use crate::{
+    ewin_core::{_cfg::key::keycmd::*, log::*, model::*},
+    model::*,
+    terminal::*,
+};
 
 impl EvtAct {
-    pub fn check_statusbar(term: &mut Terminal) -> EvtActType {
+    pub fn ctrl_statusbar(term: &mut Terminal) -> ActType {
         Log::debug_key("check_statusbar");
 
-        let tab = term.curt();
-
-        match tab.prom.keycmd {
-            KeyCmd::MouseDownLeft(y, x) => {
-                let (x, y) = (x as usize, y as usize);
-                if y != tab.sbar.disp_row_posi {
-                    return EvtActType::Hold;
-                }
-                if tab.sbar.cur_area.0 <= x && x <= tab.sbar.cur_area.1 {
-                    if term.curt().state.is_move_row {
-                        term.clear_curt_tab();
-                        return EvtActType::DrawOnly;
-                    } else {
-                        /* TODO worlspace
-                        Prompt___::move_row(term);
-                         */
-                        return EvtActType::DrawOnly;
+        match &term.keycmd {
+            KeyCmd::StatusBar(s_cmd) => match &s_cmd {
+                S_Cmd::MouseDownLeft(y, x) => {
+                    let (x, _) = (*x as usize, *y as usize);
+                    if term.curt().sbar.cur_area.0 <= x && x <= term.curt().sbar.cur_area.1 {
+                        if term.curt().state.is_move_row {
+                            term.clear_curt_tab(true);
+                        } else {
+                            term.curt().prom_move_row();
+                        }
+                        return ActType::Draw(DParts::All);
                     }
-                }
-                if tab.sbar.enc_nl_area.0 <= x && x <= tab.sbar.enc_nl_area.1 {
-                    if term.curt().state.is_enc_nl {
-                        term.clear_curt_tab();
-                        return EvtActType::DrawOnly;
-                    } else {
-                        /* TODO worlspace
-
-                         Prompt___::enc_nl(term);
-                        */
-                        return EvtActType::DrawOnly;
+                    if term.curt().sbar.enc_nl_area.0 <= x && x <= term.curt().sbar.enc_nl_area.1 {
+                        if term.curt().state.is_enc_nl {
+                            term.clear_curt_tab(true);
+                        } else {
+                            term.curt().prom_enc_nl();
+                        }
+                        return ActType::Draw(DParts::All);
                     }
+                    return ActType::Cancel;
                 }
-                return EvtActType::Hold;
-            }
-            _ => return EvtActType::Hold,
+            },
+            _ => return ActType::Next,
         }
     }
 }

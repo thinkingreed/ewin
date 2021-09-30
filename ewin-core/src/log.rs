@@ -1,4 +1,4 @@
-use crate::{_cfg::cfg::CfgLog, def::APP_NAME, global::*, model::*};
+use crate::{_cfg::cfg::*, def::*, global::*, model::*};
 use chrono::{DateTime, Local};
 use std::{
     env,
@@ -15,6 +15,9 @@ impl Log {
         match log_level {
             "info" => LogLevel::Info,
             "debug" => LogLevel::Debug,
+            "warn" => LogLevel::Warn,
+            "test" => LogLevel::Test,
+            "error" => LogLevel::Error,
             _ => LogLevel::Info,
         }
     }
@@ -118,7 +121,8 @@ pub enum LogLevel {
     Debug = 1,
     Info = 2,
     Warn = 3,
-    Error = 4,
+    Test = 4,
+    Error = 5,
 }
 
 impl fmt::Display for LogLevel {
@@ -127,6 +131,7 @@ impl fmt::Display for LogLevel {
             LogLevel::Debug => write!(f, "DEBUG"),
             LogLevel::Info => write!(f, "INFO "),
             LogLevel::Warn => write!(f, "WARN "),
+            LogLevel::Test => write!(f, "TEST "),
             LogLevel::Error => write!(f, "ERROR"),
         }
     }

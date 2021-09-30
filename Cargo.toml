@@ -8,7 +8,7 @@ members = [
 
 [package]
 name = "ewin"
-version = "0.8.0"
+version = "0.0.1"
 description = "Simple editor for Window(GUI) users.No need to remember commands."
 authors = ["thinkingreed"]
 edition = "2018"
@@ -18,8 +18,12 @@ license = "MIT"
 keywords = ["text", "editor", "terminal", "cli", "tui"]
 categories = ["command-line-utilities"]
 
+build = "build.rs"
+
 [profile.dev]
 debug = 0
+# [profile.release]
+# lto = true
 
 [[bin]]
 name = "ewin"

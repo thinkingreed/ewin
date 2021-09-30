@@ -1,5 +1,5 @@
-use crate::cont::promptcont::PromptCont;
-use ewin_core::{_cfg::keys::*, colors::*, global::*};
+use crate::model::*;
+use ewin_core::{_cfg::key::keycmd::*, colors::*, global::*};
 
 impl PromptCont {
     pub fn set_save_confirm(&mut self) {
@@ -15,7 +15,7 @@ impl PromptCont {
             Colors::get_default_fg(),
             &LANG.cancel,
             Colors::get_msg_highlight_fg(),
-            Keybind::get_key_str(KeyCmd::EscPrompt),
+            Keybind::get_key_str(KeyCmd::Prom(P_Cmd::EscPrompt)),
             Colors::get_default_fg(),
         );
     }

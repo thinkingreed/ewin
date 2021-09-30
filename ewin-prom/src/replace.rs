@@ -1,14 +1,13 @@
 use crate::{
-    cont::promptcont::*,
-    ewin_core::{_cfg::keys::*, colors::*, global::*, log::*},
-    prompt::prompt::*,
+    ewin_core::{_cfg::key::keycmd::*, colors::*, global::*, log::*},
+    model::*,
 };
 
 impl Prompt {
     pub fn replace(&mut self) {
         self.disp_row_num = 7;
-        let mut cont_1 = PromptCont::new_edit_type(self.keycmd.clone(), PromptContPosi::First);
-        let mut cont_2 = PromptCont::new_edit_type(self.keycmd.clone(), PromptContPosi::Second);
+        let mut cont_1 = PromptCont::new(Some(PromptContPosi::First));
+        let mut cont_2 = PromptCont::new(Some(PromptContPosi::Second));
         cont_1.set_replace();
         cont_2.set_replace();
         self.cont_1 = cont_1;
@@ -35,14 +34,14 @@ impl PromptCont {
                 Colors::get_default_fg(),
                 &LANG.all_replace,
                 Colors::get_msg_highlight_fg(),
-                Keybind::get_key_str(KeyCmd::ConfirmPrompt),
+                Keybind::get_key_str(KeyCmd::Prom(P_Cmd::ConfirmPrompt)),
                 Colors::get_default_fg(),
                 &LANG.move_setting_location,
                 Colors::get_msg_highlight_fg(),
                 Colors::get_default_fg(),
                 &LANG.close,
                 Colors::get_msg_highlight_fg(),
-                Keybind::get_key_str(KeyCmd::EscPrompt),
+                Keybind::get_key_str(KeyCmd::Prom(P_Cmd::EscPrompt)),
             );
             self.buf_desc = format!("{}{}", Colors::get_default_fg(), &LANG.search_str,);
         } else {

@@ -1,36 +1,32 @@
-use crate::{ewin_core::_cfg::keys::*, model::*, tab::*, terminal::*};
-use ewin_core::{
-    def::USIZE_UNDEFINED,
-    model::{DrawType, EvtActType},
-};
+use crate::{model::*, tab::*, terminal::*};
+use ewin_core::{_cfg::key::keycmd::*, def::*, model::*};
 
 impl EvtAct {
-    pub fn close(term: &mut Terminal) -> EvtActType {
+    pub fn close(term: &mut Terminal) -> ActType {
         match &term.curt().prom.keycmd {
             KeyCmd::Resize => {
                 Tab::prom_close(term);
-                return EvtActType::Next;
+                return ActType::Draw(DParts::All);
             }
-            KeyCmd::InsertStr(str) => {
+            _ => {}
+        }
+        match &term.curt().prom.p_cmd {
+            P_Cmd::InsertStr(str) => {
                 if str == &'y'.to_string() {
-                    if Tab::save(term) {
-                        return EvtAct::check_exit_close(term);
-                    } else {
-                        term.curt().editor.draw_type = DrawType::All;
-                        return EvtActType::DrawOnly;
-                    }
+                    let act_type = Tab::save(term);
+                    return if let ActType::Draw(_) = act_type { act_type } else { EvtAct::check_exit_close(term) };
                 } else if str == &'n'.to_string() {
                     return EvtAct::check_exit_close(term);
                 } else {
-                    return EvtActType::Hold;
+                    return ActType::Cancel;
                 }
             }
-            _ => return EvtActType::Hold,
+            _ => return ActType::Cancel,
         }
     }
-    pub fn check_exit_close(term: &mut Terminal) -> EvtActType {
+    pub fn check_exit_close(term: &mut Terminal) -> ActType {
         if term.tabs.len() == 1 {
-            return EvtActType::Exit;
+            return ActType::Exit;
         } else {
             term.del_tab(term.idx);
             if term.state.is_all_close_confirm || term.state.close_other_than_this_tab_idx != USIZE_UNDEFINED {
@@ -41,13 +37,9 @@ impl EvtAct {
                 } else {
                     term.close_tabs(term.state.close_other_than_this_tab_idx)
                 };
-                if is_exit {
-                    return EvtActType::Exit;
-                } else {
-                    return EvtActType::DrawOnly;
-                }
+                return if is_exit { ActType::Exit } else { ActType::Draw(DParts::All) };
             } else {
-                return EvtActType::DrawOnly;
+                return ActType::Draw(DParts::All);
             }
         }
     }

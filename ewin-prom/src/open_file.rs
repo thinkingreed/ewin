@@ -1,7 +1,6 @@
 use crate::{
-    cont::promptcont::*,
-    ewin_core::{_cfg::keys::*, colors::*, def::*, global::*, log::Log, model::*, util::*},
-    prompt::prompt::*,
+    ewin_core::{_cfg::key::keycmd::*, colors::*, def::*, global::*, log::Log, model::*, util::*},
+    model::*,
 };
 use crossterm::{cursor::MoveTo, terminal::ClearType::*, terminal::*};
 use directories::BaseDirs;
@@ -16,12 +15,12 @@ use std::{
 impl Prompt {
     pub const OPEN_FILE_FIXED_PHRASE_ROW_NUM: usize = 5;
 
-    pub fn open_file(&mut self, keycmd: KeyCmd) {
+    pub fn open_file(&mut self, open_file_type: OpenFileType) {
         Log::debug_key("open_file");
 
-        self.prom_open_file.keycmd = keycmd.clone();
-        self.cont_1 = PromptCont::new_edit_type(keycmd.clone(), PromptContPosi::First).get_open_file(self);
-        self.cont_2 = PromptCont::new_edit_type(keycmd.clone(), PromptContPosi::Second).get_open_file(self);
+        self.prom_open_file.open_file_type = open_file_type;
+        self.cont_1 = PromptCont::new(Some(PromptContPosi::First)).get_open_file(self);
+        self.cont_2 = PromptCont::new(Some(PromptContPosi::Second)).get_open_file(self);
         PromOpenFile::set_file_list(self);
 
         self.prom_open_file.base_path = get_dir_path(&self.cont_1.buf.iter().collect::<String>().replace(CONTINUE_STR, &self.prom_open_file.omitted_path_str));
@@ -43,6 +42,7 @@ impl Prompt {
         // cont_2.buf
         for y in 0..self.prom_open_file.disp_row_len {
             str_vec.push(format!("{}{}{}", MoveTo(0, self.cont_2.buf_row_posi + y as u16), Colors::get_default_fg_bg(), Clear(CurrentLine),));
+
             let mut row_str = String::new();
             let mut file_disp_str_org = String::new();
             let vec_y = y + self.prom_open_file.offset;
@@ -67,11 +67,11 @@ impl Prompt {
 
 impl PromptCont {
     pub fn get_open_file(&mut self, prom: &mut Prompt) -> PromptCont {
-        Log::debug("self.keycmd", &self.keycmd);
+        Log::debug("self.p_cmd", &self.p_cmd);
 
         if self.posi == PromptContPosi::First {
             match self.keycmd {
-                KeyCmd::OpenFile(open_file_type) => {
+                KeyCmd::Edit(E_Cmd::OpenFile(open_file_type)) => {
                     let guide_str = match open_file_type {
                         OpenFileType::Normal => &LANG.set_open_filenm,
                         OpenFileType::JsMacro => &LANG.set_exec_mocro_filenm,
@@ -85,11 +85,11 @@ impl PromptCont {
                 Colors::get_default_fg(),
                 &LANG.open,
                 Colors::get_msg_highlight_fg(),
-                Keybind::get_key_str(KeyCmd::ConfirmPrompt),
+                Keybind::get_key_str(KeyCmd::Prom(P_Cmd::ConfirmPrompt)),
                 Colors::get_default_fg(),
                 &LANG.close,
                 Colors::get_msg_highlight_fg(),
-                Keybind::get_key_str(KeyCmd::EscPrompt),
+                Keybind::get_key_str(KeyCmd::Prom(P_Cmd::EscPrompt)),
                 Colors::get_default_fg(),
                 &LANG.complement,
                 Colors::get_msg_highlight_fg(),
@@ -104,14 +104,14 @@ impl PromptCont {
             self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.filenm, Colors::get_default_fg());
 
             let open_file_type = match self.keycmd {
-                KeyCmd::OpenFile(open_file_type) => open_file_type,
+                KeyCmd::Edit(E_Cmd::OpenFile(open_file_type)) => open_file_type,
                 _ => OpenFileType::Normal,
             };
             Log::debug("prom.prom_open_file.cache_disp_filenm", &prom.prom_open_file.cache_disp_filenm);
 
             if *ENV == Env::Windows && open_file_type == OpenFileType::Normal && &CFG.get().unwrap().try_lock().unwrap().general.prompt.open_file.dir_init == &OpenFileInitValue::None {
                 self.buf = vec![];
-            } else if prom.prom_open_file.cache_disp_filenm.len() > 0 && self.keycmd == KeyCmd::OpenFile(OpenFileType::Normal) {
+            } else if prom.prom_open_file.cache_disp_filenm.len() > 0 && prom.prom_open_file.open_file_type == OpenFileType::Normal {
                 self.buf = prom.prom_open_file.cache_disp_filenm.chars().collect();
                 prom.prom_open_file.base_path = prom.prom_open_file.cache_full_path.clone();
             } else {
@@ -177,7 +177,7 @@ impl PromOpenFile {
     pub fn select_open_file(&mut self, path: &String) -> String {
         let disp_filenm = get_dir_path(&path.clone());
         let full_path = path.replace(CONTINUE_STR, &self.omitted_path_str);
-        if self.keycmd == KeyCmd::OpenFile(OpenFileType::Normal) {
+        if self.open_file_type == OpenFileType::Normal {
             self.cache_disp_filenm = disp_filenm;
             self.cache_full_path = full_path.clone();
         }
@@ -235,11 +235,11 @@ impl PromOpenFile {
         }
     }
 
-    pub fn set_vec_posi(&mut self, cur_direction: CurDirection) {
+    pub fn set_vec_posi(&mut self, cur_direction: Direction) {
         match cur_direction {
-            CurDirection::Right | CurDirection::Left => {
+            Direction::Right | Direction::Left => {
                 if let Some(vec) = self.vec.get(self.vec_y) {
-                    if cur_direction == CurDirection::Right {
+                    if cur_direction == Direction::Right {
                         if let Some(_) = vec.get(self.vec_x + 1) {
                             self.vec_x += 1;
                         };
@@ -250,7 +250,7 @@ impl PromOpenFile {
                     }
                 }
             }
-            CurDirection::Up => {
+            Direction::Up => {
                 if self.vec_y == 0 {
                     self.vec_y = PromOpenFile::PATH_INPUT_FIELD;
                 } else if let Some(vec) = self.vec.get(self.vec_y - 1) {
@@ -262,7 +262,7 @@ impl PromOpenFile {
                     }
                 }
             }
-            CurDirection::Down => {
+            Direction::Down => {
                 if self.vec_y == PromOpenFile::PATH_INPUT_FIELD {
                     if self.vec_x == 0 {
                         if self.vec.len() == 1 {
@@ -325,7 +325,7 @@ pub fn get_shaping_file_list(file_vec: &mut Vec<File>, cols: usize) -> (Vec<Vec<
             continue;
         }
         if split_idx == 1 {
-            max_len = size().unwrap().0 as usize;
+            max_len = get_term_size().0 as usize;
         }
 
         let rest_num = file_vec_len % split_idx;
@@ -405,7 +405,7 @@ pub fn get_shaping_file_list(file_vec: &mut Vec<File>, cols: usize) -> (Vec<Vec<
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PromOpenFile {
-    pub keycmd: KeyCmd,
+    pub open_file_type: OpenFileType,
     pub vec: Vec<Vec<OpenFile>>,
     pub file_all_count: usize,
     pub offset: usize,
@@ -421,7 +421,7 @@ pub struct PromOpenFile {
 
 impl Default for PromOpenFile {
     fn default() -> Self {
-        PromOpenFile { keycmd: KeyCmd::Null, vec: vec![], file_all_count: 0, offset: 0, disp_row_len: 0, cache_disp_filenm: String::new(), cache_full_path: String::new(), tab_comp: TabComp::default(), vec_y: PromOpenFile::PATH_INPUT_FIELD, vec_x: 0, base_path: String::new(), omitted_path_str: String::new() }
+        PromOpenFile { open_file_type: OpenFileType::Normal, vec: vec![], file_all_count: 0, offset: 0, disp_row_len: 0, cache_disp_filenm: String::new(), cache_full_path: String::new(), tab_comp: TabComp::default(), vec_y: PromOpenFile::PATH_INPUT_FIELD, vec_x: 0, base_path: String::new(), omitted_path_str: String::new() }
     }
 }
 

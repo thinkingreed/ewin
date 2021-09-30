@@ -1,4 +1,7 @@
-use crate::{cont::promptcont::PromptCont, ewin_core::_cfg::keys::KeyCmd, ewin_core::model::*, ewin_core::util::*};
+use crate::{
+    ewin_core::{_cfg::key::keycmd::*, model::*, util::*},
+    model::PromptCont,
+};
 use std::cmp::{max, min};
 
 impl PromptCont {
@@ -41,11 +44,11 @@ impl PromptCont {
     }
 
     pub fn cur_move(&mut self) {
-        match self.keycmd {
-            KeyCmd::CursorLeft => self.cur_left(),
-            KeyCmd::CursorRight => self.cur_right(),
-            KeyCmd::CursorRowHome => self.cur_home(),
-            KeyCmd::CursorRowEnd => self.cur_end(),
+        match self.p_cmd {
+            P_Cmd::CursorLeft => self.cur_left(),
+            P_Cmd::CursorRight => self.cur_right(),
+            P_Cmd::CursorRowHome => self.cur_home(),
+            P_Cmd::CursorRowEnd => self.cur_end(),
             _ => {}
         }
     }
@@ -53,10 +56,10 @@ impl PromptCont {
         self.sel.set_sel_posi(true, self.cur.y, self.cur.x, self.cur.disp_x);
 
         match self.keycmd {
-            KeyCmd::CursorLeftSelect => self.cur_left(),
-            KeyCmd::CursorRightSelect => self.cur_right(),
-            KeyCmd::CursorRowHomeSelect => self.set_cur_target(0),
-            KeyCmd::CursorRowEndSelect => self.set_cur_target(self.buf.len()),
+            KeyCmd::Prom(P_Cmd::CursorLeftSelect) => self.cur_left(),
+            KeyCmd::Prom(P_Cmd::CursorRightSelect) => self.cur_right(),
+            KeyCmd::Prom(P_Cmd::CursorRowHomeSelect) => self.set_cur_target(0),
+            KeyCmd::Prom(P_Cmd::CursorRowEndSelect) => self.set_cur_target(self.buf.len()),
             _ => {}
         }
 

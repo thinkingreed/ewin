@@ -12,7 +12,7 @@ pub mod cont {
 pub mod prompt {
     pub mod choice;
     pub mod prompt;
-    pub mod set_posi;
+    pub mod set_draw_posi;
 }
 
 pub mod close;

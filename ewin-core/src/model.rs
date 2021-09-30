@@ -1,5 +1,9 @@
-extern crate ropey;
-use crate::{_cfg::keys::*, char_style::*, def::*, global::*};
+use crate::{
+    _cfg::key::{keycmd::*, keys::*},
+    char_style::*,
+    def::*,
+    global::*,
+};
 use chrono::NaiveDateTime;
 use clap::ArgMatches;
 use crossterm::event::{Event, KeyCode::Null};
@@ -39,7 +43,8 @@ impl Default for EvtProc {
 #[derive(Debug, Clone, PartialEq, Eq)]
 // Process
 pub struct Proc {
-    pub keycmd: KeyCmd,
+    pub e_cmd: E_Cmd,
+    pub p_cmd: P_Cmd,
     // not include lnw
     pub cur_s: Cur,
     pub cur_e: Cur,
@@ -47,28 +52,23 @@ pub struct Proc {
     pub box_sel_vec: Vec<(SelRange, String)>,
     pub box_sel_redo_vec: Vec<(SelRange, String)>,
     pub sel: SelRange,
-    pub draw_type: DrawType,
+    pub draw_type: EditorDrawRange,
 }
 impl Default for Proc {
     fn default() -> Self {
-        Proc { cur_s: Cur::default(), cur_e: Cur::default(), str: String::new(), keycmd: KeyCmd::Null, sel: SelRange::default(), draw_type: DrawType::default(), box_sel_vec: vec![], box_sel_redo_vec: vec![] }
+        Proc { p_cmd: P_Cmd::Null, cur_s: Cur::default(), cur_e: Cur::default(), str: String::new(), e_cmd: E_Cmd::Null, sel: SelRange::default(), draw_type: EditorDrawRange::default(), box_sel_vec: vec![], box_sel_redo_vec: vec![] }
     }
 }
 impl fmt::Display for Proc {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "EvtProc cur_s:{}, cur_e:{}, str:{}, keycmd:{:?}, sel:{}, d_range:{}", self.cur_s, self.cur_e, self.str, self.keycmd, self.sel, self.draw_type)
-    }
-}
-impl Proc {
-    pub fn new(keycmd: KeyCmd, cur_s: Cur, cur_e: Cur, draw_type: DrawType) -> Self {
-        return Proc { keycmd, cur_s, cur_e, draw_type, ..Proc::default() };
+        write!(f, "EvtProc cur_s:{}, cur_e:{}, str:{}, e_cmd:{:?}, p_cmd:{:?}, sel:{}, d_range:{}", self.cur_s, self.cur_e, self.str, self.e_cmd, self.p_cmd, self.sel, self.draw_type)
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// All edit history including undo and redo
 /// History
 pub struct History {
-    pub mouse_click_vec: VecDeque<(NaiveDateTime, KeyCmd)>,
+    pub mouse_click_vec: VecDeque<(NaiveDateTime, Keys)>,
     pub undo_vec: Vec<EvtProc>,
     pub redo_vec: Vec<EvtProc>,
 }
@@ -159,7 +159,7 @@ impl Default for KeyMacro {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeyMacroState {
     pub is_record: bool,
     pub is_exec: bool,
@@ -169,6 +169,12 @@ pub struct KeyMacroState {
 impl Default for KeyMacroState {
     fn default() -> Self {
         KeyMacroState { is_record: false, is_exec: false, is_exec_end: false }
+    }
+}
+
+impl KeyMacroState {
+    pub fn is_running(&self) -> bool {
+        return self.is_exec == true && self.is_exec_end == false;
     }
 }
 
@@ -296,7 +302,7 @@ pub struct SyntaxState {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// DrawType
-pub enum DrawType {
+pub enum EditorDrawRange {
     Target(usize, usize), // Target row only redraw
     After(usize),         // Redraw after the specified line
     None,                 // First time
@@ -307,36 +313,36 @@ pub enum DrawType {
     Not,
 }
 
-impl Default for DrawType {
+impl Default for EditorDrawRange {
     fn default() -> Self {
-        DrawType::None
+        EditorDrawRange::None
     }
 }
 
-impl DrawType {
-    pub fn get_type(sel_mode: SelMode, sy: usize, ey: usize) -> DrawType {
+impl EditorDrawRange {
+    pub fn get_type(sel_mode: SelMode, sy: usize, ey: usize) -> EditorDrawRange {
         match sel_mode {
             SelMode::Normal => {
-                return DrawType::Target(min(sy, ey), max(sy, ey));
+                return EditorDrawRange::Target(min(sy, ey), max(sy, ey));
             }
             SelMode::BoxSelect => {
-                return DrawType::All;
+                return EditorDrawRange::All;
             }
         }
     }
 }
 
-impl fmt::Display for DrawType {
+impl fmt::Display for EditorDrawRange {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            DrawType::Target(_, _) => write!(f, "Target"),
-            DrawType::After(_) => write!(f, "After"),
-            DrawType::None => write!(f, "None"),
-            DrawType::All => write!(f, "All"),
-            DrawType::ScrollDown(_, _) => write!(f, "ScrollDown"),
-            DrawType::ScrollUp(_, _) => write!(f, "ScrollUp"),
-            DrawType::MoveCur => write!(f, "MoveCur"),
-            DrawType::Not => write!(f, "Not"),
+            EditorDrawRange::Target(_, _) => write!(f, "Target"),
+            EditorDrawRange::After(_) => write!(f, "After"),
+            EditorDrawRange::None => write!(f, "None"),
+            EditorDrawRange::All => write!(f, "All"),
+            EditorDrawRange::ScrollDown(_, _) => write!(f, "ScrollDown"),
+            EditorDrawRange::ScrollUp(_, _) => write!(f, "ScrollUp"),
+            EditorDrawRange::MoveCur => write!(f, "MoveCur"),
+            EditorDrawRange::Not => write!(f, "Not"),
         }
     }
 }
@@ -381,6 +387,12 @@ impl GrepState {
         self.search_str = String::new();
         self.search_folder = String::new();
         self.search_filenm = String::new();
+    }
+    pub fn is_greping(&self) -> bool {
+        return self.is_result && !(self.is_stdout_end && self.is_stderr_end) && !self.is_cancel;
+    }
+    pub fn is_grep_finished(&self) -> bool {
+        return self.is_result && ((self.is_stdout_end && self.is_stderr_end) || self.is_cancel);
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -484,11 +496,23 @@ impl NL {
 }
 // Cursor direction
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum CurDirection {
+pub enum Direction {
     Right,
     Left,
     Up,
     Down,
+}
+
+impl Direction {
+    pub fn keycmd_to_curdirection(keycmd: &KeyCmd) -> Direction {
+        return match keycmd {
+            KeyCmd::Prom(P_Cmd::CursorLeft) => Direction::Left,
+            KeyCmd::Prom(P_Cmd::CursorRight) => Direction::Right,
+            KeyCmd::Prom(P_Cmd::CursorUp) => Direction::Up,
+            KeyCmd::Prom(P_Cmd::CursorDown) => Direction::Down,
+            _ => unreachable!(),
+        };
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -729,21 +753,30 @@ impl FmtType {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum EvtActType {
-    Hold, // Check next Process
-    None, // Cancel process
+// ActionType
+pub enum ActType {
+    Cancel, // Cancel process
     Exit,
-    Next,     // Editor Event Process
-    DrawOnly, // Do not Editor key Process
+    Next, // Next Process
+    Draw(DParts),
 }
 
-impl EvtActType {
-    pub fn check_next_process_type(evt_act_type: &EvtActType) -> bool {
-        return match evt_act_type {
-            EvtActType::Next | EvtActType::DrawOnly | EvtActType::None | EvtActType::Exit => true,
-            EvtActType::Hold => false,
-        };
-    }
+#[derive(Debug, PartialEq, Clone)]
+// DrawParts
+pub enum DParts {
+    Editor,
+    Prompt,
+    MsgBar(String),
+    CtxMenu,
+    All,
+    ScrollUpDown(ScrollUpDownType),
+    AllMsgBar(String),
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum ScrollUpDownType {
+    Normal,
+    Grep,
 }
 
 #[derive(Debug, Clone)]
@@ -754,17 +787,15 @@ pub struct TabState {
     pub is_save_new_file: bool,
     pub is_move_row: bool,
     //  pub is_key_record: bool,
-    pub is_read_only: bool,
     pub is_open_file: bool,
     pub is_enc_nl: bool,
-    pub grep_state: GrepState,
-    pub key_macro_state: KeyMacroState,
+    pub grep: GrepState,
     pub is_menu: bool,
 }
 
 impl Default for TabState {
     fn default() -> Self {
-        TabState { is_close_confirm: false, is_search: false, is_replace: false, is_save_new_file: false, is_move_row: false, is_read_only: false, is_open_file: false, is_enc_nl: false, key_macro_state: KeyMacroState::default(), grep_state: GrepState::default(), is_menu: false }
+        TabState { is_close_confirm: false, is_search: false, is_replace: false, is_save_new_file: false, is_move_row: false, is_open_file: false, is_enc_nl: false, grep: GrepState::default(), is_menu: false }
     }
 }
 
@@ -787,24 +818,34 @@ impl TabState {
     }
 
     pub fn clear_grep_info(&mut self) {
-        self.grep_state.clear();
+        self.grep.clear();
     }
 
     pub fn is_nomal(&self) -> bool {
-        if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_row || self.is_read_only || self.is_open_file || self.grep_state.is_grep || self.grep_state.is_result || self.is_enc_nl || self.is_menu {
+        if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_row || self.is_open_file || self.is_enc_nl || self.is_menu
+        // grep, grep result 
+        || self.grep.is_grep  || self.grep.is_greping()
+        {
             return false;
         }
-        true
+        return true;
     }
-    pub fn is_nomal_and_not_read_only(&self) -> bool {
-        if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_row || self.is_open_file || self.grep_state.is_grep || self.is_enc_nl || self.is_menu {
+    pub fn is_nomal_and_not_result(&self) -> bool {
+        if !self.is_nomal() || self.grep.is_result {
+            return false;
+        }
+        return true;
+    }
+
+    pub fn judge_when(&self, keys: &Keys) -> bool {
+        if !self.is_nomal() || (self.grep.is_grep_finished() && keys == &Keys::Raw(Key::Enter)) {
             return false;
         }
         true
     }
 
     pub fn is_editor_cur(&self) -> bool {
-        if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_row || self.is_open_file || self.grep_state.is_grep || self.is_enc_nl || self.is_menu {
+        if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_row || self.is_open_file || self.grep.is_grep || self.grep.is_greping() || self.is_enc_nl || self.is_menu {
             return false;
         }
         true
@@ -818,7 +859,13 @@ impl TabState {
     }
 
     pub fn is_exists_input_field(&self) -> bool {
-        if self.is_save_new_file || self.is_search || self.is_replace || self.grep_state.is_grep || self.is_move_row || self.is_open_file {
+        if self.is_save_new_file || self.is_search || self.is_replace || self.grep.is_grep || self.is_move_row || self.is_open_file {
+            return true;
+        }
+        false
+    }
+    pub fn is_exists_input_field_not_open_file(&self) -> bool {
+        if !self.is_open_file && self.is_exists_input_field() {
             return true;
         }
         false
@@ -830,6 +877,13 @@ impl TabState {
         }
         false
     }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum MsgType {
+    Info,
+    Err,
+    KeyRecord,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -1,5 +1,10 @@
 pub const APP_NAME: &str = "ewin";
 
+pub const TERM_MINIMUM_WIDTH: u16 = 40;
+pub const TERM_MINIMUM_HEIGHT: u16 = 12;
+
+pub const STATUSBAR_ROW_NUM: usize = 1;
+
 pub const SETTING_FILE: &str = "setting.toml";
 pub const KEYBINDING_FILE: &str = "keybind.json5";
 pub const MACROS_DIR: &str = "macros";

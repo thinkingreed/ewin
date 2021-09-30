@@ -1,72 +1,101 @@
-use ewin_core::model::{CurDirection, EvtActType};
-
-use crate::{ctx_menu::init::*, ewin_core::_cfg::keys::*, ewin_core::log::*, model::*, terminal::*};
+use crate::{
+    ctx_menu::init::*,
+    ewin_core::{
+        _cfg::key::{keycmd::*, keys::*},
+        def::*,
+        log::*,
+        model::*,
+    },
+    model::*,
+    terminal::*,
+};
 
 impl EvtAct {
-    pub fn check_ctx_menu(term: &mut Terminal) -> EvtActType {
+    pub fn ctrl_ctx_menu(term: &mut Terminal) -> ActType {
         Log::debug_key("EvtAct.check_ctx_menu");
 
-        match term.keycmd {
-            KeyCmd::MouseDownRight(y, x) | KeyCmd::MouseDragRight(y, x) => {
-                term.ctx_menu_group.clear();
-                if CtxMenuGroup::is_ctx_menu_displayed_area(term, y, x) {
-                    CtxMenuGroup::show_init(term, y, x);
-                } else if term.state.is_ctx_menu {
-                    term.state.is_ctx_menu = false;
-                    return EvtActType::DrawOnly;
-                }
-                return EvtActType::Hold;
-            }
-            KeyCmd::MouseDownLeft(y, x) => {
+        match term.ctx_menu_group.c_cmd {
+            C_Cmd::MouseDownLeft(y, x) => {
                 if term.state.is_ctx_menu {
                     if term.ctx_menu_group.is_mouse_within_range(y, x) {
-                        CtxMenuGroup::select_ctx_menu(term);
-                        return EvtActType::DrawOnly;
+                        return CtxMenuGroup::select_ctx_menu(term);
                     } else {
                         term.state.is_ctx_menu = false;
-                        return EvtActType::Next;
+                        return ActType::Next;
                     }
                 }
-                return EvtActType::Hold;
+                return ActType::Next;
             }
-            KeyCmd::MouseMove(y, x) => {
+            C_Cmd::MouseMove(y, x) => {
                 if term.state.is_ctx_menu && term.ctx_menu_group.is_mouse_within_range(y, x) {
+                    let child_cont_org = &term.ctx_menu_group.curt_cont.menu_vec.get(term.ctx_menu_group.parent_sel_y).and_then(|cont| cont.1.clone());
                     term.ctx_menu_group.ctrl_mouse_move(y, x);
+
                     if !term.ctx_menu_group.is_menu_change() {
-                        return EvtActType::None;
+                        return ActType::Cancel;
                     }
-                    return EvtActType::Next;
+                    let child_cont = &term.ctx_menu_group.curt_cont.menu_vec.get(term.ctx_menu_group.parent_sel_y).and_then(|cont| cont.1.clone());
+
+                    // Only parent meun move
+                    if child_cont_org.is_none() && child_cont.is_none() {
+                        return ActType::Draw(DParts::CtxMenu);
+                        // Only child meun move
+                    } else if term.ctx_menu_group.parent_sel_y == term.ctx_menu_group.parent_sel_y_cache && term.ctx_menu_group.child_sel_y != USIZE_UNDEFINED {
+                        return ActType::Draw(DParts::CtxMenu);
+                    } else if (child_cont_org.is_some() || child_cont.is_some()) && term.ctx_menu_group.child_sel_y == USIZE_UNDEFINED {
+                        return ActType::Draw(DParts::Editor);
+                    } else {
+                        return ActType::Draw(DParts::Editor);
+                    }
                 } else {
-                    return EvtActType::None;
+                    return ActType::Cancel;
                 }
             }
-            KeyCmd::CursorDown | KeyCmd::CursorUp | KeyCmd::CursorRight | KeyCmd::CursorLeft => {
+            C_Cmd::CursorDown | C_Cmd::CursorUp | C_Cmd::CursorRight | C_Cmd::CursorLeft => {
                 if term.state.is_ctx_menu {
-                    match term.keycmd {
-                        KeyCmd::CursorDown => term.ctx_menu_group.cur_move(CurDirection::Down),
-                        KeyCmd::CursorUp => term.ctx_menu_group.cur_move(CurDirection::Up),
-                        KeyCmd::CursorRight => term.ctx_menu_group.cur_move(CurDirection::Right),
-                        KeyCmd::CursorLeft => term.ctx_menu_group.cur_move(CurDirection::Left),
+                    match term.ctx_menu_group.c_cmd {
+                        C_Cmd::CursorDown => term.ctx_menu_group.cur_move(Direction::Down),
+                        C_Cmd::CursorUp => term.ctx_menu_group.cur_move(Direction::Up),
+                        C_Cmd::CursorRight => term.ctx_menu_group.cur_move(Direction::Right),
+                        C_Cmd::CursorLeft => term.ctx_menu_group.cur_move(Direction::Left),
                         _ => {}
                     }
-                    return EvtActType::DrawOnly;
+                    return ActType::Draw(DParts::All);
                 } else {
-                    return EvtActType::Hold;
+                    return ActType::Next;
                 }
             }
-            KeyCmd::InsertLine => {
+            C_Cmd::ConfirmCtxMenu => {
                 if term.state.is_ctx_menu {
                     CtxMenuGroup::select_ctx_menu(term);
-                    return EvtActType::DrawOnly;
+                    return ActType::Draw(DParts::All);
                 } else {
-                    return EvtActType::Hold;
+                    return ActType::Next;
                 }
             }
-            _ => {
+            C_Cmd::Null => {
                 term.ctx_menu_group.clear();
                 term.state.is_ctx_menu = false;
-                return EvtActType::Hold;
+                return ActType::Next;
             }
         }
+    }
+
+    pub fn is_ctrl_ctx_keys(keys: &Keys, term: &mut Terminal) -> bool {
+        if term.state.is_ctx_menu {
+            let rtn = match keys {
+                Keys::Raw(Key::Left) | Keys::Raw(Key::Right) | Keys::Raw(Key::Up) | Keys::Raw(Key::Down) => true,
+                Keys::MouseMove(y, x) | Keys::MouseDownLeft(y, x) => {
+                    if term.ctx_menu_group.is_mouse_within_range(*y as usize, *x as usize) {
+                        true
+                    } else {
+                        false
+                    }
+                }
+                _ => false,
+            };
+            return rtn;
+        }
+        return false;
     }
 }

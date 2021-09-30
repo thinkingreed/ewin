@@ -1,4 +1,4 @@
-use crate::{_cfg::keys::KeyCmd, def::*, log::*, model::History, model::*};
+use crate::{_cfg::key::keys::*, def::*, log::*, model::*};
 use chrono::prelude::Local;
 
 impl History {
@@ -17,7 +17,7 @@ impl History {
             Some(self.undo_vec[self.undo_vec.len() - 1].clone())
         }
     }
-    pub fn len_undo(&mut self) -> usize {
+    pub fn len_undo(&self) -> usize {
         self.undo_vec.len()
     }
 
@@ -37,11 +37,11 @@ impl History {
         self.redo_vec.clear();
     }
 
-    pub fn len_redo(&mut self) -> usize {
+    pub fn len_redo(&self) -> usize {
         self.redo_vec.len()
     }
 
-    pub fn count_multi_click(&mut self, keycmd: &KeyCmd) -> usize {
+    pub fn count_multi_click(&mut self, keys: &Keys) -> usize {
         let mut click_count = 1;
 
         Log::debug("mouse_click_vec", &self.mouse_click_vec);
@@ -53,8 +53,8 @@ impl History {
         let now = Local::now().naive_local();
 
         if self.mouse_click_vec.len() > 0 {
-            if let Some((one_before, one_before_keycmd)) = self.mouse_click_vec.get(self.mouse_click_vec.len() - 1) {
-                if keycmd != one_before_keycmd || (now - *one_before).num_milliseconds() > MULTI_CLICK_MILLISECONDS {
+            if let Some((one_before, one_before_keys)) = self.mouse_click_vec.get(self.mouse_click_vec.len() - 1) {
+                if keys != one_before_keys || (now - *one_before).num_milliseconds() > MULTI_CLICK_MILLISECONDS {
                     self.mouse_click_vec.clear();
                 }
             }
@@ -76,7 +76,7 @@ impl History {
             }
         }
 
-        self.mouse_click_vec.push_back((now, keycmd.clone()));
+        self.mouse_click_vec.push_back((now, keys.clone()));
         return click_count;
     }
 }

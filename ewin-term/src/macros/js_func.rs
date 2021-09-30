@@ -1,7 +1,6 @@
 use crate::{
     ewin_core::{
-        _cfg::{cfg::*, keys::*},
-        global::*,
+        _cfg::{cfg::*, key::keycmd::*},
         log::*,
         model::*,
     },
@@ -29,8 +28,8 @@ impl Macros {
             let input_str = args.get(0).to_string(scope).unwrap();
 
             if let Some(Ok(mut tab)) = TAB.get().map(|tab| tab.try_lock()) {
-                tab.editor.edit_proc(KeyCmd::InsertStr(input_str.to_rust_string_lossy(scope)));
-                tab.editor.is_changed = true;
+                tab.editor.edit_proc(E_Cmd::InsertStr(input_str.to_rust_string_lossy(scope)));
+                tab.editor.state.is_changed = true;
                 Log::macros(MacrosFunc::insertString, &input_str.to_rust_string_lossy(scope));
             }
         }
@@ -48,8 +47,6 @@ impl Macros {
                     SelMode::Normal => tab.editor.buf.slice(tab.editor.sel.get_range()),
                     SelMode::BoxSelect => tab.editor.slice_box_sel().0,
                 };
-            } else {
-                tab.mbar.set_err(&format!("{}", &LANG.no_sel_range));
             }
             Log::macros(MacrosFunc::getSelectedString, &sel_str);
             rv.set(v8::String::new(scope, &sel_str).unwrap().into());

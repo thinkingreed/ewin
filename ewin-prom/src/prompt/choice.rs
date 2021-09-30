@@ -1,17 +1,21 @@
-use crate::{cont::promptcont::*, ewin_core::def::*, ewin_core::log::*, ewin_core::model::CurDirection, ewin_core::util::*};
+use crate::{
+    ewin_core::def::*,
+    ewin_core::log::*,
+    ewin_core::model::Direction,
+    ewin_core::util::*,
+    model::{Prompt, PromptCont},
+};
 use std::{cmp::max, collections::HashMap, usize};
-
-use super::prompt::Prompt;
 
 impl Choices {
     pub const ITEM_MARGIN: usize = 1;
 
-    pub fn set_vec_posi(&mut self, cur_direction: CurDirection) -> bool {
+    pub fn set_vec_posi(&mut self, cur_direction: Direction) -> bool {
         let mut is_updown_contposi = false;
         match cur_direction {
-            CurDirection::Right | CurDirection::Left => {
+            Direction::Right | Direction::Left => {
                 if let Some(vec) = self.vec.get(self.vec_y) {
-                    if cur_direction == CurDirection::Right {
+                    if cur_direction == Direction::Right {
                         self.vec_x = if vec.get(self.vec_x + 1).is_some() { self.vec_x + 1 } else { 0 };
                     } else if self.vec_x == 0 {
                         if let Some(_) = vec.get(vec.len() - 1) {
@@ -22,7 +26,7 @@ impl Choices {
                     }
                 }
             }
-            CurDirection::Up => {
+            Direction::Up => {
                 if self.vec_y == 0 {
                     is_updown_contposi = true;
                 } else if let Some(vec) = self.vec.get(self.vec_y - 1) {
@@ -35,7 +39,7 @@ impl Choices {
                     is_updown_contposi = true;
                 }
             }
-            CurDirection::Down => {
+            Direction::Down => {
                 if let Some(vec) = self.vec.get(self.vec_y + 1) {
                     if let Some(_) = vec.get(self.vec_x) {
                         self.vec_y += 1;

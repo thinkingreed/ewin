@@ -1,35 +1,40 @@
 use crate::{
-    ewin_core::{_cfg::keys::*, log::*, model::*},
+    ewin_core::{_cfg::key::keycmd::*, log::*, model::*},
     model::*,
     terminal::*,
 };
 
 impl EvtAct {
-    pub fn search(term: &mut Terminal) -> EvtActType {
-        match term.curt().prom.keycmd {
+    pub fn search(term: &mut Terminal) -> ActType {
+        Log::debug_key("EvtAct.search");
+        match &term.curt().prom.keycmd {
             KeyCmd::Resize => {
                 term.curt().prom_search();
-                return EvtActType::Next;
+                return ActType::Draw(DParts::All);
             }
-            KeyCmd::InsertStr(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::Undo | KeyCmd::Redo => {
-                let search_str = term.curt().prom.cont_1.buf.iter().collect::<String>();
-                term.curt().editor.exec_search_incremental(search_str);
-                return EvtActType::DrawOnly;
-            }
-            KeyCmd::FindNext | KeyCmd::FindBack => return EvtAct::exec_search_confirm(term),
-            _ => return EvtActType::Hold,
+            KeyCmd::Prom(p_keycmd) => match p_keycmd {
+                P_Cmd::InsertStr(_) | P_Cmd::Cut | P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::Undo | P_Cmd::Redo => {
+                    let search_str = term.curt().prom.cont_1.buf.iter().collect::<String>();
+                    term.curt().editor.exec_search_incremental(search_str);
+                    return ActType::Draw(DParts::All);
+                }
+                P_Cmd::FindNext | P_Cmd::FindBack => return EvtAct::exec_search_confirm(term),
+                _ => return ActType::Cancel,
+            },
+            _ => return if EvtAct::is_draw_prompt_tgt_keycmd(&term.curt().prom.p_cmd) { ActType::Draw(DParts::Prompt) } else { ActType::Cancel },
         };
     }
 
-    pub fn exec_search_confirm(term: &mut Terminal) -> EvtActType {
+    pub fn exec_search_confirm(term: &mut Terminal) -> ActType {
         Log::debug_s("exec_search_confirm");
         let search_str = term.curt().prom.cont_1.buf.iter().collect::<String>();
         if let Some(err_str) = term.curt().editor.exec_search_confirm(search_str) {
-            term.curt().mbar.set_err(&err_str);
-            return EvtActType::DrawOnly;
+            return ActType::Draw(DParts::MsgBar(err_str));
         } else {
-            term.clear_curt_tab();
-            return EvtActType::Next;
+            // Do not clear grep information in case of grep result
+            // Because grep result cannot be judged
+            term.clear_curt_tab(false);
+            return ActType::Draw(DParts::All);
         }
     }
 }

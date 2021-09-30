@@ -1,12 +1,12 @@
 use crate::{
-    cont::promptcont::{PromptCont, PromptContPosi},
-    ewin_core::{_cfg::keys::*, colors::*, global::*},
-    prompt::prompt::Prompt,
+    ewin_core::{_cfg::key::keycmd::*, colors::*, global::*},
+    model::*,
 };
+
 impl Prompt {
     pub fn search(&mut self) {
         self.disp_row_num = 4;
-        let mut cont = PromptCont::new_edit_type(self.keycmd.clone(), PromptContPosi::First);
+        let mut cont = PromptCont::new(Some(PromptContPosi::First));
         cont.set_search();
         self.cont_1 = cont;
     }
@@ -25,15 +25,15 @@ impl PromptCont {
             Colors::get_default_fg(),
             &LANG.search_bottom,
             Colors::get_msg_highlight_fg(),
-            Keybind::get_key_str(KeyCmd::FindNext),
+            Keybind::get_key_str(KeyCmd::Prom(P_Cmd::FindNext)),
             Colors::get_default_fg(),
             &LANG.search_top,
             Colors::get_msg_highlight_fg(),
-            Keybind::get_key_str(KeyCmd::FindBack),
+            Keybind::get_key_str(KeyCmd::Prom(P_Cmd::FindBack)),
             Colors::get_default_fg(),
             &LANG.close,
             Colors::get_msg_highlight_fg(),
-            Keybind::get_key_str(KeyCmd::EscPrompt),
+            Keybind::get_key_str(KeyCmd::Prom(P_Cmd::EscPrompt)),
             Colors::get_default_fg(),
         );
 

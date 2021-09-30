@@ -1,16 +1,24 @@
-use crate::{ewin_core::_cfg::keys::*, ewin_core::clipboard::*, ewin_core::def::*, ewin_core::log::*, ewin_core::model::*, ewin_core::util::*, model::*};
+use crate::{
+    ewin_core::{_cfg::key::keycmd::*, clipboard::*, def::*, log::*, model::*, util::*},
+    model::*,
+};
 
 impl Editor {
     pub fn insert_str(&mut self, ep: &mut Proc) {
         Log::debug_key("insert_str");
         Log::debug("ep", &ep);
 
-        if self.is_enable_syntax_highlight {
-            self.draw_type = DrawType::All;
+        self.draw_range = if self.is_enable_syntax_highlight {
+            EditorDrawRange::All
         } else {
-            self.draw_type = if self.box_insert.mode == BoxInsertMode::Insert { DrawType::All } else { DrawType::After(self.cur.y) };
-        }
-        ep.draw_type = self.draw_type;
+            if self.box_insert.mode == BoxInsertMode::Insert {
+                EditorDrawRange::All
+            } else {
+                EditorDrawRange::After(self.cur.y)
+            }
+        };
+
+        ep.draw_type = self.draw_range;
         ep.sel.set_s(self.cur.y, self.cur.x, self.cur.disp_x);
         if ep.box_sel_vec.is_empty() {
             self.ins_str(&ep.str);
@@ -179,7 +187,7 @@ impl Editor {
         self.buf.insert(self.cur.y, self.cur.x, &NL::get_nl(&self.h_file.nl));
         self.set_cur_target(self.cur.y + 1, 0, false);
 
-        self.set_draw_range_each_process(DrawType::After(self.cur.y - 1));
+        self.set_draw_range_each_process(EditorDrawRange::After(self.cur.y - 1));
 
         self.scroll();
         self.scroll_horizontal();
@@ -190,7 +198,7 @@ impl Editor {
         // beginning of the line
         if self.cur.x == 0 {
             self.cur.y -= 1;
-            self.draw_type = DrawType::After(self.cur.y);
+            self.draw_range = EditorDrawRange::After(self.cur.y);
             let (mut cur_x, _) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], 0, true);
             // ' ' is meaningless value
             let c = if cur_x > 0 { self.buf.char(self.cur.y, cur_x - 1) } else { ' ' };
@@ -198,7 +206,7 @@ impl Editor {
             // Minus for new line code
             cur_x -= 1;
 
-            self.buf.remove_del_bs(KeyCmd::DeletePrevChar, self.cur.y, self.buf.len_line_chars(self.cur.y) - 1);
+            self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelPrevChar), self.cur.y, self.buf.len_line_chars(self.cur.y) - 1);
             self.set_cur_target(self.cur.y, cur_x, false);
             self.scroll();
             self.scroll_horizontal();
@@ -207,11 +215,11 @@ impl Editor {
 
             if self.box_insert.mode == BoxInsertMode::Normal {
                 ep.str = self.buf.char(self.cur.y, self.cur.x).to_string();
-                self.buf.remove_del_bs(KeyCmd::DeletePrevChar, self.cur.y, self.cur.x);
+                self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelPrevChar), self.cur.y, self.cur.x);
                 if self.is_enable_syntax_highlight {
-                    self.draw_type = DrawType::All;
+                    self.draw_range = EditorDrawRange::All;
                 } else {
-                    self.draw_type = DrawType::Target(self.cur.y, self.cur.y);
+                    self.draw_range = EditorDrawRange::Target(self.cur.y, self.cur.y);
                 }
                 //BoxSelMode::Insert
             } else {
@@ -237,13 +245,13 @@ impl Editor {
         Log::debug_key("delete");
         let c = self.buf.char(self.cur.y, self.cur.x);
         ep.str = if c == NEW_LINE_CR { format!("{}{}", c.to_string(), NEW_LINE_LF) } else { c.to_string() };
-        self.buf.remove_del_bs(KeyCmd::DeleteNextChar, self.cur.y, self.cur.x);
-        let mut draw_type = DrawType::Target(self.cur.y, self.cur.y);
+        self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelNextChar), self.cur.y, self.cur.x);
+        let mut draw_type = EditorDrawRange::Target(self.cur.y, self.cur.y);
         if is_line_end(c) {
             self.set_cur_target(self.cur.y, self.cur.x, false);
             self.scroll();
             self.scroll_horizontal();
-            draw_type = DrawType::After(self.cur.y);
+            draw_type = EditorDrawRange::After(self.cur.y);
         }
         self.set_draw_range_each_process(draw_type);
     }

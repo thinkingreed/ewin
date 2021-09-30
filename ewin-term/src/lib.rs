@@ -10,6 +10,7 @@ pub mod global_term {
 pub mod evt_act {
     pub mod _evt_act;
     pub mod ctx_menu;
+    pub mod editor;
     pub mod headerbar;
     pub mod prom;
     pub mod statusbar;

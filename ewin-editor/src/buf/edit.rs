@@ -1,8 +1,10 @@
 use crate::{
-    ewin_core::_cfg::{cfg::*, keys::*},
-    ewin_core::def::*,
-    ewin_core::log::*,
-    ewin_core::model::*,
+    ewin_core::{
+        _cfg::{cfg::*, key::keycmd::*},
+        def::*,
+        log::*,
+        model::*,
+    },
     model::*,
 };
 use regex::RegexBuilder;
@@ -50,11 +52,11 @@ impl TextBuffer {
         let mut del_num = 1;
         let c = self.char(y, x);
         // not select del
-        if keycmd == KeyCmd::DeleteNextChar {
+        if keycmd == KeyCmd::Edit(E_Cmd::DelNextChar) {
             if NEW_LINE_CR == c && NEW_LINE_LF == self.char(y, x + 1) {
                 del_num = 2;
             }
-        } else if keycmd == KeyCmd::DeletePrevChar && x > 0 && NEW_LINE_LF == c && NEW_LINE_CR == self.char(y, x - 1) {
+        } else if keycmd == KeyCmd::Edit(E_Cmd::DelPrevChar) && x > 0 && NEW_LINE_LF == c && NEW_LINE_CR == self.char(y, x - 1) {
             i -= 1;
             del_num = 2;
         }

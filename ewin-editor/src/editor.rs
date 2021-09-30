@@ -1,59 +1,23 @@
+use crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture},
+    execute,
+};
+
 use crate::{
-    ewin_core::{_cfg::keys::*, log::*, model::*, util::*},
+    ewin_core::{
+        _cfg::key::{keycmd::*, keys::*, keywhen::*},
+        global::*,
+        log::*,
+        model::*,
+        util::*,
+    },
     model::*,
 };
-use std::{
-    cmp::{max, min},
-    usize,
-};
+use std::{io::stdout, usize};
 
 impl Editor {
-    pub const UP_DOWN_EXTRA: usize = 1;
     const MOVE_ROW_EXTRA_NUM: usize = 3;
-    const LEFT_RIGHT_JUDGE_EXTRA: usize = 3;
-    // offset_x Number of characters for switching judgment
-    const SEARCH_JUDGE_COLUMN_EXTRA: usize = 5;
-    // Number of offset increase / decrease when switching left / right offset
-    const ADD_EXTRA_NUM: usize = 10;
-    const ADD_EXTRA_END_LINE: usize = 5;
-
-    // adjusting vertical posi of cursor
-    pub fn scroll(&mut self) {
-        Log::debug_key("scroll");
-        Log::debug("self.keycmd", &self.keycmd);
-
-        if self.keycmd == KeyCmd::CursorFileHome || self.cur.y == 0 {
-            self.offset_y = 0;
-        } else if self.keycmd == KeyCmd::CursorPageUp {
-            self.offset_y = if self.offset_y >= self.disp_row_num { self.offset_y - self.disp_row_num } else { 0 };
-        } else if self.cur.y >= Editor::UP_DOWN_EXTRA {
-            self.offset_y = min(self.offset_y, self.cur.y - Editor::UP_DOWN_EXTRA);
-        }
-
-        match self.keycmd {
-            KeyCmd::CursorDown | KeyCmd::CursorUp | KeyCmd::CursorDownSelect | KeyCmd::CursorUpSelect | KeyCmd::MouseScrollUp | KeyCmd::MouseScrollDown | KeyCmd::CursorPageDown | KeyCmd::CursorPageUp | KeyCmd::CursorFileEnd | KeyCmd::InsertStr(_) | KeyCmd::Find 
-            // Prompt confirm
-            | KeyCmd::InsertLine => {
-                if self.cur.y + Editor::UP_DOWN_EXTRA >= self.disp_row_num {
-                    if self.keycmd == KeyCmd::CursorPageDown {
-                        self.offset_y = if self.buf.len_lines() - 1 > self.offset_y + self.disp_row_num * 2 { self.offset_y + self.disp_row_num } else { self.buf.len_lines() - self.disp_row_num };
-                    } else {
-                        Log::debug("self.offset_y 111", &self.offset_y);
-
-                        self.offset_y = max(self.offset_y, self.cur.y + 1 + Editor::UP_DOWN_EXTRA - self.disp_row_num);
-
-                        Log::debug("self.offset_y 222", &self.offset_y);
-                        // offset_y decreases
-                        if self.offset_y + self.disp_row_num > self.buf.len_lines() {
-                            self.offset_y = self.buf.len_lines() - self.disp_row_num;
-                        }
-                        Log::debug("self.offset_y 333", &self.offset_y);
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
+    pub const RNW_MARGIN: usize = 1;
 
     // move to row
     pub fn move_row(&mut self) {
@@ -69,77 +33,6 @@ impl Editor {
         }
     }
 
-    // adjusting horizontal posi of cursor
-    pub fn scroll_horizontal(&mut self) {
-        Log::debug_key("scroll_horizontal");
-
-        self.offset_x_org = self.offset_x;
-        let vec = &self.buf.char_vec_line(self.cur.y);
-
-        //// Calc offset_x
-        // Up・Down・Home ...
-        if 0 == self.cur.x {
-            self.offset_x = 0;
-            self.offset_disp_x = 0;
-            return;
-        } else if self.cur_y_org != self.cur.y {
-            self.offset_x = self.get_x_offset(self.cur.y, self.cur.x);
-            self.add_extra_offset(&vec);
-        } else {
-            match self.keycmd {
-                KeyCmd::CursorRowEnd | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect | KeyCmd::InsertStr(_) | KeyCmd::Undo | KeyCmd::Redo | KeyCmd::FindNext | KeyCmd::FindBack | KeyCmd::Null => {
-                    self.offset_x = self.get_x_offset(self.cur.y, self.cur.x);
-
-                    match self.keycmd {
-                        KeyCmd::InsertStr(_) | KeyCmd::CursorRowEnd | KeyCmd::CursorRowEndSelect | KeyCmd::Undo | KeyCmd::Redo => {
-                            self.add_extra_offset(&vec);
-                        }
-                        KeyCmd::FindNext | KeyCmd::FindBack | KeyCmd::Null => {
-                            let str_width = get_str_width(&self.search.str);
-                            if self.keycmd == KeyCmd::FindNext || self.keycmd == KeyCmd::Null {
-                                // Offset setting to display a few characters to the right of the search character for easier viewing
-                                if self.cur.disp_x + str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA > self.offset_disp_x + self.disp_col_num {
-                                    self.offset_x += str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA;
-                                }
-                            } else if self.keycmd == KeyCmd::FindBack {
-                                // Calc offset_disp_x once to judge the display position
-                                let offset_disp_x = get_row_width(&vec[..self.offset_x], 0, false).1;
-                                if self.cur.disp_x + str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA > offset_disp_x + self.disp_col_num {
-                                    self.offset_x += str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA;
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                KeyCmd::CursorRight | KeyCmd::CursorRightSelect => {
-                    if self.offset_disp_x + self.disp_col_num < self.cur.disp_x + Editor::LEFT_RIGHT_JUDGE_EXTRA {
-                        // Judgment whether the end fits in the width
-                        let width = get_row_width(&self.buf.char_vec_line(self.cur.y)[self.offset_x..], self.offset_disp_x, true).1;
-                        if width > self.disp_col_num {
-                            self.offset_x += Editor::ADD_EXTRA_NUM;
-                        }
-                    }
-                }
-                KeyCmd::CursorLeft | KeyCmd::CursorLeftSelect => {
-                    if self.cur.disp_x >= Editor::LEFT_RIGHT_JUDGE_EXTRA && self.offset_disp_x >= self.cur.disp_x - Editor::LEFT_RIGHT_JUDGE_EXTRA {
-                        self.offset_x = if self.offset_x >= Editor::ADD_EXTRA_NUM { self.offset_x - Editor::ADD_EXTRA_NUM } else { 0 };
-                    }
-                }
-                _ => {}
-            }
-        }
-        //     self.offset_disp_x = get_row_width(&vec[..self.offset_x], self.offset_disp_x, false).1;
-        self.offset_disp_x = get_row_width(&vec[..self.offset_x], 0, false).1;
-    }
-
-    pub fn add_extra_offset(&mut self, vec: &Vec<char>) {
-        let offset_disp_x = get_row_width(&vec[..self.offset_x], 0, false).1;
-
-        if self.cur.disp_x > offset_disp_x + self.disp_col_num - Editor::LEFT_RIGHT_JUDGE_EXTRA {
-            self.offset_x += Editor::ADD_EXTRA_END_LINE;
-        }
-    }
     /// Get x_offset from the specified y・x
     pub fn get_x_offset(&mut self, y: usize, x: usize) -> usize {
         let (mut cur_x, mut width) = (0, 0);
@@ -156,7 +49,7 @@ impl Editor {
     }
 
     pub fn set_cur_default(&mut self) {
-        if self.mouse_mode == MouseMode::Normal {
+        if self.state.mouse_mode == MouseMode::Normal {
             self.rnw = self.buf.len_lines().to_string().len();
         } else {
             self.rnw = 0;
@@ -167,7 +60,7 @@ impl Editor {
     pub fn set_cur_target(&mut self, y: usize, x: usize, is_ctrlchar_incl: bool) {
         self.cur.y = y;
         let (cur_x, width) = get_row_width(&self.buf.char_vec_range(y, x), 0, is_ctrlchar_incl);
-        self.rnw = if self.mouse_mode == MouseMode::Normal { self.buf.len_lines().to_string().len() } else { 0 };
+        self.rnw = if self.state.mouse_mode == MouseMode::Normal { self.buf.len_lines().to_string().len() } else { 0 };
         self.cur.disp_x = width;
         self.cur.x = cur_x;
     }
@@ -188,65 +81,28 @@ impl Editor {
         self.offset_x_org = self.offset_x;
         self.rnw_org = self.get_rnw();
         self.sel_org = self.sel;
+        self.state.is_changed_org = self.state.is_changed;
     }
 
     pub fn set_keys(&mut self, keys: &Keys) {
         self.keys = *keys;
-        self.keycmd = Keybind::keys_to_keycmd(keys, KeyWhen::EditorFocus);
+        let keycmd = Keybind::keys_to_keycmd(keys, KeyWhen::EditorFocus);
+        self.e_cmd = match keycmd {
+            KeyCmd::Edit(e_keycmd) => e_keycmd,
+            _ => E_Cmd::Null,
+        };
     }
-}
 
-impl Editor {
-    pub const RNW_MARGIN: usize = 1;
-
-    pub fn new() -> Self {
-        Editor {
-            mouse_mode: MouseMode::Normal,
-            buf: TextBuffer::default(),
-            buf_cache: vec![],
-            cur: Cur::default(),
-            offset_y: 0,
-            offset_y_org: 0,
-            offset_x: 0,
-            offset_x_org: 0,
-            offset_disp_x: 0,
-            cur_y_org: 0,
-            is_changed: false,
-            updown_x: 0,
-            rnw: 0,
-            rnw_org: 0,
-            //  sel_range: SelRange::default(),
-            sel: SelRange::default(),
-            sel_org: SelRange::default(),
-            keys: Keys::Null,
-            keycmd: KeyCmd::Null,
-            // for UT set
-            disp_row_num: 5,
-            disp_row_posi: 1,
-            disp_col_num: 5,
-            search: Search::default(),
-            //  draw: Draw::default(),
-            draw_type: DrawType::default(),
-            history: History::default(),
-            grep_result_vec: vec![],
-
-            // TODO workspace
-            key_vec: vec![],
-            is_enable_syntax_highlight: false,
-            h_file: HeaderFile::default(),
-            box_insert: BoxInsert::default(),
-        }
-    }
     pub fn record_key(&mut self) {
-        match self.keycmd {
+        match &self.e_cmd {
             // Ctrl
-            KeyCmd::Copy | KeyCmd::Cut | KeyCmd::AllSelect | KeyCmd::InsertStr(_) | KeyCmd::CursorFileHome | KeyCmd::CursorFileEnd => self.key_vec.push(KeyMacro { keys: self.keys, ..KeyMacro::default() }),
+            E_Cmd::Copy | E_Cmd::Cut | E_Cmd::AllSelect | E_Cmd::InsertStr(_) | E_Cmd::CursorFileHome | E_Cmd::CursorFileEnd => self.key_vec.push(KeyMacro { keys: self.keys, ..KeyMacro::default() }),
             // Shift
-            KeyCmd::CursorUpSelect | KeyCmd::CursorDownSelect | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect => self.key_vec.push(KeyMacro { keys: self.keys, ..KeyMacro::default() }),
-            KeyCmd::FindBack => self.key_vec.push(KeyMacro { keys: self.keys, search: Search { str: self.search.str.clone(), ..Search::default() } }),
+            E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::CursorLeftSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect => self.key_vec.push(KeyMacro { keys: self.keys, ..KeyMacro::default() }),
+            E_Cmd::FindBack => self.key_vec.push(KeyMacro { keys: self.keys, search: Search { str: self.search.str.clone(), ..Search::default() } }),
             // Raw
-            KeyCmd::InsertLine | KeyCmd::DeletePrevChar | KeyCmd::DeleteNextChar | KeyCmd::CursorPageUp | KeyCmd::CursorPageDown | KeyCmd::Tab | KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd => self.key_vec.push(KeyMacro { keys: self.keys, ..KeyMacro::default() }),
-            KeyCmd::FindNext => self.key_vec.push(KeyMacro { keys: self.keys, search: Search { str: self.search.str.clone(), ..Search::default() } }),
+            E_Cmd::InsertLine | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::CursorPageUp | E_Cmd::CursorPageDown | E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorLeft | E_Cmd::CursorRight | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd => self.key_vec.push(KeyMacro { keys: self.keys, ..KeyMacro::default() }),
+            E_Cmd::FindNext => self.key_vec.push(KeyMacro { keys: self.keys, search: Search { str: self.search.str.clone(), ..Search::default() } }),
             _ => {}
         }
     }
@@ -262,5 +118,119 @@ impl Editor {
             self.sel.set_sel_posi(true, self.cur.y, self.cur.x, self.cur.disp_x);
             self.sel.set_sel_posi(false, self.cur.y, self.cur.x, self.cur.disp_x);
         }
+    }
+    pub fn init(&mut self) {
+        Log::debug_key("EvtAct.init");
+        match self.e_cmd {
+            // Up, Down
+            E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::MouseScrollUp | E_Cmd::MouseScrollDown => {}
+            _ => self.updown_x = 0,
+        }
+        self.set_draw_range_init();
+
+        // Edit is_change=true, Clear redo_vec,
+        if Keybind::is_edit(&self.e_cmd, false) {
+            self.state.is_changed = true;
+            self.history.clear_redo_vec();
+        }
+
+        // Box Mode
+        match self.e_cmd {
+            E_Cmd::InsertStr(_) => {
+                if self.sel.mode == SelMode::BoxSelect {
+                    self.box_insert.mode = BoxInsertMode::Insert;
+                }
+            }
+            E_Cmd::Undo | E_Cmd::Redo | E_Cmd::DelNextChar | E_Cmd::DelPrevChar => {}
+            _ => self.box_insert.mode = BoxInsertMode::Normal,
+        }
+    }
+    pub fn finalize(&mut self) {
+        Log::debug_key("EvtAct.finalize");
+
+        // set sel draw range, Clear sel range
+        match self.e_cmd {
+            // Select
+            E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorLeftSelect | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect | E_Cmd::AllSelect => {}
+            // OpenFile, Menu
+            E_Cmd::OpenFile(_) | E_Cmd::OpenMenu | E_Cmd::OpenMenuFile | E_Cmd::OpenMenuConvert | E_Cmd::OpenMenuEdit | E_Cmd::OpenMenuSearch => {}
+            // Search
+            E_Cmd::FindNext | E_Cmd::FindBack => {}
+            // mouse
+            E_Cmd::MouseScrollUp | E_Cmd::MouseScrollDown | E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeft(_, _) | E_Cmd::MouseDownRight(_, _) | E_Cmd::MouseDragRight(_, _) | E_Cmd::MouseMove(_, _) | E_Cmd::MouseDownBoxLeft(_, _) | E_Cmd::MouseDragBoxLeft(_, _) => {}
+            // other
+            E_Cmd::CtxtMenu | E_Cmd::BoxSelectMode => {}
+            _ => {
+                if self.sel.mode == SelMode::BoxSelect {
+                    match self.e_cmd {
+                        E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorLeft | E_Cmd::CursorRight => {}
+                        _ => {
+                            self.sel.clear();
+                            self.sel.mode = SelMode::Normal;
+                        }
+                    }
+                } else {
+                    self.sel.clear();
+                    self.sel.mode = SelMode::Normal;
+                }
+            }
+        }
+
+        // Re-search when searching
+        if Keybind::is_edit(&self.e_cmd, true) && self.search.ranges.len() > 0 {
+            let len_chars = self.buf.len_chars();
+            let search_str = &self.search.str.clone();
+            let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
+            self.search.ranges = self.get_search_ranges(search_str, 0, len_chars, 0, cfg_search);
+        }
+
+        self.set_draw_range_finalize(self.state.key_macro.is_exec_end);
+    }
+    pub fn editor_check_err(&mut self) -> ActType {
+        // read_only
+        if self.state.is_read_only && Keybind::is_edit(&self.e_cmd, true) {
+            return ActType::Cancel;
+        }
+        match self.e_cmd {
+            E_Cmd::Cut | E_Cmd::Copy => {
+                if !self.sel.is_selected() {
+                    return ActType::Draw(DParts::MsgBar(LANG.no_sel_range.to_string()));
+                }
+            }
+            E_Cmd::Undo => {
+                if self.history.len_undo() == 0 {
+                    return ActType::Draw(DParts::MsgBar(LANG.no_undo_operation.to_string()));
+                }
+            }
+            E_Cmd::Redo => {
+                if self.history.len_redo() == 0 {
+                    return ActType::Draw(DParts::MsgBar(LANG.no_redo_operation.to_string()));
+                }
+            }
+            E_Cmd::ExecRecordKey => {
+                if self.key_vec.is_empty() {
+                    return ActType::Draw(DParts::MsgBar(LANG.no_key_record_exec.to_string()));
+                }
+            }
+
+            _ => {}
+        }
+
+        return ActType::Next;
+    }
+
+    pub fn ctrl_mouse_capture(&mut self) {
+        match self.state.mouse_mode {
+            MouseMode::Normal => {
+                self.rnw = 0;
+                self.state.mouse_mode = MouseMode::Mouse;
+                execute!(stdout(), DisableMouseCapture).unwrap();
+            }
+            MouseMode::Mouse => {
+                self.rnw = self.buf.len_lines().to_string().len();
+                self.state.mouse_mode = MouseMode::Normal;
+                execute!(stdout(), EnableMouseCapture).unwrap();
+            }
+        };
     }
 }

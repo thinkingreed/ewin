@@ -1,7 +1,13 @@
 use clap::*;
 use crossterm::event::{Event::Mouse, EventStream, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
-use ewin_core::{_cfg::cfg::*, _cfg::keys::*, def::*, global::*, log::*, model::*};
-use ewin_term::{model::EvtAct, terminal::Terminal};
+use ewin_core::{
+    _cfg::{cfg::*, key::keycmd::*},
+    def::*,
+    global::*,
+    log::*,
+    model::*,
+};
+use ewin_term::{model::*, terminal::*};
 use futures::{future::FutureExt, select, StreamExt};
 use std::{
     io::*,
@@ -49,7 +55,8 @@ async fn main() {
 
     Terminal::init();
     let mut term = Terminal::new();
-    term.activate(&args, &mut out);
+    term.activate(&args);
+    term.init_draw(&mut out);
 
     let (tx, rx) = channel();
     let mut tx_grep = Sender::clone(&tx);
@@ -87,7 +94,7 @@ async fn main() {
 
                         loop {
                             // Sleep to receive key event
-                            thread::sleep(time::Duration::from_millis(10));
+                            thread::sleep(time::Duration::from_millis(50));
 
                             {
                                 if let Some(Ok(grep_cancel_vec)) = GREP_CANCEL_VEC.get().map(|vec| vec.try_lock()) {
@@ -138,7 +145,6 @@ async fn main() {
     for job in rx {
         match job.job_type {
             JobType::Event => {
-                // Log::debug("Raw evt", &job.job_evt.clone().unwrap().evt);
                 if EvtAct::match_event(Keybind::evt_to_keys(&job.job_evt.unwrap().evt), &mut out, &mut term) {
                     break;
                 }

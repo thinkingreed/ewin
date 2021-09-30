@@ -94,7 +94,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `Ctrl` + `o`   | Open new file.                                                                                                      | ―             |
 | `Ctrl` + `n`   | Create new tab. Another operation is to double-click the header.                                                    | ―             |
 |                | In case of Windows, it will not be recognized unless you double-click slowly                                        |               |
-| `Ctrl` + `q`   | Change next tab.                                                                                                    | ―             |
+| `Alt` + `←`・`→`   | Switch tab.                                                                                                    | ―             |
 | `Ctrl` + `e`   | Specify the character code and reload. Or set the character code line feed code and BOM.                            | ―             |
 | `F12`          | Mouse capture changes.Used for clipboard access via terminal app                                                    | ―             |
 |                | when connecting to a remote terminal                                                                                | ―             |
@@ -241,6 +241,7 @@ Built-in v8 engine using rusty_v8.
 ## Future Works
 
 - Grep-Replace function
+- Swap file
 
 ## License
 

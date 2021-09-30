@@ -1,4 +1,8 @@
-use crate::{ewin_core::_cfg::keys::KeyCmd, ewin_core::def::*, ewin_core::log::*, ewin_core::model::*, model::*};
+use crate::{
+    ewin_core::{_cfg::key::keycmd::*, def::*, log::*, model::*},
+    model::*,
+};
+
 use kana::*;
 
 impl Editor {
@@ -23,7 +27,7 @@ impl Editor {
         } else {
             todo!()
         };
-        self.edit_proc(KeyCmd::InsertStr(convert_str));
+        self.edit_proc(E_Cmd::InsertStr(convert_str));
     }
 }
 

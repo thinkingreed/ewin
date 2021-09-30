@@ -21,7 +21,7 @@ impl Editor {
             if !self.search.ranges.is_empty() {
                 self.search_str(true, true);
             }
-            self.draw_type = DrawType::After(self.offset_y);
+            self.draw_range = EditorDrawRange::After(self.offset_y);
         }
     }
     pub fn exec_search_confirm(&mut self, search_str: String) -> Option<String> {
@@ -34,7 +34,6 @@ impl Editor {
 
         if search_vec.len() == 0 {
             return Some(LANG.cannot_find_char_search_for.clone());
-            //  return EvtActType::DrawOnly;
         } else {
             self.search.clear();
             self.search.ranges = search_vec;
@@ -42,6 +41,7 @@ impl Editor {
 
             // Set index to initial value
             self.search.idx = USIZE_UNDEFINED;
+            self.search_str(true, false);
             return None;
         }
     }
@@ -168,7 +168,7 @@ impl Editor {
 
         let end_char_idx = self.buf.replace(is_regex, &replace_str, &replace_map);
 
-        self.set_draw_range_each_process(DrawType::After(self.offset_y));
+        self.set_draw_range_each_process(EditorDrawRange::After(self.offset_y));
 
         let y = self.buf.char_to_line(end_char_idx);
         let x = end_char_idx - self.buf.line_to_char(y);

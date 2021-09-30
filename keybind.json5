@@ -19,7 +19,7 @@
      // find
          find, findNext, findBack, replace, moveLine, grep
      // file
-         newTab, nextTab, openFile, encoding, closeFile, closeAllFile, saveFile
+         newTab, switchTabRight, switchTabLight, openFile, encoding, closeFile, closeAllFile, saveFile
      // key record・mouse
          startEndRecordKey, execRecordKey, mouseOpeSwitch
      // menu
@@ -28,6 +28,8 @@
          escPrompt, confirmPrompt, findCaseSensitive, findRegex                             
      // ContextMenu
          contextMenu
+     // format
+         formatJSON, formatHTML, formatXML
   */
   /* when
      allFocus, inputFocus, editorFocus, promptFocus         
@@ -69,12 +71,12 @@
   {
     key: 'ctrl+home',
     cmd: 'cursorFileHome',
-    when: 'inputFocus'
+    when: 'editorFocus'
   },
   {
     key: 'ctrl+end',
     cmd: 'cursorFileEnd',
-    when: 'inputFocus'
+    when: 'editorFocus'
   },
   {
     key: 'pagedown',
@@ -232,8 +234,13 @@
     when: 'editorFocus'
   },
   {
-    key: 'ctrl+q',
-    cmd: 'nextTab',
+    key: 'alt+right',
+    cmd: 'switchTabRight',
+    when: 'editorFocus'
+  },
+  {
+    key: 'alt+left',
+    cmd: 'switchTabLeft',
     when: 'editorFocus'
   },
   {
@@ -336,6 +343,11 @@
   {
     key: 'F10',
     cmd: 'contextMenu',
+    when: 'editorFocus'
+  },
+  {
+    key: 'ctrl+d',
+    cmd: 'formatXML',
     when: 'editorFocus'
   }
 ]

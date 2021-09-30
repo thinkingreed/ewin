@@ -1,7 +1,7 @@
 use crate::{
-    cont::promptcont::*,
-    ewin_core::{_cfg::keys::*, colors::*, def::*, global::*, log::Log, model::*, util::*},
-    prompt::{choice::*, prompt::*},
+    ewin_core::{_cfg::key::keycmd::*, colors::*, def::*, global::*, log::Log, model::*, util::*},
+    model::*,
+    prompt::choice::*,
 };
 use crossterm::cursor::MoveTo;
 use crossterm::{terminal::ClearType::*, terminal::*};
@@ -33,13 +33,13 @@ impl Prompt {
             _ => {}
         }
     }
-    pub fn enc_nl(&mut self, h_file: &HeaderFile) {
+    pub fn enc_nl(&mut self) {
         self.disp_row_num = 10;
 
-        self.cont_1 = PromptCont::new_edit_type(self.keycmd.clone(), PromptContPosi::First).get_enc_nl(h_file);
-        self.cont_2 = PromptCont::new_edit_type(self.keycmd.clone(), PromptContPosi::Second).get_enc_nl(h_file);
-        self.cont_3 = PromptCont::new_edit_type(self.keycmd.clone(), PromptContPosi::Third).get_enc_nl(h_file);
-        self.cont_4 = PromptCont::new_edit_type(self.keycmd.clone(), PromptContPosi::Fourth).get_enc_nl(h_file);
+        self.cont_1 = PromptCont::new(Some(PromptContPosi::First)).get_enc_nl();
+        self.cont_2 = PromptCont::new(Some(PromptContPosi::Second)).get_enc_nl();
+        self.cont_3 = PromptCont::new(Some(PromptContPosi::Third)).get_enc_nl();
+        self.cont_4 = PromptCont::new(Some(PromptContPosi::Fourth)).get_enc_nl();
     }
 
     pub fn draw_enc_nl(&self, str_vec: &mut Vec<String>) {
@@ -86,14 +86,14 @@ impl Prompt {
             self.set_bom(false);
         }
     }
-    pub fn move_enc_nl(&mut self, cur_direction: CurDirection) {
+    pub fn move_enc_nl(&mut self, cur_direction: Direction) {
         match self.cont_posi {
             PromptContPosi::First => {
                 let is_move_cont = self.cont_1.get_choices().unwrap().set_vec_posi(cur_direction);
                 if is_move_cont {
-                    if cur_direction == CurDirection::Down {
+                    if cur_direction == Direction::Down {
                         self.cont_posi = PromptContPosi::Second;
-                    } else if cur_direction == CurDirection::Up {
+                    } else if cur_direction == Direction::Up {
                         let item = self.cont_1.get_choice();
                         self.cont_posi = if *item.name == LANG.file_reload { PromptContPosi::Second } else { PromptContPosi::Fourth };
                     }
@@ -102,10 +102,10 @@ impl Prompt {
             PromptContPosi::Second => {
                 let is_move_cont = self.cont_2.get_choices().unwrap().set_vec_posi(cur_direction);
                 if is_move_cont {
-                    if cur_direction == CurDirection::Down {
+                    if cur_direction == Direction::Down {
                         let item = self.cont_1.get_choice();
                         self.cont_posi = if *item.name == LANG.file_reload { PromptContPosi::First } else { PromptContPosi::Third };
-                    } else if cur_direction == CurDirection::Up {
+                    } else if cur_direction == Direction::Up {
                         self.cont_posi = PromptContPosi::First;
                     }
                 }
@@ -114,22 +114,22 @@ impl Prompt {
             PromptContPosi::Third => {
                 let is_move_cont = self.cont_3.get_choices().unwrap().set_vec_posi(cur_direction);
                 if is_move_cont {
-                    if cur_direction == CurDirection::Down {
+                    if cur_direction == Direction::Down {
                         self.cont_posi = PromptContPosi::Fourth;
-                    } else if cur_direction == CurDirection::Up {
+                    } else if cur_direction == Direction::Up {
                         self.cont_posi = PromptContPosi::Second;
                     }
                 }
             }
 
             PromptContPosi::Fourth => match cur_direction {
-                CurDirection::Up | CurDirection::Down => {
+                Direction::Up | Direction::Down => {
                     let is_move_cont = self.cont_4.get_choices().unwrap().set_vec_posi(cur_direction);
                     if is_move_cont {
-                        self.cont_posi = if cur_direction == CurDirection::Down { PromptContPosi::First } else { PromptContPosi::Third };
+                        self.cont_posi = if cur_direction == Direction::Down { PromptContPosi::First } else { PromptContPosi::Third };
                     }
                 }
-                CurDirection::Left | CurDirection::Right => {
+                Direction::Left | Direction::Right => {
                     let item = self.cont_2.get_choice();
                     if *item.name == Encode::UTF8.to_string() {
                         self.cont_4.get_choices().unwrap().set_vec_posi(cur_direction);
@@ -185,19 +185,19 @@ impl Prompt {
 }
 
 impl PromptCont {
-    fn get_enc_nl(&mut self, h_file: &HeaderFile) -> PromptCont {
+    fn get_enc_nl(&mut self) -> PromptCont {
         match self.posi {
             PromptContPosi::First => {
                 self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.set_enc_nl);
                 self.key_desc = format!(
-                    "{}{}:{}Enter・Click  {}{}:{}{}  {}{}:{}↑↓  {}{}:{}←→・Tab",
+                    "{}{}:{}Enter  {}{}:{}{}  {}{}:{}↑↓  {}{}:{}←→・Tab",
                     Colors::get_default_fg(),
                     &LANG.fixed,
                     Colors::get_msg_highlight_fg(),
                     Colors::get_default_fg(),
                     &LANG.close,
                     Colors::get_msg_highlight_fg(),
-                    Keybind::get_key_str(KeyCmd::EscPrompt),
+                    Keybind::get_key_str(KeyCmd::Prom(P_Cmd::EscPrompt)),
                     Colors::get_default_fg(),
                     &LANG.move_setting_location,
                     Colors::get_msg_highlight_fg(),
@@ -213,7 +213,6 @@ impl PromptCont {
                 choices.vec = vec;
                 choices.is_show = true;
                 self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (USIZE_UNDEFINED, USIZE_UNDEFINED)), choices);
-                self.set_default_choice_enc_nl(h_file, self.buf_row_posi);
             }
             PromptContPosi::Second => {
                 self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.encoding, Colors::get_default_fg());
@@ -227,7 +226,6 @@ impl PromptCont {
                 choices.is_show = true;
                 choices.vec = enc_vec;
                 self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 0)), choices);
-                self.set_default_choice_enc_nl(h_file, self.buf_row_posi);
             }
             PromptContPosi::Third => {
                 self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.new_line_code, Colors::get_default_fg());
@@ -237,7 +235,6 @@ impl PromptCont {
                 choices.is_show = true;
                 choices.vec = nl_vec;
                 self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 0)), choices);
-                self.set_default_choice_enc_nl(h_file, self.buf_row_posi);
             }
             PromptContPosi::Fourth => {
                 self.buf_desc = format!("{}BOM{}({}){}", Colors::get_msg_highlight_fg(), &LANG.presence_or_absence, &LANG.selectable_only_for_utf8, Colors::get_default_fg());
@@ -247,13 +244,12 @@ impl PromptCont {
                 choices.is_show = true;
                 choices.vec = bom_vec;
                 self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 0)), choices);
-                self.set_default_choice_enc_nl(h_file, self.buf_row_posi);
             }
         };
 
         return self.clone();
     }
-    fn set_default_choice_enc_nl(&mut self, h_file: &HeaderFile, buf_row_posi: u16) {
+    pub fn set_default_choice_enc_nl(&mut self, buf_row_posi: u16, h_file: &HeaderFile) {
         for (_, choices) in self.choices_map.iter_mut() {
             for (y_idx, v) in choices.vec.iter_mut().enumerate() {
                 let mut row_width = 1;

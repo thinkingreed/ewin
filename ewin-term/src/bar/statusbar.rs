@@ -1,16 +1,22 @@
-use crate::{ewin_core::colors::*, ewin_core::def::*, ewin_core::global::*, ewin_core::log::*, ewin_core::util::*, tab::*};
+use crate::{
+    ewin_core::{colors::*, def::*, global::*, log::*, model::*, util::*},
+    tab::*,
+};
 use crossterm::{cursor::*, terminal::*};
-use ewin_core::model::{BoxInsertMode, HeaderFile, SelMode};
 use std::io::{stdout, BufWriter, Write};
 
 impl StatusBar {
-    pub fn new() -> Self {
-        StatusBar { ..StatusBar::default() }
+    pub fn draw_only<T: Write>(out: &mut T, tab: &mut Tab, h_file: &HeaderFile) {
+        Log::debug_key("StatusBar.draw_only");
+        let mut v: Vec<String> = vec![];
+        StatusBar::draw(&mut v, tab, h_file);
+        let _ = out.write(&v.concat().as_bytes());
+        out.flush().unwrap();
     }
-    pub fn draw(str_vec: &mut Vec<String>, h_file: &HeaderFile, tab: &mut Tab) {
-        Log::info_key("StatusBar.draw");
 
-        if tab.sbar.disp_row_num == 0 {
+    pub fn draw(str_vec: &mut Vec<String>, tab: &mut Tab, h_file: &HeaderFile) {
+        Log::info_key("StatusBar.draw");
+        if tab.sbar.row_num == 0 {
             return;
         }
         let cur_s = StatusBar::get_cur_str(tab);
@@ -53,7 +59,7 @@ impl StatusBar {
             &enc_nl,
             Colors::get_sbar_fg_bg()
         );
-        let sber_all_str = format!("{}{}{}{}{}", MoveTo(0, tab.sbar.disp_row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_sbar_fg_bg(), sbar_ctr, Colors::get_default_fg_bg(),);
+        let sber_all_str = format!("{}{}{}{}{}", MoveTo(0, tab.sbar.row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_sbar_fg_bg(), sbar_ctr, Colors::get_default_fg_bg(),);
 
         str_vec.push(sber_all_str);
         Colors::set_text_color(str_vec);
@@ -80,7 +86,7 @@ impl StatusBar {
     }
 
     fn get_areas_width(tab: &mut Tab, enc_nl: &String, cur_str_w: usize) -> (usize, usize, usize, usize, usize) {
-        let cols_w = tab.sbar.disp_col_num;
+        let cols_w = tab.sbar.col_num;
 
         let select_mode_w = match tab.editor.sel.mode {
             SelMode::Normal => 0,
@@ -96,6 +102,9 @@ impl StatusBar {
 
         return (cols_w - enc_nl.len() - box_sel_mode_w - select_mode_w - search_w - cur_str_w, search_w, box_sel_mode_w, select_mode_w, cur_str_w);
     }
+    pub fn new() -> Self {
+        StatusBar { ..StatusBar::default() }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -103,10 +112,10 @@ pub struct StatusBar {
     pub cur_str: String,
     pub other_str: String,
     // Position on the terminal
-    pub disp_row_num: usize,
+    pub row_num: usize,
     // 0 index
-    pub disp_row_posi: usize,
-    pub disp_col_num: usize,
+    pub row_posi: usize,
+    pub col_num: usize,
     pub search_area: (usize, usize),
     pub select_mode_area: (usize, usize),
     pub cur_area: (usize, usize),
@@ -115,6 +124,6 @@ pub struct StatusBar {
 
 impl Default for StatusBar {
     fn default() -> Self {
-        StatusBar { cur_str: String::new(), other_str: String::new(), disp_row_num: 1, disp_row_posi: 0, disp_col_num: 0, search_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), select_mode_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), cur_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), enc_nl_area: (USIZE_UNDEFINED, USIZE_UNDEFINED) }
+        StatusBar { cur_str: String::new(), other_str: String::new(), row_num: STATUSBAR_ROW_NUM, row_posi: 0, col_num: 0, search_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), select_mode_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), cur_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), enc_nl_area: (USIZE_UNDEFINED, USIZE_UNDEFINED) }
     }
 }

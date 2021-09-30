@@ -1,106 +1,166 @@
 use crate::{
-    ewin_core::{_cfg::keys::*, clipboard::*, global::*, log::*, model::*},
-    ewin_prom::cont::promptcont::*,
+    ewin_core::{_cfg::key::keycmd::*, clipboard::*, global::*, log::*, model::*},
+    ewin_prom::model::*,
     model::*,
     tab::Tab,
     terminal::*,
 };
+use std::io::Write;
 
 impl EvtAct {
-    pub fn check_prom(term: &mut Terminal) -> EvtActType {
+    pub fn ctrl_prom(term: &mut Terminal) -> ActType {
+        Log::info_s("ctrl_prom");
+        let mut act_type = ActType::Next;
+        if !term.curt().state.is_nomal() {
+            act_type = EvtAct::prompt_check_err(term);
+            if ActType::Next != act_type {
+                return act_type;
+            }
+
+            EvtAct::clear_tab_comp(&mut term.tabs[term.idx]);
+            act_type = EvtAct::check_prom(term);
+        }
+        return act_type;
+    }
+
+    pub fn check_prom(term: &mut Terminal) -> ActType {
         Log::debug_key("check_prom");
 
+        if !EvtAct::check_promt_suport_keycmd(term) {
+            return ActType::Draw(DParts::MsgBar(LANG.unsupported_operation.to_string()));
+        }
+
         // Close・Esc
-        if !term.curt().state.is_nomal() {
-            match term.curt().prom.keycmd {
-                KeyCmd::CloseFile => {
-                    if term.curt().state.grep_state.is_result && !(term.curt().state.grep_state.is_stdout_end && term.curt().state.grep_state.is_stderr_end) && !term.curt().state.grep_state.is_cancel {
-                        return EvtActType::Hold;
-                    } else {
-                        return EvtActType::Next;
-                    }
+        match term.curt().prom.p_cmd {
+            P_Cmd::EscPrompt => {
+                if term.state.is_all_close_confirm {
+                    term.cancel_close_all_tab();
+                    term.clear_curt_tab(true);
+                } else if term.state.is_all_save {
+                    term.cancel_save_all_tab();
+                    term.clear_curt_tab(true);
+                } else if term.curt().state.grep.is_greping() {
+                    GREP_CANCEL_VEC.get().unwrap().try_lock().map(|mut vec| *vec.last_mut().unwrap() = true).unwrap();
+                    term.curt().state.grep.clear();
+                } else if term.curt().state.grep.is_grep_finished() {
+                    term.clear_curt_tab(false);
+                } else if term.curt().state.is_search {
+                    term.curt().editor.search.clear();
+                    term.clear_curt_tab(true);
+                } else {
+                    term.clear_curt_tab(true);
                 }
-                KeyCmd::EscPrompt => {
-                    if term.state.is_all_close_confirm {
-                        term.cancel_close_all_tab();
-                    } else if term.state.is_all_save {
-                        term.cancel_save_all_tab();
-                    } else if term.curt().state.grep_state.is_result {
-                        if (term.curt().state.grep_state.is_stdout_end && term.curt().state.grep_state.is_stderr_end) || term.curt().state.grep_state.is_cancel {
-                            if term.curt().state.is_search {
-                                term.curt().prom.clear();
-                                term.curt().state.is_search = false;
-                                term.curt().editor.draw_type = DrawType::All;
-                            }
-                        } else {
-                            GREP_CANCEL_VEC.get().unwrap().try_lock().map(|mut vec| *vec.last_mut().unwrap() = true).unwrap();
-                        }
-                    } else if term.curt().state.is_read_only {
-                    } else if term.curt().state.is_search {
-                        term.curt().editor.search.clear();
-                        term.curt().prom.clear();
-                    } else {
-                        term.clear_curt_tab();
-                        term.curt().state.grep_state.is_grep = false;
-                    }
-                    term.clear_curt_tab();
-                    return EvtActType::DrawOnly;
+                return ActType::Draw(DParts::All);
+            }
+            _ => {
+                //
+                if term.curt().state.grep.is_greping() {
+                    term.curt().mbar.clear();
+                    return ActType::Cancel;
                 }
-                _ => {}
             }
         }
 
+        let act_type = EvtAct::prompt_check_input_field(term);
+        if ActType::Next != act_type {
+            return act_type;
+        }
+
+        if let Some(act_type) = EvtAct::prompt_check_search_opt(term) {
+            return act_type;
+        }
+
+        if term.curt().state.is_search {
+            return EvtAct::search(term);
+        } else if term.curt().state.is_save_new_file {
+            return EvtAct::save_new_filenm(term);
+        } else if term.curt().state.is_close_confirm {
+            return EvtAct::close(term);
+        } else if term.curt().state.is_replace {
+            return EvtAct::replace(term);
+        } else if term.curt().state.is_open_file {
+            return EvtAct::open_file(term);
+        } else if term.curt().state.is_move_row {
+            return EvtAct::move_row(term);
+        } else if term.curt().state.is_menu {
+            return EvtAct::menu(term);
+        } else if term.curt().state.grep.is_grep {
+            return EvtAct::grep(term);
+        } else if term.curt().state.grep.is_result {
+            return EvtAct::grep_result(term);
+        } else if term.curt().state.is_enc_nl {
+            return EvtAct::enc_nl(term);
+        } else {
+            return ActType::Next;
+        }
+    }
+    pub fn prompt_check_input_field(term: &mut Terminal) -> ActType {
         // contents operation
-        if term.curt().state.is_exists_input_field() {
-            let state = &term.curt().state.clone();
-            match term.curt().prom.keycmd {
-                KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect => term.curt().prom.shift_move_com(),
-                KeyCmd::BackTab => {
-                    term.curt().prom.tab(false, state);
-                    term.curt().prom.clear_sels()
-                }
-                KeyCmd::InsertStr(_) => {
-                    if !state.is_move_row {
-                        term.curt().prom.operation()
-                    }
-                }
-                KeyCmd::Copy => term.curt().prom.copy(),
-                KeyCmd::Cut => term.curt().prom.operation(),
-                KeyCmd::Undo => term.curt().prom.undo(),
-                KeyCmd::Redo => term.curt().prom.redo(),
-                KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar => term.curt().prom.operation(),
-                KeyCmd::CursorUp => term.curt().prom.cursor_up(state),
-                KeyCmd::CursorDown => term.curt().prom.cursor_down(state),
-                KeyCmd::Tab => term.curt().prom.tab(true, state),
-                KeyCmd::MouseDownLeft(y, x) => term.curt().prom.ctrl_mouse(&state, y, x, true),
-                KeyCmd::MouseDragLeft(y, x) => term.curt().prom.ctrl_mouse(&state, y, x, false),
-                _ => {}
-            }
-            // clear_sels
-            match term.curt().prom.keycmd {
-                KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::Tab => term.curt().prom.clear_sels(),
-                _ => {}
-            }
+        if !term.curt().state.is_exists_input_field_not_open_file() {
+            return ActType::Next;
         }
 
+        // Clear msg
+        term.curt().mbar.clear_mag();
+        // Clear sels
+        term.curt().prom.clear_sels_keycmd();
+
+        let state = &term.curt().state.clone();
+        match term.curt().prom.p_cmd {
+            P_Cmd::CursorLeftSelect | P_Cmd::CursorRightSelect | P_Cmd::CursorRowHomeSelect | P_Cmd::CursorRowEndSelect => term.curt().prom.shift_move_com(),
+            P_Cmd::InsertStr(_) if state.is_move_row => {}
+            P_Cmd::InsertStr(_) => term.curt().prom.operation(),
+            P_Cmd::Copy => term.curt().prom.copy(),
+            P_Cmd::Cut => term.curt().prom.operation(),
+            P_Cmd::Undo => term.curt().prom.undo(),
+            P_Cmd::Redo => term.curt().prom.redo(),
+            P_Cmd::CursorLeft | P_Cmd::CursorRight | P_Cmd::CursorRowHome | P_Cmd::CursorRowEnd | P_Cmd::DelNextChar | P_Cmd::DelPrevChar => term.curt().prom.operation(),
+            P_Cmd::CursorUp => term.curt().prom.cursor_up(state),
+            P_Cmd::CursorDown => term.curt().prom.cursor_down(state),
+            P_Cmd::TabNextFocus => term.curt().prom.tab(true, state),
+            P_Cmd::BackTabBackFocus => term.curt().prom.tab(false, state),
+            P_Cmd::MouseDownLeft(y, x) => term.curt().prom.ctrl_mouse(&state, y, x, true),
+            P_Cmd::MouseDragLeft(y, x) => term.curt().prom.ctrl_mouse(&state, y, x, false),
+            _ => {}
+        }
+        // draw Prompt
+        if !state.is_move_row && !state.is_search {
+            return if EvtAct::is_draw_prompt_tgt_keycmd(&term.curt().prom.p_cmd) { ActType::Draw(DParts::Prompt) } else { ActType::Next };
+        } else {
+            return ActType::Next;
+        };
+    }
+
+    pub fn is_draw_prompt_tgt_keycmd(p_cmd: &P_Cmd) -> bool {
+        match p_cmd {
+            P_Cmd::InsertStr(_) | P_Cmd::CursorLeft | P_Cmd::CursorRight | P_Cmd::CursorRowHome | P_Cmd::CursorRowEnd | P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::CursorLeftSelect | P_Cmd::CursorRightSelect | P_Cmd::CursorRowHomeSelect | P_Cmd::CursorRowEndSelect | P_Cmd::BackTabBackFocus | P_Cmd::Copy | P_Cmd::Cut | P_Cmd::Undo | P_Cmd::Redo | P_Cmd::CursorUp | P_Cmd::CursorDown | P_Cmd::TabNextFocus | P_Cmd::MouseDownLeft(_, _) | P_Cmd::MouseDragLeft(_, _) => {
+                return true;
+            }
+            _ => return false,
+        };
+    }
+
+    pub fn prompt_check_search_opt(term: &mut Terminal) -> Option<ActType> {
         // Search・replace・grep option
-        if term.curt().state.is_search || term.curt().state.is_replace || term.curt().state.grep_state.is_grep {
-            match term.curt().prom.keycmd {
-                KeyCmd::FindCaseSensitive => {
+        if term.curt().state.is_search || term.curt().state.is_replace || term.curt().state.grep.is_grep {
+            match term.curt().prom.p_cmd {
+                P_Cmd::FindCaseSensitive => {
                     term.curt().prom.cont_1.change_opt_case_sens();
-                    return EvtActType::Hold;
+                    return Some(ActType::Draw(DParts::Prompt));
                 }
-                KeyCmd::FindRegex => {
+                P_Cmd::FindRegex => {
                     term.curt().prom.cont_1.change_opt_regex();
-                    return EvtActType::Hold;
+                    return Some(ActType::Draw(DParts::Prompt));
                 }
-                KeyCmd::MouseDownLeft(y, x) => {
+                P_Cmd::MouseDownLeft(y, x) => {
                     let (y, x) = (y as u16, x as u16);
                     if term.curt().prom.cont_1.opt_row_posi == y {
                         if term.curt().prom.cont_1.opt_1.mouse_area.0 <= x && x <= term.curt().prom.cont_1.opt_1.mouse_area.1 {
                             term.curt().prom.cont_1.change_opt_case_sens();
+                            return Some(ActType::Draw(DParts::Prompt));
                         } else if term.curt().prom.cont_1.opt_2.mouse_area.0 <= x && x <= term.curt().prom.cont_1.opt_2.mouse_area.1 {
                             term.curt().prom.cont_1.change_opt_regex();
+                            return Some(ActType::Draw(DParts::Prompt));
                         }
                     }
                 }
@@ -108,86 +168,33 @@ impl EvtAct {
             }
         }
 
-        // unable to edit
-        if term.curt().state.grep_state.is_result || term.curt().state.is_read_only {
-            if term.curt().state.is_search || term.curt().state.is_move_row {
-            } else {
-                if Keybind::is_edit(&term.curt().prom.keycmd, true) {
-                    if term.curt().state.grep_state.is_result {
-                        if term.curt().prom.keycmd != KeyCmd::ConfirmPrompt {
-                            return EvtActType::Hold;
-                        }
-                    } else {
-                        return EvtActType::Hold;
-                    }
-                    return EvtActType::Hold;
-                }
-                match term.keycmd {
-                    // Ctrl
-                    KeyCmd::CursorFileHome | KeyCmd::CursorFileEnd | KeyCmd::AllSelect | KeyCmd::Copy | KeyCmd::Find | KeyCmd::NewTab | KeyCmd::OpenFile(_) | KeyCmd::MoveRow => return EvtActType::Next,
-                    // Shift
-                    KeyCmd::CursorUpSelect | KeyCmd::CursorDownSelect | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect | KeyCmd::FindBack => return EvtActType::Next,
-                    // Raw
-                    KeyCmd::CursorUp | KeyCmd::CursorDown | KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::CursorPageUp | KeyCmd::CursorPageDown | KeyCmd::FindNext | KeyCmd::Help => return EvtActType::Next,
-                    KeyCmd::ConfirmPrompt | KeyCmd::EscPrompt => {}
-                    // mouse
-                    KeyCmd::MouseScrollUp | KeyCmd::MouseScrollDown | KeyCmd::MouseDownLeft(_, _) | KeyCmd::MouseDragLeft(_, _) => return EvtActType::Next,
-                    KeyCmd::Resize => {}
-                    _ => return EvtActType::Hold,
-                }
-            }
-        }
-
-        if term.curt().state.is_search == true {
-            return EvtAct::search(term);
-        } else if term.curt().state.is_save_new_file == true {
-            return EvtAct::save_new_filenm(term);
-        } else if term.curt().state.is_close_confirm == true {
-            return EvtAct::close(term);
-        } else if term.curt().state.is_replace == true {
-            return EvtAct::replace(term);
-        } else if term.curt().state.is_open_file == true {
-            return EvtAct::open_file(term);
-        } else if term.curt().state.is_move_row == true {
-            return EvtAct::move_row(term);
-        } else if term.curt().state.is_menu == true {
-            return EvtAct::menu(term);
-        } else if term.curt().state.grep_state.is_grep == true {
-            return EvtAct::grep(term);
-        } else if term.curt().state.grep_state.is_result == true {
-            return EvtAct::grep_result(term);
-        } else if term.curt().state.is_enc_nl == true {
-            return EvtAct::enc_nl(term);
-        } else {
-            return EvtActType::Next;
-        }
+        return None;
+    }
+    pub fn draw_prompt<T: Write>(out: &mut T, term: &mut Terminal) {
+        // Hide the cursor at this position to target anything other than mouse move
+        Terminal::hide_cur();
+        term.set_disp_size();
+        term.curt().mbar.draw_only(out);
+        let is_msg_changed = term.curt().mbar.is_msg_changed();
+        let state = term.curt().state.clone();
+        let h_file = term.curt_h_file().clone();
+        term.curt().prom.draw_only(out, &state, is_msg_changed, &h_file);
+        Terminal::show_cur();
     }
 
-    pub fn clear_mag(tab: &mut Tab) {
+    pub fn set_org_msg(tab: &mut Tab) {
         tab.mbar.msg_org = tab.mbar.msg.clone();
-
-        /*
-        match tab.editor.evt {
-            Key(KeyEvent { modifiers: KeyModifiers::CONTROL, .. }) => tab.mbar.clear_mag(),
-            Key(KeyEvent { modifiers: KeyModifiers::SHIFT, .. }) => tab.mbar.clear_mag(),
-            Key(KeyEvent { code, .. }) => match code {
-                Down | Up | Left | Right | Home | End => {}
-                _ => tab.mbar.clear_mag(),
-            },
-            Mouse(M_Event { kind: M_EventKind::ScrollUp, .. }) => {}
-            Mouse(M_Event { kind: M_EventKind::ScrollDown, .. }) => {}
-            _ => tab.mbar.clear_mag(),
-        } */
+        tab.mbar.msg_keyrecord_org = tab.mbar.msg_keyrecord.clone();
     }
 
     pub fn clear_tab_comp(tab: &mut Tab) {
         Log::debug_s("check_grep_clear_tab_comp");
 
-        if tab.state.grep_state.is_grep || tab.state.is_open_file || tab.state.is_save_new_file {
+        if tab.state.grep.is_grep || tab.state.is_open_file || tab.state.is_save_new_file {
             // Check clear tab candidate
-            match tab.prom.keycmd {
-                KeyCmd::InsertStr(_) | KeyCmd::DeleteNextChar | KeyCmd::DeletePrevChar | KeyCmd::CursorLeft | KeyCmd::CursorRight | KeyCmd::CursorRowHome | KeyCmd::CursorRowEnd | KeyCmd::CursorLeftSelect | KeyCmd::CursorRightSelect | KeyCmd::CursorRowHomeSelect | KeyCmd::CursorRowEndSelect => {
-                    if tab.state.grep_state.is_grep {
+            match tab.prom.p_cmd {
+                P_Cmd::InsertStr(_) | P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::CursorLeft | P_Cmd::CursorRight | P_Cmd::CursorRowHome | P_Cmd::CursorRowEnd | P_Cmd::CursorLeftSelect | P_Cmd::CursorRightSelect | P_Cmd::CursorRowHomeSelect | P_Cmd::CursorRowEndSelect => {
+                    if tab.state.grep.is_grep {
                         tab.prom.prom_grep.tab_comp.clear_tab_comp()
                     } else if tab.state.is_open_file {
                         tab.prom.prom_open_file.tab_comp.clear_tab_comp()
@@ -199,11 +206,11 @@ impl EvtAct {
             }
         }
     }
-    pub fn check_err_prompt(term: &mut Terminal) -> bool {
+    pub fn prompt_check_err(term: &mut Terminal) -> ActType {
         // Check if sel range is set
         if term.curt().state.is_exists_input_field() {
-            match &term.curt().prom.keycmd {
-                KeyCmd::Copy | KeyCmd::Cut => {
+            match &term.curt().prom.p_cmd {
+                P_Cmd::Copy | P_Cmd::Cut => {
                     let is_selected = match term.curt().prom.cont_posi {
                         PromptContPosi::First => term.curt().prom.cont_1.sel.is_selected(),
                         PromptContPosi::Second => term.curt().prom.cont_2.sel.is_selected(),
@@ -211,17 +218,17 @@ impl EvtAct {
                         PromptContPosi::Fourth => term.curt().prom.cont_4.sel.is_selected(),
                     };
                     if !is_selected {
-                        term.curt().mbar.set_err(&LANG.no_sel_range.to_string());
-                        return true;
+                        return ActType::Draw(DParts::MsgBar(LANG.no_sel_range.to_string()));
                     }
                 }
-                KeyCmd::InsertStr(str) => {
-                    if str.is_empty() && EvtAct::check_clipboard(term) {
-                        term.curt().mbar.set_err(&LANG.cannot_paste_multi_rows.clone());
-                        return true;
-                    }
+                P_Cmd::InsertStr(str) => {
+                    if str.is_empty() {
+                        if let Some(err_str) = EvtAct::check_clipboard(term) {
+                            return ActType::Draw(DParts::MsgBar(err_str));
+                        };
+                    };
                 }
-                KeyCmd::Undo => {
+                P_Cmd::Undo => {
                     let is_empty_undo = match term.curt().prom.cont_posi {
                         PromptContPosi::First => term.curt().prom.cont_1.history.undo_vec.is_empty(),
                         PromptContPosi::Second => term.curt().prom.cont_2.history.undo_vec.is_empty(),
@@ -229,11 +236,10 @@ impl EvtAct {
                         PromptContPosi::Fourth => term.curt().prom.cont_4.history.undo_vec.is_empty(),
                     };
                     if is_empty_undo {
-                        term.curt().mbar.set_err(&LANG.no_undo_operation.to_string());
-                        return true;
+                        return ActType::Draw(DParts::MsgBar(LANG.no_undo_operation.to_string()));
                     }
                 }
-                KeyCmd::Redo => {
+                P_Cmd::Redo => {
                     let is_empty_redo = match term.curt().prom.cont_posi {
                         PromptContPosi::First => term.curt().prom.cont_1.history.redo_vec.is_empty(),
                         PromptContPosi::Second => term.curt().prom.cont_2.history.redo_vec.is_empty(),
@@ -241,32 +247,70 @@ impl EvtAct {
                         PromptContPosi::Fourth => term.curt().prom.cont_4.history.redo_vec.is_empty(),
                     };
                     if is_empty_redo {
-                        term.curt().mbar.set_err(&LANG.no_redo_operation.to_string());
-                        return true;
+                        return ActType::Draw(DParts::MsgBar(LANG.no_redo_operation.to_string()));
                     }
                 }
-                _ => return false,
+                _ => return ActType::Next,
             }
         }
-        return false;
+        return ActType::Next;
     }
 
-    pub fn check_clipboard(term: &mut Terminal) -> bool {
+    pub fn check_clipboard(term: &mut Terminal) -> Option<String> {
         let clipboard = get_clipboard().unwrap_or("".to_string());
 
         if clipboard.len() == 0 {
-            term.curt().mbar.set_err(&LANG.no_value_in_clipboard.to_string());
-            return true;
+            return Some(LANG.no_value_in_clipboard.to_string());
         }
-
         // Do not paste multiple lines for Prompt
-
-        if term.curt().state.is_save_new_file || term.curt().state.is_search || term.curt().state.is_replace || term.curt().state.grep_state.is_grep || term.curt().state.is_move_row {
+        if term.curt().state.is_save_new_file || term.curt().state.is_search || term.curt().state.is_replace || term.curt().state.grep.is_grep || term.curt().state.is_move_row {
             // Check multiple lines
             if clipboard.match_indices(&NL::get_nl(&term.curt().editor.h_file.nl)).count() > 0 {
-                return true;
+                return Some(LANG.cannot_paste_multi_rows.to_string());
             };
         }
-        return false;
+        return None;
+    }
+
+    pub fn check_promt_suport_keycmd(term: &mut Terminal) -> bool {
+        Log::debug_key("check_promt_suport_keycmd");
+
+        match term.keycmd {
+            KeyCmd::Resize | KeyCmd::CloseFile => return true,
+            _ => {}
+        }
+        let is_suport = match term.curt().prom.p_cmd {
+            P_Cmd::ConfirmPrompt
+            | P_Cmd::EscPrompt
+            | P_Cmd::CursorLeft
+            | P_Cmd::CursorRight
+            | P_Cmd::CursorUp
+            | P_Cmd::CursorDown
+            | P_Cmd::CursorRowHome
+            | P_Cmd::CursorRowEnd
+            | P_Cmd::CursorLeftSelect
+            | P_Cmd::CursorRightSelect
+            | P_Cmd::CursorRowHomeSelect
+            | P_Cmd::CursorRowEndSelect
+            | P_Cmd::MouseScrollUp
+            | P_Cmd::MouseScrollDown
+            | P_Cmd::BackTabBackFocus
+            | P_Cmd::Copy
+            | P_Cmd::Cut
+            | P_Cmd::Undo
+            | P_Cmd::Redo
+            | P_Cmd::TabNextFocus
+            | P_Cmd::MouseDownLeft(_, _)
+            | P_Cmd::MouseDragLeft(_, _)
+            | P_Cmd::DelNextChar
+            | P_Cmd::DelPrevChar
+            | P_Cmd::InsertStr(_)
+            | P_Cmd::FindNext
+            | P_Cmd::FindBack
+            | P_Cmd::FindCaseSensitive
+            | P_Cmd::FindRegex => true,
+            _ => false,
+        };
+        return is_suport;
     }
 }

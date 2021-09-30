@@ -1,5 +1,5 @@
 use crate::{
-    ewin_core::{_cfg::keys::*, def::*, log::*, model::*, util::*},
+    ewin_core::{_cfg::key::keycmd::*, def::*, log::*, model::*, util::*},
     model::*,
 };
 use std::cmp::{max, min};
@@ -7,11 +7,11 @@ use std::cmp::{max, min};
 impl Editor {
     pub fn ctrl_mouse(&mut self) {
         Log::debug_key("ctrl_mouse");
-        let (mut y, mut x, mouse_proc) = match self.keycmd {
-            KeyCmd::MouseDownLeft(y, x) => (y, x, MouseProc::DownLeft),
-            KeyCmd::MouseDragLeft(y, x) => (y, x, MouseProc::DragLeft),
-            KeyCmd::MouseDownBoxLeft(y, x) => (y, x, MouseProc::DownLeftBox),
-            KeyCmd::MouseDragBoxLeft(y, x) => (y, x, MouseProc::DragLeftBox),
+        let (mut y, mut x, mouse_proc) = match self.e_cmd {
+            E_Cmd::MouseDownLeft(y, x) => (y, x, MouseProc::DownLeft),
+            E_Cmd::MouseDragLeft(y, x) => (y, x, MouseProc::DragLeft),
+            E_Cmd::MouseDownBoxLeft(y, x) => (y, x, MouseProc::DownLeftBox),
+            E_Cmd::MouseDragBoxLeft(y, x) => (y, x, MouseProc::DragLeftBox),
             _ => return,
         };
         if mouse_proc == MouseProc::DownLeftBox || mouse_proc == MouseProc::DragLeftBox {
@@ -32,7 +32,7 @@ impl Editor {
             self.set_cur_target(set_y, set_x, false);
             y = set_y;
 
-            self.draw_type = DrawType::All;
+            self.draw_range = EditorDrawRange::All;
             if mouse_proc != MouseProc::DragLeft {
                 self.sel.clear();
             }
@@ -45,7 +45,7 @@ impl Editor {
             let (cur_x, width) = get_row_width(&self.buf.char_vec_line(y)[..], 0, true);
             self.sel.set_e(y, cur_x, width);
             self.set_cur_target(y + self.offset_y, 0, false);
-            self.draw_type = DrawType::All;
+            self.draw_range = EditorDrawRange::All;
         } else {
             if x < self.get_rnw_and_margin() {
                 x = self.get_rnw_and_margin();
@@ -67,7 +67,7 @@ impl Editor {
 
             if self.sel.is_selected() {
                 match mouse_proc {
-                    MouseProc::DownLeft | MouseProc::DownLeftBox | MouseProc::DragLeftBox => self.draw_type = DrawType::All,
+                    MouseProc::DownLeft | MouseProc::DownLeftBox | MouseProc::DragLeftBox => self.draw_range = EditorDrawRange::All,
                     MouseProc::DragLeft => {
                         if self.sel.mode == SelMode::Normal {
                             let sel = self.sel.get_range();
@@ -78,9 +78,9 @@ impl Editor {
                             if ey == USIZE_UNDEFINED {
                                 ey = sy;
                             }
-                            self.draw_type = DrawType::Target(sy, ey);
+                            self.draw_range = EditorDrawRange::Target(sy, ey);
                         } else {
-                            self.draw_type = DrawType::All;
+                            self.draw_range = EditorDrawRange::All;
                         }
                     }
                 }
@@ -90,7 +90,7 @@ impl Editor {
 
     pub fn set_mouse_sel(&mut self, mouse_proc: MouseProc) {
         if mouse_proc == MouseProc::DownLeft || mouse_proc == MouseProc::DownLeftBox {
-            let click_count = self.history.count_multi_click(&self.keycmd);
+            let click_count = self.history.count_multi_click(&self.keys);
             Log::debug("click_count", &click_count);
             match click_count {
                 1 => {

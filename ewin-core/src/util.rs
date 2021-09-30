@@ -1,6 +1,7 @@
-use crate::{def::*, file::File, global::*, log::Log, model::*};
+use crate::{def::*, file::*, global::*, log::Log, model::*};
 #[cfg(target_os = "linux")]
 use anyhow::Context;
+use crossterm::terminal::size;
 #[cfg(target_os = "linux")]
 use std::io::Read;
 use std::{self, fs, path::*, process::*, *};
@@ -163,11 +164,12 @@ pub fn get_char_type(c: char) -> CharType {
 pub fn cut_str(str: String, limit_width: usize, is_from_before: bool, is_add_continue_str: bool) -> String {
     let mut chars: Vec<char> = if is_from_before { str.chars().rev().collect() } else { str.chars().collect() };
     let mut width = 0;
-    let limit_width = if is_add_continue_str { limit_width - get_str_width(CONTINUE_STR) } else { limit_width };
 
-    if limit_width > get_str_width(&str) {
+    let str_width = get_str_width(&str);
+    if limit_width >= str_width {
         return str;
     } else {
+        let limit_width = if is_add_continue_str { limit_width - get_str_width(CONTINUE_STR) } else { limit_width };
         for i in 0..chars.len() {
             if let Some(c) = chars.get(i) {
                 let w = get_char_width_not_tab(c);
@@ -257,12 +259,12 @@ pub fn get_dir_path(path_str: &String) -> String {
     return vec.join("");
 }
 
-pub fn change_nl(string: &mut String, nl: &String) {
-    if *nl == NEW_LINE_LF_STR {
+pub fn change_nl(string: &mut String, to_nl: &String) {
+    if *to_nl == NEW_LINE_LF_STR {
         *string = string.replace(NEW_LINE_CRLF, &NEW_LINE_LF.to_string());
         // CRLF
     } else {
-        //Since it is not possible to replace only LF from a character string containing CRLF,
+        // Since it is not possible to replace only LF from a character string containing CRLF,
         // convert it to LF and then convert it to CRLF.
         *string = string.replace(NEW_LINE_CRLF, &NEW_LINE_LF.to_string());
         *string = string.replace(&NEW_LINE_LF.to_string(), NEW_LINE_CRLF);
@@ -279,33 +281,30 @@ pub fn ordinal_suffix(number: usize) -> &'static str {
     }
 }
 
-pub fn change_regex(replace_str: String) -> String {
+pub fn change_regex(string: String) -> String {
     let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
 
-    Log::debug("replace_strreplace_strreplace_strreplace_str", &replace_str);
-    Log::debug("replace_str == ", &(replace_str == "\\\""));
-
     if cfg_search.regex {
-        let replace_str = replace_str.replace("\\n", &'\n'.to_string());
-        let replace_str = replace_str.replace("\\t", &'\t'.to_string());
-        let replace_str = replace_str.replace("\\r", &'\r'.to_string());
-        let replace_str = replace_str.replace("\\", &r"\".to_string());
-        let replace_str = replace_str.replace("\\'", &"\'".to_string());
-        let replace_str = replace_str.replace("\\\"", &"\"".to_string());
-        return replace_str;
+        let string = string.replace("\\n", &'\n'.to_string());
+        let string = string.replace("\\t", &'\t'.to_string());
+        let string = string.replace("\\r", &'\r'.to_string());
+        let string = string.replace("\\", &r"\".to_string());
+        let string = string.replace("\\'", &"\'".to_string());
+        let string = string.replace("\\\"", &"\"".to_string());
+        return string;
     }
-    return replace_str;
+    return string;
 }
 pub fn get_tab_str() -> String {
     return CFG.get().unwrap().try_lock().unwrap().general.editor.tab.tab.clone();
 }
 
 pub fn is_include_path(src: &str, dst: &str) -> bool {
-    let sec_vec: Vec<&str> = src.split(MAIN_SEPARATOR).collect();
+    let src_vec: Vec<&str> = src.split(MAIN_SEPARATOR).collect();
     let dst_vec: Vec<&str> = dst.split(MAIN_SEPARATOR).collect();
 
     let mut is_include = false;
-    for (i, src) in sec_vec.iter().enumerate() {
+    for (i, src) in src_vec.iter().enumerate() {
         if let Some(dst) = dst_vec.get(i) {
             is_include = if src == dst { true } else { false };
         } else {
@@ -315,13 +314,22 @@ pub fn is_include_path(src: &str, dst: &str) -> bool {
     return is_include;
 }
 
+pub fn get_term_size() -> (u16, u16) {
+    let (columns, rows) = size().unwrap();
+
+    // (1, 1) is judged as test
+    if (columns, rows) == (1, 1) {
+        return (TERM_MINIMUM_WIDTH, TERM_MINIMUM_HEIGHT);
+    } else {
+        return (columns, rows);
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use std::sync::Mutex;
-
-    use crate::{_cfg::cfg::Cfg, model::Args};
-
     use super::*;
+    use crate::{_cfg::cfg::Cfg, model::Args};
+    use std::sync::Mutex;
 
     #[test]
     fn test_get_str_width() {
@@ -410,7 +418,6 @@ mod tests {
     fn test_get_char_type() {
         assert_eq!(get_char_type('"'), CharType::Delim);
         assert_eq!(get_char_type('!'), CharType::Delim);
-
         assert_eq!(get_char_type(' '), CharType::HalfSpace);
         assert_eq!(get_char_type('　'), CharType::FullSpace);
         assert_eq!(get_char_type('a'), CharType::Nomal);
@@ -418,7 +425,33 @@ mod tests {
     }
     #[test]
     fn test_cut_str() {
-        //   assert_eq!(cut_str('"'), CharType::Delim);
+        assert_eq!(cut_str("abc".to_string(), 0, false, false), "".to_string());
+        assert_eq!(cut_str("abc".to_string(), 4, false, false), "abc".to_string());
+        assert_eq!(cut_str("abc".to_string(), 2, false, false), "ab".to_string());
+        assert_eq!(cut_str("abc".to_string(), 2, true, false), "bc".to_string());
+        assert_eq!(cut_str("abc".to_string(), 3, false, true), "abc".to_string());
+        assert_eq!(cut_str("aあbcd".to_string(), 5, true, false), "あbcd".to_string());
+        assert_eq!(cut_str("aあbcd".to_string(), 5, true, true), "..bcd".to_string());
+        assert_eq!(cut_str("aあbcd".to_string(), 5, false, false), "aあbc".to_string());
+        assert_eq!(cut_str("aあbcd".to_string(), 5, false, true), "aあ..".to_string());
+        assert_eq!(cut_str("aあbcd".to_string(), 6, false, true), "aあbcd".to_string());
+    }
+    #[test]
+    fn test_split_inclusive() {
+        assert_eq!(split_inclusive("a,b", ','), vec!["a".to_string(), ",".to_string(), "b".to_string()]);
+        assert_eq!(split_inclusive(",ab", ','), vec![",".to_string(), "ab".to_string()]);
+        assert_eq!(split_inclusive("ab,", ','), vec!["ab".to_string(), ",".to_string()]);
+    }
+    #[test]
+    fn test_get_dir_path() {
+        assert_eq!(get_dir_path(&"/home/".to_string()), "/home/".to_string());
+        assert_eq!(get_dir_path(&"/home/ewin".to_string()), "/home/".to_string());
+        assert_eq!(get_dir_path(&"".to_string()), "".to_string());
+    }
+    #[test]
+    fn test_is_include_path() {
+        assert!(is_include_path("/home", "/home/ewin"));
+        assert!(!is_include_path("/hoge", "/home/ewin"));
     }
 
     #[test]

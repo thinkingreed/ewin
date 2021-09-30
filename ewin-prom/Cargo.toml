@@ -16,7 +16,7 @@ path = "src/lib.rs"
 [dependencies]
 crossterm  = {version ="0.21.0", features = ["event-stream"]} 
 directories = "3.0.1"
-
-
+tokio = { version = "1.4.0", features = ["process", "macros", "rt-multi-thread"] }
+tokio-util = { version = "0.6.3", features = ["codec"] }
 
 ewin-core = { path = "../ewin-core" }

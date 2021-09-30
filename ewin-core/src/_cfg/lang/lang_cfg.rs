@@ -136,7 +136,9 @@ pub struct LangCfg {
     pub file_loading_failed: String,
     pub file_already_exists: String,
     pub log_file_create_failed: String,
+    pub check_log_file: String,
     pub close_other_than_this_tab: String,
+    pub no_tab_can_be_switched: String,
     // Not sel range
     pub no_sel_range: String,
     // Paste
@@ -179,11 +181,11 @@ impl LangCfg {
 #[cfg(target_os = "windows")]
 impl LangCfg {
     pub fn read_lang_cfg() -> LangCfg {
-        let env_lang = match Command::new("powershell.exe").args(&["(Get-WinUserLanguageList)[0].LanguageTag"]).output() {
+        let env_lang = match Command::new("powershell.exe").args(&["(Get-Culture)[0].name"]).output() {
             Ok(output) => String::from_utf8_lossy(&output.stdout).trim().to_string(),
             Err(_) => "en_US".to_string(),
         };
-        let lang_str = if env_lang.starts_with("ja_JP") { include_str!("ja_JP.toml") } else { include_str!("en_US.toml") };
+        let lang_str = if env_lang.starts_with("ja-JP") { include_str!("ja_JP.toml") } else { include_str!("en_US.toml") };
         let lang_cfg: LangCfg = toml::from_str(&lang_str).unwrap();
 
         return lang_cfg;

@@ -1,10 +1,15 @@
-use crate::{ewin_core::_cfg::keys::*, ewin_core::def::*, ewin_core::global::*, ewin_core::log::*, ewin_core::model::*, model::*};
+use crate::{
+    ewin_core::{_cfg::key::keycmd::*, def::*, global::*, log::*, model::*},
+    model::*,
+};
 use serde::Serialize;
 use serde_json::Value;
 
 impl Editor {
     pub fn format(&mut self, fmt_type: FmtType) -> Option<String> {
-        if let Err(err) = self.exec_format(fmt_type) {
+        if !self.sel.is_selected() {
+            return Some(format!("{}", LANG.no_sel_range));
+        } else if let Err(err) = self.exec_format(fmt_type) {
             let err_str = format!("{}{}", fmt_type, LANG.parsing_failed);
             Log::error(&err_str, &err);
             return Some(err_str);
@@ -20,7 +25,7 @@ impl Editor {
             FmtType::JSON => {
                 let slice = self.buf.slice_rope(self.sel.get_range());
 
-                let value: Value = serde_json::from_str(&slice.to_string()).unwrap();
+                let value: Value = serde_json::from_str(&slice.to_string())?;
                 let buf = Vec::new();
                 let indent = &CFG.get().unwrap().try_lock().unwrap().general.editor.format.indent;
                 let formatter = serde_json::ser::PrettyFormatter::with_indent(indent.as_bytes());
@@ -35,19 +40,13 @@ impl Editor {
             }
             FmtType::XML | FmtType::HTML => {
                 let slice = self.buf.slice(self.sel.get_range());
-                let nl = NL::get_nl(&self.h_file.enc.to_string());
-                if fmt_type == FmtType::XML {
-                    FormatXml::format_xml_html(slice, FmtType::XML, nl)
-                } else {
-                    FormatXml::format_xml_html(slice, FmtType::HTML, nl)
-                }
+                let nl = NL::get_nl(&self.h_file.nl.to_string());
+                FormatXml::format_xml_html(slice, fmt_type, nl)
             }
         };
 
-        Log::debug("format_str", &format_str);
-
-        self.keycmd = KeyCmd::InsertStr(format_str.clone());
-        self.edit_proc(KeyCmd::InsertStr(format_str));
+        self.e_cmd = E_Cmd::InsertStr(format_str.clone());
+        self.edit_proc(E_Cmd::InsertStr(format_str));
 
         Ok(())
     }

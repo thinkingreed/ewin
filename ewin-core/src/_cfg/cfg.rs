@@ -1,7 +1,7 @@
 use crate::{_cfg::*, colors::*, def::*, global::*, log::*, model::*};
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::{env, fs, fs::File, io::Write, sync::Mutex};
+use std::{fs, fs::File, io::Write, sync::Mutex};
 use syntect::{
     self,
     highlighting::{Theme, ThemeSet},
@@ -354,6 +354,7 @@ impl Cfg {
         }
 
         Log::set_logger(&cfg.general.log);
+        Log::info("cfg.general.log", &cfg.general.log);
         if !read_str.is_empty() {
             Log::info("read setting.toml", &read_str);
         }

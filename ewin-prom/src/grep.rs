@@ -1,16 +1,15 @@
 use crate::{
-    cont::promptcont::*,
-    ewin_core::{_cfg::keys::*, colors::*, global::*},
-    prompt::prompt::*,
+    ewin_core::{_cfg::key::keycmd::*, colors::*, global::*},
+    model::*,
 };
 use std::env;
 
 impl Prompt {
     pub fn grep(&mut self) {
         self.disp_row_num = 9;
-        self.cont_1 = PromptCont::new_edit_type(self.keycmd.clone(), PromptContPosi::First).get_grep(&self);
-        self.cont_2 = PromptCont::new_edit_type(self.keycmd.clone(), PromptContPosi::Second).get_grep(&self);
-        self.cont_3 = PromptCont::new_edit_type(self.keycmd.clone(), PromptContPosi::Third).get_grep(&self);
+        self.cont_1 = PromptCont::new(Some(PromptContPosi::First)).get_grep(&self);
+        self.cont_2 = PromptCont::new(Some(PromptContPosi::Second)).get_grep(&self);
+        self.cont_3 = PromptCont::new(Some(PromptContPosi::Third)).get_grep(&self);
     }
 
     pub fn draw_grep(&self, str_vec: &mut Vec<String>) {
@@ -33,14 +32,14 @@ impl PromptCont {
                 Colors::get_default_fg(),
                 &LANG.search,
                 Colors::get_msg_highlight_fg(),
-                Keybind::get_key_str(KeyCmd::ConfirmPrompt),
+                Keybind::get_key_str(KeyCmd::Prom(P_Cmd::ConfirmPrompt)),
                 Colors::get_default_fg(),
                 &LANG.move_setting_location,
                 Colors::get_msg_highlight_fg(),
                 Colors::get_default_fg(),
                 &LANG.close,
                 Colors::get_msg_highlight_fg(),
-                Keybind::get_key_str(KeyCmd::EscPrompt),
+                Keybind::get_key_str(KeyCmd::Prom(P_Cmd::EscPrompt)),
                 Colors::get_default_fg(),
                 &LANG.complement,
                 Colors::get_msg_highlight_fg(),

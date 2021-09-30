@@ -5,6 +5,7 @@ pub struct Macros {}
 pub struct MsgBar {
     pub msg_readonly: String,
     pub msg_keyrecord: String,
+    pub msg_keyrecord_org: String,
     pub msg: Msg,
     pub msg_org: Msg,
     pub disp_readonly_row_posi: usize,
@@ -21,7 +22,7 @@ pub struct MsgBar {
 
 impl Default for MsgBar {
     fn default() -> Self {
-        MsgBar { msg_readonly: String::new(), msg_keyrecord: String::new(), msg: Msg::default(), msg_org: Msg::default(), disp_readonly_row_posi: 0, disp_keyrecord_row_posi: 0, disp_row_posi: 0, disp_readonly_row_num: 0, disp_keyrecord_row_num: 0, disp_row_num: 0, disp_col_num: 0 }
+        MsgBar { msg_readonly: String::new(), msg_keyrecord: String::new(), msg_keyrecord_org: String::new(), msg: Msg::default(), msg_org: Msg::default(), disp_readonly_row_posi: 0, disp_keyrecord_row_posi: 0, disp_row_posi: 0, disp_readonly_row_num: 0, disp_keyrecord_row_num: 0, disp_row_num: 0, disp_col_num: 0 }
     }
 }
 

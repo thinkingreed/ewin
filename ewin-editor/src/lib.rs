@@ -7,6 +7,7 @@ pub mod buf {
 pub mod view {
     pub mod buf_cache;
     pub mod draw;
+    pub mod draw_range;
 }
 pub mod prompt {
     pub mod grep_result;
@@ -16,10 +17,11 @@ pub mod format {
     pub mod xml_html;
 }
 pub mod convert;
-pub mod draw_range;
-pub mod edit_proc;
 pub mod editor;
 pub mod model;
+pub mod proc;
+pub mod proc_edit;
+pub mod scroll;
 
 pub mod key {
     pub mod cur;
