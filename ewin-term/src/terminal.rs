@@ -72,9 +72,7 @@ impl Terminal {
         };
         //  if let DParts::MsgBar(_) |
         if let &DParts::ScrollUpDown(_) | &DParts::All = draw_parts {
-            // if draw_parts != &DParts::ScrollUpDown(ScrollUpDownType::Grep) {
             HeaderBar::draw(self, &mut str_vec);
-            // }
             self.help.draw(&mut str_vec);
             self.curt().mbar.draw(&mut str_vec);
             let is_msg_changed = self.curt().mbar.is_msg_changed();
@@ -105,10 +103,28 @@ impl Terminal {
         // Log::debug("", &self.curt().editor.search);
         // Log::debug("box_sel.mode", &self.curt().editor.box_insert.mode);
 
-        let _ = out.write(str_vec.concat().as_bytes());
-        out.flush().unwrap();
+        self.draw_flush(out, str_vec);
 
         Log::info_key("Terminal.draw end");
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    pub fn draw_flush<T: Write>(&mut self, out: &mut T, str_vec: Vec<String>) {
+        let _ = out.write(str_vec.concat().as_bytes());
+        out.flush().unwrap();
+    }
+
+    // Suppress the number of flushes due to the following error when trying to flush a large amount of data in windows
+    // Error:Windows stdio in console mode does not support writing non-UTF-8 byte sequences
+    #[cfg(target_os = "windows")]
+    pub fn draw_flush<T: Write>(&mut self, out: &mut T, str_vec: Vec<String>) {
+        let string = str_vec.concat();
+        // NEW_LINE_LF is mark
+        let vec = split_inclusive(&string, NEW_LINE_LF);
+        for string in vec {
+            let _ = out.write(string.as_bytes());
+            out.flush().unwrap();
+        }
     }
 
     pub fn draw_cur<T: Write>(&mut self, out: &mut T) {

@@ -51,11 +51,12 @@ impl Prompt {
 
             /*
             let out = stdout();
-            let mut out = BufWriter::new(out.lock());
+
+             let mut out = BufWriter::new(out.lock());
             let _ = out.write(&str_vec.concat().as_bytes());
             out.flush().unwrap();
-            str_vec.clear();
-             */
+             str_vec.clear();
+            */
         }
     }
 

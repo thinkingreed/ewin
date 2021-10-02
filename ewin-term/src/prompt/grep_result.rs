@@ -32,7 +32,12 @@ impl EvtAct {
             if term.curt().editor.buf.len_lines() > term.curt().editor.disp_row_num && rnw_org == term.curt().editor.rnw {
                 let y = term.curt().editor.offset_y + term.curt().editor.disp_row_num - 2;
                 term.curt().editor.draw_range = EditorDrawRange::ScrollDown(y - 2, y);
-                term.draw(out, &DParts::ScrollUpDown(ScrollUpDownType::Grep));
+
+                if cfg!(target_os = "windows") {
+                    term.draw(out, &DParts::All);
+                } else {
+                    term.draw(out, &DParts::ScrollUpDown(ScrollUpDownType::Grep));
+                }
             } else {
                 // term.curt().prom.cont_1.guide_row_posi = 0;
                 term.draw(out, &DParts::All);

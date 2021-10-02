@@ -764,7 +764,7 @@ pub enum ActType {
 #[derive(Debug, PartialEq, Clone)]
 // DrawParts
 pub enum DParts {
-    Editor,
+    Editor, // and StatuusBar
     Prompt,
     MsgBar(String),
     CtxMenu,

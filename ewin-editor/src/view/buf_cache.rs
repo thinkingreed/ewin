@@ -19,10 +19,10 @@ impl EditorDraw {
                 self.syntax_state_vec.clear();
             }
         }
-        let d_range = editor.draw_range.clone();
-
-        Log::debug("draw_cache.d_range", &d_range);
-        match d_range {
+     
+      
+        Log::debug("draw_cache.d_range", &editor.draw_range );
+        match editor.draw_range {
             EditorDrawRange::After(sy) => {
                 self.sy = sy;
                 self.ey = min(editor.offset_y + editor.disp_row_num - 1, editor.buf.len_lines() - 1);

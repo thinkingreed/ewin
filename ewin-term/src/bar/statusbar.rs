@@ -3,12 +3,13 @@ use crate::{
     tab::*,
 };
 use crossterm::{cursor::*, terminal::*};
-use std::io::{stdout, BufWriter, Write};
+use std::io::Write;
 
 impl StatusBar {
     pub fn draw_only<T: Write>(out: &mut T, tab: &mut Tab, h_file: &HeaderFile) {
         Log::debug_key("StatusBar.draw_only");
         let mut v: Vec<String> = vec![];
+        // DParts::Editor is dummy
         StatusBar::draw(&mut v, tab, h_file);
         let _ = out.write(&v.concat().as_bytes());
         out.flush().unwrap();
@@ -20,7 +21,6 @@ impl StatusBar {
             return;
         }
         let cur_s = StatusBar::get_cur_str(tab);
-
         let enc_nl = format!("{}({})", h_file.enc, h_file.nl);
         let (other_w, search_w, box_sel_mode_w, select_mode_w, cur_w) = StatusBar::get_areas_width(tab, &enc_nl, get_str_width(&cur_s));
         tab.sbar.search_area = (other_w + 1, other_w + search_w - 1);
@@ -59,18 +59,14 @@ impl StatusBar {
             &enc_nl,
             Colors::get_sbar_fg_bg()
         );
+
+        // let clear_str = if draw_parts == &DParts::ScrollUpDown(ScrollUpDownType::Grep) { "".to_string() } else { Clear(ClearType::CurrentLine).to_string() };
+        //      Log::debug("clear_str clear_strclear_strclear_strclear_strclear_strclear_strclear_strclear_strclear_strclear_strclear_str", &clear_str);
+
         let sber_all_str = format!("{}{}{}{}{}", MoveTo(0, tab.sbar.row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_sbar_fg_bg(), sbar_ctr, Colors::get_default_fg_bg(),);
 
         str_vec.push(sber_all_str);
         Colors::set_text_color(str_vec);
-
-        let out = stdout();
-        let mut out = BufWriter::new(out.lock());
-
-        let _ = out.write(&str_vec.concat().as_bytes());
-        out.flush().unwrap();
-
-        str_vec.clear();
     }
 
     pub fn get_cur_str(tab: &mut Tab) -> String {
