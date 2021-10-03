@@ -315,7 +315,7 @@ pub fn is_include_path(src: &str, dst: &str) -> bool {
 }
 
 pub fn get_term_size() -> (u16, u16) {
-    let (columns, rows) = size().unwrap();
+    let (columns, rows) = size().unwrap_or((TERM_MINIMUM_WIDTH as u16, TERM_MINIMUM_HEIGHT as u16));
 
     // (1, 1) is judged as test
     if (columns, rows) == (1, 1) {
