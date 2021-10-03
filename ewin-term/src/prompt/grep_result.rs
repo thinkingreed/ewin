@@ -29,8 +29,8 @@ impl EvtAct {
             let rnw_org = term.curt().editor.rnw;
             term.curt().editor.set_grep_result(line_str);
 
-            if term.curt().editor.buf.len_lines() > term.curt().editor.disp_row_num && rnw_org == term.curt().editor.rnw {
-                let y = term.curt().editor.offset_y + term.curt().editor.disp_row_num - 2;
+            if term.curt().editor.buf.len_lines() > term.curt().editor.row_num && rnw_org == term.curt().editor.rnw {
+                let y = term.curt().editor.offset_y + term.curt().editor.row_num - 2;
                 term.curt().editor.draw_range = EditorDrawRange::ScrollDown(y - 2, y);
 
                 if cfg!(target_os = "windows") {
@@ -54,7 +54,6 @@ impl EvtAct {
         term.curt().state.grep.is_stderr_end = job_grep.is_stderr_end;
         term.curt().state.grep.is_cancel = job_grep.is_cancel;
 
-        // term.curt().mbar.msg = Msg::default();
         term.curt().mbar.set_readonly(&LANG.unable_to_edit);
         term.curt().editor.state.is_read_only = true;
 
@@ -65,6 +64,46 @@ impl EvtAct {
         term.curt().editor.scroll();
         term.curt().editor.scroll_horizontal();
         term.draw_all(out, DParts::All);
+    }
+
+    pub fn grep_result(term: &mut Terminal) -> ActType {
+        Log::debug_key("EvtAct::grep_result");
+
+        match term.curt().prom.keycmd {
+            KeyCmd::Resize => {
+                term.set_disp_size();
+                let is_grep_result_vec_empty = term.curt().editor.grep_result_vec.is_empty();
+                let is_cancel = term.curt().state.grep.is_cancel;
+                term.curt().prom.set_grep_result(is_grep_result_vec_empty, is_cancel);
+                return ActType::Draw(DParts::All);
+            }
+            KeyCmd::Prom(P_Cmd::ConfirmPrompt) => {
+                let y = term.curt().editor.cur.y;
+                let grep_result = term.curt().editor.grep_result_vec[y].clone();
+
+                Log::debug("term.tabs[term.idx].state.grep", &term.curt().state.grep);
+
+                if grep_result.row_num != USIZE_UNDEFINED {
+                    let mut tab_grep = Tab::new();
+                    tab_grep.editor.search.str = term.curt().state.grep.search_str.clone();
+                    tab_grep.editor.search.row_num = grep_result.row_num - 1;
+                    tab_grep.editor.set_keys(&Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::FindNext)));
+                    Log::debug("tab.editor.search", &tab_grep.editor.search);
+
+                    let folder = if term.curt().editor.search.folder.is_empty() { "".to_string() } else { format!("{}{}", &term.curt().editor.search.folder, MAIN_SEPARATOR) };
+                    let act_type = term.open(&format!("{}{}", &folder, &grep_result.filenm), &mut tab_grep, false);
+
+                    if let ActType::Draw(DParts::MsgBar(_)) = act_type {
+                        return act_type;
+                    };
+                    Log::debug("term.curt().editor.search", &term.curt().editor.search);
+
+                    term.curt().editor.search_str(true, false);
+                }
+                return ActType::Draw(DParts::All);
+            }
+            _ => return ActType::Cancel,
+        }
     }
 
     #[cfg(target_os = "linux")]
@@ -133,40 +172,5 @@ impl EvtAct {
         let child = cmd.kill_on_drop(true).stdout(process::Stdio::piped()).stderr(process::Stdio::piped()).spawn().unwrap();
 
         return child;
-    }
-
-    pub fn grep_result(term: &mut Terminal) -> ActType {
-        Log::debug_key("EvtAct::grep_result");
-
-        match term.curt().prom.keycmd {
-            KeyCmd::Resize => {
-                term.set_disp_size();
-                let is_grep_result_vec_empty = term.curt().editor.grep_result_vec.is_empty();
-                let is_cancel = term.curt().state.grep.is_cancel;
-                term.curt().prom.set_grep_result(is_grep_result_vec_empty, is_cancel);
-                return ActType::Draw(DParts::All);
-            }
-            KeyCmd::Prom(P_Cmd::ConfirmPrompt) => {
-                let y = term.tabs[term.idx].editor.cur.y;
-                let grep_result = term.tabs[term.idx].editor.grep_result_vec[y].clone();
-
-                if grep_result.row_num != USIZE_UNDEFINED {
-                    let mut tab_grep = Tab::new();
-                    tab_grep.editor.search.str = term.tabs[term.idx].state.grep.search_str.clone();
-                    tab_grep.editor.search.row_num = grep_result.row_num - 1;
-                    tab_grep.editor.set_keys(&Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::Find)));
-
-                    let folder = if term.curt().editor.search.folder.is_empty() { "".to_string() } else { format!("{}{}", &term.curt().editor.search.folder, MAIN_SEPARATOR) };
-                    let act_type = term.open(&format!("{}{}", &folder, &grep_result.filenm), &mut tab_grep, false);
-
-                    if let ActType::Draw(DParts::MsgBar(_)) = act_type {
-                        return act_type;
-                    };
-                    term.curt().editor.search_str(true, false);
-                }
-                return ActType::Draw(DParts::All);
-            }
-            _ => return ActType::Cancel,
-        }
     }
 }

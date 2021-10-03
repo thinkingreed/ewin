@@ -1,15 +1,15 @@
 pub const APP_NAME: &str = "ewin";
 
-pub const TERM_MINIMUM_WIDTH: u16 = 40;
-pub const TERM_MINIMUM_HEIGHT: u16 = 12;
+pub const TERM_MINIMUM_WIDTH: usize = 40;
+pub const TERM_MINIMUM_HEIGHT: usize = 12;
 
+pub const HEADERBAR_ROW_NUM: usize = 1;
 pub const STATUSBAR_ROW_NUM: usize = 1;
 
 pub const SETTING_FILE: &str = "setting.toml";
 pub const KEYBINDING_FILE: &str = "keybind.json5";
 pub const MACROS_DIR: &str = "macros";
 
-pub const STR_UNDEFINED: &str = "STR_UNDEFINED";
 pub const USIZE_UNDEFINED: usize = usize::MAX;
 // Corresponding alternative character that cannot set a newline at the end in WSL
 pub const COPY_END: &str = "COPY_END";

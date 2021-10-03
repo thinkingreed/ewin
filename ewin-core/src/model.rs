@@ -817,10 +817,6 @@ impl TabState {
         self.is_menu = false;
     }
 
-    pub fn clear_grep_info(&mut self) {
-        self.grep.clear();
-    }
-
     pub fn is_nomal(&self) -> bool {
         if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_row || self.is_open_file || self.is_enc_nl || self.is_menu
         // grep, grep result 

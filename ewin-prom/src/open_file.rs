@@ -109,6 +109,7 @@ impl PromptCont {
             };
             Log::debug("prom.prom_open_file.cache_disp_filenm", &prom.prom_open_file.cache_disp_filenm);
 
+            // In case of Windows, cache is invalid because paste is possible by D&D of file.
             if *ENV == Env::Windows && open_file_type == OpenFileType::Normal && &CFG.get().unwrap().try_lock().unwrap().general.prompt.open_file.dir_init == &OpenFileInitValue::None {
                 self.buf = vec![];
             } else if prom.prom_open_file.cache_disp_filenm.len() > 0 && prom.prom_open_file.open_file_type == OpenFileType::Normal {

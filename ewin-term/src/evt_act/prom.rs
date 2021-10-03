@@ -11,16 +11,22 @@ impl EvtAct {
     pub fn ctrl_prom(term: &mut Terminal) -> ActType {
         Log::info_s("ctrl_prom");
         let mut act_type = ActType::Next;
-        if !term.curt().state.is_nomal() {
+        if !term.curt().state.is_nomal() || EvtAct::check_prom_special_conditions(term) {
             act_type = EvtAct::prompt_check_err(term);
             if ActType::Next != act_type {
                 return act_type;
             }
-
             EvtAct::clear_tab_comp(&mut term.tabs[term.idx]);
             act_type = EvtAct::check_prom(term);
         }
         return act_type;
+    }
+
+    pub fn check_prom_special_conditions(term: &mut Terminal) -> bool {
+        if term.curt().state.grep.is_result && !term.curt().state.grep.is_greping() && term.curt().prom.p_cmd == P_Cmd::ConfirmPrompt {
+            return true;
+        }
+        return false;
     }
 
     pub fn check_prom(term: &mut Terminal) -> ActType {
@@ -41,7 +47,7 @@ impl EvtAct {
                     term.clear_curt_tab(true);
                 } else if term.curt().state.grep.is_greping() {
                     GREP_CANCEL_VEC.get().unwrap().try_lock().map(|mut vec| *vec.last_mut().unwrap() = true).unwrap();
-                    term.curt().state.grep.clear();
+                    // term.curt().state.grep.clear();
                 } else if term.curt().state.grep.is_grep_finished() {
                     term.clear_curt_tab(false);
                 } else if term.curt().state.is_search {

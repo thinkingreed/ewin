@@ -3,7 +3,7 @@ extern crate ewin_core;
 pub mod cont {
     pub mod cur;
     pub mod edit;
-    pub mod edit_proc;
+    pub mod proc_edit;
     pub mod promptcont;
     pub mod select;
     pub mod un_redo;

@@ -65,7 +65,7 @@ impl Editor {
                 match self.e_cmd {
                     E_Cmd::CursorUp | E_Cmd::MouseScrollUp => self.draw_range = EditorDrawRange::ScrollUp(self.offset_y, self.offset_y + Editor::UP_DOWN_EXTRA + 1),
                     E_Cmd::CursorDown | E_Cmd::MouseScrollDown => {
-                        let y = self.offset_y + self.disp_row_num - 1;
+                        let y = self.offset_y + self.row_num - 1;
                         self.draw_range = EditorDrawRange::ScrollDown(y - Editor::UP_DOWN_EXTRA - 1, y);
                     }
                     _ => self.draw_range = EditorDrawRange::All,

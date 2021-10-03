@@ -20,12 +20,12 @@ impl Editor {
             self.sel.mode = SelMode::Normal;
         }
         // y, x range check
-        if y < self.disp_row_posi || self.disp_row_num < y || self.buf.len_lines() < y {
+        if y < self.row_posi || self.row_num < y || self.buf.len_lines() < y {
             let mut set_y = 0;
             // In case of MouseMode::Mouse, this function is not executed, so ignore it.
-            if self.buf.len_lines() < y || self.disp_row_num < y {
+            if self.buf.len_lines() < y || self.row_num < y {
                 set_y = self.buf.len_lines() - 1;
-            } else if y < self.disp_row_posi {
+            } else if y < self.row_posi {
                 set_y = 0;
             }
             let set_x = get_until_x(&self.buf.char_vec_line(set_y), if x > self.get_rnw_and_margin() { x - self.get_rnw_and_margin() } else { 0 }).0;
@@ -37,7 +37,7 @@ impl Editor {
                 self.sel.clear();
             }
         } else {
-            y = y - self.disp_row_posi;
+            y = y - self.row_posi;
         }
 
         if mouse_proc == MouseProc::DownLeft && x < self.get_rnw_and_margin() {

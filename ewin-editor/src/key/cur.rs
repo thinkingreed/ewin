@@ -183,13 +183,13 @@ impl Editor {
     }
 
     pub fn page_down(&mut self) {
-        self.cur.y = min(self.cur.y + self.disp_row_num, self.buf.len_lines() - 1);
+        self.cur.y = min(self.cur.y + self.row_num, self.buf.len_lines() - 1);
         self.cur_updown_com();
         self.scroll();
     }
 
     pub fn page_up(&mut self) {
-        self.cur.y = if self.cur.y > self.disp_row_num { self.cur.y - self.disp_row_num } else { 0 };
+        self.cur.y = if self.cur.y > self.row_num { self.cur.y - self.row_num } else { 0 };
         self.cur_updown_com();
         self.scroll();
     }

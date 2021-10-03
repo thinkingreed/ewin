@@ -162,7 +162,7 @@ impl CtxMenuGroup {
     pub fn set_curt_term_place(term: &mut Terminal, y: usize) {
         if term.hbar.row_posi == y {
             term.ctx_menu_group.curt_cont = term.ctx_menu_group.ctx_menu_place_map[&TermPlace::HeaderBar].clone();
-        } else if term.curt().editor.disp_row_posi <= y && y <= term.curt().editor.disp_row_posi + term.curt().editor.disp_row_num {
+        } else if term.curt().editor.row_posi <= y && y <= term.curt().editor.row_posi + term.curt().editor.row_num {
             let place_cond = if term.curt().editor.sel.is_selected() { TermPlace::Editor(TermPlaceCond::EditorRangeSelected) } else { TermPlace::Editor(TermPlaceCond::EditorRangeNonSelected) };
             term.ctx_menu_group.curt_cont = term.ctx_menu_group.ctx_menu_place_map[&place_cond].clone();
         }

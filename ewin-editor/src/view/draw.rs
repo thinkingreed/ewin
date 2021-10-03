@@ -17,25 +17,25 @@ impl Editor {
             EditorDrawRange::Not | EditorDrawRange::MoveCur => {}
             EditorDrawRange::None => {
                 self.set_bg_color(str_vec);
-                str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, self.disp_row_posi as u16).to_string()));
+                str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, self.row_posi as u16).to_string()));
             }
             EditorDrawRange::Target(sy, ey) => {
                 for i in sy - self.offset_y..=ey - self.offset_y {
-                    str_vec.push(format!("{}{}", MoveTo(0, (i + self.disp_row_posi) as u16), Clear(ClearType::CurrentLine)));
+                    str_vec.push(format!("{}{}", MoveTo(0, (i + self.row_posi) as u16), Clear(ClearType::CurrentLine)));
                 }
-                str_vec.push(format!("{}", MoveTo(0, (sy - self.offset_y + self.disp_row_posi) as u16)));
+                str_vec.push(format!("{}", MoveTo(0, (sy - self.offset_y + self.row_posi) as u16)));
             }
             EditorDrawRange::All => {
-                if self.disp_row_num > 0 {
-                    for i in self.disp_row_posi - 1..=self.disp_row_posi + self.disp_row_num - 2 {
-                        str_vec.push(format!("{}{}", MoveTo(0, (i + self.disp_row_posi) as u16), Clear(ClearType::CurrentLine)));
+                if self.row_num > 0 {
+                    for i in self.row_posi - 1..=self.row_posi + self.row_num - 2 {
+                        str_vec.push(format!("{}{}", MoveTo(0, (i + self.row_posi) as u16), Clear(ClearType::CurrentLine)));
                     }
-                    str_vec.push(format!("{}", MoveTo(0, self.disp_row_posi as u16)));
+                    str_vec.push(format!("{}", MoveTo(0, self.row_posi as u16)));
                 }
             }
-            EditorDrawRange::After(sy) => str_vec.push(format!("{}{}", MoveTo(0, (sy - self.offset_y + self.disp_row_posi) as u16), Clear(ClearType::FromCursorDown))),
-            EditorDrawRange::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.disp_row_num - Editor::UP_DOWN_EXTRA - 1) as u16), Clear(ClearType::FromCursorDown))),
-            EditorDrawRange::ScrollUp(_, _) => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, (self.disp_row_posi) as u16), Clear(ClearType::CurrentLine))),
+            EditorDrawRange::After(sy) => str_vec.push(format!("{}{}", MoveTo(0, (sy - self.offset_y + self.row_posi) as u16), Clear(ClearType::FromCursorDown))),
+            EditorDrawRange::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.row_num - Editor::UP_DOWN_EXTRA - 1) as u16), Clear(ClearType::FromCursorDown))),
+            EditorDrawRange::ScrollUp(_, _) => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, (self.row_posi) as u16), Clear(ClearType::CurrentLine))),
         }
 
         let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.size;
@@ -64,7 +64,7 @@ impl Editor {
                     _ => c.width().unwrap_or(0),
                 };
 
-                if x_width + width > self.disp_col_num {
+                if x_width + width > self.col_num {
                     break;
                 }
                 x_width += width;
@@ -73,7 +73,7 @@ impl Editor {
                     match c {
                         EOF_MARK => {
                             // EOF_STR.len() - 1 is rest 2 char
-                            let disp_len = if EOF_STR.len() - 1 + x_width > self.disp_col_num { EOF_STR.len() - (EOF_STR.len() - 1 + x_width - self.disp_col_num) } else { EOF_STR.len() };
+                            let disp_len = if EOF_STR.len() - 1 + x_width > self.col_num { EOF_STR.len() - (EOF_STR.len() - 1 + x_width - self.col_num) } else { EOF_STR.len() };
                             Colors::set_eof(str_vec, disp_len)
                         }
                         NEW_LINE_LF => str_vec.push(if c_org == NEW_LINE_CR { NEW_LINE_CRLF_MARK.to_string() } else { NEW_LINE_LF_MARK.to_string() }),
@@ -93,7 +93,7 @@ impl Editor {
             y += 1;
             x_width = 0;
 
-            if y >= self.disp_row_num {
+            if y >= self.row_num {
                 break;
             } else {
                 str_vec.push(NEW_LINE_CRLF.to_string());

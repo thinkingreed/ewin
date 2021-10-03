@@ -11,7 +11,7 @@ impl Editor {
         let regex = CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex;
 
         let s_row_idx = if regex { self.buf.line_to_byte(self.offset_y) } else { self.buf.line_to_char(self.offset_y) };
-        let ey = min(self.offset_y + self.disp_row_num, self.buf.len_lines());
+        let ey = min(self.offset_y + self.row_num, self.buf.len_lines());
         let e_row_idx = if regex { self.buf.line_to_byte(ey) } else { self.buf.line_to_char(ey) };
         let search_org = self.search.clone();
 
@@ -73,7 +73,6 @@ impl Editor {
             if self.search.ranges.len() == 0 {
                 return;
             }
-
             if self.search.row_num == USIZE_UNDEFINED {
                 self.search.idx = self.get_search_str_index(is_asc);
             } else {
@@ -85,6 +84,7 @@ impl Editor {
                 let range = self.search.ranges[self.search.idx];
                 self.set_cur_target(range.y, range.sx, false);
             }
+            Log::debug("self.e_cmd", &self.e_cmd);
 
             self.scroll();
             self.scroll_horizontal();

@@ -12,7 +12,7 @@ impl EvtAct {
                 term.curt().prom_search();
                 return ActType::Draw(DParts::All);
             }
-            KeyCmd::Prom(p_keycmd) => match p_keycmd {
+            KeyCmd::Prom(p_cmd) => match p_cmd {
                 P_Cmd::InsertStr(_) | P_Cmd::Cut | P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::Undo | P_Cmd::Redo => {
                     let search_str = term.curt().prom.cont_1.buf.iter().collect::<String>();
                     term.curt().editor.exec_search_incremental(search_str);
@@ -27,6 +27,15 @@ impl EvtAct {
 
     pub fn exec_search_confirm(term: &mut Terminal) -> ActType {
         Log::debug_s("exec_search_confirm");
+
+        if let KeyCmd::Prom(p_cmd) = &term.keycmd {
+            term.curt().editor.e_cmd = match p_cmd {
+                P_Cmd::FindNext => E_Cmd::FindNext,
+                P_Cmd::FindBack => E_Cmd::FindBack,
+                _ => E_Cmd::Null,
+            };
+        }
+
         let search_str = term.curt().prom.cont_1.buf.iter().collect::<String>();
         if let Some(err_str) = term.curt().editor.exec_search_confirm(search_str) {
             return ActType::Draw(DParts::MsgBar(err_str));

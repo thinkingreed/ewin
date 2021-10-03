@@ -1,5 +1,6 @@
 use crate::ewin_core::{
     _cfg::key::{keycmd::*, keys::*},
+    def::*,
     model::*,
 };
 use ropey::Rope;
@@ -33,9 +34,9 @@ pub struct Editor {
     // Clipboard on memory
     // pub clipboard: String,
     /// number displayed on the terminal
-    pub disp_row_num: usize,
-    pub disp_row_posi: usize,
-    pub disp_col_num: usize,
+    pub row_num: usize,
+    pub row_posi: usize,
+    pub col_num: usize,
     pub search: Search,
     // pub draw: Draw,
     pub draw_range: EditorDrawRange,
@@ -70,9 +71,9 @@ impl Editor {
             // keycmd: KeyCmd::Edit(E_Cmd::Null),
             e_cmd: E_Cmd::Null,
             // for UT set
-            disp_row_num: 5,
-            disp_row_posi: 1,
-            disp_col_num: 5,
+            row_num: TERM_MINIMUM_HEIGHT - HEADERBAR_ROW_NUM - STATUSBAR_ROW_NUM,
+            row_posi: 1,
+            col_num: TERM_MINIMUM_WIDTH - Editor::RNW_MARGIN,
             search: Search::default(),
             //  draw: Draw::default(),
             draw_range: EditorDrawRange::default(),

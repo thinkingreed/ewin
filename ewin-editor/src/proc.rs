@@ -4,15 +4,6 @@ impl Editor {
     pub fn proc(&mut self) {
         let e_cmd = self.e_cmd.clone();
         match e_cmd {
-            // cursor move
-            E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::CursorDown | E_Cmd::MouseScrollDown | E_Cmd::CursorLeft | E_Cmd::CursorRight | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd => self.cur_move_com(),
-            E_Cmd::CursorFileHome => self.ctrl_home(),
-            E_Cmd::CursorFileEnd => self.ctrl_end(),
-            E_Cmd::CursorPageUp => self.page_up(),
-            E_Cmd::CursorPageDown => self.page_down(),
-            // select
-            E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::CursorLeftSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect => self.shift_move_com(),
-            E_Cmd::AllSelect => self.all_select(),
             // edit
             E_Cmd::InsertStr(str) => self.edit_proc(E_Cmd::InsertStr(str)),
             E_Cmd::InsertLine => self.edit_proc(E_Cmd::InsertLine),
@@ -22,6 +13,15 @@ impl Editor {
             E_Cmd::Copy => self.copy(),
             E_Cmd::Undo => self.undo(),
             E_Cmd::Redo => self.redo(),
+            // cursor move
+            E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::CursorDown | E_Cmd::MouseScrollDown | E_Cmd::CursorLeft | E_Cmd::CursorRight | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd => self.cur_move_com(),
+            E_Cmd::CursorFileHome => self.ctrl_home(),
+            E_Cmd::CursorFileEnd => self.ctrl_end(),
+            E_Cmd::CursorPageUp => self.page_up(),
+            E_Cmd::CursorPageDown => self.page_down(),
+            // select
+            E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::CursorLeftSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect => self.shift_move_com(),
+            E_Cmd::AllSelect => self.all_select(),
             // Search
             E_Cmd::FindNext => self.search_str(true, false),
             E_Cmd::FindBack => self.search_str(false, false),
@@ -33,7 +33,6 @@ impl Editor {
             E_Cmd::BoxSelectMode => self.box_select_mode(),
             // empty
             E_Cmd::Null => {}
-            //// Internal use
             _ => unreachable!(),
         }
     }
@@ -41,19 +40,19 @@ impl Editor {
 
 #[cfg(test)]
 mod tests {
-    use ewin_core::{_cfg::cfg::*, clipboard::*, log::*, model::*};
-
     use super::*;
+    use ewin_core::{_cfg::cfg::*, clipboard::*, def::*, log::*, model::*};
 
     #[test]
-    fn test_editor_proc() {
+    fn test_editor_proc_base_edit() {
         Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
+        let mut e = Editor::new();
+        e.buf.insert_end(&EOF_MARK.to_string());
 
         // InsertStr
-        let mut e = Editor::new();
         e.e_cmd = E_Cmd::InsertStr("a".to_string());
         e.proc();
-        assert_eq!(e.buf.text.to_string(), "a");
+        assert_eq!(e.buf.text.to_string(), "a▚");
         assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
 
         // Copy
@@ -67,14 +66,93 @@ mod tests {
         // Paste
         e.e_cmd = E_Cmd::InsertStr("".to_string());
         e.proc();
-        assert_eq!(e.buf.text.to_string(), "aa");
+        assert_eq!(e.buf.text.to_string(), "aa▚");
         assert_eq!(e.cur, Cur { y: 0, x: 2, disp_x: 2 });
+
+        // Cut
+        e.sel.set_s(0, 1, 1);
+        e.sel.set_e(0, 2, 2);
+        e.e_cmd = E_Cmd::Cut;
+        e.proc();
+        let clipboard = get_clipboard().unwrap_or("".to_string());
+        assert_eq!(clipboard, "a");
+        assert_eq!(e.buf.text.to_string(), "a▚");
+        assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
+        e.sel.clear();
 
         // InsertLine
         e.e_cmd = E_Cmd::InsertLine;
         e.proc();
+        assert_eq!(e.buf.text.to_string(), "a\n▚");
+        assert_eq!(e.cur, Cur { y: 1, x: 0, disp_x: 0 });
 
-        // assert_eq!(e.buf.text.to_string(),"aa" NEW_LINE_LF.to_string());
-        // assert_eq!(e.cur, Cur { y: 1, x: 0, disp_x: 0 });
+        // DelPrevChar
+        e.e_cmd = E_Cmd::DelPrevChar;
+        e.proc();
+        assert_eq!(e.buf.text.to_string(), "a▚");
+        assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
+
+        // DelNextChar
+        e.e_cmd = E_Cmd::InsertStr("b".to_string());
+        e.proc();
+        assert_eq!(e.buf.text.to_string(), "ab▚");
+        assert_eq!(e.cur, Cur { y: 0, x: 2, disp_x: 2 });
+        e.e_cmd = E_Cmd::CursorLeft;
+        e.proc();
+        assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
+        e.e_cmd = E_Cmd::DelNextChar;
+        e.proc();
+        assert_eq!(e.buf.text.to_string(), "a▚");
+        assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
+
+        // Undo
+        e.e_cmd = E_Cmd::Undo;
+        e.proc();
+        assert_eq!(e.buf.text.to_string(), "ab▚");
+        assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
+
+        // Redo
+        e.e_cmd = E_Cmd::Redo;
+        e.proc();
+        assert_eq!(e.buf.text.to_string(), "a▚");
+        assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
+    }
+
+    #[test]
+    fn test_editor_proc_base_cur_move() {
+        Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
+        let mut e = Editor::new();
+        e.buf.insert_end(&EOF_MARK.to_string());
+
+        // CursorLeft
+        e.e_cmd = E_Cmd::InsertStr("a".to_string());
+        e.proc();
+        assert_eq!(e.buf.text.to_string(), "a▚");
+        e.e_cmd = E_Cmd::CursorLeft;
+        e.proc();
+        assert_eq!(e.cur, Cur { y: 0, x: 0, disp_x: 0 });
+        // CursorRight
+        e.e_cmd = E_Cmd::CursorRight;
+        e.proc();
+        assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
+
+        // E_Cmd::CursorUp
+        e.e_cmd = E_Cmd::InsertLine;
+        e.proc();
+        e.e_cmd = E_Cmd::CursorUp;
+        e.proc();
+        assert_eq!(e.cur, Cur { y: 0, x: 0, disp_x: 0 });
+        // E_Cmd::CursorDown
+        e.e_cmd = E_Cmd::CursorDown;
+        e.proc();
+        assert_eq!(e.cur, Cur { y: 1, x: 0, disp_x: 0 });
+
+        // CursorRowHome
+        e.e_cmd = E_Cmd::InsertStr("abc".to_string());
+        e.proc();
+        assert_eq!(e.cur, Cur { y: 1, x: 3, disp_x: 3 });
+        e.e_cmd = E_Cmd::CursorRowHome;
+        e.proc();
+        assert_eq!(e.cur, Cur { y: 1, x: 0, disp_x: 0 });
     }
 }

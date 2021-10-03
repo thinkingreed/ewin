@@ -1,5 +1,5 @@
 use crate::{
-    ewin_core::{_cfg::cfg::Cfg, _cfg::key::keycmd::*, char_style::*, def::*, global::*, log::*, model::*, util::*},
+    ewin_core::{_cfg::cfg::*, _cfg::key::keycmd::*, char_style::*, def::*, global::*, log::*, model::*, util::*},
     model::*,
 };
 use std::cmp::min;
@@ -19,13 +19,12 @@ impl EditorDraw {
                 self.syntax_state_vec.clear();
             }
         }
-     
-      
-        Log::debug("draw_cache.d_range", &editor.draw_range );
+
+        Log::debug("draw_cache.d_range", &editor.draw_range);
         match editor.draw_range {
             EditorDrawRange::After(sy) => {
                 self.sy = sy;
-                self.ey = min(editor.offset_y + editor.disp_row_num - 1, editor.buf.len_lines() - 1);
+                self.ey = min(editor.offset_y + editor.row_num - 1, editor.buf.len_lines() - 1);
             }
             EditorDrawRange::Target(sy, ey) | EditorDrawRange::ScrollDown(sy, ey) | EditorDrawRange::ScrollUp(sy, ey) => {
                 self.sy = sy;
@@ -33,7 +32,7 @@ impl EditorDraw {
             }
             EditorDrawRange::All | EditorDrawRange::None => {
                 self.sy = editor.offset_y;
-                self.ey = if editor.disp_row_num == 0 { 0 } else { min(editor.offset_y + editor.disp_row_num - 1, editor.buf.len_lines() - 1) };
+                self.ey = if editor.row_num == 0 { 0 } else { min(editor.offset_y + editor.row_num - 1, editor.buf.len_lines() - 1) };
             }
             _ => {}
         }
@@ -46,6 +45,7 @@ impl EditorDraw {
             EditorDrawRange::Not | EditorDrawRange::MoveCur => {}
         }
     }
+
     fn set_draw_regions(&mut self, editor: &Editor) {
         let cfg = CFG.get().unwrap().try_lock().unwrap();
         let (sy, ey) = if editor.is_enable_syntax_highlight && self.syntax_state_vec.len() == 0 { (0, editor.buf.len_lines() - 1) } else { (self.sy, self.ey) };
@@ -53,7 +53,7 @@ impl EditorDraw {
         for y in sy..=ey {
             let row_vec = editor.buf.char_vec_line(y);
             let sx = if y == editor.cur.y { editor.offset_x } else { 0 };
-            let ex = min(sx + editor.disp_col_num, editor.buf.len_line_chars(y));
+            let ex = min(sx + editor.col_num, editor.buf.len_line_chars(y));
 
             if editor.is_enable_syntax_highlight {
                 self.set_regions_highlight(&cfg, editor, y, row_vec, sx, ex);

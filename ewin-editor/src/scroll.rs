@@ -1,5 +1,5 @@
 use crate::{
-    ewin_core::{_cfg::key::keycmd::*, def::*, log::*, util::*},
+    ewin_core::{_cfg::key::keycmd::*, log::*, util::*},
     model::*,
 };
 use std::{
@@ -19,49 +19,32 @@ impl Editor {
     // adjusting vertical posi of cursor
     pub fn scroll(&mut self) {
         Log::debug_key("scroll");
+        Log::debug("self.cur.y", &self.cur.y);
+        Log::debug("self.offset_y before", &self.offset_y);
 
-        if self.e_cmd == E_Cmd::CursorFileHome || self.cur.y == 0 {
-            self.offset_y = 0;
-        } else if self.e_cmd == E_Cmd::CursorPageUp {
-            self.offset_y = if self.offset_y >= self.disp_row_num { self.offset_y - self.disp_row_num } else { 0 };
-        } else if self.cur.y >= Editor::UP_DOWN_EXTRA {
-            self.offset_y = min(self.offset_y, self.cur.y - Editor::UP_DOWN_EXTRA);
-        }
-
-        match &self.e_cmd {
-                E_Cmd::GrepResult | E_Cmd::CursorDown |E_Cmd::CursorUp | E_Cmd::CursorDownSelect | E_Cmd::CursorUpSelect | E_Cmd::MouseScrollUp  | E_Cmd::MouseScrollDown | E_Cmd::CursorPageDown | E_Cmd::CursorPageUp | E_Cmd::CursorFileEnd | E_Cmd::InsertStr(_) | E_Cmd::FindNext | E_Cmd::FindBack | E_Cmd::DelNextChar | E_Cmd::DelPrevChar
-            // Prompt confirm
-            // | E_Cmd::InsertLine
-             => {
-                 // When all the display rows fit in the terminal
-                if self.buf.len_lines() - self.offset_y + STATUSBAR_ROW_NUM  <= self.disp_row_num {
-            
-                } else {
-                    if self.cur.y + Editor::UP_DOWN_EXTRA >= self.disp_row_num {
-                  
-                        if self.e_cmd == E_Cmd::CursorPageDown {
-                            self.offset_y = if self.buf.len_lines() - 1 > self.offset_y + self.disp_row_num * 2 { self.offset_y + self.disp_row_num } else { self.buf.len_lines() - self.disp_row_num };
-                        } else {
-                     
-                            self.offset_y = max(self.offset_y, self.cur.y + 1 + Editor::UP_DOWN_EXTRA - self.disp_row_num);
-
-                            // offset_y decreases
-                            if self.offset_y + self.disp_row_num > self.buf.len_lines() {
-                                self.offset_y = self.buf.len_lines() - self.disp_row_num;
-                            }
-                        }
+        if self.cur.y == 0 {
+            self.offset_y = 0
+        } else {
+            match &self.e_cmd {
+                // When multi rows are deleted
+                E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Undo | E_Cmd::Redo if self.offset_y > self.cur.y => self.offset_y = self.cur.y - Editor::UP_DOWN_EXTRA,
+                E_Cmd::GrepResult | E_Cmd::CursorDown | E_Cmd::CursorDownSelect | E_Cmd::MouseScrollDown | E_Cmd::CursorFileEnd | E_Cmd::InsertStr(_) | E_Cmd::FindNext | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Undo | E_Cmd::Redo => {
+                    if self.cur.y + Editor::UP_DOWN_EXTRA >= self.row_num {
+                        // "self.buf.len_lines() - self.row_num" is For the last row
+                        self.offset_y = max(self.offset_y, min(self.buf.len_lines() - self.row_num, self.cur.y + 1 + Editor::UP_DOWN_EXTRA - self.row_num));
                     }
                 }
-            },
-            _ => {}
+                E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::CursorUpSelect | E_Cmd::FindBack => {
+                    if self.offset_y >= Editor::UP_DOWN_EXTRA && self.cur.y == Editor::UP_DOWN_EXTRA + self.offset_y - 1 {
+                        self.offset_y -= Editor::UP_DOWN_EXTRA;
+                    }
+                }
+                E_Cmd::CursorPageUp => self.offset_y = if self.offset_y >= self.row_num { self.offset_y - self.row_num } else { 0 },
+                E_Cmd::CursorPageDown => self.offset_y = if self.buf.len_lines() - 1 > self.offset_y + self.row_num * 2 { self.offset_y + self.row_num } else { self.buf.len_lines() - self.row_num },
+                _ => {}
+            }
         }
-    }
-    pub fn add_extra_offset(&mut self, vec: &Vec<char>) {
-        let offset_disp_x = get_row_width(&vec[..self.offset_x], 0, false).1;
-
-        if self.cur.disp_x > offset_disp_x + self.disp_col_num - Editor::LEFT_RIGHT_JUDGE_EXTRA {
-            self.offset_x += Editor::ADD_EXTRA_END_LINE;
-        }
+        Log::debug("self.offset_y after", &self.offset_y);
     }
 
     // adjusting horizontal posi of cursor
@@ -79,27 +62,27 @@ impl Editor {
             return;
         } else if self.cur_y_org != self.cur.y {
             self.offset_x = self.get_x_offset(self.cur.y, self.cur.x);
-            self.add_extra_offset(&vec);
+            self.add_extra_offset_x(&vec);
         } else {
             match &self.e_cmd {
-                E_Cmd::CursorRowEnd | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect | E_Cmd::InsertStr(_) | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::FindNext | E_Cmd::FindBack | E_Cmd::Null => {
+                E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect | E_Cmd::InsertStr(_) | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::FindNext | E_Cmd::FindBack | E_Cmd::Null => {
                     self.offset_x = self.get_x_offset(self.cur.y, self.cur.x);
 
                     match &self.e_cmd {
                         E_Cmd::InsertStr(_) | E_Cmd::CursorRowEnd | E_Cmd::CursorRowEndSelect | E_Cmd::Undo | E_Cmd::Redo => {
-                            self.add_extra_offset(&vec);
+                            self.add_extra_offset_x(&vec);
                         }
                         E_Cmd::FindNext | E_Cmd::FindBack | E_Cmd::Null => {
                             let str_width = get_str_width(&self.search.str);
+                            let offset_disp_x = get_row_width(&vec[..self.offset_x], 0, false).1;
                             if self.e_cmd == E_Cmd::FindNext || self.e_cmd == E_Cmd::Null {
                                 // Offset setting to display a few characters to the right of the search character for easier viewing
-                                if self.cur.disp_x + str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA > self.offset_disp_x + self.disp_col_num {
+                                if self.cur.disp_x + str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA > offset_disp_x + self.col_num {
                                     self.offset_x += str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA;
                                 }
                             } else if self.e_cmd == E_Cmd::FindBack {
                                 // Calc offset_disp_x once to judge the display position
-                                let offset_disp_x = get_row_width(&vec[..self.offset_x], 0, false).1;
-                                if self.cur.disp_x + str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA > offset_disp_x + self.disp_col_num {
+                                if self.cur.disp_x + str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA > offset_disp_x + self.col_num {
                                     self.offset_x += str_width + Editor::SEARCH_JUDGE_COLUMN_EXTRA;
                                 }
                             }
@@ -109,10 +92,10 @@ impl Editor {
                     }
                 }
                 E_Cmd::CursorRight | E_Cmd::CursorRightSelect => {
-                    if self.offset_disp_x + self.disp_col_num < self.cur.disp_x + Editor::LEFT_RIGHT_JUDGE_EXTRA {
+                    if self.offset_disp_x + self.col_num < self.cur.disp_x + Editor::LEFT_RIGHT_JUDGE_EXTRA {
                         // Judgment whether the end fits in the width
                         let width = get_row_width(&self.buf.char_vec_line(self.cur.y)[self.offset_x..], self.offset_disp_x, true).1;
-                        if width > self.disp_col_num {
+                        if width > self.col_num {
                             self.offset_x += Editor::ADD_EXTRA_NUM;
                         }
                     }
@@ -125,7 +108,31 @@ impl Editor {
                 _ => {}
             }
         }
-        //     self.offset_disp_x = get_row_width(&vec[..self.offset_x], self.offset_disp_x, false).1;
         self.offset_disp_x = get_row_width(&vec[..self.offset_x], 0, false).1;
+    }
+
+    pub fn add_extra_offset_x(&mut self, vec: &Vec<char>) {
+        let offset_disp_x = get_row_width(&vec[..self.offset_x], 0, false).1;
+
+        if self.cur.disp_x > offset_disp_x + self.col_num - Editor::LEFT_RIGHT_JUDGE_EXTRA {
+            self.offset_x += Editor::ADD_EXTRA_END_LINE;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ewin_core::_cfg::cfg::*;
+
+    // initial value
+    // row_num : 10
+    // Cur y:0, x:0, disp_x:0,
+    #[test]
+    fn test_editor_scroll_base() {
+        Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
+        let mut e = Editor::new();
+        e.scroll();
+        assert_eq!(e.offset_y, 0);
     }
 }

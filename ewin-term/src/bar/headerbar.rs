@@ -222,7 +222,7 @@ impl Default for HeaderBar {
             is_right_arrow_disp: false,
             right_arrow_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
             left_arrow_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
-            row_num: 1,
+            row_num: HEADERBAR_ROW_NUM,
             row_posi: 0,
             col_num: 0,
             history: History::default(),

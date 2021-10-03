@@ -21,10 +21,10 @@ impl Editor {
 
     // move to row
     pub fn move_row(&mut self) {
-        if self.cur.y > self.offset_y + self.disp_row_num {
+        if self.cur.y > self.offset_y + self.row_num {
             // last page
-            if self.buf.len_lines() - 1 - self.cur.y < self.disp_row_num {
-                self.offset_y = self.buf.len_lines() - self.disp_row_num;
+            if self.buf.len_lines() - 1 - self.cur.y < self.row_num {
+                self.offset_y = self.buf.len_lines() - self.row_num;
             } else {
                 self.offset_y = self.cur.y - Editor::MOVE_ROW_EXTRA_NUM;
             }
@@ -40,7 +40,7 @@ impl Editor {
 
         for c in char_vec.iter().rev() {
             width += get_char_width(c, width);
-            if width > self.disp_col_num {
+            if width > self.col_num {
                 break;
             }
             cur_x += 1;

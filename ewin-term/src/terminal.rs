@@ -51,7 +51,7 @@ impl Terminal {
             self.curt().editor.draw_range = EditorDrawRange::None;
         } else {
             match draw_parts {
-                DParts::All | DParts::AllMsgBar(_) => self.curt().editor.draw_range = EditorDrawRange::All,
+                DParts::All | DParts::AllMsgBar(_) if self.curt().editor.draw_range != EditorDrawRange::None => self.curt().editor.draw_range = EditorDrawRange::All,
                 _ => {}
             };
         };
@@ -138,7 +138,7 @@ impl Terminal {
             }
             let rnw_margin = if self.curt().editor.state.mouse_mode == MouseMode::Normal { self.curt().editor.get_rnw_and_margin() } else { 0 };
             let editor = &self.curt().editor;
-            str_vec.push(MoveTo((editor.cur.disp_x - editor.offset_disp_x + rnw_margin) as u16, (editor.cur.y - editor.offset_y + editor.disp_row_posi) as u16).to_string());
+            str_vec.push(MoveTo((editor.cur.disp_x - editor.offset_disp_x + rnw_margin) as u16, (editor.cur.y - editor.offset_y + editor.row_posi) as u16).to_string());
 
             Terminal::show_cur();
         } else if self.curt().state.is_prom_show_cur() {
@@ -180,7 +180,7 @@ impl Terminal {
     pub fn check_displayable() -> bool {
         let (cols, rows) = get_term_size();
         // rows 12 is prompt.open_file
-        if cols <= TERM_MINIMUM_WIDTH || rows <= TERM_MINIMUM_HEIGHT {
+        if cols <= TERM_MINIMUM_WIDTH as u16 || rows <= TERM_MINIMUM_HEIGHT as u16 {
             return false;
         }
         true
@@ -232,8 +232,8 @@ impl Terminal {
         self.curt().mbar.disp_keyrecord_row_posi = rows - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.row_num - 1;
         self.curt().mbar.disp_readonly_row_posi = rows - self.curt().mbar.disp_keyrecord_row_num - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.row_num - 1;
 
-        self.curt().editor.disp_col_num = if self.curt().editor.state.mouse_mode == MouseMode::Normal { cols - self.curt().editor.get_rnw_and_margin() } else { cols };
-        self.curt().editor.disp_row_num = rows - self.hbar.row_num - self.curt().mbar.disp_readonly_row_num - self.curt().mbar.disp_keyrecord_row_num - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.row_num;
+        self.curt().editor.col_num = if self.curt().editor.state.mouse_mode == MouseMode::Normal { cols - self.curt().editor.get_rnw_and_margin() } else { cols };
+        self.curt().editor.row_num = rows - self.hbar.row_num - self.curt().mbar.disp_readonly_row_num - self.curt().mbar.disp_keyrecord_row_num - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.row_num;
 
         return true;
     }
@@ -285,6 +285,7 @@ impl Terminal {
 
     pub fn open(&mut self, filenm: &str, tab: &mut Tab, is_first_open: bool) -> ActType {
         Log::info("File open start", &filenm);
+
         let path = Path::new(&filenm);
 
         let (is_readable, is_writable) = File::is_readable_writable(filenm);
@@ -342,7 +343,6 @@ impl Terminal {
             Terminal::set_title(&filenm);
 
             Log::info("File info", &h_file);
-
             self.add_tab(tab.clone(), h_file);
             self.idx = self.tabs.len() - 1;
             //  Terminal::enable_syntax_highlight(&path, tab);
@@ -563,7 +563,7 @@ impl Terminal {
         self.curt().prom.clear();
         self.curt().state.clear();
         if is_clear_grep_info {
-            self.curt().state.clear_grep_info();
+            self.curt().state.grep.clear();
         }
         self.curt().mbar.clear();
         self.set_disp_size();
@@ -600,7 +600,7 @@ impl Terminal {
                 if self.state.is_ctx_menu && (self.keycmd == KeyCmd::Edit(E_Cmd::MouseDownRight(y, x)) || self.keycmd == KeyCmd::CtxMenu(C_Cmd::MouseMove(y, x)) && self.ctx_menu_group.is_mouse_within_range(y, x) && self.ctx_menu_group.is_mouse_within_range(y, x)) {
                     let offset_y = self.curt().editor.offset_y;
                     let hbar_disp_row_num = self.hbar.row_num;
-                    let editor_disp_row_num = if self.curt().editor.offset_y > 0 { self.curt().editor.disp_row_num + self.curt().editor.offset_y - hbar_disp_row_num } else { self.curt().editor.disp_row_num - hbar_disp_row_num };
+                    let editor_disp_row_num = if self.curt().editor.offset_y > 0 { self.curt().editor.row_num + self.curt().editor.offset_y - hbar_disp_row_num } else { self.curt().editor.row_num - hbar_disp_row_num };
 
                     if let Some((sy, ey)) = self.ctx_menu_group.get_draw_range(offset_y, hbar_disp_row_num, editor_disp_row_num) {
                         self.curt().editor.draw_range = EditorDrawRange::Target(sy, ey);

@@ -16,12 +16,13 @@ fn test_key_input() {
 
     eprintln!("111 {:?}", term.curt().editor.buf.text.to_string());
 
-    // let key = Keybind::keycmd_to_keys(&KeyCmd::InsertLine);
+    /*
     EvtAct::ctrl_editor(&mut term);
-    let editor = Editor::new();
+    let mut editor = Editor::new();
 
     editor.e_cmd = E_Cmd::InsertLine;
 
     // Editor::new()
     println!("");
+     */
 }

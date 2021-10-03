@@ -48,15 +48,6 @@ impl Prompt {
             } else if tab_state.is_enc_nl {
                 self.draw_enc_nl(str_vec);
             }
-
-            /*
-            let out = stdout();
-
-             let mut out = BufWriter::new(out.lock());
-            let _ = out.write(&str_vec.concat().as_bytes());
-            out.flush().unwrap();
-             str_vec.clear();
-            */
         }
     }
 
@@ -376,15 +367,12 @@ impl TabComp {
         if self.files.len() == 0 {
             self.files = get_tab_comp_files(target_path.clone(), is_dir_only, true);
         }
-        Log::debug_s("　　One candidate");
 
         let mut rtn_string = target_path;
 
         for file in &self.files {
             // One candidate
             if self.files.len() == 1 {
-                Log::debug_s("　　One candidate");
-
                 if !is_dir_only {
                     let path = Path::new(&file.name);
                     //  let path = Path::new(&os_str);

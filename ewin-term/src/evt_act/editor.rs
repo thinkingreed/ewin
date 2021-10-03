@@ -47,6 +47,7 @@ impl EvtAct {
                 }
                 // file
                 E_Cmd::NewTab => term.new_tab(),
+
                 // format
                 E_Cmd::Format(fmt_type) => return EvtAct::evt_editor_format(term, *fmt_type),
                 // key record

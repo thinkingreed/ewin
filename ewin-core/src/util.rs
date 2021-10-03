@@ -319,7 +319,7 @@ pub fn get_term_size() -> (u16, u16) {
 
     // (1, 1) is judged as test
     if (columns, rows) == (1, 1) {
-        return (TERM_MINIMUM_WIDTH, TERM_MINIMUM_HEIGHT);
+        return (TERM_MINIMUM_WIDTH as u16, TERM_MINIMUM_HEIGHT as u16);
     } else {
         return (columns, rows);
     }

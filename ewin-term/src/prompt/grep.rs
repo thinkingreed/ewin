@@ -31,7 +31,6 @@ impl EvtAct {
                     return ActType::Draw(DParts::MsgBar(LANG.not_entered_search_folder.to_string()));
                 } else {
                     term.clear_curt_tab(true);
-                    term.curt().state.clear_grep_info();
 
                     if search_folder.chars().nth(0).unwrap() != '/' && search_folder.chars().nth(0).unwrap() != 'C' {
                         let current_dir = env::current_dir().unwrap().display().to_string();
@@ -57,7 +56,6 @@ impl EvtAct {
                     grep_tab.state.grep.search_str = search_str.clone();
                     grep_tab.state.grep.search_filenm = search_filenm.clone();
                     grep_tab.state.grep.search_folder = search_folder.clone();
-                    term.idx = term.tabs.len();
                     {
                         GREP_INFO_VEC.get().unwrap().try_lock().unwrap().push(grep_tab.state.grep.clone());
                     }
