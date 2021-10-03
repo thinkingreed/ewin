@@ -1,11 +1,6 @@
-use crossterm::cursor::position;
-use ewin_core::{
-    _cfg::key::keycmd::{Keybind, *},
-    model::*,
-};
-use ewin_editor::model::Editor;
-use ewin_term::{model::*, terminal::*};
-use std::{env, io::stdout};
+use ewin_core::model::*;
+use ewin_term::terminal::*;
+
 mod common;
 
 #[test]
