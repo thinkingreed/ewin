@@ -43,6 +43,12 @@ impl TextBuffer {
     pub fn insert_end(&mut self, s: &str) {
         self.text.insert(self.text.len_chars(), s);
     }
+    pub fn insert_end_multi(&mut self, s_array: &[&str]) {
+        for s in s_array {
+            self.insert_end(s)
+        }
+    }
+
     pub fn remove(&mut self, s_idx: usize, e_idx: usize) {
         self.text.remove(s_idx..e_idx);
     }
@@ -154,6 +160,9 @@ impl TextBuffer {
 
     pub fn append(&mut self, rope: Rope) {
         self.text.append(rope);
+    }
+    pub fn clear(&mut self) {
+        self.text.remove(..);
     }
 
     pub fn search(&self, search_pattern: &str, s_idx: usize, e_idx: usize, cfg_search: &CfgSearch) -> BTreeMap<(usize, usize), String> {

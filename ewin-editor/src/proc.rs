@@ -122,7 +122,7 @@ mod tests {
     fn test_editor_proc_base_cur_move() {
         Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
         let mut e = Editor::new();
-        e.buf.insert_end(&EOF_MARK.to_string());
+        e.buf.insert_end(EOF_MARK_STR);
 
         // CursorLeft
         e.e_cmd = E_Cmd::InsertStr("a".to_string());

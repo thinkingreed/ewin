@@ -35,6 +35,7 @@ impl Editor {
                     }
                 }
                 E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::CursorUpSelect | E_Cmd::FindBack => {
+                    // -1 is to maintain consistency with the 0 standard of cur.y
                     if self.offset_y >= Editor::UP_DOWN_EXTRA && self.cur.y == Editor::UP_DOWN_EXTRA + self.offset_y - 1 {
                         self.offset_y -= Editor::UP_DOWN_EXTRA;
                     }
@@ -123,7 +124,7 @@ impl Editor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ewin_core::_cfg::cfg::*;
+    use ewin_core::{_cfg::cfg::*, def::*};
 
     // initial value
     // row_num : 10
@@ -132,7 +133,74 @@ mod tests {
     fn test_editor_scroll_base() {
         Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
         let mut e = Editor::new();
+        e.buf.insert_end_multi(&["1\n2\n3\n4\n5\n6\n7\n8\n9\n10", EOF_MARK_STR]);
+
+        /*** Downward test ***/
+        e.e_cmd = E_Cmd::DelNextChar;
+
+        // cur.y = 0
         e.scroll();
         assert_eq!(e.offset_y, 0);
+        // cur.y < offset_y
+        e.offset_y = 10;
+        e.cur.y = 5;
+        e.scroll();
+        assert_eq!(e.offset_y, 4);
+        // self.cur.y + Editor::UP_DOWN_EXTRA >= self.row_num
+        // cur.y is last row
+        e.offset_y = 0;
+        e.cur.y = 20;
+        e.scroll();
+        assert_eq!(e.offset_y, 0);
+        // cur.y is not  last row
+
+        e.buf.clear();
+
+        e.buf.insert_end_multi(&["1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20", EOF_MARK_STR]);
+
+        e.offset_y = 0;
+        e.cur.y = 9;
+        e.scroll();
+        assert_eq!(e.offset_y, 1);
+
+        /*** Upward test ***/
+        // self.cur.y == Editor::UP_DOWN_EXTRA + self.offset_y - 1
+        e.e_cmd = E_Cmd::CursorUp;
+        e.offset_y = 10;
+        e.cur.y = 10;
+        e.scroll();
+        assert_eq!(e.offset_y, 9);
+        // e.offset_y = 0;
+        e.offset_y = 0;
+        e.cur.y = 1;
+        e.scroll();
+        assert_eq!(e.offset_y, 0);
+
+        /*** Page change test ***/
+
+        e.e_cmd = E_Cmd::CursorPageUp;
+        e.offset_y = 10;
+        e.cur.y = 20;
+        e.scroll();
+        assert_eq!(e.offset_y, 0);
+        e.offset_y = 5;
+        e.cur.y = 15;
+        e.scroll();
+        assert_eq!(e.offset_y, 0);
+        e.offset_y = 0;
+        e.cur.y = 5;
+        e.scroll();
+        assert_eq!(e.offset_y, 0);
+        // 1 page
+        e.e_cmd = E_Cmd::CursorPageDown;
+        e.offset_y = 0;
+        e.cur.y = 10;
+        e.scroll();
+        assert_eq!(e.offset_y, 10);
+        // not 1 page
+        e.offset_y = 5;
+        e.cur.y = 5;
+        e.scroll();
+        assert_eq!(e.offset_y, 10);
     }
 }
