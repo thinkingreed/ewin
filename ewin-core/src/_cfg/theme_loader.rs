@@ -18,7 +18,7 @@ impl ThemeLoader {
     pub fn load(mut self) -> anyhow::Result<(Theme, String)> {
         let mut err_str = String::new();
 
-        if !self.theme_path.is_some() {
+        if self.theme_path.is_none() {
             err_str = self.load_user();
         }
 

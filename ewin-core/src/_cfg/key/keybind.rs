@@ -115,9 +115,8 @@ impl Keybind {
         if keycmd != KeyCmd::Unsupported {
             return keycmd;
         }
-        match keys {
-            Keys::Resize => return KeyCmd::Resize,
-            _ => {}
+        if keys == &Keys::Resize {
+            return KeyCmd::Resize;
         }
 
         let keycmd = match keywhen {
@@ -178,9 +177,8 @@ impl Keybind {
         if keycmd != KeyCmd::Unsupported {
             return keycmd;
         }
-        match keys {
-            Keys::Resize => return KeyCmd::Resize,
-            _ => {}
+        if keys == &Keys::Resize {
+            return KeyCmd::Resize;
         }
 
         let keycmd = match keywhen {
@@ -246,11 +244,11 @@ impl Keybind {
                     KeyCode::Right => Key::Right,
                     KeyCode::F(i) => Key::F(*i),
                 };
-                match m {
-                    &KeyModifiers::CONTROL => Keys::Ctrl(inner),
-                    &KeyModifiers::ALT => Keys::Alt(inner),
-                    &KeyModifiers::SHIFT => Keys::Shift(inner),
-                    &KeyModifiers::NONE => Keys::Raw(inner),
+                match *m {
+                    KeyModifiers::CONTROL => Keys::Ctrl(inner),
+                    KeyModifiers::ALT => Keys::Alt(inner),
+                    KeyModifiers::SHIFT => Keys::Shift(inner),
+                    KeyModifiers::NONE => Keys::Raw(inner),
                     _ => Keys::Unsupported,
                 }
             }
@@ -274,13 +272,7 @@ impl Keybind {
             E_Cmd::InsertStr(_) | E_Cmd::InsertLine | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Cut => {
                 return true;
             }
-            E_Cmd::Undo | E_Cmd::Redo => {
-                if is_incl_unredo {
-                    return true;
-                } else {
-                    return false;
-                }
-            }
+            E_Cmd::Undo | E_Cmd::Redo => return is_incl_unredo,
             _ => return false,
         }
     }
@@ -298,7 +290,7 @@ impl Keybind {
         };
     }
     pub fn keycmd_to_keys(keycmd: &KeyCmd) -> Keys {
-        return *CMD_KEY_MAP.get().unwrap().get(&(&keycmd)).unwrap();
+        return *CMD_KEY_MAP.get().unwrap().get(&keycmd).unwrap();
     }
 
     pub fn check_keybind_file(keybind: &Keybind, i: usize) -> String {

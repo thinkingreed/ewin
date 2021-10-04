@@ -122,10 +122,7 @@ pub fn is_wsl_powershell_enable() -> bool {
     let mut rtn = false;
     if *ENV == Env::WSL {
         let result = Command::new("powershell.exe").stdout(Stdio::null()).stdin(Stdio::null()).stderr(Stdio::null()).spawn();
-        rtn = match result {
-            Ok(_) => true,
-            Err(_) => false,
-        };
+        rtn = result.is_ok();
     }
     return rtn;
 }
@@ -142,11 +139,8 @@ pub fn is_line_end(c: char) -> bool {
 
 pub fn is_enable_syntax_highlight(ext: &str) -> bool {
     let disable_syntax_highlight_ext_vec = &CFG.get().unwrap().try_lock().unwrap().colors.theme.disable_syntax_highlight_ext;
-    if ext.len() == 0 || disable_syntax_highlight_ext_vec.contains(&ext.to_string()) {
-        return false;
-    } else {
-        return true;
-    }
+
+    return !(ext.is_empty() || disable_syntax_highlight_ext_vec.contains(&ext.to_string()));
 }
 
 pub fn get_char_type(c: char) -> CharType {
@@ -179,7 +173,7 @@ pub fn cut_str(str: String, limit_width: usize, is_from_before: bool, is_add_con
                         if is_from_before {
                             rtn_str = format!("{}{}", &CONTINUE_STR, rtn_str);
                         } else {
-                            rtn_str.push_str(&CONTINUE_STR);
+                            rtn_str.push_str(CONTINUE_STR);
                         }
                     }
                     return rtn_str;
@@ -219,7 +213,7 @@ pub fn get_tab_comp_files(target_path: String, is_dir_only: bool, is_full_path_f
     let mut base_dir = ".".to_string();
     let vec: Vec<(usize, &str)> = target_path.match_indices(path::MAIN_SEPARATOR).collect();
     // "/" exist
-    if vec.len() > 0 {
+    if !vec.is_empty() {
         let (base, _) = target_path.split_at(vec[vec.len() - 1].0 + 1);
         base_dir = base.to_string();
     }
@@ -232,7 +226,7 @@ pub fn get_tab_comp_files(target_path: String, is_dir_only: bool, is_full_path_f
                 let mut filenm = path.path().display().to_string();
                 let v: Vec<(usize, &str)> = filenm.match_indices(target_path.as_str()).collect();
 
-                if v.len() > 0 {
+                if !v.is_empty() {
                     // Replace "./" for display
                     if &base_dir == "." {
                         filenm = filenm.replace("./", "");
@@ -249,7 +243,7 @@ pub fn get_tab_comp_files(target_path: String, is_dir_only: bool, is_full_path_f
     rtn_vec.sort_by_key(|file| file.name.clone());
     return rtn_vec;
 }
-pub fn get_dir_path(path_str: &String) -> String {
+pub fn get_dir_path(path_str: &str) -> String {
     let mut vec = split_inclusive(path_str, MAIN_SEPARATOR);
     // Deleted when characters were entered
 
@@ -259,8 +253,8 @@ pub fn get_dir_path(path_str: &String) -> String {
     return vec.join("");
 }
 
-pub fn change_nl(string: &mut String, to_nl: &String) {
-    if *to_nl == NEW_LINE_LF_STR {
+pub fn change_nl(string: &mut String, to_nl: &str) {
+    if to_nl == NEW_LINE_LF_STR {
         *string = string.replace(NEW_LINE_CRLF, &NEW_LINE_LF.to_string());
         // CRLF
     } else {
@@ -306,7 +300,7 @@ pub fn is_include_path(src: &str, dst: &str) -> bool {
     let mut is_include = false;
     for (i, src) in src_vec.iter().enumerate() {
         if let Some(dst) = dst_vec.get(i) {
-            is_include = if src == dst { true } else { false };
+            is_include = src == dst;
         } else {
             is_include = false;
         }

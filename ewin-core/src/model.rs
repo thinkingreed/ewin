@@ -685,14 +685,14 @@ impl HeaderFile {
         let file_fullpath;
 
         if path.is_absolute() {
-            setting_filenm = Path::new(&filenm).file_name().unwrap().to_string_lossy().to_string().clone();
+            setting_filenm = Path::new(&filenm).file_name().unwrap().to_string_lossy().to_string();
             file_fullpath = filenm.to_string();
         } else {
             setting_filenm = filenm.to_string();
             file_fullpath = Path::new(&*CURT_DIR).join(filenm).to_string_lossy().to_string();
         }
 
-        return HeaderFile { filenm: if filenm.is_empty() { LANG.new_file.clone() } else { Path::new(&setting_filenm).file_name().unwrap().to_string_lossy().to_string().clone() }, fullpath: file_fullpath.to_string(), ..HeaderFile::default() };
+        return HeaderFile { filenm: if filenm.is_empty() { LANG.new_file.clone() } else { Path::new(&setting_filenm).file_name().unwrap().to_string_lossy().to_string() }, fullpath: file_fullpath, ..HeaderFile::default() };
     }
 }
 

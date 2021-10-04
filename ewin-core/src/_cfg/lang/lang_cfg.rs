@@ -168,11 +168,11 @@ impl LangCfg {
 #[cfg(target_os = "linux")]
 impl LangCfg {
     pub fn read_lang_cfg() -> LangCfg {
-        let env_lang = env::var("LANG").unwrap_or("en_US".to_string());
+        let env_lang = env::var("LANG").unwrap_or_else(|_| "en_US".to_string());
 
         // TODO File read dynamic generation
         let lang_str = if env_lang.starts_with("ja_JP") { include_str!("ja_JP.toml") } else { include_str!("en_US.toml") };
-        let lang_cfg: LangCfg = toml::from_str(&lang_str).unwrap();
+        let lang_cfg: LangCfg = toml::from_str(lang_str).unwrap();
 
         return lang_cfg;
     }

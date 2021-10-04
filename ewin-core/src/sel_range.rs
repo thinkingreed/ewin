@@ -123,11 +123,11 @@ impl BoxInsert {
     pub fn clear_clipboard(&mut self) {
         self.vec = vec![]
     }
-    pub fn get_str(&mut self, nl: &String) -> String {
+    pub fn get_str(&mut self, nl: &str) -> String {
         let mut str = String::new();
         for (_, s) in self.vec.iter() {
-            str.push_str(&s);
-            str.push_str(&nl);
+            str.push_str(s);
+            str.push_str(nl);
         }
         return str;
     }
