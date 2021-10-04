@@ -35,6 +35,14 @@ jobs:
           sudo apt install libxcb-shape0-dev
           sudo apt install libxcb-xfixes0-dev
 
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+
         # https://github.com/actions/cache/blob/master/examples.md#rust---cargo
       - name: Cache cargo files
         uses: actions/cache@v2
