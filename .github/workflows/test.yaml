@@ -1,15 +1,16 @@
-name: Test
+name: Rust
 
 on:
   push:
     branches: [master]
   pull_request:
     branches: [master]
+
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  test:
+  build_Test:
     strategy:
       matrix:
         target:
@@ -34,14 +35,6 @@ jobs:
           sudo apt install libxcb-render0-dev
           sudo apt install libxcb-shape0-dev
           sudo apt install libxcb-xfixes0-dev
-
-      - name: Setup Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: ${{ matrix.target }}
-          override: true
 
         # https://github.com/actions/cache/blob/master/examples.md#rust---cargo
       - name: Cache cargo files
