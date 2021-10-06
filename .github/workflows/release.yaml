@@ -21,9 +21,9 @@ jobs:
       - name: Fetch all tags
         run: git fetch origin +refs/tags/*:refs/tags/*
 
-      - name: Create Changelog
-        id: create_changelog
-        uses: thinkingreed/ccclog@gha-v0
+      #      - name: Create Changelog
+      #        id: create_changelog
+      #        uses: thinkingreed/ccclog@gha-v0
 
       - name: Create release
         id: create_release
