@@ -209,9 +209,9 @@ mod tests {
         assert_eq!(e.search, Search { idx: 0, ranges: vec![SearchRange { y: 1, sx: 1, ex: 2 }, SearchRange { y: 3, sx: 1, ex: 2 }], str: "b".to_string(), ..Search::default() });
 
         // FindBack
-        e.e_cmd = E_Cmd::FindBack;
+        e.e_cmd = E_Cmd::FindNext;
         e.proc();
-        assert_eq!(e.cur, Cur { y: 3, x: 1, disp_x: 1 });
+        assert_eq!(e.cur, Cur { y: 3, x: 1, disp_x: 2 });
         assert_eq!(e.search, Search { idx: 1, ranges: vec![SearchRange { y: 1, sx: 1, ex: 2 }, SearchRange { y: 3, sx: 1, ex: 2 }], str: "b".to_string(), ..Search::default() });
     }
 }
