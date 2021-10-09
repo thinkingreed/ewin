@@ -238,6 +238,7 @@ impl fmt::Display for Cell {
 pub enum CharStyleType {
     Nomal,
     Select,
+    Search,
     CtrlChar,
 }
 

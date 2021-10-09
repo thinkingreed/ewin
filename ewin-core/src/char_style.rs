@@ -55,6 +55,11 @@ impl CharStyle {
         let selection = &cfg.colors.editor.selection;
         CharStyle { fg: Color { rgb: Rgb { r: selection.fg.rgb.r, g: selection.fg.rgb.g, b: selection.fg.rgb.b } }, bg: Color { rgb: Rgb { r: selection.bg.rgb.r, g: selection.bg.rgb.g, b: selection.bg.rgb.b } } }
     }
+
+    pub fn searched(cfg: &Cfg) -> CharStyle {
+        let search = &cfg.colors.editor.search;
+        CharStyle { fg: Color { rgb: Rgb { r: search.fg.rgb.r, g: search.fg.rgb.g, b: search.fg.rgb.b } }, bg: Color { rgb: Rgb { r: search.bg.rgb.r, g: search.bg.rgb.g, b: search.bg.rgb.b } } }
+    }
 }
 
 impl Cell {

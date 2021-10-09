@@ -69,7 +69,7 @@ background = "#ff4500"
 foreground = "#000000"
 
 [colors.editor.search]
-background = "#ff4500"
+background = "#aa6400"
 foreground = "#000000"
 
 [colors.editor.control_char]

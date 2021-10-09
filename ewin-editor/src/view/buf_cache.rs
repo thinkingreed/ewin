@@ -140,6 +140,7 @@ impl EditorDraw {
 
         let to_style = match style_type {
             CharStyleType::Select => CharStyle::selected(&cfg),
+            CharStyleType::Search => CharStyle::searched(&cfg),
             CharStyleType::Nomal => {
                 if editor.is_enable_syntax_highlight {
                     *style
@@ -179,7 +180,7 @@ impl EditorDraw {
         }
         for range in &editor.search.ranges {
             if range.y == y && range.sx <= x && x < range.ex {
-                return CharStyleType::Select;
+                return CharStyleType::Search;
             } else if range.y > y {
                 break;
             }

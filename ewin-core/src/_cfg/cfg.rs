@@ -130,7 +130,7 @@ pub struct CfgColorEditor {
     pub fg: Color,
     pub line_number: LineNumber,
     pub selection: Selection,
-    pub search: Search,
+    pub search: CfgColorEditorSearch,
     pub control_char: ControlChar,
 }
 
@@ -154,7 +154,7 @@ pub struct Selection {
     pub fg: Color,
 }
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Search {
+pub struct CfgColorEditorSearch {
     background: String,
     foreground: String,
     #[serde(skip_deserializing, skip_serializing)]

@@ -154,5 +154,64 @@ mod tests {
         e.e_cmd = E_Cmd::CursorRowHome;
         e.proc();
         assert_eq!(e.cur, Cur { y: 1, x: 0, disp_x: 0 });
+        // CursorRowEnd
+        e.e_cmd = E_Cmd::CursorRowEnd;
+        e.proc();
+        assert_eq!(e.cur, Cur { y: 1, x: 3, disp_x: 3 });
+    }
+
+    #[test]
+    fn test_editor_proc_base_select() {
+        Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
+        let mut e = Editor::new();
+        e.buf.insert_end(&EOF_MARK.to_string());
+        e.e_cmd = E_Cmd::InsertStr("123\nabc\nABC".to_string());
+        e.proc();
+
+        // CursorUpSelect
+        e.e_cmd = E_Cmd::CursorUpSelect;
+        e.proc();
+        assert_eq!(e.sel.get_range(), SelRange { sy: 1, sx: 3, ey: 2, ex: 3, s_disp_x: 3, e_disp_x: 3, ..SelRange::default() });
+
+        // CursorLeftSelect
+        e.e_cmd = E_Cmd::CursorLeftSelect;
+        e.proc();
+        assert_eq!(e.sel.get_range(), SelRange { sy: 1, sx: 2, ey: 2, ex: 3, s_disp_x: 2, e_disp_x: 3, ..SelRange::default() });
+
+        // CursorRightSelect
+        e.e_cmd = E_Cmd::CursorRightSelect;
+        e.proc();
+        assert_eq!(e.sel.get_range(), SelRange { sy: 1, sx: 3, ey: 2, ex: 3, s_disp_x: 3, e_disp_x: 3, ..SelRange::default() });
+
+        // CursorDownSelect
+        e.e_cmd = E_Cmd::CursorDownSelect;
+        e.proc();
+        assert_eq!(e.sel.get_range(), SelRange { ..SelRange::default() });
+    }
+
+    #[test]
+    fn test_editor_proc_base_find_next_back() {
+        Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
+        Cfg::init(&Args { ..Args::default() });
+
+        let mut e = Editor::new();
+        e.buf.insert_end(&EOF_MARK.to_string());
+        e.e_cmd = E_Cmd::InsertStr("123\nabc\nABC\nabc".to_string());
+        e.proc();
+
+        println!("{}", e.cur);
+
+        // FindNext
+        e.search.str = "b".to_string();
+        e.e_cmd = E_Cmd::FindNext;
+        e.proc();
+        assert_eq!(e.cur, Cur { y: 1, x: 1, disp_x: 1 });
+        assert_eq!(e.search, Search { idx: 0, ranges: vec![SearchRange { y: 1, sx: 1, ex: 2 }, SearchRange { y: 3, sx: 1, ex: 2 }], str: "b".to_string(), ..Search::default() });
+
+        // FindBack
+        e.e_cmd = E_Cmd::FindBack;
+        e.proc();
+        assert_eq!(e.cur, Cur { y: 3, x: 1, disp_x: 1 });
+        assert_eq!(e.search, Search { idx: 1, ranges: vec![SearchRange { y: 1, sx: 1, ex: 2 }, SearchRange { y: 3, sx: 1, ex: 2 }], str: "b".to_string(), ..Search::default() });
     }
 }

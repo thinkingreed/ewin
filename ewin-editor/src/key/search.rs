@@ -84,7 +84,6 @@ impl Editor {
                 let range = self.search.ranges[self.search.idx];
                 self.set_cur_target(range.y, range.sx, false);
             }
-            Log::debug("self.e_cmd", &self.e_cmd);
 
             self.scroll();
             self.scroll_horizontal();
@@ -121,7 +120,7 @@ impl Editor {
         if is_asc {
             for (i, range) in self.search.ranges.iter().enumerate() {
                 // When the cursor position is the target in the first search
-                if self.search.idx == USIZE_UNDEFINED && (self.cur.y <= range.y || (self.cur.y == range.y && cur_x <= range.sx)) {
+                if self.search.idx == USIZE_UNDEFINED && (self.cur.y < range.y || (self.cur.y == range.y && cur_x <= range.sx)) {
                     return i;
                 }
                 if self.cur.y < range.y || (self.cur.y == range.y && cur_x < range.sx) {
