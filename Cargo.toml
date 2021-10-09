@@ -56,5 +56,8 @@ ewin-core = { path = "ewin-core" }
 ewin-editor = { path = "ewin-editor" }
 ewin-prom = { path = "ewin-prom" }
 
+[dev-dependencies]
+cargo-husky = "1.5.0"
+
 [target.'cfg(windows)'.build-dependencies]
 windres = "0.2.2"
