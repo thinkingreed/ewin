@@ -20,9 +20,9 @@ jobs:
       - name: Fetch all tags
         run: git fetch origin +refs/tags/*:refs/tags/*
 
-      - name: Create Changelog
-        id: create_changelog
-        uses: thinkingreed/ccclog@gha-v0
+      #      - name: Create Changelog
+      #        id: create_changelog
+      #        uses: thinkingreed/ccclog@gha-v0
 
       - name: Create release
         id: create_release
@@ -65,14 +65,14 @@ jobs:
       - name: Setup code
         uses: actions/checkout@v2
 
-      - name: Get tag
-        id: get_tag
-        uses: olegtarasov/get-tag@v2
+      # - name: Get tag
+      #   id: get_tag
+      #   uses: olegtarasov/get-tag@v2
 
-      - name: Install musl tools
-        if: matrix.target == 'x86_64-unknown-linux-musl'
-        run: |
-          sudo apt install -qq -y musl-tools --no-install-recommends
+      #      - name: Install musl tools
+      #        if: matrix.target == 'x86_64-unknown-linux-musl'
+      #        run: |
+      #          sudo apt install -qq -y musl-tools --no-install-recommends
       - name: Setup Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
