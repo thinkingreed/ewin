@@ -6,7 +6,6 @@ on:
       - '*.*.*'
 env:
   NAME: url
-
 jobs:
   create_github_release:
     name: Create Github release
