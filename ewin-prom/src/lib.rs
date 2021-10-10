@@ -1,8 +1,10 @@
 extern crate ewin_core;
 
 pub mod cont {
+    pub mod choice;
     pub mod cur;
     pub mod edit;
+    pub mod mouse;
     pub mod proc_edit;
     pub mod promptcont;
     pub mod select;

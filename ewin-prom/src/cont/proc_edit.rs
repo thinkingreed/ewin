@@ -48,13 +48,8 @@ impl PromptCont {
                 P_Cmd::DelNextChar => self.delete(&mut ep),
                 P_Cmd::DelPrevChar => self.backspace(&mut ep),
                 P_Cmd::Cut => self.cut(ep_del.str),
-                P_Cmd::InsertStr(str) => {
-                    if str.is_empty() {
-                        self.paste(&mut ep);
-                    } else {
-                        self.insert_str(&mut ep);
-                    }
-                }
+                P_Cmd::InsertStr(str) if str.is_empty() => self.paste(&mut ep),
+                P_Cmd::InsertStr(_) => self.insert_str(&mut ep),
                 _ => {}
             }
             ep.cur_e = self.cur;

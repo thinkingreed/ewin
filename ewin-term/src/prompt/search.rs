@@ -19,9 +19,9 @@ impl EvtAct {
                     return ActType::Draw(DParts::All);
                 }
                 P_Cmd::FindNext | P_Cmd::FindBack => return EvtAct::exec_search_confirm(term),
-                _ => return ActType::Cancel,
+                _ => return if EvtAct::is_draw_prompt_tgt_keycmd(&term.curt().prom.p_cmd) { ActType::Draw(DParts::Prompt) } else { ActType::Cancel },
             },
-            _ => return if EvtAct::is_draw_prompt_tgt_keycmd(&term.curt().prom.p_cmd) { ActType::Draw(DParts::Prompt) } else { ActType::Cancel },
+            _ => return ActType::Cancel,
         };
     }
 

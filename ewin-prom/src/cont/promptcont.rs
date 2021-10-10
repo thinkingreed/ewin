@@ -1,10 +1,14 @@
 use crate::{
-    ewin_core::{_cfg::key::keycmd::*, colors::*, global::*, log::*, util::*},
+    ewin_core::{
+        _cfg::key::{keycmd::*, keys::*},
+        colors::*,
+        global::*,
+        log::*,
+        util::*,
+    },
     model::*,
-    prompt::choice::*,
 };
-use crossterm::cursor::MoveTo;
-use std::{cmp::min, io::Write, usize};
+use std::{cmp::min, usize};
 
 impl PromptCont {
     pub fn new(cont_posi: Option<PromptContPosi>) -> Self {
@@ -22,31 +26,17 @@ impl PromptCont {
         PromptCont { posi: prompt_cont_posi, ..PromptCont::default() }
     }
 
-    /*
-    pub fn new(keycmd: KeyCmd, cont_posi: Option<PromptContPosi>) -> Self {
-        let p_cmd = match &keycmd {
-            KeyCmd::Prom(p_keycmd) => p_keycmd.clone(),
-            _ => P_Cmd::Null,
-        };
-        if let Some(prompt_cont_posi) = cont_posi {
-            return PromptCont::new_edit_type(keycmd, p_cmd, prompt_cont_posi);
-        } else {
-            return PromptCont::new_not_edit_type(keycmd, p_cmd);
-        }
+    pub fn set_key_info(&mut self, keycmd: KeyCmd, keys: Keys, p_cmd: P_Cmd) {
+        self.keycmd = keycmd;
+        self.keys = keys;
+        self.p_cmd = p_cmd;
     }
-
-    fn new_not_edit_type(keycmd: KeyCmd, p_cmd: P_Cmd) -> Self {
-        PromptCont { keycmd, p_cmd, ..PromptCont::default() }
-    }
-
-    fn new_edit_type(keycmd: KeyCmd, p_cmd: P_Cmd, prompt_cont_posi: PromptContPosi) -> Self {
-        PromptCont { keycmd, p_cmd, posi: prompt_cont_posi, ..PromptCont::default() }
-    }
-     */
 
     pub fn get_draw_buf_str(&self) -> String {
-        // Log::ep_s("                          Prompt.ctl_select_color");
+        Log::debug_key("PromptCont.get_draw_buf_str");
         let ranges = self.sel.get_range();
+
+        Log::debug("ranges", &ranges);
 
         let mut str_vec: Vec<String> = vec![];
         for (i, c) in self.buf.iter().enumerate() {
@@ -97,101 +87,6 @@ impl PromptCont {
         CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.regex = self.opt_2.is_check).unwrap();
     }
 
-    pub fn ctrl_mouse(&mut self, x: usize, y: usize, is_left_down: bool) {
-        Log::debug_key("PromptCont.ctrl_mouse");
-
-        if y as u16 != self.buf_row_posi {
-            return;
-        }
-        let (cur_x, width) = get_until_x(&self.buf, x as usize);
-        self.cur.x = cur_x;
-        self.cur.disp_x = width;
-
-        if is_left_down {
-            self.sel.clear_prompt();
-            self.sel.set_s(self.cur.y, self.cur.x, self.cur.disp_x);
-            self.sel.set_e(self.cur.y, self.cur.x, self.cur.disp_x);
-        } else {
-            self.sel.set_e(self.cur.y, self.cur.x, self.cur.disp_x);
-        }
-    }
-    pub fn draw_only<T: Write>(&mut self, out: &mut T) {
-        Log::debug_key("PromptCont.draw_only");
-        let _ = out.write(&self.get_draw_buf_str().as_bytes());
-        out.flush().unwrap();
-    }
-    /*
-     * choice
-     */
-    pub fn left_down_choice(&mut self, y: u16, x: u16) -> bool {
-        Log::debug_key("left_down_choice_menu");
-
-        let (y, x) = (y as usize, x as usize);
-        for (_, choices) in self.choices_map.iter_mut() {
-            if choices.is_show {
-                for (y_idx, vec) in choices.vec.iter().enumerate() {
-                    for (x_idx, item) in vec.iter().enumerate() {
-                        Log::debug("item", &item);
-                        if item.area.0 == y && item.area.1 <= x && x <= item.area.2 {
-                            Log::debug_key("item.area.0");
-                            choices.vec_y = y_idx;
-                            choices.vec_x = x_idx;
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-    pub fn draw_choice_cur(&self, str_vec: &mut Vec<String>) {
-        Log::debug_key("draw_choice_cur");
-
-        let (mut y, mut x) = (0, 0);
-        'outer: for (_, choices) in self.choices_map.iter() {
-            if choices.is_show {
-                for (y_idx, vec) in choices.vec.iter().enumerate() {
-                    for (x_idx, item) in vec.iter().enumerate() {
-                        if choices.vec_y == y_idx && choices.vec_x == x_idx {
-                            y = self.buf_row_posi + y_idx as u16;
-                            x = item.area.1;
-                            break 'outer;
-                        }
-                    }
-                }
-            }
-        }
-        Log::debug("x", &x);
-        Log::debug("y", &y);
-
-        str_vec.push(MoveTo(x as u16, y as u16).to_string());
-    }
-
-    pub fn get_choices(&mut self) -> Option<&mut Choices> {
-        for (_, choices) in self.choices_map.iter_mut() {
-            if choices.is_show {
-                return Some(choices);
-            }
-        }
-        // dummy
-        return None;
-    }
-
-    pub fn get_choice(&self) -> Choice {
-        let dummy = Choice::new(&"".to_string());
-        for (_, choices) in self.choices_map.iter() {
-            if choices.is_show {
-                for (y_idx, v) in choices.vec.iter().enumerate() {
-                    for (x_idx, item) in v.iter().enumerate() {
-                        if choices.vec_y == y_idx && choices.vec_x == x_idx {
-                            return item.clone();
-                        }
-                    }
-                }
-            }
-        }
-        return dummy;
-    }
     pub fn set_cur_target(&mut self, x: usize) {
         let (cur_x, width) = get_row_width(&self.buf[..x], 0, false);
         self.cur.x = cur_x;

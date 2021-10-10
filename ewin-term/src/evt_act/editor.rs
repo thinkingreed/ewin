@@ -25,7 +25,7 @@ impl EvtAct {
         // EvtAct::init(term);
         term.curt().editor.init();
 
-        let keycmd = Keybind::keys_to_keycmd(&term.curt().editor.keys, KeyWhen::EditorFocus);
+        let keycmd = Keybind::keys_to_keycmd(&term.curt().editor.keys, KeyWhen::EditorFocus, None, None);
         match &keycmd {
             KeyCmd::CloseFile => {
                 if Tab::prom_close(term) {

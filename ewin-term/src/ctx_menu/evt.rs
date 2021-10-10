@@ -26,7 +26,7 @@ impl CtxMenuGroup {
     const EXTRA_FROM_CUR_Y: usize = 1;
 
     pub fn set_keys(&mut self, keys: Keys) {
-        let keycmd = Keybind::keys_to_keycmd(&keys, KeyWhen::CtxMenuFocus);
+        let keycmd = Keybind::keys_to_keycmd(&keys, KeyWhen::CtxMenuFocus, None, None);
         let c_cmd = match &keycmd {
             KeyCmd::CtxMenu(c_keycmd) => c_keycmd.clone(),
             _ => C_Cmd::Null,

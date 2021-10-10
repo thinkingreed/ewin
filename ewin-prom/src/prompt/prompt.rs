@@ -155,18 +155,19 @@ impl Prompt {
 
     pub fn ctrl_mouse(&mut self, state: &TabState, y: usize, x: usize, is_left_down: bool) {
         Log::debug_key("PromptCont.ctrl_mouse");
+        let y = y as u16;
 
-        if y as u16 == self.cont_1.buf_row_posi {
+        if y == self.cont_1.buf_row_posi {
             self.cont_posi = PromptContPosi::First;
             if !state.is_open_file {
                 self.cont_1.ctrl_mouse(x, y, is_left_down);
             }
-        } else if y as u16 == self.cont_2.buf_row_posi {
+        } else if y == self.cont_2.buf_row_posi {
             if !state.is_open_file {
                 self.cont_posi = PromptContPosi::Second;
                 self.cont_2.ctrl_mouse(x, y, is_left_down);
             }
-        } else if y as u16 == self.cont_3.buf_row_posi {
+        } else if y == self.cont_3.buf_row_posi {
             self.cont_posi = PromptContPosi::Third;
             self.cont_3.ctrl_mouse(x, y, is_left_down);
         }
@@ -316,7 +317,7 @@ impl Prompt {
     }
     pub fn set_keys(&mut self, keys: Keys) {
         Log::debug_key("Prompt::set_keys");
-        let keycmd = Keybind::keys_to_keycmd(&keys, KeyWhen::PromptFocus);
+        let keycmd = Keybind::keys_to_keycmd(&keys, KeyWhen::PromptFocus, None, None);
         self.keycmd = keycmd.clone();
         let p_cmd = match &keycmd {
             KeyCmd::Prom(p_cmd) => p_cmd.clone(),
@@ -324,22 +325,10 @@ impl Prompt {
         };
         self.p_cmd = p_cmd.clone();
         match self.cont_posi {
-            PromptContPosi::First => {
-                self.cont_1.keycmd = keycmd;
-                self.cont_1.p_cmd = p_cmd;
-            }
-            PromptContPosi::Second => {
-                self.cont_2.keycmd = keycmd;
-                self.cont_2.p_cmd = p_cmd;
-            }
-            PromptContPosi::Third => {
-                self.cont_3.keycmd = keycmd;
-                self.cont_3.p_cmd = p_cmd;
-            }
-            PromptContPosi::Fourth => {
-                self.cont_4.keycmd = keycmd;
-                self.cont_4.p_cmd = p_cmd;
-            }
+            PromptContPosi::First => self.cont_1.set_key_info(keycmd, keys, p_cmd),
+            PromptContPosi::Second => self.cont_2.set_key_info(keycmd, keys, p_cmd),
+            PromptContPosi::Third => self.cont_3.set_key_info(keycmd, keys, p_cmd),
+            PromptContPosi::Fourth => self.cont_4.set_key_info(keycmd, keys, p_cmd),
         }
     }
 

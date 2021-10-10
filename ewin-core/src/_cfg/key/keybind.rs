@@ -102,10 +102,8 @@ impl Keybind {
         return err_str;
     }
 
-    pub fn keys_to_keycmd_ex(keys: &Keys, keywhen: KeyWhen, hbar_row_posi: usize, sbar_row_posi: usize) -> KeyCmd {
-        Log::debug_key("keys_to_keycmd_ex");
-        Log::debug("hbar_row_posi", &hbar_row_posi);
-        Log::debug("sbar_row_posi", &sbar_row_posi);
+    pub fn keys_to_keycmd(keys: &Keys, keywhen: KeyWhen, hbar_row_posi_opt: Option<usize>, sbar_row_posi_opt: Option<usize>) -> KeyCmd {
+        Log::debug_key("keys_to_keycmd_overall");
 
         let result = KEY_CMD_MAP.get().unwrap().get(&(*keys, KeyWhen::AllFocus)).or_else(|| KEY_CMD_MAP.get().unwrap().get(&(*keys, keywhen.clone())));
         let keycmd = match result {
@@ -118,6 +116,9 @@ impl Keybind {
         if keys == &Keys::Resize {
             return KeyCmd::Resize;
         }
+
+        let hbar_row_posi = if hbar_row_posi_opt.is_none() { USIZE_UNDEFINED } else { hbar_row_posi_opt.unwrap() };
+        let sbar_row_posi = if sbar_row_posi_opt.is_none() { USIZE_UNDEFINED } else { sbar_row_posi_opt.unwrap() };
 
         let keycmd = match keywhen {
             KeyWhen::EditorFocus => {
@@ -144,58 +145,6 @@ impl Keybind {
                 };
 
                 return KeyCmd::Unsupported;
-            }
-            KeyWhen::PromptFocus => {
-                let p_cmd = match &keys {
-                    Keys::Shift(Key::Char(c)) => P_Cmd::InsertStr(c.to_ascii_uppercase().to_string()),
-                    Keys::Raw(Key::Char(c)) => P_Cmd::InsertStr(c.to_string()),
-                    Keys::MouseDownLeft(y, x) => P_Cmd::MouseDownLeft(*y as usize, *x as usize),
-                    Keys::MouseDragLeft(y, x) => P_Cmd::MouseDragLeft(*y as usize, *x as usize),
-                    _ => return KeyCmd::Unsupported,
-                };
-                KeyCmd::Prom(p_cmd)
-            }
-            KeyWhen::CtxMenuFocus => {
-                let c_cmd = match &keys {
-                    Keys::MouseDownLeft(y, x) => C_Cmd::MouseDownLeft(*y as usize, *x as usize),
-                    Keys::MouseMove(y, x) => C_Cmd::MouseMove(*y as usize, *x as usize),
-                    _ => return KeyCmd::Unsupported,
-                };
-                KeyCmd::CtxMenu(c_cmd)
-            }
-            _ => return KeyCmd::Unsupported,
-        };
-
-        return keycmd;
-    }
-    pub fn keys_to_keycmd(keys: &Keys, keywhen: KeyWhen) -> KeyCmd {
-        let result = KEY_CMD_MAP.get().unwrap().get(&(*keys, KeyWhen::AllFocus)).or_else(|| KEY_CMD_MAP.get().unwrap().get(&(*keys, keywhen.clone())));
-        let keycmd = match result {
-            Some(cmd) => cmd.clone(),
-            None => KEY_CMD_MAP.get().unwrap().get(&(*keys, KeyWhen::InputFocus)).unwrap_or(&KeyCmd::Unsupported).clone(),
-        };
-        if keycmd != KeyCmd::Unsupported {
-            return keycmd;
-        }
-        if keys == &Keys::Resize {
-            return KeyCmd::Resize;
-        }
-
-        let keycmd = match keywhen {
-            KeyWhen::EditorFocus => {
-                let e_cmd = match &keys {
-                    Keys::Shift(Key::Char(c)) => E_Cmd::InsertStr(c.to_ascii_uppercase().to_string()),
-                    Keys::Raw(Key::Char(c)) => E_Cmd::InsertStr(c.to_string()),
-                    Keys::MouseAltDownLeft(y, x) => E_Cmd::MouseDownBoxLeft(*y as usize, *x as usize),
-                    Keys::MouseAltDragLeft(y, x) => E_Cmd::MouseDragBoxLeft(*y as usize, *x as usize),
-                    Keys::MouseDownLeft(y, x) => E_Cmd::MouseDownLeft(*y as usize, *x as usize),
-                    Keys::MouseDragLeft(y, x) => E_Cmd::MouseDragLeft(*y as usize, *x as usize),
-                    Keys::MouseDownRight(y, x) => E_Cmd::MouseDownRight(*y as usize, *x as usize),
-                    Keys::MouseDragRight(y, x) => E_Cmd::MouseDragRight(*y as usize, *x as usize),
-                    Keys::MouseMove(y, x) => E_Cmd::MouseMove(*y as usize, *x as usize),
-                    _ => return KeyCmd::Unsupported,
-                };
-                KeyCmd::Edit(e_cmd)
             }
             KeyWhen::PromptFocus => {
                 let p_cmd = match &keys {

@@ -1,5 +1,10 @@
 use crate::{grep::*, menu::*, open_file::*, prompt::choice::*, save_new_file::*};
-use ewin_core::{_cfg::key::keycmd::*, def::*, file::*, model::*};
+use ewin_core::{
+    _cfg::key::{keycmd::*, keys::Keys},
+    def::*,
+    file::*,
+    model::*,
+};
 use std::{collections::HashMap, fmt};
 
 #[derive(Debug, Clone)]
@@ -66,6 +71,7 @@ impl fmt::Display for TabComp {
 #[derive(Debug, Clone)]
 pub struct PromptCont {
     pub keycmd: KeyCmd,
+    pub keys: Keys,
     pub open_file_type: OpenFileType,
     pub p_cmd: P_Cmd,
     pub disp_row_posi: u16,
@@ -97,6 +103,7 @@ impl Default for PromptCont {
     fn default() -> Self {
         PromptCont {
             keycmd: KeyCmd::Prom(P_Cmd::Null),
+            keys: Keys::Null,
             open_file_type: OpenFileType::Normal,
             p_cmd: P_Cmd::Null,
             disp_row_posi: 0,

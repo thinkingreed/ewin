@@ -50,10 +50,6 @@ impl Log {
     #[track_caller]
     pub fn write(s: &str, log_level: LogLevel) {
         if let Some(log) = LOG.get() {
-            if log.level > log_level {
-                return;
-            }
-
             let t = Local::now().format("%Y-%m-%d %H:%M:%S%.6f").to_string();
             let caller = Location::caller().to_string();
             let vec: Vec<&str> = caller.split(path::MAIN_SEPARATOR).collect();
@@ -61,6 +57,10 @@ impl Log {
             let s = if cfg!(debug_assertions) { format!("{} {}", log_level, s) } else { format!("{} {} {} :: {}", t, log_level, s, file_info) };
 
             writeln!(&log.file, "{}", s).unwrap();
+
+            if log.level > log_level {
+                return;
+            }
         } else {
             eprintln!("{}", s);
         }

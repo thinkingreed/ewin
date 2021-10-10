@@ -1,8 +1,3 @@
-use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture},
-    execute,
-};
-
 use crate::{
     ewin_core::{
         _cfg::key::{keycmd::*, keys::*, keywhen::*},
@@ -12,6 +7,10 @@ use crate::{
         util::*,
     },
     model::*,
+};
+use crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture},
+    execute,
 };
 use std::{io::stdout, usize};
 
@@ -86,7 +85,7 @@ impl Editor {
 
     pub fn set_keys(&mut self, keys: &Keys) {
         self.keys = *keys;
-        let keycmd = Keybind::keys_to_keycmd(keys, KeyWhen::EditorFocus);
+        let keycmd = Keybind::keys_to_keycmd(keys, KeyWhen::EditorFocus, None, None);
         self.e_cmd = match keycmd {
             KeyCmd::Edit(e_keycmd) => e_keycmd,
             _ => E_Cmd::Null,
@@ -115,8 +114,8 @@ impl Editor {
         };
         if self.sel.mode == SelMode::BoxSelect {
             // Initial processing for Box Insert without moving the cursor
-            self.sel.set_sel_posi(true, self.cur.y, self.cur.x, self.cur.disp_x);
-            self.sel.set_sel_posi(false, self.cur.y, self.cur.x, self.cur.disp_x);
+            self.sel.set_sel_posi(true, self.cur);
+            self.sel.set_sel_posi(false, self.cur);
         }
     }
     pub fn init(&mut self) {
@@ -133,14 +132,9 @@ impl Editor {
             self.state.is_changed = true;
             self.history.clear_redo_vec();
         }
-
         // Box Mode
         match self.e_cmd {
-            E_Cmd::InsertStr(_) => {
-                if self.sel.mode == SelMode::BoxSelect {
-                    self.box_insert.mode = BoxInsertMode::Insert;
-                }
-            }
+            E_Cmd::InsertStr(_) if self.sel.mode == SelMode::BoxSelect => self.box_insert.mode = BoxInsertMode::Insert,
             E_Cmd::Undo | E_Cmd::Redo | E_Cmd::DelNextChar | E_Cmd::DelPrevChar => {}
             _ => self.box_insert.mode = BoxInsertMode::Normal,
         }
@@ -151,13 +145,13 @@ impl Editor {
         // set sel draw range, Clear sel range
         match self.e_cmd {
             // Select
-            E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorLeftSelect | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect | E_Cmd::AllSelect => {}
+            E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorLeftSelect | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect | E_Cmd::AllSelect |
             // OpenFile, Menu
-            E_Cmd::OpenFile(_) | E_Cmd::OpenMenu | E_Cmd::OpenMenuFile | E_Cmd::OpenMenuConvert | E_Cmd::OpenMenuEdit | E_Cmd::OpenMenuSearch => {}
+            E_Cmd::OpenFile(_) | E_Cmd::OpenMenu | E_Cmd::OpenMenuFile | E_Cmd::OpenMenuConvert | E_Cmd::OpenMenuEdit | E_Cmd::OpenMenuSearch |
             // Search
-            E_Cmd::FindNext | E_Cmd::FindBack => {}
+            E_Cmd::FindNext | E_Cmd::FindBack |
             // mouse
-            E_Cmd::MouseScrollUp | E_Cmd::MouseScrollDown | E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeft(_, _) | E_Cmd::MouseDownRight(_, _) | E_Cmd::MouseDragRight(_, _) | E_Cmd::MouseMove(_, _) | E_Cmd::MouseDownBoxLeft(_, _) | E_Cmd::MouseDragBoxLeft(_, _) => {}
+            E_Cmd::MouseScrollUp | E_Cmd::MouseScrollDown | E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeft(_, _) | E_Cmd::MouseDownRight(_, _) | E_Cmd::MouseDragRight(_, _) | E_Cmd::MouseMove(_, _) | E_Cmd::MouseDownBoxLeft(_, _) | E_Cmd::MouseDragBoxLeft(_, _) |
             // other
             E_Cmd::CtxtMenu | E_Cmd::BoxSelectMode => {}
             _ => {

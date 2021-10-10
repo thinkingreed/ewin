@@ -113,7 +113,7 @@ impl Editor {
             KeyCmd::CloseFile => DParts::All,
             KeyCmd::Edit(e_keycmd) => match e_keycmd {
                 E_Cmd::ReplacePrompt | E_Cmd::Encoding | E_Cmd::OpenFile(_) | E_Cmd::Find | E_Cmd::MoveRow | E_Cmd::Grep | E_Cmd::OpenMenu | E_Cmd::OpenMenuFile | E_Cmd::OpenMenuConvert | E_Cmd::OpenMenuEdit | E_Cmd::OpenMenuSearch | E_Cmd::OpenMenuMacro => DParts::Prompt,
-                E_Cmd::NewTab | E_Cmd::SaveFile | E_Cmd::MouseOpeSwitch | E_Cmd::Help | E_Cmd::Null => DParts::All,
+                E_Cmd::NewTab | E_Cmd::SaveFile | E_Cmd::MouseModeSwitch | E_Cmd::Help | E_Cmd::Null => DParts::All,
                 _ => {
                     if self.state.is_change_changed() {
                         DParts::All

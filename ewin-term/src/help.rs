@@ -69,7 +69,7 @@ impl Help {
             let key_select_str = &format!("{}{}", Keybind::get_key_str(KeyCmd::Edit(E_Cmd::CursorLeftSelect)).split('+').collect::<Vec<&str>>()[0], KEY_SELECT_KEY);
             self.set_key_bind_ex(&mut vec, key_select_str, &LANG.range_select, key_select_str.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (key_select_str.chars().count() + 1));
             // self.set_key_bind_ex(&mut vec, KEY_MOUSE_SWITCH, &LANG.mouse_switch, KEY_MOUSE_SWITCH.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (KEY_MOUSE_SWITCH.chars().count() + 1));
-            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::MouseOpeSwitch)), &LANG.mouse_switch);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::MouseModeSwitch)), &LANG.mouse_switch);
             self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::OpenMenu)), &LANG.menu);
             self.key_bind_vec.push(vec.clone());
             vec.clear();

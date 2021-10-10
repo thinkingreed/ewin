@@ -318,6 +318,34 @@ pub fn get_term_size() -> (u16, u16) {
         return (columns, rows);
     }
 }
+pub fn get_delim_x(row: &[char], x: usize) -> (usize, usize) {
+    let mut forward = row[..x + 1].to_vec();
+    forward.reverse();
+    let sx = get_delim(&forward, x, true);
+    let backward = row[x..].to_vec();
+    let ex = get_delim(&backward, x, false);
+    return (sx, ex);
+}
+
+fn get_delim(target: &Vec<char>, x: usize, is_forward: bool) -> usize {
+    let mut rtn_x = 0;
+
+    let mut char_type_org = CharType::Nomal;
+    for (i, c) in (0_usize..).zip(target) {
+        let char_type = get_char_type(*c);
+        if i == 0 {
+            char_type_org = char_type;
+        }
+        if char_type != char_type_org {
+            rtn_x = if is_forward { x - i + 1 } else { x + i };
+            break;
+        } else if i == target.len() - 1 {
+            rtn_x = if is_forward { x - i } else { x + i + 1 };
+        }
+        char_type_org = char_type;
+    }
+    return rtn_x;
+}
 
 #[cfg(test)]
 mod tests {
@@ -449,5 +477,20 @@ mod tests {
     }
 
     #[test]
-    fn test_1() {}
+    fn test_get_delim() {
+        //  let vec: Vec<char> = ;
+
+        assert_eq!(get_delim_x(&"<12345>".chars().collect::<Vec<char>>(), 0), (0, 1));
+        assert_eq!(get_delim_x(&"<12345>".chars().collect::<Vec<char>>(), 1), (1, 6));
+        assert_eq!(get_delim_x(&"<12345>".chars().collect::<Vec<char>>(), 6), (6, 7));
+        assert_eq!(get_delim_x(&"  12345>".chars().collect::<Vec<char>>(), 0), (0, 2));
+        assert_eq!(get_delim_x(&"  　　12345>".chars().collect::<Vec<char>>(), 1), (0, 2));
+        assert_eq!(get_delim_x(&"<12345>>".chars().collect::<Vec<char>>(), 6), (6, 8));
+        assert_eq!(get_delim_x(&"<12345  ".chars().collect::<Vec<char>>(), 6), (6, 8));
+        assert_eq!(get_delim_x(&"<12345　　".chars().collect::<Vec<char>>(), 6), (6, 8));
+        assert_eq!(get_delim_x(&"<12345".chars().collect::<Vec<char>>(), 1), (1, 6));
+        assert_eq!(get_delim_x(&"<12<<345>".chars().collect::<Vec<char>>(), 4), (3, 5));
+        assert_eq!(get_delim_x(&"<12  345>".chars().collect::<Vec<char>>(), 4), (3, 5));
+        assert_eq!(get_delim_x(&"<12　　345>".chars().collect::<Vec<char>>(), 4), (3, 5));
+    }
 }

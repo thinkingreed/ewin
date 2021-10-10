@@ -42,10 +42,9 @@ impl EvtAct {
                     term.curt().editor.scroll_horizontal();
                     return ActType::Draw(DParts::All);
                 }
-                _ => return ActType::Cancel,
+                _ => return if EvtAct::is_draw_prompt_tgt_keycmd(&term.curt().prom.p_cmd) { ActType::Draw(DParts::Prompt) } else { ActType::Cancel },
             },
-            // _ => return ActType::Cancel,
-            _ => return if EvtAct::is_draw_prompt_tgt_keycmd(&term.curt().prom.p_cmd) { ActType::Draw(DParts::Prompt) } else { ActType::Cancel },
+            _ => return ActType::Cancel,
         }
     }
 }

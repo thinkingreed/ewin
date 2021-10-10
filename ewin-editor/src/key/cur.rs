@@ -19,7 +19,7 @@ impl Editor {
         }
 
         if self.sel.mode == SelMode::BoxSelect {
-            self.sel.set_sel_posi(false, self.cur.y, self.cur.x, self.cur.disp_x);
+            self.sel.set_sel_posi(false, self.cur);
             self.draw_range = EditorDrawRange::get_type(self.sel.mode, self.cur_y_org, self.cur.y);
             self.box_insert.vec = self.slice_box_sel().1;
         }
@@ -194,7 +194,7 @@ impl Editor {
         self.scroll();
     }
     pub fn shift_move_com(&mut self) {
-        self.sel.set_sel_posi(true, self.cur.y, self.cur.x, self.cur.disp_x);
+        self.sel.set_sel_posi(true, self.cur);
 
         match self.e_cmd {
             E_Cmd::CursorUpSelect => self.cur_up(),
@@ -206,7 +206,7 @@ impl Editor {
             _ => {}
         }
 
-        self.sel.set_sel_posi(false, self.cur.y, self.cur.x, self.cur.disp_x);
+        self.sel.set_sel_posi(false, self.cur);
         self.draw_range = EditorDrawRange::get_type(self.sel.mode, self.cur_y_org, self.cur.y);
         self.sel.check_overlap();
     }

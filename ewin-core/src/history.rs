@@ -1,4 +1,4 @@
-use crate::{_cfg::key::keys::*, def::*, log::*, model::*};
+use crate::{_cfg::key::keys::*, def::*, log::*, model::*, util::*};
 use chrono::prelude::Local;
 
 impl History {
@@ -42,6 +42,9 @@ impl History {
     }
 
     pub fn count_multi_click(&mut self, keys: &Keys) -> usize {
+        Log::debug_key("History.count_multi_click");
+        Log::debug("keys", &keys);
+
         let mut click_count = 1;
 
         Log::debug("mouse_click_vec", &self.mouse_click_vec);
@@ -63,14 +66,14 @@ impl History {
         if self.mouse_click_vec.len() == 1 {
             if let Some((one_before, _)) = self.mouse_click_vec.get(self.mouse_click_vec.len() - 1) {
                 if (now - *one_before).num_milliseconds() <= MULTI_CLICK_MILLISECONDS {
-                    Log::debug_key("                             double_click");
+                    Log::debug_s("double_click");
                     click_count = 2;
                 }
             }
         } else if self.mouse_click_vec.len() == 2 {
             if let Some((two_before, _)) = self.mouse_click_vec.get(self.mouse_click_vec.len() - 2) {
                 if (now - *two_before).num_milliseconds() <= MULTI_CLICK_MILLISECONDS * 2 {
-                    Log::debug_key("                             triple_click");
+                    Log::debug_s("triple_click");
                     click_count = 3;
                 }
             }
@@ -78,5 +81,33 @@ impl History {
 
         self.mouse_click_vec.push_back((now, keys.clone()));
         return click_count;
+    }
+
+    pub fn set_sel_multi_click(&mut self, mouse_proc: MouseProc, sel: &mut SelRange, cur: &Cur, row: &Vec<char>, keys: &Keys) {
+        match mouse_proc {
+            MouseProc::DownLeft | MouseProc::DownLeftBox => {
+                match self.count_multi_click(keys) {
+                    1 => {
+                        sel.clear();
+                        sel.set_s(cur.y, cur.x, cur.disp_x);
+                        sel.set_e(cur.y, cur.x, cur.disp_x);
+                    }
+                    // Delimiter unit
+                    2 => {
+                        let (sx, ex) = get_delim_x(&row, cur.x);
+                        sel.set_s(cur.y, sx, get_row_width(&row[..sx], 0, false).1);
+                        sel.set_e(cur.y, ex, get_row_width(&row[..ex], 0, false).1);
+                    }
+                    // One row
+                    3 => {
+                        sel.set_s(cur.y, 0, 0);
+                        let (cur_x, width) = get_row_width(&row[..], 0, true);
+                        sel.set_e(cur.y, cur_x, width);
+                    }
+                    _ => {}
+                }
+            }
+            _ => sel.set_e(cur.y, cur.x, cur.disp_x),
+        }
     }
 }

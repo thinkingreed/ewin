@@ -112,7 +112,7 @@ impl KeyCmd {
                 "startEndRecordKey" => KeyCmd::Edit(E_Cmd::StartEndRecordKey),
                 "execRecordKey" => KeyCmd::Edit(E_Cmd::ExecRecordKey),
                 // mouse
-                "mouseOpeSwitch" => KeyCmd::Edit(E_Cmd::MouseOpeSwitch),
+                "mouseOpeSwitch" => KeyCmd::Edit(E_Cmd::MouseModeSwitch),
                 // menu
                 "help" => KeyCmd::Edit(E_Cmd::Help),
                 "openMenu" => KeyCmd::Edit(E_Cmd::OpenMenu),
@@ -251,7 +251,7 @@ pub enum E_Cmd {
     MouseMove(usize, usize),
     MouseDownBoxLeft(usize, usize),
     MouseDragBoxLeft(usize, usize),
-    MouseOpeSwitch,
+    MouseModeSwitch,
     // menu
     Help,
     OpenMenu,

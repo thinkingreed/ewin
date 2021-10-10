@@ -63,7 +63,7 @@ impl Editor {
                 self.cur.disp_x = width;
                 self.scroll_horizontal();
             }
-            self.set_mouse_sel(mouse_proc);
+            self.history.set_sel_multi_click(mouse_proc, &mut self.sel, &self.cur, &self.buf.char_vec_line(self.cur.y), &self.keys);
 
             if self.sel.is_selected() {
                 match mouse_proc {
@@ -86,94 +86,5 @@ impl Editor {
                 }
             }
         }
-    }
-
-    pub fn set_mouse_sel(&mut self, mouse_proc: MouseProc) {
-        if mouse_proc == MouseProc::DownLeft || mouse_proc == MouseProc::DownLeftBox {
-            let click_count = self.history.count_multi_click(&self.keys);
-            Log::debug("click_count", &click_count);
-            match click_count {
-                1 => {
-                    self.sel.clear();
-                    self.sel.set_s(self.cur.y, self.cur.x, self.cur.disp_x);
-                    self.sel.set_e(self.cur.y, self.cur.x, self.cur.disp_x);
-                }
-                2 => {
-                    self.sel.ey = self.cur.y;
-                    let row = &self.buf.char_vec_line(self.cur.y);
-                    let (sx, ex) = get_delim_x(&row, self.cur.x);
-                    self.sel.sx = sx;
-                    self.sel.ex = ex;
-                    let (_, s_disp_x) = get_row_width(&row[..sx], 0, false);
-                    let (_, e_disp_x) = get_row_width(&row[..ex], 0, false);
-                    self.sel.s_disp_x = s_disp_x;
-                    self.sel.e_disp_x = e_disp_x;
-                }
-                // One line
-                3 => {
-                    self.sel.ey = self.cur.y;
-                    self.sel.sx = 0;
-                    self.sel.s_disp_x = 0;
-                    let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], 0, true);
-                    self.sel.ex = cur_x;
-                    self.sel.e_disp_x = width;
-                }
-                _ => {}
-            }
-        } else {
-            self.sel.set_e(self.cur.y, self.cur.x, self.cur.disp_x);
-        }
-    }
-}
-
-fn get_delim(target: &Vec<char>, x: usize, is_forward: bool) -> usize {
-    let mut rtn_x = 0;
-
-    let mut char_type_org = CharType::Nomal;
-    for (i, c) in (0_usize..).zip(target) {
-        let char_type = get_char_type(*c);
-        if i == 0 {
-            char_type_org = char_type;
-        }
-        if char_type != char_type_org {
-            rtn_x = if is_forward { x - i + 1 } else { x + i };
-            break;
-        } else if i == target.len() - 1 {
-            rtn_x = if is_forward { x - i } else { x + i + 1 };
-        }
-        char_type_org = char_type;
-    }
-    return rtn_x;
-}
-
-pub fn get_delim_x(row: &[char], x: usize) -> (usize, usize) {
-    let mut forward = row[..x + 1].to_vec();
-    forward.reverse();
-    let sx = get_delim(&forward, x, true);
-    let backward = row[x..].to_vec();
-    let ex = get_delim(&backward, x, false);
-    return (sx, ex);
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_get_delim() {
-        //  let vec: Vec<char> = ;
-
-        assert_eq!(get_delim_x(&"<12345>".chars().collect::<Vec<char>>(), 0), (0, 1));
-        assert_eq!(get_delim_x(&"<12345>".chars().collect::<Vec<char>>(), 1), (1, 6));
-        assert_eq!(get_delim_x(&"<12345>".chars().collect::<Vec<char>>(), 6), (6, 7));
-        assert_eq!(get_delim_x(&"  12345>".chars().collect::<Vec<char>>(), 0), (0, 2));
-        assert_eq!(get_delim_x(&"  　　12345>".chars().collect::<Vec<char>>(), 1), (0, 2));
-        assert_eq!(get_delim_x(&"<12345>>".chars().collect::<Vec<char>>(), 6), (6, 8));
-        assert_eq!(get_delim_x(&"<12345  ".chars().collect::<Vec<char>>(), 6), (6, 8));
-        assert_eq!(get_delim_x(&"<12345　　".chars().collect::<Vec<char>>(), 6), (6, 8));
-        assert_eq!(get_delim_x(&"<12345".chars().collect::<Vec<char>>(), 1), (1, 6));
-        assert_eq!(get_delim_x(&"<12<<345>".chars().collect::<Vec<char>>(), 4), (3, 5));
-        assert_eq!(get_delim_x(&"<12  345>".chars().collect::<Vec<char>>(), 4), (3, 5));
-        assert_eq!(get_delim_x(&"<12　　345>".chars().collect::<Vec<char>>(), 4), (3, 5));
     }
 }

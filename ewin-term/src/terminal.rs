@@ -615,7 +615,7 @@ impl Terminal {
     pub fn set_keys(&mut self, keys: &Keys) {
         let keywhen = self.get_when(keys);
         Log::debug("Terminal.set_keys.keywhen", &keywhen);
-        self.keycmd = Keybind::keys_to_keycmd_ex(keys, keywhen, self.hbar.row_posi, self.curt().sbar.row_posi);
+        self.keycmd = Keybind::keys_to_keycmd(keys, keywhen, Some(self.hbar.row_posi), Some(self.curt().sbar.row_posi));
         Log::debug("Terminal.set_keys.keycmd", &self.keycmd);
         self.keys = *keys;
     }

@@ -102,13 +102,13 @@ impl SelRange {
             */
         }
     }
-    pub fn set_sel_posi(&mut self, is_start: bool, y: usize, x: usize, disp_x: usize) {
+    pub fn set_sel_posi(&mut self, is_start: bool, cur: Cur) {
         if is_start {
             if !self.is_selected() {
-                self.set_s(y, x, disp_x);
+                self.set_s(cur.y, cur.x, cur.disp_x);
             }
         } else {
-            self.set_e(y, x, disp_x);
+            self.set_e(cur.y, cur.x, cur.disp_x);
         }
     }
     pub fn is_another_select(&mut self, sel_org: SelRange) -> bool {
