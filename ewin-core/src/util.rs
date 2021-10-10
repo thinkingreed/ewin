@@ -428,8 +428,7 @@ mod tests {
 
     #[test]
     fn test_is_enable_syntax_highlight() {
-        let cfg: Cfg = toml::from_str(include_str!("../../setting.toml")).unwrap();
-        let _ = CFG.set(Mutex::new(cfg));
+        Cfg::init(&Args { ..Args::default() });
 
         assert!(!is_enable_syntax_highlight("txt"));
         assert!(is_enable_syntax_highlight("rs"));
