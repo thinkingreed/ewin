@@ -52,10 +52,10 @@ futures = "0.3"
 futures-util = "0.3.12"
 clap = "2"
 
-ewin-term = { path = "ewin-term" }
-ewin-core = { path = "ewin-core" }
-ewin-editor = { path = "ewin-editor" }
-ewin-prom = { path = "ewin-prom" }
+ewin-term = {version = "0.0.1", path = "ewin-term" }
+ewin-core = {version = "0.0.1", path = "ewin-core" }
+ewin-editor = {version = "0.0.1", path = "ewin-editor" }
+ewin-prom = {version = "0.0.1", path = "ewin-prom" }
 
 [dev-dependencies]
 cargo-husky = "1.5.0"
