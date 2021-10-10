@@ -18,7 +18,7 @@ use std::{
 
 impl Keybind {
     pub fn init(args: &Args) -> String {
-        let keybind_str = include_str!("../../../../keybind.json5");
+        let keybind_str = include_str!("../keybind.json5");
         let mut keybind_vec: Vec<Keybind> = json5::from_str(keybind_str).unwrap();
 
         let mut err_str = "".to_string();

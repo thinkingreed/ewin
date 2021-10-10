@@ -249,7 +249,7 @@ impl Default for Syntax {
 }
 impl Cfg {
     pub fn init(args: &Args) -> String {
-        let cfg_str = include_str!("../../../setting.toml");
+        let cfg_str = include_str!("setting.toml");
         let mut cfg: Cfg = toml::from_str(cfg_str).unwrap();
         let mut err_str = "".to_string();
         let mut read_str = String::new();
