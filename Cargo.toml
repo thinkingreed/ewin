@@ -17,7 +17,6 @@ repository = "https://github.com/thinkingreed/ewin"
 license = "MIT"
 keywords = ["text", "editor", "terminal", "cli", "tui"]
 categories = ["text-editors", "command-line-utilities", ]
-documentation = "..."
 
 build = "build.rs"
 
@@ -30,14 +29,6 @@ debug = 0
 name = "ewin"
 path = "ewin-term/src/main.rs"
 
-[package.metadata.deb]
-extended-description = """\
-Simple editor for Window(GUI) users.\ 
-No need to learn new commands.\
-
-It provides basic features as a minimal text editor.\
-depends = "$auto"\
-"""
 assets = [
     ["target/release/ewin", "usr/bin/", "755"],
     ["README.md", "usr/share/doc/ewin/README", "644"],
