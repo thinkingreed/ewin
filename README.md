@@ -18,7 +18,7 @@ It provides basic features as a minimal text editor:
 - Tab support
 - Box select・Inseret support
 
-[![Rust](https://github.com/thinkingreed/ewin/actions/workflows/test.yaml/badge.svg)](https://github.com/thinkingreed/ewin/actions/workflows/test.yaml)
+[![Rust](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml/badge.svg)](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml)
 
 ## Installation
 

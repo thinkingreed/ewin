@@ -7,8 +7,6 @@ edition = "2018"
 readme = "README.md"
 repository = "https://github.com/thinkingreed/ewin"
 license = "MIT"
-keywords = ["text", "editor", "terminal", "cli", "tui"]
-categories = ["command-line-utilities"]
 
 [dependencies]
 crossterm  = {version ="0.21.0", features = ["event-stream"]} 
