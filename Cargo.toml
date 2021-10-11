@@ -27,7 +27,7 @@ debug = 0
 
 [[bin]]
 name = "ewin"
-path = "/home/hi/rust/ewin/ewin-term/src/main.rs"
+path = "./ewin-term/src/main.rs"
 
 assets = [
     ["target/release/ewin", "usr/bin/", "755"],
