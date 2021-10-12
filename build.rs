@@ -4,7 +4,7 @@ extern crate windres;
 #[cfg(windows)]
 use windres::Build;
 
-#[cfg(unix)]
+#[cfg(not(windows))]
 fn main() {}
 
 #[cfg(windows)]

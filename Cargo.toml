@@ -8,7 +8,7 @@ members = [
 
 [package]
 name = "ewin"
-version = "0.0.1"
+version = "0.0.2"
 description = "Simple editor for Window(GUI) users.No need to remember commands."
 authors = ["thinkingreed"]
 edition = "2018"
@@ -20,19 +20,23 @@ categories = ["text-editors", "command-line-utilities", ]
 
 build = "build.rs"
 
-[profile.dev]
-debug = 0
-# [profile.release]
-# lto = true
-
 [[bin]]
-name = "ewin"
-path = "./ewin-term/src/main.rs"
+name = "ew"
+path = "ewin-term/src/main.rs"
 
+[package.metadata.deb]
+extended-description = """\
+Simple editor for Window(GUI) users.\ 
+No need to learn new commands.\
+
+It provides basic features as a minimal text editor.\
+depends = "$auto"\
+"""
 assets = [
     ["target/release/ewin", "usr/bin/", "755"],
     ["README.md", "usr/share/doc/ewin/README", "644"],
 ]
+
 
 [dependencies]
 crossterm  = {version ="0.21.0", features = ["event-stream"]} 

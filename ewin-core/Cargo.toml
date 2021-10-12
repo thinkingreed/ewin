@@ -7,6 +7,8 @@ edition = "2018"
 repository = "https://github.com/thinkingreed/ewin"
 license = "MIT"
 
+[lib]
+path = "src/lib.rs"
 
 [dependencies]
 ropey="1.2.0"
