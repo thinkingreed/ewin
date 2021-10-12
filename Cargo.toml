@@ -22,7 +22,7 @@ build = "build.rs"
 
 [[bin]]
 name = "ew"
-path = "ewin-term/src/main.rs"
+path = "src/main.rs"
 
 [package.metadata.deb]
 extended-description = """\
@@ -36,7 +36,6 @@ assets = [
     ["target/release/ewin", "usr/bin/", "755"],
     ["README.md", "usr/share/doc/ewin/README", "644"],
 ]
-
 
 [dependencies]
 crossterm  = {version ="0.21.0", features = ["event-stream"]} 

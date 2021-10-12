@@ -48,10 +48,10 @@ Please see `ewin --help` for command usage.
 
 #### File edit
 
-Installing package introduces `ewin` command in your system.
+Installing package introduces `ew` command in your system.
 
 ```sh
-$ ewin [file]         # Open files to edit
+$ ew [file]         # Open files to edit
 ```
 
 #### Output config file
