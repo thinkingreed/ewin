@@ -30,6 +30,7 @@ jobs:
       - name: Install Library
         if: matrix.os == 'ubuntu-latest'
         run: |
+          sudo apt-get update
           sudo apt install build-essential 
           sudo apt install xorg-dev
           sudo apt install libxcb-render0-dev
