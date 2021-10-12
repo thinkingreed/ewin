@@ -351,7 +351,6 @@ fn get_delim(target: &Vec<char>, x: usize, is_forward: bool) -> usize {
 mod tests {
     use super::*;
     use crate::{_cfg::cfg::Cfg, model::Args};
-    use std::sync::Mutex;
 
     #[test]
     fn test_get_str_width() {
