@@ -1,4 +1,4 @@
-use ewin_core::model::*;
+use ewin_com::model::*;
 use ewin_term::terminal::*;
 
 mod common;

@@ -1,0 +1,19 @@
+[package]
+name = "ewin-prom"
+version = "0.0.1"
+description = "Simple editor for Window(GUI) users.No need to remember commands."
+authors = ["thinkingreed"]
+edition = "2018"
+repository = "https://github.com/thinkingreed/ewin"
+license = "MIT"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+crossterm  = {version ="0.21.0", features = ["event-stream"]} 
+directories = "4.0.1"
+tokio = { version = "1.4.0", features = ["process", "macros", "rt-multi-thread"] }
+tokio-util = { version = "0.6.3", features = ["codec"] }
+
+ewin-com = {version = "0.0.2", path = "../ewin-com" }
