@@ -1,13 +1,14 @@
 use crate::{_cfg::*, colors::*, def::*, global::*, log::*, model::*};
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
-use std::{fs, fs::File, io::Write, sync::Mutex};
+use std::{collections::HashMap, fs, fs::File, io::Write, sync::Mutex};
 use syntect::{
     self,
     highlighting::{Theme, ThemeSet},
     parsing::SyntaxSet,
 };
 use theme_loader::ThemeLoader;
+use toml::Value;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Cfg {
@@ -361,5 +362,15 @@ impl Cfg {
         let _ = CFG.set(Mutex::new(cfg));
 
         return err_str;
+    }
+
+    /// Get version of app as a whole
+    pub fn get_app_version() -> String {
+        let cfg_str = include_str!("../../../Cargo.toml");
+        let map: HashMap<String, Value> = toml::from_str(cfg_str).unwrap();
+        let mut s = map["package"]["version"].to_string();
+
+        s.retain(|c| c != '"');
+        return s;
     }
 }

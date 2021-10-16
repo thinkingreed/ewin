@@ -34,6 +34,8 @@ impl Editor {
             E_Cmd::BoxSelectMode => self.box_select_mode(),
             // empty
             E_Cmd::Null => {}
+            // If CtxMenu = true and there is no Mouse on CtxMenu
+            E_Cmd::MouseMove(_, _) => {}
             _ => unreachable!(),
         }
     }

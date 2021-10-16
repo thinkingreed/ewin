@@ -167,8 +167,13 @@ impl Terminal {
             let pkg_name = APP_NAME;
             Colors::set_text_color(str_vec);
             str_vec.push(format!("{}{}{}", MoveTo(0, 3), Clear(ClearType::CurrentLine), format!("{name:^w$}", name = pkg_name, w = cols - (get_str_width(pkg_name) - pkg_name.chars().count()))));
-            let ver_name = format!("{}: {}", "Version", env!("CARGO_PKG_VERSION"));
-            str_vec.push(format!("{}{}{}", MoveTo(0, 4), Clear(ClearType::CurrentLine), format!("{ver:^w$}", ver = ver_name, w = cols - (get_str_width(&ver_name) - ver_name.chars().count()))));
+
+            //  let ver_name = format!("{}: {}", "Version", env!("CARGO_PKG_VERSION"));
+            //  let mut cfg: Cfg = toml::from_str(cfg_str).unwrap();
+
+            let ver = &(*APP_VERSION.to_string());
+
+            str_vec.push(format!("{}{}{}", MoveTo(0, 4), Clear(ClearType::CurrentLine), format!("{ver:^w$}", ver = ver, w = cols - (get_str_width(ver) - ver.chars().count()))));
 
             let simple_help = LANG.simple_help_desc.clone();
             str_vec.push(format!("{}{}{}", MoveTo(0, 6), Clear(ClearType::CurrentLine), format!("{s_help:^w$}", s_help = simple_help, w = cols - (get_str_width(&simple_help) - simple_help.chars().count()))));
@@ -621,7 +626,9 @@ impl Terminal {
     }
 
     pub fn get_when(&mut self, keys: &Keys) -> KeyWhen {
+        Log::debug("self.state", &self.state);
         Log::debug("self.curt().state", &self.curt().state);
+        Log::debug("keys", &keys);
 
         return if self.curt().state.judge_when(keys) {
             if self.state.is_ctx_menu {

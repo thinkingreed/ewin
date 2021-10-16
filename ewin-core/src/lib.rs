@@ -19,6 +19,7 @@ pub mod global {
     pub static LOG: OnceCell<crate::log::Log> = OnceCell::new();
     pub static KEY_CMD_MAP: OnceCell<HashMap<(Keys, KeyWhen), KeyCmd>> = OnceCell::new();
     pub static CMD_KEY_MAP: OnceCell<HashMap<KeyCmd, Keys>> = OnceCell::new();
+    pub static APP_VERSION: Lazy<String> = Lazy::new(|| Cfg::get_app_version());
 
     pub static GREP_INFO_VEC: OnceCell<tokio::sync::Mutex<Vec<GrepState>>> = OnceCell::new();
     // Cancel is defined independently. Because it needs to be obtained when GREP_INFO_VEC is locked
