@@ -355,8 +355,6 @@ pub struct GrepState {
     pub is_stdout_end: bool,
     pub is_stderr_end: bool,
     pub is_cancel: bool,
-    // pub is_grep_result_init: bool,
-    //  pub is_grep_result_cancel: bool,
     pub search_str: String,
     pub search_folder: String,
     pub search_filenm: String,
@@ -364,18 +362,7 @@ pub struct GrepState {
 
 impl Default for GrepState {
     fn default() -> Self {
-        GrepState {
-            is_grep: false,
-            is_result: false,
-            is_cancel: false,
-            is_stdout_end: false,
-            is_stderr_end: false,
-            //  is_grep_result_init: false,
-            //  is_grep_result_cancel: false,
-            search_str: String::new(),
-            search_folder: String::new(),
-            search_filenm: String::new(),
-        }
+        GrepState { is_grep: false, is_result: false, is_cancel: false, is_stdout_end: false, is_stderr_end: false, search_str: String::new(), search_folder: String::new(), search_filenm: String::new() }
     }
 }
 
@@ -816,6 +803,7 @@ impl TabState {
         self.is_open_file = false;
         self.is_enc_nl = false;
         self.is_menu = false;
+        self.grep.is_grep = false;
     }
 
     pub fn is_nomal(&self) -> bool {

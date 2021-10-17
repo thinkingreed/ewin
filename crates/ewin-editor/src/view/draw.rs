@@ -3,6 +3,7 @@ use crate::{
     model::*,
 };
 use crossterm::{cursor::*, terminal::*};
+use std::io::Write;
 use unicode_width::*;
 
 impl Editor {
@@ -25,14 +26,7 @@ impl Editor {
                 }
                 str_vec.push(format!("{}", MoveTo(0, (sy - self.offset_y + self.row_posi) as u16)));
             }
-            EditorDrawRange::All => {
-                if self.row_num > 0 {
-                    for i in self.row_posi - 1..=self.row_posi + self.row_num - 2 {
-                        str_vec.push(format!("{}{}", MoveTo(0, (i + self.row_posi) as u16), Clear(ClearType::CurrentLine)));
-                    }
-                    str_vec.push(format!("{}", MoveTo(0, self.row_posi as u16)));
-                }
-            }
+            EditorDrawRange::All => self.clear_draw_vec(str_vec, self.row_posi - 1),
             EditorDrawRange::After(sy) => str_vec.push(format!("{}{}", MoveTo(0, (sy - self.offset_y + self.row_posi) as u16), Clear(ClearType::FromCursorDown))),
             EditorDrawRange::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.row_num - Editor::UP_DOWN_EXTRA - 1) as u16), Clear(ClearType::FromCursorDown))),
             EditorDrawRange::ScrollUp(_, _) => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, (self.row_posi) as u16), Clear(ClearType::CurrentLine))),
@@ -129,6 +123,20 @@ impl Editor {
             str_vec.push(if self.is_enable_syntax_highlight && cfg.colors.theme.theme_bg_enable { Colors::bg(Color::from(color)) } else { Colors::bg(cfg.colors.editor.bg) });
         } else {
             str_vec.push(Colors::bg(cfg.colors.editor.bg));
+        }
+    }
+    pub fn clear_draw<T: Write>(&self, out: &mut T, sy: usize) {
+        let mut str_vec: Vec<String> = vec![];
+        self.clear_draw_vec(&mut str_vec, sy);
+        let _ = out.write(&str_vec.concat().as_bytes());
+        out.flush().unwrap();
+    }
+    pub fn clear_draw_vec(&self, str_vec: &mut Vec<String>, sy: usize) {
+        if self.row_num > 0 {
+            for i in sy..=self.row_posi + self.row_num - 2 {
+                str_vec.push(format!("{}{}", MoveTo(0, (i + self.row_posi) as u16), Clear(ClearType::CurrentLine)));
+            }
+            str_vec.push(format!("{}", MoveTo(0, self.row_posi as u16)));
         }
     }
 }

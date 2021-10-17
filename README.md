@@ -244,5 +244,4 @@ Built-in v8 engine using rusty_v8.
 - Swap file
 
 ## License
-
-This project is distributed under [the MIT License](./LICENSE.txt).
+This project is distributed under [the MIT License](./LICENSE).

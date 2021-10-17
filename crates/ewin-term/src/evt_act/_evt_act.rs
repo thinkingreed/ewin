@@ -18,6 +18,11 @@ impl EvtAct {
 
         match act_type {
             ActType::Draw(draw_parts) => {
+                if term.state.is_show_init_info {
+                    let row_posi = term.curt().editor.row_posi;
+                    term.curt().editor.clear_draw(out, row_posi);
+                    term.state.is_show_init_info = false;
+                }
                 match &draw_parts {
                     DParts::MsgBar(msg) | DParts::AllMsgBar(msg) => {
                         if msg == &LANG.key_recording {

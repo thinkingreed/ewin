@@ -42,6 +42,7 @@ impl Terminal {
         self.set_disp_size();
 
         let mut str_vec: Vec<String> = vec![];
+
         match draw_parts {
             DParts::All | DParts::AllMsgBar(_) if self.curt().editor.draw_range != EditorDrawRange::None => self.curt().editor.draw_range = EditorDrawRange::All,
             _ => {}
@@ -162,6 +163,8 @@ impl Terminal {
         Log::debug("self.curt().editor.state.is_changed", &self.curt().editor.state.is_changed);
 
         if self.curt().editor.buf.len_chars() == 1 && draw_range_org == EditorDrawRange::None && self.idx == 0 && self.curt().state.is_nomal() && !self.curt().editor.state.is_changed {
+            self.state.is_show_init_info = true;
+
             let cols = get_term_size().0 as usize;
             let pkg_name = APP_NAME;
             Colors::set_text_color(str_vec);
@@ -678,6 +681,7 @@ impl Default for Terminal {
 }
 #[derive(Debug, Clone)]
 pub struct TerminalState {
+    pub is_show_init_info: bool,
     pub is_all_close_confirm: bool,
     pub is_all_save: bool,
     pub close_other_than_this_tab_idx: usize,
@@ -687,7 +691,7 @@ pub struct TerminalState {
 
 impl Default for TerminalState {
     fn default() -> Self {
-        TerminalState { is_all_close_confirm: false, is_all_save: false, close_other_than_this_tab_idx: USIZE_UNDEFINED, is_displayable: true, is_ctx_menu: false }
+        TerminalState { is_show_init_info: false, is_all_close_confirm: false, is_all_save: false, close_other_than_this_tab_idx: USIZE_UNDEFINED, is_displayable: true, is_ctx_menu: false }
     }
 }
 
