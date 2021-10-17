@@ -7,6 +7,7 @@ use ewin_com::{
     log::*,
     model::*,
 };
+
 use ewin_term::{model::*, terminal::*};
 use futures::{future::FutureExt, select, StreamExt};
 use serde_json::Value;
@@ -169,7 +170,6 @@ pub fn get_app_version() -> String {
     let cfg_str = include_str!("../../Cargo.toml");
     let map: HashMap<String, Value> = toml::from_str(cfg_str).unwrap();
     let mut s = map["package"]["version"].to_string();
-
     s.retain(|c| c != '"');
     return s;
 }

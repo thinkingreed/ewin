@@ -201,7 +201,7 @@ mod tests {
     #[test]
     fn test_editor_proc_base_find_next_back() {
         Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
-        Cfg::init(&Args { ..Args::default() });
+        Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
 
         let mut e = Editor::new();
         e.buf.insert_end(&EOF_MARK.to_string());
@@ -225,7 +225,7 @@ mod tests {
     #[test]
     fn test_editor_proc_base_mouse() {
         Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
-        Cfg::init(&Args { ..Args::default() });
+        Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
 
         let mut e = Editor::new();
         e.buf.insert_end(&EOF_MARK.to_string());

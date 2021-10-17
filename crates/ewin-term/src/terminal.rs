@@ -39,22 +39,15 @@ use std::{
 impl Terminal {
     pub fn draw<T: Write>(&mut self, out: &mut T, draw_parts: &DParts) {
         Log::info_key("Terminal.draw start");
-        Log::info("draw_parts", &draw_parts);
-        // let mut draw_parts = draw_parts;
         self.set_disp_size();
 
-        let draw_type_org = self.curt().editor.draw_range;
-        Log::debug("draw_type_org", &draw_type_org);
         let mut str_vec: Vec<String> = vec![];
-
-        if self.keycmd == KeyCmd::Resize {
-            self.curt().editor.draw_range = EditorDrawRange::None;
-        } else {
-            match draw_parts {
-                DParts::All | DParts::AllMsgBar(_) if self.curt().editor.draw_range != EditorDrawRange::None => self.curt().editor.draw_range = EditorDrawRange::All,
-                _ => {}
-            };
+        match draw_parts {
+            DParts::All | DParts::AllMsgBar(_) if self.curt().editor.draw_range != EditorDrawRange::None => self.curt().editor.draw_range = EditorDrawRange::All,
+            _ => {}
         };
+
+        let draw_range_org = self.curt().editor.draw_range;
 
         // Editor
         match self.curt().editor.draw_range {
@@ -89,7 +82,7 @@ impl Terminal {
                 self.ctx_menu_group.draw(&mut str_vec);
             }
         }
-        self.draw_init_info(&mut str_vec, draw_type_org);
+        self.draw_init_info(&mut str_vec, draw_range_org);
 
         Log::debug("cur", &self.curt().editor.cur);
         Log::debug("offset_x", &self.curt().editor.offset_x);
@@ -158,11 +151,17 @@ impl Terminal {
         self.draw_cur(out);
     }
 
-    pub fn draw_init_info(&mut self, str_vec: &mut Vec<String>, draw_type_org: EditorDrawRange) {
+    pub fn draw_init_info(&mut self, str_vec: &mut Vec<String>, draw_range_org: EditorDrawRange) {
         Log::debug_key("Terminal.draw_init_info");
         // Information display in the center when a new file is created
 
-        if self.curt().editor.buf.len_chars() == 1 && draw_type_org == EditorDrawRange::None && self.idx == 0 && self.curt().state.is_nomal() && !self.curt().editor.state.is_changed {
+        Log::debug("self.curt().editor.buf.len_chars()", &self.curt().editor.buf.len_chars());
+        Log::debug("draw_type_org", &draw_range_org);
+        Log::debug(" self.idx", &self.idx);
+        Log::debug("self.curt().state.is_nomal()", &self.curt().state.is_nomal());
+        Log::debug("self.curt().editor.state.is_changed", &self.curt().editor.state.is_changed);
+
+        if self.curt().editor.buf.len_chars() == 1 && draw_range_org == EditorDrawRange::None && self.idx == 0 && self.curt().state.is_nomal() && !self.curt().editor.state.is_changed {
             let cols = get_term_size().0 as usize;
             let pkg_name = APP_NAME;
             Colors::set_text_color(str_vec);

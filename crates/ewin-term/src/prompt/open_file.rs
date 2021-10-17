@@ -114,9 +114,9 @@ impl EvtAct {
                     return ActType::Draw(DParts::Prompt);
                 } else {
                     Log::debug("full_path_str", &full_path_str);
-                    Log::debug("term.curt().prom.prom_open_file.keycmd", &term.curt().prom.prom_open_file.open_file_type);
+                    Log::debug("term.curt().prom.prom_open_file.keycmd", &term.curt().prom.prom_open_file.file_type);
 
-                    if term.curt().prom.prom_open_file.open_file_type == OpenFileType::Normal {
+                    if term.curt().prom.prom_open_file.file_type == OpenFileType::Normal {
                         let mut tgt_idx = USIZE_UNDEFINED;
                         // Check if the file is already open
                         for (idx, h_file) in term.hbar.file_vec.iter().enumerate() {
@@ -136,7 +136,7 @@ impl EvtAct {
                             term.idx = tgt_idx;
                             term.curt().editor.set_keys(&Keys::Null);
                         }
-                    } else if term.curt().prom.prom_open_file.open_file_type == OpenFileType::JsMacro {
+                    } else if term.curt().prom.prom_open_file.file_type == OpenFileType::JsMacro {
                         let act_type = Macros::exec_js_macro(term, &full_path_str);
                         if let ActType::Draw(DParts::MsgBar(_)) = act_type {
                             return act_type;

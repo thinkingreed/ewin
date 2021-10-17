@@ -28,7 +28,7 @@ impl Editor {
             match &self.e_cmd {
                 // When multi rows are deleted
                 E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Undo | E_Cmd::Redo if self.offset_y > self.cur.y => self.offset_y = self.cur.y - Editor::UP_DOWN_EXTRA,
-                E_Cmd::GrepResult | E_Cmd::CursorDown | E_Cmd::CursorDownSelect | E_Cmd::MouseScrollDown | E_Cmd::CursorFileEnd | E_Cmd::InsertStr(_) | E_Cmd::FindNext | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Undo | E_Cmd::Redo => {
+                E_Cmd::GrepResult | E_Cmd::CursorDown | E_Cmd::CursorDownSelect | E_Cmd::MouseScrollDown | E_Cmd::CursorFileEnd | E_Cmd::InsertStr(_) | E_Cmd::InsertLine | E_Cmd::FindNext | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Undo | E_Cmd::Redo => {
                     if self.cur.y + Editor::UP_DOWN_EXTRA >= self.row_num {
                         // "self.buf.len_lines() - self.row_num" is For the last row
                         self.offset_y = max(self.offset_y, min(self.buf.len_lines() - self.row_num, self.cur.y + 1 + Editor::UP_DOWN_EXTRA - self.row_num));

@@ -54,6 +54,7 @@ impl EvtAct {
         term.curt().state.grep.is_stderr_end = job_grep.is_stderr_end;
         term.curt().state.grep.is_cancel = job_grep.is_cancel;
 
+        term.curt().mbar.clear();
         term.curt().mbar.set_readonly(&LANG.unable_to_edit);
         term.curt().editor.state.is_read_only = true;
 

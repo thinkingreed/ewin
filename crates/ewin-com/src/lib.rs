@@ -12,13 +12,13 @@ pub mod global {
     use once_cell::sync::OnceCell;
     use std::{collections::HashMap, env, sync::Mutex};
 
-    pub static LANG: Lazy<LangCfg> = Lazy::new(|| LangCfg::read_lang_cfg());
     pub static LANG_MAP: Lazy<HashMap<String, String>> = Lazy::new(|| LangCfg::get_lang_map());
     pub static ENV: Lazy<Env> = Lazy::new(|| get_env_platform());
     pub static CFG: OnceCell<Mutex<Cfg>> = OnceCell::new();
     pub static LOG: OnceCell<crate::log::Log> = OnceCell::new();
     pub static KEY_CMD_MAP: OnceCell<HashMap<(Keys, KeyWhen), KeyCmd>> = OnceCell::new();
     pub static CMD_KEY_MAP: OnceCell<HashMap<KeyCmd, Keys>> = OnceCell::new();
+    pub static LANG: Lazy<LangCfg> = Lazy::new(|| LangCfg::read_lang_cfg());
     pub static APP_VERSION: OnceCell<String> = OnceCell::new();
 
     pub static GREP_INFO_VEC: OnceCell<tokio::sync::Mutex<Vec<GrepState>>> = OnceCell::new();

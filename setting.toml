@@ -2,6 +2,10 @@
 # "info" or "debug" or "error"
 level = "debug"
 
+[general] # option
+# "en_US" or "ja_JP" If not set, environment settings 
+lang = "en_US"
+
 [general.editor.tab]
 size = 4
 # tab or half_width_blank

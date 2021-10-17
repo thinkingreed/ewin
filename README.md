@@ -214,18 +214,16 @@ Operation / Unexpected error log is output below.
 ## Sample imsage
 
 - **Initial display**  
-  ![initial_display](assets/img/initial_display.png 'initial_display')
+  ![initial](assets/img/init.png 'initial')
 - **help**  
   ![help](assets/img/help.png 'help')
 - **grep**
 
-1. Search character, search folder, file pattern input screen.
-   ![grep](assets/img/grep.png 'grep')
+1. Input search character, search folder, file pattern.
 2. Display screen of grep result.
-   ![grep_result](assets/img/grep_result.png 'grep_result')
-3. Enter the Enter key on the 5th line of the grep result screen to open the target file in a new terminal.
+3. Enter the Enter key on the 3th line of the grep result screen to open the target file in a new tab.
    The cursor moves to the character in the search result.
-   ![grep_result_move_file](assets/img/grep_result_move_file.png 'grep_result_move_file')
+   ![grep](assets/img/grep.gif 'grep')
 
 ## Settings when using via Tera Term
 

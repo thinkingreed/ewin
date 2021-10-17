@@ -164,6 +164,7 @@ impl EvtAct {
             KeyCmd::Resize => {
                 if Terminal::check_displayable() {
                     term.state.is_displayable = true;
+                    term.curt().editor.draw_range = EditorDrawRange::None;
                     return if term.curt().state.is_nomal() { ActType::Draw(DParts::All) } else { ActType::Next };
                 } else {
                     term.state.is_displayable = false;

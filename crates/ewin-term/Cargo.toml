@@ -1,6 +1,6 @@
 [package]
 name = "ewin-term"
-version = "0.0.1"
+version = "0.0.2"
 description = "Simple editor for Window(GUI) users.No need to remember commands."
 authors = ["thinkingreed"]
 edition = "2018"
@@ -25,5 +25,5 @@ futures-util = "0.3.12"
 clap = "2"
 
 ewin-com = {version = "0.0.2", path = "../ewin-com" }
-ewin-editor = {version = "0.0.1", path = "../ewin-editor" }
-ewin-prom = {version = "0.0.1", path = "../ewin-prom" }
+ewin-editor = {version = "0.0.2", path = "../ewin-editor" }
+ewin-prom = {version = "0.0.2", path = "../ewin-prom" }

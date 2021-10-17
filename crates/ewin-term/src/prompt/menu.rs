@@ -89,7 +89,8 @@ impl EvtAct {
             // macros
         } else if choice_1.name.contains(&LANG.macros) {
             if choice_2.name.contains(&LANG.specify_file_and_exec_macro) {
-                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::OpenFile(OpenFileType::JsMacro))), &mut stdout(), term);
+                term.curt().prom_open_file(OpenFileType::JsMacro);
+                // EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::OpenFile(OpenFileType::JsMacro))), &mut stdout(), term);
             }
         }
         return ActType::Draw(DParts::All);

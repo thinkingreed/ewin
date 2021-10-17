@@ -1,6 +1,6 @@
 [package]
 name = "ewin-prom"
-version = "0.0.1"
+version = "0.0.2"
 description = "Simple editor for Window(GUI) users.No need to remember commands."
 authors = ["thinkingreed"]
 edition = "2018"

@@ -22,7 +22,6 @@ impl EvtAct {
             return act_type;
         }
         term.curt().editor.set_org_state();
-        // EvtAct::init(term);
         term.curt().editor.init();
 
         let keycmd = Keybind::keys_to_keycmd(&term.curt().editor.keys, KeyWhen::EditorFocus, None, None);

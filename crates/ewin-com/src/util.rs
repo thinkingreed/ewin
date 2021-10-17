@@ -360,7 +360,7 @@ mod tests {
     }
     #[test]
     fn test_get_row_x() {
-        Cfg::init(&Args { ..Args::default() }, "");
+        Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
 
         assert_eq!(get_row_x(&['a'], 0, false), Some(0));
         assert_eq!(get_row_x(&['a', 'b'], 1, false), Some(1));
@@ -375,7 +375,7 @@ mod tests {
 
     #[test]
     fn test_get_row_width() {
-        Cfg::init(&Args { ..Args::default() }, "");
+        Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
 
         assert_eq!(get_row_width(&['a'], 0, false), (1, 1));
         assert_eq!(get_row_width(&['あ'], 0, false), (1, 2));
@@ -393,7 +393,7 @@ mod tests {
 
     #[test]
     fn test_get_until_x() {
-        Cfg::init(&Args { ..Args::default() }, "");
+        Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
         assert_eq!(get_until_x(&['a'], 0), (0, 0));
         assert_eq!(get_until_x(&['a', 'あ',], 2), (1, 1));
         assert_eq!(get_until_x(&['a', 'あ',], 2), (1, 1));
@@ -405,7 +405,7 @@ mod tests {
     }
     #[test]
     fn test_get_char_width() {
-        Cfg::init(&Args { ..Args::default() }, "");
+        Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
         assert_eq!(get_char_width(&'a', 0), 1);
         assert_eq!(get_char_width(&'あ', 0), 2);
         assert_eq!(get_char_width(&TAB_CHAR, 1), 3);
@@ -427,7 +427,7 @@ mod tests {
 
     #[test]
     fn test_is_enable_syntax_highlight() {
-        Cfg::init(&Args { ..Args::default() }, "");
+        Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
 
         assert!(!is_enable_syntax_highlight("txt"));
         assert!(is_enable_syntax_highlight("rs"));

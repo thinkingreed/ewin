@@ -26,16 +26,8 @@ impl Prompt {
     pub fn left_down_choice_menu(&mut self, y: u16, x: u16) -> bool {
         Log::debug_key("left_down_choice_menu");
 
-        Log::debug("yyy", &y);
-        Log::debug("xxx", &x);
-        Log::debug("self.cont_1.buf_row_posi", &self.cont_1.buf_row_posi);
-        Log::debug("self.cont_1.buf_row_len", &self.cont_1.buf_row_len);
-
-        Log::debug("self.cont_2.buf_row_posi", &self.cont_2.buf_row_posi);
-        Log::debug("self.cont_2.buf_row_len", &self.cont_2.buf_row_len);
-
-        Log::debug("self.cont_3.buf_row_posi", &self.cont_3.buf_row_posi);
-        Log::debug("self.cont_3.buf_row_len", &self.cont_3.buf_row_len);
+        Log::debug("y", &y);
+        Log::debug("x", &x);
 
         let is_menu_select = match y {
             y if self.cont_1.buf_row_posi <= y && y <= self.cont_1.buf_row_posi + self.cont_1.buf_row_len => {
@@ -272,9 +264,6 @@ impl PromptCont {
 
     pub fn set_default_choice_menu(&mut self, first_y: usize, first_x: usize, second_y: usize, second_x: usize) {
         Log::debug_key("set_default_choice_menu");
-        Log::debug("self.p_cmd", &self.p_cmd);
-        Log::debug("parent_vec_y", &first_y);
-        Log::debug("parent_vec_x", &first_x);
 
         for (((grandparentst_y, grandparentst_x), (parent_y, parent_x)), choices) in self.choices_map.iter_mut() {
             for (y_idx, v) in choices.vec.iter_mut().enumerate() {
