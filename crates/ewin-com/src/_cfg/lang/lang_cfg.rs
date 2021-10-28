@@ -4,11 +4,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 #[cfg(target_os = "linux")]
 use std::env;
-#[cfg(target_os = "windows")]
-use std::process::Command;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct LangCfg {
+pub struct Lang {
     pub row: String,
     pub col: String,
     pub yes: String,
@@ -158,35 +156,41 @@ pub struct LangCfg {
     pub increase_height_width_terminal: String,
 }
 
-impl LangCfg {
+impl Lang {
     pub fn get_lang_map() -> HashMap<String, String> {
-        let lang_map: HashMap<String, String> = serde_json::from_str(&serde_json::to_string(&*LANG).unwrap()).unwrap();
-
-        return lang_map;
+        return serde_json::from_str(&serde_json::to_string(&Lang::get()).unwrap()).unwrap();
     }
 }
-#[cfg(target_os = "linux")]
-impl LangCfg {
-    pub fn read_lang_cfg() -> LangCfg {
-        let env_lang = env::var("LANG").unwrap_or_else(|_| "en_US".to_string());
-
-        let lang_str = if env_lang.starts_with("ja_JP") { include_str!("ja_JP.toml") } else { include_str!("en_US.toml") };
-        let lang_cfg: LangCfg = toml::from_str(lang_str).unwrap();
-
-        return lang_cfg;
+impl Lang {
+    pub fn get() -> &'static Lang {
+        LANG.get().unwrap()
     }
-}
 
-#[cfg(target_os = "windows")]
-impl LangCfg {
-    pub fn read_lang_cfg() -> LangCfg {
-        let env_lang = match Command::new("powershell.exe").args(&["(Get-Culture)[0].name"]).output() {
-            Ok(output) => String::from_utf8_lossy(&output.stdout).trim().to_string(),
-            Err(_) => "en_US".to_string(),
+    #[cfg(target_os = "linux")]
+    pub fn read_lang_cfg() -> Lang {
+        let lang_opt = &CFG.get().unwrap().try_lock().unwrap().general.lang;
+        let lang = match lang_opt {
+            Some(s) if s == "ja_JP" => "ja_JP".to_string(),
+            _ => env::var("LANG").unwrap_or_else(|_| "en_US".to_string()),
         };
-        let lang_str = if env_lang.starts_with("ja-JP") { include_str!("ja_JP.toml") } else { include_str!("en_US.toml") };
-        let lang_cfg: LangCfg = toml::from_str(&lang_str).unwrap();
 
+        let lang_str = if lang.starts_with("ja_JP") { include_str!("ja_JP.toml") } else { include_str!("en_US.toml") };
+        let lang_cfg: Lang = toml::from_str(lang_str).unwrap();
+
+        lang_cfg
+    }
+
+    #[cfg(target_os = "windows")]
+    pub fn read_lang_cfg() -> Lang {
+        let lang_opt = &CFG.get().unwrap().try_lock().unwrap().general.lang;
+
+        let lang = match lang_opt {
+            Some(s) if s == "ja_JP" => "ja_JP",
+            _ => "en_US",
+        };
+
+        let lang_str = if lang.starts_with("ja_JP") { include_str!("ja_JP.toml") } else { include_str!("en_US.toml") };
+        let lang_cfg: Lang = toml::from_str(lang_str).unwrap();
         return lang_cfg;
     }
 }

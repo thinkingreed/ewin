@@ -1,5 +1,11 @@
 use crate::{
-    ewin_com::{_cfg::cfg::*, def::*, global::*, log::*, model::*},
+    ewin_com::{
+        _cfg::{cfg::*, lang::lang_cfg::*},
+        def::*,
+        global::*,
+        log::*,
+        model::*,
+    },
     model::*,
 };
 use std::{cmp::min, collections::BTreeMap};
@@ -15,7 +21,7 @@ impl Editor {
         let e_row_idx = if regex { self.buf.line_to_byte(ey) } else { self.buf.line_to_char(ey) };
         let search_org = self.search.clone();
 
-        self.search.ranges = if self.search.str.len() == 0 { vec![] } else { self.get_search_ranges(&self.search.str, s_row_idx, e_row_idx, 0, &CFG.get().unwrap().try_lock().unwrap().general.editor.search) };
+        self.search.ranges = if self.search.str.is_empty() { vec![] } else { self.get_search_ranges(&self.search.str, s_row_idx, e_row_idx, 0, &CFG.get().unwrap().try_lock().unwrap().general.editor.search) };
         if !search_org.ranges.is_empty() || !self.search.ranges.is_empty() {
             // Search in advance for drawing
             if !self.search.ranges.is_empty() {
@@ -26,14 +32,14 @@ impl Editor {
     }
     pub fn exec_search_confirm(&mut self, search_str: String) -> Option<String> {
         Log::debug_s("exec_search_confirm");
-        if &search_str.len() == &0 {
-            return Some(LANG.not_entered_search_str.clone());
+        if search_str.is_empty() {
+            return Some(Lang::get().not_entered_search_str.clone());
         }
         let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
         let search_vec = self.search(&search_str, cfg_search);
 
-        if search_vec.len() == 0 {
-            return Some(LANG.cannot_find_char_search_for.clone());
+        if search_vec.is_empty() {
+            return Some(Lang::get().cannot_find_char_search_for.clone());
         } else {
             self.search.clear();
             self.search.ranges = search_vec;
@@ -42,35 +48,35 @@ impl Editor {
             // Set index to initial value
             self.search.idx = USIZE_UNDEFINED;
             self.search_str(true, false);
-            return None;
+            None
         }
     }
 
-    pub fn search(&mut self, search_str: &String, cfg_search: &CfgSearch) -> Vec<SearchRange> {
+    pub fn search(&mut self, search_str: &str, cfg_search: &CfgSearch) -> Vec<SearchRange> {
         Log::debug_key("search");
 
         let search_vec = self.get_search_ranges(search_str, 0, self.buf.len_chars(), 0, cfg_search);
-        if search_vec.len() == 0 {
+        if search_vec.is_empty() {
             return search_vec;
         } else {
             self.search.clear();
             self.search.ranges = search_vec.clone();
-            self.search.str = search_str.clone();
+            self.search.str = search_str.to_string();
             // Set index to initial value
             self.search.idx = USIZE_UNDEFINED;
         }
-        return search_vec;
+        search_vec
     }
 
     pub fn search_str(&mut self, is_asc: bool, is_incremental: bool) {
         Log::debug_key("search_str");
 
-        if self.search.str.len() > 0 {
-            if self.search.ranges.len() == 0 {
+        if !self.search.str.is_empty() {
+            if self.search.ranges.is_empty() {
                 let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
                 self.search.ranges = self.get_search_ranges(&self.search.str, 0, self.buf.len_chars(), 0, cfg_search);
             }
-            if self.search.ranges.len() == 0 {
+            if self.search.ranges.is_empty() {
                 return;
             }
             if self.search.row_num == USIZE_UNDEFINED {
@@ -90,8 +96,8 @@ impl Editor {
         }
     }
 
-    pub fn get_search_ranges(&self, search_str: &String, s_idx: usize, e_idx: usize, ignore_prefix_len: usize, cfg_search: &CfgSearch) -> Vec<SearchRange> {
-        let search_map = self.buf.search(&search_str, s_idx, e_idx, cfg_search);
+    pub fn get_search_ranges(&self, search_str: &str, s_idx: usize, e_idx: usize, ignore_prefix_len: usize, cfg_search: &CfgSearch) -> Vec<SearchRange> {
+        let search_map = self.buf.search(search_str, s_idx, e_idx, cfg_search);
         let mut rtn_vec = vec![];
 
         // Case regex: Use the number of bytes
@@ -111,7 +117,7 @@ impl Editor {
             rtn_vec.push(SearchRange { y, sx, ex });
         }
 
-        return rtn_vec;
+        rtn_vec
     }
 
     pub fn get_search_str_index(&mut self, is_asc: bool) -> usize {
@@ -128,7 +134,7 @@ impl Editor {
                 }
             }
             // return 0 for circular search
-            return 0;
+            0
         } else {
             let max_index = self.search.ranges.len() - 1;
 
@@ -141,18 +147,17 @@ impl Editor {
                 }
             }
             // return index for circular search
-            return max_index;
+            max_index
         }
     }
     pub fn get_search_row_no_index(&self, row_num: usize) -> usize {
         // let row_num: usize = row_num.parse().unwrap();
-        let index = 0;
         for (i, range) in self.search.ranges.iter().enumerate() {
             if row_num == range.y {
                 return i;
             }
         }
-        return index;
+        0
     }
 
     pub fn replace(&mut self, ep: &mut Proc, is_regex: bool, replace_str: String, replace_map: BTreeMap<(usize, usize), String>) {
@@ -175,23 +180,17 @@ impl Editor {
         ep.cur_e = self.cur;
     }
 
-    pub fn get_replace_map(&mut self, is_regex: bool, replace_str: &String, org_map: &BTreeMap<(usize, usize), String>) -> BTreeMap<(usize, usize), String> {
+    pub fn get_replace_map(&mut self, is_regex: bool, replace_str: &str, org_map: &BTreeMap<(usize, usize), String>) -> BTreeMap<(usize, usize), String> {
         let mut replace_map: BTreeMap<(usize, usize), String> = BTreeMap::new();
         let mut total = 0;
 
         for (i, ((sx, _), search_str)) in org_map.iter().enumerate() {
             let replace_str_len = if is_regex { replace_str.len() } else { replace_str.chars().count() };
             let diff: isize = if is_regex { replace_str.len() as isize - search_str.len() as isize } else { replace_str.chars().count() as isize - search_str.chars().count() as isize };
-            let sx = if i == 0 {
-                *sx
-            } else if is_regex {
-                *sx
-            } else {
-                (*sx as isize + total) as usize
-            };
+            let sx = if i == 0 || is_regex { *sx } else { (*sx as isize + total) as usize };
             replace_map.insert((sx as usize, sx as usize + replace_str_len), search_str.clone());
             total += diff;
         }
-        return replace_map;
+        replace_map
     }
 }

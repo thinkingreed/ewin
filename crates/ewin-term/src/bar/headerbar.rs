@@ -52,7 +52,7 @@ impl HeaderBar {
 
     pub fn set_header_filenm(term: &mut Terminal) {
         let mut tmp_all_vec: Vec<(usize, String)> = vec![];
-        if term.hbar.file_vec.len() == 0 {
+        if term.hbar.file_vec.is_empty() {
             return;
         }
         let disp_base_idx = if term.hbar.disp_base_idx == USIZE_UNDEFINED { 0 } else { term.hbar.disp_base_idx };
@@ -91,7 +91,7 @@ impl HeaderBar {
             // Judgment whether to display left arrow
             let mut width = 0;
             for (_, disp_str) in tmp_all_vec.iter() {
-                let disp_str_w = get_str_width(&disp_str);
+                let disp_str_w = get_str_width(disp_str);
                 if term.hbar.all_filenm_space_w >= width + disp_str_w {
                     width += disp_str_w;
                 } else {
@@ -138,7 +138,7 @@ impl HeaderBar {
 
         let mut width = 0;
         for (_, disp_str) in &disp_vec {
-            width += get_str_width(&disp_str);
+            width += get_str_width(disp_str);
         }
         term.hbar.all_filenm_rest = term.hbar.all_filenm_space_w - width;
 
@@ -147,7 +147,7 @@ impl HeaderBar {
         for (idx, filenm) in disp_vec.iter() {
             let s_w = width;
 
-            width += get_str_width(&filenm);
+            width += get_str_width(filenm);
             let e_w = width - 1;
             term.hbar.file_vec.get_mut(*idx).unwrap().filenm_area = (s_w, e_w);
             term.hbar.file_vec.get_mut(*idx).unwrap().close_area = (e_w - 1, e_w);

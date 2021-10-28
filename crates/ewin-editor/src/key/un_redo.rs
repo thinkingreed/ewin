@@ -32,14 +32,14 @@ impl Editor {
     // initial cursor posi set
     pub fn undo_init(&mut self, proc: &Proc) {
         match &proc.e_cmd {
-            E_Cmd::InsertStr(_) | E_Cmd::InsertLine | E_Cmd::Cut | E_Cmd::ReplaceExec(_, _, _) => self.set_evtproc(&proc, &proc.cur_s),
+            E_Cmd::InsertStr(_) | E_Cmd::InsertLine | E_Cmd::Cut | E_Cmd::ReplaceExec(_, _, _) => self.set_evtproc(proc, &proc.cur_s),
             E_Cmd::DelNextChar | E_Cmd::DelPrevChar => {
                 if proc.sel.is_selected() {
-                    self.set_evtproc(&proc, if proc.cur_s.x > proc.cur_e.x { &proc.cur_e } else { &proc.cur_s });
+                    self.set_evtproc(proc, if proc.cur_s.x > proc.cur_e.x { &proc.cur_e } else { &proc.cur_s });
                 } else if proc.e_cmd == E_Cmd::DelNextChar {
-                    self.set_evtproc(&proc, &proc.cur_s);
+                    self.set_evtproc(proc, &proc.cur_s);
                 } else {
-                    self.set_evtproc(&proc, &proc.cur_e);
+                    self.set_evtproc(proc, &proc.cur_e);
                 }
             }
             _ => {}
@@ -61,7 +61,7 @@ impl Editor {
                 self.edit_proc(if proc.box_sel_vec.is_empty() { E_Cmd::InsertStr(proc.str.clone()) } else { E_Cmd::InsertBox(proc.box_sel_vec.clone()) });
             }
             E_Cmd::ReplaceExec(is_regex, replace_str, search_map) => {
-                let replace_map = self.get_replace_map(*is_regex, replace_str, &search_map);
+                let replace_map = self.get_replace_map(*is_regex, replace_str, search_map);
 
                 if *is_regex {
                     for ((s, e), org_str) in replace_map {
@@ -71,7 +71,7 @@ impl Editor {
                     }
                 } else {
                     let search_str = search_map.iter().min().unwrap().1;
-                    self.edit_proc(E_Cmd::ReplaceExec(*is_regex, search_str.clone(), replace_map.clone()));
+                    self.edit_proc(E_Cmd::ReplaceExec(*is_regex, search_str.clone(), replace_map));
                 }
             }
             _ => {}
@@ -82,21 +82,21 @@ impl Editor {
         match &proc.e_cmd {
             E_Cmd::DelNextChar => {
                 if proc.sel.is_selected() {
-                    self.set_evtproc(&proc, if proc.cur_s.x > proc.cur_e.x { &proc.cur_s } else { &proc.cur_e });
+                    self.set_evtproc(proc, if proc.cur_s.x > proc.cur_e.x { &proc.cur_s } else { &proc.cur_e });
                 } else {
-                    self.set_evtproc(&proc, &proc.cur_s);
+                    self.set_evtproc(proc, &proc.cur_s);
                 }
             }
             E_Cmd::DelPrevChar => {
                 if proc.sel.is_selected() {
-                    self.set_evtproc(&proc, &proc.cur_e);
+                    self.set_evtproc(proc, &proc.cur_e);
                 } else if !proc.box_sel_vec.is_empty() {
-                    self.set_evtproc(&proc, &proc.cur_s);
+                    self.set_evtproc(proc, &proc.cur_s);
                 }
             }
             E_Cmd::ReplaceExec(_, _, _) => {
                 // Return cursor position
-                self.set_evtproc(&proc, &proc.cur_s);
+                self.set_evtproc(proc, &proc.cur_s);
             }
             _ => {}
         }

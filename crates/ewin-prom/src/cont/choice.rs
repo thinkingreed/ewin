@@ -1,4 +1,4 @@
-use crate::{ewin_com::log::*, model::*, prompt::choice::*};
+use crate::{ewin_com::log::*, model::*, prom::choice::*};
 use crossterm::cursor::MoveTo;
 use std::usize;
 
@@ -22,7 +22,7 @@ impl PromptCont {
                 }
             }
         }
-        return false;
+        false
     }
     pub fn draw_choice_cur(&self, str_vec: &mut Vec<String>) {
         Log::debug_key("draw_choice_cur");
@@ -54,7 +54,7 @@ impl PromptCont {
             }
         }
         // dummy
-        return None;
+        None
     }
 
     pub fn get_choice(&self) -> Choice {
@@ -70,6 +70,6 @@ impl PromptCont {
                 }
             }
         }
-        return dummy;
+        dummy
     }
 }

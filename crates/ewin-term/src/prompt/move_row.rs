@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, global::*, log::*, model::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, log::*, model::*},
     model::*,
     terminal::*,
 };
@@ -15,7 +15,7 @@ impl EvtAct {
             KeyCmd::Prom(p_keycmd) => match p_keycmd {
                 P_Cmd::InsertStr(str) => {
                     let str = str.clone();
-                    if !str.chars().nth(0).unwrap().is_ascii_digit() {
+                    if !str.chars().next().unwrap().is_ascii_digit() {
                         return ActType::Cancel;
                     }
                     let entered_str: String = term.curt().prom.cont_1.buf.iter().collect::<String>();
@@ -29,11 +29,11 @@ impl EvtAct {
                 P_Cmd::ConfirmPrompt => {
                     let str = term.curt().prom.cont_1.buf.iter().collect::<String>();
                     if str.is_empty() {
-                        return ActType::Draw(DParts::MsgBar(LANG.not_entered_row_number_to_move.to_string()));
+                        return ActType::Draw(DParts::MsgBar(Lang::get().not_entered_row_number_to_move.to_string()));
                     }
                     let row_num: usize = str.parse().unwrap();
                     if row_num > term.curt().editor.buf.len_lines() || row_num == 0 {
-                        return ActType::Draw(DParts::MsgBar(LANG.number_within_current_number_of_rows.to_string()));
+                        return ActType::Draw(DParts::MsgBar(Lang::get().number_within_current_number_of_rows.to_string()));
                     }
                     term.curt().editor.set_cur_target(row_num - 1, 0, false);
 

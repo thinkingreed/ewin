@@ -14,7 +14,7 @@ impl Editor {
         // Pattern
         //   text.txt:100:string
         //   grep:text.txt:No permission
-        let vec: Vec<&str> = line_str.splitn(3, ":").collect();
+        let vec: Vec<&str> = line_str.splitn(3, ':').collect();
 
         if vec.len() > 2 && vec[0] != "grep" {
             let ignore_prefix_str = format!("{}:{}:", vec[0], vec[1]);

@@ -1,4 +1,4 @@
-use crate::{_cfg::*, colors::*, def::*, global::*, log::*, model::*};
+use crate::{_cfg::lang::lang_cfg::*, colors::*, def::*, global::*, log::*, model::*};
 use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
 use std::{fs, fs::File, io::Write, sync::Mutex};
@@ -7,8 +7,8 @@ use syntect::{
     highlighting::{Theme, ThemeSet},
     parsing::SyntaxSet,
 };
-use theme_loader::ThemeLoader;
 
+use super::theme_loader::ThemeLoader;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Cfg {
     pub general: CfgGeneral,
@@ -19,6 +19,7 @@ pub struct Cfg {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgGeneral {
+    pub lang: Option<String>,
     pub log: Option<CfgLog>,
     pub editor: CfgEditor,
     pub prompt: CfgPrompt,
@@ -268,12 +269,12 @@ impl Cfg {
             if config_file.exists() {
                 match fs::read_to_string(config_file) {
                     Ok(str) => read_str = str,
-                    Err(e) => err_str = format!("{} {} {}", LANG.file_loading_failed, config_file.to_string_lossy().to_string(), e),
+                    Err(e) => err_str = format!("{} {} {}", Lang::get().file_loading_failed, config_file.to_string_lossy().to_string(), e),
                 }
                 if err_str.is_empty() {
                     match toml::from_str(&read_str) {
                         Ok(c) => cfg = c,
-                        Err(e) => err_str = format!("{}{} {} {}", LANG.file, LANG.parsing_failed, config_file.to_string_lossy().to_string(), e),
+                        Err(e) => err_str = format!("{}{} {} {}", Lang::get().file, Lang::get().parsing_failed, config_file.to_string_lossy().to_string(), e),
                     };
                 }
             } else if args.out_config_flg {
@@ -332,24 +333,20 @@ impl Cfg {
         cfg.colors.file.directory_fg = Colors::hex2rgb(&cfg.colors.file.directory_foreground);
         cfg.colors.file.executable_fg = Colors::hex2rgb(&cfg.colors.file.executable_foreground);
 
-        match ThemeLoader::new(&cfg.colors.theme.theme_path, &cfg.syntax.theme_set.themes).load() {
-            Ok((theme, err_string)) => {
-                if !err_string.is_empty() {
-                    err_str = err_string;
-                }
-                cfg.syntax.theme = theme;
-                if let Some(c) = cfg.syntax.theme.settings.background {
-                    if let Some(theme_bg_enable) = cfg.colors.theme.theme_background_enable {
-                        cfg.colors.editor.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
-                        cfg.colors.editor.line_number.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
-                        cfg.colors.theme.theme_bg_enable = theme_bg_enable;
-                    } else {
-                        cfg.colors.theme.theme_bg_enable = false;
-                    }
+        if let Ok((theme, err_string)) = ThemeLoader::new(&cfg.colors.theme.theme_path, &cfg.syntax.theme_set.themes).load() {
+            if !err_string.is_empty() {
+                err_str = err_string;
+            }
+            cfg.syntax.theme = theme;
+            if let Some(c) = cfg.syntax.theme.settings.background {
+                if let Some(theme_bg_enable) = cfg.colors.theme.theme_background_enable {
+                    cfg.colors.editor.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
+                    cfg.colors.editor.line_number.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
+                    cfg.colors.theme.theme_bg_enable = theme_bg_enable;
+                } else {
+                    cfg.colors.theme.theme_bg_enable = false;
                 }
             }
-            // Even if the set theme fails to read, the internal theme is read, so the theme is surely read.
-            Err(_) => {}
         }
 
         Log::set_logger(&cfg.general.log);
@@ -359,6 +356,6 @@ impl Cfg {
         }
         let _ = CFG.set(Mutex::new(cfg));
 
-        return err_str;
+        err_str
     }
 }

@@ -1,6 +1,7 @@
 use crate::{
     ewin_com::{
         _cfg::key::{keycmd::*, keys::*},
+        _cfg::lang::lang_cfg::*,
         colors::*,
         global::*,
         log::*,
@@ -13,9 +14,9 @@ use std::{cmp::min, usize};
 impl PromptCont {
     pub fn new(cont_posi: Option<PromptContPosi>) -> Self {
         if let Some(prompt_cont_posi) = cont_posi {
-            return PromptCont::new_edit_type(prompt_cont_posi);
+            PromptCont::new_edit_type(prompt_cont_posi)
         } else {
-            return PromptCont::new_not_edit_type();
+            PromptCont::new_not_edit_type()
         }
     }
     fn new_not_edit_type() -> Self {
@@ -48,7 +49,7 @@ impl PromptCont {
             str_vec.push(c.to_string())
         }
         Colors::set_text_color(&mut str_vec);
-        return str_vec.join("");
+        str_vec.join("")
     }
 
     pub fn del_sel_range(&mut self) {
@@ -60,18 +61,18 @@ impl PromptCont {
 
     pub fn set_opt_case_sens(&mut self) {
         let key_str = Keybind::get_key_str(KeyCmd::Prom(P_Cmd::FindCaseSensitive));
-        let key_case_sens = format!("{}{}:{}{}", Colors::get_default_fg(), &LANG.case_sens, Colors::get_msg_warning_fg(), key_str);
-        let sx = get_str_width(&format!("{}:{}", &LANG.case_sens, key_str)) as u16;
+        let key_case_sens = format!("{}{}:{}{}", Colors::get_default_fg(), &Lang::get().case_sens, Colors::get_msg_warning_fg(), key_str);
+        let sx = get_str_width(&format!("{}:{}", &Lang::get().case_sens, key_str)) as u16;
         let opt_case_sens = PromptContOpt { key: key_case_sens, is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens, mouse_area: (sx, sx + 2) };
         self.opt_1 = opt_case_sens;
     }
 
     pub fn set_opt_regex(&mut self) {
         let key_str = Keybind::get_key_str(KeyCmd::Prom(P_Cmd::FindRegex));
-        let key_regex = format!("{}{}:{}{}", Colors::get_default_fg(), &LANG.regex, Colors::get_msg_warning_fg(), key_str);
+        let key_regex = format!("{}{}:{}{}", Colors::get_default_fg(), &Lang::get().regex, Colors::get_msg_warning_fg(), key_str);
 
         // +2 is the space between options
-        let sx = self.opt_1.mouse_area.1 + 2 + get_str_width(&format!("{}:{}", &LANG.regex, key_str)) as u16 + 1;
+        let sx = self.opt_1.mouse_area.1 + 2 + get_str_width(&format!("{}:{}", &Lang::get().regex, key_str)) as u16 + 1;
 
         let opt_regex = PromptContOpt { key: key_regex, is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex, mouse_area: (sx, sx + 2) };
         self.opt_2 = opt_regex;

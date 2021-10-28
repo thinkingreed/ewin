@@ -1,3 +1,5 @@
+#![allow(clippy::needless_return, clippy::iter_nth_zero, clippy::type_complexity)]
+
 extern crate ewin_com;
 
 pub mod buf {
@@ -12,8 +14,8 @@ pub mod view {
 pub mod prompt {
     pub mod grep_result;
 }
-pub mod format {
-    pub mod format;
+pub mod fmt {
+    pub mod fmt_ctrl;
     pub mod xml_html;
 }
 pub mod convert;

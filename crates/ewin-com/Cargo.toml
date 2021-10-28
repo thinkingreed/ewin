@@ -1,9 +1,11 @@
 [package]
 name = "ewin-com"
 version = "0.0.2"
-description = "Simple editor for Window(GUI) users.No need to remember commands."
+rust-version = "1.56.0"
+description = """Simple editor for Window(GUI) users.
+                 No need to remember commands."""
 authors = ["thinkingreed"]
-edition = "2018"
+edition = "2021"
 repository = "https://github.com/thinkingreed/ewin"
 license = "MIT"
 
@@ -15,7 +17,7 @@ ropey="1.2.0"
 encoding_rs= "0.8.28"
 faccess = "0.2.3"
 chrono="0.4.19"
-crossterm  = {version ="0.21.0", features = ["event-stream"]} 
+crossterm  = {version ="0.22.1", features = ["event-stream"]} 
 anyhow = "1"
 clipboard = "0.5.0"
 colors-transform = "0.2.11"

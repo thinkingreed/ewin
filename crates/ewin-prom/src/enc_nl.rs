@@ -1,7 +1,7 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, colors::*, def::*, global::*, log::Log, model::*, util::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, colors::*, def::*, log::Log, model::*, util::*},
     model::*,
-    prompt::choice::*,
+    prom::choice::*,
 };
 use crossterm::cursor::MoveTo;
 use crossterm::{terminal::ClearType::*, terminal::*};
@@ -52,7 +52,7 @@ impl Prompt {
         Prompt::draw_choice_enc_nl(self, str_vec, &self.cont_2);
 
         let item = self.cont_1.get_choice();
-        let is_file_reload = *item.name == LANG.file_reload;
+        let is_file_reload = *item.name == Lang::get().file_reload;
 
         let cont_3_buf_desc = if is_file_reload { "".to_string() } else { self.cont_3.buf_desc.clone() };
         let cont_4_buf_desc = if is_file_reload { "".to_string() } else { self.cont_4.buf_desc.clone() };
@@ -95,7 +95,7 @@ impl Prompt {
                         self.cont_posi = PromptContPosi::Second;
                     } else if cur_direction == Direction::Up {
                         let item = self.cont_1.get_choice();
-                        self.cont_posi = if *item.name == LANG.file_reload { PromptContPosi::Second } else { PromptContPosi::Fourth };
+                        self.cont_posi = if *item.name == Lang::get().file_reload { PromptContPosi::Second } else { PromptContPosi::Fourth };
                     }
                 }
             }
@@ -104,7 +104,7 @@ impl Prompt {
                 if is_move_cont {
                     if cur_direction == Direction::Down {
                         let item = self.cont_1.get_choice();
-                        self.cont_posi = if *item.name == LANG.file_reload { PromptContPosi::First } else { PromptContPosi::Third };
+                        self.cont_posi = if *item.name == Lang::get().file_reload { PromptContPosi::First } else { PromptContPosi::Third };
                     } else if cur_direction == Direction::Up {
                         self.cont_posi = PromptContPosi::First;
                     }
@@ -144,10 +144,7 @@ impl Prompt {
             if choices.is_show {
                 for (y_idx, v) in choices.vec.iter().enumerate() {
                     for (x_idx, item) in v.iter().enumerate() {
-                        if is_check && item.name == format!("BOM{}", &LANG.with) {
-                            choices.vec_y = y_idx;
-                            choices.vec_x = x_idx;
-                        } else if !is_check && item.name == format!("BOM{}", &LANG.without) {
+                        if is_check && item.name == format!("BOM{}", &Lang::get().with) || !is_check && item.name == format!("BOM{}", &Lang::get().without) {
                             choices.vec_y = y_idx;
                             choices.vec_x = x_idx;
                         }
@@ -170,7 +167,7 @@ impl Prompt {
                     match prom_cont.posi {
                         PromptContPosi::Third | PromptContPosi::Fourth => {
                             let item = prom.cont_1.get_choice();
-                            enable_choice = enable_choice && *item.name == LANG.keep_and_apply_string;
+                            enable_choice = enable_choice && *item.name == Lang::get().keep_and_apply_string;
                         }
                         _ => {}
                     }
@@ -188,66 +185,56 @@ impl PromptCont {
     fn get_enc_nl(&mut self) -> PromptCont {
         match self.posi {
             PromptContPosi::First => {
-                self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.set_enc_nl);
+                self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &Lang::get().set_enc_nl);
                 self.key_desc = format!(
                     "{}{}:{}Enter  {}{}:{}{}  {}{}:{}↑↓  {}{}:{}←→・Tab",
                     Colors::get_default_fg(),
-                    &LANG.fixed,
+                    &Lang::get().fixed,
                     Colors::get_msg_highlight_fg(),
                     Colors::get_default_fg(),
-                    &LANG.close,
+                    &Lang::get().close,
                     Colors::get_msg_highlight_fg(),
                     Keybind::get_key_str(KeyCmd::Prom(P_Cmd::EscPrompt)),
                     Colors::get_default_fg(),
-                    &LANG.move_setting_location,
+                    &Lang::get().move_setting_location,
                     Colors::get_msg_highlight_fg(),
                     Colors::get_default_fg(),
-                    &LANG.candidate_change,
+                    &Lang::get().candidate_change,
                     Colors::get_msg_highlight_fg(),
                 );
 
-                self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.method_of_applying, Colors::get_default_fg());
+                self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().method_of_applying, Colors::get_default_fg());
 
                 let mut choices = Choices::default();
-                let vec = vec![vec![Choice::new(&LANG.file_reload.clone()), Choice::new(&LANG.keep_and_apply_string)]];
+                let vec = vec![vec![Choice::new(&Lang::get().file_reload.clone()), Choice::new(&Lang::get().keep_and_apply_string)]];
                 choices.vec = vec;
                 choices.is_show = true;
                 self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (USIZE_UNDEFINED, USIZE_UNDEFINED)), choices);
             }
             PromptContPosi::Second => {
-                self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.encoding, Colors::get_default_fg());
+                self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().encoding, Colors::get_default_fg());
 
                 let mut utf_vec = vec![Choice::new(&Encode::UTF8.to_string()), Choice::new(&Encode::UTF16LE.to_string()), Choice::new(&Encode::UTF16BE.to_string())];
                 let mut local_vec = vec![Choice::new(&Encode::SJIS.to_string()), Choice::new(&Encode::JIS.to_string()), Choice::new(&Encode::EucJp.to_string()), Choice::new(&Encode::GBK.to_string())];
                 utf_vec.append(&mut local_vec);
-                let enc_vec: Vec<Vec<Choice>> = vec![utf_vec];
-
-                let mut choices = Choices::default();
-                choices.is_show = true;
-                choices.vec = enc_vec;
+                let choices = Choices { is_show: true, vec: vec![utf_vec], ..Default::default() };
                 self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 0)), choices);
             }
             PromptContPosi::Third => {
-                self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.new_line_code, Colors::get_default_fg());
+                self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().new_line_code, Colors::get_default_fg());
                 let nl_vec: Vec<Vec<Choice>> = vec![vec![Choice::new(&NEW_LINE_LF_STR.to_string()), Choice::new(&NEW_LINE_CRLF_STR.to_string())]];
-
-                let mut choices = Choices::default();
-                choices.is_show = true;
-                choices.vec = nl_vec;
+                let choices = Choices { is_show: true, vec: nl_vec, ..Default::default() };
                 self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 0)), choices);
             }
             PromptContPosi::Fourth => {
-                self.buf_desc = format!("{}BOM{}({}){}", Colors::get_msg_highlight_fg(), &LANG.presence_or_absence, &LANG.selectable_only_for_utf8, Colors::get_default_fg());
-                let bom_vec: Vec<Vec<Choice>> = vec![vec![Choice::new(&format!("BOM{}", &LANG.with)), Choice::new(&format!("BOM{}", &LANG.without))]];
-
-                let mut choices = Choices::default();
-                choices.is_show = true;
-                choices.vec = bom_vec;
+                self.buf_desc = format!("{}BOM{}({}){}", Colors::get_msg_highlight_fg(), &Lang::get().presence_or_absence, &Lang::get().selectable_only_for_utf8, Colors::get_default_fg());
+                let bom_vec: Vec<Vec<Choice>> = vec![vec![Choice::new(&format!("BOM{}", &Lang::get().with)), Choice::new(&format!("BOM{}", &Lang::get().without))]];
+                let choices = Choices { is_show: true, vec: bom_vec, ..Default::default() };
                 self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 0)), choices);
             }
         };
 
-        return self.clone();
+        self.clone()
     }
     pub fn set_default_choice_enc_nl(&mut self, buf_row_posi: u16, h_file: &HeaderFile) {
         for (_, choices) in self.choices_map.iter_mut() {
@@ -264,18 +251,18 @@ impl PromptCont {
                             }
                         }
                         PromptContPosi::Third => {
-                            if h_file.nl.to_string() == choice.name {
+                            if h_file.nl == choice.name {
                                 choices.vec_y = y_idx;
                                 choices.vec_x = x_idx;
                             }
                         }
                         PromptContPosi::Fourth => {
                             if None == h_file.bom {
-                                if choice.name == format!("BOM{}", &LANG.without) {
+                                if choice.name == format!("BOM{}", &Lang::get().without) {
                                     choices.vec_y = y_idx;
                                     choices.vec_x = x_idx;
                                 }
-                            } else if choice.name == format!("BOM{}", &LANG.with) {
+                            } else if choice.name == format!("BOM{}", &Lang::get().with) {
                                 choices.vec_y = y_idx;
                                 choices.vec_x = x_idx;
                             }

@@ -21,9 +21,9 @@ impl Editor {
         } else if ConvType::FullWidth == conv_type {
             to_full_width(&tgt_str)
         } else if ConvType::Space == conv_type {
-            tgt_str.replace(&TAB_CHAR.to_string(), " ").clone()
+            tgt_str.replace(&TAB_CHAR.to_string(), " ")
         } else if ConvType::Tab == conv_type {
-            tgt_str.replace(" ", &TAB_CHAR.to_string()).clone()
+            tgt_str.replace(" ", &TAB_CHAR.to_string())
         } else {
             todo!()
         };
@@ -34,14 +34,12 @@ impl Editor {
 fn to_half_width(str: &str) -> String {
     let str = wide2ascii(str);
     let str = nowidespace(&str);
-    let str = nowideyen(&str);
-    return str;
+    return nowideyen(&str);
 }
 fn to_full_width(str: &str) -> String {
     let str = ascii2wide(str);
     let str = space2wide(&str);
-    let str = yen2wide(&str);
-    return str;
+    return yen2wide(&str);
 }
 
 fn to_lowercase(c: char) -> char {

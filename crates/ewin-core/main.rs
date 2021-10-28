@@ -1,7 +1,9 @@
+#![allow(clippy::needless_return, clippy::iter_nth_zero)]
+
 use clap::*;
 use crossterm::event::{Event::Mouse, EventStream, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use ewin_com::{
-    _cfg::{cfg::*, key::keycmd::*},
+    _cfg::{cfg::*, key::keycmd::*, lang::lang_cfg::*},
     def::*,
     global::*,
     log::*,
@@ -23,11 +25,6 @@ use tokio_util::codec::*;
 
 #[tokio::main]
 async fn main() {
-    // Processing ends when the terminal size is small
-    if !Terminal::check_displayable() {
-        println!("{:?}", &LANG.terminal_size_small);
-        return;
-    }
     let default_hook = panic::take_hook();
     panic::set_hook(Box::new(move |panic_info| {
         eprintln!("{}", panic_info);
@@ -52,6 +49,14 @@ async fn main() {
     let _ = APP_VERSION.set(get_app_version());
 
     if args.out_config_flg {
+        return;
+    }
+
+    let _ = LANG.set(Lang::read_lang_cfg());
+
+    // Processing ends when the terminal size is small
+    if !Terminal::check_displayable() {
+        println!("{:?}", &Lang::get().terminal_size_small);
         return;
     }
 
@@ -107,7 +112,7 @@ async fn main() {
                                     if is_cancel {
                                         drop(child);
                                         grep_info.is_cancel = true;
-                                        send_grep_job("".to_string(), &mut tx_grep, &grep_info);
+                                        send_grep_job("".to_string(), &mut tx_grep, grep_info);
                                         grep_info.is_result = false;
                                         grep_info.is_cancel = false;
                                         break;
@@ -119,14 +124,14 @@ async fn main() {
                             select! {
                                 std_out = read_stdout => {
                                     match std_out {
-                                        Some(Ok(grep_str))=> send_grep_job(grep_str, &mut tx_grep, &grep_info),
+                                        Some(Ok(grep_str))=> send_grep_job(grep_str, &mut tx_grep, grep_info),
                                         None=> grep_info.is_stdout_end = true,
                                         _ => {},
                                     }
                                 },
                                 std_err = read_stderr => {
                                     match std_err {
-                                      Some(Ok(grep_str)) => send_grep_job(grep_str, &mut tx_grep, &grep_info),
+                                      Some(Ok(grep_str)) => send_grep_job(grep_str, &mut tx_grep, grep_info),
                                       None => grep_info.is_stderr_end = true,
                                         _ => {},
                                     }
@@ -134,7 +139,7 @@ async fn main() {
                             }
                             if grep_info.is_stdout_end && grep_info.is_stderr_end {
                                 //     drop(child);
-                                send_grep_job("".to_string(), &mut tx_grep, &grep_info);
+                                send_grep_job("".to_string(), &mut tx_grep, grep_info);
                                 grep_info.is_result = false;
                                 grep_info.is_stdout_end = false;
                                 grep_info.is_stderr_end = false;
@@ -150,9 +155,11 @@ async fn main() {
     for job in rx {
         match job.job_type {
             JobType::Event => {
-                if EvtAct::match_event(Keybind::evt_to_keys(&job.job_evt.unwrap().evt), &mut out, &mut term) {
+                let keys = Keybind::evt_to_keys(&job.job_evt.unwrap().evt);
+                if EvtAct::match_event(keys, &mut out, &mut term) {
                     break;
                 }
+                term.keys_org = keys;
             }
             JobType::GrepResult => EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap()),
         }

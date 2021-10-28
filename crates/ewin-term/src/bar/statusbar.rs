@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{colors::*, def::*, global::*, log::*, model::*, util::*},
+    ewin_com::{_cfg::lang::lang_cfg::*, colors::*, def::*, log::*, model::*, util::*},
     tab::*,
 };
 use crossterm::{cursor::*, terminal::*};
@@ -11,7 +11,7 @@ impl StatusBar {
         let mut v: Vec<String> = vec![];
         // DParts::Editor is dummy
         StatusBar::draw(&mut v, tab, h_file);
-        let _ = out.write(&v.concat().as_bytes());
+        let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();
     }
 
@@ -31,7 +31,7 @@ impl StatusBar {
         tab.sbar.other_str = " ".repeat(other_w);
 
         let search_idx = if tab.editor.search.idx == USIZE_UNDEFINED { 1 } else { tab.editor.search.idx + 1 };
-        let search_str = if search_w == 0 { "".to_string() } else { format!("{}({}/{})", &LANG.search, search_idx, tab.editor.search.ranges.len()) };
+        let search_str = if search_w == 0 { "".to_string() } else { format!("{}({}/{})", &Lang::get().search, search_idx, tab.editor.search.ranges.len()) };
         let search_disp_str = format!("{search:>w$}", search = search_str, w = search_w - (get_str_width(&search_str) - search_str.chars().count()));
 
         let select_mode_str = tab.editor.sel.mode.to_string();
@@ -70,31 +70,31 @@ impl StatusBar {
     }
 
     pub fn get_cur_str(tab: &mut Tab) -> String {
-        let cur = tab.editor.cur.clone();
+        let cur = tab.editor.cur;
         let len_lines = tab.editor.buf.len_lines();
         let len_line_chars = tab.editor.buf.len_line_chars(tab.editor.cur.y);
 
-        let row_str = format!("{}({}/{})", &LANG.row, (cur.y + 1).to_string(), len_lines.to_string());
+        let row_str = format!("{}({}/{})", &Lang::get().row, (cur.y + 1).to_string(), len_lines.to_string());
         let len_line_chars = if len_line_chars == 0 { 0 } else { len_line_chars - 1 };
-        let col_str = format!("{}({}/{})", &LANG.col, cur.x + 1, len_line_chars.to_string()).to_string();
+        let col_str = format!("{}({}/{})", &Lang::get().col, cur.x + 1, len_line_chars.to_string());
         let cur_posi = format!("{} {}", row_str, col_str,);
         return cur_posi;
     }
 
-    fn get_areas_width(tab: &mut Tab, enc_nl: &String, cur_str_w: usize) -> (usize, usize, usize, usize, usize) {
+    fn get_areas_width(tab: &mut Tab, enc_nl: &str, cur_str_w: usize) -> (usize, usize, usize, usize, usize) {
         let cols_w = tab.sbar.col_num;
 
         let select_mode_w = match tab.editor.sel.mode {
             SelMode::Normal => 0,
-            SelMode::BoxSelect => get_str_width(&LANG.box_select),
+            SelMode::BoxSelect => get_str_width(&Lang::get().box_select),
         };
         let box_sel_mode_w = match tab.editor.box_insert.mode {
             BoxInsertMode::Normal => 0,
-            BoxInsertMode::Insert => get_str_width(&LANG.box_insert),
+            BoxInsertMode::Insert => get_str_width(&Lang::get().box_insert),
         };
 
         let search_idx = if tab.editor.search.idx == USIZE_UNDEFINED { 1 } else { tab.editor.search.idx + 1 };
-        let search_w = if !tab.state.is_nomal() || tab.editor.search.ranges.len() == 0 { 0 } else { get_str_width(&format!("{}({}/{})", &LANG.search, search_idx, tab.editor.search.ranges.len())) };
+        let search_w = if !tab.state.is_nomal() || tab.editor.search.ranges.is_empty() { 0 } else { get_str_width(&format!("{}({}/{})", &Lang::get().search, search_idx, tab.editor.search.ranges.len())) };
 
         return (cols_w - enc_nl.len() - box_sel_mode_w - select_mode_w - search_w - cur_str_w, search_w, box_sel_mode_w, select_mode_w, cur_str_w);
     }

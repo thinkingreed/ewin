@@ -1,14 +1,6 @@
 use crate::{
     ctx_menu::init::*,
-    ewin_com::{
-        _cfg::key::{keycmd::*, keys::*, keywhen::*},
-        colors::*,
-        def::*,
-        global::*,
-        log::*,
-        model::*,
-        util::*,
-    },
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, colors::*, def::*, global::*, log::*, model::*, util::*},
     model::*,
     tab::Tab,
     terminal::*,
@@ -25,13 +17,12 @@ impl CtxMenuGroup {
     const EXTRA_FROM_CUR_X: usize = 1;
     const EXTRA_FROM_CUR_Y: usize = 1;
 
-    pub fn set_keys(&mut self, keys: Keys) {
-        let keycmd = Keybind::keys_to_keycmd(&keys, KeyWhen::CtxMenuFocus, None, None);
-        let c_cmd = match &keycmd {
-            KeyCmd::CtxMenu(c_keycmd) => c_keycmd.clone(),
+    pub fn set_keys(&mut self, keycmd: &KeyCmd) {
+        //  let keycmd = Keybind::keys_to_keycmd(&keys, None, KeyWhen::CtxMenuFocus);
+        self.c_cmd = match keycmd {
+            KeyCmd::CtxMenu(c_cmd) => c_cmd.clone(),
             _ => C_Cmd::Null,
         };
-        self.c_cmd = c_cmd;
     }
 
     pub fn select_ctx_menu(term: &mut Terminal) -> ActType {
@@ -49,13 +40,13 @@ impl CtxMenuGroup {
 
         let mut evt_act_type = ActType::Draw(DParts::Editor);
         if LANG_MAP.get(parent_name).is_some() {
-            if &LANG.macros == LANG_MAP.get(parent_name).unwrap() {
+            if &Lang::get().macros == LANG_MAP.get(parent_name).unwrap() {
                 if let Some(base_dirs) = BaseDirs::new() {
                     let full_path_str = base_dirs.config_dir().join(APP_NAME).join(MACROS_DIR).join(child_name);
                     if full_path_str.exists() {
                         evt_act_type = Macros::exec_js_macro(term, &full_path_str.to_string_lossy().to_string());
                     } else {
-                        evt_act_type = ActType::Draw(DParts::MsgBar(LANG.file_not_found.clone()));
+                        evt_act_type = ActType::Draw(DParts::MsgBar(Lang::get().file_not_found.clone()));
                     }
                 }
             } else if LANG_MAP.get(child_name).is_some() {
@@ -76,13 +67,13 @@ impl CtxMenuGroup {
         match &LANG_MAP[name] {
             //// editor
             // convert
-            s if s == &LANG.to_uppercase || s == &LANG.to_lowercase || s == &LANG.to_full_width || s == &LANG.to_half_width || s == &LANG.to_space || s == &LANG.to_tab => {
-                term.curt().editor.convert(ConvType::from_str(&LANG_MAP[name]));
+            s if s == &Lang::get().to_uppercase || s == &Lang::get().to_lowercase || s == &Lang::get().to_full_width || s == &Lang::get().to_half_width || s == &Lang::get().to_space || s == &Lang::get().to_tab => {
+                term.curt().editor.convert(ConvType::from_str_conv_type(&LANG_MAP[name]));
                 term.curt().editor.sel.clear();
             }
             // format
-            s if s == &LANG.json || s == &LANG.xml || s == &LANG.html => {
-                if let Some(err_str) = term.curt().editor.format(FmtType::from_str(s)) {
+            s if s == &Lang::get().json || s == &Lang::get().xml || s == &Lang::get().html => {
+                if let Some(err_str) = term.curt().editor.format(FmtType::from_str_fmt_type(s)) {
                     return ActType::Draw(DParts::AllMsgBar(err_str));
                 } else {
                     // highlight data reset
@@ -90,30 +81,30 @@ impl CtxMenuGroup {
                 }
                 term.curt().editor.sel.clear();
             }
-            s if s == &LANG.cut => {
+            s if s == &Lang::get().cut => {
                 EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::Cut)), &mut stdout(), term);
                 term.curt().editor.sel.clear();
             }
-            s if s == &LANG.copy => {
+            s if s == &Lang::get().copy => {
                 EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::Copy)), &mut stdout(), term);
                 term.curt().editor.sel.clear();
             }
-            s if s == &LANG.paste => {
+            s if s == &Lang::get().paste => {
                 EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::InsertStr("".to_string()))), &mut stdout(), term);
             }
-            s if s == &LANG.all_select => {
+            s if s == &Lang::get().all_select => {
                 EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::AllSelect)), &mut stdout(), term);
             }
 
             //// headerbar
             // close
-            s if s == &LANG.close => {
+            s if s == &Lang::get().close => {
                 if Tab::prom_close(term) {
                     Terminal::exit();
                 }
             }
             // close other than this tab
-            s if s == &LANG.close_other_than_this_tab => {
+            s if s == &Lang::get().close_other_than_this_tab => {
                 let _ = term.close_tabs(term.idx);
             }
             _ => {}
@@ -127,7 +118,7 @@ impl CtxMenuGroup {
         let mut v: Vec<String> = vec![];
         self.draw(&mut v);
         self.draw_cur();
-        let _ = out.write(&v.concat().as_bytes());
+        let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();
     }
 
@@ -328,10 +319,7 @@ impl CtxMenuGroup {
         return Some((min(sy, ey), min(max(sy, ey), editor_disp_row_num)));
     }
     pub fn is_menu_change(&mut self) -> bool {
-        if self.parent_sel_y != USIZE_UNDEFINED && self.parent_sel_y == self.parent_sel_y_cache && (self.child_sel_y == USIZE_UNDEFINED || self.child_sel_y != USIZE_UNDEFINED && self.child_sel_y == self.child_sel_y_cache) {
-            return false;
-        }
-        return true;
+        return self.parent_sel_y == USIZE_UNDEFINED || self.parent_sel_y != self.parent_sel_y_cache || self.child_sel_y != USIZE_UNDEFINED && self.child_sel_y != self.child_sel_y_cache;
     }
 
     pub fn get_curt_parent(&self) -> Option<(CtxMenu, Option<CtxMenuCont>)> {

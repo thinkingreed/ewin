@@ -8,7 +8,7 @@ impl FormatXml {
         Log::debug("fmt_type", &fmt_type);
         Log::debug("nl", &nl);
 
-        let edit_text_non_comment = Regex::new(r"<!--[\s\S]*?-->").unwrap().replace_all(&text.clone(), "").to_string();
+        let edit_text_non_comment = Regex::new(r"<!--[\s\S]*?-->").unwrap().replace_all(&text, "").to_string();
 
         // "<" → "~::~<"   ※~::~ is mark
         let edit_text = Regex::new(r"<").unwrap().replace_all(&text, "~::~<").to_string();
@@ -86,18 +86,14 @@ impl FormatXml {
             } else if Regex::new(r"/>").unwrap().is_match(str_array[idx]) {
                 string = if !in_comment { format!("{}{}{}", string, indent[deep], str_array[idx]) } else { format!("{}{}", string, str_array[idx]) };
 
-                // <? xml ... ?>
-            } else if Regex::new(r"<\?").unwrap().is_match(str_array[idx]) {
-                string = format!("{}{}{}", string, indent[deep], str_array[idx].trim());
-
-                // xmlns
-            } else if Regex::new(r"xmlns:").unwrap().is_match(str_array[idx]) || Regex::new(r"xmlns=").unwrap().is_match(str_array[idx]) {
+                // <? xml ... ?> || xmlns
+            } else if Regex::new(r"<\?").unwrap().is_match(str_array[idx]) || Regex::new(r"xmlns:").unwrap().is_match(str_array[idx]) || Regex::new(r"xmlns=").unwrap().is_match(str_array[idx]) {
                 string = format!("{}{}{}", string, indent[deep], str_array[idx].trim());
             } else {
                 string += str_array[idx].trim();
             }
         }
-        return string.replacen(&nl, "", 1);
+        string.replacen(&nl, "", 1)
     }
 
     fn remove_space_between_tag_and_elm(in_comment: bool, tgt_node: &str, regex: &str) -> String {
@@ -110,20 +106,20 @@ impl FormatXml {
             let elm = tgt_node.replace(&tag, "").trim().to_string();
             format!("{}{}", tag, elm)
         };
-        return node;
+        node
     }
     // Support for HTML optional tags
     fn is_exist_end_tag(node: &str, string: &str) -> bool {
         // let OPTIONAL_TAG_VEC: Vec<&'static str> = vec!["p", "dt", "dd", "li", "option", "thead", "tfoot", "th", "tr", "td", "rt", "rp", "optgroup", "caption"];
 
         let caps = Regex::new(r"<\s{0,}\w*").unwrap().captures(node).unwrap();
-        let tag = caps[0].to_string().replace("<", "").replace("/", "").to_string();
+        let tag = caps[0].to_string().replace("<", "").replace("/", "");
 
         let end_tag_prefix = r"<\s{0,}/\s{0,}";
         let regex = format!("{}{}", end_tag_prefix, tag);
-        let caps = Regex::new(&regex).unwrap().captures(&string);
+        let caps = Regex::new(&regex).unwrap().captures(string);
 
-        return caps.is_some();
+        caps.is_some()
     }
 
     // Save to  match the indentation depth of the start and end tags
@@ -131,7 +127,7 @@ impl FormatXml {
         // Get tag name
         let caps = Regex::new(r"<\s{0,}\w*\s{0,}").unwrap().captures(node).unwrap();
         let node_tag = caps[0].to_string();
-        let tagnm = node_tag.clone().replace("<", "").trim().to_string();
+        let tagnm = node_tag.replace("<", "").trim().to_string();
 
         start_tag_map.insert((tagnm, indent_deep));
     }
@@ -141,7 +137,7 @@ impl FormatXml {
         // Get tag name
         let caps = Regex::new(r"<\s{0,}/\s{0,}\w*\s{0,}").unwrap().captures(node).unwrap();
         let mut end_tag = caps[0].to_string();
-        end_tag = end_tag.replace("<", "").replace("/", "").to_string();
+        end_tag = end_tag.replace("<", "").replace("/", "");
 
         let (mut del_tag, mut del_indent) = ("".to_string(), USIZE_UNDEFINED);
         for (start_tag, indent_deep) in start_tag_map.iter().rev() {
@@ -154,32 +150,14 @@ impl FormatXml {
         }
         start_tag_map.remove(&(del_tag, del_indent));
 
-        return rtn_indent_deep;
+        rtn_indent_deep
     }
 
     fn create_indent_arr(nl: String) -> Vec<String> {
-        /*
-        let space = match step {
-            1 => " ",
-            2 => "  ",
-            3 => "   ",
-            4 => "    ",
-            5 => "     ",
-            6 => "      ",
-            7 => "       ",
-            8 => "        ",
-            9 => "         ",
-            10 => "          ",
-            11 => "           ",
-            12 => "            ",
-            _ => "    ",
-        };
-         */
-
         let mut indent_arr = vec![nl]; // array of shifts
         for idx in 0..100 {
             indent_arr.push(format!("{}{}", indent_arr[idx], &CFG.get().unwrap().try_lock().unwrap().general.editor.format.indent));
         }
-        return indent_arr;
+        indent_arr
     }
 }

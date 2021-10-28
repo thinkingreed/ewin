@@ -23,19 +23,19 @@ impl SelRange {
 
     pub fn is_selected(&self) -> bool {
         if self.mode == SelMode::Normal {
-            return self.sy != self.ey || self.s_disp_x != self.e_disp_x;
+            self.sy != self.ey || self.s_disp_x != self.e_disp_x
         } else {
             // SelMode::BoxSelect
-            return !(self.sy == USIZE_UNDEFINED && self.ey == USIZE_UNDEFINED);
+            !(self.sy == USIZE_UNDEFINED && self.ey == USIZE_UNDEFINED)
         }
     }
 
     pub fn is_selected_width(&self) -> bool {
         if self.mode == SelMode::Normal {
-            return self.is_selected();
+            self.is_selected()
         } else {
             // SelMode::BoxSelect
-            return self.is_selected() && !(self.s_disp_x == self.e_disp_x);
+            self.is_selected() && self.s_disp_x != self.e_disp_x
         }
     }
 
@@ -65,15 +65,15 @@ impl SelRange {
             s_disp_x = min(self.s_disp_x, self.e_disp_x);
             e_disp_x = max(self.s_disp_x, self.e_disp_x);
         }
-        return SelRange { sy, ey, sx, ex, s_disp_x, e_disp_x, mode: self.mode };
+        SelRange { sy, ey, sx, ex, s_disp_x, e_disp_x, mode: self.mode }
     }
 
     pub fn set_s(&mut self, y: usize, x: usize, disp_x: usize) {
         if self.mode == SelMode::Normal {
             self.sy = y;
-
-            // SelMode::BoxSelect
-        } else if self.sy == USIZE_UNDEFINED {
+        }
+        // SelMode::BoxSelect
+        if self.sy == USIZE_UNDEFINED {
             self.sy = y;
         }
         self.sx = x;
@@ -115,7 +115,7 @@ impl SelRange {
         if self.sy == sel_org.sy && self.s_disp_x == sel_org.s_disp_x {
             return false;
         }
-        return true;
+        true
     }
 }
 
@@ -129,6 +129,6 @@ impl BoxInsert {
             str.push_str(s);
             str.push_str(nl);
         }
-        return str;
+        str
     }
 }

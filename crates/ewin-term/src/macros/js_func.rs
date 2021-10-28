@@ -71,7 +71,7 @@ impl Macros {
         Log::debug_key("Macros.searchAll");
 
         if args.get(0) != v8::undefined(scope) {
-            let search_str = args.get(0).to_string(scope).unwrap().to_rust_string_lossy(scope).to_string();
+            let search_str = args.get(0).to_string(scope).unwrap().to_rust_string_lossy(scope);
             let input_obj = args.get(1).to_object(scope).unwrap();
 
             let case_sens_value: v8::Local<v8::Value> = v8::String::new(scope, "caseSens").unwrap().into();

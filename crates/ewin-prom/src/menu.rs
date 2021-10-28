@@ -1,7 +1,7 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, colors::*, def::*, global::*, log::*, model::*, util::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, colors::*, def::*, log::*, model::*, util::*},
     model::*,
-    prompt::choice::*,
+    prom::choice::*,
 };
 use crossterm::{cursor::*, terminal::ClearType::*, terminal::*};
 use std::collections::*;
@@ -59,7 +59,7 @@ impl Prompt {
         if is_menu_select {
             Choices::change_show_choice(self);
         }
-        return is_menu_select;
+        is_menu_select
     }
     pub fn cache_menu(&mut self) {
         let map = self.cont_1.choices_map.clone();
@@ -133,36 +133,36 @@ impl PromptCont {
             PromptContPosi::First => {
                 self.buf_row_len = 2;
 
-                self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.select_menu);
+                self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &Lang::get().select_menu);
                 self.key_desc = format!(
                     "{}{}:{}{}Click  {}{}:{}{}  {}{}:{}Tab  {}{}:{}↑↓←→",
                     Colors::get_default_fg(),
-                    &LANG.fixed,
+                    &Lang::get().fixed,
                     Colors::get_msg_highlight_fg(),
                     Keybind::get_key_str(KeyCmd::Prom(P_Cmd::ConfirmPrompt)),
                     Colors::get_default_fg(),
-                    &LANG.close,
+                    &Lang::get().close,
                     Colors::get_msg_highlight_fg(),
                     Keybind::get_key_str(KeyCmd::Prom(P_Cmd::EscPrompt)),
                     Colors::get_default_fg(),
-                    &LANG.move_setting_location,
+                    &Lang::get().move_setting_location,
                     Colors::get_msg_highlight_fg(),
                     Colors::get_default_fg(),
-                    &LANG.candidate_change,
+                    &Lang::get().candidate_change,
                     Colors::get_msg_highlight_fg(),
                 );
 
-                self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.menu, Colors::get_default_fg());
+                self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().menu, Colors::get_default_fg());
 
                 if prom.keycmd == KeyCmd::Edit(E_Cmd::OpenMenu) && prom.prom_menu.choices_map_cache.get(&PromptContPosi::First).is_some() {
                     self.choices_map = prom.prom_menu.choices_map_cache.get(&PromptContPosi::First).unwrap().clone();
                     prom.cont_posi = prom.prom_menu.cont_posi_cache;
                 } else {
                     let mut choices = Choices::default();
-                    let file = Keybind::get_menu_str(&LANG.file, KeyCmd::Edit(E_Cmd::OpenMenuFile));
-                    let edit = Keybind::get_menu_str(&LANG.edit, KeyCmd::Edit(E_Cmd::OpenMenuEdit));
-                    let search = Keybind::get_menu_str(&LANG.search, KeyCmd::Edit(E_Cmd::OpenMenuSearch));
-                    let macros = Keybind::get_menu_str(&LANG.macros, KeyCmd::Edit(E_Cmd::OpenMenuMacro));
+                    let file = Keybind::get_menu_str(&Lang::get().file, KeyCmd::Edit(E_Cmd::OpenMenuFile));
+                    let edit = Keybind::get_menu_str(&Lang::get().edit, KeyCmd::Edit(E_Cmd::OpenMenuEdit));
+                    let search = Keybind::get_menu_str(&Lang::get().search, KeyCmd::Edit(E_Cmd::OpenMenuSearch));
+                    let macros = Keybind::get_menu_str(&Lang::get().macros, KeyCmd::Edit(E_Cmd::OpenMenuMacro));
 
                     choices.vec = vec![vec![Choice::new(&file), Choice::new(&edit), Choice::new(&search), Choice::new(&macros)]];
                     choices.is_show = true;
@@ -175,40 +175,35 @@ impl PromptCont {
             PromptContPosi::Second => {
                 self.buf_row_len = 2;
 
-                self.buf_desc = format!("{}{} 1{}", Colors::get_msg_highlight_fg(), &LANG.contents, Colors::get_default_fg());
+                self.buf_desc = format!("{}{} 1{}", Colors::get_msg_highlight_fg(), &Lang::get().contents, Colors::get_default_fg());
 
                 if prom.keycmd == KeyCmd::Edit(E_Cmd::OpenMenu) && prom.prom_menu.choices_map_cache.get(&PromptContPosi::Second).is_some() {
                     self.choices_map = prom.prom_menu.choices_map_cache.get(&PromptContPosi::Second).unwrap().clone();
                 } else {
                     // file
-                    let create_new = Keybind::get_menu_str(&LANG.create_new, KeyCmd::Edit(E_Cmd::NewTab));
-                    let open_file = Keybind::get_menu_str(&LANG.open, KeyCmd::Edit(E_Cmd::OpenFile(OpenFileType::Normal)));
-                    let encode = Keybind::get_menu_str(&LANG.encode, KeyCmd::Edit(E_Cmd::Encoding));
-                    let vec_1 = vec![Choice::new(&create_new), Choice::new(&open_file), Choice::new(&LANG.save_as)];
-                    let vec_2 = vec![Choice::new(&encode), Choice::new(&LANG.end_of_all_save)];
-                    let mut choices = Choices::default();
-                    choices.vec = vec![vec_1, vec_2];
+                    let create_new = Keybind::get_menu_str(&Lang::get().create_new, KeyCmd::Edit(E_Cmd::NewTab));
+                    let open_file = Keybind::get_menu_str(&Lang::get().open, KeyCmd::Edit(E_Cmd::OpenFile(OpenFileType::Normal)));
+                    let encode = Keybind::get_menu_str(&Lang::get().encode, KeyCmd::Edit(E_Cmd::Encoding));
+                    let vec_1 = vec![Choice::new(&create_new), Choice::new(&open_file), Choice::new(&Lang::get().save_as)];
+                    let vec_2 = vec![Choice::new(&encode), Choice::new(&Lang::get().end_of_all_save)];
+                    let choices = Choices { vec: vec![vec_1, vec_2], ..Default::default() };
                     self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 0)), choices);
 
                     // edit
-                    let convert = Keybind::get_menu_str(&LANG.convert, KeyCmd::Edit(E_Cmd::OpenMenuConvert));
-                    let format = &LANG.format;
-                    let vec_1 = vec![Choice::new(&convert), Choice::new(&format)];
-                    let select = Keybind::get_menu_str(&LANG.box_select, KeyCmd::Edit(E_Cmd::BoxSelectMode));
+                    let convert = Keybind::get_menu_str(&Lang::get().convert, KeyCmd::Edit(E_Cmd::OpenMenuConvert));
+                    let vec_1 = vec![Choice::new(&convert), Choice::new(&Lang::get().format)];
+                    let select = Keybind::get_menu_str(&Lang::get().box_select, KeyCmd::Edit(E_Cmd::BoxSelectMode));
                     let vec_2 = vec![Choice::new(&select)];
-                    let mut choices = Choices::default();
-                    choices.vec = vec![vec_1, vec_2];
+                    let choices = Choices { vec: vec![vec_1, vec_2], ..Default::default() };
                     self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 1)), choices);
                     // search
-                    let move_row = Keybind::get_menu_str(&LANG.move_row, KeyCmd::Edit(E_Cmd::MoveRow));
+                    let move_row = Keybind::get_menu_str(&Lang::get().move_row, KeyCmd::Edit(E_Cmd::MoveRow));
                     let vec_1 = vec![Choice::new(&move_row)];
-                    let mut choices = Choices::default();
-                    choices.vec = vec![vec_1];
+                    let choices = Choices { vec: vec![vec_1], ..Default::default() };
                     self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 2)), choices);
                     // macros
-                    let vec_1 = vec![Choice::new(&LANG.specify_file_and_exec_macro)];
-                    let mut choices = Choices::default();
-                    choices.vec = vec![vec_1];
+                    let vec_1 = vec![Choice::new(&Lang::get().specify_file_and_exec_macro)];
+                    let choices = Choices { vec: vec![vec_1], ..Default::default() };
                     self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 3)), choices);
                     Choices::set_shaping_choice_list(&mut self.choices_map);
                 }
@@ -216,23 +211,22 @@ impl PromptCont {
             PromptContPosi::Third => {
                 self.buf_row_len = 2;
 
-                self.buf_desc = format!("{}{} 2{}", Colors::get_msg_highlight_fg(), &LANG.contents, Colors::get_default_fg());
+                self.buf_desc = format!("{}{} 2{}", Colors::get_msg_highlight_fg(), &Lang::get().contents, Colors::get_default_fg());
 
                 if prom.keycmd == KeyCmd::Edit(E_Cmd::OpenMenu) && prom.prom_menu.choices_map_cache.get(&PromptContPosi::Third).is_some() {
                     self.choices_map = prom.prom_menu.choices_map_cache.get(&PromptContPosi::Third).unwrap().clone();
                 } else {
-                    let vec_1 = vec![Choice::new(&LANG.to_lowercase), Choice::new(&LANG.to_half_width), Choice::new(&LANG.to_space)];
-                    let vec_2 = vec![Choice::new(&LANG.to_uppercase), Choice::new(&LANG.to_full_width), Choice::new(&LANG.to_tab)];
-                    let mut choices = Choices::default();
-                    choices.vec = vec![vec_1, vec_2];
+                    let vec_1 = vec![Choice::new(&Lang::get().to_lowercase), Choice::new(&Lang::get().to_half_width), Choice::new(&Lang::get().to_space)];
+                    let vec_2 = vec![Choice::new(&Lang::get().to_uppercase), Choice::new(&Lang::get().to_full_width), Choice::new(&Lang::get().to_tab)];
+
+                    let choices = Choices { vec: vec![vec_1, vec_2], ..Default::default() };
                     self.choices_map.insert(((0, 1), (0, 0)), choices);
 
-                    let format_json = Keybind::get_menu_str(&LANG.json, KeyCmd::Edit(E_Cmd::Format(FmtType::JSON)));
-                    let format_html = Keybind::get_menu_str(&LANG.html, KeyCmd::Edit(E_Cmd::Format(FmtType::HTML)));
-                    let format_xml = Keybind::get_menu_str(&LANG.xml, KeyCmd::Edit(E_Cmd::Format(FmtType::XML)));
+                    let format_json = Keybind::get_menu_str(&Lang::get().json, KeyCmd::Edit(E_Cmd::Format(FmtType::JSON)));
+                    let format_html = Keybind::get_menu_str(&Lang::get().html, KeyCmd::Edit(E_Cmd::Format(FmtType::HTML)));
+                    let format_xml = Keybind::get_menu_str(&Lang::get().xml, KeyCmd::Edit(E_Cmd::Format(FmtType::XML)));
                     let vec_1 = vec![Choice::new(&format_json), Choice::new(&format_html), Choice::new(&format_xml)];
-                    let mut choices = Choices::default();
-                    choices.vec = vec![vec_1];
+                    let choices = Choices { vec: vec![vec_1], ..Default::default() };
                     self.choices_map.insert(((0, 1), (0, 1)), choices);
 
                     Choices::set_shaping_choice_list(&mut self.choices_map);
@@ -271,19 +265,19 @@ impl PromptCont {
                     match self.posi {
                         PromptContPosi::First => match self.keycmd {
                             KeyCmd::Edit(E_Cmd::OpenMenuFile) => {
-                                if choice.name.contains(&LANG.file) {
+                                if choice.name.contains(&Lang::get().file) {
                                     choices.vec_y = y_idx;
                                     choices.vec_x = x_idx;
                                 }
                             }
                             KeyCmd::Edit(E_Cmd::OpenMenuEdit) => {
-                                if choice.name.contains(&LANG.edit) {
+                                if choice.name.contains(&Lang::get().edit) {
                                     choices.vec_y = y_idx;
                                     choices.vec_x = x_idx;
                                 }
                             }
                             KeyCmd::Edit(E_Cmd::OpenMenuSearch) => {
-                                if choice.name.contains(&LANG.search) {
+                                if choice.name.contains(&Lang::get().search) {
                                     choices.vec_y = y_idx;
                                     choices.vec_x = x_idx;
                                 }
@@ -291,10 +285,10 @@ impl PromptCont {
                             _ => {}
                         },
                         PromptContPosi::Second => {
-                            choices.is_show = if parent_y == &second_y && parent_x == &second_x { true } else { false };
+                            choices.is_show = parent_y == &second_y && parent_x == &second_x;
                         }
                         PromptContPosi::Third => {
-                            choices.is_show = if grandparentst_y == &first_y && grandparentst_x == &first_x && parent_y == &second_y && parent_x == &second_y { true } else { false };
+                            choices.is_show = grandparentst_y == &first_y && grandparentst_x == &first_x && parent_y == &second_y && parent_x == &second_y;
                         }
                         _ => {}
                     }
@@ -308,7 +302,7 @@ impl PromptCont {
                 return true;
             }
         }
-        return false;
+        false
     }
 }
 

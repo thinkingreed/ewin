@@ -1,3 +1,5 @@
+#![allow(clippy::needless_return, clippy::iter_nth_zero, clippy::type_complexity)]
+
 extern crate ewin_com;
 
 pub mod cont {
@@ -11,9 +13,9 @@ pub mod cont {
     pub mod un_redo;
 }
 
-pub mod prompt {
+pub mod prom {
     pub mod choice;
-    pub mod prompt;
+    pub mod prom_ctrl;
     pub mod set_draw_posi;
 }
 

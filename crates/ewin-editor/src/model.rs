@@ -85,6 +85,12 @@ impl Editor {
     }
 }
 
+impl Default for Editor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EditorState {
     pub is_changed: bool,
@@ -101,7 +107,7 @@ impl Default for EditorState {
 }
 impl EditorState {
     pub fn is_change_changed(&self) -> bool {
-        return self.is_changed != self.is_changed_org;
+        self.is_changed != self.is_changed_org
     }
 }
 

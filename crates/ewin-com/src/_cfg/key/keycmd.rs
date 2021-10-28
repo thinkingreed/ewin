@@ -14,11 +14,12 @@ impl KeyCmd {
         /*
          * All
          */
-        match keycmd {
-            "closeFile" => return KeyCmd::CloseFile,
-            _ => {}
+
+        if keycmd == "closeFile" {
+            return KeyCmd::CloseFile;
         }
-        return match keywhen {
+
+        match keywhen {
             "promptFocus" => match keycmd {
                 /*
                  * Input
@@ -128,9 +129,9 @@ impl KeyCmd {
             },
 
             // unreachable
-            "inputFocus" | "allFocus" => return KeyCmd::Null,
+            "inputFocus" | "allFocus" => KeyCmd::Null,
             _ => KeyCmd::Null,
-        };
+        }
     }
 }
 
@@ -205,7 +206,10 @@ pub enum E_Cmd {
     CursorRowHomeSelect,
     CursorRowEndSelect,
     MouseDownLeft(usize, usize),
-    MouseDragLeft(usize, usize),
+    MouseDragLeftLeft(usize, usize),
+    MouseDragLeftRight(usize, usize),
+    MouseDragLeftUp(usize, usize),
+    MouseDragLeftDown(usize, usize),
     MouseDownRight(usize, usize),
     MouseDragRight(usize, usize),
     MouseScrollUp,
@@ -286,6 +290,7 @@ pub enum C_Cmd {
 #[allow(non_camel_case_types)]
 pub enum H_Cmd {
     MouseDownLeft(usize, usize),
+    MouseDragLeftUp(usize, usize),
     SwitchTabRight,
     SwitchTabLeft,
 }

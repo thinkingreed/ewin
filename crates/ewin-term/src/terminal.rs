@@ -3,6 +3,7 @@ use crate::{
     ctx_menu::init::*,
     ewin_com::{
         _cfg::key::{keycmd::*, keys::*, keywhen::*},
+        _cfg::lang::lang_cfg::*,
         colors::*,
         def::*,
         file::*,
@@ -170,17 +171,13 @@ impl Terminal {
             Colors::set_text_color(str_vec);
             str_vec.push(format!("{}{}{}", MoveTo(0, 3), Clear(ClearType::CurrentLine), format!("{name:^w$}", name = pkg_name, w = cols - (get_str_width(pkg_name) - pkg_name.chars().count()))));
 
-            //  let ver_name = format!("{}: {}", "Version", env!("CARGO_PKG_VERSION"));
-            //  let mut cfg: Cfg = toml::from_str(cfg_str).unwrap();
-
-            // let ver = &(*APP_VERSION.get().unwrap().to_string());
             let ver_name = &format!("{}: {}", "Version", &(*APP_VERSION.get().unwrap().to_string()));
 
             str_vec.push(format!("{}{}{}", MoveTo(0, 4), Clear(ClearType::CurrentLine), format!("{ver:^w$}", ver = ver_name, w = cols - (get_str_width(ver_name) - ver_name.chars().count()))));
 
-            let simple_help = LANG.simple_help_desc.clone();
+            let simple_help = Lang::get().simple_help_desc.clone();
             str_vec.push(format!("{}{}{}", MoveTo(0, 6), Clear(ClearType::CurrentLine), format!("{s_help:^w$}", s_help = simple_help, w = cols - (get_str_width(&simple_help) - simple_help.chars().count()))));
-            let detailed_help = LANG.detailed_help_desc.clone();
+            let detailed_help = Lang::get().detailed_help_desc.clone();
             str_vec.push(format!("{}{}{}", MoveTo(0, 7), Clear(ClearType::CurrentLine), format!("{d_help:^w$}", d_help = detailed_help, w = cols - (get_str_width(&detailed_help) - detailed_help.chars().count()))));
         }
     }
@@ -300,10 +297,10 @@ impl Terminal {
 
         if !filenm.is_empty() && !path.exists() {
             if is_first_open {
-                Terminal::exit_file_open(&LANG.file_not_found);
+                Terminal::exit_file_open(&Lang::get().file_not_found);
                 return ActType::Exit;
             } else {
-                return ActType::Draw(DParts::MsgBar(LANG.file_not_found.to_string()));
+                return ActType::Draw(DParts::MsgBar(Lang::get().file_not_found.to_string()));
             };
         } else {
             let mut enc = Encode::UTF8;
@@ -326,19 +323,18 @@ impl Terminal {
 
                         if !is_writable {
                             tab.editor.state.is_read_only = true;
-                            tab.mbar.set_readonly(&format!("{}({})", &LANG.unable_to_edit, &LANG.no_write_permission));
+                            tab.mbar.set_readonly(&format!("{}({})", &Lang::get().unable_to_edit, &Lang::get().no_write_permission));
                         }
                     }
-                    Err(err) => match err.kind() {
-                        _ => {
-                            let err_str = if err.kind() == ErrorKind::PermissionDenied && !is_readable { LANG.no_read_permission.clone() } else { format!("{} {:?}", &LANG.file_opening_problem, err) };
-                            if self.tabs.is_empty() {
-                                Terminal::exit_file_open(&err_str);
-                            } else {
-                                return ActType::Draw(DParts::MsgBar(err_str));
-                            }
+
+                    Err(err) => {
+                        let err_str = if err.kind() == ErrorKind::PermissionDenied && !is_readable { Lang::get().no_read_permission.clone() } else { format!("{} {:?}", &Lang::get().file_opening_problem, err) };
+                        if self.tabs.is_empty() {
+                            Terminal::exit_file_open(&err_str);
+                        } else {
+                            return ActType::Draw(DParts::MsgBar(err_str));
                         }
-                    },
+                    }
                 }
             }
 
@@ -368,7 +364,7 @@ impl Terminal {
         let file_meta = metadata(path).unwrap();
         let ext = path.extension().unwrap_or_else(|| OsStr::new("txt")).to_string_lossy().to_string();
         //  self.editor_draw_vec[self.idx].syntax_reference = if let Some(sr) = CFG.get().unwrap().try_lock().unwrap().syntax.syntax_set.find_syntax_by_extension(&ext) { Some(sr.clone()) } else { None };
-        self.editor_draw_vec[self.idx].syntax_reference = CFG.get().unwrap().try_lock().unwrap().syntax.syntax_set.find_syntax_by_extension(&ext).map(|sr| sr.clone());
+        self.editor_draw_vec[self.idx].syntax_reference = CFG.get().unwrap().try_lock().unwrap().syntax.syntax_set.find_syntax_by_extension(&ext).cloned();
 
         if self.editor_draw_vec[self.idx].syntax_reference.is_some() && file_meta.len() < ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE && is_enable_syntax_highlight(&ext) {
             self.curt().editor.is_enable_syntax_highlight = true;
@@ -388,8 +384,9 @@ impl Terminal {
         let _ = GREP_CANCEL_VEC.set(tokio::sync::Mutex::new(vec![]));
         let _ = global_term::TAB.set(tokio::sync::Mutex::new(Tab::new()));
 
-        self.ctx_menu_group.init();
         self.open(&args.filenm, &mut Tab::new(), true);
+
+        self.ctx_menu_group.init();
     }
 
     pub fn init_draw<T: Write>(&mut self, out: &mut T) {
@@ -505,7 +502,7 @@ impl Terminal {
         self.state.is_all_close_confirm = false;
         for tab in self.tabs.iter_mut() {
             if tab.editor.state.is_changed {
-                tab.editor.set_keys(&Keys::Null);
+                tab.editor.set_keys(Keys::Null, None);
                 tab.state.clear();
             }
         }
@@ -516,7 +513,7 @@ impl Terminal {
 
     pub fn new_tab(&mut self) {
         // Disable the event in case of the next display
-        self.curt().editor.set_keys(&Keys::Null);
+        self.curt().editor.set_keys(Keys::Null, None);
 
         let mut new_tab = Tab::new();
         new_tab.editor.set_cur_default();
@@ -526,7 +523,7 @@ impl Terminal {
         // let dt: DateTime<Local> = Local::now();
         // self.add_tab(new_tab, HeaderFile::new(&dt.format("%M:%S").to_string()));
 
-        self.add_tab(new_tab, HeaderFile::new(&LANG.new_file));
+        self.add_tab(new_tab, HeaderFile::new(&Lang::get().new_file));
         Terminal::set_title(&self.curt_h_file().fullpath);
     }
 
@@ -538,19 +535,17 @@ impl Terminal {
                 } else {
                     self.idx + 1
                 }
+            } else if self.idx == 0 {
+                self.tabs.len() - 1
             } else {
-                if self.idx == 0 {
-                    self.tabs.len() - 1
-                } else {
-                    self.idx - 1
-                }
+                self.idx - 1
             };
             Terminal::set_title(&self.curt_h_file().fullpath);
             return ActType::Draw(DParts::All);
 
             //   self.curt().editor.set_keys(&Keys::Null);
         } else {
-            return ActType::Draw(DParts::MsgBar(LANG.no_tab_can_be_switched.to_string()));
+            return ActType::Draw(DParts::MsgBar(Lang::get().no_tab_can_be_switched.to_string()));
         }
     }
 
@@ -623,7 +618,9 @@ impl Terminal {
     pub fn set_keys(&mut self, keys: &Keys) {
         let keywhen = self.get_when(keys);
         Log::debug("Terminal.set_keys.keywhen", &keywhen);
-        self.keycmd = Keybind::keys_to_keycmd(keys, keywhen, Some(self.hbar.row_posi), Some(self.curt().sbar.row_posi));
+        let editor_row_posi = self.curt().editor.row_posi;
+        let sbar_row_posi = self.curt().sbar.row_posi;
+        self.keycmd = Keybind::keys_to_keycmd_pressed(keys, Some(&self.keys_org), keywhen, editor_row_posi, sbar_row_posi);
         Log::debug("Terminal.set_keys.keycmd", &self.keycmd);
         self.keys = *keys;
     }
@@ -633,9 +630,9 @@ impl Terminal {
         Log::debug("self.curt().state", &self.curt().state);
         Log::debug("keys", &keys);
 
-        return if self.curt().state.judge_when(keys) {
+        return if self.curt().state.judge_when_prompt(keys) {
             if self.state.is_ctx_menu {
-                if EvtAct::is_ctrl_ctx_keys(&keys, self) {
+                if EvtAct::is_ctrl_ctx_keys(keys, self) {
                     KeyWhen::CtxMenuFocus
                 } else {
                     match keys {
@@ -644,8 +641,15 @@ impl Terminal {
                     }
                     KeyWhen::EditorFocus
                 }
+            } else if self.state.judge_when_headerbar(keys, self.hbar.row_posi) {
+                KeyWhen::HeaderBarFocus
             } else {
-                KeyWhen::EditorFocus
+                let sbar_row_posi = self.curt().sbar.row_posi;
+                if self.curt().state.judge_when_statusbar(keys, sbar_row_posi) {
+                    KeyWhen::StatusBarFocus
+                } else {
+                    KeyWhen::EditorFocus
+                }
             }
         } else {
             KeyWhen::PromptFocus
@@ -657,6 +661,7 @@ impl Terminal {
 pub struct Terminal {
     pub keycmd: KeyCmd,
     pub keys: Keys,
+    pub keys_org: Keys,
     pub hbar: HeaderBar,
     pub help: Help,
     pub tabs: Vec<Tab>,
@@ -676,7 +681,7 @@ impl Terminal {
 
 impl Default for Terminal {
     fn default() -> Self {
-        Terminal { draw_parts_org: DParts::All, keycmd: KeyCmd::Null, keys: Keys::Null, hbar: HeaderBar::new(), tabs: vec![], editor_draw_vec: vec![], idx: 0, help: Help::new(), state: TerminalState::default(), ctx_menu_group: CtxMenuGroup::default() }
+        Terminal { draw_parts_org: DParts::All, keycmd: KeyCmd::Null, keys: Keys::Null, keys_org: Keys::Null, hbar: HeaderBar::new(), tabs: vec![], editor_draw_vec: vec![], idx: 0, help: Help::new(), state: TerminalState::default(), ctx_menu_group: CtxMenuGroup::default() }
     }
 }
 #[derive(Debug, Clone)]
@@ -692,6 +697,19 @@ pub struct TerminalState {
 impl Default for TerminalState {
     fn default() -> Self {
         TerminalState { is_show_init_info: false, is_all_close_confirm: false, is_all_save: false, close_other_than_this_tab_idx: USIZE_UNDEFINED, is_displayable: true, is_ctx_menu: false }
+    }
+}
+impl TerminalState {
+    pub fn judge_when_headerbar(&self, keys: &Keys, hbar_row_posi: usize) -> bool {
+        match keys {
+            Keys::MouseDownLeft(y, _) | Keys::MouseDragLeft(y, _) => {
+                if y == &(hbar_row_posi as u16) {
+                    return true;
+                }
+                return false;
+            }
+            _ => return false,
+        }
     }
 }
 

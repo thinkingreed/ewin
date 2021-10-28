@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, global::*, log::*, model::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, global::*, log::*, model::*},
     model::*,
     tab::Tab,
     terminal::*,
@@ -23,12 +23,12 @@ impl EvtAct {
                 Log::debug("search_filenm", &search_filenm);
                 Log::debug("search_folder", &search_folder);
 
-                if search_str.len() == 0 {
-                    return ActType::Draw(DParts::MsgBar(LANG.not_entered_search_str.to_string()));
-                } else if search_filenm.len() == 0 {
-                    return ActType::Draw(DParts::MsgBar(LANG.not_entered_search_file.to_string()));
-                } else if search_folder.len() == 0 {
-                    return ActType::Draw(DParts::MsgBar(LANG.not_entered_search_folder.to_string()));
+                if search_str.is_empty() {
+                    return ActType::Draw(DParts::MsgBar(Lang::get().not_entered_search_str.to_string()));
+                } else if search_filenm.is_empty() {
+                    return ActType::Draw(DParts::MsgBar(Lang::get().not_entered_search_file.to_string()));
+                } else if search_folder.is_empty() {
+                    return ActType::Draw(DParts::MsgBar(Lang::get().not_entered_search_folder.to_string()));
                 } else {
                     term.clear_curt_tab(true);
 
@@ -48,20 +48,20 @@ impl EvtAct {
                     grep_tab.editor.search.folder = search_folder.clone();
                     grep_tab.editor.e_cmd = E_Cmd::GrepResult;
 
-                    grep_tab.mbar.set_info(&LANG.searching);
+                    grep_tab.mbar.set_info(&Lang::get().searching);
 
                     grep_tab.state.grep.is_result = true;
                     grep_tab.state.grep.is_stdout_end = false;
                     grep_tab.state.grep.is_stderr_end = false;
                     grep_tab.state.grep.search_str = search_str.clone();
-                    grep_tab.state.grep.search_filenm = search_filenm.clone();
-                    grep_tab.state.grep.search_folder = search_folder.clone();
+                    grep_tab.state.grep.search_filenm = search_filenm;
+                    grep_tab.state.grep.search_folder = search_folder;
                     {
                         GREP_INFO_VEC.get().unwrap().try_lock().unwrap().push(grep_tab.state.grep.clone());
                     }
                     GREP_CANCEL_VEC.get().unwrap().try_lock().unwrap().resize_with(GREP_INFO_VEC.get().unwrap().try_lock().unwrap().len(), || false);
 
-                    term.add_tab(grep_tab, HeaderFile::new(&format!(r#"{} "{}""#, &LANG.grep, &search_str)));
+                    term.add_tab(grep_tab, HeaderFile::new(&format!(r#"{} "{}""#, &Lang::get().grep, &search_str)));
                     term.curt().prom.set_grep_working();
 
                     // Clear(ClearType::CurrentLine) is not performed during grep to prevent flicker. Therefore, clear first

@@ -52,8 +52,9 @@ impl CtxMenuGroup {
             let mut child_max_len_vec: Vec<usize> = vec![];
             let mut parent_max_len = 0;
 
-            for (idx, (parent_menu, child_cont_option)) in self.ctx_menu_place_map[&term_place].menu_vec.iter().enumerate() {
+            for (idx, (parent_menu, child_cont_option)) in self.ctx_menu_place_map[term_place].menu_vec.iter().enumerate() {
                 let parent_name_len = get_str_width(CtxMenuGroup::get_disp_name(&parent_menu.name));
+
                 parent_max_len = if parent_name_len > parent_max_len { parent_name_len } else { parent_max_len };
 
                 let mut child_max_len = 0;
@@ -67,6 +68,7 @@ impl CtxMenuGroup {
                         child_max_len = if child_name_len > child_max_len { child_name_len } else { child_max_len };
                     }
                 }
+
                 child_max_len_vec.insert(idx, child_max_len);
             }
             if is_exist_child_mark_flg {
@@ -76,39 +78,37 @@ impl CtxMenuGroup {
             child_max_len_map.insert(*term_place, child_max_len_vec);
 
             // set name_disp
-            for (idx, (parent_menu, child_menu_cont_option)) in self.ctx_menu_place_map.get_mut(&term_place).unwrap().menu_vec.iter_mut().enumerate() {
-                let space;
+            for (idx, (parent_menu, child_menu_cont_option)) in self.ctx_menu_place_map.get_mut(term_place).unwrap().menu_vec.iter_mut().enumerate() {
                 let parent_max_len = parent_max_len_map[term_place];
                 let child_max_len_vec = &child_max_len_map[term_place];
                 let perent_str = CtxMenuGroup::get_disp_name(&parent_menu.name);
+                let space = parent_max_len - get_str_width(perent_str);
                 if let Some(child_cont) = child_menu_cont_option {
-                    space = parent_max_len - (get_str_width(perent_str));
                     parent_menu.name_disp = format!("  {}{}{}", perent_str, " ".repeat(space - exist_child_mark.len()), exist_child_mark);
                     for (child_menu, _) in child_cont.menu_vec.iter_mut() {
                         let child_str = CtxMenuGroup::get_disp_name(&child_menu.name);
-                        let diff = child_max_len_vec[idx] - get_str_width(&child_str);
+                        let diff = child_max_len_vec[idx] - get_str_width(child_str);
                         child_menu.name_disp = format!("  {}{}  ", child_str, " ".repeat(diff));
                     }
                     child_cont.height = child_cont.menu_vec.len();
                     // +4 is extra
                     child_cont.width = child_max_len_vec[idx] + 4;
                 } else {
-                    space = parent_max_len - get_str_width(perent_str);
                     let exist_child_mark_space = if is_exist_child_mark_flg { "" } else { "  " };
                     parent_menu.name_disp = format!("  {}{}{}", perent_str, " ".repeat(space), exist_child_mark_space);
                 }
             }
-            self.ctx_menu_place_map.get_mut(&term_place).unwrap().height = self.ctx_menu_place_map[&term_place].menu_vec.len();
+            self.ctx_menu_place_map.get_mut(term_place).unwrap().height = self.ctx_menu_place_map[term_place].menu_vec.len();
             // +1 is Extra
-            self.ctx_menu_place_map.get_mut(&term_place).unwrap().width = parent_max_len_map[term_place] + 1;
+            self.ctx_menu_place_map.get_mut(term_place).unwrap().width = parent_max_len_map[term_place] + 1;
         }
     }
 
-    pub fn get_disp_name<'a>(name_str: &'a String) -> &'a String {
+    pub fn get_disp_name(name_str: &str) -> &str {
         if let Some(name) = LANG_MAP.get(name_str) {
             return name;
         } else {
-            return &name_str;
+            return name_str;
         }
     }
 }

@@ -36,14 +36,11 @@ impl EvtAct {
                     }
                     let child_cont = &term.ctx_menu_group.curt_cont.menu_vec.get(term.ctx_menu_group.parent_sel_y).and_then(|cont| cont.1.clone());
 
-                    // Only parent meun move
-                    if child_cont_org.is_none() && child_cont.is_none() {
+                    // Only parent meun move || Only child meun move
+                    if child_cont_org.is_none() && child_cont.is_none() || term.ctx_menu_group.parent_sel_y == term.ctx_menu_group.parent_sel_y_cache && term.ctx_menu_group.child_sel_y != USIZE_UNDEFINED {
                         return ActType::Draw(DParts::CtxMenu);
-                        // Only child meun move
-                    } else if term.ctx_menu_group.parent_sel_y == term.ctx_menu_group.parent_sel_y_cache && term.ctx_menu_group.child_sel_y != USIZE_UNDEFINED {
-                        return ActType::Draw(DParts::CtxMenu);
-                    } else if (child_cont_org.is_some() || child_cont.is_some()) && term.ctx_menu_group.child_sel_y == USIZE_UNDEFINED {
-                        return ActType::Draw(DParts::Editor);
+                    // } else if (child_cont_org.is_some() || child_cont.is_some()) && term.ctx_menu_group.child_sel_y == USIZE_UNDEFINED {
+                    //     return ActType::Draw(DParts::Editor);
                     } else {
                         return ActType::Draw(DParts::Editor);
                     }
@@ -85,13 +82,7 @@ impl EvtAct {
         if term.state.is_ctx_menu {
             let rtn = match keys {
                 Keys::Raw(Key::Left) | Keys::Raw(Key::Right) | Keys::Raw(Key::Up) | Keys::Raw(Key::Down) => true,
-                Keys::MouseMove(y, x) | Keys::MouseDownLeft(y, x) => {
-                    if term.ctx_menu_group.is_mouse_within_range(*y as usize, *x as usize) {
-                        true
-                    } else {
-                        false
-                    }
-                }
+                Keys::MouseMove(y, x) | Keys::MouseDownLeft(y, x) => term.ctx_menu_group.is_mouse_within_range(*y as usize, *x as usize),
                 _ => false,
             };
             return rtn;

@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, def::*, global::*, log::Log, model::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, def::*, global::*, log::Log, model::*},
     model::*,
     tab::Tab,
     terminal::*,
@@ -15,11 +15,11 @@ impl EvtAct {
             Log::debug_s("grep is canceled");
             EvtAct::exit_grep_result(out, term, job_grep, true);
         } else if !(job_grep.is_stdout_end && job_grep.is_stderr_end) {
-            if job_grep.grep_str.trim().len() == 0 {
+            if job_grep.grep_str.trim().is_empty() {
                 return;
             }
             let path = PathBuf::from(&term.curt().editor.search.filenm);
-            let filenm = path.file_name().unwrap_or(OsStr::new("")).to_string_lossy().to_string();
+            let filenm = path.file_name().unwrap_or_else(|| OsStr::new("")).to_string_lossy().to_string();
             let replace_folder = term.curt().editor.search.filenm.replace(&filenm, "");
             let line_str = job_grep.grep_str.replace(&replace_folder, "");
 
@@ -55,7 +55,7 @@ impl EvtAct {
         term.curt().state.grep.is_cancel = job_grep.is_cancel;
 
         term.curt().mbar.clear();
-        term.curt().mbar.set_readonly(&LANG.unable_to_edit);
+        term.curt().mbar.set_readonly(&Lang::get().unable_to_edit);
         term.curt().editor.state.is_read_only = true;
 
         let is_grep_result_vec_empty = term.curt().editor.grep_result_vec.is_empty();
@@ -88,7 +88,7 @@ impl EvtAct {
                     let mut tab_grep = Tab::new();
                     tab_grep.editor.search.str = term.curt().state.grep.search_str.clone();
                     tab_grep.editor.search.row_num = grep_result.row_num - 1;
-                    tab_grep.editor.set_keys(&Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::FindNext)));
+                    tab_grep.editor.set_keys(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::FindNext)), None);
                     Log::debug("tab.editor.search", &tab_grep.editor.search);
 
                     let folder = if term.curt().editor.search.folder.is_empty() { "".to_string() } else { format!("{}{}", &term.curt().editor.search.folder, MAIN_SEPARATOR) };
@@ -108,7 +108,7 @@ impl EvtAct {
     }
 
     #[cfg(target_os = "linux")]
-    pub fn get_grep_child(search_str: &String, search_folder: &String, search_filenm: &String) -> Child {
+    pub fn get_grep_child(search_str: &str, search_folder: &str, search_filenm: &str) -> Child {
         Log::debug_key("get_grep_child linux");
         // -r:Subfolder search, -H:File name display, -n:Line number display,
         // -I:Binary file not applicable, -i:Ignore-case, -F:Fixed-strings
@@ -141,17 +141,17 @@ impl EvtAct {
         return child;
     }
     #[cfg(target_os = "windows")]
-    pub fn get_grep_child(search_str: &String, search_folder: &String, search_filenm: &String) -> Child {
+    pub fn get_grep_child(search_str: &str, search_folder: &str, search_filenm: &str) -> Child {
         Log::info_s("              get_grep_child windows");
         let mut cmd_option = "".to_string();
         {
             if CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens {
-                cmd_option.push_str(&" -CaseSensitive");
+                cmd_option.push_str(" -CaseSensitive");
             };
         }
         {
             if !CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex {
-                cmd_option.push_str(&" -SimpleMatch");
+                cmd_option.push_str(" -SimpleMatch");
             };
         }
         let path = Path::new(&search_folder).join(&search_filenm);

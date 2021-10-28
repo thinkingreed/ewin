@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, clipboard::*, global::*, log::*, model::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, clipboard::*, global::*, log::*, model::*},
     ewin_prom::model::*,
     model::*,
     tab::Tab,
@@ -33,7 +33,7 @@ impl EvtAct {
         Log::debug_key("check_prom");
 
         if !EvtAct::check_promt_suport_keycmd(term) {
-            return ActType::Draw(DParts::MsgBar(LANG.unsupported_operation.to_string()));
+            return ActType::Draw(DParts::MsgBar(Lang::get().unsupported_operation.to_string()));
         }
 
         // Close・Esc
@@ -102,7 +102,7 @@ impl EvtAct {
     }
     pub fn prompt_check_input_field(term: &mut Terminal) -> ActType {
         // contents operation
-        if !term.curt().state.is_exists_input_field_not_open_file() {
+        if !term.curt().state.is_exists_input_field() {
             return ActType::Next;
         }
 
@@ -125,12 +125,12 @@ impl EvtAct {
             P_Cmd::CursorDown => term.curt().prom.cursor_down(state),
             P_Cmd::TabNextFocus => term.curt().prom.tab(true, state),
             P_Cmd::BackTabBackFocus => term.curt().prom.tab(false, state),
-            P_Cmd::MouseDownLeft(y, x) => term.curt().prom.ctrl_mouse(&state, y, x, true),
-            P_Cmd::MouseDragLeft(y, x) => term.curt().prom.ctrl_mouse(&state, y, x, false),
+            P_Cmd::MouseDownLeft(y, x) => term.curt().prom.ctrl_mouse(state, y, x, true),
+            P_Cmd::MouseDragLeft(y, x) => term.curt().prom.ctrl_mouse(state, y, x, false),
             _ => {}
         }
         // draw Prompt
-        if !state.is_move_row && !state.is_search {
+        if !state.is_move_row && !state.is_search && !state.is_open_file {
             return if EvtAct::is_draw_prompt_tgt_keycmd(&term.curt().prom.p_cmd) { ActType::Draw(DParts::Prompt) } else { ActType::Next };
         } else {
             return ActType::Next;
@@ -224,7 +224,7 @@ impl EvtAct {
                         PromptContPosi::Fourth => term.curt().prom.cont_4.sel.is_selected(),
                     };
                     if !is_selected {
-                        return ActType::Draw(DParts::MsgBar(LANG.no_sel_range.to_string()));
+                        return ActType::Draw(DParts::MsgBar(Lang::get().no_sel_range.to_string()));
                     }
                 }
                 P_Cmd::InsertStr(str) => {
@@ -242,7 +242,7 @@ impl EvtAct {
                         PromptContPosi::Fourth => term.curt().prom.cont_4.history.undo_vec.is_empty(),
                     };
                     if is_empty_undo {
-                        return ActType::Draw(DParts::MsgBar(LANG.no_undo_operation.to_string()));
+                        return ActType::Draw(DParts::MsgBar(Lang::get().no_undo_operation.to_string()));
                     }
                 }
                 P_Cmd::Redo => {
@@ -253,7 +253,7 @@ impl EvtAct {
                         PromptContPosi::Fourth => term.curt().prom.cont_4.history.redo_vec.is_empty(),
                     };
                     if is_empty_redo {
-                        return ActType::Draw(DParts::MsgBar(LANG.no_redo_operation.to_string()));
+                        return ActType::Draw(DParts::MsgBar(Lang::get().no_redo_operation.to_string()));
                     }
                 }
                 _ => return ActType::Next,
@@ -263,16 +263,16 @@ impl EvtAct {
     }
 
     pub fn check_clipboard(term: &mut Terminal) -> Option<String> {
-        let clipboard = get_clipboard().unwrap_or("".to_string());
+        let clipboard = get_clipboard().unwrap_or_else(|_| "".to_string());
 
-        if clipboard.len() == 0 {
-            return Some(LANG.no_value_in_clipboard.to_string());
+        if clipboard.is_empty() {
+            return Some(Lang::get().no_value_in_clipboard.to_string());
         }
         // Do not paste multiple lines for Prompt
         if term.curt().state.is_save_new_file || term.curt().state.is_search || term.curt().state.is_replace || term.curt().state.grep.is_grep || term.curt().state.is_move_row {
             // Check multiple lines
             if clipboard.match_indices(&NL::get_nl(&term.curt().editor.h_file.nl)).count() > 0 {
-                return Some(LANG.cannot_paste_multi_rows.to_string());
+                return Some(Lang::get().cannot_paste_multi_rows.to_string());
             };
         }
         return None;
@@ -285,38 +285,37 @@ impl EvtAct {
             KeyCmd::Resize | KeyCmd::CloseFile => return true,
             _ => {}
         }
-        let is_suport = match term.curt().prom.p_cmd {
+        return matches!(
+            term.curt().prom.p_cmd,
             P_Cmd::ConfirmPrompt
-            | P_Cmd::EscPrompt
-            | P_Cmd::CursorLeft
-            | P_Cmd::CursorRight
-            | P_Cmd::CursorUp
-            | P_Cmd::CursorDown
-            | P_Cmd::CursorRowHome
-            | P_Cmd::CursorRowEnd
-            | P_Cmd::CursorLeftSelect
-            | P_Cmd::CursorRightSelect
-            | P_Cmd::CursorRowHomeSelect
-            | P_Cmd::CursorRowEndSelect
-            | P_Cmd::MouseScrollUp
-            | P_Cmd::MouseScrollDown
-            | P_Cmd::BackTabBackFocus
-            | P_Cmd::Copy
-            | P_Cmd::Cut
-            | P_Cmd::Undo
-            | P_Cmd::Redo
-            | P_Cmd::TabNextFocus
-            | P_Cmd::MouseDownLeft(_, _)
-            | P_Cmd::MouseDragLeft(_, _)
-            | P_Cmd::DelNextChar
-            | P_Cmd::DelPrevChar
-            | P_Cmd::InsertStr(_)
-            | P_Cmd::FindNext
-            | P_Cmd::FindBack
-            | P_Cmd::FindCaseSensitive
-            | P_Cmd::FindRegex => true,
-            _ => false,
-        };
-        return is_suport;
+                | P_Cmd::EscPrompt
+                | P_Cmd::CursorLeft
+                | P_Cmd::CursorRight
+                | P_Cmd::CursorUp
+                | P_Cmd::CursorDown
+                | P_Cmd::CursorRowHome
+                | P_Cmd::CursorRowEnd
+                | P_Cmd::CursorLeftSelect
+                | P_Cmd::CursorRightSelect
+                | P_Cmd::CursorRowHomeSelect
+                | P_Cmd::CursorRowEndSelect
+                | P_Cmd::MouseScrollUp
+                | P_Cmd::MouseScrollDown
+                | P_Cmd::BackTabBackFocus
+                | P_Cmd::Copy
+                | P_Cmd::Cut
+                | P_Cmd::Undo
+                | P_Cmd::Redo
+                | P_Cmd::TabNextFocus
+                | P_Cmd::MouseDownLeft(_, _)
+                | P_Cmd::MouseDragLeft(_, _)
+                | P_Cmd::DelNextChar
+                | P_Cmd::DelPrevChar
+                | P_Cmd::InsertStr(_)
+                | P_Cmd::FindNext
+                | P_Cmd::FindBack
+                | P_Cmd::FindCaseSensitive
+                | P_Cmd::FindRegex
+        );
     }
 }

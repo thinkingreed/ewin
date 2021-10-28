@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, def::*, global::*, log::*, model::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, def::*, global::*, log::*, model::*},
     model::*,
 };
 use serde::Serialize;
@@ -8,13 +8,13 @@ use serde_json::Value;
 impl Editor {
     pub fn format(&mut self, fmt_type: FmtType) -> Option<String> {
         if !self.sel.is_selected() {
-            return Some(format!("{}", LANG.no_sel_range));
+            Some(Lang::get().no_sel_range.to_string())
         } else if let Err(err) = self.exec_format(fmt_type) {
-            let err_str = format!("{}{}", fmt_type, LANG.parsing_failed);
+            let err_str = format!("{}{}", fmt_type, Lang::get().parsing_failed);
             Log::error(&err_str, &err);
-            return Some(err_str);
+            Some(err_str)
         } else {
-            return None;
+            None
         }
     }
 

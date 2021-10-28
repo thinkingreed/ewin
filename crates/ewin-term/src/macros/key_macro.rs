@@ -1,7 +1,7 @@
 use ewin_com::model::{ActType, DParts};
 
 use crate::{
-    ewin_com::{global::*, log::*},
+    ewin_com::{_cfg::lang::lang_cfg::*, log::*},
     model::*,
     tab::*,
     terminal::*,
@@ -17,7 +17,7 @@ impl Tab {
         } else {
             self.editor.state.key_macro.is_record = true;
             self.editor.key_vec = vec![];
-            return ActType::Draw(DParts::MsgBar(LANG.key_recording.to_string()));
+            return ActType::Draw(DParts::MsgBar(Lang::get().key_recording.to_string()));
         }
     }
 

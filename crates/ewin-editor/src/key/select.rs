@@ -18,13 +18,12 @@ impl Editor {
     pub fn copy(&mut self) {
         Log::debug_key("copy");
 
-        let copy_str;
-        match self.sel.mode {
-            SelMode::Normal => copy_str = self.buf.slice(self.sel.get_range()),
+        let copy_str = match self.sel.mode {
+            SelMode::Normal => self.buf.slice(self.sel.get_range()),
             SelMode::BoxSelect => {
                 let (str, box_sel_vec) = self.slice_box_sel();
-                copy_str = str.clone();
                 self.box_insert.vec = box_sel_vec;
+                str
             }
         };
         set_clipboard(&copy_str);

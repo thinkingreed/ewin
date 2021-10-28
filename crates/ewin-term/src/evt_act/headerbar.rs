@@ -1,3 +1,5 @@
+use std::io::stdout;
+
 use crate::{
     ewin_com::{
         _cfg::key::{keycmd::*, keys::*},
@@ -11,13 +13,17 @@ use crate::{
 
 impl EvtAct {
     pub fn ctrl_headerbar(term: &mut Terminal) -> ActType {
-        Log::debug_key("check_headerbar");
+        Log::debug_key("ctrl_headerbar");
 
         match &term.keycmd {
             KeyCmd::HeaderBar(h_cmd) => match &h_cmd {
                 // switch_tab
                 H_Cmd::SwitchTabRight => return term.switch_tab(Direction::Right),
                 H_Cmd::SwitchTabLeft => return term.switch_tab(Direction::Left),
+                H_Cmd::MouseDragLeftUp(y, x) => {
+                    EvtAct::match_event(Keys::MouseDragLeft((*y + HEADERBAR_ROW_NUM) as u16, *x as u16), &mut stdout(), term);
+                    return ActType::Cancel;
+                }
                 H_Cmd::MouseDownLeft(y, x) => {
                     let (x, _) = (*x as usize, *y as usize);
                     if term.hbar.all_filenm_space_w >= x {
@@ -44,7 +50,7 @@ impl EvtAct {
                             if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 {
                                 term.idx = idx;
                                 Terminal::set_title(&h_file.fullpath);
-                                term.curt().editor.set_keys(&Keys::Null);
+                                term.curt().editor.set_keys(Keys::Null, None);
                                 return ActType::Draw(DParts::All);
                             }
                         }

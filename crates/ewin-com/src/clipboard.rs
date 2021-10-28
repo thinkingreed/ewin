@@ -8,7 +8,7 @@ use std::iter::FromIterator;
 use std::process;
 use std::process::Command;
 
-pub fn set_clipboard(copy_string: &String) {
+pub fn set_clipboard(copy_string: &str) {
     Log::debug_s("set_clipboard ");
     if *ENV == Env::WSL {
         if *IS_POWERSHELL_ENABLE {
@@ -30,10 +30,10 @@ pub fn set_clipboard(copy_string: &String) {
         }
     };
 }
-fn set_win_clipboard(copy_string: &String) -> anyhow::Result<()> {
+fn set_win_clipboard(copy_string: &str) -> anyhow::Result<()> {
     Log::debug("copy_string", &copy_string);
 
-    let escape_string = get_wsl_str(&copy_string);
+    let escape_string = get_wsl_str(copy_string);
 
     Log::debug("escape_string", &escape_string);
 
@@ -49,10 +49,9 @@ fn set_win_clipboard(copy_string: &String) -> anyhow::Result<()> {
 // enclose the string in "’ "
 // new line are ","
 // Empty line is an empty string
-fn get_wsl_str(str: &String) -> String {
+fn get_wsl_str(str: &str) -> String {
     let mut copy_str: String = String::new();
 
-    // TODO nl
     let str = str.replace(NEW_LINE_CRLF, &NEW_LINE_LF.to_string());
     let vec = Vec::from_iter(str.split(NEW_LINE_LF).map(String::from));
     for (i, str) in vec.iter().enumerate() {
@@ -70,7 +69,7 @@ fn get_wsl_str(str: &String) -> String {
             copy_str.push(',');
         }
     }
-    return copy_str;
+    copy_str
 }
 
 pub fn get_clipboard() -> anyhow::Result<String> {

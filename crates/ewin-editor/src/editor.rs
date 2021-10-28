@@ -1,6 +1,9 @@
 use crate::{
     ewin_com::{
-        _cfg::key::{keycmd::*, keys::*, keywhen::*},
+        _cfg::{
+            key::{keycmd::*, keys::*, keywhen::*},
+            lang::lang_cfg::*,
+        },
         global::*,
         log::*,
         model::*,
@@ -44,7 +47,7 @@ impl Editor {
             }
             cur_x += 1;
         }
-        return x - cur_x;
+        x - cur_x
     }
 
     pub fn set_cur_default(&mut self) {
@@ -58,18 +61,20 @@ impl Editor {
 
     pub fn set_cur_target(&mut self, y: usize, x: usize, is_ctrlchar_incl: bool) {
         self.cur.y = y;
+
         let (cur_x, width) = get_row_width(&self.buf.char_vec_range(y, x), 0, is_ctrlchar_incl);
+
         self.rnw = if self.state.mouse_mode == MouseMode::Normal { self.buf.len_lines().to_string().len() } else { 0 };
         self.cur.disp_x = width;
         self.cur.x = cur_x;
     }
 
     pub fn get_rnw(&self) -> usize {
-        return self.rnw;
+        self.rnw
     }
 
     pub fn get_rnw_and_margin(&self) -> usize {
-        return self.rnw + Editor::RNW_MARGIN;
+        self.rnw + Editor::RNW_MARGIN
     }
 
     pub fn set_org_state(&mut self) {
@@ -83,11 +88,14 @@ impl Editor {
         self.state.is_changed_org = self.state.is_changed;
     }
 
-    pub fn set_keys(&mut self, keys: &Keys) {
-        self.keys = *keys;
-        let keycmd = Keybind::keys_to_keycmd(keys, KeyWhen::EditorFocus, None, None);
+    pub fn set_keys(&mut self, keys: Keys, keycmd_opt: Option<&KeyCmd>) {
+        self.keys = keys;
+        let keycmd = match keycmd_opt {
+            Some(keycmd) => keycmd.clone(),
+            _ => Keybind::keys_to_keycmd(&keys, KeyWhen::EditorFocus),
+        };
         self.e_cmd = match keycmd {
-            KeyCmd::Edit(e_keycmd) => e_keycmd,
+            KeyCmd::Edit(e_cmd) => e_cmd,
             _ => E_Cmd::Null,
         };
     }
@@ -151,7 +159,7 @@ impl Editor {
             // Search
             E_Cmd::FindNext | E_Cmd::FindBack |
             // mouse
-            E_Cmd::MouseScrollUp | E_Cmd::MouseScrollDown | E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeft(_, _) | E_Cmd::MouseDownRight(_, _) | E_Cmd::MouseDragRight(_, _) | E_Cmd::MouseMove(_, _) | E_Cmd::MouseDownBoxLeft(_, _) | E_Cmd::MouseDragBoxLeft(_, _) |
+            E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) | E_Cmd::MouseDownRight(_, _) | E_Cmd::MouseDragRight(_, _) | E_Cmd::MouseMove(_, _) | E_Cmd::MouseDownBoxLeft(_, _) | E_Cmd::MouseDragBoxLeft(_, _) |
             // other
             E_Cmd::CtxtMenu | E_Cmd::BoxSelectMode => {}
             _ => {
@@ -171,7 +179,7 @@ impl Editor {
         }
 
         // Re-search when searching
-        if Keybind::is_edit(&self.e_cmd, true) && self.search.ranges.len() > 0 {
+        if Keybind::is_edit(&self.e_cmd, true) && !self.search.ranges.is_empty() {
             let len_chars = self.buf.len_chars();
             let search_str = &self.search.str.clone();
             let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
@@ -188,29 +196,29 @@ impl Editor {
         match self.e_cmd {
             E_Cmd::Cut | E_Cmd::Copy => {
                 if !self.sel.is_selected() {
-                    return ActType::Draw(DParts::MsgBar(LANG.no_sel_range.to_string()));
+                    return ActType::Draw(DParts::MsgBar(Lang::get().no_sel_range.to_string()));
                 }
             }
             E_Cmd::Undo => {
                 if self.history.len_undo() == 0 {
-                    return ActType::Draw(DParts::MsgBar(LANG.no_undo_operation.to_string()));
+                    return ActType::Draw(DParts::MsgBar(Lang::get().no_undo_operation.to_string()));
                 }
             }
             E_Cmd::Redo => {
                 if self.history.len_redo() == 0 {
-                    return ActType::Draw(DParts::MsgBar(LANG.no_redo_operation.to_string()));
+                    return ActType::Draw(DParts::MsgBar(Lang::get().no_redo_operation.to_string()));
                 }
             }
             E_Cmd::ExecRecordKey => {
                 if self.key_vec.is_empty() {
-                    return ActType::Draw(DParts::MsgBar(LANG.no_key_record_exec.to_string()));
+                    return ActType::Draw(DParts::MsgBar(Lang::get().no_key_record_exec.to_string()));
                 }
             }
 
             _ => {}
         }
 
-        return ActType::Next;
+        ActType::Next
     }
 
     pub fn ctrl_mouse_capture(&mut self) {

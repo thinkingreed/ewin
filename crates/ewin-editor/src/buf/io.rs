@@ -1,4 +1,7 @@
-use crate::{ewin_com::def::*, ewin_com::file::*, ewin_com::global::*, ewin_com::log::*, ewin_com::model::*, model::*};
+use crate::{
+    ewin_com::{_cfg::lang::lang_cfg::*, def::*, file::*, global::*, log::*, model::*},
+    model::*,
+};
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 use ropey::RopeBuilder;
 use std::{cmp::min, io::*, option::Option, *};
@@ -16,11 +19,11 @@ impl TextBuffer {
         let text_buf = TextBuffer { text: b.finish() };
 
         let nl = text_buf.check_nl();
-        return Ok((text_buf, enc, nl, bom));
+        Ok((text_buf, enc, nl, bom))
     }
 
-    pub fn set_encoding(&mut self, h_file: &mut HeaderFile, to_encode: Encode, nl_item_name: &String, apply_item_name: &String, bom_item_name: &String) -> io::Result<()> {
-        if apply_item_name == &LANG.file_reload {
+    pub fn set_encoding(&mut self, h_file: &mut HeaderFile, to_encode: Encode, nl_item_name: &str, apply_item_name: &str, bom_item_name: &str) -> io::Result<()> {
+        if apply_item_name == Lang::get().file_reload {
             let (vec, bom) = File::read_file(&h_file.filenm)?;
             h_file.bom = bom;
 
@@ -40,7 +43,7 @@ impl TextBuffer {
             h_file.enc = to_encode;
             h_file.bom = TextBuffer::get_select_item_bom(&to_encode, bom_item_name);
             h_file.nl_org = h_file.nl.clone();
-            h_file.nl = nl_item_name.clone();
+            h_file.nl = nl_item_name.to_string();
 
             if h_file.nl != h_file.nl_org {
                 self.change_nl(&h_file.nl_org, &h_file.nl);
@@ -48,26 +51,26 @@ impl TextBuffer {
         }
         Log::info("File info", &h_file);
 
-        return Ok(());
+        Ok(())
     }
 
     fn check_nl(&self) -> String {
         let mut new_line = NEW_LINE_CRLF_STR.to_string();
         // 2048 Newline character judgment at a specific size
         let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
-        let crlf_len = self.search(&NEW_LINE_CRLF, 0, min(2048, self.len_chars()), cfg_search).len();
+        let crlf_len = self.search(NEW_LINE_CRLF, 0, min(2048, self.len_chars()), cfg_search).len();
         if crlf_len == 0 {
             new_line = NEW_LINE_LF_STR.to_string();
         };
-        return new_line;
+        new_line
     }
 
-    fn get_select_item_bom(encode: &Encode, bom_item_name: &String) -> Option<Encode> {
+    fn get_select_item_bom(encode: &Encode, bom_item_name: &str) -> Option<Encode> {
         let bom = match *encode {
             Encode::UTF16LE => Some(Encode::UTF16LE),
             Encode::UTF16BE => Some(Encode::UTF16BE),
             Encode::UTF8 => {
-                if bom_item_name == &format!("BOM{}", &LANG.with) {
+                if bom_item_name == format!("BOM{}", &Lang::get().with) {
                     Some(Encode::UTF8)
                 } else {
                     None
@@ -75,7 +78,7 @@ impl TextBuffer {
             }
             _ => None,
         };
-        return bom;
+        bom
     }
 
     pub fn change_nl(&mut self, from_nl_str: &str, to_nl_str: &str) {
@@ -114,7 +117,7 @@ impl TextBuffer {
         };
         bom_vec.append(vec);
 
-        return bom_vec;
+        bom_vec
     }
 
     fn encode(&mut self, h_file: &HeaderFile) -> io::Result<(Vec<u8>, bool)> {
@@ -142,6 +145,6 @@ impl TextBuffer {
                 u8_vec = Vec::from(&*cow);
             }
         }
-        return Ok((u8_vec, had_errors));
+        Ok((u8_vec, had_errors))
     }
 }

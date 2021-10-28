@@ -1,7 +1,5 @@
-use ewin_com::global::LANG;
-
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, model::*},
     model::*,
 };
 
@@ -18,7 +16,7 @@ impl Editor {
         self.draw_range = EditorDrawRange::Not;
 
         match self.e_cmd {
-            E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorLeft | E_Cmd::CursorRight | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd => {
+            E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorLeft | E_Cmd::CursorRight | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) => {
                 if self.sel.mode == SelMode::BoxSelect {
                     self.draw_range = EditorDrawRange::Target(min(self.sel.sy, self.sel.ey), max(self.sel.sy, self.sel.ey));
 
@@ -32,17 +30,12 @@ impl Editor {
                     self.draw_range = EditorDrawRange::MoveCur;
                 }
             }
-            E_Cmd::MouseDragLeft(y, _) => {
-                if self.sel.is_selected() {
-                    self.draw_range = EditorDrawRange::Target(y, y);
-                }
-            }
             E_Cmd::MouseDragBoxLeft(_, _) => {
                 if self.sel.is_selected() {
                     self.draw_range = EditorDrawRange::All;
                 }
             }
-            E_Cmd::MouseScrollUp | E_Cmd::MouseScrollDown => {
+            E_Cmd::MouseScrollUp | E_Cmd::MouseScrollDown | E_Cmd::MouseDragLeftDown(_, _) => {
                 if self.sel.is_selected() {
                     let sel = self.sel.get_range();
                     self.draw_range = EditorDrawRange::Target(max(sel.sy, self.offset_y), sel.ey);
@@ -57,16 +50,16 @@ impl Editor {
 
     pub fn set_draw_range_finalize(&mut self, is_key_macro_exec_end: bool) {
         if self.draw_range != EditorDrawRange::All {
-            if self.rnw_org != self.get_rnw() {
-                self.draw_range = EditorDrawRange::All;
-            } else if (self.offset_x > 0 && self.cur_y_org != self.cur.y) || self.offset_x_org != self.offset_x {
+            if self.rnw_org != self.get_rnw() || (self.offset_x > 0 && self.cur_y_org != self.cur.y) || self.offset_x_org != self.offset_x {
                 self.draw_range = EditorDrawRange::All;
             } else if self.offset_y_org != self.offset_y {
                 match self.e_cmd {
-                    E_Cmd::CursorUp | E_Cmd::MouseScrollUp => self.draw_range = EditorDrawRange::ScrollUp(self.offset_y, self.offset_y + Editor::UP_DOWN_EXTRA + 1),
-                    E_Cmd::CursorDown | E_Cmd::MouseScrollDown => {
+                    E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::MouseDragLeftUp(_, _) => {
+                        self.draw_range = EditorDrawRange::ScrollUp(self.offset_y, self.offset_y + Editor::SCROLL_UP_DOWN_EXTRA + 1);
+                    }
+                    E_Cmd::CursorDown | E_Cmd::MouseScrollDown | E_Cmd::MouseDragLeftDown(_, _) => {
                         let y = self.offset_y + self.row_num - 1;
-                        self.draw_range = EditorDrawRange::ScrollDown(y - Editor::UP_DOWN_EXTRA - 1, y);
+                        self.draw_range = EditorDrawRange::ScrollDown(y - Editor::SCROLL_UP_DOWN_EXTRA - 1, y);
                     }
                     _ => self.draw_range = EditorDrawRange::All,
                 }
@@ -82,7 +75,7 @@ impl Editor {
         let y = self.cur.y;
 
         let y_after = match self.e_cmd {
-            E_Cmd::CursorDown | E_Cmd::MouseScrollDown => min(y + 1, self.buf.len_lines() - 1),
+            E_Cmd::CursorDown | E_Cmd::MouseScrollDown | E_Cmd::MouseDragLeftDown(_, _) => min(y + 1, self.buf.len_lines() - 1),
             // UP・ScrollUp
             _ => {
                 if y == 0 {
@@ -93,7 +86,7 @@ impl Editor {
             }
         };
 
-        return (y, y_after);
+        (y, y_after)
     }
 
     pub fn set_draw_range_each_process(&mut self, draw_type: EditorDrawRange) {
@@ -109,7 +102,7 @@ impl Editor {
 
     pub fn set_draw_parts(&mut self, keycmd: &KeyCmd) -> DParts {
         return match keycmd {
-            KeyCmd::Unsupported => DParts::MsgBar(LANG.unsupported_operation.to_string()),
+            KeyCmd::Unsupported => DParts::MsgBar(Lang::get().unsupported_operation.to_string()),
             KeyCmd::CloseFile => DParts::All,
             KeyCmd::Edit(e_keycmd) => match e_keycmd {
                 E_Cmd::ReplacePrompt | E_Cmd::Encoding | E_Cmd::OpenFile(_) | E_Cmd::Find | E_Cmd::MoveRow | E_Cmd::Grep | E_Cmd::OpenMenu | E_Cmd::OpenMenuFile | E_Cmd::OpenMenuConvert | E_Cmd::OpenMenuEdit | E_Cmd::OpenMenuSearch | E_Cmd::OpenMenuMacro => DParts::Prompt,

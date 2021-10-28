@@ -16,7 +16,7 @@ impl PromptCont {
     }
     pub fn paste(&mut self, ep: &mut Proc) {
         // for Not Undo
-        ep.str = get_clipboard().unwrap_or("".to_string());
+        ep.str = get_clipboard().unwrap_or_else(|_| "".to_string());
 
         let chars: Vec<char> = ep.str.chars().collect();
         ep.sel.set_s(self.cur.y, self.cur.x, self.cur.disp_x);

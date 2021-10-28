@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, colors::*, def::*, global::*, log::Log, model::*, util::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, colors::*, def::*, log::Log, model::*, util::*},
     model::*,
 };
 use crossterm::{cursor::MoveTo, terminal::ClearType::*, terminal::*};
@@ -36,7 +36,7 @@ impl Prompt {
         Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
 
         let num_of_disp = format!("{}/{}", self.prom_open_file.get_disp_file_count(), self.prom_open_file.file_all_count);
-        let cont_2_buf_desc = format!("{}{}({}){}", Colors::get_msg_highlight_fg(), &LANG.file_list, num_of_disp, Colors::get_default_fg());
+        let cont_2_buf_desc = format!("{}{}({}){}", Colors::get_msg_highlight_fg(), &Lang::get().file_list, num_of_disp, Colors::get_default_fg());
         Prompt::set_draw_vec(str_vec, self.cont_2.buf_desc_row_posi, &cont_2_buf_desc);
 
         // cont_2.buf
@@ -48,11 +48,11 @@ impl Prompt {
             let vec_y = y + self.prom_open_file.offset;
             if let Some(vec) = self.prom_open_file.vec.get(vec_y) {
                 for (x, op_file) in vec.iter().enumerate() {
-                    let file_disp_str = self.prom_open_file.get_file_disp_str(&op_file, vec_y, x);
+                    let file_disp_str = self.prom_open_file.get_file_disp_str(op_file, vec_y, x);
                     if file_disp_str != file_disp_str_org {
                         row_str.push_str(&format!("{}{}", file_disp_str, op_file.filenm_disp));
                     } else {
-                        row_str.push_str(&format!("{}", op_file.filenm_disp));
+                        row_str.push_str(&op_file.filenm_disp);
                     }
                     file_disp_str_org = file_disp_str.clone();
                 }
@@ -61,7 +61,7 @@ impl Prompt {
                 str_vec.push(format!("{}{}", MoveTo(0, self.cont_2.buf_row_posi + y as u16), row_str));
             }
         }
-        str_vec.push(format!("{}", Colors::get_default_fg_bg()));
+        str_vec.push(Colors::get_default_fg_bg());
     }
 }
 
@@ -71,40 +71,37 @@ impl PromptCont {
 
         if self.posi == PromptContPosi::First {
             let guide_str = match prom.prom_open_file.file_type {
-                OpenFileType::Normal => &LANG.set_open_filenm,
-                OpenFileType::JsMacro => &LANG.set_exec_mocro_filenm,
+                OpenFileType::Normal => &Lang::get().set_open_filenm,
+                OpenFileType::JsMacro => &Lang::get().set_exec_mocro_filenm,
             };
             self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), guide_str);
 
             self.key_desc = format!(
                 "{}{}:{}{}  {}{}:{}{}  {}{}:{}Tab  {}{}:{}Click  {}{}:{}↑↓←→",
                 Colors::get_default_fg(),
-                &LANG.open,
+                &Lang::get().open,
                 Colors::get_msg_highlight_fg(),
                 Keybind::get_key_str(KeyCmd::Prom(P_Cmd::ConfirmPrompt)),
                 Colors::get_default_fg(),
-                &LANG.close,
+                &Lang::get().close,
                 Colors::get_msg_highlight_fg(),
                 Keybind::get_key_str(KeyCmd::Prom(P_Cmd::EscPrompt)),
                 Colors::get_default_fg(),
-                &LANG.complement,
+                &Lang::get().complement,
                 Colors::get_msg_highlight_fg(),
                 Colors::get_default_fg(),
-                &LANG.select,
+                &Lang::get().select,
                 Colors::get_msg_highlight_fg(),
                 Colors::get_default_fg(),
-                &LANG.movement,
+                &Lang::get().movement,
                 Colors::get_msg_highlight_fg(),
             );
 
-            self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.filenm, Colors::get_default_fg());
+            self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().filenm, Colors::get_default_fg());
 
             Log::debug("prom.prom_open_file.cache_disp_filenm", &prom.prom_open_file.cache_disp_filenm);
 
-            // In case of Windows, cache is invalid because paste is possible by D&D of file.
-            if *ENV == Env::Windows && prom.prom_open_file.file_type == OpenFileType::Normal && &CFG.get().unwrap().try_lock().unwrap().general.prompt.open_file.dir_init == &OpenFileInitValue::None {
-                self.buf = vec![];
-            } else if prom.prom_open_file.cache_disp_filenm.len() > 0 && prom.prom_open_file.file_type == OpenFileType::Normal {
+            if !prom.prom_open_file.cache_disp_filenm.is_empty() && prom.prom_open_file.file_type == OpenFileType::Normal {
                 self.buf = prom.prom_open_file.cache_disp_filenm.chars().collect();
                 prom.prom_open_file.base_path = prom.prom_open_file.cache_full_path.clone();
             } else {
@@ -130,16 +127,16 @@ impl PromptCont {
             self.cur.x = self.buf.len();
             self.cur.disp_x = get_str_width(&self.buf.iter().collect::<String>());
         } else if self.posi == PromptContPosi::Second {
-            self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &LANG.file_list, Colors::get_default_fg());
+            self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().file_list, Colors::get_default_fg());
         }
-        return self.clone();
+        self.clone()
     }
 }
 
 impl PromOpenFile {
     pub const PATH_INPUT_FIELD: usize = USIZE_UNDEFINED;
 
-    pub fn set_file_path(prom: &mut Prompt, path: &String) {
+    pub fn set_file_path(prom: &mut Prompt, path: &str) {
         let path = &path.replace(CONTINUE_STR, &prom.prom_open_file.omitted_path_str);
         // -2 is margin
         let disp_path = cut_str(path.clone(), prom.disp_col_num - 2, true, true);
@@ -153,9 +150,9 @@ impl PromOpenFile {
         prom.cont_1.buf = disp_path.chars().collect();
     }
 
-    pub fn set_file_path_parent(prom: &mut Prompt, path: &String) {
+    pub fn set_file_path_parent(prom: &mut Prompt, path: &str) {
         if File::is_root_dir(path) {
-            PromOpenFile::set_file_path(prom, &path);
+            PromOpenFile::set_file_path(prom, path);
             return;
         }
         let path = &path.replace(CONTINUE_STR, &prom.prom_open_file.omitted_path_str);
@@ -167,14 +164,14 @@ impl PromOpenFile {
         PromOpenFile::set_file_path(prom, &parent_str);
     }
 
-    pub fn select_open_file(&mut self, path: &String) -> String {
-        let disp_filenm = get_dir_path(&path.clone());
+    pub fn select_open_file(&mut self, path: &str) -> String {
+        let disp_filenm = get_dir_path(path);
         let full_path = path.replace(CONTINUE_STR, &self.omitted_path_str);
         if self.file_type == OpenFileType::Normal {
             self.cache_disp_filenm = disp_filenm;
             self.cache_full_path = full_path.clone();
         }
-        return full_path;
+        full_path
     }
 
     pub fn chenge_file_path(prom: &mut Prompt, op_file: &OpenFile) {
@@ -213,7 +210,7 @@ impl PromOpenFile {
         for vec in self.vec[0..dest].iter() {
             count += vec.len();
         }
-        return count;
+        count
     }
 
     pub fn down_disp_file_list(&mut self) {
@@ -233,13 +230,11 @@ impl PromOpenFile {
             Direction::Right | Direction::Left => {
                 if let Some(vec) = self.vec.get(self.vec_y) {
                     if cur_direction == Direction::Right {
-                        if let Some(_) = vec.get(self.vec_x + 1) {
+                        if vec.get(self.vec_x + 1).is_some() {
                             self.vec_x += 1;
-                        };
-                    } else if self.vec_x != 0 {
-                        if let Some(_) = vec.get(self.vec_x - 1) {
-                            self.vec_x -= 1;
-                        };
+                        }
+                    } else if self.vec_x != 0 && vec.get(self.vec_x - 1).is_some() {
+                        self.vec_x -= 1;
                     }
                 }
             }
@@ -247,9 +242,9 @@ impl PromOpenFile {
                 if self.vec_y == 0 {
                     self.vec_y = PromOpenFile::PATH_INPUT_FIELD;
                 } else if let Some(vec) = self.vec.get(self.vec_y - 1) {
-                    if let Some(_) = vec.get(self.vec_x) {
+                    if vec.get(self.vec_x).is_some() {
                         self.vec_y -= 1;
-                    };
+                    }
                     if self.vec_y < self.offset {
                         self.offset -= 1;
                     }
@@ -269,19 +264,19 @@ impl PromOpenFile {
                         self.vec_y = 0;
                     }
                 } else if let Some(vec) = self.vec.get(self.vec_y + 1) {
-                    if let Some(_) = vec.get(self.vec_x) {
+                    if vec.get(self.vec_x).is_some() {
                         if self.vec_y >= self.offset + self.disp_row_len - 1 {
                             self.offset += 1;
                         }
                         self.vec_y += 1;
-                    };
+                    }
                 }
             }
         }
     }
     pub fn get_file_disp_str(&self, op_file: &OpenFile, y: usize, x: usize) -> String {
         // Select
-        return if y == self.vec_y && x == self.vec_x {
+        if y == self.vec_y && x == self.vec_x {
             if op_file.file.is_dir {
                 Colors::get_file_dir_inversion_fg_bg()
             } else if File::is_executable(&op_file.file.name) {
@@ -295,7 +290,7 @@ impl PromOpenFile {
             Colors::get_file_executable_fg_bg()
         } else {
             Colors::get_file_normal_fg_bg()
-        };
+        }
     }
 }
 pub fn get_shaping_file_list(file_vec: &mut Vec<File>, cols: usize) -> (Vec<Vec<OpenFile>>, usize) {
@@ -329,7 +324,7 @@ pub fn get_shaping_file_list(file_vec: &mut Vec<File>, cols: usize) -> (Vec<Vec<
         let mut row_vec: Vec<OpenFile> = vec![];
         for (idx, file) in file_vec.iter_mut().enumerate() {
             row_vec.push(OpenFile { file: file.clone(), ..OpenFile::default() });
-            if &row_vec.len() == &row_num || idx == file_vec_len - 1 {
+            if row_vec.len() == row_num || idx == file_vec_len - 1 {
                 all_vec.push(row_vec.clone());
                 row_vec = vec![];
             }
@@ -393,7 +388,7 @@ pub fn get_shaping_file_list(file_vec: &mut Vec<File>, cols: usize) -> (Vec<Vec<
             all_row_vec.push(row_vec);
         }
     }
-    return (all_row_vec, all_count);
+    (all_row_vec, all_count)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

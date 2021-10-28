@@ -1,7 +1,7 @@
 use crate::{
     ewin_com::{
         _cfg::key::{keycmd::*, keys::*, keywhen::*},
-        global::*,
+        _cfg::lang::lang_cfg::*,
         log::*,
         model::*,
     },
@@ -16,43 +16,40 @@ impl EvtAct {
         Log::debug("EvtAct::draw.evt_act_type", &act_type);
         Log::debug("EvtAct::draw.term.draw_parts_org", &term.draw_parts_org);
 
-        match act_type {
-            ActType::Draw(draw_parts) => {
-                if term.state.is_show_init_info {
-                    let row_posi = term.curt().editor.row_posi;
-                    term.curt().editor.clear_draw(out, row_posi);
-                    term.state.is_show_init_info = false;
-                }
-                match &draw_parts {
-                    DParts::MsgBar(msg) | DParts::AllMsgBar(msg) => {
-                        if msg == &LANG.key_recording {
-                            term.curt().mbar.set_keyrecord(&msg);
-                        } else {
-                            term.curt().mbar.set_err(&msg);
-                        }
-                        if let DParts::MsgBar(_) = draw_parts {
-                            term.curt().mbar.draw_only(out);
-                        } else if let DParts::AllMsgBar(_) = draw_parts {
-                            term.draw(out, &DParts::All);
-                        }
-                    }
-
-                    DParts::CtxMenu => {
-                        term.set_draw_range_ctx_menu();
-                        term.ctx_menu_group.draw_only(out);
-                    }
-                    DParts::Prompt => EvtAct::draw_prompt(out, term),
-                    DParts::All | DParts::Editor | DParts::ScrollUpDown(_) => {
-                        // If the last time was an err msg, redraw the whole to delete it.
-                        if let DParts::MsgBar(_) | DParts::AllMsgBar(_) = &term.draw_parts_org {
-                            term.curt().editor.draw_range = EditorDrawRange::All;
-                        }
-                        term.draw(out, &draw_parts);
-                    }
-                };
-                term.draw_parts_org = draw_parts.clone();
+        if let ActType::Draw(draw_parts) = act_type {
+            if term.state.is_show_init_info {
+                let row_posi = term.curt().editor.row_posi;
+                term.curt().editor.clear_draw(out, row_posi);
+                term.state.is_show_init_info = false;
             }
-            _ => {}
+            match &draw_parts {
+                DParts::MsgBar(msg) | DParts::AllMsgBar(msg) => {
+                    if msg == &Lang::get().key_recording {
+                        term.curt().mbar.set_keyrecord(msg);
+                    } else {
+                        term.curt().mbar.set_err(msg);
+                    }
+                    if let DParts::MsgBar(_) = draw_parts {
+                        term.curt().mbar.draw_only(out);
+                    } else if let DParts::AllMsgBar(_) = draw_parts {
+                        term.draw(out, &DParts::All);
+                    }
+                }
+
+                DParts::CtxMenu => {
+                    term.set_draw_range_ctx_menu();
+                    term.ctx_menu_group.draw_only(out);
+                }
+                DParts::Prompt => EvtAct::draw_prompt(out, term),
+                DParts::All | DParts::Editor | DParts::ScrollUpDown(_) => {
+                    // If the last time was an err msg, redraw the whole to delete it.
+                    if let DParts::MsgBar(_) | DParts::AllMsgBar(_) = &term.draw_parts_org {
+                        term.curt().editor.draw_range = EditorDrawRange::All;
+                    }
+                    term.draw(out, draw_parts);
+                }
+            };
+            term.draw_parts_org = draw_parts.clone();
         }
     }
     pub fn check_next_process<T: Write>(out: &mut T, term: &mut Terminal, act_type: ActType) -> Option<bool> {
@@ -105,18 +102,18 @@ impl EvtAct {
 
         match keywhen {
             KeyWhen::CtxMenuFocus => {
-                // ctx_menu
                 let act_type = EvtAct::ctrl_ctx_menu(term);
                 if let Some(rtn) = EvtAct::check_next_process(out, term, act_type) {
                     return rtn;
                 }
             }
-            KeyWhen::EditorFocus => {
-                // headerbar
+            KeyWhen::HeaderBarFocus => {
                 let act_type = EvtAct::ctrl_headerbar(term);
                 if let Some(rtn) = EvtAct::check_next_process(out, term, act_type) {
                     return rtn;
                 }
+            }
+            KeyWhen::EditorFocus => {
                 // editor
                 let act_type = EvtAct::ctrl_editor(term);
                 if let Some(rtn) = EvtAct::check_next_process(out, term, act_type) {
@@ -154,10 +151,12 @@ impl EvtAct {
         }
         term.set_keys(&keys);
         if term.keycmd == KeyCmd::Unsupported {
-            return ActType::Draw(DParts::MsgBar(LANG.unsupported_operation.to_string()));
+            return ActType::Draw(DParts::MsgBar(Lang::get().unsupported_operation.to_string()));
         }
-        term.ctx_menu_group.set_keys(keys);
-        term.curt().prom.set_keys(keys);
+        let keycmd = &term.keycmd.clone();
+        term.ctx_menu_group.set_keys(keycmd);
+        term.curt().editor.set_keys(keys, Some(keycmd));
+        term.curt().prom.set_keys(keys, keycmd);
 
         return ActType::Next;
     }
@@ -175,7 +174,7 @@ impl EvtAct {
                     term.state.is_displayable = false;
                     Terminal::clear_display();
                     Terminal::hide_cur();
-                    println!("{}", &LANG.increase_height_width_terminal);
+                    println!("{}", &Lang::get().increase_height_width_terminal);
                     return ActType::Cancel;
                 }
             }

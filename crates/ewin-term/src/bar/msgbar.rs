@@ -46,7 +46,7 @@ impl MsgBar {
 
         let mut v: Vec<String> = vec![];
         self.draw(&mut v);
-        let _ = out.write(&v.concat().as_bytes());
+        let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();
     }
 
@@ -86,23 +86,16 @@ impl MsgBar {
     }
 
     pub fn is_msg_changed(&mut self) -> bool {
-        if self.msg_org == self.msg || self.msg.str.is_empty() {
-            return false;
-        } else {
-            return true;
-        }
+        return !(self.msg_org == self.msg || self.msg.str.is_empty());
     }
     pub fn is_exsist_msg(&mut self) -> bool {
         return !(self.msg.str.is_empty() && self.msg_keyrecord.is_empty());
     }
 
     pub fn is_msg_keyrecord_changed(&mut self) -> bool {
-        if self.msg_keyrecord_org == self.msg_keyrecord {
-            return false;
-        } else {
-            return true;
-        }
+        return self.msg_keyrecord_org != self.msg_keyrecord;
     }
+
     pub fn new() -> Self {
         MsgBar { ..MsgBar::default() }
     }

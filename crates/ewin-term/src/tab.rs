@@ -1,6 +1,6 @@
 use crate::{
     bar::statusbar::*,
-    ewin_com::{global::*, log::*, model::*},
+    ewin_com::{_cfg::lang::lang_cfg::*, log::*, model::*},
     ewin_editor::model::*,
     ewin_prom::model::*,
     model::*,
@@ -10,7 +10,7 @@ use crate::{
 impl Tab {
     pub fn save(term: &mut Terminal) -> ActType {
         let h_file = term.curt_h_file().clone();
-        if h_file.filenm == LANG.new_file {
+        if h_file.filenm == Lang::get().new_file {
             term.curt().prom_save_new_file();
             return ActType::Draw(DParts::All);
         } else {
@@ -20,7 +20,7 @@ impl Tab {
                 Ok(enc_errors) => {
                     if enc_errors {
                         Log::info("Encoding errors", &enc_errors);
-                        return ActType::Draw(DParts::AllMsgBar(LANG.cannot_convert_encoding.to_string()));
+                        return ActType::Draw(DParts::AllMsgBar(Lang::get().cannot_convert_encoding.to_string()));
                     } else {
                         term.curt().editor.state.is_changed = false;
                         term.curt().prom.clear();
@@ -35,7 +35,7 @@ impl Tab {
                 }
                 Err(err) => {
                     Log::error("err", &err.to_string());
-                    return ActType::Draw(DParts::AllMsgBar(format!("{} {:?}", LANG.file_saving_problem, err.kind())));
+                    return ActType::Draw(DParts::AllMsgBar(format!("{} {:?}", Lang::get().file_saving_problem, err.kind())));
                 }
             }
         }
@@ -52,7 +52,7 @@ impl Tab {
 
     pub fn prom_close(term: &mut Terminal) -> bool {
         Log::debug_key("Tab::prom_close");
-        if term.tabs[term.idx].editor.state.is_changed == true {
+        if term.tabs[term.idx].editor.state.is_changed {
             if !term.curt().state.is_nomal() {
                 term.clear_curt_tab(true);
             }
@@ -99,6 +99,11 @@ impl Tab {
     }
     pub fn new() -> Self {
         Tab { editor: Editor::new(), mbar: MsgBar::new(), prom: Prompt::new(), sbar: StatusBar::new(), state: TabState::default() }
+    }
+}
+impl Default for Tab {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

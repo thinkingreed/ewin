@@ -1,5 +1,5 @@
 extern crate ropey;
-use crate::{global::LANG, log::*, model::Encode};
+use crate::{_cfg::lang::lang_cfg::*, log::*, model::Encode};
 use encoding_rs::Encoding;
 use faccess::PathExt;
 #[cfg(target_os = "windows")]
@@ -28,60 +28,61 @@ impl fmt::Display for File {
 impl File {
     pub fn is_readable(path_str: &str) -> bool {
         if path_str.is_empty() {
-            return true;
+            true
         } else {
             let path = Path::new(path_str);
-            return path.readable();
+            path.readable()
         }
     }
     pub fn is_readable_writable(path_str: &str) -> (bool, bool) {
         if path_str.is_empty() {
-            return (true, true);
+            (true, true)
         } else {
             let path = Path::new(path_str);
-            return (path.readable(), path.writable());
+            (path.readable(), path.writable())
         }
     }
-    pub fn is_executable(path: &String) -> bool {
+    pub fn is_executable(path: &str) -> bool {
         if path.is_empty() {
-            return false;
+            false
         } else {
             let path = Path::new(path);
-            return path.executable();
+            path.executable()
         }
     }
     #[cfg(target_os = "linux")]
-    pub fn is_root_dir(path: &String) -> bool {
-        return path == &MAIN_SEPARATOR.to_string();
+    pub fn is_root_dir(path: &str) -> bool {
+        *path == MAIN_SEPARATOR.to_string()
     }
 
     #[cfg(target_os = "windows")]
-    pub fn is_root_dir(path: &String) -> bool {
-        // C:\ or D:\ ...
-        let re = Regex::new(r"[a-zA-Z]:\\").unwrap();
-        return re.is_match(path) && path.chars().count() == 3;
+    pub fn is_root_dir(path: &str) -> bool {
+        // C:\ or D:\ ... or \\
+        let re_1 = Regex::new(r"[a-zA-Z]:\\").unwrap();
+        let re_2 = Regex::new(r"\\\\").unwrap();
+        return re_1.is_match(path) && path.chars().count() == 3 || re_2.is_match(path);
     }
 
     pub fn read_external_file(filepath: &str) -> (String, String) {
-        let is_readable = File::is_readable(&filepath);
+        let is_readable = File::is_readable(filepath);
 
         match File::read(filepath) {
-            Ok((string, _, _)) => return (string, "".to_string()),
+            Ok((string, _, _)) => (string, "".to_string()),
             Err(err) => {
                 let filenm = Path::new(&filepath).file_name().unwrap().to_string_lossy().to_string();
                 Log::error_s(&err.to_string());
                 match err.kind() {
                     ErrorKind::PermissionDenied => {
                         if !is_readable {
-                            return ("".to_string(), format!("{} {}", &filenm, &LANG.no_read_permission.clone()));
+                            return ("".to_string(), format!("{} {}", &filenm, &Lang::get().no_read_permission.clone()));
                         }
                     }
-                    ErrorKind::NotFound => return ("".to_string(), format!("{} {}", &filenm, &LANG.file_not_found.clone())),
-                    _ => return ("".to_string(), format!("{} {}", &filenm, &LANG.file_opening_problem.clone())),
+                    ErrorKind::NotFound => return ("".to_string(), format!("{} {}", &filenm, &Lang::get().file_not_found.clone())),
+                    _ => return ("".to_string(), format!("{} {}", &filenm, &Lang::get().file_opening_problem.clone())),
                 }
-                return ("".to_string(), err.to_string());
+                ("".to_string(), err.to_string())
             }
-        };
+        }
     }
 
     pub fn read(path: &str) -> io::Result<(String, Encode, Option<Encode>)> {
@@ -119,9 +120,6 @@ impl File {
     }
 
     pub fn read_file(path: &str) -> io::Result<(Vec<u8>, Option<Encode>)> {
-        if path.is_empty() {
-            //     Err(Error::kind(std::io::Error));
-        }
         let mut file = std::fs::File::open(path)?;
 
         Log::debug("file len", &file.metadata()?.len());
@@ -131,7 +129,7 @@ impl File {
         file.seek(SeekFrom::Start(0))?;
         let bom = File::check_file_bom(&file);
 
-        return Ok((vec, bom));
+        Ok((vec, bom))
     }
     pub fn read_bytes(bytes: &[u8], encode: Encode) -> (String, Encode) {
         let encoding: &Encoding = Encode::into_encoding(encode);
@@ -141,26 +139,26 @@ impl File {
         match encode {
             Encode::UTF8 | Encode::UTF16LE | Encode::UTF16BE => {
                 //Do not load bom to prevent false recognition
-                let (cow, enc, had_errors) = Encode::into_encoding(encode).decode(&bytes);
+                let (cow, enc, had_errors) = Encode::into_encoding(encode).decode(bytes);
                 if !had_errors {
                     return ((*cow).to_string(), Encode::from_encoding(enc));
                 }
             }
             _ => {
-                if let Some(str_cow) = encoding.decode_without_bom_handling_and_without_replacement(&bytes) {
+                if let Some(str_cow) = encoding.decode_without_bom_handling_and_without_replacement(bytes) {
                     return ((*str_cow).to_string(), encode);
                 };
             }
         }
 
-        return ("".to_string(), Encode::Unknown);
+        ("".to_string(), Encode::Unknown)
     }
 
     fn check_file_bom(file: &std::fs::File) -> Option<Encode> {
         let mut reader = BufReader::new(file);
         let mut bom = [0u8; 3];
 
-        if let Ok(_) = reader.read_exact(&mut bom) {
+        if reader.read_exact(&mut bom).is_ok() {
             Log::debug("BOM", &bom);
             match Encoding::for_bom(&bom) {
                 Some((enc, _)) => {
@@ -181,6 +179,6 @@ impl File {
                 }
             }
         }
-        return None;
+        None
     }
 }

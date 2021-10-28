@@ -1,3 +1,5 @@
+#![allow(clippy::needless_return, clippy::iter_nth_zero, clippy::type_complexity)]
+
 pub mod global {
     use crate::{
         _cfg::{
@@ -12,13 +14,13 @@ pub mod global {
     use once_cell::sync::OnceCell;
     use std::{collections::HashMap, env, sync::Mutex};
 
-    pub static LANG_MAP: Lazy<HashMap<String, String>> = Lazy::new(|| LangCfg::get_lang_map());
-    pub static ENV: Lazy<Env> = Lazy::new(|| get_env_platform());
+    pub static LANG_MAP: Lazy<HashMap<String, String>> = Lazy::new(Lang::get_lang_map);
+    pub static ENV: Lazy<Env> = Lazy::new(get_env_platform);
     pub static CFG: OnceCell<Mutex<Cfg>> = OnceCell::new();
     pub static LOG: OnceCell<crate::log::Log> = OnceCell::new();
     pub static KEY_CMD_MAP: OnceCell<HashMap<(Keys, KeyWhen), KeyCmd>> = OnceCell::new();
     pub static CMD_KEY_MAP: OnceCell<HashMap<KeyCmd, Keys>> = OnceCell::new();
-    pub static LANG: Lazy<LangCfg> = Lazy::new(|| LangCfg::read_lang_cfg());
+    pub static LANG: OnceCell<Lang> = OnceCell::new();
     pub static APP_VERSION: OnceCell<String> = OnceCell::new();
 
     pub static GREP_INFO_VEC: OnceCell<tokio::sync::Mutex<Vec<GrepState>>> = OnceCell::new();
@@ -27,7 +29,7 @@ pub mod global {
 
     pub static CURT_DIR: Lazy<String> = Lazy::new(|| env::current_dir().unwrap().to_string_lossy().to_string());
 
-    pub static IS_POWERSHELL_ENABLE: Lazy<bool> = Lazy::new(|| is_wsl_powershell_enable());
+    pub static IS_POWERSHELL_ENABLE: Lazy<bool> = Lazy::new(is_wsl_powershell_enable);
     // Clipboard on memory
     pub static CLIPBOARD: OnceCell<String> = OnceCell::new();
 }

@@ -18,7 +18,24 @@ It provides basic features as a minimal text editor:
 - Tab support
 - Box select・Inseret support
 
+
 [![Rust](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml/badge.svg)](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml)
+[![crate-name at crates.io](https://img.shields.io/crates/v/ewin.svg)](https://crates.io/crates/ewin)
+
+## Sample image
+- **grep**
+
+1. Input Ctrl + g
+2. Input search character, search folder, file pattern.
+3. Display screen of grep result.
+4. Enter the Enter key on the 3th line of the grep result screen to open the target file in a new tab.
+   The cursor moves to the character in the search result.
+   ![grep](https://github.com/thinkingreed/ewin/wiki/assets/img/grep.gif 'grep')
+
+- **See below for other sample images**
+
+https://github.com/thinkingreed/ewin/wiki/Sample-image
+
 
 ## Installation
 
@@ -59,7 +76,7 @@ $ ew [file]         # Open files to edit
 Configuration file output.
 
 ```sh
-$ ewin -o, --output-config
+$ ew -o, --output-config
 ```
 
 The output location of the config file is as follows.
@@ -79,28 +96,28 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 - **Operations**
 
-| Mapping        | Motion                                                                                                              | Key recording |
-| -------------- | ------------------------------------------------------------------------------------------------------------------- | ------------- |
-| `Ctrl` + `w`   | Quit.                                                                                                               | ―             |
-| `Ctrl` + `s`   | Save current buffer to file.                                                                                        | ―             |
-| `F1`           | Key binding display at the bottom of the screen.                                                                    | ―             |
-| `Ctrl` + `f`   | Enter the characters to incremental search.Search target is open file.                                              | ―             |
-| `Ctrl` + `g`   | Grep. Enter the characters you want to search for. The search target is the UTF-8 file of the entered file pattern. | ―             |
-|                | Linux・WSL                                                                                                          | ―             |
-|                | Command to use : grep -rHnI search_str --include=search_filenm search_folder                                        |               |
-|                | -r:Subfolder search,-H:File name display,-n:Line number display,-I: Binary file not applicable                      |               |
-|                | Windows 　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　                              | ―             |
-|                | Command to use : dir -recurse search_folder -Exclude Binary file... \| Select-String search_str                     |               |
-| `Shift` + `F1` | Key record start or stop.Recording key operation.                                                                   | ―             |
-| `Shift` + `F2` | Execution of the recorded key.                                                                                      | ―             |
-| `Ctrl` + `o`   | Open new file.                                                                                                      | ―             |
-| `Ctrl` + `n`   | Create new tab. Another operation is to double-click the header.                                                    | ―             |
-|                | In case of Windows, it will not be recognized unless you double-click slowly                                        |               |
-| `Alt` + `←`・`→`   | Switch tab.                                                                                                    | ―             |
-| `Ctrl` + `e`   | Specify the character code and reload. Or set the character code line feed code and BOM.                            | ―             |
-| `F12`          | Mouse capture changes.Used for clipboard access via terminal app                                                    | ―             |
-|                | when connecting to a remote terminal                                                                                | ―             |
-| `F10`          | Display Context menu.                                                                                               | ―             |
+| Mapping          | Motion                                                                                                              | Key recording |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `Ctrl` + `w`     | Quit.                                                                                                               | ―             |
+| `Ctrl` + `s`     | Save current buffer to file.                                                                                        | ―             |
+| `F1`             | Key binding display at the bottom of the screen.                                                                    | ―             |
+| `Ctrl` + `f`     | Enter the characters to incremental search.Search target is open file.                                              | ―             |
+| `Ctrl` + `g`     | Grep. Enter the characters you want to search for. The search target is the UTF-8 file of the entered file pattern. | ―             |
+|                  | Linux・WSL                                                                                                          | ―             |
+|                  | Command to use : grep -rHnI search_str --include=search_filenm search_folder                                        |               |
+|                  | -r:Subfolder search,-H:File name display,-n:Line number display,-I: Binary file not applicable                      |               |
+|                  | Windows 　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　                              | ―             |
+|                  | Command to use : dir -recurse search_folder -Exclude Binary file... \| Select-String search_str                     |               |
+| `Shift` + `F1`   | Key record start or stop.Recording key operation.                                                                   | ―             |
+| `Shift` + `F2`   | Execution of the recorded key.                                                                                      | ―             |
+| `Ctrl` + `o`     | Open new file.                                                                                                      | ―             |
+| `Ctrl` + `n`     | Create new tab. Another operation is to double-click the header.                                                    | ―             |
+|                  | In case of Windows, it will not be recognized unless you double-click slowly                                        |               |
+| `Alt` + `←`・`→` | Switch tab.                                                                                                         | ―             |
+| `Ctrl` + `e`     | Specify the character code and reload. Or set the character code line feed code and BOM.                            | ―             |
+| `F12`            | Mouse capture changes.Used for clipboard access via terminal app                                                    | ―             |
+|                  | when connecting to a remote terminal                                                                                | ―             |
+| `F10`            | Display Context menu.                                                                                               | ―             |
 
 - **Moving cursor**
 
@@ -211,20 +228,6 @@ Operation / Unexpected error log is output below.
 
 %USERPROFILE%AppData\\Local\\Temp\\ewin\\
 
-## Sample imsage
-
-- **Initial display**  
-  ![initial](assets/img/init.png 'initial')
-- **help**  
-  ![help](assets/img/help.png 'help')
-- **grep**
-
-1. Input search character, search folder, file pattern.
-2. Display screen of grep result.
-3. Enter the Enter key on the 3th line of the grep result screen to open the target file in a new tab.
-   The cursor moves to the character in the search result.
-   ![grep](assets/img/grep.gif 'grep')
-
 ## Settings when using via Tera Term
 
 Settings when using via Tera Term is as follows.
@@ -240,8 +243,9 @@ Built-in v8 engine using rusty_v8.
 
 ## Future Works
 
-- Grep-Replace function
 - Swap file
+- Auto save file
 
 ## License
+
 This project is distributed under [the MIT License](./LICENSE).

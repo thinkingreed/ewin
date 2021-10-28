@@ -11,7 +11,7 @@ impl History {
     }
 
     pub fn get_undo_last(&mut self) -> Option<EvtProc> {
-        if self.undo_vec.len() == 0 {
+        if self.undo_vec.is_empty() {
             None
         } else {
             Some(self.undo_vec[self.undo_vec.len() - 1].clone())
@@ -22,7 +22,7 @@ impl History {
     }
 
     pub fn get_redo_last(&mut self) -> Option<EvtProc> {
-        if self.redo_vec.len() == 0 {
+        if self.redo_vec.is_empty() {
             None
         } else {
             Some(self.redo_vec[self.redo_vec.len() - 1].clone())
@@ -55,7 +55,7 @@ impl History {
 
         let now = Local::now().naive_local();
 
-        if self.mouse_click_vec.len() > 0 {
+        if !self.mouse_click_vec.is_empty() {
             if let Some((one_before, one_before_keys)) = self.mouse_click_vec.get(self.mouse_click_vec.len() - 1) {
                 if keys != one_before_keys || (now - *one_before).num_milliseconds() > MULTI_CLICK_MILLISECONDS {
                     self.mouse_click_vec.clear();
@@ -79,11 +79,11 @@ impl History {
             }
         }
 
-        self.mouse_click_vec.push_back((now, keys.clone()));
-        return click_count;
+        self.mouse_click_vec.push_back((now, *keys));
+        click_count
     }
 
-    pub fn set_sel_multi_click(&mut self, mouse_proc: MouseProc, sel: &mut SelRange, cur: &Cur, row: &Vec<char>, keys: &Keys) {
+    pub fn set_sel_multi_click(&mut self, mouse_proc: MouseProc, sel: &mut SelRange, cur: &Cur, row: &[char], keys: &Keys) {
         match mouse_proc {
             MouseProc::DownLeft | MouseProc::DownLeftBox => {
                 match self.count_multi_click(keys) {
@@ -94,14 +94,14 @@ impl History {
                     }
                     // Delimiter unit
                     2 => {
-                        let (sx, ex) = get_delim_x(&row, cur.x);
+                        let (sx, ex) = get_delim_x(row, cur.x);
                         sel.set_s(cur.y, sx, get_row_width(&row[..sx], 0, false).1);
                         sel.set_e(cur.y, ex, get_row_width(&row[..ex], 0, false).1);
                     }
                     // One row
                     3 => {
                         sel.set_s(cur.y, 0, 0);
-                        let (cur_x, width) = get_row_width(&row[..], 0, true);
+                        let (cur_x, width) = get_row_width(row, 0, true);
                         sel.set_e(cur.y, cur_x, width);
                     }
                     _ => {}

@@ -14,7 +14,7 @@ pub fn get_str_width(msg: &str) -> usize {
         // Because the width varies depending on the environment
         width += get_char_width_not_tab(&c);
     }
-    return width;
+    width
 }
 
 /// Get cur_x of any x. If there are no characters, return None.
@@ -41,7 +41,7 @@ pub fn get_row_x(char_arr: &[char], disp_x: usize, is_ctrlchar_incl: bool) -> Op
         width += c_len;
         cur_x += 1;
     }
-    return None;
+    None
 }
 
 /// Get cur_x and disp_x of the target string
@@ -61,7 +61,7 @@ pub fn get_row_width(char_arr: &[char], offset_disp_x: usize, is_ctrlchar_incl: 
         width += c_len;
         cur_x += 1;
     }
-    return (cur_x, width);
+    (cur_x, width)
 }
 
 /// Calculate disp_x and cursor_x by adding the widths up to x.
@@ -79,20 +79,20 @@ pub fn get_until_x(char_vec: &[char], x: usize) -> (usize, usize) {
             cur_x += 1;
         }
     }
-    return (cur_x, width);
+    (cur_x, width)
 }
 
 // Everything including tab
 pub fn get_char_width(c: &char, width: usize) -> usize {
     if c == &TAB_CHAR {
         let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.size;
-        return get_tab_width(width, cfg_tab_width);
+        get_tab_width(width, cfg_tab_width)
     } else {
-        return get_char_width_not_tab(c);
+        get_char_width_not_tab(c)
     }
 }
 pub fn get_tab_width(width: usize, cfg_tab_width: usize) -> usize {
-    return cfg_tab_width - width % cfg_tab_width;
+    cfg_tab_width - width % cfg_tab_width
 }
 
 pub fn get_char_width_not_tab(c: &char) -> usize {
@@ -100,7 +100,24 @@ pub fn get_char_width_not_tab(c: &char) -> usize {
     if c == &NEW_LINE_LF {
         return 1;
     }
-    return c.width().unwrap_or(0);
+    // Correspondence for each OS of characters whose judgment is wrong in unicode_width
+    if let Some(width) = get_char_width_tgt_os(c) {
+        return width;
+    };
+    c.width().unwrap_or(0)
+}
+
+#[cfg(target_os = "windows")]
+pub fn get_char_width_tgt_os(c: &char) -> Option<usize> {
+    if ['■', '●', '◆', '□', '○', '◇', '→', '←', '↑', '↓'].contains(c) {
+        return Some(2);
+    }
+    return None;
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn get_char_width_tgt_os(_c: &char) -> Option<usize> {
+    return None;
 }
 
 #[cfg(target_os = "linux")]
@@ -110,8 +127,11 @@ pub fn get_env_platform() -> Env {
     let mut buf = String::new();
     stdout.read_to_string(&mut buf).unwrap();
 
-    let env = if buf.to_ascii_lowercase().contains("microsoft") { Env::WSL } else { Env::Linux };
-    return env;
+    if buf.to_ascii_lowercase().contains("microsoft") {
+        Env::WSL
+    } else {
+        Env::Linux
+    }
 }
 #[cfg(target_os = "windows")]
 pub fn get_env_platform() -> Env {
@@ -124,7 +144,7 @@ pub fn is_wsl_powershell_enable() -> bool {
         let result = Command::new("powershell.exe").stdout(Stdio::null()).stdin(Stdio::null()).stderr(Stdio::null()).spawn();
         rtn = result.is_ok();
     }
-    return rtn;
+    rtn
 }
 
 pub fn change_output_encoding() {
@@ -140,18 +160,18 @@ pub fn is_line_end(c: char) -> bool {
 pub fn is_enable_syntax_highlight(ext: &str) -> bool {
     let disable_syntax_highlight_ext_vec = &CFG.get().unwrap().try_lock().unwrap().colors.theme.disable_syntax_highlight_ext;
 
-    return !(ext.is_empty() || disable_syntax_highlight_ext_vec.contains(&ext.to_string()));
+    !(ext.is_empty() || disable_syntax_highlight_ext_vec.contains(&ext.to_string()))
 }
 
 pub fn get_char_type(c: char) -> CharType {
     if DELIM_STR.contains(c) {
-        return CharType::Delim;
+        CharType::Delim
     } else if HALF_SPACE.contains(c) {
-        return CharType::HalfSpace;
+        CharType::HalfSpace
     } else if FULL_SPACE.contains(c) {
-        return CharType::FullSpace;
+        CharType::FullSpace
     } else {
-        return CharType::Nomal;
+        CharType::Nomal
     }
 }
 
@@ -182,7 +202,7 @@ pub fn cut_str(str: String, limit_width: usize, is_from_before: bool, is_add_con
             }
         }
     }
-    return str;
+    str
 }
 
 pub fn split_inclusive(target: &str, split_char: char) -> Vec<String> {
@@ -204,7 +224,7 @@ pub fn split_inclusive(target: &str, split_char: char) -> Vec<String> {
             vec.push(string.clone());
         }
     }
-    return vec;
+    vec
 }
 pub fn get_tab_comp_files(target_path: String, is_dir_only: bool, is_full_path_filenm: bool) -> Vec<File> {
     Log::debug_key("get_tab_comp_files");
@@ -222,11 +242,10 @@ pub fn get_tab_comp_files(target_path: String, is_dir_only: bool, is_full_path_f
 
     if let Ok(mut read_dir) = fs::read_dir(&base_dir) {
         while let Some(Ok(path)) = read_dir.next() {
-            if !is_dir_only || (is_dir_only && path.path().is_dir()) {
+            if !is_dir_only || path.path().is_dir() {
                 let mut filenm = path.path().display().to_string();
-                let v: Vec<(usize, &str)> = filenm.match_indices(target_path.as_str()).collect();
 
-                if !v.is_empty() {
+                if filenm.match_indices(target_path.as_str()).next().is_some() {
                     // Replace "./" for display
                     if &base_dir == "." {
                         filenm = filenm.replace("./", "");
@@ -241,7 +260,7 @@ pub fn get_tab_comp_files(target_path: String, is_dir_only: bool, is_full_path_f
         }
     }
     rtn_vec.sort_by_key(|file| file.name.clone());
-    return rtn_vec;
+    rtn_vec
 }
 pub fn get_dir_path(path_str: &str) -> String {
     let mut vec = split_inclusive(path_str, MAIN_SEPARATOR);
@@ -250,17 +269,14 @@ pub fn get_dir_path(path_str: &str) -> String {
     if !vec.is_empty() && vec.last().unwrap() != &MAIN_SEPARATOR.to_string() {
         vec.pop();
     }
-    return vec.join("");
+    vec.join("")
 }
 
 pub fn change_nl(string: &mut String, to_nl: &str) {
-    if to_nl == NEW_LINE_LF_STR {
-        *string = string.replace(NEW_LINE_CRLF, &NEW_LINE_LF.to_string());
-        // CRLF
-    } else {
-        // Since it is not possible to replace only LF from a character string containing CRLF,
-        // convert it to LF and then convert it to CRLF.
-        *string = string.replace(NEW_LINE_CRLF, &NEW_LINE_LF.to_string());
+    // Since it is not possible to replace only LF from a character string containing CRLF,
+    // convert it to LF and then convert it to CRLF.
+    *string = string.replace(NEW_LINE_CRLF, &NEW_LINE_LF.to_string());
+    if to_nl == NEW_LINE_CRLF_STR {
         *string = string.replace(&NEW_LINE_LF.to_string(), NEW_LINE_CRLF);
     }
 }
@@ -287,10 +303,10 @@ pub fn change_regex(string: String) -> String {
         let string = string.replace("\\\"", &"\"".to_string());
         return string;
     }
-    return string;
+    string
 }
 pub fn get_tab_str() -> String {
-    return CFG.get().unwrap().try_lock().unwrap().general.editor.tab.tab.clone();
+    CFG.get().unwrap().try_lock().unwrap().general.editor.tab.tab.clone()
 }
 
 pub fn is_include_path(src: &str, dst: &str) -> bool {
@@ -305,7 +321,7 @@ pub fn is_include_path(src: &str, dst: &str) -> bool {
             is_include = false;
         }
     }
-    return is_include;
+    is_include
 }
 
 pub fn get_term_size() -> (u16, u16) {
@@ -313,9 +329,9 @@ pub fn get_term_size() -> (u16, u16) {
 
     // (1, 1) is judged as test
     if (columns, rows) == (1, 1) {
-        return (TERM_MINIMUM_WIDTH as u16, TERM_MINIMUM_HEIGHT as u16);
+        (TERM_MINIMUM_WIDTH as u16, TERM_MINIMUM_HEIGHT as u16)
     } else {
-        return (columns, rows);
+        (columns, rows)
     }
 }
 pub fn get_delim_x(row: &[char], x: usize) -> (usize, usize) {
@@ -324,10 +340,10 @@ pub fn get_delim_x(row: &[char], x: usize) -> (usize, usize) {
     let sx = get_delim(&forward, x, true);
     let backward = row[x..].to_vec();
     let ex = get_delim(&backward, x, false);
-    return (sx, ex);
+    (sx, ex)
 }
 
-fn get_delim(target: &Vec<char>, x: usize, is_forward: bool) -> usize {
+fn get_delim(target: &[char], x: usize, is_forward: bool) -> usize {
     let mut rtn_x = 0;
 
     let mut char_type_org = CharType::Nomal;
@@ -344,7 +360,7 @@ fn get_delim(target: &Vec<char>, x: usize, is_forward: bool) -> usize {
         }
         char_type_org = char_type;
     }
-    return rtn_x;
+    rtn_x
 }
 
 #[cfg(test)]

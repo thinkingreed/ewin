@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, colors::*, global::*, log::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, colors::*, log::*},
     model::*,
 };
 
@@ -28,24 +28,24 @@ impl Prompt {
 impl PromptCont {
     pub fn set_replace(&mut self) {
         if self.posi == PromptContPosi::First {
-            self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &LANG.set_replace);
+            self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &Lang::get().set_replace);
             self.key_desc = format!(
                 "{}{}:{}{}  {}{}:{}Tab ↓↑  {}{}:{}{}",
                 Colors::get_default_fg(),
-                &LANG.all_replace,
+                &Lang::get().all_replace,
                 Colors::get_msg_highlight_fg(),
                 Keybind::get_key_str(KeyCmd::Prom(P_Cmd::ConfirmPrompt)),
                 Colors::get_default_fg(),
-                &LANG.move_setting_location,
+                &Lang::get().move_setting_location,
                 Colors::get_msg_highlight_fg(),
                 Colors::get_default_fg(),
-                &LANG.close,
+                &Lang::get().close,
                 Colors::get_msg_highlight_fg(),
                 Keybind::get_key_str(KeyCmd::Prom(P_Cmd::EscPrompt)),
             );
-            self.buf_desc = format!("{}{}", Colors::get_default_fg(), &LANG.search_str,);
+            self.buf_desc = format!("{}{}", Colors::get_default_fg(), &Lang::get().search_str,);
         } else {
-            self.buf_desc = format!("{}{}", Colors::get_default_fg(), &LANG.replace_char,);
+            self.buf_desc = format!("{}{}", Colors::get_default_fg(), &Lang::get().replace_char,);
         }
         self.set_opt_case_sens();
         self.set_opt_regex();

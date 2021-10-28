@@ -32,7 +32,11 @@ impl From<Color> for CrosstermColor {
 
 impl CharStyle {
     pub fn from_syntect_style(cfg: &Cfg, style: syntect::highlighting::Style) -> CharStyle {
-        return if cfg.colors.theme.theme_bg_enable { CharStyle { bg: style.background.into(), fg: style.foreground.into() } } else { CharStyle { bg: cfg.colors.editor.bg, fg: style.foreground.into() } };
+        if cfg.colors.theme.theme_bg_enable {
+            CharStyle { bg: style.background.into(), fg: style.foreground.into() }
+        } else {
+            CharStyle { bg: cfg.colors.editor.bg, fg: style.foreground.into() }
+        }
     }
 
     pub fn normal(cfg: &Cfg) -> CharStyle {

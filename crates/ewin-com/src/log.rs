@@ -1,4 +1,9 @@
-use crate::{_cfg::cfg::*, def::*, global::*, model::*};
+use crate::{
+    _cfg::{cfg::*, lang::lang_cfg::*},
+    def::*,
+    global::*,
+    model::*,
+};
 use chrono::{DateTime, Local};
 use std::{
     env,
@@ -40,10 +45,9 @@ impl Log {
             };
 
             let log = Log { file, level: Log::set_log_level(log_level) };
-
             let _ = LOG.set(log);
         } else {
-            eprintln!("{}", &LANG.log_file_create_failed);
+            eprintln!("{}", &Lang::get().log_file_create_failed);
         }
     }
 

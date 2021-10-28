@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, global::*, model::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, model::*},
     model::*,
     terminal::*,
 };
@@ -7,12 +7,9 @@ use std::io::*;
 
 impl EvtAct {
     pub fn enc_nl(term: &mut Terminal) -> ActType {
-        match &term.curt().prom.keycmd {
-            KeyCmd::Resize => {
-                term.curt().prom_enc_nl();
-                return ActType::Draw(DParts::All);
-            }
-            _ => {}
+        if term.curt().prom.keycmd == KeyCmd::Resize {
+            term.curt().prom_enc_nl();
+            return ActType::Draw(DParts::All);
         }
         match term.curt().prom.p_cmd {
             P_Cmd::MouseDownLeft(y, x) => {
@@ -32,9 +29,9 @@ impl EvtAct {
                     Ok(()) => term.curt().editor.h_file = term.hbar.file_vec[term.idx].clone(),
                     Err(err) => {
                         let err_str = match err.kind() {
-                            ErrorKind::PermissionDenied => &LANG.no_read_permission,
-                            ErrorKind::NotFound => &LANG.file_not_found,
-                            _ => &LANG.file_opening_problem,
+                            ErrorKind::PermissionDenied => &Lang::get().no_read_permission,
+                            ErrorKind::NotFound => &Lang::get().file_not_found,
+                            _ => &Lang::get().file_opening_problem,
                         };
                         return ActType::Draw(DParts::MsgBar(err_str.to_string()));
                     }

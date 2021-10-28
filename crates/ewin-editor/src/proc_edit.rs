@@ -50,7 +50,7 @@ impl Editor {
                     E_Cmd::InsertLine => self.enter(),
                     E_Cmd::Cut => self.cut(ep_del),
                     E_Cmd::InsertStr(_) | E_Cmd::InsertBox(_) => self.insert_str(&mut ep),
-                    E_Cmd::DelBox(box_sel_vec) => self.undo_del_box(&box_sel_vec),
+                    E_Cmd::DelBox(box_sel_vec) => self.undo_del_box(box_sel_vec),
                     // In case of replace, only registration of Evt process
                     E_Cmd::ReplaceExec(is_regex, replace_str, search_map) => self.replace(&mut ep, *is_regex, replace_str.clone(), search_map.clone()),
                     _ => {}
@@ -77,7 +77,7 @@ impl Editor {
         let mut vec: Vec<(SelRange, String)> = vec![];
 
         for y in sy..=ey {
-            let mut row_sel = self.sel.clone();
+            let mut row_sel = self.sel;
             let mut slice_str = String::new();
             if row_sel.is_selected_width() {
                 let (slice_string, sx, ex) = self.get_disp_x_range_string(self.buf.char_vec_line(y));
@@ -96,10 +96,10 @@ impl Editor {
             vec.push((row_sel, slice_str.clone()));
 
             string.push_str(&slice_str);
-            string.push_str(&&NL::get_nl(&self.h_file.nl));
+            string.push_str(&NL::get_nl(&self.h_file.nl));
         }
 
-        return (string, vec);
+        (string, vec)
     }
 
     pub fn get_disp_x_range_string(&mut self, vec: Vec<char>) -> (String, usize, usize) {
@@ -111,7 +111,7 @@ impl Editor {
                 break;
             }
             let width_org = width;
-            let c_len = get_char_width(&c, width + self.offset_disp_x);
+            let c_len = get_char_width(c, width + self.offset_disp_x);
             width += c_len;
             cur_x_e += 1;
 
@@ -125,7 +125,7 @@ impl Editor {
                 break;
             }
         }
-        return (rtn, cur_x_s, cur_x_e);
+        (rtn, cur_x_s, cur_x_e)
     }
 
     pub fn set_box_sel_vec(&mut self, ep_del: &Proc, ep: &mut Proc) {
@@ -141,16 +141,20 @@ impl Editor {
         }
     }
     pub fn is_edit_del_keycmd(&mut self, e_cmd: &E_Cmd) -> bool {
+        matches!(e_cmd, E_Cmd::InsertStr(_) | E_Cmd::InsertLine | E_Cmd::Cut | E_Cmd::DelNextChar | E_Cmd::DelPrevChar)
+
+        /*
         match e_cmd {
-            E_Cmd::InsertStr(_) | E_Cmd::InsertLine | E_Cmd::Cut | E_Cmd::DelNextChar | E_Cmd::DelPrevChar => return true,
-            _ => return false,
+            E_Cmd::InsertStr(_) | E_Cmd::InsertLine | E_Cmd::Cut | E_Cmd::DelNextChar | E_Cmd::DelPrevChar => true,
+            _ => false,
         }
+         */
     }
     pub fn exit_box_mode(&mut self) {
         self.sel.mode = SelMode::Normal;
         self.box_insert.mode = BoxInsertMode::Normal;
     }
-    pub fn edit_proc_set_insert_str(&mut self, str: &String, ep: &mut Proc) {
+    pub fn edit_proc_set_insert_str(&mut self, str: &str, ep: &mut Proc) {
         if self.box_insert.mode == BoxInsertMode::Insert {
             // paste
             if str.is_empty() {
@@ -177,7 +181,7 @@ impl Editor {
             if str.is_empty() {
                 self.get_clipboard(ep);
             } else {
-                ep.str = if str == &TAB_CHAR.to_string() { get_tab_str() } else { str.to_string() };
+                ep.str = if str == TAB_CHAR.to_string() { get_tab_str() } else { str.to_string() };
             }
         }
     }
@@ -202,7 +206,7 @@ impl Editor {
                 return true;
             }
         }
-        return false;
+        false
     }
     pub fn del_sel_range(&mut self, ep: &Proc) {
         let sel = self.sel.get_range();
@@ -217,16 +221,16 @@ impl Editor {
 
         let (slice_str, vec) = self.slice_box_sel();
 
-        ep.str = slice_str.clone();
-        ep.box_sel_vec = vec.clone();
+        ep.str = slice_str;
+        ep.box_sel_vec = vec;
 
         Log::debug("ep", &ep);
     }
 
-    pub fn set_box_str_vec(&mut self, ins_str: &String, ep: &mut Proc) {
+    pub fn set_box_str_vec(&mut self, ins_str: &str, ep: &mut Proc) {
         for i in 0..=ep.box_sel_vec.len() - 1 {
             if !ins_str.is_empty() {
-                ep.box_sel_vec[i].1 = ins_str.clone();
+                ep.box_sel_vec[i].1 = ins_str.to_string();
             };
             ep.box_sel_vec[i].0.sx = self.cur.x;
             ep.box_sel_vec[i].0.s_disp_x = self.cur.disp_x;

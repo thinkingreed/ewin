@@ -1,11 +1,6 @@
 use crate::{
     ctx_menu::init::*,
-    ewin_com::{
-        _cfg::key::{keycmd::*, keywhen::*},
-        def::*,
-        log::*,
-        model::*,
-    },
+    ewin_com::{_cfg::key::keycmd::*, def::*, log::*, model::*},
     help::*,
     model::*,
     tab::Tab,
@@ -14,8 +9,7 @@ use crate::{
 
 impl EvtAct {
     pub fn ctrl_editor(term: &mut Terminal) -> ActType {
-        Log::debug_key("ctrl_editor");
-        EvtAct::set_keys_editor(term);
+        Log::debug_key("EvtAct::ctrl_editor");
 
         let act_type = term.curt().editor.editor_check_err();
         if ActType::Next != act_type {
@@ -24,7 +18,7 @@ impl EvtAct {
         term.curt().editor.set_org_state();
         term.curt().editor.init();
 
-        let keycmd = Keybind::keys_to_keycmd(&term.curt().editor.keys, KeyWhen::EditorFocus, None, None);
+        let keycmd = &term.keycmd.clone();
         match &keycmd {
             KeyCmd::CloseFile => {
                 if Tab::prom_close(term) {
@@ -70,7 +64,6 @@ impl EvtAct {
                 E_Cmd::MouseDownRight(_, _) | E_Cmd::MouseDragRight(_, _) => CtxMenuGroup::show_init(term),
                 E_Cmd::CtxtMenu => CtxMenuGroup::show_init(term),
                 //
-                //
                 // Operation editor
                 _ => term.curt().editor.proc(),
             },
@@ -85,7 +78,7 @@ impl EvtAct {
         }
         term.curt().editor.finalize();
 
-        let dparts = term.curt().editor.set_draw_parts(&keycmd);
+        let dparts = term.curt().editor.set_draw_parts(keycmd);
         return ActType::Draw(dparts);
     }
 
@@ -97,10 +90,5 @@ impl EvtAct {
             term.editor_draw_vec[term.idx].clear();
             return ActType::Draw(DParts::All);
         }
-    }
-
-    fn set_keys_editor(term: &mut Terminal) {
-        let key = term.keys;
-        term.curt().editor.set_keys(&key);
     }
 }

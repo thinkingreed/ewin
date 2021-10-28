@@ -1,7 +1,7 @@
 use crate::{
     ewin_com::{_cfg::key::keycmd::*, def::*, log::*, model::*},
     model::*,
-    prompt::choice::*,
+    prom::choice::*,
 };
 use std::u16;
 

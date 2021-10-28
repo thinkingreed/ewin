@@ -12,7 +12,7 @@ impl Editor {
 
         // let mut str_vec: Vec<String> = vec![];
         let (mut y, mut x_width) = (0, 0);
-        let d_range = self.draw_range.clone();
+        let d_range = self.draw_range;
 
         match d_range {
             EditorDrawRange::Not | EditorDrawRange::MoveCur => {}
@@ -28,7 +28,7 @@ impl Editor {
             }
             EditorDrawRange::All => self.clear_draw_vec(str_vec, self.row_posi - 1),
             EditorDrawRange::After(sy) => str_vec.push(format!("{}{}", MoveTo(0, (sy - self.offset_y + self.row_posi) as u16), Clear(ClearType::FromCursorDown))),
-            EditorDrawRange::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.row_num - Editor::UP_DOWN_EXTRA - 1) as u16), Clear(ClearType::FromCursorDown))),
+            EditorDrawRange::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.row_num - Editor::SCROLL_UP_DOWN_EXTRA - 1) as u16), Clear(ClearType::FromCursorDown))),
             EditorDrawRange::ScrollUp(_, _) => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, (self.row_posi) as u16), Clear(ClearType::CurrentLine))),
         }
 
@@ -109,11 +109,12 @@ impl Editor {
                 str_vec.push(">".repeat(self.get_rnw()));
             } else {
                 if self.get_rnw() > 0 {
-                    str_vec.push(" ".repeat(self.get_rnw() - (i + 1).to_string().len()).to_string());
+                    str_vec.push(" ".repeat(self.get_rnw() - (i + 1).to_string().len()));
                 }
                 str_vec.push((i + 1).to_string());
             }
-            str_vec.push(" ".repeat(Editor::RNW_MARGIN).to_string());
+            #[allow(clippy::repeat_once)]
+            str_vec.push(" ".to_string().repeat(Editor::RNW_MARGIN));
             Colors::set_text_color(str_vec);
         }
     }
@@ -128,7 +129,7 @@ impl Editor {
     pub fn clear_draw<T: Write>(&self, out: &mut T, sy: usize) {
         let mut str_vec: Vec<String> = vec![];
         self.clear_draw_vec(&mut str_vec, sy);
-        let _ = out.write(&str_vec.concat().as_bytes());
+        let _ = out.write(str_vec.concat().as_bytes());
         out.flush().unwrap();
     }
     pub fn clear_draw_vec(&self, str_vec: &mut Vec<String>, sy: usize) {

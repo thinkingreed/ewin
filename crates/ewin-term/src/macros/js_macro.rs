@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{global::*, log::Log},
+    ewin_com::{_cfg::lang::lang_cfg::*, log::Log},
     global_term::*,
     model::*,
     terminal::*,
@@ -48,7 +48,7 @@ impl Macros {
                 script
             } else {
                 Macros::log_exceptions(scope);
-                return ActType::Draw(DParts::MsgBar(format!("{} {}", &LANG.script_compile_error, &LANG.check_log_file)));
+                return ActType::Draw(DParts::MsgBar(format!("{} {}", &Lang::get().script_compile_error, &Lang::get().check_log_file)));
             };
             if let Some(result) = script.run(&mut scope) {
                 Log::debug("script.run result", &result.to_string(&mut scope).unwrap().to_rust_string_lossy(&mut scope));
@@ -59,11 +59,11 @@ impl Macros {
                 }
             } else {
                 Macros::log_exceptions(scope);
-                return ActType::Draw(DParts::MsgBar(format!("{} {}", &LANG.script_run_error, &LANG.check_log_file)));
+                return ActType::Draw(DParts::MsgBar(format!("{} {}", &Lang::get().script_run_error, &Lang::get().check_log_file)));
             };
             return ActType::Next;
         } else {
-            return ActType::Draw(DParts::MsgBar(err_str.to_string()));
+            return ActType::Draw(DParts::MsgBar(err_str));
         }
     }
 

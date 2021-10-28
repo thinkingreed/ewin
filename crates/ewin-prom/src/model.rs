@@ -1,4 +1,4 @@
-use crate::{grep::*, menu::*, open_file::*, prompt::choice::*, save_new_file::*};
+use crate::{grep::*, menu::*, open_file::*, prom::choice::*, save_new_file::*};
 use ewin_com::{
     _cfg::key::{keycmd::*, keys::Keys},
     def::*,
@@ -144,7 +144,7 @@ impl Default for PromptContOpt {
 impl PromptContOpt {
     pub fn get_check_str(&self) -> String {
         let str = if self.is_check { "[*]" } else { "[ ]" };
-        return str.to_string();
+        str.to_string()
     }
     pub fn toggle_check(&mut self) {
         match self.is_check {

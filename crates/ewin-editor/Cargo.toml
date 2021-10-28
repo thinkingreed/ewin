@@ -1,9 +1,10 @@
 [package]
 name = "ewin-editor"
 version = "0.0.2"
+rust-version = "1.56.0"
 description = "Simple editor for Window(GUI) users.No need to remember commands."
 authors = ["thinkingreed"]
-edition = "2018"
+edition = "2021"
 repository = "https://github.com/thinkingreed/ewin"
 license = "MIT"
 
@@ -15,7 +16,7 @@ ropey="1.2.0"
 syntect = "4.5"
 unicode-width = "0.1.8"
 unicode-jp= "0.4.0"
-crossterm  = {version ="0.21.0", features = ["event-stream"]} 
+crossterm  = {version ="0.22.1", features = ["event-stream"]} 
 serde = { version = "1.0.123", features = ["derive"] }
 regex = "1.4.3"
 byteorder = "1.4.3"

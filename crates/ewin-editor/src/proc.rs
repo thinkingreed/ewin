@@ -1,7 +1,12 @@
-use crate::{ewin_com::_cfg::key::keycmd::*, model::*};
+use crate::{
+    ewin_com::{_cfg::key::keycmd::*, log::*},
+    model::*,
+};
 
 impl Editor {
     pub fn proc(&mut self) {
+        Log::debug_key("Editor.proc");
+
         let e_cmd = self.e_cmd.clone();
 
         match e_cmd {
@@ -27,7 +32,7 @@ impl Editor {
             E_Cmd::FindNext => self.search_str(true, false),
             E_Cmd::FindBack => self.search_str(false, false),
             // mouse
-            E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeft(_, _) | E_Cmd::MouseDownBoxLeft(_, _) | E_Cmd::MouseDragBoxLeft(_, _) => self.ctrl_mouse(),
+            E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) | E_Cmd::MouseDownBoxLeft(_, _) | E_Cmd::MouseDragBoxLeft(_, _) => self.ctrl_mouse(),
             E_Cmd::MouseModeSwitch => self.ctrl_mouse_capture(),
             // Mode
             E_Cmd::CancelMode => self.cancel_mode(),
@@ -48,7 +53,6 @@ mod tests {
         _cfg::{cfg::*, key::keys::Keys},
         clipboard::*,
         def::*,
-        log::*,
         model::*,
     };
 
@@ -69,7 +73,7 @@ mod tests {
         e.sel.set_e(0, 1, 1);
         e.e_cmd = E_Cmd::Copy;
         e.proc();
-        let clipboard = get_clipboard().unwrap_or("".to_string());
+        let clipboard = get_clipboard().unwrap_or_else(|_| "".to_string());
         assert_eq!(clipboard, "a");
 
         // Paste
@@ -83,7 +87,7 @@ mod tests {
         e.sel.set_e(0, 2, 2);
         e.e_cmd = E_Cmd::Cut;
         e.proc();
-        let clipboard = get_clipboard().unwrap_or("".to_string());
+        let clipboard = get_clipboard().unwrap_or_else(|_| "".to_string());
         assert_eq!(clipboard, "a");
         assert_eq!(e.buf.text.to_string(), "a▚");
         assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
@@ -238,7 +242,8 @@ mod tests {
         assert_eq!(e.cur, Cur { y: 2, x: 1, disp_x: 1 });
 
         // MouseDragLeft
-        e.e_cmd = E_Cmd::MouseDragLeft(4, 4);
+        // TODO MouseDragLeftDown, MouseDragLeftUp
+        e.e_cmd = E_Cmd::MouseDragLeftDown(4, 4);
         e.keys = Keys::MouseDragLeft(4, 4);
         e.proc();
         assert_eq!(e.cur, Cur { y: 3, x: 2, disp_x: 2 });
@@ -256,7 +261,7 @@ mod tests {
         e.e_cmd = E_Cmd::MouseDragBoxLeft(3, 4);
         e.proc();
         assert_eq!(e.cur, Cur { y: 2, x: 2, disp_x: 2 });
-        assert_eq!(e.sel.get_range(), SelRange { mode: SelMode::BoxSelect, sy: 1, sx: 1, s_disp_x: 1, ey: 2, ex: 2, e_disp_x: 2, ..SelRange::default() });
+        assert_eq!(e.sel.get_range(), SelRange { mode: SelMode::BoxSelect, sy: 1, sx: 1, s_disp_x: 1, ey: 2, ex: 2, e_disp_x: 2 });
 
         // MouseModeSwitch
         e.e_cmd = E_Cmd::MouseModeSwitch;

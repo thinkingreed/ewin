@@ -1,5 +1,8 @@
 use crate::{
-    _cfg::key::{keycmd::*, keys::Key, keys::*, keywhen::*},
+    _cfg::{
+        key::{keycmd::*, keys::Key, keys::*, keywhen::*},
+        lang::lang_cfg::*,
+    },
     def::*,
     global::*,
     log::*,
@@ -33,7 +36,7 @@ impl Keybind {
                         read_str = str;
                         Log::info("read keybind.json5", &read_str);
                     }
-                    Err(e) => err_str = format!("{} {} {}", LANG.file_loading_failed, keybind_file.to_string_lossy().to_string(), e),
+                    Err(e) => err_str = format!("{} {} {}", Lang::get().file_loading_failed, keybind_file.to_string_lossy().to_string(), e),
                 }
 
                 if err_str.is_empty() {
@@ -47,7 +50,7 @@ impl Keybind {
                                 }
                             }
                         }
-                        Err(e) => err_str = format!("{}{} {} {}", LANG.file, LANG.parsing_failed, keybind_file.to_string_lossy().to_string(), e),
+                        Err(e) => err_str = format!("{}{} {} {}", Lang::get().file, Lang::get().parsing_failed, keybind_file.to_string_lossy().to_string(), e),
                     };
                 }
             } else if args.out_config_flg {
@@ -98,10 +101,14 @@ impl Keybind {
 
         let _ = KEY_CMD_MAP.set(key_cmd_map);
         let _ = CMD_KEY_MAP.set(cmd_key_map);
-        return err_str;
+        err_str
     }
 
-    pub fn keys_to_keycmd(keys: &Keys, keywhen: KeyWhen, hbar_row_posi_opt: Option<usize>, sbar_row_posi_opt: Option<usize>) -> KeyCmd {
+    pub fn keys_to_keycmd(keys: &Keys, keywhen: KeyWhen) -> KeyCmd {
+        return Keybind::keys_to_keycmd_pressed(keys, None, keywhen, USIZE_UNDEFINED, USIZE_UNDEFINED);
+    }
+
+    pub fn keys_to_keycmd_pressed(keys: &Keys, keys_org_opt: Option<&Keys>, keywhen: KeyWhen, editor_row_posi: usize, sbar_row_posi: usize) -> KeyCmd {
         Log::debug_key("keys_to_keycmd_overall");
 
         let result = KEY_CMD_MAP.get().unwrap().get(&(*keys, KeyWhen::AllFocus)).or_else(|| KEY_CMD_MAP.get().unwrap().get(&(*keys, keywhen.clone())));
@@ -116,30 +123,52 @@ impl Keybind {
             return KeyCmd::Resize;
         }
 
-        let hbar_row_posi = if hbar_row_posi_opt.is_none() { USIZE_UNDEFINED } else { hbar_row_posi_opt.unwrap() };
-        let sbar_row_posi = if sbar_row_posi_opt.is_none() { USIZE_UNDEFINED } else { sbar_row_posi_opt.unwrap() };
-
-        let keycmd = match keywhen {
+        match keywhen {
+            KeyWhen::HeaderBarFocus => {
+                match &keys {
+                    Keys::MouseDownLeft(y, x) => return KeyCmd::HeaderBar(H_Cmd::MouseDownLeft(*y as usize, *x as usize)),
+                    Keys::MouseDragLeft(y, x) => return KeyCmd::HeaderBar(H_Cmd::MouseDragLeftUp(*y as usize, *x as usize)),
+                    _ => {}
+                }
+                return KeyCmd::Unsupported;
+            }
+            KeyWhen::StatusBarFocus => {
+                if let Keys::MouseDownLeft(y, x) = &keys {
+                    return KeyCmd::StatusBar(S_Cmd::MouseDownLeft(*y as usize, *x as usize));
+                };
+                return KeyCmd::Unsupported;
+            }
             KeyWhen::EditorFocus => {
                 match &keys {
                     Keys::Shift(Key::Char(c)) => return KeyCmd::Edit(E_Cmd::InsertStr(c.to_ascii_uppercase().to_string())),
                     Keys::Raw(Key::Char(c)) => return KeyCmd::Edit(E_Cmd::InsertStr(c.to_string())),
                     Keys::MouseAltDownLeft(y, x) => return KeyCmd::Edit(E_Cmd::MouseDownBoxLeft(*y as usize, *x as usize)),
                     Keys::MouseAltDragLeft(y, x) => return KeyCmd::Edit(E_Cmd::MouseDragBoxLeft(*y as usize, *x as usize)),
-                    Keys::MouseDownLeft(y, x) if y != &(hbar_row_posi as u16) && y != &(sbar_row_posi as u16) => return KeyCmd::Edit(E_Cmd::MouseDownLeft(*y as usize, *x as usize)),
-                    Keys::MouseDragLeft(y, x) => return KeyCmd::Edit(E_Cmd::MouseDragLeft(*y as usize, *x as usize)),
+                    Keys::MouseDownLeft(y, x) => return KeyCmd::Edit(E_Cmd::MouseDownLeft(*y as usize, *x as usize)),
+                    Keys::MouseDragLeft(y, x) => {
+                        match keys_org_opt {
+                            Some(Keys::MouseDragLeft(y_org, x_org)) | Some(Keys::MouseDownLeft(y_org, x_org)) => {
+                                return if y < y_org || y == &(editor_row_posi as u16) {
+                                    KeyCmd::Edit(E_Cmd::MouseDragLeftUp(*y as usize, *x as usize))
+                                } else if y > y_org || y == &(sbar_row_posi as u16) {
+                                    KeyCmd::Edit(E_Cmd::MouseDragLeftDown(*y as usize, *x as usize))
+                                } else if y == y_org {
+                                    let cols = get_term_size().0 as usize;
+                                    if x > x_org || x == &(cols as u16) {
+                                        KeyCmd::Edit(E_Cmd::MouseDragLeftRight(*y as usize, *x as usize))
+                                    } else {
+                                        KeyCmd::Edit(E_Cmd::MouseDragLeftLeft(*y as usize, *x as usize))
+                                    }
+                                } else {
+                                    KeyCmd::Edit(E_Cmd::MouseDragLeftDown(*y as usize, *x as usize))
+                                };
+                            }
+                            _ => {}
+                        };
+                    }
                     Keys::MouseDownRight(y, x) => return KeyCmd::Edit(E_Cmd::MouseDownRight(*y as usize, *x as usize)),
                     Keys::MouseDragRight(y, x) => return KeyCmd::Edit(E_Cmd::MouseDragRight(*y as usize, *x as usize)),
                     Keys::MouseMove(y, x) => return KeyCmd::Edit(E_Cmd::MouseMove(*y as usize, *x as usize)),
-                    _ => {}
-                };
-
-                match &keys {
-                    Keys::MouseDownLeft(y, x) if y == &(hbar_row_posi as u16) => return KeyCmd::HeaderBar(H_Cmd::MouseDownLeft(*y as usize, *x as usize)),
-                    _ => {}
-                };
-                match &keys {
-                    Keys::MouseDownLeft(y, x) if y == &(sbar_row_posi as u16) => return KeyCmd::StatusBar(S_Cmd::MouseDownLeft(*y as usize, *x as usize)),
                     _ => {}
                 };
 
@@ -153,7 +182,7 @@ impl Keybind {
                     Keys::MouseDragLeft(y, x) => P_Cmd::MouseDragLeft(*y as usize, *x as usize),
                     _ => return KeyCmd::Unsupported,
                 };
-                KeyCmd::Prom(p_cmd)
+                return KeyCmd::Prom(p_cmd);
             }
             KeyWhen::CtxMenuFocus => {
                 let c_cmd = match &keys {
@@ -161,16 +190,14 @@ impl Keybind {
                     Keys::MouseMove(y, x) => C_Cmd::MouseMove(*y as usize, *x as usize),
                     _ => return KeyCmd::Unsupported,
                 };
-                KeyCmd::CtxMenu(c_cmd)
+                return KeyCmd::CtxMenu(c_cmd);
             }
             _ => return KeyCmd::Unsupported,
         };
-
-        return keycmd;
     }
 
     pub fn evt_to_keys(evt: &Event) -> Keys {
-        match evt {
+        return match evt {
             Event::Key(KeyEvent { code: c, modifiers: m }) => {
                 let inner = match c {
                     KeyCode::Char(c) => Key::Char(*c),
@@ -200,28 +227,26 @@ impl Keybind {
                     _ => Keys::Unsupported,
                 }
             }
-            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), modifiers: KeyModifiers::ALT, row: y, column: x, .. }) => return Keys::MouseAltDownLeft(*y, *x),
-            Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), modifiers: KeyModifiers::ALT, row: y, column: x, .. }) => return Keys::MouseAltDragLeft(*y, *x),
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), modifiers: KeyModifiers::ALT, row: y, column: x, .. }) => Keys::MouseAltDownLeft(*y, *x),
+            Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), modifiers: KeyModifiers::ALT, row: y, column: x, .. }) => Keys::MouseAltDragLeft(*y, *x),
             // Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), modifiers: KeyModifiers::ALT, .. }) => return Keys::MouseAltUpLeft,
-            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), row: y, column: x, .. }) => return Keys::MouseDownLeft(*y, *x),
-            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Right), row: y, column: x, .. }) => return Keys::MouseDownRight(*y, *x),
-            Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), row: y, column: x, .. }) => return Keys::MouseDragLeft(*y, *x),
-            Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Right), row: y, column: x, .. }) => return Keys::MouseDragRight(*y, *x),
-            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => return Keys::MouseScrollUp,
-            Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => return Keys::MouseScrollDown,
-            Mouse(M_Event { kind: M_Kind::Moved, row: y, column: x, .. }) => return Keys::MouseMove(*y, *x),
-            Resize(_, _) => return Keys::Resize,
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), row: y, column: x, .. }) => Keys::MouseDownLeft(*y, *x),
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Right), row: y, column: x, .. }) => Keys::MouseDownRight(*y, *x),
+            Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), row: y, column: x, .. }) => Keys::MouseDragLeft(*y, *x),
+            Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Right), row: y, column: x, .. }) => Keys::MouseDragRight(*y, *x),
+            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => Keys::MouseScrollUp,
+            Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => Keys::MouseScrollDown,
+            Mouse(M_Event { kind: M_Kind::Moved, row: y, column: x, .. }) => Keys::MouseMove(*y, *x),
+            Resize(_, _) => Keys::Resize,
             _ => Keys::Null,
-        }
+        };
     }
 
     pub fn is_edit(e_cmd: &E_Cmd, is_incl_unredo: bool) -> bool {
         match e_cmd {
-            E_Cmd::InsertStr(_) | E_Cmd::InsertLine | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Cut => {
-                return true;
-            }
-            E_Cmd::Undo | E_Cmd::Redo => return is_incl_unredo,
-            _ => return false,
+            E_Cmd::InsertStr(_) | E_Cmd::InsertLine | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Cut => true,
+            E_Cmd::Undo | E_Cmd::Redo => is_incl_unredo,
+            _ => false,
         }
     }
 
@@ -232,13 +257,13 @@ impl Keybind {
     }
     pub fn get_key_str(cmd: KeyCmd) -> String {
         let result = CMD_KEY_MAP.get().unwrap().get(&cmd);
-        return match result {
+        match result {
             Some(key) => key.to_string(),
             None => "".to_string(),
-        };
+        }
     }
     pub fn keycmd_to_keys(keycmd: &KeyCmd) -> Keys {
-        return *CMD_KEY_MAP.get().unwrap().get(&keycmd).unwrap();
+        *CMD_KEY_MAP.get().unwrap().get(keycmd).unwrap()
     }
 
     pub fn check_keybind_file(keybind: &Keybind, i: usize) -> String {
@@ -247,19 +272,19 @@ impl Keybind {
         let mut err_str = String::new();
 
         if Keys::from_str(&keybind.key).is_err() {
-            msg = &LANG.specification_err_key;
+            msg = &Lang::get().specification_err_key;
             err_key = &keybind.key;
         } else if KeyCmd::cmd_when_to_keycmd(&keybind.cmd, &keybind.when) == KeyCmd::Unsupported {
-            msg = &LANG.specification_err_keycmd;
+            msg = &Lang::get().specification_err_keycmd;
             err_key = &keybind.cmd;
         } else if KeyWhen::from_str(&keybind.when).is_err() {
-            msg = &LANG.specification_err_keywhen;
+            msg = &Lang::get().specification_err_keywhen;
             err_key = &keybind.when;
         }
 
         if !msg.is_empty() {
-            err_str = format!("{}{} {} {} setting {}{} {}", LANG.file, LANG.parsing_failed, KEYBINDING_FILE, msg, (i + 1).to_string(), ordinal_suffix(i + 1), err_key);
+            err_str = format!("{}{} {} {} setting {}{} {}", Lang::get().file, Lang::get().parsing_failed, KEYBINDING_FILE, msg, (i + 1).to_string(), ordinal_suffix(i + 1), err_key);
         }
-        return err_str;
+        err_str
     }
 }

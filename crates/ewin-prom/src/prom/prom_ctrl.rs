@@ -1,13 +1,13 @@
 use crate::{
     ewin_com::{
-        _cfg::key::{keycmd::*, keys::*, keywhen::*},
+        _cfg::key::{keycmd::*, keys::*},
         def::*,
         log::*,
         model::*,
         util::*,
     },
     model::{PromptContPosi::*, *},
-    prompt::choice::*,
+    prom::choice::*,
 };
 use crossterm::{cursor::*, terminal::ClearType::*, terminal::*};
 use std::{
@@ -57,10 +57,10 @@ impl Prompt {
         return format!("{}{}  {}{}", o1.key, o1.get_check_str(), o2.key, o2.get_check_str());
     }
 
-    pub fn set_draw_vec(str_vec: &mut Vec<String>, posi: u16, str: &String) {
+    pub fn set_draw_vec(str_vec: &mut Vec<String>, posi: u16, str: &str) {
         str_vec.push(format!("{}{}{}", MoveTo(0, posi), Clear(CurrentLine), str));
     }
-    pub fn set_draw_vec_for_greping(str_vec: &mut Vec<String>, posi: u16, str: &String) {
+    pub fn set_draw_vec_for_greping(str_vec: &mut Vec<String>, posi: u16, str: &str) {
         str_vec.push(format!("{}{}", MoveTo(0, posi), str));
     }
 
@@ -70,7 +70,7 @@ impl Prompt {
         let prom_disp_row_posi = self.disp_row_posi;
         self.draw(&mut v, prom_disp_row_posi, tab_state, is_exsist_msg, h_file);
         self.draw_cur(&mut v, tab_state);
-        let _ = out.write(&v.concat().as_bytes());
+        let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();
     }
 
@@ -315,15 +315,16 @@ impl Prompt {
             }
         }
     }
-    pub fn set_keys(&mut self, keys: Keys) {
+    pub fn set_keys(&mut self, keys: Keys, keycmd: &KeyCmd) {
         Log::debug_key("Prompt::set_keys");
-        let keycmd = Keybind::keys_to_keycmd(&keys, KeyWhen::PromptFocus, None, None);
+        //  let keycmd = Keybind::keys_to_keycmd(&keys, None, KeyWhen::PromptFocus);
         self.keycmd = keycmd.clone();
-        let p_cmd = match &keycmd {
+        let p_cmd = match keycmd {
             KeyCmd::Prom(p_cmd) => p_cmd.clone(),
             _ => P_Cmd::Null,
         };
         self.p_cmd = p_cmd.clone();
+        let keycmd = keycmd.clone();
         match self.cont_posi {
             PromptContPosi::First => self.cont_1.set_key_info(keycmd, keys, p_cmd),
             PromptContPosi::Second => self.cont_2.set_key_info(keycmd, keys, p_cmd),
@@ -347,13 +348,13 @@ impl Prompt {
         self.cont_posi = PromptContPosi::First;
     }
     pub fn is_first_draw(&mut self) -> bool {
-        return self.cont_1.guide_row_posi == 0;
+        self.cont_1.guide_row_posi == 0
     }
 }
 
 impl TabComp {
     pub fn get_tab_candidate(&mut self, is_asc: bool, target_path: String, is_dir_only: bool) -> String {
-        if self.files.len() == 0 {
+        if self.files.is_empty() {
             self.files = get_tab_comp_files(target_path.clone(), is_dir_only, true);
         }
 
@@ -361,34 +362,37 @@ impl TabComp {
 
         for file in &self.files {
             // One candidate
-            if self.files.len() == 1 {
-                if !is_dir_only {
-                    let path = Path::new(&file.name);
-                    //  let path = Path::new(&os_str);
-                    rtn_string = if path.metadata().unwrap().is_file() { file.name.to_string() } else { format!("{}{}", file.name.to_string(), path::MAIN_SEPARATOR) };
-                } else {
-                    rtn_string = format!("{}{}", file.name.to_string(), path::MAIN_SEPARATOR);
-                }
-                self.clear_tab_comp();
-                break;
 
-            // Multiple candidates
-            } else if self.files.len() > 1 {
-                Log::debug_s("Multi candidates");
-                Log::debug("self.tab_comp.index", &self.index);
-                if is_asc && self.index >= self.files.len() - 1 || self.index == USIZE_UNDEFINED {
-                    self.index = 0;
-                } else if !is_asc && self.index == 0 {
-                    self.index = self.files.len() - 1;
-                } else {
-                    self.index = if is_asc { self.index + 1 } else { self.index - 1 };
+            match self.files.len() {
+                0 => {}
+                1 => {
+                    if !is_dir_only {
+                        let path = Path::new(&file.name);
+                        //  let path = Path::new(&os_str);
+                        rtn_string = if path.metadata().unwrap().is_file() { file.name.to_string() } else { format!("{}{}", file.name.to_string(), path::MAIN_SEPARATOR) };
+                    } else {
+                        rtn_string = format!("{}{}", file.name.to_string(), path::MAIN_SEPARATOR);
+                    }
+                    self.clear_tab_comp();
+                    break;
                 }
-                rtn_string = self.files[self.index].name.clone();
-                break;
+                _ => {
+                    Log::debug_s("Multi candidates");
+                    Log::debug("self.tab_comp.index", &self.index);
+                    if is_asc && self.index >= self.files.len() - 1 || self.index == USIZE_UNDEFINED {
+                        self.index = 0;
+                    } else if !is_asc && self.index == 0 {
+                        self.index = self.files.len() - 1;
+                    } else {
+                        self.index = if is_asc { self.index + 1 } else { self.index - 1 };
+                    }
+                    rtn_string = self.files[self.index].name.clone();
+                    break;
+                }
             }
         }
 
-        return rtn_string;
+        rtn_string
     }
     pub fn clear_tab_comp(&mut self) {
         Log::debug_s("clear_tab_comp ");

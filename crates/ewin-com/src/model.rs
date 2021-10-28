@@ -1,5 +1,8 @@
 use crate::{
-    _cfg::key::{keycmd::*, keys::*},
+    _cfg::{
+        key::{keycmd::*, keys::*},
+        lang::lang_cfg::*,
+    },
     char_style::*,
     def::*,
     global::*,
@@ -103,7 +106,7 @@ pub struct GrepResult {
 }
 impl GrepResult {
     pub fn new(filenm: String, row_num: usize) -> Self {
-        return GrepResult { filenm, row_num };
+        GrepResult { filenm, row_num }
     }
 }
 impl fmt::Display for GrepResult {
@@ -138,7 +141,7 @@ impl Search {
             let (sy, ey) = (self.ranges.first().unwrap().y, self.ranges.last().unwrap().y);
             return (sy, ey);
         }
-        return (0, 0);
+        (0, 0)
     }
 }
 impl Default for Search {
@@ -174,7 +177,7 @@ impl Default for KeyMacroState {
 
 impl KeyMacroState {
     pub fn is_running(&self) -> bool {
-        return self.is_exec == true && self.is_exec_end == false;
+        self.is_exec && !self.is_exec_end
     }
 }
 
@@ -323,12 +326,8 @@ impl Default for EditorDrawRange {
 impl EditorDrawRange {
     pub fn get_type(sel_mode: SelMode, sy: usize, ey: usize) -> EditorDrawRange {
         match sel_mode {
-            SelMode::Normal => {
-                return EditorDrawRange::Target(min(sy, ey), max(sy, ey));
-            }
-            SelMode::BoxSelect => {
-                return EditorDrawRange::All;
-            }
+            SelMode::Normal => EditorDrawRange::Target(min(sy, ey), max(sy, ey)),
+            SelMode::BoxSelect => EditorDrawRange::All,
         }
     }
 }
@@ -377,10 +376,10 @@ impl GrepState {
         self.search_filenm = String::new();
     }
     pub fn is_greping(&self) -> bool {
-        return self.is_result && !(self.is_stdout_end && self.is_stderr_end) && !self.is_cancel;
+        self.is_result && !(self.is_stdout_end && self.is_stderr_end) && !self.is_cancel
     }
     pub fn is_grep_finished(&self) -> bool {
-        return self.is_result && ((self.is_stdout_end && self.is_stderr_end) || self.is_cancel);
+        self.is_result && ((self.is_stdout_end && self.is_stderr_end) || self.is_cancel)
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -412,48 +411,48 @@ pub enum Encode {
 impl Encode {
     pub fn into_encoding(self) -> &'static Encoding {
         match self {
-            Encode::UTF16LE => return &encoding_rs::UTF_16LE_INIT,
-            Encode::UTF16BE => return &encoding_rs::UTF_16BE_INIT,
-            Encode::SJIS => return &encoding_rs::SHIFT_JIS_INIT,
-            Encode::JIS => return &encoding_rs::ISO_2022_JP_INIT,
-            Encode::EucJp => return &encoding_rs::EUC_JP_INIT,
-            Encode::GBK => return &encoding_rs::GBK_INIT,
-            _ => return &encoding_rs::UTF_8_INIT,
+            Encode::UTF16LE => &encoding_rs::UTF_16LE_INIT,
+            Encode::UTF16BE => &encoding_rs::UTF_16BE_INIT,
+            Encode::SJIS => &encoding_rs::SHIFT_JIS_INIT,
+            Encode::JIS => &encoding_rs::ISO_2022_JP_INIT,
+            Encode::EucJp => &encoding_rs::EUC_JP_INIT,
+            Encode::GBK => &encoding_rs::GBK_INIT,
+            _ => &encoding_rs::UTF_8_INIT,
         }
     }
-    pub fn from_name(name: &String) -> Encode {
-        if name == &Encode::UTF16LE.to_string() {
-            return Encode::UTF16LE;
-        } else if name == &Encode::UTF16BE.to_string() {
-            return Encode::UTF16BE;
-        } else if name == &Encode::SJIS.to_string() {
-            return Encode::SJIS;
-        } else if name == &Encode::EucJp.to_string() {
-            return Encode::EucJp;
-        } else if name == &Encode::JIS.to_string() {
-            return Encode::JIS;
-        } else if name == &Encode::GBK.to_string() {
-            return Encode::GBK;
+    pub fn from_name(name: &str) -> Encode {
+        if name == Encode::UTF16LE.to_string() {
+            Encode::UTF16LE
+        } else if name == Encode::UTF16BE.to_string() {
+            Encode::UTF16BE
+        } else if name == Encode::SJIS.to_string() {
+            Encode::SJIS
+        } else if name == Encode::EucJp.to_string() {
+            Encode::EucJp
+        } else if name == Encode::JIS.to_string() {
+            Encode::JIS
+        } else if name == Encode::GBK.to_string() {
+            Encode::GBK
         } else {
-            return Encode::UTF8;
+            Encode::UTF8
         }
     }
 
     pub fn from_encoding(from: &encoding_rs::Encoding) -> Encode {
         if from == &encoding_rs::UTF_16LE_INIT {
-            return Encode::UTF16LE;
+            Encode::UTF16LE
         } else if from == &encoding_rs::UTF_16BE_INIT {
-            return Encode::UTF16BE;
+            Encode::UTF16BE
         } else if from == &encoding_rs::SHIFT_JIS_INIT {
-            return Encode::SJIS;
+            Encode::SJIS
         } else if from == &encoding_rs::EUC_JP_INIT {
-            return Encode::EucJp;
+            Encode::EucJp
         } else if from == &encoding_rs::ISO_2022_JP_INIT {
-            return Encode::JIS;
+            Encode::JIS
         } else if from == &encoding_rs::GBK_INIT {
-            return Encode::GBK;
+            Encode::GBK
         } else {
-            return Encode::UTF8;
+            Encode::UTF8
         }
     }
 }
@@ -476,9 +475,9 @@ pub struct NL {}
 impl NL {
     pub fn get_nl(nl_str: &str) -> String {
         if nl_str == NEW_LINE_CRLF_STR {
-            return NEW_LINE_CRLF.to_string();
+            NEW_LINE_CRLF.to_string()
         } else {
-            return NEW_LINE_LF.to_string();
+            NEW_LINE_LF.to_string()
         }
     }
 }
@@ -493,13 +492,13 @@ pub enum Direction {
 
 impl Direction {
     pub fn keycmd_to_curdirection(keycmd: &KeyCmd) -> Direction {
-        return match keycmd {
+        match keycmd {
             KeyCmd::Prom(P_Cmd::CursorLeft) => Direction::Left,
             KeyCmd::Prom(P_Cmd::CursorRight) => Direction::Right,
             KeyCmd::Prom(P_Cmd::CursorUp) => Direction::Up,
             KeyCmd::Prom(P_Cmd::CursorDown) => Direction::Down,
             _ => unreachable!(),
-        };
+        }
     }
 }
 
@@ -514,20 +513,20 @@ pub enum ConvType {
     Tab,
 }
 impl ConvType {
-    pub fn from_str(s: &str) -> ConvType {
-        if s == &LANG.to_lowercase {
-            return ConvType::Lowercase;
-        } else if s == &LANG.to_uppercase {
-            return ConvType::Uppercase;
-        } else if s == &LANG.to_half_width {
-            return ConvType::HalfWidth;
-        } else if s == &LANG.to_full_width {
-            return ConvType::FullWidth;
-        } else if s == &LANG.to_space {
-            return ConvType::Space;
+    pub fn from_str_conv_type(s: &str) -> ConvType {
+        return if s == Lang::get().to_lowercase {
+            ConvType::Lowercase
+        } else if s == Lang::get().to_uppercase {
+            ConvType::Uppercase
+        } else if s == Lang::get().to_half_width {
+            ConvType::HalfWidth
+        } else if s == Lang::get().to_full_width {
+            ConvType::FullWidth
+        } else if s == Lang::get().to_space {
+            ConvType::Space
         } else {
-            return ConvType::Tab;
-        }
+            ConvType::Tab
+        };
     }
 }
 
@@ -590,7 +589,7 @@ impl fmt::Display for SelMode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             SelMode::Normal => write!(f, ""),
-            SelMode::BoxSelect => write!(f, "{}", LANG.box_select),
+            SelMode::BoxSelect => write!(f, "{}", Lang::get().box_select),
         }
     }
 }
@@ -608,8 +607,8 @@ impl Default for Args {
 }
 impl Args {
     pub fn new(matches: &ArgMatches) -> Self {
-        let file_path: String = matches.value_of_os("file").unwrap_or(OsStr::new("")).to_string_lossy().to_string();
-        Args { filenm: file_path, out_config_flg: if matches.is_present("output-config") { true } else { false } }
+        let file_path: String = matches.value_of_os("file").unwrap_or_else(|| OsStr::new("")).to_string_lossy().to_string();
+        Args { filenm: file_path, out_config_flg: matches.is_present("output-config") }
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -680,7 +679,7 @@ impl HeaderFile {
             file_fullpath = Path::new(&*CURT_DIR).join(filenm).to_string_lossy().to_string();
         }
 
-        return HeaderFile { filenm: if filenm.is_empty() { LANG.new_file.clone() } else { Path::new(&setting_filenm).file_name().unwrap().to_string_lossy().to_string() }, fullpath: file_fullpath, ..HeaderFile::default() };
+        HeaderFile { filenm: if filenm.is_empty() { Lang::get().new_file.clone() } else { Path::new(&setting_filenm).file_name().unwrap().to_string_lossy().to_string() }, fullpath: file_fullpath, ..HeaderFile::default() }
     }
 }
 
@@ -706,7 +705,7 @@ impl fmt::Display for BoxInsertMode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             BoxInsertMode::Normal => write!(f, ""),
-            BoxInsertMode::Insert => write!(f, "{}", LANG.box_insert),
+            BoxInsertMode::Insert => write!(f, "{}", Lang::get().box_insert),
         }
     }
 }
@@ -729,13 +728,13 @@ impl fmt::Display for FmtType {
     }
 }
 impl FmtType {
-    pub fn from_str(s: &str) -> FmtType {
-        if s == LANG.json {
-            return FmtType::JSON;
-        } else if s == LANG.xml {
-            return FmtType::XML;
+    pub fn from_str_fmt_type(s: &str) -> FmtType {
+        if s == Lang::get().json {
+            FmtType::JSON
+        } else if s == Lang::get().xml {
+            FmtType::XML
         } else {
-            return FmtType::HTML;
+            FmtType::HTML
         }
     }
 }
@@ -813,20 +812,28 @@ impl TabState {
         {
             return false;
         }
-        return true;
+        true
     }
     pub fn is_nomal_and_not_result(&self) -> bool {
         if !self.is_nomal() || self.grep.is_result {
             return false;
         }
-        return true;
+        true
     }
 
-    pub fn judge_when(&self, keys: &Keys) -> bool {
+    pub fn judge_when_prompt(&self, keys: &Keys) -> bool {
         if !self.is_nomal() || (self.grep.is_grep_finished() && keys == &Keys::Raw(Key::Enter)) {
             return false;
         }
         true
+    }
+    pub fn judge_when_statusbar(&self, keys: &Keys, sbar_row_posi: usize) -> bool {
+        if let Keys::MouseDownLeft(y, _) = keys {
+            if y == &(sbar_row_posi as u16) {
+                return true;
+            }
+        }
+        return false;
     }
 
     pub fn is_editor_cur(&self) -> bool {
@@ -849,12 +856,14 @@ impl TabState {
         }
         false
     }
+    /*
     pub fn is_exists_input_field_not_open_file(&self) -> bool {
         if !self.is_open_file && self.is_exists_input_field() {
             return true;
         }
         false
     }
+     */
 
     pub fn is_exists_choice(&self) -> bool {
         if self.is_enc_nl || self.is_menu {

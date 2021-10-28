@@ -18,9 +18,9 @@ impl Choices {
                     if cur_direction == Direction::Right {
                         self.vec_x = if vec.get(self.vec_x + 1).is_some() { self.vec_x + 1 } else { 0 };
                     } else if self.vec_x == 0 {
-                        if let Some(_) = vec.get(vec.len() - 1) {
+                        if vec.get(vec.len() - 1).is_some() {
                             self.vec_x = vec.len() - 1;
-                        };
+                        }
                     } else {
                         self.vec_x = if vec.get(self.vec_x - 1).is_some() { self.vec_x - 1 } else { 0 };
                     }
@@ -30,7 +30,7 @@ impl Choices {
                 if self.vec_y == 0 {
                     is_updown_contposi = true;
                 } else if let Some(vec) = self.vec.get(self.vec_y - 1) {
-                    if let Some(_) = vec.get(self.vec_x) {
+                    if vec.get(self.vec_x).is_some() {
                         self.vec_y -= 1;
                     } else {
                         is_updown_contposi = true;
@@ -41,7 +41,7 @@ impl Choices {
             }
             Direction::Down => {
                 if let Some(vec) = self.vec.get(self.vec_y + 1) {
-                    if let Some(_) = vec.get(self.vec_x) {
+                    if vec.get(self.vec_x).is_some() {
                         self.vec_y += 1;
                     } else {
                         is_updown_contposi = true;
@@ -51,7 +51,7 @@ impl Choices {
                 }
             }
         }
-        return is_updown_contposi;
+        is_updown_contposi
     }
 
     pub fn get_y_x(prompt_cont: &PromptCont) -> (usize, usize) {
@@ -68,8 +68,9 @@ impl Choices {
                 }
             }
         }
-        return (dummy_y, dummy_x);
+        (dummy_y, dummy_x)
     }
+
     pub fn set_choice_area(buf_row_posi: u16, choices_map: &mut HashMap<((usize, usize), (usize, usize)), Choices>) {
         for (_, choices) in choices_map.iter_mut() {
             for (y_idx, v) in choices.vec.iter_mut().enumerate() {
@@ -92,7 +93,7 @@ impl Choices {
 
     pub fn set_show_choice(grandparents_y: usize, grandparents_x: usize, parent_y: usize, parent_x: usize, choices_map: &mut HashMap<((usize, usize), (usize, usize)), Choices>) {
         for (((gp_y, gp_x), (p_y, p_x)), choices) in choices_map.iter_mut() {
-            choices.is_show = if grandparents_y == *gp_y && grandparents_x == *gp_x && parent_y == *p_y && parent_x == *p_x { true } else { false };
+            choices.is_show = grandparents_y == *gp_y && grandparents_x == *gp_x && parent_y == *p_y && parent_x == *p_x;
         }
     }
 
@@ -138,11 +139,11 @@ impl Default for Choice {
 }
 
 impl Choice {
-    pub fn new(name: &String) -> Self {
-        return Choice { name: name.clone(), ..Choice::default() };
+    pub fn new(name: &str) -> Self {
+        Choice { name: name.to_string(), ..Choice::default() }
     }
     pub fn is_none(&self) -> bool {
-        return self.name.is_empty();
+        self.name.is_empty()
     }
 }
 
