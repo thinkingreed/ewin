@@ -92,7 +92,7 @@ impl EvtAct {
                     Log::debug("tab.editor.search", &tab_grep.editor.search);
 
                     let folder = if term.curt().editor.search.folder.is_empty() { "".to_string() } else { format!("{}{}", &term.curt().editor.search.folder, MAIN_SEPARATOR) };
-                    let act_type = term.open(&format!("{}{}", &folder, &grep_result.filenm), &mut tab_grep, USIZE_UNDEFINED, FileOpenType::Normal);
+                    let act_type = term.open(&format!("{}{}", &folder, &grep_result.filenm), &mut tab_grep, false);
 
                     if let ActType::Draw(DParts::MsgBar(_)) = act_type {
                         return act_type;
