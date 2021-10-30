@@ -25,7 +25,7 @@ jobs:
             os: windows-latest
         rust:
           - stable
-    #          - beta
+          - beta
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
