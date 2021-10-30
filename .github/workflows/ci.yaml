@@ -11,6 +11,8 @@ env:
 
 jobs:
   test:
+    name: Rust ${{ matrix.os }} ${{ matrix.rust }}
+
     strategy:
       matrix:
         target:
@@ -21,11 +23,19 @@ jobs:
             os: ubuntu-latest
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-
+        rust:
+          - stable
+    #          - beta
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Setup code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
 
       - name: Install Library
         if: matrix.os == 'ubuntu-latest'

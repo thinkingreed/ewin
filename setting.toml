@@ -42,7 +42,7 @@ content = """
     "range_non_selected": [
       {"paste": []},
       {"all_select": []},
-      {"macros": ["insertString.js"]}
+      {"macros": ["insertString.js"]},
     ]
   },
   "header_bar": {

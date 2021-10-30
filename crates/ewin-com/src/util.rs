@@ -109,7 +109,7 @@ pub fn get_char_width_not_tab(c: &char) -> usize {
 
 #[cfg(target_os = "windows")]
 pub fn get_char_width_tgt_os(c: &char) -> Option<usize> {
-    if ['■', '●', '◆', '□', '○', '◇', '→', '←', '↑', '↓'].contains(c) {
+    if ['■', '●', '◆', '□', '○', '◇', '→', '←', '↑', '↓', '⇒', '⇔'].contains(c) {
         return Some(2);
     }
     return None;
