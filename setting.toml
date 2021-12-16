@@ -26,6 +26,7 @@ indent_size = 2
 # "" is Not set or "current_directory"
 directory_init_value = ""
 
+
 # context menu
 [general.ctx_menu]
 content = """
