@@ -22,22 +22,13 @@ impl StatusBar {
         }
         let cur_s = StatusBar::get_cur_str(tab);
         let enc_nl = format!("{}({})", h_file.enc, h_file.nl);
-        let (file_fullpath_w, search_w, box_sel_mode_w, select_mode_w, cur_w) = StatusBar::get_areas_width(tab, &enc_nl, get_str_width(&cur_s));
-        tab.sbar.search_area = (file_fullpath_w + 1, file_fullpath_w + search_w - 1);
+        let (other_w, search_w, box_sel_mode_w, select_mode_w, cur_w) = StatusBar::get_areas_width(tab, &enc_nl, get_str_width(&cur_s));
+        tab.sbar.search_area = (other_w + 1, other_w + search_w - 1);
 
-        tab.sbar.select_mode_area = (file_fullpath_w + search_w + 1, file_fullpath_w + search_w + select_mode_w - 1);
-        tab.sbar.cur_area = (file_fullpath_w + search_w + select_mode_w, file_fullpath_w + search_w + select_mode_w + cur_w - 1);
-        tab.sbar.enc_nl_area = (file_fullpath_w + select_mode_w + cur_w, file_fullpath_w + select_mode_w + cur_w + enc_nl.len() - 1);
-
-        // -1 is space
-        let path_width = get_str_width(&h_file.fullpath) + 1;
-        if path_width > file_fullpath_w {
-            // -1 is space
-            tab.sbar.fullpath_str = format!("{} ", cut_str(h_file.fullpath.clone(), file_fullpath_w - 1, true, true));
-        } else {
-            tab.sbar.fullpath_str = h_file.fullpath.to_string();
-            tab.sbar.other_str = " ".repeat(file_fullpath_w - path_width - 1);
-        };
+        tab.sbar.select_mode_area = (other_w + search_w + 1, other_w + search_w + select_mode_w - 1);
+        tab.sbar.cur_area = (other_w + search_w + select_mode_w, other_w + search_w + select_mode_w + cur_w - 1);
+        tab.sbar.enc_nl_area = (other_w + select_mode_w + cur_w, other_w + select_mode_w + cur_w + enc_nl.len() - 1);
+        tab.sbar.other_str = " ".repeat(other_w);
 
         let search_idx = if tab.editor.search.idx == USIZE_UNDEFINED { 1 } else { tab.editor.search.idx + 1 };
         let search_str = if search_w == 0 { "".to_string() } else { format!("{}({}/{})", &Lang::get().search, search_idx, tab.editor.search.ranges.len()) };
@@ -52,14 +43,15 @@ impl StatusBar {
         tab.sbar.cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
 
         let sbar_ctr = format!(
-            "{}{}{}{}{}{}{}{}{} {}{}{}{}",
-            Colors::get_sbar_fg_bg(),
+            "{}{}{}{}{}{}{}{}{}{}{}{}{}{}",
             tab.sbar.other_str,
-            Colors::get_scrollbar_bg(),
-            tab.sbar.fullpath_str,
             Colors::get_sbar_inversion_fg_bg(),
             &search_disp_str,
+            Colors::get_sbar_fg_bg(),
+            Colors::get_sbar_inversion_fg_bg(),
             &box_mode_disp_str,
+            Colors::get_sbar_fg_bg(),
+            Colors::get_sbar_inversion_fg_bg(),
             &select_mode_disp_str,
             Colors::get_sbar_fg_bg(),
             tab.sbar.cur_str,
@@ -67,6 +59,9 @@ impl StatusBar {
             &enc_nl,
             Colors::get_sbar_fg_bg()
         );
+
+        // let clear_str = if draw_parts == &DParts::ScrollUpDown(ScrollUpDownType::Grep) { "".to_string() } else { Clear(ClearType::CurrentLine).to_string() };
+        //      Log::debug("clear_str clear_strclear_strclear_strclear_strclear_strclear_strclear_strclear_strclear_strclear_strclear_str", &clear_str);
 
         let sber_all_str = format!("{}{}{}{}{}", MoveTo(0, tab.sbar.row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_sbar_fg_bg(), sbar_ctr, Colors::get_default_fg_bg(),);
 
@@ -111,7 +106,6 @@ impl StatusBar {
 #[derive(Debug, Clone)]
 pub struct StatusBar {
     pub cur_str: String,
-    pub fullpath_str: String,
     pub other_str: String,
     // Position on the terminal
     pub row_num: usize,
@@ -126,17 +120,6 @@ pub struct StatusBar {
 
 impl Default for StatusBar {
     fn default() -> Self {
-        StatusBar {
-            cur_str: String::new(),
-            other_str: String::new(),
-            fullpath_str: String::new(),
-            row_num: STATUSBAR_ROW_NUM,
-            row_posi: 0,
-            col_num: 0,
-            search_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
-            select_mode_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
-            cur_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
-            enc_nl_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
-        }
+        StatusBar { cur_str: String::new(), other_str: String::new(), row_num: STATUSBAR_ROW_NUM, row_posi: 0, col_num: 0, search_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), select_mode_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), cur_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), enc_nl_area: (USIZE_UNDEFINED, USIZE_UNDEFINED) }
     }
 }
