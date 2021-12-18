@@ -28,7 +28,6 @@ pub fn get_row_x(char_arr: &[char], disp_x: usize, is_ctrlchar_incl: bool) -> Op
                     width += 1;
                     cur_x += 1;
                 }
-                return Some(cur_x);
             } else if width >= disp_x {
                 return Some(cur_x);
             } else {
@@ -97,6 +96,9 @@ pub fn get_tab_width(width: usize, cfg_tab_width: usize) -> usize {
 }
 
 pub fn get_char_width_not_tab(c: &char) -> usize {
+    if c == &NEW_LINE_LF {
+        return 1;
+    }
     // Correspondence for each OS of characters whose judgment is wrong in unicode_width
     if let Some(width) = get_char_width_tgt_os(c) {
         return width;

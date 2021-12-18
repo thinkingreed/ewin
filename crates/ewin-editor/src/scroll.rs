@@ -153,7 +153,8 @@ mod tests {
         e.offset_y = 10;
         e.cur.y = 5;
         e.scroll();
-        assert_eq!(e.offset_y, 4);
+        assert_eq!(e.offset_y, 0);
+
         // self.cur.y + Editor::UP_DOWN_EXTRA >= self.row_num
         // cur.y is last row
         e.offset_y = 0;
