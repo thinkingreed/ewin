@@ -1,4 +1,4 @@
-use crate::model::*;
+use crate::{def::USIZE_UNDEFINED, model::*};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -19,7 +19,8 @@ impl KeyCmd {
             return KeyCmd::CloseFile;
         }
 
-        match keywhen {
+        return match keywhen {
+            "headerBarFocus" => KeyCmd::Unsupported,
             "promptFocus" => match keycmd {
                 /*
                  * Input
@@ -91,7 +92,7 @@ impl KeyCmd {
                 "allSelect" => KeyCmd::Edit(E_Cmd::AllSelect),
                 "boxSelectModeStart" => KeyCmd::Edit(E_Cmd::BoxSelectMode),
                 // edit
-                "insertLine" => KeyCmd::Edit(E_Cmd::InsertLine),
+                "insertLine" => KeyCmd::Edit(E_Cmd::InsertRow),
                 "formatJSON" => KeyCmd::Edit(E_Cmd::Format(FmtType::JSON)),
                 "formatXML" => KeyCmd::Edit(E_Cmd::Format(FmtType::XML)),
                 "formatHTML" => KeyCmd::Edit(E_Cmd::Format(FmtType::HTML)),
@@ -103,8 +104,6 @@ impl KeyCmd {
                 "grep" => KeyCmd::Edit(E_Cmd::Grep),
                 // file
                 "newTab" => KeyCmd::Edit(E_Cmd::NewTab),
-                "switchTabRight" => KeyCmd::HeaderBar(H_Cmd::SwitchTabRight),
-                "switchTabLeft" => KeyCmd::HeaderBar(H_Cmd::SwitchTabLeft),
                 "openFile" => KeyCmd::Edit(E_Cmd::OpenFile(OpenFileType::Normal)),
                 "encoding" => KeyCmd::Edit(E_Cmd::Encoding),
                 "closeAllFile" => KeyCmd::Edit(E_Cmd::CloseAllFile),
@@ -122,16 +121,19 @@ impl KeyCmd {
                 "openMenuEdit" => KeyCmd::Edit(E_Cmd::OpenMenuEdit),
                 "openMenuSearch" => KeyCmd::Edit(E_Cmd::OpenMenuSearch),
                 // mode
-                "cancelMode" => KeyCmd::Edit(E_Cmd::CancelMode),
+                "cancelMode" => KeyCmd::Edit(E_Cmd::CancelModeAndSearchResult),
                 // ContextMenu
-                "contextMenu" => KeyCmd::Edit(E_Cmd::CtxtMenu),
+                "contextMenu" => KeyCmd::Edit(E_Cmd::CtxtMenu(USIZE_UNDEFINED, USIZE_UNDEFINED)),
+                // switchTab
+                "switchTabLeft" => KeyCmd::Edit(E_Cmd::SwitchTabLeft),
+                "switchTabRight" => KeyCmd::Edit(E_Cmd::SwitchTabRight),
                 _ => KeyCmd::Unsupported,
             },
 
             // unreachable
             "inputFocus" | "allFocus" => KeyCmd::Null,
             _ => KeyCmd::Null,
-        }
+        };
     }
 }
 
@@ -189,7 +191,6 @@ pub enum P_Cmd {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[allow(non_camel_case_types)]
 pub enum E_Cmd {
-    // All
     FindNext,
     FindBack,
     // Input furcus
@@ -210,8 +211,8 @@ pub enum E_Cmd {
     MouseDragLeftRight(usize, usize),
     MouseDragLeftUp(usize, usize),
     MouseDragLeftDown(usize, usize),
-    MouseDownRight(usize, usize),
-    MouseDragRight(usize, usize),
+    // MouseDownRight(usize, usize),
+    // MouseDragRight(usize, usize),
     MouseScrollUp,
     MouseScrollDown,
     // Internal use as an alternative to paste
@@ -233,7 +234,7 @@ pub enum E_Cmd {
     // InsertChar(char),
     InsertBox(Vec<(SelRange, String)>),
     DelBox(Vec<(SelRange, String)>),
-    InsertLine,
+    InsertRow,
     Format(FmtType),
     // find
     Find,
@@ -253,8 +254,8 @@ pub enum E_Cmd {
     ExecRecordKey,
     // mouse
     MouseMove(usize, usize),
-    MouseDownBoxLeft(usize, usize),
-    MouseDragBoxLeft(usize, usize),
+    MouseDownLeftBox(usize, usize),
+    MouseDragLeftBox(usize, usize),
     MouseModeSwitch,
     // menu
     Help,
@@ -264,12 +265,15 @@ pub enum E_Cmd {
     OpenMenuEdit,
     OpenMenuSearch,
     OpenMenuMacro,
-    CtxtMenu,
+    CtxtMenu(usize, usize),
     // mode
     BoxSelectMode,
-    CancelMode,
+    CancelModeAndSearchResult,
+    ReOpenFile,
+    // SwitchTab
+    SwitchTabRight,
+    SwitchTabLeft,
     // Other
-    // Unsupported,
     Null,
 }
 
@@ -278,6 +282,7 @@ pub enum E_Cmd {
 pub enum C_Cmd {
     MouseMove(usize, usize),
     MouseDownLeft(usize, usize),
+    CtxMenu(usize, usize),
     CursorDown,
     CursorUp,
     CursorRight,
@@ -291,8 +296,6 @@ pub enum C_Cmd {
 pub enum H_Cmd {
     MouseDownLeft(usize, usize),
     MouseDragLeftUp(usize, usize),
-    SwitchTabRight,
-    SwitchTabLeft,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

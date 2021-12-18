@@ -17,7 +17,7 @@ pub fn get_str_width(msg: &str) -> usize {
     width
 }
 
-/// Get cur_x of any x. If there are no characters, return None.
+/// Get cur_x of any disp_x. If there are no characters, return None.
 pub fn get_row_x(char_arr: &[char], disp_x: usize, is_ctrlchar_incl: bool) -> Option<usize> {
     let (mut cur_x, mut width) = (0, 0);
 
@@ -28,6 +28,7 @@ pub fn get_row_x(char_arr: &[char], disp_x: usize, is_ctrlchar_incl: bool) -> Op
                     width += 1;
                     cur_x += 1;
                 }
+                return Some(cur_x);
             } else if width >= disp_x {
                 return Some(cur_x);
             } else {
@@ -45,7 +46,7 @@ pub fn get_row_x(char_arr: &[char], disp_x: usize, is_ctrlchar_incl: bool) -> Op
 }
 
 /// Get cur_x and disp_x of the target string
-pub fn get_row_width(char_arr: &[char], offset_disp_x: usize, is_ctrlchar_incl: bool) -> (usize, usize) {
+pub fn get_row_x_disp_x(char_arr: &[char], offset_disp_x: usize, is_ctrlchar_incl: bool) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
 
     for c in char_arr {
@@ -84,32 +85,28 @@ pub fn get_until_x(char_vec: &[char], x: usize) -> (usize, usize) {
 
 // Everything including tab
 pub fn get_char_width(c: &char, width: usize) -> usize {
-    if c == &TAB_CHAR {
+    return if c == &TAB_CHAR {
         let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.size;
         get_tab_width(width, cfg_tab_width)
     } else {
         get_char_width_not_tab(c)
-    }
+    };
 }
 pub fn get_tab_width(width: usize, cfg_tab_width: usize) -> usize {
-    cfg_tab_width - width % cfg_tab_width
+    return cfg_tab_width - width % cfg_tab_width;
 }
 
 pub fn get_char_width_not_tab(c: &char) -> usize {
-    // \r len is 0, \r\n len is 1
-    if c == &NEW_LINE_LF {
-        return 1;
-    }
     // Correspondence for each OS of characters whose judgment is wrong in unicode_width
     if let Some(width) = get_char_width_tgt_os(c) {
         return width;
     };
-    c.width().unwrap_or(0)
+    return c.width().unwrap_or(0);
 }
 
 #[cfg(target_os = "windows")]
 pub fn get_char_width_tgt_os(c: &char) -> Option<usize> {
-    if ['■', '●', '◆', '□', '○', '◇', '→', '←', '↑', '↓', '⇒', '⇔'].contains(c) {
+    if [NEW_LINE_LF, '■', '●', '◆', '□', '○', '◇', '→', '←', '↑', '↓', '⇒', '⇔', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'].contains(c) {
         return Some(2);
     }
     return None;
@@ -393,18 +390,18 @@ mod tests {
     fn test_get_row_width() {
         Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
 
-        assert_eq!(get_row_width(&['a'], 0, false), (1, 1));
-        assert_eq!(get_row_width(&['あ'], 0, false), (1, 2));
-        assert_eq!(get_row_width(&['a', NEW_LINE_LF], 0, false), (1, 1));
-        assert_eq!(get_row_width(&['a', NEW_LINE_LF], 0, true), (2, 2));
-        assert_eq!(get_row_width(&[TAB_CHAR, 'a'], 0, false), (2, 5));
-        assert_eq!(get_row_width(&[TAB_CHAR, 'a'], 1, false), (2, 4));
-        assert_eq!(get_row_width(&['a', NEW_LINE_LF], 0, false), (1, 1));
-        assert_eq!(get_row_width(&['a', NEW_LINE_LF], 0, true), (2, 2));
-        assert_eq!(get_row_width(&['a', NEW_LINE_CR], 0, false), (1, 1));
-        assert_eq!(get_row_width(&['a', NEW_LINE_CR], 0, true), (2, 2));
-        assert_eq!(get_row_width(&['a', EOF_MARK], 0, false), (1, 1));
-        assert_eq!(get_row_width(&['a', EOF_MARK], 0, true), (1, 1));
+        assert_eq!(get_row_x_disp_x(&['a'], 0, false), (1, 1));
+        assert_eq!(get_row_x_disp_x(&['あ'], 0, false), (1, 2));
+        assert_eq!(get_row_x_disp_x(&['a', NEW_LINE_LF], 0, false), (1, 1));
+        assert_eq!(get_row_x_disp_x(&['a', NEW_LINE_LF], 0, true), (2, 2));
+        assert_eq!(get_row_x_disp_x(&[TAB_CHAR, 'a'], 0, false), (2, 5));
+        assert_eq!(get_row_x_disp_x(&[TAB_CHAR, 'a'], 1, false), (2, 4));
+        assert_eq!(get_row_x_disp_x(&['a', NEW_LINE_LF], 0, false), (1, 1));
+        assert_eq!(get_row_x_disp_x(&['a', NEW_LINE_LF], 0, true), (2, 2));
+        assert_eq!(get_row_x_disp_x(&['a', NEW_LINE_CR], 0, false), (1, 1));
+        assert_eq!(get_row_x_disp_x(&['a', NEW_LINE_CR], 0, true), (2, 2));
+        assert_eq!(get_row_x_disp_x(&['a', EOF_MARK], 0, false), (1, 1));
+        assert_eq!(get_row_x_disp_x(&['a', EOF_MARK], 0, true), (1, 1));
     }
 
     #[test]

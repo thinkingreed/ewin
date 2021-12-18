@@ -32,7 +32,7 @@ impl Editor {
     // initial cursor posi set
     pub fn undo_init(&mut self, proc: &Proc) {
         match &proc.e_cmd {
-            E_Cmd::InsertStr(_) | E_Cmd::InsertLine | E_Cmd::Cut | E_Cmd::ReplaceExec(_, _, _) => self.set_evtproc(proc, &proc.cur_s),
+            E_Cmd::InsertStr(_) | E_Cmd::InsertRow | E_Cmd::Cut | E_Cmd::ReplaceExec(_, _, _) => self.set_evtproc(proc, &proc.cur_s),
             E_Cmd::DelNextChar | E_Cmd::DelPrevChar => {
                 if proc.sel.is_selected() {
                     self.set_evtproc(proc, if proc.cur_s.x > proc.cur_e.x { &proc.cur_e } else { &proc.cur_s });
@@ -47,7 +47,7 @@ impl Editor {
     }
     pub fn undo_exec(&mut self, proc: &Proc) {
         match &proc.e_cmd {
-            E_Cmd::InsertLine => self.edit_proc(E_Cmd::DelNextChar),
+            E_Cmd::InsertRow => self.edit_proc(E_Cmd::DelNextChar),
             E_Cmd::InsertStr(_) => {
                 if proc.box_sel_vec.is_empty() {
                     // Set paste target with sel
@@ -129,7 +129,7 @@ impl Editor {
             E_Cmd::DelNextChar => self.edit_proc(E_Cmd::DelNextChar),
             E_Cmd::DelPrevChar => self.edit_proc(E_Cmd::DelPrevChar),
             E_Cmd::Cut => self.edit_proc(E_Cmd::Cut),
-            E_Cmd::InsertLine => self.edit_proc(E_Cmd::InsertLine),
+            E_Cmd::InsertRow => self.edit_proc(E_Cmd::InsertRow),
             E_Cmd::InsertStr(_) => {
                 if proc.box_sel_vec.is_empty() {
                     self.edit_proc(E_Cmd::InsertStr(proc.str.clone()));

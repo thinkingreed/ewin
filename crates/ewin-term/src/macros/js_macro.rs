@@ -2,7 +2,6 @@ use crate::{
     ewin_com::{_cfg::lang::lang_cfg::*, log::Log},
     global_term::*,
     model::*,
-    terminal::*,
 };
 use ewin_com::{
     file::File,
@@ -61,7 +60,7 @@ impl Macros {
                 Macros::log_exceptions(scope);
                 return ActType::Draw(DParts::MsgBar(format!("{} {}", &Lang::get().script_run_error, &Lang::get().check_log_file)));
             };
-            return ActType::Next;
+            return ActType::Draw(DParts::All);
         } else {
             return ActType::Draw(DParts::MsgBar(err_str));
         }

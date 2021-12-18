@@ -58,6 +58,6 @@ ewin-prom = {version = "0.0.2", path = "crates/ewin-prom" }
 [dev-dependencies]
 cargo-husky = "1.5.0"
 
-
 [target.'cfg(windows)'.build-dependencies]
 windres = "0.2.2"
+

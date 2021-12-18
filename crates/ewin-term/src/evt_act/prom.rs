@@ -3,7 +3,6 @@ use crate::{
     ewin_prom::model::*,
     model::*,
     tab::Tab,
-    terminal::*,
 };
 use std::io::Write;
 
@@ -80,8 +79,10 @@ impl EvtAct {
             return EvtAct::search(term);
         } else if term.curt().state.is_save_new_file {
             return EvtAct::save_new_filenm(term);
-        } else if term.curt().state.is_close_confirm {
-            return EvtAct::close(term);
+        } else if term.curt().state.is_save_confirm {
+            return EvtAct::save_confirm(term);
+        } else if term.curt().state.is_save_forced {
+            return EvtAct::save_forced(term);
         } else if term.curt().state.is_replace {
             return EvtAct::replace(term);
         } else if term.curt().state.is_open_file {
@@ -125,8 +126,8 @@ impl EvtAct {
             P_Cmd::CursorDown => term.curt().prom.cursor_down(state),
             P_Cmd::TabNextFocus => term.curt().prom.tab(true, state),
             P_Cmd::BackTabBackFocus => term.curt().prom.tab(false, state),
-            P_Cmd::MouseDownLeft(y, x) => term.curt().prom.ctrl_mouse(state, y, x, true),
-            P_Cmd::MouseDragLeft(y, x) => term.curt().prom.ctrl_mouse(state, y, x, false),
+            P_Cmd::MouseDownLeft(y, x) => term.curt().prom.ctrl_mouse(state, y, x),
+            P_Cmd::MouseDragLeft(y, x) => term.curt().prom.ctrl_mouse(state, y, x),
             _ => {}
         }
         // draw Prompt
@@ -280,6 +281,7 @@ impl EvtAct {
 
     pub fn check_promt_suport_keycmd(term: &mut Terminal) -> bool {
         Log::debug_key("check_promt_suport_keycmd");
+        Log::debug("term.curt().prom.p_cmd", &term.curt().prom.p_cmd);
 
         match term.keycmd {
             KeyCmd::Resize | KeyCmd::CloseFile => return true,

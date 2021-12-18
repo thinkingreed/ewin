@@ -3,7 +3,6 @@ use crate::{
     ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, colors::*, def::*, global::*, log::*, model::*, util::*},
     model::*,
     tab::Tab,
-    terminal::*,
 };
 use crossterm::cursor::MoveTo;
 use directories::BaseDirs;
@@ -17,10 +16,10 @@ impl CtxMenuGroup {
     const EXTRA_FROM_CUR_X: usize = 1;
     const EXTRA_FROM_CUR_Y: usize = 1;
 
-    pub fn set_keys(&mut self, keycmd: &KeyCmd) {
+    pub fn set_cmd(&mut self, keycmd: KeyCmd) {
         //  let keycmd = Keybind::keys_to_keycmd(&keys, None, KeyWhen::CtxMenuFocus);
         self.c_cmd = match keycmd {
-            KeyCmd::CtxMenu(c_cmd) => c_cmd.clone(),
+            KeyCmd::CtxMenu(c_cmd) => c_cmd,
             _ => C_Cmd::Null,
         };
     }
@@ -99,17 +98,19 @@ impl CtxMenuGroup {
             //// headerbar
             // close
             s if s == &Lang::get().close => {
-                if Tab::prom_close(term) {
+                if Tab::prom_save_confirm(term) {
                     Terminal::exit();
                 }
+                return ActType::Draw(DParts::All);
             }
             // close other than this tab
             s if s == &Lang::get().close_other_than_this_tab => {
                 let _ = term.close_tabs(term.idx);
+                return ActType::Draw(DParts::All);
             }
             _ => {}
         };
-        term.curt().editor.draw_range = EditorDrawRange::All;
+        term.curt().editor.draw_range = E_DrawRange::All;
         return ActType::Draw(DParts::Editor);
     }
 
@@ -153,7 +154,7 @@ impl CtxMenuGroup {
     pub fn set_curt_term_place(term: &mut Terminal, y: usize) {
         if term.hbar.row_posi == y {
             term.ctx_menu_group.curt_cont = term.ctx_menu_group.ctx_menu_place_map[&TermPlace::HeaderBar].clone();
-        } else if term.curt().editor.row_posi <= y && y <= term.curt().editor.row_posi + term.curt().editor.row_num {
+        } else if term.curt().editor.row_posi <= y && y <= term.curt().editor.row_posi + term.curt().editor.row_len {
             let place_cond = if term.curt().editor.sel.is_selected() { TermPlace::Editor(TermPlaceCond::EditorRangeSelected) } else { TermPlace::Editor(TermPlaceCond::EditorRangeNonSelected) };
             term.ctx_menu_group.curt_cont = term.ctx_menu_group.ctx_menu_place_map[&place_cond].clone();
         }
@@ -170,14 +171,9 @@ impl CtxMenuGroup {
         }
         return false;
     }
-    pub fn show_init(term: &mut Terminal) {
+    pub fn show_init(term: &mut Terminal, y: usize, x: usize) {
         term.ctx_menu_group.clear();
-        let (y, x) = match term.curt().editor.e_cmd {
-            E_Cmd::MouseDownRight(y, x) => (y, x),
-            E_Cmd::MouseDragRight(y, x) => (y, x),
-            E_Cmd::CtxtMenu => (USIZE_UNDEFINED, USIZE_UNDEFINED),
-            _ => return,
-        };
+
         if CtxMenuGroup::is_ctx_menu_displayed_area(term, y, x) {
             let (y, x) = if y == USIZE_UNDEFINED {
                 (term.curt().editor.cur.y - term.curt().editor.offset_y + term.hbar.row_num, if term.curt().editor.state.mouse_mode == MouseMode::Normal { term.curt().editor.cur.disp_x + term.curt().editor.get_rnw_and_margin() } else { term.curt().editor.cur.disp_x })
@@ -211,21 +207,42 @@ impl CtxMenuGroup {
         self.parent_sel_y = USIZE_UNDEFINED;
     }
 
-    pub fn is_mouse_within_range(&mut self, y: usize, x: usize) -> bool {
+    pub fn is_mouse_within_range(&mut self, y: usize, x: usize, is_around: bool) -> bool {
         Log::debug_key("CtxMenuGroup.is_mouse_within_range");
+        Log::debug("is_around_check", &is_around);
 
-        if self.curt_cont.y_area.0 <= y && y <= self.curt_cont.y_area.1 && self.curt_cont.x_area.0 <= x && x <= self.curt_cont.x_area.1 {
-            return true;
-        };
-        if self.parent_sel_y != USIZE_UNDEFINED {
-            if let Some(child_cont) = &mut self.curt_cont.menu_vec[self.parent_sel_y].1 {
-                if child_cont.y_area.0 <= y && y <= child_cont.y_area.1 && child_cont.x_area.0 <= x && x <= child_cont.x_area.1 {
-                    return true;
-                };
+        Log::debug("yyy", &y);
+        Log::debug("xxx", &x);
+        Log::debug("self.curt_cont.y_area", &self.curt_cont.y_area);
+        Log::debug("self.curt_cont.x_area", &self.curt_cont.x_area);
+
+        if is_around {
+            if self.curt_cont.y_area.0 - 1 == y || y == self.curt_cont.y_area.1 + 1 || self.curt_cont.x_area.0 - 1 == x || x == self.curt_cont.x_area.1 + 1 {
+                return true;
+            };
+            if self.parent_sel_y != USIZE_UNDEFINED {
+                if let Some(child_cont) = &mut self.curt_cont.menu_vec[self.parent_sel_y].1 {
+                    if child_cont.y_area.0 - 1 == y && y == child_cont.y_area.1 + 1 || child_cont.x_area.0 - 1 == x || x == child_cont.x_area.1 + 1 {
+                        return true;
+                    };
+                }
             }
-        }
+        } else {
+            if self.curt_cont.y_area.0 <= y && y <= self.curt_cont.y_area.1 && self.curt_cont.x_area.0 <= x && x <= self.curt_cont.x_area.1 {
+                return true;
+            };
+            if self.parent_sel_y != USIZE_UNDEFINED {
+                if let Some(child_cont) = &mut self.curt_cont.menu_vec[self.parent_sel_y].1 {
+                    if child_cont.y_area.0 <= y && y <= child_cont.y_area.1 && child_cont.x_area.0 <= x && x <= child_cont.x_area.1 {
+                        return true;
+                    };
+                }
+            }
+        };
+
         return false;
     }
+
     pub fn set_parent_disp_area(&mut self, y: usize, x: usize) {
         Log::debug_key("set_parent_disp_area");
 
@@ -301,23 +318,24 @@ impl CtxMenuGroup {
         }
     }
 
-    pub fn get_draw_range(&mut self, offset_y: usize, hbar_disp_row_num: usize, editor_disp_row_num: usize) -> Option<(usize, usize)> {
+    pub fn get_draw_range(&mut self, offset_y: usize, hbar_disp_row_num: usize, editor_row_len: usize) -> Option<(usize, usize)> {
         Log::debug_key("CtxMenuGroup.get_draw_range");
         if !self.is_menu_change() {
             return None;
         };
-        let mut sy = offset_y + self.disp_sy - hbar_disp_row_num;
-        let ey = offset_y + self.disp_ey - hbar_disp_row_num;
+        let mut sy = self.disp_sy - hbar_disp_row_num;
+        let ey = self.disp_ey - hbar_disp_row_num;
 
         if self.parent_sel_y_cache != USIZE_UNDEFINED {
-            sy = max(sy, self.curt_cont.y_area.0 + self.parent_sel_y_cache);
+            sy = min(sy, self.curt_cont.y_area.0 + self.parent_sel_y_cache);
         }
         if let Some((_, Some(child_cont))) = self.get_curt_parent() {
             // -1 is the correspondence when the previous child menu exists.
             sy = min(sy, child_cont.y_area.0 - 1);
         }
-        return Some((min(sy, ey), min(max(sy, ey), editor_disp_row_num)));
+        return Some((offset_y + min(sy, ey), min(offset_y + max(sy, ey), offset_y + editor_row_len)));
     }
+
     pub fn is_menu_change(&mut self) -> bool {
         return self.parent_sel_y == USIZE_UNDEFINED || self.parent_sel_y != self.parent_sel_y_cache || self.child_sel_y != USIZE_UNDEFINED && self.child_sel_y != self.child_sel_y_cache;
     }
@@ -349,7 +367,19 @@ impl CtxMenuGroup {
 
     pub fn cur_move(&mut self, direction: Direction) {
         Log::debug_key("CtxMenuGroup.cur_move");
-        if self.child_sel_y != USIZE_UNDEFINED {
+        if self.child_sel_y == USIZE_UNDEFINED {
+            self.parent_sel_y_cache = self.parent_sel_y;
+            match direction {
+                Direction::Down => self.parent_sel_y = if self.parent_sel_y == USIZE_UNDEFINED || self.curt_cont.menu_vec.get_mut(self.parent_sel_y + 1).is_none() { 0 } else { self.parent_sel_y + 1 },
+                Direction::Up => self.parent_sel_y = if self.parent_sel_y == USIZE_UNDEFINED || self.parent_sel_y == 0 { self.curt_cont.menu_vec.len() - 1 } else { self.parent_sel_y - 1 },
+                Direction::Right => {
+                    if self.is_exist_child_curt_parent() {
+                        self.child_sel_y = 0;
+                    }
+                }
+                Direction::Left => {}
+            }
+        } else {
             match direction {
                 Direction::Down => {
                     if let Some((_, Some(mut child_cont))) = self.get_curt_parent() {
@@ -364,19 +394,7 @@ impl CtxMenuGroup {
                 Direction::Left => self.child_sel_y = USIZE_UNDEFINED,
                 Direction::Right => {}
             }
-        } else {
-            self.parent_sel_y_cache = self.parent_sel_y;
-            match direction {
-                Direction::Down => self.parent_sel_y = if self.parent_sel_y == USIZE_UNDEFINED || self.curt_cont.menu_vec.get_mut(self.parent_sel_y + 1).is_none() { 0 } else { self.parent_sel_y + 1 },
-                Direction::Up => self.parent_sel_y = if self.parent_sel_y == USIZE_UNDEFINED || self.parent_sel_y == 0 { self.curt_cont.menu_vec.len() - 1 } else { self.parent_sel_y - 1 },
-                Direction::Right => {
-                    if self.is_exist_child_curt_parent() {
-                        self.child_sel_y = 0;
-                    }
-                }
-                Direction::Left => {}
-            }
-            self.set_child_disp_area();
         }
+        self.set_child_disp_area();
     }
 }

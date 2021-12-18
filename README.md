@@ -17,7 +17,8 @@ It provides basic features as a minimal text editor:
 - Context menu support
 - Tab support
 - Box select・Inseret support
-
+- Change detection of another process of file (when saving)
+- When using WSL, it can be linked with the Windows Clipboard.
 
 [![Rust](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml/badge.svg)](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml)
 [![crate-name at crates.io](https://img.shields.io/crates/v/ewin.svg)](https://crates.io/crates/ewin)
@@ -177,8 +178,9 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 
 | motion                 | Mapping                | environment | Contents                                                                                                                         |
 | ---------------------- | ---------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `Copy`・`Paste`・`Cut` | `Ctrl` + `c`・`v`・`x` | WSL         | ・If you want to copy it to the clipboard, you need the path to powershell.exe. Try \$ PSHOME in a PowerShell terminal|
+|  |  |  |・There are environmental restrictions on the length of the string.|
 | `Key record`           | `Ctrl` + `F1`          | WSL         | keybindings.command."copy" and "paste" needs to be changed to something other than Ctrl+c, Ctrl+v. Ex)Ctrl+Shift+c, Ctrl+Shift+v |
-| `Copy`・`Paste`・`Cut` | `Ctrl` + `c`・`v`・`x` | WSL         | If you want to copy it to the clipboard, you need the path to powershell.exe. Try \$ PSHOME in a PowerShell terminal             |
 
 ## Setting file
 

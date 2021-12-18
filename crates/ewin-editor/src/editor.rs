@@ -1,9 +1,6 @@
 use crate::{
     ewin_com::{
-        _cfg::{
-            key::{keycmd::*, keys::*, keywhen::*},
-            lang::lang_cfg::*,
-        },
+        _cfg::{key::keycmd::*, lang::lang_cfg::*},
         global::*,
         log::*,
         model::*,
@@ -22,14 +19,10 @@ impl Editor {
     pub const RNW_MARGIN: usize = 1;
 
     // move to row
-    pub fn move_row(&mut self) {
-        if self.cur.y > self.offset_y + self.row_num {
+    pub fn set_offset_y_move_row(&mut self) {
+        if self.cur.y >= self.offset_y + self.row_len {
             // last page
-            if self.buf.len_lines() - 1 - self.cur.y < self.row_num {
-                self.offset_y = self.buf.len_lines() - self.row_num;
-            } else {
-                self.offset_y = self.cur.y - Editor::MOVE_ROW_EXTRA_NUM;
-            }
+            self.offset_y = if self.buf.len_rows() - 1 - self.cur.y < self.row_len { self.buf.len_rows() - self.row_len } else { self.cur.y - Editor::MOVE_ROW_EXTRA_NUM }
         } else if self.cur.y < self.offset_y {
             self.offset_y = if self.cur.y > Editor::MOVE_ROW_EXTRA_NUM { self.cur.y - Editor::MOVE_ROW_EXTRA_NUM } else { 0 };
         }
@@ -51,20 +44,15 @@ impl Editor {
     }
 
     pub fn set_cur_default(&mut self) {
-        if self.state.mouse_mode == MouseMode::Normal {
-            self.rnw = self.buf.len_lines().to_string().len();
-        } else {
-            self.rnw = 0;
-        }
+        self.rnw = if self.state.mouse_mode == MouseMode::Normal { self.buf.len_rows().to_string().len() } else { 0 };
         self.cur = Cur { y: 0, x: 0, disp_x: 0 };
     }
 
     pub fn set_cur_target(&mut self, y: usize, x: usize, is_ctrlchar_incl: bool) {
         self.cur.y = y;
 
-        let (cur_x, width) = get_row_width(&self.buf.char_vec_range(y, x), 0, is_ctrlchar_incl);
-
-        self.rnw = if self.state.mouse_mode == MouseMode::Normal { self.buf.len_lines().to_string().len() } else { 0 };
+        let (cur_x, width) = get_row_x_disp_x(&self.buf.char_vec_range(y, x), 0, is_ctrlchar_incl);
+        self.rnw = if self.state.mouse_mode == MouseMode::Normal { self.buf.len_rows().to_string().len() } else { 0 };
         self.cur.disp_x = width;
         self.cur.x = cur_x;
     }
@@ -86,14 +74,12 @@ impl Editor {
         self.rnw_org = self.get_rnw();
         self.sel_org = self.sel;
         self.state.is_changed_org = self.state.is_changed;
+        self.row_len_org = self.buf.len_rows();
+        self.scrl_v.row_posi_org = self.scrl_v.row_posi;
+        self.scrl_v.row_len_org = self.scrl_v.row_len;
     }
 
-    pub fn set_keys(&mut self, keys: Keys, keycmd_opt: Option<&KeyCmd>) {
-        self.keys = keys;
-        let keycmd = match keycmd_opt {
-            Some(keycmd) => keycmd.clone(),
-            _ => Keybind::keys_to_keycmd(&keys, KeyWhen::EditorFocus),
-        };
+    pub fn set_cmd(&mut self, keycmd: KeyCmd) {
         self.e_cmd = match keycmd {
             KeyCmd::Edit(e_cmd) => e_cmd,
             _ => E_Cmd::Null,
@@ -103,13 +89,12 @@ impl Editor {
     pub fn record_key(&mut self) {
         match &self.e_cmd {
             // Ctrl
-            E_Cmd::Copy | E_Cmd::Cut | E_Cmd::AllSelect | E_Cmd::InsertStr(_) | E_Cmd::CursorFileHome | E_Cmd::CursorFileEnd => self.key_vec.push(KeyMacro { keys: self.keys, ..KeyMacro::default() }),
+            E_Cmd::Copy | E_Cmd::Cut | E_Cmd::AllSelect | E_Cmd::InsertStr(_) | E_Cmd::CursorFileHome | E_Cmd::CursorFileEnd|
             // Shift
-            E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::CursorLeftSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect => self.key_vec.push(KeyMacro { keys: self.keys, ..KeyMacro::default() }),
-            E_Cmd::FindBack => self.key_vec.push(KeyMacro { keys: self.keys, search: Search { str: self.search.str.clone(), ..Search::default() } }),
+            E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::CursorLeftSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect |
             // Raw
-            E_Cmd::InsertLine | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::CursorPageUp | E_Cmd::CursorPageDown | E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorLeft | E_Cmd::CursorRight | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd => self.key_vec.push(KeyMacro { keys: self.keys, ..KeyMacro::default() }),
-            E_Cmd::FindNext => self.key_vec.push(KeyMacro { keys: self.keys, search: Search { str: self.search.str.clone(), ..Search::default() } }),
+            E_Cmd::InsertRow | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::CursorPageUp | E_Cmd::CursorPageDown | E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorLeft | E_Cmd::CursorRight | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd => self.key_vec.push(KeyMacro { e_cmd:self.e_cmd.clone(), ..KeyMacro::default() }),
+            E_Cmd::FindNext | E_Cmd::FindBack => self.key_vec.push(KeyMacro { e_cmd: self.e_cmd.clone(), search: Search { str: self.search.str.clone(), ..Search::default() } }),
             _ => {}
         }
     }
@@ -130,13 +115,12 @@ impl Editor {
         Log::debug_key("EvtAct.init");
         match self.e_cmd {
             // Up, Down
-            E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::MouseScrollUp | E_Cmd::MouseScrollDown => {}
+            E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::MouseScrollUp | E_Cmd::MouseScrollDown | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) => {}
             _ => self.updown_x = 0,
         }
-        self.set_draw_range_init();
 
         // Edit is_change=true, Clear redo_vec,
-        if Keybind::is_edit(&self.e_cmd, false) {
+        if Editor::is_edit(&self.e_cmd, false) {
             self.state.is_changed = true;
             self.history.clear_redo_vec();
         }
@@ -159,9 +143,11 @@ impl Editor {
             // Search
             E_Cmd::FindNext | E_Cmd::FindBack |
             // mouse
-            E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) | E_Cmd::MouseDownRight(_, _) | E_Cmd::MouseDragRight(_, _) | E_Cmd::MouseMove(_, _) | E_Cmd::MouseDownBoxLeft(_, _) | E_Cmd::MouseDragBoxLeft(_, _) |
+            E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) 
+           // | E_Cmd::MouseDownRight(_, _) | E_Cmd::MouseDragRight(_, _)
+             | E_Cmd::MouseMove(_, _) | E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) |
             // other
-            E_Cmd::CtxtMenu | E_Cmd::BoxSelectMode => {}
+            E_Cmd::CtxtMenu(_,_) | E_Cmd::BoxSelectMode => {}
             _ => {
                 if self.sel.mode == SelMode::BoxSelect {
                     match self.e_cmd {
@@ -179,18 +165,16 @@ impl Editor {
         }
 
         // Re-search when searching
-        if Keybind::is_edit(&self.e_cmd, true) && !self.search.ranges.is_empty() {
+        if Editor::is_edit(&self.e_cmd, true) && !self.search.ranges.is_empty() {
             let len_chars = self.buf.len_chars();
             let search_str = &self.search.str.clone();
             let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
             self.search.ranges = self.get_search_ranges(search_str, 0, len_chars, 0, cfg_search);
         }
-
-        self.set_draw_range_finalize(self.state.key_macro.is_exec_end);
     }
     pub fn editor_check_err(&mut self) -> ActType {
         // read_only
-        if self.state.is_read_only && Keybind::is_edit(&self.e_cmd, true) {
+        if self.state.is_read_only && Editor::is_edit(&self.e_cmd, true) {
             return ActType::Cancel;
         }
         match self.e_cmd {
@@ -214,10 +198,8 @@ impl Editor {
                     return ActType::Draw(DParts::MsgBar(Lang::get().no_key_record_exec.to_string()));
                 }
             }
-
             _ => {}
         }
-
         ActType::Next
     }
 
@@ -229,10 +211,24 @@ impl Editor {
                 execute!(stdout(), DisableMouseCapture).unwrap();
             }
             MouseMode::Mouse => {
-                self.rnw = self.buf.len_lines().to_string().len();
+                self.rnw = self.buf.len_rows().to_string().len();
                 self.state.mouse_mode = MouseMode::Normal;
                 execute!(stdout(), EnableMouseCapture).unwrap();
             }
+        };
+    }
+
+    pub fn adjust_cur_posi(&mut self) {
+        Log::debug_key("Editor.adjust_cur_posi");
+
+        if self.cur.y > self.buf.len_rows() - 1 {
+            self.set_cur_target(self.buf.len_rows() - 1, 0, false);
+            self.scroll();
+        } else if self.cur.x > self.buf.char_vec_line(self.cur.y).len() {
+            self.set_cur_target(self.cur.y, self.buf.char_vec_line(self.cur.y).len(), false);
+            self.scroll_horizontal();
+        } else {
+            self.set_cur_target(self.cur.y, self.cur.x, false);
         };
     }
 }

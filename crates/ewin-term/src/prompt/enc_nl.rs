@@ -1,7 +1,6 @@
 use crate::{
     ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, model::*},
     model::*,
-    terminal::*,
 };
 use std::io::*;
 

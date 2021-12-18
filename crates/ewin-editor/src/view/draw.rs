@@ -1,10 +1,9 @@
 use crate::{
-    ewin_com::{colors::*, def::*, global::*, log::*, model::*},
+    ewin_com::{colors::*, def::*, global::*, log::*, model::*, util::*},
     model::*,
 };
 use crossterm::{cursor::*, terminal::*};
 use std::io::Write;
-use unicode_width::*;
 
 impl Editor {
     pub fn draw(&mut self, str_vec: &mut Vec<String>, draw: &EditorDraw) {
@@ -13,26 +12,32 @@ impl Editor {
         // let mut str_vec: Vec<String> = vec![];
         let (mut y, mut x_width) = (0, 0);
         let d_range = self.draw_range;
+        Log::debug("d_range", &d_range);
 
         match d_range {
-            EditorDrawRange::Not | EditorDrawRange::MoveCur => {}
-            EditorDrawRange::None => {
+            E_DrawRange::Not | E_DrawRange::MoveCur => {}
+            E_DrawRange::None => {
                 self.set_bg_color(str_vec);
                 str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, self.row_posi as u16).to_string()));
             }
-            EditorDrawRange::Target(sy, ey) => {
+            E_DrawRange::Target(sy, ey) => {
                 for i in sy - self.offset_y..=ey - self.offset_y {
                     str_vec.push(format!("{}{}", MoveTo(0, (i + self.row_posi) as u16), Clear(ClearType::CurrentLine)));
                 }
                 str_vec.push(format!("{}", MoveTo(0, (sy - self.offset_y + self.row_posi) as u16)));
             }
-            EditorDrawRange::All => self.clear_draw_vec(str_vec, self.row_posi - 1),
-            EditorDrawRange::After(sy) => str_vec.push(format!("{}{}", MoveTo(0, (sy - self.offset_y + self.row_posi) as u16), Clear(ClearType::FromCursorDown))),
-            EditorDrawRange::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.row_num - Editor::SCROLL_UP_DOWN_EXTRA - 1) as u16), Clear(ClearType::FromCursorDown))),
-            EditorDrawRange::ScrollUp(_, _) => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, (self.row_posi) as u16), Clear(ClearType::CurrentLine))),
+            E_DrawRange::All => self.clear_draw_vec(str_vec, self.row_posi - 1),
+            E_DrawRange::After(sy) => str_vec.push(format!("{}{}", MoveTo(0, (sy - self.offset_y + self.row_posi) as u16), Clear(ClearType::FromCursorDown))),
+            E_DrawRange::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.row_len - Editor::SCROLL_UP_DOWN_EXTRA - 1) as u16), Clear(ClearType::FromCursorDown))),
+            E_DrawRange::ScrollUp(_, _) => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, (self.row_posi) as u16), Clear(ClearType::CurrentLine))),
         }
 
-        let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.size;
+        // If you need to edit the previous row_num
+        if self.offset_y <= self.cur_y_org && self.cur_y_org <= self.offset_y + self.row_len && !(draw.sy <= self.cur_y_org && self.cur_y_org <= draw.ey) {
+            str_vec.push(format!("{}", MoveTo(0, (self.cur_y_org - self.offset_y + self.row_posi) as u16)));
+            self.set_row_num(self.cur_y_org, str_vec);
+            str_vec.push(format!("{}", MoveTo(0, (draw.sy - self.offset_y + self.row_posi) as u16)));
+        }
 
         for i in draw.sy..=draw.ey {
             self.set_row_num(i, str_vec);
@@ -42,22 +47,7 @@ impl Editor {
             for (x_idx, cell) in (0_usize..).zip(row_cell) {
                 cell.draw_style(str_vec, x_idx == 0 && self.offset_x > 0);
                 let c = cell.c;
-
-                let tab_width = if c == TAB_CHAR { cfg_tab_width - ((x_width + if y == self.cur.y { self.offset_disp_x } else { 0 }) % cfg_tab_width) } else { 0 };
-
-                let width = match c {
-                    TAB_CHAR => tab_width,
-                    NEW_LINE_LF => {
-                        // NEW_LINE_LF_MARK width
-                        if cfg!(target_os = "linux") {
-                            1
-                        } else {
-                            2
-                        }
-                    }
-                    _ => c.width().unwrap_or(0),
-                };
-
+                let width = get_char_width(&c, x_width);
                 if x_width + width > self.col_num {
                     break;
                 }
@@ -72,13 +62,13 @@ impl Editor {
                         }
                         NEW_LINE_LF => str_vec.push(if c_org == NEW_LINE_CR { NEW_LINE_CRLF_MARK.to_string() } else { NEW_LINE_LF_MARK.to_string() }),
                         NEW_LINE_CR => {}
-                        TAB_CHAR => str_vec.push(format!("{}{}", TAB_MARK, " ".repeat(tab_width - 1))),
+                        TAB_CHAR => str_vec.push(format!("{}{}", TAB_MARK, " ".repeat(width - 1))),
                         _ => str_vec.push(c.to_string()),
                     }
                 } else {
                     match c {
                         EOF_MARK | NEW_LINE_LF | NEW_LINE_CR => {}
-                        TAB_CHAR => str_vec.push(" ".repeat(tab_width)),
+                        TAB_CHAR => str_vec.push(" ".repeat(width)),
                         _ => str_vec.push(c.to_string()),
                     }
                 }
@@ -87,14 +77,15 @@ impl Editor {
             y += 1;
             x_width = 0;
 
-            if y >= self.row_num {
+            if y >= self.row_len {
                 break;
             } else {
                 str_vec.push(NEW_LINE_CRLF.to_string());
             }
         }
+        self.draw_scrlbar_v(str_vec);
 
-        self.draw_range = EditorDrawRange::Not;
+        self.draw_range = E_DrawRange::Not;
         self.sel_org.clear();
     }
 
@@ -132,9 +123,10 @@ impl Editor {
         let _ = out.write(str_vec.concat().as_bytes());
         out.flush().unwrap();
     }
+
     pub fn clear_draw_vec(&self, str_vec: &mut Vec<String>, sy: usize) {
-        if self.row_num > 0 {
-            for i in sy..=self.row_posi + self.row_num - 2 {
+        if self.row_len > 0 {
+            for i in sy..=self.row_posi + self.row_len - 2 {
                 str_vec.push(format!("{}{}", MoveTo(0, (i + self.row_posi) as u16), Clear(ClearType::CurrentLine)));
             }
             str_vec.push(format!("{}", MoveTo(0, self.row_posi as u16)));

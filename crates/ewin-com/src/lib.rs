@@ -38,6 +38,7 @@ pub mod clipboard;
 pub mod colors;
 pub mod def;
 pub mod file;
+pub mod file_path;
 pub mod history;
 pub mod log;
 pub mod model;

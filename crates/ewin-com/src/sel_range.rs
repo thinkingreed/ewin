@@ -23,7 +23,7 @@ impl SelRange {
 
     pub fn is_selected(&self) -> bool {
         if self.mode == SelMode::Normal {
-            self.sy != self.ey || self.s_disp_x != self.e_disp_x
+            self.sy != USIZE_UNDEFINED && self.ey != USIZE_UNDEFINED && (self.sy != self.ey || self.s_disp_x != self.e_disp_x)
         } else {
             // SelMode::BoxSelect
             !(self.sy == USIZE_UNDEFINED && self.ey == USIZE_UNDEFINED)

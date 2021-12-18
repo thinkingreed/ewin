@@ -1,11 +1,5 @@
 use crate::{
-    ewin_com::{
-        _cfg::key::{keycmd::*, keys::*},
-        def::*,
-        log::*,
-        model::*,
-        util::*,
-    },
+    ewin_com::{_cfg::key::keycmd::*, def::*, log::*, model::*, util::*},
     model::{PromptContPosi::*, *},
     prom::choice::*,
 };
@@ -39,6 +33,8 @@ impl Prompt {
                 self.draw_search(str_vec);
             } else if tab_state.is_replace {
                 self.draw_replace(str_vec);
+            } else if tab_state.is_save_forced {
+                self.draw_save_forced(str_vec);
             } else if tab_state.is_open_file {
                 self.draw_open_file(str_vec, is_exsist_msg);
             } else if tab_state.is_menu {
@@ -153,23 +149,23 @@ impl Prompt {
         }
     }
 
-    pub fn ctrl_mouse(&mut self, state: &TabState, y: usize, x: usize, is_left_down: bool) {
+    pub fn ctrl_mouse(&mut self, state: &TabState, y: usize, x: usize) {
         Log::debug_key("PromptCont.ctrl_mouse");
         let y = y as u16;
 
         if y == self.cont_1.buf_row_posi {
             self.cont_posi = PromptContPosi::First;
             if !state.is_open_file {
-                self.cont_1.ctrl_mouse(x, y, is_left_down);
+                self.cont_1.ctrl_mouse(x, y);
             }
         } else if y == self.cont_2.buf_row_posi {
             if !state.is_open_file {
                 self.cont_posi = PromptContPosi::Second;
-                self.cont_2.ctrl_mouse(x, y, is_left_down);
+                self.cont_2.ctrl_mouse(x, y);
             }
         } else if y == self.cont_3.buf_row_posi {
             self.cont_posi = PromptContPosi::Third;
-            self.cont_3.ctrl_mouse(x, y, is_left_down);
+            self.cont_3.ctrl_mouse(x, y);
         }
     }
 
@@ -270,7 +266,7 @@ impl Prompt {
                     let str = self.cont_3.buf[..self.cont_3.cur.x].iter().collect::<String>();
 
                     self.cont_3.buf = self.prom_grep.tab_comp.get_tab_candidate(is_asc, str, true).chars().collect();
-                    let (cur_x, width) = get_row_width(&self.cont_3.buf[..], 0, false);
+                    let (cur_x, width) = get_row_x_disp_x(&self.cont_3.buf[..], 0, false);
                     self.cont_3.cur.x = cur_x;
                     self.cont_3.cur.disp_x = width;
                 }
@@ -286,7 +282,7 @@ impl Prompt {
 
             self.cont_1.buf = self.prom_open_file.tab_comp.get_tab_candidate(is_asc, str, false).chars().collect();
 
-            let (cur_x, width) = get_row_width(&self.cont_1.buf[..], 0, false);
+            let (cur_x, width) = get_row_x_disp_x(&self.cont_1.buf[..], 0, false);
             self.cont_1.cur.x = cur_x;
             self.cont_1.cur.disp_x = width;
         } else if state.is_enc_nl {
@@ -315,21 +311,21 @@ impl Prompt {
             }
         }
     }
-    pub fn set_keys(&mut self, keys: Keys, keycmd: &KeyCmd) {
+    pub fn set_cmd(&mut self, keycmd: KeyCmd) {
         Log::debug_key("Prompt::set_keys");
         //  let keycmd = Keybind::keys_to_keycmd(&keys, None, KeyWhen::PromptFocus);
         self.keycmd = keycmd.clone();
-        let p_cmd = match keycmd {
+        let p_cmd = match &keycmd {
             KeyCmd::Prom(p_cmd) => p_cmd.clone(),
             _ => P_Cmd::Null,
         };
         self.p_cmd = p_cmd.clone();
-        let keycmd = keycmd.clone();
+        let keycmd = keycmd;
         match self.cont_posi {
-            PromptContPosi::First => self.cont_1.set_key_info(keycmd, keys, p_cmd),
-            PromptContPosi::Second => self.cont_2.set_key_info(keycmd, keys, p_cmd),
-            PromptContPosi::Third => self.cont_3.set_key_info(keycmd, keys, p_cmd),
-            PromptContPosi::Fourth => self.cont_4.set_key_info(keycmd, keys, p_cmd),
+            PromptContPosi::First => self.cont_1.set_key_info(keycmd, p_cmd),
+            PromptContPosi::Second => self.cont_2.set_key_info(keycmd, p_cmd),
+            PromptContPosi::Third => self.cont_3.set_key_info(keycmd, p_cmd),
+            PromptContPosi::Fourth => self.cont_4.set_key_info(keycmd, p_cmd),
         }
     }
 

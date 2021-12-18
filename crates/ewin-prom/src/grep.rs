@@ -70,15 +70,9 @@ impl PromptCont {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct PromGrep {
     pub cache_search_filenm: String,
     pub cache_search_folder: String,
     pub tab_comp: TabComp,
-}
-
-impl Default for PromGrep {
-    fn default() -> Self {
-        PromGrep { cache_search_filenm: String::new(), cache_search_folder: String::new(), tab_comp: TabComp::default() }
-    }
 }

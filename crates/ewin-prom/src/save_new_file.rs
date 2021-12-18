@@ -30,13 +30,7 @@ impl PromptCont {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PromSaveNewFile {
     pub tab_comp: TabComp,
-}
-
-impl Default for PromSaveNewFile {
-    fn default() -> Self {
-        PromSaveNewFile { tab_comp: TabComp::default() }
-    }
 }

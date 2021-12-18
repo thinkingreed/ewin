@@ -1,7 +1,6 @@
 use crate::{
     ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, log::*, model::*},
     model::*,
-    terminal::*,
 };
 impl EvtAct {
     pub fn move_row(term: &mut Terminal) -> ActType {
@@ -32,13 +31,13 @@ impl EvtAct {
                         return ActType::Draw(DParts::MsgBar(Lang::get().not_entered_row_number_to_move.to_string()));
                     }
                     let row_num: usize = str.parse().unwrap();
-                    if row_num > term.curt().editor.buf.len_lines() || row_num == 0 {
+                    if row_num > term.curt().editor.buf.len_rows() || row_num == 0 {
                         return ActType::Draw(DParts::MsgBar(Lang::get().number_within_current_number_of_rows.to_string()));
                     }
                     term.curt().editor.set_cur_target(row_num - 1, 0, false);
 
                     term.clear_curt_tab(true);
-                    term.curt().editor.move_row();
+                    term.curt().editor.set_offset_y_move_row();
                     term.curt().editor.scroll_horizontal();
                     return ActType::Draw(DParts::All);
                 }

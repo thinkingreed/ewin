@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, colors::*, log::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, colors::*},
     model::*,
 };
 
@@ -15,8 +15,6 @@ impl Prompt {
     }
 
     pub fn draw_replace(&self, str_vec: &mut Vec<String>) {
-        Log::debug_s("111111111111111111111111");
-
         Prompt::set_draw_vec(str_vec, self.cont_1.opt_row_posi, &self.get_serach_opt());
         Prompt::set_draw_vec(str_vec, self.cont_1.buf_desc_row_posi, &self.cont_1.buf_desc.clone());
         Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());

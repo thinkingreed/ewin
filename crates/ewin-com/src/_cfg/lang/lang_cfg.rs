@@ -1,9 +1,6 @@
 use crate::global::*;
-
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-#[cfg(target_os = "linux")]
-use std::env;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Lang {
@@ -20,6 +17,7 @@ pub struct Lang {
     pub copy: String,
     pub paste: String,
     pub save: String,
+    pub save_forced: String,
     pub undo: String,
     pub redo: String,
     pub cut: String,
@@ -27,9 +25,12 @@ pub struct Lang {
     pub detail: String,
     pub grep: String,
     pub open: String,
+    pub reopen: String,
     pub movement: String,
     pub file: String,
     pub edit: String,
+    pub unable_to_edit: String,
+    pub edit_discard: String,
     pub convert: String,
     pub filenm: String,
     pub file_list: String,
@@ -57,7 +58,10 @@ pub struct Lang {
     pub select: String,
     pub move_setting_location: String,
     pub replace_char: String,
-    pub save_confirmation_to_close: String,
+    pub save_confirm_to_close: String,
+    pub file_has_been_modified_by_other_app: String,
+    pub open_modified_time: String,
+    pub last_modified_time: String,
     pub terminal_size_small: String,
     pub set_new_filenm: String,
     pub set_open_filenm: String,
@@ -69,7 +73,6 @@ pub struct Lang {
     pub set_enc_nl: String,
     pub selectable_only_for_utf8: String,
     pub move_to_specified_row: String,
-    pub unable_to_edit: String,
     pub complement: String,
     pub open_target_file: String,
     pub key_record_start_stop: String,
@@ -166,31 +169,14 @@ impl Lang {
         LANG.get().unwrap()
     }
 
-    #[cfg(target_os = "linux")]
     pub fn read_lang_cfg() -> Lang {
-        let lang_opt = &CFG.get().unwrap().try_lock().unwrap().general.lang;
-        let lang = match lang_opt {
+        let lang = match &CFG.get().unwrap().try_lock().unwrap().general.lang {
             Some(s) if s == "ja_JP" => "ja_JP".to_string(),
-            _ => env::var("LANG").unwrap_or_else(|_| "en_US".to_string()),
+            _ => "en_US".to_string(),
         };
-
         let lang_str = if lang.starts_with("ja_JP") { include_str!("ja_JP.toml") } else { include_str!("en_US.toml") };
         let lang_cfg: Lang = toml::from_str(lang_str).unwrap();
 
         lang_cfg
-    }
-
-    #[cfg(target_os = "windows")]
-    pub fn read_lang_cfg() -> Lang {
-        let lang_opt = &CFG.get().unwrap().try_lock().unwrap().general.lang;
-
-        let lang = match lang_opt {
-            Some(s) if s == "ja_JP" => "ja_JP",
-            _ => "en_US",
-        };
-
-        let lang_str = if lang.starts_with("ja_JP") { include_str!("ja_JP.toml") } else { include_str!("en_US.toml") };
-        let lang_cfg: Lang = toml::from_str(lang_str).unwrap();
-        return lang_cfg;
     }
 }

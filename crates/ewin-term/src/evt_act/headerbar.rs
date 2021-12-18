@@ -8,7 +8,6 @@ use crate::{
         model::*,
     },
     model::*,
-    terminal::*,
 };
 
 impl EvtAct {
@@ -17,9 +16,6 @@ impl EvtAct {
 
         match &term.keycmd {
             KeyCmd::HeaderBar(h_cmd) => match &h_cmd {
-                // switch_tab
-                H_Cmd::SwitchTabRight => return term.switch_tab(Direction::Right),
-                H_Cmd::SwitchTabLeft => return term.switch_tab(Direction::Left),
                 H_Cmd::MouseDragLeftUp(y, x) => {
                     EvtAct::match_event(Keys::MouseDragLeft((*y + HEADERBAR_ROW_NUM) as u16, *x as u16), &mut stdout(), term);
                     return ActType::Cancel;
@@ -50,7 +46,7 @@ impl EvtAct {
                             if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 {
                                 term.idx = idx;
                                 Terminal::set_title(&h_file.fullpath);
-                                term.curt().editor.set_keys(Keys::Null, None);
+                                term.curt().editor.set_cmd(KeyCmd::Null);
                                 return ActType::Draw(DParts::All);
                             }
                         }

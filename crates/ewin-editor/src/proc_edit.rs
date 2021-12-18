@@ -6,7 +6,8 @@ use crate::{
 impl Editor {
     pub fn edit_proc(&mut self, e_cmd: E_Cmd) {
         Log::debug_s("edit_proc");
-        if self.check_evtproc(&e_cmd) {
+
+        if self.init_evtproc(&e_cmd) {
             return;
         }
         let mut evt_proc = EvtProc::default();
@@ -14,7 +15,7 @@ impl Editor {
         let mut ep_del = Proc::default();
 
         // selected range delete
-        if self.sel.is_selected_width() && self.is_edit_del_keycmd(&e_cmd) {
+        if self.sel.is_selected_width() && Editor::is_edit(&e_cmd, false) {
             ep_del = Proc { e_cmd: if e_cmd == E_Cmd::DelNextChar { E_Cmd::DelNextChar } else { E_Cmd::DelPrevChar }, ..Proc::default() };
             ep_del.cur_s = Cur { y: self.sel.sy, x: self.sel.sx, disp_x: self.sel.s_disp_x };
             ep_del.cur_e = self.cur;
@@ -25,7 +26,6 @@ impl Editor {
             ep_del.sel = self.sel;
             self.del_sel_range(&ep_del);
             self.sel.clear();
-            self.set_draw_range_each_process(EditorDrawRange::After(self.cur.y));
             ep_del.draw_type = self.draw_range;
             evt_proc.sel_proc = Some(ep_del.clone());
         }
@@ -47,7 +47,7 @@ impl Editor {
                 match &e_cmd {
                     E_Cmd::DelNextChar => self.delete(&mut ep),
                     E_Cmd::DelPrevChar => self.backspace(&mut ep),
-                    E_Cmd::InsertLine => self.enter(),
+                    E_Cmd::InsertRow => self.insert_row(),
                     E_Cmd::Cut => self.cut(ep_del),
                     E_Cmd::InsertStr(_) | E_Cmd::InsertBox(_) => self.insert_str(&mut ep),
                     E_Cmd::DelBox(box_sel_vec) => self.undo_del_box(box_sel_vec),
@@ -140,16 +140,15 @@ impl Editor {
             }
         }
     }
-    pub fn is_edit_del_keycmd(&mut self, e_cmd: &E_Cmd) -> bool {
-        matches!(e_cmd, E_Cmd::InsertStr(_) | E_Cmd::InsertLine | E_Cmd::Cut | E_Cmd::DelNextChar | E_Cmd::DelPrevChar)
 
-        /*
+    pub fn is_edit(e_cmd: &E_Cmd, is_incl_unredo: bool) -> bool {
         match e_cmd {
-            E_Cmd::InsertStr(_) | E_Cmd::InsertLine | E_Cmd::Cut | E_Cmd::DelNextChar | E_Cmd::DelPrevChar => true,
+            E_Cmd::InsertStr(_) | E_Cmd::InsertRow | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Cut => true,
+            E_Cmd::Undo | E_Cmd::Redo => is_incl_unredo,
             _ => false,
         }
-         */
     }
+
     pub fn exit_box_mode(&mut self) {
         self.sel.mode = SelMode::Normal;
         self.box_insert.mode = BoxInsertMode::Normal;
@@ -192,17 +191,22 @@ impl Editor {
         self.draw_range = ep.draw_type;
     }
 
-    pub fn check_evtproc(&mut self, e_cmd: &E_Cmd) -> bool {
+    pub fn init_evtproc(&mut self, e_cmd: &E_Cmd) -> bool {
+        // Editing Editor from other than KeyWhen::EditorFocus
+        if self.e_cmd == E_Cmd::Null {
+            self.e_cmd = e_cmd.clone();
+        }
+
         if e_cmd == &E_Cmd::DelNextChar {
             // End of last line
-            if !self.sel.is_selected() && self.cur.y == self.buf.len_lines() - 1 && self.cur.x == self.buf.len_line_chars(self.cur.y) - 1 {
-                self.draw_range = EditorDrawRange::Not;
+            if !self.sel.is_selected() && self.cur.y == self.buf.len_rows() - 1 && self.cur.x == self.buf.len_line_chars(self.cur.y) - 1 {
+                self.draw_range = E_DrawRange::Not;
                 return true;
             }
         } else if e_cmd == &E_Cmd::DelPrevChar {
             // For the starting point
             if !self.sel.is_selected() && self.cur.y == 0 && self.cur.x == 0 {
-                self.draw_range = EditorDrawRange::Not;
+                self.draw_range = E_DrawRange::Not;
                 return true;
             }
         }

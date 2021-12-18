@@ -17,7 +17,7 @@ impl Editor {
         let regex = CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex;
 
         let s_row_idx = if regex { self.buf.line_to_byte(self.offset_y) } else { self.buf.line_to_char(self.offset_y) };
-        let ey = min(self.offset_y + self.row_num, self.buf.len_lines());
+        let ey = min(self.offset_y + self.row_len, self.buf.len_rows());
         let e_row_idx = if regex { self.buf.line_to_byte(ey) } else { self.buf.line_to_char(ey) };
         let search_org = self.search.clone();
 
@@ -27,7 +27,7 @@ impl Editor {
             if !self.search.ranges.is_empty() {
                 self.search_str(true, true);
             }
-            self.draw_range = EditorDrawRange::After(self.offset_y);
+            self.draw_range = E_DrawRange::After(self.offset_y);
         }
     }
     pub fn exec_search_confirm(&mut self, search_str: String) -> Option<String> {
@@ -172,7 +172,7 @@ impl Editor {
 
         let end_char_idx = self.buf.replace(is_regex, &replace_str, &replace_map);
 
-        self.set_draw_range_each_process(EditorDrawRange::After(self.offset_y));
+        //  self.set_draw_range_each_process(EditorDrawRange::After(self.offset_y));
 
         let y = self.buf.char_to_line(end_char_idx);
         let x = end_char_idx - self.buf.line_to_char(y);

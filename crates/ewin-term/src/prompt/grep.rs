@@ -2,7 +2,6 @@ use crate::{
     ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, global::*, log::*, model::*},
     model::*,
     tab::Tab,
-    terminal::*,
 };
 use std::{env, path::*};
 

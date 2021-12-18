@@ -14,6 +14,9 @@ pub mod view {
 pub mod prompt {
     pub mod grep_result;
 }
+pub mod scrollbar {
+    pub mod vertical;
+}
 pub mod fmt {
     pub mod fmt_ctrl;
     pub mod xml_html;

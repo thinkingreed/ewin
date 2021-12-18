@@ -6,8 +6,8 @@ use std::path::PathBuf;
 
 impl Editor {
     pub fn set_grep_result(&mut self, line_str: String) {
-        self.rnw = if self.state.mouse_mode == MouseMode::Normal { self.buf.len_lines().to_string().len() } else { 0 };
-        self.cur = Cur { y: self.buf.len_lines() - 1, x: 0, disp_x: 0 };
+        self.rnw = if self.state.mouse_mode == MouseMode::Normal { self.buf.len_rows().to_string().len() } else { 0 };
+        self.cur = Cur { y: self.buf.len_rows() - 1, x: 0, disp_x: 0 };
 
         self.scroll();
 
@@ -20,7 +20,7 @@ impl Editor {
             let ignore_prefix_str = format!("{}:{}:", vec[0], vec[1]);
 
             let regex = CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex;
-            let row = self.buf.len_lines() - 2;
+            let row = self.buf.len_rows() - 2;
 
             let (start_idx, end_idx, ignore_prefix_len) = match regex {
                 true => (self.buf.line_to_byte(row), self.buf.len_bytes(), ignore_prefix_str.len()),

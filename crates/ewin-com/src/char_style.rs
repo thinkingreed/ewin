@@ -2,16 +2,10 @@ use crate::{_cfg::cfg::Cfg, colors::*, model::*};
 use crossterm::style::{Color as CrosstermColor, SetBackgroundColor, SetForegroundColor};
 use std::fmt;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct CharStyle {
     pub fg: Color,
     pub bg: Color,
-}
-
-impl Default for CharStyle {
-    fn default() -> Self {
-        CharStyle { fg: Color::default(), bg: Color::default() }
-    }
 }
 
 impl fmt::Display for CharStyle {

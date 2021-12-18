@@ -4,15 +4,13 @@ impl Editor {
     pub fn all_select(&mut self) {
         self.sel.clear();
         self.sel.set_s(0, 0, 0);
-        let (cur_x, width) = get_row_width(&self.buf.char_vec_line(self.buf.len_lines() - 1)[..], 0, false);
-        self.sel.set_e(self.buf.len_lines() - 1, cur_x, width);
-        self.draw_range = EditorDrawRange::All;
+        let (cur_x, width) = get_row_x_disp_x(&self.buf.char_vec_line(self.buf.len_rows() - 1)[..], 0, false);
+        self.sel.set_e(self.buf.len_rows() - 1, cur_x, width);
     }
 
     pub fn cut(&mut self, ep: Proc) {
         Log::debug_key("cut");
         set_clipboard(&ep.str);
-        self.draw_range = EditorDrawRange::All;
     }
 
     pub fn copy(&mut self) {

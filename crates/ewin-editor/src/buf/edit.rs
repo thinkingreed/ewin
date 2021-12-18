@@ -130,7 +130,7 @@ impl TextBuffer {
         self.text.chars()
     }
 
-    pub fn len_lines(&self) -> usize {
+    pub fn len_rows(&self) -> usize {
         self.text.len_lines()
     }
 
@@ -248,11 +248,6 @@ impl TextBuffer {
     }
 }
 
-impl Default for TextBuffer {
-    fn default() -> Self {
-        TextBuffer { text: Rope::default() }
-    }
-}
 impl<'a> SearchIter<'a> {
     fn from_rope_slice<'b>(slice: &'b RopeSlice, search_pattern: &'b str, cfg_search: &'b CfgSearch) -> SearchIter<'b> {
         assert!(!search_pattern.is_empty(), "Can't search using an empty search pattern.");

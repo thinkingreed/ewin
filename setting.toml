@@ -1,6 +1,6 @@
 [general]
 # "en_US" or "ja_JP"
-lang = "en_US"  # option default "en_US"
+#lang = "en_US"  # option default "en_US"
 
 [general.log] # option
 # "info" or "debug" or "error"
@@ -21,11 +21,14 @@ indent_type = "half_width_blank"
 # Valid only for half_width_blank
 indent_size = 2
 
+[general.editor.scrollbar.vertical]
+# 0 is hide
+width = 2
+
 [general.prompt.open_file]
 # Valid only for Windows
 # "" is Not set or "current_directory"
 directory_init_value = ""
-
 
 # context menu
 [general.ctx_menu]
@@ -43,7 +46,7 @@ content = """
     "range_non_selected": [
       {"paste": []},
       {"all_select": []},
-      {"macros": ["insertString.js"]},
+      {"macros": ["insertString.js"]}
     ]
   },
   "header_bar": {

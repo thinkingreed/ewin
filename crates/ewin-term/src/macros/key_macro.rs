@@ -1,10 +1,12 @@
-use ewin_com::model::{ActType, DParts};
+use ewin_com::{
+    _cfg::key::keycmd::KeyCmd,
+    model::{ActType, DParts},
+};
 
 use crate::{
     ewin_com::{_cfg::lang::lang_cfg::*, log::*},
     model::*,
     tab::*,
-    terminal::*,
 };
 
 impl Tab {
@@ -28,7 +30,9 @@ impl Tab {
 
         let macro_vec = term.curt().editor.key_vec.clone();
         for (i, mac) in macro_vec.iter().enumerate() {
-            term.keys = mac.keys;
+            term.keycmd = KeyCmd::Edit(mac.e_cmd.clone());
+            term.curt().editor.e_cmd = mac.e_cmd.clone();
+
             if i == macro_vec.len() - 1 {
                 term.curt().editor.state.key_macro.is_exec_end = true;
             }

@@ -1,7 +1,6 @@
 use crate::{
     ewin_com::{_cfg::key::keycmd::*, log::*, model::*},
     model::*,
-    terminal::*,
 };
 
 impl EvtAct {

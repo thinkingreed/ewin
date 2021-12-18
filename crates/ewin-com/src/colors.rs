@@ -4,27 +4,17 @@ use crate::{def::*, global::*};
 use colors_transform::{Color as transform_Color, Rgb as transform_Rgb};
 use crossterm::style::{Color as CrosstermColor, SetBackgroundColor, SetForegroundColor};
 use serde::{Deserialize, Serialize};
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Color {
     pub rgb: Rgb,
 }
-impl Default for Color {
-    fn default() -> Self {
-        Color { rgb: Rgb::default() }
-    }
-}
 pub struct Colors {}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Rgb {
     pub r: u8,
     pub g: u8,
     pub b: u8,
-}
-impl Default for Rgb {
-    fn default() -> Self {
-        Rgb { r: 0, g: 0, b: 0 }
-    }
 }
 impl Colors {
     pub fn set_text_color(str_vec: &mut Vec<String>) {
@@ -57,15 +47,22 @@ impl Colors {
     pub fn get_default_bg() -> String {
         Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg)
     }
-    pub fn get_default_fg_bg() -> String {
-        format!("{}{}", Colors::get_default_bg(), Colors::get_default_fg())
-    }
+
     fn get_default_inversion_fg() -> String {
         Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg)
     }
     pub fn get_default_inversion_fg_bg() -> String {
         let cfg = CFG.get().unwrap().try_lock().unwrap();
         format!("{}{}", Colors::fg(cfg.colors.editor.bg), Colors::bg(cfg.colors.editor.fg))
+    }
+    pub fn get_default_fg_bg() -> String {
+        format!("{}{}", Colors::get_default_bg(), Colors::get_default_fg())
+    }
+    //
+    // Scrollbar
+    //
+    pub fn get_scrollbar_bg() -> String {
+        Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.line_number.bg)
     }
     //
     // HeaderBar

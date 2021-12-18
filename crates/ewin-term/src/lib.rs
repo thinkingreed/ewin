@@ -32,7 +32,6 @@ pub mod macros {
     pub mod key_macro;
 }
 pub mod prompt {
-    pub mod close;
     pub mod enc_nl;
     pub mod grep;
     pub mod grep_result;
@@ -40,6 +39,8 @@ pub mod prompt {
     pub mod move_row;
     pub mod open_file;
     pub mod replace;
+    pub mod save_confirm;
+    pub mod save_forced;
     pub mod save_new_file;
     pub mod search;
 }

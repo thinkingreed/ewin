@@ -4,7 +4,6 @@ use crate::{
     help::*,
     model::*,
     tab::Tab,
-    terminal::*,
 };
 
 impl EvtAct {
@@ -21,7 +20,7 @@ impl EvtAct {
         let keycmd = &term.keycmd.clone();
         match &keycmd {
             KeyCmd::CloseFile => {
-                if Tab::prom_close(term) {
+                if Tab::prom_save_confirm(term) {
                     return ActType::Exit;
                 }
             }
@@ -33,7 +32,7 @@ impl EvtAct {
                     }
                 }
                 E_Cmd::SaveFile => {
-                    let act_type = Tab::save(term);
+                    let act_type = Tab::save(term, false);
                     if let ActType::Draw(_) = act_type {
                         return act_type;
                     }
@@ -54,15 +53,22 @@ impl EvtAct {
                 E_Cmd::Find => term.curt().prom_search(),
                 E_Cmd::MoveRow => term.curt().prom_move_row(),
                 E_Cmd::Grep => term.curt().prom_grep(),
-                E_Cmd::Encoding => term.curt().prom_enc_nl(),
                 E_Cmd::OpenMenu | E_Cmd::OpenMenuFile | E_Cmd::OpenMenuConvert | E_Cmd::OpenMenuEdit | E_Cmd::OpenMenuSearch | E_Cmd::OpenMenuMacro => term.curt().prom_menu(),
+                //  E_Cmd::Encoding => term.curt().prom_enc_nl(),
+                E_Cmd::Encoding => {
+                    let h_file = term.curt_h_file().clone();
+                    term.curt().prom_save_forced(h_file);
+                }
                 // Help
                 E_Cmd::Help => Help::disp_toggle(term),
                 /*
                  * ctx_menu
                  */
-                E_Cmd::MouseDownRight(_, _) | E_Cmd::MouseDragRight(_, _) => CtxMenuGroup::show_init(term),
-                E_Cmd::CtxtMenu => CtxMenuGroup::show_init(term),
+                // E_Cmd::MouseDownRight(_, _) | E_Cmd::MouseDragRight(_, _) => CtxMenuGroup::show_init(term),
+                E_Cmd::CtxtMenu(y, x) => CtxMenuGroup::show_init(term, *y, *x),
+                // switch_tab
+                E_Cmd::SwitchTabRight => return term.switch_tab(Direction::Right),
+                E_Cmd::SwitchTabLeft => return term.switch_tab(Direction::Left),
                 //
                 // Operation editor
                 _ => term.curt().editor.proc(),
@@ -77,6 +83,7 @@ impl EvtAct {
             return ActType::Cancel;
         }
         term.curt().editor.finalize();
+        term.curt().editor.set_draw_range();
 
         let dparts = term.curt().editor.set_draw_parts(keycmd);
         return ActType::Draw(dparts);

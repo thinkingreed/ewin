@@ -1,10 +1,5 @@
 use crate::{grep::*, menu::*, open_file::*, prom::choice::*, save_new_file::*};
-use ewin_com::{
-    _cfg::key::{keycmd::*, keys::Keys},
-    def::*,
-    file::*,
-    model::*,
-};
+use ewin_com::{_cfg::key::keycmd::*, def::*, file::*, model::*};
 use std::{collections::HashMap, fmt};
 
 #[derive(Debug, Clone)]
@@ -71,7 +66,6 @@ impl fmt::Display for TabComp {
 #[derive(Debug, Clone)]
 pub struct PromptCont {
     pub keycmd: KeyCmd,
-    pub keys: Keys,
     pub open_file_type: OpenFileType,
     pub p_cmd: P_Cmd,
     pub disp_row_posi: u16,
@@ -103,7 +97,6 @@ impl Default for PromptCont {
     fn default() -> Self {
         PromptCont {
             keycmd: KeyCmd::Prom(P_Cmd::Null),
-            keys: Keys::Null,
             open_file_type: OpenFileType::Normal,
             p_cmd: P_Cmd::Null,
             disp_row_posi: 0,
@@ -129,16 +122,11 @@ impl Default for PromptCont {
         }
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct PromptContOpt {
     pub key: String,
     pub is_check: bool,
     pub mouse_area: (u16, u16),
-}
-impl Default for PromptContOpt {
-    fn default() -> Self {
-        PromptContOpt { key: String::new(), is_check: false, mouse_area: (0, 0) }
-    }
 }
 
 impl PromptContOpt {

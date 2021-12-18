@@ -153,16 +153,10 @@ impl Default for CtxMenuCont {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct CtxMenu {
     pub name: String,
     pub name_disp: String,
-}
-
-impl Default for CtxMenu {
-    fn default() -> Self {
-        CtxMenu { name: String::new(), name_disp: String::new() }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

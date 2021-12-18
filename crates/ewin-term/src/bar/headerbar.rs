@@ -1,6 +1,6 @@
 use crate::{
     ewin_com::{colors::*, def::*, log::*, model::*, util::*},
-    terminal::*,
+    model::*,
 };
 use crossterm::{cursor::*, terminal::*};
 

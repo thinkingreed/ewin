@@ -15,7 +15,7 @@ impl Prompt {
             self.cont_1.guide_row_posi = base_posi;
             idx += 1;
             self.cont_1.key_desc_row_posi = base_posi + idx;
-            if tab_state.is_search || (tab_state.is_close_confirm && !tab_state.is_save_new_file) {
+            if tab_state.is_search || (tab_state.is_save_confirm && !tab_state.is_save_new_file) {
                 idx += 1;
                 self.cont_1.opt_row_posi = base_posi + idx;
                 idx += 1;
@@ -23,7 +23,10 @@ impl Prompt {
             } else if tab_state.is_save_new_file || tab_state.is_move_row {
                 idx += 1;
                 self.cont_1.buf_row_posi = base_posi + idx;
-            } else if tab_state.is_replace || tab_state.grep.is_grep {
+            } else if tab_state.is_save_forced {
+                idx += 1;
+                self.cont_1.buf_desc_row_posi = base_posi + idx;
+            } else if tab_state.is_replace || tab_state.grep.is_grep || tab_state.is_save_forced {
                 idx += 1;
                 self.cont_1.opt_row_posi = base_posi + idx;
                 idx += 1;

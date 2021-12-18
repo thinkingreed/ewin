@@ -1,18 +1,16 @@
-use crate::def::*;
 use crate::{global::*, log::*, model::*};
 use anyhow::Context;
 use clipboard::{ClipboardContext, ClipboardProvider};
-use std::io::Read;
-use std::io::Write;
-use std::iter::FromIterator;
-use std::process;
-use std::process::Command;
+use std::{fs::OpenOptions, io::Read, io::Write, process, process::Command};
+use wslpath::wsl_to_windows;
 
 pub fn set_clipboard(copy_string: &str) {
     Log::debug_s("set_clipboard ");
     if *ENV == Env::WSL {
         if *IS_POWERSHELL_ENABLE {
-            if let Err(err) = set_win_clipboard(copy_string) {
+            let result = set_win_clipboard(copy_string);
+            Log::debug("result", &result);
+            if let Err(err) = result {
                 Log::error("set_win_clipboard err", &err.to_string());
                 let _ = CLIPBOARD.set(copy_string.to_string());
             }
@@ -30,46 +28,22 @@ pub fn set_clipboard(copy_string: &str) {
         }
     };
 }
-fn set_win_clipboard(copy_string: &str) -> anyhow::Result<()> {
-    Log::debug("copy_string", &copy_string);
 
-    let escape_string = get_wsl_str(copy_string);
+fn set_win_clipboard(copy_str: &str) -> anyhow::Result<()> {
+    let clipboard_file = FilePath::get_app_clipboard_file_path();
+    let mut file = OpenOptions::new().create(true).write(true).truncate(true).open(&clipboard_file)?;
+    file.write_all(copy_str.as_bytes())?;
 
-    Log::debug("escape_string", &escape_string);
+    let mut cmd = Command::new("powershell.exe");
 
-    let mut p = Command::new("powershell.exe").arg("set-clipboard").arg("-Value").arg(&escape_string).stdin(process::Stdio::piped()).spawn()?;
-    {
-        let mut stdin = p.stdin.take().context("take stdin")?;
-        write!(stdin, "{}", &escape_string)?;
-    }
-    p.wait()?;
+    let win_path = wsl_to_windows(clipboard_file.to_str().unwrap()).unwrap();
+    // cmd.args(&["Get-Content", "-Encoding", "UTF8", relative_path_clipboard_file.to_str().unwrap(), "-Raw", "|", "Set-Clipboard"]);
+    cmd.args(&["Get-Content", "-Encoding", "UTF8", &win_path, "-Raw", "|", "Set-Clipboard"]);
+
+    Log::debug("clipboard cmd", &cmd);
+    let mut child = cmd.spawn()?;
+    child.wait()?;
     Ok(())
-}
-// WSL:powershell.clipboard
-// enclose the string in "’ "
-// new line are ","
-// Empty line is an empty string
-fn get_wsl_str(str: &str) -> String {
-    let mut copy_str: String = String::new();
-
-    let str = str.replace(NEW_LINE_CRLF, &NEW_LINE_LF.to_string());
-    let vec = Vec::from_iter(str.split(NEW_LINE_LF).map(String::from));
-    for (i, str) in vec.iter().enumerate() {
-        let tmp_vec: Vec<char> = str.chars().collect();
-        let mut tmp_str = String::new();
-        for c in tmp_vec {
-            match c {
-                '\'' => tmp_str.push_str("''"),
-                _ => tmp_str.push(c),
-            }
-        }
-        let ss = if tmp_str.is_empty() { "''".to_string() } else { format!("'{}'", tmp_str) };
-        copy_str.push_str(ss.as_str());
-        if i != vec.len() - 1 {
-            copy_str.push(',');
-        }
-    }
-    copy_str
 }
 
 pub fn get_clipboard() -> anyhow::Result<String> {

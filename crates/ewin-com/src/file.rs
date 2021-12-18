@@ -4,22 +4,20 @@ use encoding_rs::Encoding;
 use faccess::PathExt;
 #[cfg(target_os = "windows")]
 use regex::Regex;
-use std::io::{self, BufReader, ErrorKind, Read, Seek, SeekFrom};
 #[cfg(target_os = "linux")]
 use std::path::MAIN_SEPARATOR;
 use std::{fmt, path::Path};
+use std::{
+    io::{self, BufReader, ErrorKind, Read, Seek, SeekFrom},
+    time::SystemTime,
+};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct File {
     pub name: String,
     pub is_dir: bool,
 }
 
-impl Default for File {
-    fn default() -> Self {
-        File { name: String::new(), is_dir: false }
-    }
-}
 impl fmt::Display for File {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "File filenm:{}, is_dir:{} ", self.name, self.is_dir)
@@ -67,7 +65,7 @@ impl File {
         let is_readable = File::is_readable(filepath);
 
         match File::read(filepath) {
-            Ok((string, _, _)) => (string, "".to_string()),
+            Ok((string, _, _, _)) => (string, "".to_string()),
             Err(err) => {
                 let filenm = Path::new(&filepath).file_name().unwrap().to_string_lossy().to_string();
                 Log::error_s(&err.to_string());
@@ -85,51 +83,53 @@ impl File {
         }
     }
 
-    pub fn read(path: &str) -> io::Result<(String, Encode, Option<Encode>)> {
-        let (vec, bom) = File::read_file(path)?;
+    pub fn read(path: &str) -> io::Result<(String, Encode, Option<Encode>, SystemTime)> {
+        let (vec, bom, modified_time) = File::read_file(path)?;
 
         // UTF8
         let (str, enc) = File::read_bytes(&vec[..], Encode::UTF8);
         if !str.is_empty() {
-            return Ok((str, enc, bom));
+            return Ok((str, enc, bom, modified_time));
         }
         // SJIS
         let (str, enc) = File::read_bytes(&vec[..], Encode::SJIS);
         if !str.is_empty() {
-            return Ok((str, enc, bom));
+            return Ok((str, enc, bom, modified_time));
         }
         // EUC_JP
         let (str, enc) = File::read_bytes(&vec[..], Encode::EucJp);
         if !str.is_empty() {
-            return Ok((str, enc, bom));
+            return Ok((str, enc, bom, modified_time));
         }
         // GBK
         let (str, enc) = File::read_bytes(&vec[..], Encode::GBK);
         if !str.is_empty() {
-            return Ok((str, enc, bom));
+            return Ok((str, enc, bom, modified_time));
         }
         // UTF16LE・UTF16BE
         // Read once with UTF16LE / UTF16BE to be judged by bom
         let (str, enc) = File::read_bytes(&vec[..], Encode::UTF16LE);
         if !str.is_empty() {
-            return Ok((str, enc, bom));
+            return Ok((str, enc, bom, modified_time));
         }
 
         // Encoding::Unknown
-        return Ok(((*String::from_utf8_lossy(&vec[..])).to_string(), Encode::Unknown, bom));
+        return Ok(((*String::from_utf8_lossy(&vec[..])).to_string(), Encode::Unknown, bom, modified_time));
     }
 
-    pub fn read_file(path: &str) -> io::Result<(Vec<u8>, Option<Encode>)> {
+    pub fn read_file(path: &str) -> io::Result<(Vec<u8>, Option<Encode>, SystemTime)> {
         let mut file = std::fs::File::open(path)?;
 
-        Log::debug("file len", &file.metadata()?.len());
+        Log::debug("file metadata", &file.metadata()?.modified());
+        let modified_time = file.metadata()?.modified()?;
+
         let mut vec: Vec<u8> = vec![];
         // Read all bytes of the file
         BufReader::new(&file).read_to_end(&mut vec)?;
         file.seek(SeekFrom::Start(0))?;
         let bom = File::check_file_bom(&file);
 
-        Ok((vec, bom))
+        Ok((vec, bom, modified_time))
     }
     pub fn read_bytes(bytes: &[u8], encode: Encode) -> (String, Encode) {
         let encoding: &Encoding = Encode::into_encoding(encode);
@@ -180,5 +180,9 @@ impl File {
             }
         }
         None
+    }
+    pub fn get_modified_time(path: &str) -> SystemTime {
+        let file = std::fs::File::open(path).unwrap();
+        return file.metadata().unwrap().modified().unwrap();
     }
 }

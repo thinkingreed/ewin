@@ -1,7 +1,6 @@
 use crate::{
     ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, global::*, log::*, model::*, util::*},
     model::*,
-    terminal::*,
 };
 
 impl EvtAct {
@@ -27,6 +26,7 @@ impl EvtAct {
                         let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
                         end_idx = if cfg_search.regex { term.curt().editor.buf.len_bytes() } else { term.curt().editor.buf.len_chars() };
                     }
+
                     let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
 
                     let search_map = term.curt().editor.buf.search(&search_str, 0, end_idx, cfg_search);

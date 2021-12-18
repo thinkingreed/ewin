@@ -1,35 +1,59 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, def::*, log::*, model::*, util::*},
+    ewin_com::{
+        _cfg::key::{keycmd::*, keys::*},
+        def::*,
+        log::*,
+        model::*,
+        util::*,
+    },
     model::*,
 };
-use std::cmp::{max, min};
 
 impl Editor {
     pub fn ctrl_mouse(&mut self) {
         Log::debug_key("ctrl_mouse");
 
-        let (mut y, mut x, mouse_proc) = match self.e_cmd {
-            E_Cmd::MouseDownLeft(y, x) => (y, x, MouseProc::DownLeft),
-            E_Cmd::MouseDragLeftUp(y, x) | E_Cmd::MouseDragLeftDown(y, x) | E_Cmd::MouseDragLeftLeft(y, x) | E_Cmd::MouseDragLeftRight(y, x) => (y, x, MouseProc::DragLeft),
-            E_Cmd::MouseDownBoxLeft(y, x) => (y, x, MouseProc::DownLeftBox),
-            E_Cmd::MouseDragBoxLeft(y, x) => (y, x, MouseProc::DragLeftBox),
+        let (mut y, mut x, keys) = match self.e_cmd {
+            E_Cmd::MouseDownLeft(y, x) => (y, x, Keys::MouseDownLeft(y as u16, x as u16)),
+            E_Cmd::MouseDragLeftUp(y, x) | E_Cmd::MouseDragLeftDown(y, x) | E_Cmd::MouseDragLeftLeft(y, x) | E_Cmd::MouseDragLeftRight(y, x) => (y, x, Keys::MouseDragLeft(y as u16, x as u16)),
+            E_Cmd::MouseDownLeftBox(y, x) => (y, x, Keys::MouseDownLeft(y as u16, x as u16)),
+            E_Cmd::MouseDragLeftBox(y, x) => (y, x, Keys::MouseDragLeft(y as u16, x as u16)),
             _ => return,
         };
         Log::debug("y", &y);
         Log::debug("x", &x);
 
-        self.sel.mode = match mouse_proc {
-            MouseProc::DownLeftBox | MouseProc::DragLeftBox => SelMode::BoxSelect,
-            MouseProc::DownLeft | MouseProc::DragLeft => SelMode::Normal,
+        self.sel.mode = match self.e_cmd {
+            E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) => SelMode::BoxSelect,
+            _ => SelMode::Normal,
         };
 
+        // scrlbar_v
+        if self.buf.len_rows() > self.row_len && self.row_posi <= y && y <= self.row_posi + self.row_len {
+            match self.e_cmd {
+                E_Cmd::MouseDownLeft(y, x) if self.get_rnw_and_margin() + self.col_num <= x => {
+                    self.set_scrlbar_v_posi(y);
+                    return;
+                }
+                E_Cmd::MouseDragLeftDown(y, _) | E_Cmd::MouseDragLeftUp(y, _) | E_Cmd::MouseDragLeftLeft(y, _) | E_Cmd::MouseDragLeftRight(y, _) if self.scrl_v.is_enable => {
+                    if matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _)) {
+                        self.set_scrlbar_v_posi(y);
+                    }
+                    return;
+                }
+                _ => self.scrl_v.is_enable = false,
+            };
+        } else {
+            self.scrl_v.is_enable = false;
+        }
+
         // y, range check
-        if self.buf.len_lines() < y || HEADERBAR_ROW_NUM + self.row_num - 1 + STATUSBAR_ROW_NUM == y {
+        if self.buf.len_rows() < y || HEADERBAR_ROW_NUM + self.row_len - 1 + STATUSBAR_ROW_NUM == y {
             // In case of MouseMode::Mouse, this function is not executed, so ignore it.
-            if self.buf.len_lines() < y {
-                y = self.buf.len_lines() - 1;
-            } else if HEADERBAR_ROW_NUM + self.row_num - 1 + STATUSBAR_ROW_NUM == y {
-                y = self.offset_y + self.row_num - 1;
+            if self.buf.len_rows() < y {
+                y = self.buf.len_rows() - 1;
+            } else if HEADERBAR_ROW_NUM + self.row_len - 1 + STATUSBAR_ROW_NUM == y {
+                y = self.offset_y + self.row_len - 1;
             }
         } else {
             if y >= HEADERBAR_ROW_NUM {
@@ -38,9 +62,9 @@ impl Editor {
             y += self.offset_y
         }
 
-        if mouse_proc == MouseProc::DownLeft && x < self.get_rnw_and_margin() {
+        if matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) && x < self.get_rnw_and_margin() {
             self.sel.set_s(y, 0, 0);
-            let (cur_x, width) = get_row_width(&self.buf.char_vec_line(y)[..], 0, true);
+            let (cur_x, width) = get_row_x_disp_x(&self.buf.char_vec_line(y)[..], 0, true);
             self.sel.set_e(y, cur_x, width);
             self.set_cur_target(y, 0, false);
         } else {
@@ -58,20 +82,7 @@ impl Editor {
                 self.scroll();
                 self.scroll_horizontal();
             }
-            self.history.set_sel_multi_click(mouse_proc, &mut self.sel, &self.cur, &self.buf.char_vec_line(self.cur.y), &self.keys);
-
-            if self.sel.is_selected() {
-                match mouse_proc {
-                    MouseProc::DownLeft | MouseProc::DownLeftBox | MouseProc::DragLeftBox => self.draw_range = EditorDrawRange::All,
-                    MouseProc::DragLeft => {
-                        if self.sel.mode == SelMode::Normal {
-                            self.draw_range = EditorDrawRange::Target(min(self.cur.y, self.cur_y_org), max(self.cur.y, self.cur_y_org));
-                        } else {
-                            self.draw_range = EditorDrawRange::All;
-                        }
-                    }
-                }
-            }
+            self.history.set_sel_multi_click(&keys, &mut self.sel, &self.cur, &self.buf.char_vec_line(self.cur.y));
         }
     }
 }

@@ -2,7 +2,6 @@ use crate::{
     ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, log::*, model::*},
     ewin_prom::{model::*, prom::choice::*},
     model::*,
-    terminal::*,
 };
 use std::io::stdout;
 

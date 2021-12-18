@@ -1,20 +1,29 @@
 use crate::{
     bar::statusbar::*,
-    ewin_com::{_cfg::lang::lang_cfg::*, log::*, model::*},
+    ewin_com::{_cfg::lang::lang_cfg::*, file::*, log::*, model::*},
     ewin_editor::model::*,
     ewin_prom::model::*,
     model::*,
-    terminal::*,
 };
 
 impl Tab {
-    pub fn save(term: &mut Terminal) -> ActType {
+    pub fn save(term: &mut Terminal, is_forced: bool) -> ActType {
         let h_file = term.curt_h_file().clone();
         if h_file.filenm == Lang::get().new_file {
             term.curt().prom_save_new_file();
             return ActType::Draw(DParts::All);
         } else {
+            if !is_forced {
+                // Check if the file has been updated after opening
+                let latest_modified_time = File::get_modified_time(&h_file.fullpath);
+                if latest_modified_time > h_file.modified_time {
+                    Log::debug("latest_modified_time > h_file.modified_time ", &(latest_modified_time > h_file.modified_time));
+                    term.curt().prom_save_forced(h_file);
+                    return ActType::Draw(DParts::All);
+                }
+            }
             Log::info_s(&format!("Save {}, file info {:?}", &h_file.filenm, &h_file));
+
             let result = term.curt().editor.buf.write_to(&h_file.fullpath, &h_file);
             match result {
                 Ok(enc_errors) => {
@@ -22,15 +31,20 @@ impl Tab {
                         Log::info("Encoding errors", &enc_errors);
                         return ActType::Draw(DParts::AllMsgBar(Lang::get().cannot_convert_encoding.to_string()));
                     } else {
-                        term.curt().editor.state.is_changed = false;
+                        term.curt_h_file().modified_time = File::get_modified_time(&h_file.fullpath);
+
                         term.curt().prom.clear();
                         term.curt().mbar.clear();
-                        if !term.curt().state.is_close_confirm {
+                        if !term.curt().state.is_save_confirm {
                             term.curt().state.clear();
                         }
                         Log::info("Saved file", &h_file.filenm.as_str());
-                        // return true;
-                        return ActType::Next;
+                        if term.curt().editor.state.is_changed {
+                            term.curt().editor.state.is_changed = false;
+                            return ActType::Draw(DParts::All);
+                        } else {
+                            return ActType::Draw(DParts::None);
+                        };
                     }
                 }
                 Err(err) => {
@@ -49,19 +63,21 @@ impl Tab {
         self.state.is_save_new_file = true;
         self.prom.save_new_file();
     }
+    pub fn prom_save_forced(&mut self, h_file: HeaderFile) {
+        Log::debug_key("Tab::prom_save_forced");
+        self.state.is_save_forced = true;
+        let last_modified_time = File::get_modified_time(&h_file.fullpath);
+        self.prom.save_forced(h_file.modified_time, last_modified_time);
+    }
 
-    pub fn prom_close(term: &mut Terminal) -> bool {
-        Log::debug_key("Tab::prom_close");
+    pub fn prom_save_confirm(term: &mut Terminal) -> bool {
+        Log::debug_key("Tab::prom_save_confirm");
         if term.tabs[term.idx].editor.state.is_changed {
             if !term.curt().state.is_nomal() {
                 term.clear_curt_tab(true);
             }
-            term.curt().prom.disp_row_num = 2;
-            term.set_disp_size();
-            let mut cont = PromptCont::new(None);
-            cont.set_save_confirm();
-            term.curt().prom.cont_1 = cont;
-            term.curt().state.is_close_confirm = true;
+            term.curt().prom.save_confirm();
+            term.curt().state.is_save_confirm = true;
             return false;
         };
         if term.tabs.len() == 1 {
@@ -69,7 +85,7 @@ impl Tab {
         } else {
             term.del_tab(term.idx);
             // Redraw the previous tab
-            term.curt().editor.draw_range = EditorDrawRange::All;
+            term.curt().editor.draw_range = E_DrawRange::All;
             return false;
         }
     }

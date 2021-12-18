@@ -4,11 +4,11 @@ use crate::{
 };
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 use ropey::RopeBuilder;
-use std::{cmp::min, io::*, option::Option, *};
+use std::{cmp::min, fs::OpenOptions, io::*, option::Option, time::SystemTime, *};
 
 impl TextBuffer {
-    pub fn from_path(path: &str) -> io::Result<(TextBuffer, Encode, String, Option<Encode>)> {
-        let (mut read_str, mut enc, bom) = File::read(path)?;
+    pub fn read_file(path: &str) -> io::Result<(TextBuffer, Encode, String, Option<Encode>, SystemTime)> {
+        let (mut read_str, mut enc, bom, modified_time) = File::read(path)?;
 
         if read_str.is_empty() {
             enc = Encode::UTF8;
@@ -19,12 +19,12 @@ impl TextBuffer {
         let text_buf = TextBuffer { text: b.finish() };
 
         let nl = text_buf.check_nl();
-        Ok((text_buf, enc, nl, bom))
+        Ok((text_buf, enc, nl, bom, modified_time))
     }
 
     pub fn set_encoding(&mut self, h_file: &mut HeaderFile, to_encode: Encode, nl_item_name: &str, apply_item_name: &str, bom_item_name: &str) -> io::Result<()> {
         if apply_item_name == Lang::get().file_reload {
-            let (vec, bom) = File::read_file(&h_file.filenm)?;
+            let (vec, bom, modified_time) = File::read_file(&h_file.filenm)?;
             h_file.bom = bom;
 
             let (mut decode_str, enc) = File::read_bytes(&vec, to_encode);
@@ -35,6 +35,7 @@ impl TextBuffer {
 
             h_file.enc = enc;
             h_file.nl = self.check_nl();
+            h_file.modified_time = modified_time;
 
             let mut b = RopeBuilder::new();
             b.append(&decode_str);
@@ -62,7 +63,7 @@ impl TextBuffer {
         if crlf_len == 0 {
             new_line = NEW_LINE_LF_STR.to_string();
         };
-        new_line
+        return new_line;
     }
 
     fn get_select_item_bom(encode: &Encode, bom_item_name: &str) -> Option<Encode> {
@@ -104,6 +105,11 @@ impl TextBuffer {
             self.insert_end(EOF_MARK.to_string().as_str());
         }
         Ok(enc_errors)
+    }
+    pub fn write_simple_to(&mut self, copy_str: &str) -> io::Result<()> {
+        let mut file = OpenOptions::new().write(true).truncate(true).open("clip.txt")?;
+        file.write_all(copy_str.as_bytes())?;
+        Ok(())
     }
 
     fn add_bom(&mut self, vec: &mut Vec<u8>, h_file: &HeaderFile) -> Vec<u8> {

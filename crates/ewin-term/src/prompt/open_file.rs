@@ -1,17 +1,8 @@
 use crate::{
-    ewin_com::{
-        _cfg::key::{keycmd::*, keys::*},
-        _cfg::lang::lang_cfg::*,
-        def::*,
-        file::*,
-        log::*,
-        model::*,
-        util::*,
-    },
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, def::*, file::*, log::*, model::*, util::*},
     ewin_prom::{model::*, open_file::*},
     model::*,
     tab::*,
-    terminal::*,
 };
 use std::{
     cmp::min,
@@ -120,7 +111,7 @@ impl EvtAct {
                         }
                         Log::debug("tgt_idx", &tgt_idx);
                         if tgt_idx == USIZE_UNDEFINED {
-                            let act_type = term.open(&path.display().to_string(), &mut Tab::new(), false);
+                            let act_type = term.open_file(&path.display().to_string(), Some(&mut Tab::new()), FileOpenType::Nomal);
                             if act_type == ActType::Next {
                                 term.clear_pre_tab_status();
                             } else {
@@ -128,7 +119,7 @@ impl EvtAct {
                             }
                         } else {
                             term.idx = tgt_idx;
-                            term.curt().editor.set_keys(Keys::Null, None);
+                            term.curt().editor.set_cmd(KeyCmd::Null);
                         }
                     } else if term.curt().prom.prom_open_file.file_type == OpenFileType::JsMacro {
                         let act_type = Macros::exec_js_macro(term, &full_path_str);
@@ -185,7 +176,7 @@ impl EvtAct {
                 let base_path = term.curt().prom.prom_open_file.base_path.clone();
                 let base_path = term.curt().prom.prom_open_file.select_open_file(&base_path);
 
-                let act_type = term.open(&format!("{}{}", &base_path, op_file.file.name), &mut Tab::new(), false);
+                let act_type = term.open_file(&format!("{}{}", &base_path, op_file.file.name), Some(&mut Tab::new()), FileOpenType::Nomal);
                 if act_type == ActType::Next {
                     term.clear_pre_tab_status();
                 } else {

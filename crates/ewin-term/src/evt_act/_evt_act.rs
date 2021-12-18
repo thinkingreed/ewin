@@ -6,7 +6,6 @@ use crate::{
         model::*,
     },
     model::*,
-    terminal::*,
 };
 use std::io::Write;
 
@@ -22,7 +21,19 @@ impl EvtAct {
                 term.curt().editor.clear_draw(out, row_posi);
                 term.state.is_show_init_info = false;
             }
+
+            // Judge whether to delete ctx_menu
+            let draw_parts = if term.state.is_ctx_menu_hide_draw {
+                term.state.is_ctx_menu_hide_draw = false;
+                &DParts::All
+            } else {
+                draw_parts
+            };
+
+            Log::debug("EvtAct::draw_parts", &draw_parts);
+
             match &draw_parts {
+                DParts::None => {}
                 DParts::MsgBar(msg) | DParts::AllMsgBar(msg) => {
                     if msg == &Lang::get().key_recording {
                         term.curt().mbar.set_keyrecord(msg);
@@ -36,15 +47,12 @@ impl EvtAct {
                     }
                 }
 
-                DParts::CtxMenu => {
-                    term.set_draw_range_ctx_menu();
-                    term.ctx_menu_group.draw_only(out);
-                }
+                DParts::CtxMenu => term.ctx_menu_group.draw_only(out),
                 DParts::Prompt => EvtAct::draw_prompt(out, term),
                 DParts::All | DParts::Editor | DParts::ScrollUpDown(_) => {
                     // If the last time was an err msg, redraw the whole to delete it.
                     if let DParts::MsgBar(_) | DParts::AllMsgBar(_) = &term.draw_parts_org {
-                        term.curt().editor.draw_range = EditorDrawRange::All;
+                        term.curt().editor.draw_range = E_DrawRange::All;
                     }
                     term.draw(out, draw_parts);
                 }
@@ -53,15 +61,7 @@ impl EvtAct {
         }
     }
     pub fn check_next_process<T: Write>(out: &mut T, term: &mut Terminal, act_type: ActType) -> Option<bool> {
-        match term.keycmd {
-            // Log at the time of Mouse Move is not output
-            KeyCmd::Null => {}
-            _ => {
-                Log::debug("evt_act_type", &act_type);
-                Log::debug("term.keycmd", &term.keycmd);
-            }
-        }
-
+        Log::debug("check_next_process::act_type", &act_type);
         return match &act_type {
             ActType::Next => None,
             ActType::Draw(_) => {
@@ -83,18 +83,18 @@ impl EvtAct {
         if let Some(rtn) = EvtAct::check_next_process(out, term, act_type) {
             return rtn;
         }
-        Terminal::hide_cur();
+        //  term.state.set_org_state();
+        Log::debug("term.keycmd", &term.keycmd);
 
-        Log::info("term.keycmd", &term.keycmd);
+        Terminal::hide_cur();
 
         // Pressed keys Pre-check
         let act_type = EvtAct::init_event(term);
         if let Some(rtn) = EvtAct::check_next_process(out, term, act_type) {
             return rtn;
         }
-
         // msg
-        EvtAct::set_org_msg(&mut term.curt());
+        EvtAct::set_org_msg(term.curt());
         term.curt().mbar.clear_mag();
 
         let keywhen = term.get_when(&keys);
@@ -153,10 +153,10 @@ impl EvtAct {
         if term.keycmd == KeyCmd::Unsupported {
             return ActType::Draw(DParts::MsgBar(Lang::get().unsupported_operation.to_string()));
         }
-        let keycmd = &term.keycmd.clone();
-        term.ctx_menu_group.set_keys(keycmd);
-        term.curt().editor.set_keys(keys, Some(keycmd));
-        term.curt().prom.set_keys(keys, keycmd);
+        let keycmd = term.keycmd.clone();
+        term.ctx_menu_group.set_cmd(keycmd.clone());
+        term.curt().editor.set_cmd(keycmd.clone());
+        term.curt().prom.set_cmd(keycmd);
 
         return ActType::Next;
     }
@@ -168,7 +168,7 @@ impl EvtAct {
             KeyCmd::Resize => {
                 if Terminal::check_displayable() {
                     term.state.is_displayable = true;
-                    term.curt().editor.draw_range = EditorDrawRange::None;
+                    term.curt().editor.draw_range = E_DrawRange::None;
                     return if term.curt().state.is_nomal() { ActType::Draw(DParts::All) } else { ActType::Next };
                 } else {
                     term.state.is_displayable = false;
@@ -181,6 +181,7 @@ impl EvtAct {
             KeyCmd::CloseFile => {
                 term.curt().prom.clear();
                 term.curt().state.clear();
+                term.clear_ctx_menu();
                 return ActType::Next;
             }
             _ => return if term.state.is_displayable { ActType::Next } else { ActType::Cancel },

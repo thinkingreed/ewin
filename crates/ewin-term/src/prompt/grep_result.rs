@@ -2,7 +2,6 @@ use crate::{
     ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, def::*, global::*, log::Log, model::*},
     model::*,
     tab::Tab,
-    terminal::*,
 };
 use std::{ffi::OsStr, io::Write, path::*, process};
 use tokio::process::*;
@@ -29,9 +28,9 @@ impl EvtAct {
             let rnw_org = term.curt().editor.rnw;
             term.curt().editor.set_grep_result(line_str);
 
-            if term.curt().editor.buf.len_lines() > term.curt().editor.row_num && rnw_org == term.curt().editor.rnw {
-                let y = term.curt().editor.offset_y + term.curt().editor.row_num - 2;
-                term.curt().editor.draw_range = EditorDrawRange::ScrollDown(y - 2, y);
+            if term.curt().editor.buf.len_rows() > term.curt().editor.row_len && rnw_org == term.curt().editor.rnw {
+                let y = term.curt().editor.offset_y + term.curt().editor.row_len - 2;
+                term.curt().editor.draw_range = E_DrawRange::ScrollDown(y - 2, y);
 
                 if cfg!(target_os = "windows") {
                     term.draw(out, &DParts::All);
@@ -39,7 +38,6 @@ impl EvtAct {
                     term.draw(out, &DParts::ScrollUpDown(ScrollUpDownType::Grep));
                 }
             } else {
-                // term.curt().prom.cont_1.guide_row_posi = 0;
                 term.draw(out, &DParts::All);
             }
         } else {
@@ -88,11 +86,11 @@ impl EvtAct {
                     let mut tab_grep = Tab::new();
                     tab_grep.editor.search.str = term.curt().state.grep.search_str.clone();
                     tab_grep.editor.search.row_num = grep_result.row_num - 1;
-                    tab_grep.editor.set_keys(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::FindNext)), None);
+                    tab_grep.editor.set_cmd(KeyCmd::Edit(E_Cmd::FindNext));
                     Log::debug("tab.editor.search", &tab_grep.editor.search);
 
                     let folder = if term.curt().editor.search.folder.is_empty() { "".to_string() } else { format!("{}{}", &term.curt().editor.search.folder, MAIN_SEPARATOR) };
-                    let act_type = term.open(&format!("{}{}", &folder, &grep_result.filenm), &mut tab_grep, false);
+                    let act_type = term.open_file(&format!("{}{}", &folder, &grep_result.filenm), Some(&mut tab_grep), FileOpenType::Nomal);
 
                     if let ActType::Draw(DParts::MsgBar(_)) = act_type {
                         return act_type;
@@ -171,7 +169,6 @@ impl EvtAct {
 
         Log::info("Grep command", &cmd);
         let child = cmd.kill_on_drop(true).stdout(process::Stdio::piped()).stderr(process::Stdio::piped()).spawn().unwrap();
-
         return child;
     }
 }

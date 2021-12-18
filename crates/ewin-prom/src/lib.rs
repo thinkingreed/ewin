@@ -19,7 +19,6 @@ pub mod prom {
     pub mod set_draw_posi;
 }
 
-pub mod close;
 pub mod enc_nl;
 pub mod grep;
 pub mod grep_result;
@@ -27,6 +26,8 @@ pub mod menu;
 pub mod move_row;
 pub mod open_file;
 pub mod replace;
+pub mod save_confirm;
+pub mod save_forced;
 pub mod save_new_file;
 pub mod search;
 

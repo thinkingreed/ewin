@@ -9,6 +9,7 @@ pub const STATUSBAR_ROW_NUM: usize = 1;
 pub const SETTING_FILE: &str = "setting.toml";
 pub const KEYBINDING_FILE: &str = "keybind.json5";
 pub const MACROS_DIR: &str = "macros";
+pub const CLIPBOARD_FILE: &str = "clipboard.txt";
 
 pub const USIZE_UNDEFINED: usize = usize::MAX;
 // Corresponding alternative character that cannot set a newline at the end in WSL

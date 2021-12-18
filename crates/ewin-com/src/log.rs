@@ -6,7 +6,6 @@ use crate::{
 };
 use chrono::{DateTime, Local};
 use std::{
-    env,
     fmt::{self, Debug},
     fs,
     fs::{File, OpenOptions},
@@ -28,14 +27,13 @@ impl Log {
     }
     pub fn set_logger(cfg_log: &Option<CfgLog>) {
         let dt: DateTime<Local> = Local::now();
-        let mut path = env::temp_dir();
-        path.push(&APP_NAME);
+        let mut tmp_path = FilePath::get_app_tmp_path();
 
         // Ignore the error
-        let _ = fs::create_dir(&path);
-        path.push(format!("{}_{}{}", &APP_NAME, &dt.format("%Y_%m%d").to_string(), ".log"));
+        let _ = fs::create_dir(&tmp_path);
+        tmp_path.push(format!("{}_{}{}", &APP_NAME, &dt.format("%Y_%m%d").to_string(), ".log"));
 
-        if let Ok(file) = OpenOptions::new().create(true).append(true).open(path) {
+        if let Ok(file) = OpenOptions::new().create(true).append(true).open(tmp_path) {
             let log_level = match cfg_log {
                 Some(cfg_log) => match &cfg_log.level {
                     Some(level) => level,

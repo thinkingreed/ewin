@@ -1,5 +1,4 @@
 use crate::{_cfg::lang::lang_cfg::*, colors::*, def::*, global::*, log::*, model::*};
-use directories::BaseDirs;
 use serde::{Deserialize, Serialize};
 use std::{fs, fs::File, io::Write, sync::Mutex};
 use syntect::{
@@ -35,6 +34,7 @@ pub struct CfgEditor {
     pub search: CfgSearch,
     pub tab: CfgTab,
     pub format: CfgFormat,
+    pub scrollbar: CfgScrl,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -70,6 +70,16 @@ pub struct CfgFormat {
     pub tab_type: TabType,
     #[serde(skip_deserializing, skip_serializing)]
     pub indent: String,
+}
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CfgScrl {
+    pub vertical: CfgScrlVertical,
+    // pub horizontal: CfgScrlHorizontal,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CfgScrlVertical {
+    pub width: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -254,20 +264,9 @@ impl Cfg {
         let mut err_str = "".to_string();
         let mut read_str = String::new();
 
-        if let Some(base_dirs) = BaseDirs::new() {
-            let config_dir = base_dirs.config_dir();
-            if !config_dir.exists() {
-                let _ = fs::create_dir(&config_dir);
-            }
-            let app_dir = config_dir.join(APP_NAME);
-
-            if !app_dir.exists() {
-                let _ = fs::create_dir(&app_dir);
-            }
-            let config_file = &app_dir.join(SETTING_FILE);
-
+        if let Some(config_file) = FilePath::get_app_config_file_path() {
             if config_file.exists() {
-                match fs::read_to_string(config_file) {
+                match fs::read_to_string(&config_file) {
                     Ok(str) => read_str = str,
                     Err(e) => err_str = format!("{} {} {}", Lang::get().file_loading_failed, config_file.to_string_lossy().to_string(), e),
                 }
@@ -351,6 +350,7 @@ impl Cfg {
 
         Log::set_logger(&cfg.general.log);
         Log::info("cfg.general.log", &cfg.general.log);
+
         if !read_str.is_empty() {
             Log::info("read setting.toml", &read_str);
         }

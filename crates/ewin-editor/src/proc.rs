@@ -8,11 +8,10 @@ impl Editor {
         Log::debug_key("Editor.proc");
 
         let e_cmd = self.e_cmd.clone();
-
         match e_cmd {
             // edit
             E_Cmd::InsertStr(str) => self.edit_proc(E_Cmd::InsertStr(str)),
-            E_Cmd::InsertLine => self.edit_proc(E_Cmd::InsertLine),
+            E_Cmd::InsertRow => self.edit_proc(E_Cmd::InsertRow),
             E_Cmd::DelPrevChar => self.edit_proc(E_Cmd::DelPrevChar),
             E_Cmd::DelNextChar => self.edit_proc(E_Cmd::DelNextChar),
             E_Cmd::Cut => self.edit_proc(E_Cmd::Cut),
@@ -32,10 +31,10 @@ impl Editor {
             E_Cmd::FindNext => self.search_str(true, false),
             E_Cmd::FindBack => self.search_str(false, false),
             // mouse
-            E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) | E_Cmd::MouseDownBoxLeft(_, _) | E_Cmd::MouseDragBoxLeft(_, _) => self.ctrl_mouse(),
+            E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) | E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) => self.ctrl_mouse(),
             E_Cmd::MouseModeSwitch => self.ctrl_mouse_capture(),
             // Mode
-            E_Cmd::CancelMode => self.cancel_mode(),
+            E_Cmd::CancelModeAndSearchResult => self.cancel_mode_and_search_result(),
             E_Cmd::BoxSelectMode => self.box_select_mode(),
             // empty
             E_Cmd::Null => {}
@@ -49,12 +48,7 @@ impl Editor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ewin_com::{
-        _cfg::{cfg::*, key::keys::Keys},
-        clipboard::*,
-        def::*,
-        model::*,
-    };
+    use ewin_com::{_cfg::cfg::*, clipboard::*, def::*, model::*};
 
     #[test]
     fn test_editor_proc_base_edit() {
@@ -94,7 +88,7 @@ mod tests {
         e.sel.clear();
 
         // InsertLine
-        e.e_cmd = E_Cmd::InsertLine;
+        e.e_cmd = E_Cmd::InsertRow;
         e.proc();
         assert_eq!(e.buf.text.to_string(), "a\n▚");
         assert_eq!(e.cur, Cur { y: 1, x: 0, disp_x: 0 });
@@ -150,7 +144,7 @@ mod tests {
         assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
 
         // E_Cmd::CursorUp
-        e.e_cmd = E_Cmd::InsertLine;
+        e.e_cmd = E_Cmd::InsertRow;
         e.proc();
         e.e_cmd = E_Cmd::CursorUp;
         e.proc();
@@ -244,21 +238,19 @@ mod tests {
         // MouseDragLeft
         // TODO MouseDragLeftDown, MouseDragLeftUp
         e.e_cmd = E_Cmd::MouseDragLeftDown(4, 4);
-        e.keys = Keys::MouseDragLeft(4, 4);
         e.proc();
         assert_eq!(e.cur, Cur { y: 3, x: 2, disp_x: 2 });
         assert_eq!(e.sel.get_range(), SelRange { sy: 2, sx: 1, s_disp_x: 1, ey: 3, ex: 2, e_disp_x: 2, ..SelRange::default() });
         e.sel.clear();
 
         // MouseDownBoxLeft
-        e.e_cmd = E_Cmd::MouseDownBoxLeft(2, 3);
-        e.keys = Keys::MouseAltDownLeft(2, 3);
+        e.e_cmd = E_Cmd::MouseDownLeftBox(2, 3);
         e.proc();
         assert_eq!(e.cur, Cur { y: 1, x: 1, disp_x: 1 });
         assert_eq!(e.sel.mode, SelMode::BoxSelect);
 
         // MouseDragBoxLeft
-        e.e_cmd = E_Cmd::MouseDragBoxLeft(3, 4);
+        e.e_cmd = E_Cmd::MouseDragLeftBox(3, 4);
         e.proc();
         assert_eq!(e.cur, Cur { y: 2, x: 2, disp_x: 2 });
         assert_eq!(e.sel.get_range(), SelRange { mode: SelMode::BoxSelect, sy: 1, sx: 1, s_disp_x: 1, ey: 2, ex: 2, e_disp_x: 2 });
@@ -271,7 +263,7 @@ mod tests {
         e.e_cmd = E_Cmd::MouseModeSwitch;
         e.proc();
         assert_eq!(e.state.mouse_mode, MouseMode::Normal);
-        assert_eq!(e.rnw, e.buf.len_lines().to_string().len());
+        assert_eq!(e.rnw, e.buf.len_rows().to_string().len());
 
         // BoxSelectMode
         e.e_cmd = E_Cmd::BoxSelectMode;
@@ -283,7 +275,7 @@ mod tests {
         e.box_insert.mode = BoxInsertMode::Insert;
 
         // CancelMode
-        e.e_cmd = E_Cmd::CancelMode;
+        e.e_cmd = E_Cmd::CancelModeAndSearchResult;
         e.proc();
         assert_eq!(e.sel.mode, SelMode::Normal);
         assert_eq!(e.box_insert.mode, BoxInsertMode::Normal);
@@ -291,7 +283,7 @@ mod tests {
         e.e_cmd = E_Cmd::CursorLeftSelect;
         e.proc();
         assert_eq!(e.sel, SelRange { sy: 2, sx: 2, s_disp_x: 2, ey: 2, ex: 1, e_disp_x: 1, ..SelRange::default() });
-        e.e_cmd = E_Cmd::CancelMode;
+        e.e_cmd = E_Cmd::CancelModeAndSearchResult;
         e.proc();
         assert_eq!(e.sel, SelRange { ..SelRange::default() });
     }

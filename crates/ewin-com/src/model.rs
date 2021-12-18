@@ -20,6 +20,7 @@ use std::{
     ffi::OsStr,
     fmt,
     path::Path,
+    time::SystemTime,
 };
 use syntect::highlighting::HighlightState;
 use syntect::parsing::{ParseState, ScopeStackOp};
@@ -30,17 +31,12 @@ pub enum Env {
     Linux,
     Windows,
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 /// undo,redo範囲
 /// EventProcess
 pub struct EvtProc {
     pub sel_proc: Option<Proc>,
     pub evt_proc: Option<Proc>,
-}
-impl Default for EvtProc {
-    fn default() -> Self {
-        EvtProc { sel_proc: None, evt_proc: None }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -55,11 +51,11 @@ pub struct Proc {
     pub box_sel_vec: Vec<(SelRange, String)>,
     pub box_sel_redo_vec: Vec<(SelRange, String)>,
     pub sel: SelRange,
-    pub draw_type: EditorDrawRange,
+    pub draw_type: E_DrawRange,
 }
 impl Default for Proc {
     fn default() -> Self {
-        Proc { p_cmd: P_Cmd::Null, cur_s: Cur::default(), cur_e: Cur::default(), str: String::new(), e_cmd: E_Cmd::Null, sel: SelRange::default(), draw_type: EditorDrawRange::default(), box_sel_vec: vec![], box_sel_redo_vec: vec![] }
+        Proc { p_cmd: P_Cmd::Null, cur_s: Cur::default(), cur_e: Cur::default(), str: String::new(), e_cmd: E_Cmd::Null, sel: SelRange::default(), draw_type: E_DrawRange::default(), box_sel_vec: vec![], box_sel_redo_vec: vec![] }
     }
 }
 impl fmt::Display for Proc {
@@ -67,7 +63,7 @@ impl fmt::Display for Proc {
         write!(f, "EvtProc cur_s:{}, cur_e:{}, str:{}, e_cmd:{:?}, p_cmd:{:?}, sel:{}, d_range:{}", self.cur_s, self.cur_e, self.str, self.e_cmd, self.p_cmd, self.sel, self.draw_type)
     }
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 /// All edit history including undo and redo
 /// History
 pub struct History {
@@ -76,11 +72,6 @@ pub struct History {
     pub redo_vec: Vec<EvtProc>,
 }
 
-impl Default for History {
-    fn default() -> Self {
-        History { mouse_click_vec: VecDeque::new(), undo_vec: vec![], redo_vec: vec![] }
-    }
-}
 impl fmt::Display for History {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "History mouse_click_vec:{:?}, undo_vec:{:?}, redo_vec:{:?}, ", self.mouse_click_vec, self.undo_vec, self.redo_vec,)
@@ -152,27 +143,21 @@ impl Default for Search {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeyMacro {
-    pub keys: Keys,
+    pub e_cmd: E_Cmd,
     pub search: Search,
 }
 
 impl Default for KeyMacro {
     fn default() -> Self {
-        KeyMacro { keys: Keys::Null, search: Search::default() }
+        KeyMacro { e_cmd: E_Cmd::Null, search: Search::default() }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct KeyMacroState {
     pub is_record: bool,
     pub is_exec: bool,
     pub is_exec_end: bool,
-}
-
-impl Default for KeyMacroState {
-    fn default() -> Self {
-        KeyMacroState { is_record: false, is_exec: false, is_exec_end: false }
-    }
 }
 
 impl KeyMacroState {
@@ -181,18 +166,12 @@ impl KeyMacroState {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 /// 検索範囲
 pub struct SearchRange {
     pub y: usize,
     pub sx: usize,
     pub ex: usize,
-}
-
-impl Default for SearchRange {
-    fn default() -> Self {
-        SearchRange { y: 0, sx: 0, ex: 0 }
-    }
 }
 
 impl fmt::Display for SearchRange {
@@ -202,7 +181,7 @@ impl fmt::Display for SearchRange {
 }
 /// Cursor 　0-indexed
 /// Editor, Prompt
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct Cur {
     // Editor.buffer [y]
     pub y: usize,
@@ -210,12 +189,6 @@ pub struct Cur {
     pub x: usize,
     // Display position on the terminal, row num width + 1
     pub disp_x: usize,
-}
-
-impl Default for Cur {
-    fn default() -> Self {
-        Cur { y: 0, x: 0, disp_x: 0 }
-    }
 }
 
 impl fmt::Display for Cur {
@@ -276,19 +249,13 @@ impl Default for JobEvent {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct JobGrep {
     pub grep_str: String,
     pub is_result: bool,
     pub is_stdout_end: bool,
     pub is_stderr_end: bool,
     pub is_cancel: bool,
-}
-
-impl Default for JobGrep {
-    fn default() -> Self {
-        JobGrep { grep_str: String::new(), is_result: false, is_stdout_end: false, is_stderr_end: false, is_cancel: false }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -306,7 +273,8 @@ pub struct SyntaxState {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// DrawType
-pub enum EditorDrawRange {
+#[allow(non_camel_case_types)]
+pub enum E_DrawRange {
     Target(usize, usize), // Target row only redraw
     After(usize),         // Redraw after the specified line
     None,                 // First time
@@ -317,37 +285,37 @@ pub enum EditorDrawRange {
     Not,
 }
 
-impl Default for EditorDrawRange {
+impl Default for E_DrawRange {
     fn default() -> Self {
-        EditorDrawRange::None
+        E_DrawRange::None
     }
 }
 
-impl EditorDrawRange {
-    pub fn get_type(sel_mode: SelMode, sy: usize, ey: usize) -> EditorDrawRange {
+impl E_DrawRange {
+    pub fn get_type(sel_mode: SelMode, sy: usize, ey: usize) -> E_DrawRange {
         match sel_mode {
-            SelMode::Normal => EditorDrawRange::Target(min(sy, ey), max(sy, ey)),
-            SelMode::BoxSelect => EditorDrawRange::All,
+            SelMode::Normal => E_DrawRange::Target(min(sy, ey), max(sy, ey)),
+            SelMode::BoxSelect => E_DrawRange::All,
         }
     }
 }
 
-impl fmt::Display for EditorDrawRange {
+impl fmt::Display for E_DrawRange {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            EditorDrawRange::Target(_, _) => write!(f, "Target"),
-            EditorDrawRange::After(_) => write!(f, "After"),
-            EditorDrawRange::None => write!(f, "None"),
-            EditorDrawRange::All => write!(f, "All"),
-            EditorDrawRange::ScrollDown(_, _) => write!(f, "ScrollDown"),
-            EditorDrawRange::ScrollUp(_, _) => write!(f, "ScrollUp"),
-            EditorDrawRange::MoveCur => write!(f, "MoveCur"),
-            EditorDrawRange::Not => write!(f, "Not"),
+            E_DrawRange::Target(_, _) => write!(f, "Target"),
+            E_DrawRange::After(_) => write!(f, "After"),
+            E_DrawRange::None => write!(f, "None"),
+            E_DrawRange::All => write!(f, "All"),
+            E_DrawRange::ScrollDown(_, _) => write!(f, "ScrollDown"),
+            E_DrawRange::ScrollUp(_, _) => write!(f, "ScrollUp"),
+            E_DrawRange::MoveCur => write!(f, "MoveCur"),
+            E_DrawRange::Not => write!(f, "Not"),
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct GrepState {
     pub is_grep: bool,
     pub is_result: bool,
@@ -357,12 +325,6 @@ pub struct GrepState {
     pub search_str: String,
     pub search_folder: String,
     pub search_filenm: String,
-}
-
-impl Default for GrepState {
-    fn default() -> Self {
-        GrepState { is_grep: false, is_result: false, is_cancel: false, is_stdout_end: false, is_stderr_end: false, search_str: String::new(), search_folder: String::new(), search_filenm: String::new() }
-    }
 }
 
 impl GrepState {
@@ -386,14 +348,6 @@ impl GrepState {
 pub enum MouseMode {
     Normal,
     Mouse,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MouseProc {
-    DownLeft,
-    DragLeft,
-    DownLeftBox,
-    DragLeftBox,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -594,17 +548,12 @@ impl fmt::Display for SelMode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Args {
     pub filenm: String,
     pub out_config_flg: bool,
 }
 
-impl Default for Args {
-    fn default() -> Self {
-        Args { filenm: String::new(), out_config_flg: false }
-    }
-}
 impl Args {
     pub fn new(matches: &ArgMatches) -> Self {
         let file_path: String = matches.value_of_os("file").unwrap_or_else(|| OsStr::new("")).to_string_lossy().to_string();
@@ -644,6 +593,7 @@ pub struct HeaderFile {
     pub nl: String,
     pub nl_org: String,
     pub bom: Option<Encode>,
+    pub modified_time: SystemTime,
 }
 
 impl Default for HeaderFile {
@@ -661,6 +611,7 @@ impl Default for HeaderFile {
             nl: NEW_LINE_LF_STR.to_string(),
             nl_org: NEW_LINE_LF_STR.to_string(),
             bom: None,
+            modified_time: SystemTime::UNIX_EPOCH,
         }
     }
 }
@@ -758,6 +709,7 @@ pub enum DParts {
     All,
     ScrollUpDown(ScrollUpDownType),
     AllMsgBar(String),
+    None,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -766,24 +718,19 @@ pub enum ScrollUpDownType {
     Grep,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct TabState {
-    pub is_close_confirm: bool,
     pub is_search: bool,
     pub is_replace: bool,
+    pub is_save_confirm: bool,
     pub is_save_new_file: bool,
+    pub is_save_forced: bool,
     pub is_move_row: bool,
     //  pub is_key_record: bool,
     pub is_open_file: bool,
     pub is_enc_nl: bool,
     pub grep: GrepState,
     pub is_menu: bool,
-}
-
-impl Default for TabState {
-    fn default() -> Self {
-        TabState { is_close_confirm: false, is_search: false, is_replace: false, is_save_new_file: false, is_move_row: false, is_open_file: false, is_enc_nl: false, grep: GrepState::default(), is_menu: false }
-    }
 }
 
 impl fmt::Display for TabState {
@@ -794,10 +741,11 @@ impl fmt::Display for TabState {
 
 impl TabState {
     pub fn clear(&mut self) {
-        self.is_close_confirm = false;
+        self.is_save_confirm = false;
         self.is_search = false;
         self.is_replace = false;
         self.is_save_new_file = false;
+        self.is_save_forced = false;
         self.is_move_row = false;
         self.is_open_file = false;
         self.is_enc_nl = false;
@@ -806,7 +754,7 @@ impl TabState {
     }
 
     pub fn is_nomal(&self) -> bool {
-        if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_row || self.is_open_file || self.is_enc_nl || self.is_menu
+        if self.is_save_confirm || self.is_search || self.is_replace || self.is_save_new_file|| self.is_save_forced || self.is_move_row || self.is_open_file || self.is_enc_nl || self.is_menu
         // grep, grep result 
         || self.grep.is_grep  || self.grep.is_greping()
         {
@@ -823,9 +771,9 @@ impl TabState {
 
     pub fn judge_when_prompt(&self, keys: &Keys) -> bool {
         if !self.is_nomal() || (self.grep.is_grep_finished() && keys == &Keys::Raw(Key::Enter)) {
-            return false;
+            return true;
         }
-        true
+        return false;
     }
     pub fn judge_when_statusbar(&self, keys: &Keys, sbar_row_posi: usize) -> bool {
         if let Keys::MouseDownLeft(y, _) = keys {
@@ -837,7 +785,7 @@ impl TabState {
     }
 
     pub fn is_editor_cur(&self) -> bool {
-        if self.is_close_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_move_row || self.is_open_file || self.grep.is_grep || self.grep.is_greping() || self.is_enc_nl || self.is_menu {
+        if self.is_save_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_save_forced || self.is_move_row || self.is_open_file || self.grep.is_grep || self.grep.is_greping() || self.is_enc_nl || self.is_menu {
             return false;
         }
         true
@@ -879,6 +827,8 @@ pub enum MsgType {
     Err,
     KeyRecord,
 }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FilePath {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UT {}

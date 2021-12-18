@@ -2,7 +2,6 @@ use crate::{
     ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, global::*, log::Log, model::*},
     model::*,
     tab::Tab,
-    terminal::*,
 };
 use std::path::Path;
 
@@ -31,10 +30,10 @@ impl EvtAct {
                         let absolute_path = Path::new(&*CURT_DIR).join(filenm);
                         term.hbar.file_vec[term.idx].fullpath = absolute_path.to_string_lossy().to_string();
                     }
-                    let act_type = Tab::save(term);
+                    let act_type = Tab::save(term, true);
                     if let ActType::Draw(_) = act_type {
                         return act_type;
-                    } else if term.curt().state.is_close_confirm {
+                    } else if term.curt().state.is_save_confirm {
                         return EvtAct::check_exit_close(term);
                     } else if term.state.is_all_save {
                         return EvtAct::check_exit_save(term);

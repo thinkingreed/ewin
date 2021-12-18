@@ -20,14 +20,12 @@ impl Editor {
 
         if self.sel.mode == SelMode::BoxSelect {
             self.sel.set_sel_posi(false, self.cur);
-            self.draw_range = EditorDrawRange::get_type(self.sel.mode, self.cur_y_org, self.cur.y);
             self.box_insert.vec = self.slice_box_sel().1;
         }
     }
 
     pub fn cur_up(&mut self) {
         if self.cur.y == 0 {
-            self.draw_range = EditorDrawRange::Not;
             return;
         }
         if self.cur.y > 0 {
@@ -40,11 +38,10 @@ impl Editor {
 
     pub fn cur_down(&mut self) {
         Log::debug_key("c_d start");
-        if self.cur.y == self.buf.len_lines() {
-            self.draw_range = EditorDrawRange::Not;
+        if self.cur.y == self.buf.len_rows() {
             return;
         }
-        if self.cur.y + 1 < self.buf.len_lines() {
+        if self.cur.y + 1 < self.buf.len_rows() {
             self.cur.y += 1;
             self.cur_updown_com();
         }
@@ -79,7 +76,7 @@ impl Editor {
 
             if c == TAB_CHAR {
                 let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.size;
-                let (_, width) = get_row_width(&self.buf.char_vec_line(self.cur.y)[self.offset_x..self.cur.x - 1], self.offset_disp_x, false);
+                let (_, width) = get_row_x_disp_x(&self.buf.char_vec_line(self.cur.y)[self.offset_x..self.cur.x - 1], self.offset_disp_x, false);
                 self.cur.disp_x -= cfg_tab_width - ((self.offset_disp_x + width) % cfg_tab_width);
                 self.cur.x -= 1;
             } else {
@@ -105,7 +102,7 @@ impl Editor {
                         is_end_of_line = true;
                     }
                 } else {
-                    let (cur_x, _) = get_row_width(&self.buf.char_vec_line(self.cur.y)[..], 0, false);
+                    let (cur_x, _) = get_row_x_disp_x(&self.buf.char_vec_line(self.cur.y)[..], 0, false);
                     if self.cur.x == cur_x {
                         is_end_of_line = true;
                     }
@@ -123,13 +120,12 @@ impl Editor {
         // End of line
         if is_end_of_line {
             // Last line
-            if self.cur.y == self.buf.len_lines() - 1 {
+            if self.cur.y == self.buf.len_rows() - 1 {
                 return;
             } else {
                 self.updown_x = 0;
                 self.cur.disp_x = 0;
                 self.cur.x = 0;
-                self.draw_range = EditorDrawRange::Target(self.cur.y, self.cur.y + 1);
                 self.cur_down();
             }
         } else {
@@ -172,7 +168,7 @@ impl Editor {
     }
 
     pub fn ctrl_end(&mut self) {
-        let y = self.buf.len_lines() - 1;
+        let y = self.buf.len_rows() - 1;
         let len_line_chars = self.buf.len_line_chars(y);
         self.set_cur_target(y, len_line_chars, false);
         self.scroll();
@@ -183,13 +179,13 @@ impl Editor {
     }
 
     pub fn page_down(&mut self) {
-        self.cur.y = min(self.cur.y + self.row_num, self.buf.len_lines() - 1);
+        self.cur.y = min(self.cur.y + self.row_len, self.buf.len_rows() - 1);
         self.cur_updown_com();
         self.scroll();
     }
 
     pub fn page_up(&mut self) {
-        self.cur.y = if self.cur.y > self.row_num { self.cur.y - self.row_num } else { 0 };
+        self.cur.y = if self.cur.y > self.row_len { self.cur.y - self.row_len } else { 0 };
         self.cur_updown_com();
         self.scroll();
     }
@@ -207,7 +203,6 @@ impl Editor {
         }
 
         self.sel.set_sel_posi(false, self.cur);
-        self.draw_range = EditorDrawRange::get_type(self.sel.mode, self.cur_y_org, self.cur.y);
         self.sel.check_overlap();
     }
 }

@@ -1,8 +1,4 @@
-use crate::ewin_com::{
-    _cfg::key::{keycmd::*, keys::*},
-    def::*,
-    model::*,
-};
+use crate::ewin_com::{_cfg::key::keycmd::*, def::*, model::*};
 use ropey::Rope;
 use std::{fmt, usize};
 use syntect::parsing::SyntaxReference;
@@ -28,18 +24,16 @@ pub struct Editor {
     //  pub sel_range: SelRange,
     pub sel: SelRange,
     pub sel_org: SelRange,
-    pub keys: Keys,
-    // pub keycmd: KeyCmd,
     pub e_cmd: E_Cmd,
     // Clipboard on memory
     // pub clipboard: String,
     /// number displayed on the terminal
-    pub row_num: usize,
+    pub row_len: usize,
     pub row_posi: usize,
     pub col_num: usize,
     pub search: Search,
     // pub draw: Draw,
-    pub draw_range: EditorDrawRange,
+    pub draw_range: E_DrawRange,
     pub history: History,
     pub grep_result_vec: Vec<GrepResult>,
     pub key_vec: Vec<KeyMacro>,
@@ -47,6 +41,8 @@ pub struct Editor {
     pub h_file: HeaderFile,
     // Have sy・ey, or Copy vec
     pub box_insert: BoxInsert,
+    pub scrl_v: ScrollbarV,
+    pub row_len_org: usize,
 }
 impl Editor {
     pub fn new() -> Self {
@@ -66,14 +62,13 @@ impl Editor {
             rnw_org: 0,
             sel: SelRange::default(),
             sel_org: SelRange::default(),
-            keys: Keys::Null,
             e_cmd: E_Cmd::Null,
             // for UT set
-            row_num: TERM_MINIMUM_HEIGHT - HEADERBAR_ROW_NUM - STATUSBAR_ROW_NUM,
+            row_len: TERM_MINIMUM_HEIGHT - HEADERBAR_ROW_NUM - STATUSBAR_ROW_NUM,
             row_posi: 1,
             col_num: TERM_MINIMUM_WIDTH - Editor::RNW_MARGIN,
             search: Search::default(),
-            draw_range: EditorDrawRange::default(),
+            draw_range: E_DrawRange::default(),
             history: History::default(),
             grep_result_vec: vec![],
 
@@ -81,6 +76,8 @@ impl Editor {
             is_enable_syntax_highlight: false,
             h_file: HeaderFile::default(),
             box_insert: BoxInsert::default(),
+            scrl_v: ScrollbarV::default(),
+            row_len_org: 0,
         }
     }
 }
@@ -111,12 +108,12 @@ impl EditorState {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct TextBuffer {
     pub text: Rope,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct EditorDraw {
     pub sy: usize,
     pub ey: usize,
@@ -132,12 +129,6 @@ impl EditorDraw {
     }
 }
 
-impl Default for EditorDraw {
-    fn default() -> Self {
-        EditorDraw { sy: 0, ey: 0, cells: vec![], syntax_state_vec: vec![], syntax_reference: None }
-    }
-}
-
 impl fmt::Display for EditorDraw {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Draw y_s:{}, y_e:{}, ", self.sy, self.ey)
@@ -145,3 +136,18 @@ impl fmt::Display for EditorDraw {
 }
 
 pub struct FormatXml {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScrollbarV {
+    pub is_enable: bool,
+    // Not include　editor.row_posi
+    pub row_posi: usize,
+    pub row_posi_org: usize,
+    pub row_len: usize,
+    pub row_len_org: usize,
+}
+impl Default for ScrollbarV {
+    fn default() -> Self {
+        ScrollbarV { is_enable: false, row_posi: USIZE_UNDEFINED, row_posi_org: USIZE_UNDEFINED, row_len: USIZE_UNDEFINED, row_len_org: USIZE_UNDEFINED }
+    }
+}

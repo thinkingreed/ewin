@@ -10,9 +10,9 @@ use unicode_width::UnicodeWidthChar;
 impl EditorDraw {
     pub fn draw_cache(&mut self, editor: &mut Editor) {
         // char_vec initialize
-        let diff: isize = editor.buf.len_lines() as isize - self.cells.len() as isize;
+        let diff: isize = editor.buf.len_rows() as isize - self.cells.len() as isize;
         if diff > 0 {
-            self.cells.resize_with(editor.buf.len_lines() as usize, Vec::new);
+            self.cells.resize_with(editor.buf.len_rows() as usize, Vec::new);
 
             // When there is a change to offset_y in paste for highlight target
             if editor.is_enable_syntax_highlight && editor.offset_y != editor.offset_y_org && editor.e_cmd == E_Cmd::InsertStr("".to_string()) {
@@ -22,17 +22,17 @@ impl EditorDraw {
 
         Log::debug("draw_cache.d_range", &editor.draw_range);
         match editor.draw_range {
-            EditorDrawRange::After(sy) => {
+            E_DrawRange::After(sy) => {
                 self.sy = sy;
-                self.ey = min(editor.offset_y + editor.row_num - 1, editor.buf.len_lines() - 1);
+                self.ey = min(editor.offset_y + editor.row_len - 1, editor.buf.len_rows() - 1);
             }
-            EditorDrawRange::Target(sy, ey) | EditorDrawRange::ScrollDown(sy, ey) | EditorDrawRange::ScrollUp(sy, ey) => {
+            E_DrawRange::Target(sy, ey) | E_DrawRange::ScrollDown(sy, ey) | E_DrawRange::ScrollUp(sy, ey) => {
                 self.sy = sy;
-                self.ey = min(ey, editor.buf.len_lines() - 1);
+                self.ey = min(ey, editor.buf.len_rows() - 1);
             }
-            EditorDrawRange::All | EditorDrawRange::None => {
+            E_DrawRange::All | E_DrawRange::None => {
                 self.sy = editor.offset_y;
-                self.ey = if editor.row_num == 0 { 0 } else { min(editor.offset_y + editor.row_num - 1, editor.buf.len_lines() - 1) };
+                self.ey = if editor.row_len == 0 { 0 } else { min(editor.offset_y + editor.row_len - 1, editor.buf.len_rows() - 1) };
             }
             _ => {}
         }
@@ -42,14 +42,14 @@ impl EditorDraw {
         Log::debug("editor.offset_y", &editor.offset_y);
 
         match editor.draw_range {
-            EditorDrawRange::None | EditorDrawRange::Target(_, _) | EditorDrawRange::After(_) | EditorDrawRange::All | EditorDrawRange::ScrollDown(_, _) | EditorDrawRange::ScrollUp(_, _) => self.set_draw_regions(editor),
-            EditorDrawRange::Not | EditorDrawRange::MoveCur => {}
+            E_DrawRange::None | E_DrawRange::Target(_, _) | E_DrawRange::After(_) | E_DrawRange::All | E_DrawRange::ScrollDown(_, _) | E_DrawRange::ScrollUp(_, _) => self.set_draw_regions(editor),
+            E_DrawRange::Not | E_DrawRange::MoveCur => {}
         }
     }
 
     fn set_draw_regions(&mut self, editor: &Editor) {
         let cfg = CFG.get().unwrap().try_lock().unwrap();
-        let (sy, ey) = if editor.is_enable_syntax_highlight && self.syntax_state_vec.is_empty() { (0, editor.buf.len_lines() - 1) } else { (self.sy, self.ey) };
+        let (sy, ey) = if editor.is_enable_syntax_highlight && self.syntax_state_vec.is_empty() { (0, editor.buf.len_rows() - 1) } else { (self.sy, self.ey) };
 
         for y in sy..=ey {
             let row_vec = editor.buf.char_vec_line(y);
@@ -193,8 +193,8 @@ impl EditorDraw {
         }
         match c {
             // Ignore NEW_LINE_CR
-            NEW_LINE_LF | TAB_CHAR =>  CharStyleType::CtrlChar,
-            _ =>  CharStyleType::Nomal,
+            NEW_LINE_LF | TAB_CHAR => CharStyleType::CtrlChar,
+            _ => CharStyleType::Nomal,
         }
     }
 }

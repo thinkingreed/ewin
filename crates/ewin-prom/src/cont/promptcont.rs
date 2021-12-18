@@ -1,12 +1,5 @@
 use crate::{
-    ewin_com::{
-        _cfg::key::{keycmd::*, keys::*},
-        _cfg::lang::lang_cfg::*,
-        colors::*,
-        global::*,
-        log::*,
-        util::*,
-    },
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, colors::*, global::*, log::*, util::*},
     model::*,
 };
 use std::{cmp::min, usize};
@@ -27,9 +20,8 @@ impl PromptCont {
         PromptCont { posi: prompt_cont_posi, ..PromptCont::default() }
     }
 
-    pub fn set_key_info(&mut self, keycmd: KeyCmd, keys: Keys, p_cmd: P_Cmd) {
+    pub fn set_key_info(&mut self, keycmd: KeyCmd, p_cmd: P_Cmd) {
         self.keycmd = keycmd;
-        self.keys = keys;
         self.p_cmd = p_cmd;
     }
 
@@ -89,7 +81,7 @@ impl PromptCont {
     }
 
     pub fn set_cur_target(&mut self, x: usize) {
-        let (cur_x, width) = get_row_width(&self.buf[..x], 0, false);
+        let (cur_x, width) = get_row_x_disp_x(&self.buf[..x], 0, false);
         self.cur.x = cur_x;
         self.cur.disp_x = width;
     }

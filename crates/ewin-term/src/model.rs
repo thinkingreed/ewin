@@ -1,7 +1,15 @@
+use ewin_com::{
+    _cfg::key::{keycmd::KeyCmd, keys::Keys},
+    model::DParts,
+};
+use ewin_editor::model::EditorDraw;
+
+use crate::{bar::headerbar::HeaderBar, ctx_menu::init::CtxMenuGroup, help::Help, tab::Tab};
+
 #[derive(Debug, Clone)]
 pub struct Macros {}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct MsgBar {
     pub msg_readonly: String,
     pub msg_keyrecord: String,
@@ -18,12 +26,6 @@ pub struct MsgBar {
     pub disp_keyrecord_row_num: usize,
     pub disp_row_num: usize,
     pub disp_col_num: usize,
-}
-
-impl Default for MsgBar {
-    fn default() -> Self {
-        MsgBar { msg_readonly: String::new(), msg_keyrecord: String::new(), msg_keyrecord_org: String::new(), msg: Msg::default(), msg_org: Msg::default(), disp_readonly_row_posi: 0, disp_keyrecord_row_posi: 0, disp_row_posi: 0, disp_readonly_row_num: 0, disp_keyrecord_row_num: 0, disp_row_num: 0, disp_col_num: 0 }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -46,3 +48,37 @@ pub enum MsgType {
 /// Event action
 #[derive(Debug, Clone)]
 pub struct EvtAct {}
+
+#[derive(Debug, Clone)]
+pub struct Terminal {
+    pub keycmd: KeyCmd,
+    pub keys: Keys,
+    pub keys_org: Keys,
+    pub hbar: HeaderBar,
+    pub help: Help,
+    pub tabs: Vec<Tab>,
+    pub editor_draw_vec: Vec<EditorDraw>,
+    // tab index
+    pub idx: usize,
+    pub state: TerminalState,
+    pub ctx_menu_group: CtxMenuGroup,
+    pub draw_parts_org: DParts,
+}
+
+#[derive(Debug, Clone)]
+pub struct TerminalState {
+    pub is_show_init_info: bool,
+    pub is_all_close_confirm: bool,
+    pub is_all_save: bool,
+    pub close_other_than_this_tab_idx: usize,
+    pub is_displayable: bool,
+    pub is_ctx_menu: bool,
+    pub is_ctx_menu_hide_draw: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FileOpenType {
+    Nomal,
+    First,
+    Reopen,
+}

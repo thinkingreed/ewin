@@ -147,17 +147,11 @@ impl Choice {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Choices {
     pub is_show: bool,
     pub vec: Vec<Vec<Choice>>,
     // pub idx: usize,
     pub vec_y: usize,
     pub vec_x: usize,
-}
-
-impl Default for Choices {
-    fn default() -> Self {
-        Choices { is_show: false, vec: vec![], vec_y: 0, vec_x: 0 }
-    }
 }

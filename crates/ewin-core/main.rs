@@ -10,7 +10,7 @@ use ewin_com::{
     model::*,
 };
 
-use ewin_term::{model::*, terminal::*};
+use ewin_term::model::*;
 use futures::{future::FutureExt, select, StreamExt};
 use serde_json::Value;
 use std::{

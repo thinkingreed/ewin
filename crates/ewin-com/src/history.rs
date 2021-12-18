@@ -83,9 +83,9 @@ impl History {
         click_count
     }
 
-    pub fn set_sel_multi_click(&mut self, mouse_proc: MouseProc, sel: &mut SelRange, cur: &Cur, row: &[char], keys: &Keys) {
-        match mouse_proc {
-            MouseProc::DownLeft | MouseProc::DownLeftBox => {
+    pub fn set_sel_multi_click(&mut self, keys: &Keys, sel: &mut SelRange, cur: &Cur, row: &[char]) {
+        match keys {
+            Keys::MouseDownLeft(_, _) => {
                 match self.count_multi_click(keys) {
                     1 => {
                         sel.clear();
@@ -95,13 +95,13 @@ impl History {
                     // Delimiter unit
                     2 => {
                         let (sx, ex) = get_delim_x(row, cur.x);
-                        sel.set_s(cur.y, sx, get_row_width(&row[..sx], 0, false).1);
-                        sel.set_e(cur.y, ex, get_row_width(&row[..ex], 0, false).1);
+                        sel.set_s(cur.y, sx, get_row_x_disp_x(&row[..sx], 0, false).1);
+                        sel.set_e(cur.y, ex, get_row_x_disp_x(&row[..ex], 0, false).1);
                     }
                     // One row
                     3 => {
                         sel.set_s(cur.y, 0, 0);
-                        let (cur_x, width) = get_row_width(row, 0, true);
+                        let (cur_x, width) = get_row_x_disp_x(row, 0, true);
                         sel.set_e(cur.y, cur_x, width);
                     }
                     _ => {}

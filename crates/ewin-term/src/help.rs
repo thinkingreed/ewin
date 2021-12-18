@@ -1,6 +1,6 @@
 use crate::{
     ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, colors::*, def::*, log::*, model::*, util::*},
-    terminal::Terminal,
+    model::*,
 };
 use crossterm::{cursor::*, terminal::*};
 use unicode_width::UnicodeWidthChar;
@@ -26,13 +26,13 @@ impl Help {
         let tab = term.tabs.get_mut(term.idx).unwrap();
         if term.help.mode == HelpMode::Show {
             // Cursor moves out of help display area
-            if tab.editor.cur.y - tab.editor.offset_y > tab.editor.row_num - 1 {
-                tab.editor.cur.y = tab.editor.offset_y + tab.editor.row_num - 1;
+            if tab.editor.cur.y - tab.editor.offset_y > tab.editor.row_len - 1 {
+                tab.editor.cur.y = tab.editor.offset_y + tab.editor.row_len - 1;
                 tab.editor.cur.x = 0;
                 tab.editor.cur.disp_x = 0;
             }
         }
-        tab.editor.draw_range = EditorDrawRange::All;
+        tab.editor.draw_range = E_DrawRange::All;
     }
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
