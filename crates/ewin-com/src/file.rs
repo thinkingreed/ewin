@@ -4,7 +4,7 @@ use encoding_rs::Encoding;
 use faccess::PathExt;
 #[cfg(target_os = "windows")]
 use regex::Regex;
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::path::MAIN_SEPARATOR;
 use std::{fmt, path::Path};
 use std::{
@@ -48,7 +48,7 @@ impl File {
             path.executable()
         }
     }
-    #[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
     pub fn is_root_dir(path: &str) -> bool {
         *path == MAIN_SEPARATOR.to_string()
     }

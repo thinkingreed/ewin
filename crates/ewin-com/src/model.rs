@@ -12,7 +12,7 @@ use clap::ArgMatches;
 use crossterm::event::{Event, KeyCode::Null};
 use encoding_rs::Encoding;
 use serde::Deserialize;
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::usize;
 use std::{
     cmp::{max, min},
