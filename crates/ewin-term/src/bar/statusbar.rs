@@ -72,7 +72,7 @@ impl StatusBar {
     pub fn get_cur_str(tab: &mut Tab) -> String {
         let cur = tab.editor.cur;
         let len_lines = tab.editor.buf.len_rows();
-        let len_line_chars = tab.editor.buf.len_line_chars(tab.editor.cur.y);
+        let len_line_chars = tab.editor.buf.len_row_chars(tab.editor.cur.y);
 
         let row_str = format!("{}({}/{})", &Lang::get().row, (cur.y + 1).to_string(), len_lines.to_string());
         let len_line_chars = if len_line_chars == 0 { 0 } else { len_line_chars - 1 };

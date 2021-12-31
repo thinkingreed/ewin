@@ -109,13 +109,11 @@ impl Keybind {
         err_str
     }
 
-    pub fn keys_to_keycmd(keys: &Keys, keywhen: KeyWhen) -> KeyCmd {
-        return Keybind::keys_to_keycmd_pressed(keys, None, keywhen, USIZE_UNDEFINED, USIZE_UNDEFINED);
-    }
-
-    pub fn keys_to_keycmd_pressed(keys: &Keys, keys_org_opt: Option<&Keys>, keywhen: KeyWhen, hbar_row_posi: usize, sbar_row_posi: usize) -> KeyCmd {
+    //  pub fn keys_to_keycmd_pressed(keys: &Keys, keys_org_opt: Option<&Keys>, keywhen: KeyWhen, hbar_row_posi: usize, sbar_row_posi: usize, scrl_v_is_enable: bool, scrl_h_is_enable: bool) -> KeyCmd {
+    pub fn keys_to_keycmd_pressed(keys: &Keys, keys_org_opt: Option<&Keys>, keywhen: KeyWhen) -> KeyCmd {
         Log::debug_key("keys_to_keycmd_overall");
         Log::debug("keys", &keys);
+        Log::debug("keywhen", &keywhen);
 
         let result = KEY_CMD_MAP.get().unwrap().get(&(*keys, KeyWhen::AllFocus)).or_else(|| KEY_CMD_MAP.get().unwrap().get(&(*keys, keywhen.clone())));
         let keycmd = match result {
@@ -155,10 +153,17 @@ impl Keybind {
                     Keys::MouseDragLeft(y, x) => {
                         match keys_org_opt {
                             Some(Keys::MouseDragLeft(y_org, x_org)) | Some(Keys::MouseDownLeft(y_org, x_org)) => {
+                                Log::debug("yyyyyyyyyyyyyyyy", &y);
+                                Log::debug("y_org", &y_org);
+                                Log::debug("xxxxxxxxxxxxxxxx", &x);
+                                Log::debug("x_org", &x_org);
+
                                 let cols = get_term_size().0 as usize;
-                                return if y < y_org || (y == &(hbar_row_posi as u16) && x < &((cols - CFG.get().unwrap().try_lock().unwrap().general.editor.scrollbar.vertical.width) as u16)) {
+                                //    return if y < y_org || (y == &(hbar_row_posi as u16) && x < &((cols - CFG.get().unwrap().try_lock().unwrap().general.editor.scrollbar.vertical.width) as u16)) {
+                                return if y < y_org {
                                     KeyCmd::Edit(E_Cmd::MouseDragLeftUp(*y as usize, *x as usize))
-                                } else if y > y_org || (y == &(sbar_row_posi as u16) && x < &((cols - CFG.get().unwrap().try_lock().unwrap().general.editor.scrollbar.vertical.width) as u16)) {
+                                    // } else if y > y_org || (y == &(sbar_row_posi as u16) && x < &((cols - CFG.get().unwrap().try_lock().unwrap().general.editor.scrollbar.vertical.width) as u16)) {
+                                } else if y > y_org {
                                     KeyCmd::Edit(E_Cmd::MouseDragLeftDown(*y as usize, *x as usize))
                                 } else if y == y_org {
                                     if x > x_org || x == &(cols as u16) {

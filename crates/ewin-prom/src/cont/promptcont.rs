@@ -81,7 +81,7 @@ impl PromptCont {
     }
 
     pub fn set_cur_target(&mut self, x: usize) {
-        let (cur_x, width) = get_row_x_disp_x(&self.buf[..x], 0, false);
+        let (cur_x, width) = get_row_cur_x_disp_x(&self.buf[..x], 0, false);
         self.cur.x = cur_x;
         self.cur.disp_x = width;
     }

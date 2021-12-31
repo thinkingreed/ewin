@@ -62,10 +62,13 @@ impl Editor {
                 }
             }
         }
+        self.recalc_scrlbar_h_row(&evt_proc);
+
         // Register edit history
         if self.e_cmd != E_Cmd::Undo && self.e_cmd != E_Cmd::Redo {
             self.history.undo_vec.push(evt_proc);
         }
+
         self.scroll();
         self.scroll_horizontal();
     }
@@ -199,7 +202,7 @@ impl Editor {
 
         if e_cmd == &E_Cmd::DelNextChar {
             // End of last line
-            if !self.sel.is_selected() && self.cur.y == self.buf.len_rows() - 1 && self.cur.x == self.buf.len_line_chars(self.cur.y) - 1 {
+            if !self.sel.is_selected() && self.cur.y == self.buf.len_rows() - 1 && self.cur.x == self.buf.len_row_chars(self.cur.y) - 1 {
                 self.draw_range = E_DrawRange::Not;
                 return true;
             }

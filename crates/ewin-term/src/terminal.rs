@@ -130,8 +130,14 @@ impl Terminal {
             }
             let rnw_margin = if self.curt().editor.state.mouse_mode == MouseMode::Normal { self.curt().editor.get_rnw_and_margin() } else { 0 };
             let editor = &self.curt().editor;
-            str_vec.push(MoveTo((editor.cur.disp_x - editor.offset_disp_x + rnw_margin) as u16, (editor.cur.y - editor.offset_y + editor.row_posi) as u16).to_string());
 
+            if editor.scrl_h.is_enable {
+                if editor.offset_disp_x <= editor.cur.disp_x && editor.cur.disp_x <= editor.offset_disp_x + editor.col_len {
+                    str_vec.push(MoveTo((editor.cur.disp_x - editor.offset_disp_x + rnw_margin) as u16, (editor.cur.y - editor.offset_y + editor.row_posi) as u16).to_string());
+                }
+            } else {
+                str_vec.push(MoveTo((editor.cur.disp_x - editor.offset_disp_x + rnw_margin) as u16, (editor.cur.y - editor.offset_y + editor.row_posi) as u16).to_string());
+            }
             Terminal::show_cur();
         } else if self.curt().state.is_prom_show_cur() {
             Terminal::show_cur();
@@ -187,6 +193,7 @@ impl Terminal {
         }
         true
     }
+
     pub fn clear_display() {
         let string = format!("{}{}", Clear(ClearType::All), MoveTo(0, 0).to_string());
         let _ = stdout().write(string.as_bytes());
@@ -234,17 +241,27 @@ impl Terminal {
         self.curt().mbar.disp_keyrecord_row_posi = rows - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.row_num - 1;
         self.curt().mbar.disp_readonly_row_posi = rows - self.curt().mbar.disp_keyrecord_row_num - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.row_num - 1;
 
-        self.curt().editor.col_num = if self.curt().editor.state.mouse_mode == MouseMode::Normal { cols - self.curt().editor.get_rnw_and_margin() } else { cols };
-        self.curt().editor.row_len = rows - self.hbar.row_num - self.curt().mbar.disp_readonly_row_num - self.curt().mbar.disp_keyrecord_row_num - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.row_num;
+        self.curt().editor.col_len = if self.curt().editor.state.mouse_mode == MouseMode::Normal { cols - self.curt().editor.get_rnw_and_margin() } else { cols };
+        self.curt().editor.row_disp_len = rows - self.hbar.row_num - self.curt().mbar.disp_readonly_row_num - self.curt().mbar.disp_keyrecord_row_num - self.curt().mbar.disp_row_num - self.curt().prom.disp_row_num - self.help.disp_row_num - self.curt().sbar.row_num;
 
-        if self.curt().editor.row_len < self.curt().editor.buf.len_rows() {
+        if self.curt().editor.row_disp_len < self.curt().editor.buf.len_rows() {
             {
-                self.curt().editor.col_num -= CFG.get().unwrap().try_lock().unwrap().general.editor.scrollbar.vertical.width;
+                self.curt().editor.scrl_v.is_show = true;
+                self.curt().editor.col_len -= CFG.get().unwrap().try_lock().unwrap().general.editor.scrollbar.vertical.width;
             }
+        } else {
+            self.curt().editor.scrl_v.is_show = false;
         }
 
-        Log::debug("self.curt().editor.row_num ", &self.curt().editor.row_len);
-        Log::debug("self.curt().editor.row_num ", &CFG.get().unwrap().try_lock().unwrap().general.editor.scrollbar.vertical.width);
+        if self.curt().editor.scrl_h.row_max_width > self.curt().editor.col_len {
+            self.curt().editor.scrl_h.is_show = true;
+            {
+                self.curt().editor.row_disp_len -= CFG.get().unwrap().try_lock().unwrap().general.editor.scrollbar.horizontal.height;
+                self.curt().editor.scrl_h.row_posi = self.curt().editor.row_disp_len + 1;
+            }
+        } else {
+            self.curt().editor.scrl_h.is_show = false;
+        }
 
         return true;
     }
@@ -252,6 +269,7 @@ impl Terminal {
     pub fn show_cur() {
         execute!(stdout(), Show).unwrap();
     }
+
     pub fn hide_cur() {
         execute!(stdout(), Hide).unwrap();
     }
@@ -357,6 +375,7 @@ impl Terminal {
                     self.curt().editor.adjust_cur_posi();
                 }
             };
+
             if !filenm.is_empty() {
                 self.enable_syntax_highlight(path);
             }
@@ -407,15 +426,21 @@ impl Terminal {
 
         self.hbar.file_vec.push(h_file.clone());
         self.hbar.disp_base_idx = USIZE_UNDEFINED;
+
+        self.curt().editor.calc_scrlbar_h_row();
+
         self.set_disp_size();
 
         self.curt().editor.h_file = h_file;
     }
+
     pub fn change_curt_tab(&mut self, tab: Tab, h_file: HeaderFile) {
         self.tabs[self.idx] = tab;
         self.editor_draw_vec[self.idx].clear();
 
         self.hbar.file_vec[self.idx] = h_file.clone();
+        self.curt().editor.calc_scrlbar_h_row();
+
         self.set_disp_size();
 
         self.curt().editor.h_file = h_file;
@@ -627,7 +652,7 @@ impl Terminal {
     }
 
     pub fn set_editor_draw_target_for_ctxmenu_redraw(&mut self) {
-        let (offset_y, hbar_disp_row_num, editor_row_len) = (self.curt().editor.offset_y, self.hbar.row_num, self.curt().editor.row_len);
+        let (offset_y, hbar_disp_row_num, editor_row_len) = (self.curt().editor.offset_y, self.hbar.row_num, self.curt().editor.row_disp_len);
         self.curt().editor.draw_range = if let Some((sy, ey)) = self.ctx_menu_group.get_draw_range(offset_y, hbar_disp_row_num, editor_row_len) { E_DrawRange::Target(sy, ey) } else { E_DrawRange::Not }
     }
 
@@ -635,9 +660,13 @@ impl Terminal {
         let keywhen = self.get_when(keys);
         Log::debug("Terminal.set_keys.keywhen", &keywhen);
 
+        /*
         let hbar_row_posi = self.hbar.row_posi;
         let sbar_row_posi = self.curt().sbar.row_posi;
-        self.keycmd = Keybind::keys_to_keycmd_pressed(keys, Some(&self.keys_org), keywhen, hbar_row_posi, sbar_row_posi);
+        let scrl_v_is_enable = self.curt().editor.scrl_v.is_enable;
+        let scrl_h_is_enable = self.curt().editor.scrl_h.is_enable;
+         */
+        self.keycmd = Keybind::keys_to_keycmd_pressed(keys, Some(&self.keys_org), keywhen);
         Log::debug("Terminal.set_keys.keycmd", &self.keycmd);
         self.keys = *keys;
     }

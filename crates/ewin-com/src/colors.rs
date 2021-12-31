@@ -61,8 +61,11 @@ impl Colors {
     //
     // Scrollbar
     //
-    pub fn get_scrollbar_bg() -> String {
-        Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.line_number.bg)
+    pub fn get_scrollbar_v_bg() -> String {
+        Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.scrollbar.bg_vertical)
+    }
+    pub fn get_scrollbar_h_bg() -> String {
+        Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.scrollbar.bg_horizontal)
     }
     //
     // HeaderBar
@@ -71,7 +74,7 @@ impl Colors {
         Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg)
     }
     fn get_hbar_fg() -> String {
-        Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.header_bar.fg)
+        Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.headerbar.fg)
     }
     pub fn get_hbar_fg_bg() -> String {
         format!("{}{}", Colors::get_hbar_fg(), Colors::get_hbar_bg())
@@ -83,7 +86,7 @@ impl Colors {
         format!("{}{}", Colors::get_hbar_inversion_bg_passive(), Colors::get_default_inversion_fg())
     }
     pub fn get_hbar_inversion_bg_active() -> String {
-        Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.header_bar.fg)
+        Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.headerbar.fg)
     }
     pub fn get_hbar_inversion_fg_bg_active() -> String {
         format!("{}{}", Colors::get_hbar_inversion_bg_active(), Colors::get_default_inversion_fg())
@@ -95,7 +98,7 @@ impl Colors {
         Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg)
     }
     pub fn get_sbar_fg() -> String {
-        Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.status_bar.fg)
+        Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.statusbar.fg)
     }
     pub fn get_sbar_fg_bg() -> String {
         format!("{}{}", Colors::get_sbar_fg(), Colors::get_sbar_bg())
@@ -104,7 +107,7 @@ impl Colors {
         Colors::fg(CFG.get().unwrap().try_lock().unwrap().colors.editor.bg)
     }
     pub fn get_sbar_inversion_bg() -> String {
-        Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.status_bar.fg)
+        Colors::bg(CFG.get().unwrap().try_lock().unwrap().colors.statusbar.fg)
     }
     pub fn get_sbar_inversion_fg_bg() -> String {
         format!("{}{}", Colors::get_sbar_inversion_fg(), Colors::get_sbar_inversion_bg())

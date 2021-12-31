@@ -20,9 +20,9 @@ impl Editor {
 
     // move to row
     pub fn set_offset_y_move_row(&mut self) {
-        if self.cur.y >= self.offset_y + self.row_len {
+        if self.cur.y >= self.offset_y + self.row_disp_len {
             // last page
-            self.offset_y = if self.buf.len_rows() - 1 - self.cur.y < self.row_len { self.buf.len_rows() - self.row_len } else { self.cur.y - Editor::MOVE_ROW_EXTRA_NUM }
+            self.offset_y = if self.buf.len_rows() - 1 - self.cur.y < self.row_disp_len { self.buf.len_rows() - self.row_disp_len } else { self.cur.y - Editor::MOVE_ROW_EXTRA_NUM }
         } else if self.cur.y < self.offset_y {
             self.offset_y = if self.cur.y > Editor::MOVE_ROW_EXTRA_NUM { self.cur.y - Editor::MOVE_ROW_EXTRA_NUM } else { 0 };
         }
@@ -31,11 +31,11 @@ impl Editor {
     /// Get x_offset from the specified y・x
     pub fn get_x_offset(&mut self, y: usize, x: usize) -> usize {
         let (mut cur_x, mut width) = (0, 0);
-        let char_vec = self.buf.char_vec_range(y, x);
+        let char_vec = self.buf.char_vec_range(y, ..x);
 
         for c in char_vec.iter().rev() {
             width += get_char_width(c, width);
-            if width > self.col_num {
+            if width > self.col_len {
                 break;
             }
             cur_x += 1;
@@ -44,25 +44,25 @@ impl Editor {
     }
 
     pub fn set_cur_default(&mut self) {
-        self.rnw = if self.state.mouse_mode == MouseMode::Normal { self.buf.len_rows().to_string().len() } else { 0 };
+        self.rnw = self.get_rnw();
         self.cur = Cur { y: 0, x: 0, disp_x: 0 };
     }
 
     pub fn set_cur_target(&mut self, y: usize, x: usize, is_ctrlchar_incl: bool) {
         self.cur.y = y;
 
-        let (cur_x, width) = get_row_x_disp_x(&self.buf.char_vec_range(y, x), 0, is_ctrlchar_incl);
-        self.rnw = if self.state.mouse_mode == MouseMode::Normal { self.buf.len_rows().to_string().len() } else { 0 };
+        let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_range(y, ..x), 0, is_ctrlchar_incl);
+        self.rnw = self.get_rnw();
         self.cur.disp_x = width;
         self.cur.x = cur_x;
     }
 
     pub fn get_rnw(&self) -> usize {
-        self.rnw
+        return if self.state.mouse_mode == MouseMode::Normal { self.buf.len_rows().to_string().len() } else { 0 };
     }
 
     pub fn get_rnw_and_margin(&self) -> usize {
-        self.rnw + Editor::RNW_MARGIN
+        self.get_rnw() + Editor::RNW_MARGIN
     }
 
     pub fn set_org_state(&mut self) {
@@ -76,7 +76,8 @@ impl Editor {
         self.state.is_changed_org = self.state.is_changed;
         self.row_len_org = self.buf.len_rows();
         self.scrl_v.row_posi_org = self.scrl_v.row_posi;
-        self.scrl_v.row_len_org = self.scrl_v.row_len;
+        self.scrl_h.row_max_width_org = self.scrl_h.row_max_width;
+        self.scrl_h.clm_posi_org = self.scrl_h.clm_posi;
     }
 
     pub fn set_cmd(&mut self, keycmd: KeyCmd) {

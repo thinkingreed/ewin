@@ -17,7 +17,7 @@ impl Editor {
         let regex = CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex;
 
         let s_row_idx = if regex { self.buf.line_to_byte(self.offset_y) } else { self.buf.line_to_char(self.offset_y) };
-        let ey = min(self.offset_y + self.row_len, self.buf.len_rows());
+        let ey = min(self.offset_y + self.row_disp_len, self.buf.len_rows());
         let e_row_idx = if regex { self.buf.line_to_byte(ey) } else { self.buf.line_to_char(ey) };
         let search_org = self.search.clone();
 

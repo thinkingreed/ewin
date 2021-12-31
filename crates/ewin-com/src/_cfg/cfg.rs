@@ -74,12 +74,17 @@ pub struct CfgFormat {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgScrl {
     pub vertical: CfgScrlVertical,
-    // pub horizontal: CfgScrlHorizontal,
+    pub horizontal: CfgScrlHorizontal,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgScrlVertical {
     pub width: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CfgScrlHorizontal {
+    pub height: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -113,9 +118,9 @@ impl TabType {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgColors {
     pub theme: CfgColorTheme,
-    pub header_bar: CfgColorHeaderBar,
+    pub headerbar: CfgColorHeaderBar,
     pub editor: CfgColorEditor,
-    pub status_bar: CfgColorStatusBar,
+    pub statusbar: CfgColorStatusBar,
     pub ctx_menu: CfgColorCtxMenu,
     pub msg: CfgColorMsg,
     pub file: CfgColorFile,
@@ -143,6 +148,7 @@ pub struct CfgColorEditor {
     pub selection: Selection,
     pub search: CfgColorEditorSearch,
     pub control_char: ControlChar,
+    pub scrollbar: CfgColorScrollbar,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -179,12 +185,38 @@ pub struct ControlChar {
     #[serde(skip_deserializing, skip_serializing)]
     pub fg: Color,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CfgColorScrollbar {
+    horizontal_background: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub bg_horizontal: Color,
+    vertical_background: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub bg_vertical: Color,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename = "HeaderBar")]
 pub struct CfgColorHeaderBar {
     foreground: String,
     #[serde(skip_deserializing, skip_serializing)]
     pub fg: Color,
+    background: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub bg: Color,
+    tab_active_foreground: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub fg_tab_active: Color,
+    tab_active_background: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub bg_tab_active: Color,
+    tab_passive_foreground: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub fg_tab_passive: Color,
+    tab_passive_background: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub bg_tab_passive: Color,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -198,16 +230,16 @@ pub struct CfgColorStatusBar {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename = "CtxMenu")]
 pub struct CfgColorCtxMenu {
-    background_non_select: String,
+    non_select_background: String,
     #[serde(skip_deserializing, skip_serializing)]
     pub bg_non_sel: Color,
-    background_select: String,
+    select_background: String,
     #[serde(skip_deserializing, skip_serializing)]
     pub bg_sel: Color,
-    foreground_non_select: String,
+    non_select_foreground: String,
     #[serde(skip_deserializing, skip_serializing)]
     pub fg_non_sel: Color,
-    foreground_select: String,
+    select_foreground: String,
     #[serde(skip_deserializing, skip_serializing)]
     pub fg_sel: Color,
 }
@@ -305,7 +337,12 @@ impl Cfg {
             _ => OpenFileInitValue::None,
         };
 
-        cfg.colors.header_bar.fg = Colors::hex2rgb(&cfg.colors.header_bar.foreground);
+        cfg.colors.headerbar.fg = Colors::hex2rgb(&cfg.colors.headerbar.foreground);
+        cfg.colors.headerbar.bg = Colors::hex2rgb(&cfg.colors.headerbar.background);
+        cfg.colors.headerbar.fg_tab_active = Colors::hex2rgb(&cfg.colors.headerbar.tab_active_foreground);
+        cfg.colors.headerbar.bg_tab_active = Colors::hex2rgb(&cfg.colors.headerbar.tab_active_background);
+        cfg.colors.headerbar.fg_tab_passive = Colors::hex2rgb(&cfg.colors.headerbar.tab_passive_foreground);
+        cfg.colors.headerbar.bg_tab_passive = Colors::hex2rgb(&cfg.colors.headerbar.tab_passive_background);
 
         cfg.colors.editor.fg = Colors::hex2rgb(&cfg.colors.editor.foreground);
         cfg.colors.editor.bg = Colors::hex2rgb(&cfg.colors.editor.background);
@@ -316,17 +353,19 @@ impl Cfg {
         cfg.colors.editor.search.bg = Colors::hex2rgb(&cfg.colors.editor.search.background);
         cfg.colors.editor.search.fg = Colors::hex2rgb(&cfg.colors.editor.search.foreground);
         cfg.colors.editor.control_char.fg = Colors::hex2rgb(&cfg.colors.editor.control_char.foreground);
+        cfg.colors.editor.scrollbar.bg_vertical = Colors::hex2rgb(&cfg.colors.editor.scrollbar.vertical_background);
+        cfg.colors.editor.scrollbar.bg_horizontal = Colors::hex2rgb(&cfg.colors.editor.scrollbar.horizontal_background);
 
         cfg.colors.msg.normal_fg = Colors::hex2rgb(&cfg.colors.msg.normal_foreground);
         cfg.colors.msg.highlight_fg = Colors::hex2rgb(&cfg.colors.msg.highlight_foreground);
         cfg.colors.msg.warning_fg = Colors::hex2rgb(&cfg.colors.msg.warning_foreground);
         cfg.colors.msg.err_fg = Colors::hex2rgb(&cfg.colors.msg.err_foreground);
-        cfg.colors.status_bar.fg = Colors::hex2rgb(&cfg.colors.status_bar.foreground);
+        cfg.colors.statusbar.fg = Colors::hex2rgb(&cfg.colors.statusbar.foreground);
 
-        cfg.colors.ctx_menu.fg_sel = Colors::hex2rgb(&cfg.colors.ctx_menu.foreground_select);
-        cfg.colors.ctx_menu.fg_non_sel = Colors::hex2rgb(&cfg.colors.ctx_menu.foreground_non_select);
-        cfg.colors.ctx_menu.bg_sel = Colors::hex2rgb(&cfg.colors.ctx_menu.background_select);
-        cfg.colors.ctx_menu.bg_non_sel = Colors::hex2rgb(&cfg.colors.ctx_menu.background_non_select);
+        cfg.colors.ctx_menu.fg_sel = Colors::hex2rgb(&cfg.colors.ctx_menu.select_foreground);
+        cfg.colors.ctx_menu.fg_non_sel = Colors::hex2rgb(&cfg.colors.ctx_menu.non_select_foreground);
+        cfg.colors.ctx_menu.bg_sel = Colors::hex2rgb(&cfg.colors.ctx_menu.select_background);
+        cfg.colors.ctx_menu.bg_non_sel = Colors::hex2rgb(&cfg.colors.ctx_menu.non_select_background);
 
         cfg.colors.file.normal_fg = Colors::hex2rgb(&cfg.colors.file.normal_foreground);
         cfg.colors.file.directory_fg = Colors::hex2rgb(&cfg.colors.file.directory_foreground);

@@ -15,6 +15,7 @@ pub mod prompt {
     pub mod grep_result;
 }
 pub mod scrollbar {
+    pub mod horizontal;
     pub mod vertical;
 }
 pub mod fmt {

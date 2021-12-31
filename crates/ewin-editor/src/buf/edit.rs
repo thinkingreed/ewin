@@ -10,13 +10,14 @@ use crate::{
 use regex::RegexBuilder;
 use ropey::{iter::Chars, Rope, RopeSlice};
 use std::collections::BTreeMap;
+use std::ops::RangeBounds;
 
 impl TextBuffer {
     pub fn line(&self, i: usize) -> RopeSlice {
         self.text.line(i)
     }
 
-    pub fn len_line_chars(&self, i: usize) -> usize {
+    pub fn len_row_chars(&self, i: usize) -> usize {
         self.text.line(i).len_chars()
     }
 
@@ -27,12 +28,13 @@ impl TextBuffer {
     pub fn len_bytes(&self) -> usize {
         self.text.len_bytes()
     }
+
     pub fn char_vec_line(&self, i: usize) -> Vec<char> {
         self.line(i).chars().collect()
     }
 
-    pub fn char_vec_range(&self, y: usize, x: usize) -> Vec<char> {
-        self.line(y).slice(..x).chars().collect()
+    pub fn char_vec_range<R: RangeBounds<usize>>(&self, y: usize, range: R) -> Vec<char> {
+        self.line(y).slice(range).chars().collect()
     }
 
     pub fn insert(&mut self, y: usize, x: usize, s: &str) {
@@ -43,6 +45,7 @@ impl TextBuffer {
     pub fn insert_end(&mut self, s: &str) {
         self.text.insert(self.text.len_chars(), s);
     }
+
     pub fn insert_end_multi(&mut self, s_array: &[&str]) {
         for s in s_array {
             self.insert_end(s)
@@ -52,6 +55,7 @@ impl TextBuffer {
     pub fn remove(&mut self, s_idx: usize, e_idx: usize) {
         self.text.remove(s_idx..e_idx);
     }
+
     pub fn remove_del_bs(&mut self, keycmd: KeyCmd, y: usize, x: usize) {
         let mut i = self.text.line_to_char(y) + x;
 
@@ -91,11 +95,12 @@ impl TextBuffer {
 
     pub fn char(&self, y: usize, x: usize) -> char {
         let mut char = ' ';
-        if self.len_line_chars(y) > x {
+        if self.len_row_chars(y) > x {
             char = self.line(y).char(x);
         }
-        char
+        return char;
     }
+
     pub fn char_idx(&self, i: usize) -> char {
         self.text.char(i)
     }
@@ -108,6 +113,7 @@ impl TextBuffer {
 
         self.text.slice(s..e).to_string()
     }
+
     pub fn slice_rope(&self, sel: SelRange) -> RopeSlice {
         Log::debug("slice sel", &sel);
 
@@ -137,6 +143,7 @@ impl TextBuffer {
     pub fn line_to_char(&self, i: usize) -> usize {
         self.text.line_to_char(i)
     }
+
     pub fn line_to_byte(&self, i: usize) -> usize {
         self.text.line_to_byte(i)
     }
@@ -160,6 +167,7 @@ impl TextBuffer {
     pub fn append(&mut self, rope: Rope) {
         self.text.append(rope);
     }
+
     pub fn clear(&mut self) {
         self.text.remove(..);
     }

@@ -28,8 +28,8 @@ impl EvtAct {
             let rnw_org = term.curt().editor.rnw;
             term.curt().editor.set_grep_result(line_str);
 
-            if term.curt().editor.buf.len_rows() > term.curt().editor.row_len && rnw_org == term.curt().editor.rnw {
-                let y = term.curt().editor.offset_y + term.curt().editor.row_len - 2;
+            if term.curt().editor.buf.len_rows() > term.curt().editor.row_disp_len && rnw_org == term.curt().editor.rnw {
+                let y = term.curt().editor.offset_y + term.curt().editor.row_disp_len - 2;
                 term.curt().editor.draw_range = E_DrawRange::ScrollDown(y - 2, y);
 
                 if cfg!(target_os = "windows") {

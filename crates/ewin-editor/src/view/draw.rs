@@ -28,12 +28,13 @@ impl Editor {
             }
             E_DrawRange::All => self.clear_draw_vec(str_vec, self.row_posi - 1),
             E_DrawRange::After(sy) => str_vec.push(format!("{}{}", MoveTo(0, (sy - self.offset_y + self.row_posi) as u16), Clear(ClearType::FromCursorDown))),
-            E_DrawRange::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.row_len - Editor::SCROLL_UP_DOWN_EXTRA - 1) as u16), Clear(ClearType::FromCursorDown))),
+            E_DrawRange::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.row_disp_len - Editor::SCROLL_UP_DOWN_MARGIN - 1) as u16), Clear(ClearType::FromCursorDown))),
             E_DrawRange::ScrollUp(_, _) => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, (self.row_posi) as u16), Clear(ClearType::CurrentLine))),
         }
 
         // If you need to edit the previous row_num
-        if self.offset_y <= self.cur_y_org && self.cur_y_org <= self.offset_y + self.row_len && !(draw.sy <= self.cur_y_org && self.cur_y_org <= draw.ey) {
+        if !(draw.sy <= self.cur_y_org && self.cur_y_org <= draw.ey) && self.buf.len_rows() >= self.cur_y_org {
+            //  if self.offset_y <= self.cur_y_org && self.cur_y_org <= self.offset_y + self.row_disp_len && !(draw.sy <= self.cur_y_org && self.cur_y_org <= draw.ey) {
             str_vec.push(format!("{}", MoveTo(0, (self.cur_y_org - self.offset_y + self.row_posi) as u16)));
             self.set_row_num(self.cur_y_org, str_vec);
             str_vec.push(format!("{}", MoveTo(0, (draw.sy - self.offset_y + self.row_posi) as u16)));
@@ -48,7 +49,7 @@ impl Editor {
                 cell.draw_style(str_vec, x_idx == 0 && self.offset_x > 0);
                 let c = cell.c;
                 let width = get_char_width(&c, x_width);
-                if x_width + width > self.col_num {
+                if x_width + width > self.col_len {
                     break;
                 }
                 x_width += width;
@@ -57,7 +58,7 @@ impl Editor {
                     match c {
                         EOF_MARK => {
                             // EOF_STR.len() - 1 is rest 2 char
-                            let disp_len = if EOF_STR.len() - 1 + x_width > self.col_num { EOF_STR.len() - (EOF_STR.len() - 1 + x_width - self.col_num) } else { EOF_STR.len() };
+                            let disp_len = if EOF_STR.len() - 1 + x_width > self.col_len { EOF_STR.len() - (EOF_STR.len() - 1 + x_width - self.col_len) } else { EOF_STR.len() };
                             Colors::set_eof(str_vec, disp_len)
                         }
                         NEW_LINE_LF => str_vec.push(if c_org == NEW_LINE_CR { NEW_LINE_CRLF_MARK.to_string() } else { NEW_LINE_LF_MARK.to_string() }),
@@ -77,13 +78,14 @@ impl Editor {
             y += 1;
             x_width = 0;
 
-            if y >= self.row_len {
+            if y >= self.row_disp_len {
                 break;
             } else {
                 str_vec.push(NEW_LINE_CRLF.to_string());
             }
         }
         self.draw_scrlbar_v(str_vec);
+        self.draw_scrlbar_h(str_vec);
 
         self.draw_range = E_DrawRange::Not;
         self.sel_org.clear();
@@ -96,14 +98,12 @@ impl Editor {
             } else {
                 Colors::set_rownum_color(str_vec);
             }
-            if self.cur.y == i && self.offset_disp_x > 0 {
-                str_vec.push(">".repeat(self.get_rnw()));
-            } else {
-                if self.get_rnw() > 0 {
-                    str_vec.push(" ".repeat(self.get_rnw() - (i + 1).to_string().len()));
-                }
-                str_vec.push((i + 1).to_string());
+
+            if self.get_rnw() > 0 {
+                str_vec.push(" ".repeat(self.get_rnw() - (i + 1).to_string().len()));
             }
+            str_vec.push((i + 1).to_string());
+
             #[allow(clippy::repeat_once)]
             str_vec.push(" ".to_string().repeat(Editor::RNW_MARGIN));
             Colors::set_text_color(str_vec);
@@ -125,8 +125,8 @@ impl Editor {
     }
 
     pub fn clear_draw_vec(&self, str_vec: &mut Vec<String>, sy: usize) {
-        if self.row_len > 0 {
-            for i in sy..=self.row_posi + self.row_len - 2 {
+        if self.row_disp_len > 0 {
+            for i in sy..=self.row_posi + self.row_disp_len - 2 {
                 str_vec.push(format!("{}{}", MoveTo(0, (i + self.row_posi) as u16), Clear(ClearType::CurrentLine)));
             }
             str_vec.push(format!("{}", MoveTo(0, self.row_posi as u16)));

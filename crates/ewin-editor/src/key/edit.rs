@@ -71,7 +71,7 @@ impl Editor {
             // Exist row
             if sy + i <= self.buf.len_rows() - 1 {
                 // If there are characters up to the column to insert
-                if let Some(cur_x) = get_row_x(&self.buf.char_vec_line(sy + i)[..], s_disp_x, false) {
+                if let Some(cur_x) = get_row_x(&self.buf.char_vec_line(sy + i)[..], s_disp_x, false, false) {
                     self.buf.insert(sy + i, cur_x, sel_str);
                     let sel = SelRange { sy: sy + i, sx: cur_x, ex: cur_x + sel_str.chars().count(), s_disp_x, e_disp_x: s_disp_x + get_str_width(sel_str), ..SelRange::default() };
                     box_sel_undo_vec.push((sel, sel_str.clone()));
@@ -80,7 +80,7 @@ impl Editor {
                         ex = cur_x + sel_str.chars().count();
                     }
                 } else {
-                    let (cur_x, width) = get_row_x_disp_x(&self.buf.char_vec_line(sy + i)[..], 0, false);
+                    let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_line(sy + i)[..], 0, false);
 
                     let insert_str = format!("{}{}", " ".repeat(s_disp_x - width), &sel_str);
                     self.buf.insert(sy + i, cur_x, &insert_str);
@@ -97,8 +97,8 @@ impl Editor {
 
                 // Insert a new line at the end of the current last line
                 let nl_code = &NL::get_nl(&self.h_file.nl);
-                let end_idx = self.buf.len_line_chars(self.buf.len_rows() - 1);
-                let (_, width) = get_row_x_disp_x(&self.buf.char_vec_line(self.buf.len_rows() - 1)[..], 0, false);
+                let end_idx = self.buf.len_row_chars(self.buf.len_rows() - 1);
+                let (_, width) = get_row_cur_x_disp_x(&self.buf.char_vec_line(self.buf.len_rows() - 1)[..], 0, false);
 
                 self.buf.insert_end(nl_code);
                 box_sel_undo_vec.push((SelRange { sy: sy + i - 1, sx: end_idx, ex: end_idx + nl_code.chars().count(), s_disp_x: width, e_disp_x: width + get_str_width(nl_code), ..SelRange::default() }, "".to_string()));
@@ -119,7 +119,7 @@ impl Editor {
                 let ey = sy + i;
                 let e_disp_x;
 
-                e_disp_x = get_row_x_disp_x(&self.buf.char_vec_line(sy)[..ex], 0, false).1;
+                e_disp_x = get_row_cur_x_disp_x(&self.buf.char_vec_line(sy)[..ex], 0, false).1;
                 self.set_cur_target(sy, sx, false);
 
                 ep.cur_e = self.cur;
@@ -173,14 +173,14 @@ impl Editor {
         // beginning of the line
         if self.cur.x == 0 {
             self.cur.y -= 1;
-            let (mut cur_x, _) = get_row_x_disp_x(&self.buf.char_vec_line(self.cur.y)[..], 0, true);
+            let (mut cur_x, _) = get_row_cur_x_disp_x(&self.buf.char_vec_line(self.cur.y)[..], 0, true);
             // ' ' is meaningless value
             let c = if cur_x > 0 { self.buf.char(self.cur.y, cur_x - 1) } else { ' ' };
             ep.str = if c == NEW_LINE_CR { NEW_LINE_CRLF.to_string() } else { NEW_LINE_LF.to_string() };
             // Minus for new line code
             cur_x -= 1;
 
-            self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelPrevChar), self.cur.y, self.buf.len_line_chars(self.cur.y) - 1);
+            self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelPrevChar), self.cur.y, self.buf.len_row_chars(self.cur.y) - 1);
             self.set_cur_target(self.cur.y, cur_x, false);
             self.scroll();
             self.scroll_horizontal();
@@ -200,7 +200,7 @@ impl Editor {
                     let c = self.buf.char_idx(s);
                     ep.box_sel_vec[i].1 = c.to_string().clone();
                     self.buf.remove(s, e);
-                    let (_, width) = get_row_x_disp_x(&self.buf.char_vec_line(ep.box_sel_vec[i].0.sy)[..self.cur.x], 0, false);
+                    let (_, width) = get_row_cur_x_disp_x(&self.buf.char_vec_line(ep.box_sel_vec[i].0.sy)[..self.cur.x], 0, false);
                     ep.box_sel_vec[i].0.sx = self.cur.x;
                     ep.box_sel_vec[i].0.s_disp_x = width;
                     ep.box_sel_vec[i].0.ex = self.cur.x + 1;
@@ -216,7 +216,7 @@ impl Editor {
         let c = self.buf.char(self.cur.y, self.cur.x);
         ep.str = if c == NEW_LINE_CR { format!("{}{}", c.to_string(), NEW_LINE_LF) } else { c.to_string() };
         self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelNextChar), self.cur.y, self.cur.x);
-        if is_line_end(c) {
+        if is_line_end_char(c) {
             self.set_cur_target(self.cur.y, self.cur.x, false);
             self.scroll();
             self.scroll_horizontal();

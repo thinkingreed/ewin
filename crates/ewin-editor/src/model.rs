@@ -6,7 +6,6 @@ use syntect::parsing::SyntaxReference;
 #[derive(Debug, Clone)]
 pub struct Editor {
     pub buf: TextBuffer,
-    pub buf_cache: Vec<Vec<char>>,
     /// current cursor position
     pub cur: Cur,
     pub offset_y: usize,
@@ -28,9 +27,10 @@ pub struct Editor {
     // Clipboard on memory
     // pub clipboard: String,
     /// number displayed on the terminal
-    pub row_len: usize,
+    pub row_disp_len: usize,
+    pub row_len_org: usize,
     pub row_posi: usize,
-    pub col_num: usize,
+    pub col_len: usize,
     pub search: Search,
     // pub draw: Draw,
     pub draw_range: E_DrawRange,
@@ -42,13 +42,13 @@ pub struct Editor {
     // Have sy・ey, or Copy vec
     pub box_insert: BoxInsert,
     pub scrl_v: ScrollbarV,
-    pub row_len_org: usize,
+    pub scrl_h: ScrollbarH,
 }
+
 impl Editor {
     pub fn new() -> Self {
         Editor {
             buf: TextBuffer::default(),
-            buf_cache: vec![],
             cur: Cur::default(),
             offset_y: 0,
             offset_y_org: 0,
@@ -64,9 +64,9 @@ impl Editor {
             sel_org: SelRange::default(),
             e_cmd: E_Cmd::Null,
             // for UT set
-            row_len: TERM_MINIMUM_HEIGHT - HEADERBAR_ROW_NUM - STATUSBAR_ROW_NUM,
+            row_disp_len: TERM_MINIMUM_HEIGHT - HEADERBAR_ROW_NUM - STATUSBAR_ROW_NUM,
             row_posi: 1,
-            col_num: TERM_MINIMUM_WIDTH - Editor::RNW_MARGIN,
+            col_len: TERM_MINIMUM_WIDTH - Editor::RNW_MARGIN,
             search: Search::default(),
             draw_range: E_DrawRange::default(),
             history: History::default(),
@@ -77,6 +77,7 @@ impl Editor {
             h_file: HeaderFile::default(),
             box_insert: BoxInsert::default(),
             scrl_v: ScrollbarV::default(),
+            scrl_h: ScrollbarH::default(),
             row_len_org: 0,
         }
     }
@@ -134,20 +135,48 @@ impl fmt::Display for EditorDraw {
         write!(f, "Draw y_s:{}, y_e:{}, ", self.sy, self.ey)
     }
 }
-
 pub struct FormatXml {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScrollbarV {
+    pub is_show: bool,
     pub is_enable: bool,
     // Not include　editor.row_posi
     pub row_posi: usize,
     pub row_posi_org: usize,
-    pub row_len: usize,
-    pub row_len_org: usize,
+    pub bar_len: usize,
 }
+
 impl Default for ScrollbarV {
     fn default() -> Self {
-        ScrollbarV { is_enable: false, row_posi: USIZE_UNDEFINED, row_posi_org: USIZE_UNDEFINED, row_len: USIZE_UNDEFINED, row_len_org: USIZE_UNDEFINED }
+        ScrollbarV { is_show: false, is_enable: false, row_posi: USIZE_UNDEFINED, row_posi_org: USIZE_UNDEFINED, bar_len: USIZE_UNDEFINED }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScrollbarH {
+    pub is_show: bool,
+    pub is_enable: bool,
+    pub max_width_row_idx: usize,
+    pub row_max_width: usize,
+    pub row_max_chars: usize,
+    pub row_chars_vec: Vec<usize>,
+    pub row_width_vec: Vec<usize>,
+    pub row_posi: usize,
+    pub clm_posi: usize,
+    pub clm_posi_org: usize,
+    pub bar_len: usize,
+    pub row_max_width_org: usize,
+    pub move_cur_x: usize,
+    pub scrl_range: usize,
+}
+
+impl Default for ScrollbarH {
+    fn default() -> Self {
+        ScrollbarH { is_show: false, is_enable: false, row_chars_vec: vec![], row_width_vec: vec![], row_posi: USIZE_UNDEFINED, max_width_row_idx: 0, clm_posi: 0, clm_posi_org: 0, bar_len: 0, row_max_width: 0, row_max_width_org: 0, row_max_chars: 0, move_cur_x: 0, scrl_range: 0 }
+    }
+}
+
+impl ScrollbarH {
+    pub fn clear(&mut self) {}
 }

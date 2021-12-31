@@ -18,7 +18,7 @@ pub fn get_str_width(msg: &str) -> usize {
 }
 
 /// Get cur_x of any disp_x. If there are no characters, return None.
-pub fn get_row_x(char_arr: &[char], disp_x: usize, is_ctrlchar_incl: bool) -> Option<usize> {
+pub fn get_row_x(char_arr: &[char], disp_x: usize, is_ctrlchar_incl: bool, is_return_on_the_way: bool) -> Option<usize> {
     let (mut cur_x, mut width) = (0, 0);
 
     for c in char_arr {
@@ -41,11 +41,14 @@ pub fn get_row_x(char_arr: &[char], disp_x: usize, is_ctrlchar_incl: bool) -> Op
         width += c_len;
         cur_x += 1;
     }
+    if is_return_on_the_way && cur_x > 0 {
+        return Some(cur_x);
+    }
     None
 }
 
 /// Get cur_x and disp_x of the target string
-pub fn get_row_x_disp_x(char_arr: &[char], offset_disp_x: usize, is_ctrlchar_incl: bool) -> (usize, usize) {
+pub fn get_row_cur_x_disp_x(char_arr: &[char], offset_disp_x: usize, is_ctrlchar_incl: bool) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
 
     for c in char_arr {
@@ -151,9 +154,18 @@ pub fn change_output_encoding() {
     Log::debug("change output encoding chcp 65001 ", &result.is_ok());
 }
 
-pub fn is_line_end(c: char) -> bool {
+pub fn is_line_end_char(c: char) -> bool {
     // LF, CR
     [NEW_LINE_LF, NEW_LINE_CR].contains(&c)
+}
+
+pub fn is_line_end_str(s: &str) -> bool {
+    for c in s.chars() {
+        if is_line_end_char(c) {
+            return true;
+        }
+    }
+    return false;
 }
 
 pub fn is_enable_syntax_highlight(ext: &str) -> bool {
@@ -324,6 +336,8 @@ pub fn is_include_path(src: &str, dst: &str) -> bool {
 }
 
 pub fn get_term_size() -> (u16, u16) {
+    Log::debug("get_term_size", &size());
+
     let (columns, rows) = size().unwrap_or((TERM_MINIMUM_WIDTH as u16, TERM_MINIMUM_HEIGHT as u16));
 
     // (1, 1) is judged as test
@@ -377,33 +391,33 @@ mod tests {
     fn test_get_row_x() {
         Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
 
-        assert_eq!(get_row_x(&['a'], 0, false), Some(0));
-        assert_eq!(get_row_x(&['a', 'b'], 1, false), Some(1));
-        assert_eq!(get_row_x(&['a', 'あ', NEW_LINE_LF], 3, false), Some(2));
-        assert_eq!(get_row_x(&[TAB_CHAR, 'a'], 5, false), None);
-        assert_eq!(get_row_x(&[TAB_CHAR, 'a', NEW_LINE_LF], 5, true), Some(2));
-        assert_eq!(get_row_x(&[' ', TAB_CHAR, 'a'], 2, false), Some(1));
-        assert_eq!(get_row_x(&['a', NEW_LINE_LF, EOF_MARK], 2, false), None);
-        assert_eq!(get_row_x(&['a', NEW_LINE_LF, EOF_MARK], 2, true), Some(2));
-        assert_eq!(get_row_x(&['a', EOF_MARK], 2, true), None);
+        assert_eq!(get_row_x(&['a'], 0, false, false,), Some(0));
+        assert_eq!(get_row_x(&['a', 'b'], 1, false, false,), Some(1));
+        assert_eq!(get_row_x(&['a', 'あ', NEW_LINE_LF], 3, false, false,), Some(2));
+        assert_eq!(get_row_x(&[TAB_CHAR, 'a'], 5, false, false,), None);
+        assert_eq!(get_row_x(&[TAB_CHAR, 'a', NEW_LINE_LF], 5, true, false,), Some(2));
+        assert_eq!(get_row_x(&[' ', TAB_CHAR, 'a'], 2, false, false,), Some(1));
+        assert_eq!(get_row_x(&['a', NEW_LINE_LF, EOF_MARK], 2, false, false,), None);
+        assert_eq!(get_row_x(&['a', NEW_LINE_LF, EOF_MARK], 2, true, false,), Some(2));
+        assert_eq!(get_row_x(&['a', EOF_MARK], 2, true, false,), None);
     }
 
     #[test]
     fn test_get_row_width() {
         Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
 
-        assert_eq!(get_row_x_disp_x(&['a'], 0, false), (1, 1));
-        assert_eq!(get_row_x_disp_x(&['あ'], 0, false), (1, 2));
-        assert_eq!(get_row_x_disp_x(&['a', NEW_LINE_LF], 0, false), (1, 1));
-        assert_eq!(get_row_x_disp_x(&['a', NEW_LINE_LF], 0, true), (2, 2));
-        assert_eq!(get_row_x_disp_x(&[TAB_CHAR, 'a'], 0, false), (2, 5));
-        assert_eq!(get_row_x_disp_x(&[TAB_CHAR, 'a'], 1, false), (2, 4));
-        assert_eq!(get_row_x_disp_x(&['a', NEW_LINE_LF], 0, false), (1, 1));
-        assert_eq!(get_row_x_disp_x(&['a', NEW_LINE_LF], 0, true), (2, 2));
-        assert_eq!(get_row_x_disp_x(&['a', NEW_LINE_CR], 0, false), (1, 1));
-        assert_eq!(get_row_x_disp_x(&['a', NEW_LINE_CR], 0, true), (2, 2));
-        assert_eq!(get_row_x_disp_x(&['a', EOF_MARK], 0, false), (1, 1));
-        assert_eq!(get_row_x_disp_x(&['a', EOF_MARK], 0, true), (1, 1));
+        assert_eq!(get_row_cur_x_disp_x(&['a'], 0, false), (1, 1));
+        assert_eq!(get_row_cur_x_disp_x(&['あ'], 0, false), (1, 2));
+        assert_eq!(get_row_cur_x_disp_x(&['a', NEW_LINE_LF], 0, false), (1, 1));
+        assert_eq!(get_row_cur_x_disp_x(&['a', NEW_LINE_LF], 0, true), (2, 2));
+        assert_eq!(get_row_cur_x_disp_x(&[TAB_CHAR, 'a'], 0, false), (2, 5));
+        assert_eq!(get_row_cur_x_disp_x(&[TAB_CHAR, 'a'], 1, false), (2, 4));
+        assert_eq!(get_row_cur_x_disp_x(&['a', NEW_LINE_LF], 0, false), (1, 1));
+        assert_eq!(get_row_cur_x_disp_x(&['a', NEW_LINE_LF], 0, true), (2, 2));
+        assert_eq!(get_row_cur_x_disp_x(&['a', NEW_LINE_CR], 0, false), (1, 1));
+        assert_eq!(get_row_cur_x_disp_x(&['a', NEW_LINE_CR], 0, true), (2, 2));
+        assert_eq!(get_row_cur_x_disp_x(&['a', EOF_MARK], 0, false), (1, 1));
+        assert_eq!(get_row_cur_x_disp_x(&['a', EOF_MARK], 0, true), (1, 1));
     }
 
     #[test]

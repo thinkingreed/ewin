@@ -266,7 +266,7 @@ impl Prompt {
                     let str = self.cont_3.buf[..self.cont_3.cur.x].iter().collect::<String>();
 
                     self.cont_3.buf = self.prom_grep.tab_comp.get_tab_candidate(is_asc, str, true).chars().collect();
-                    let (cur_x, width) = get_row_x_disp_x(&self.cont_3.buf[..], 0, false);
+                    let (cur_x, width) = get_row_cur_x_disp_x(&self.cont_3.buf[..], 0, false);
                     self.cont_3.cur.x = cur_x;
                     self.cont_3.cur.disp_x = width;
                 }
@@ -282,7 +282,7 @@ impl Prompt {
 
             self.cont_1.buf = self.prom_open_file.tab_comp.get_tab_candidate(is_asc, str, false).chars().collect();
 
-            let (cur_x, width) = get_row_x_disp_x(&self.cont_1.buf[..], 0, false);
+            let (cur_x, width) = get_row_cur_x_disp_x(&self.cont_1.buf[..], 0, false);
             self.cont_1.cur.x = cur_x;
             self.cont_1.cur.disp_x = width;
         } else if state.is_enc_nl {

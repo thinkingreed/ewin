@@ -24,6 +24,9 @@ indent_size = 2
 [general.editor.scrollbar.vertical]
 # 0 is hide
 width = 2
+[general.editor.scrollbar.horizontal]
+# 0 is hide
+height = 1
 
 [general.prompt.open_file]
 # Valid only for Windows
@@ -83,17 +86,26 @@ foreground = "#000000"
 [colors.editor.control_char]
 foreground = "#6e6e6e"
 
-[colors.header_bar]
-foreground = "#c0c0c0"
+[colors.editor.scrollbar]
+horizontal_background = "#282828"
+vertical_background = "#282828"
 
-[colors.status_bar]
+[colors.headerbar]
+foreground = "#c0c0c0"
+background = "#000000"
+tab_active_foreground = "#000000"
+tab_active_background = "#c0c0c0"
+tab_passive_foreground = "#000000"
+tab_passive_background = "#6e6e6e"
+
+[colors.statusbar]
 foreground = "#c0c0c0"
 
 [colors.ctx_menu]
-background_non_select = "#969696"
-background_select = "#6495ed"
-foreground_non_select = "#000000"
-foreground_select = "#ffffff"
+non_select_background = "#969696"
+select_background = "#6495ed"
+non_select_foreground = "#000000"
+select_foreground = "#ffffff"
 
 [colors.msg]
 normal_foreground = "#ffffff"

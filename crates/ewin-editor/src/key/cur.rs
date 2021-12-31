@@ -70,13 +70,13 @@ impl Editor {
         // 行頭の場合
         } else if self.cur.x == 0 {
             self.cur_up();
-            self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y), false);
+            self.set_cur_target(self.cur.y, self.buf.len_row_chars(self.cur.y), false);
         } else {
             let c = self.buf.char(self.cur.y, self.cur.x - 1);
 
             if c == TAB_CHAR {
                 let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.size;
-                let (_, width) = get_row_x_disp_x(&self.buf.char_vec_line(self.cur.y)[self.offset_x..self.cur.x - 1], self.offset_disp_x, false);
+                let (_, width) = get_row_cur_x_disp_x(&self.buf.char_vec_line(self.cur.y)[self.offset_x..self.cur.x - 1], self.offset_disp_x, false);
                 self.cur.disp_x -= cfg_tab_width - ((self.offset_disp_x + width) % cfg_tab_width);
                 self.cur.x -= 1;
             } else {
@@ -98,18 +98,18 @@ impl Editor {
         match self.e_cmd {
             E_Cmd::CursorRight | E_Cmd::InsertStr(_) => {
                 if self.state.mouse_mode == MouseMode::Normal {
-                    if is_line_end(c) {
+                    if is_line_end_char(c) {
                         is_end_of_line = true;
                     }
                 } else {
-                    let (cur_x, _) = get_row_x_disp_x(&self.buf.char_vec_line(self.cur.y)[..], 0, false);
+                    let (cur_x, _) = get_row_cur_x_disp_x(&self.buf.char_vec_line(self.cur.y)[..], 0, false);
                     if self.cur.x == cur_x {
                         is_end_of_line = true;
                     }
                 }
             }
             E_Cmd::CursorRightSelect => {
-                let len_line_chars = self.buf.len_line_chars(self.cur.y);
+                let len_line_chars = self.buf.len_row_chars(self.cur.y);
                 let x = if c == NEW_LINE_CR { len_line_chars - 1 } else { len_line_chars };
                 if self.cur.x == x - 1 {
                     is_end_of_line = true;
@@ -139,7 +139,7 @@ impl Editor {
                 self.cur.x += 1;
             } else {
                 self.cur.disp_x += get_char_width_not_tab(&c);
-                self.cur.x = min(self.cur.x + 1, self.buf.len_line_chars(self.cur.y));
+                self.cur.x = min(self.cur.x + 1, self.buf.len_row_chars(self.cur.y));
                 if self.e_cmd == E_Cmd::CursorRightSelect && c == NEW_LINE_CR {
                     self.cur.disp_x += 1;
                     self.cur.x += 1;
@@ -156,7 +156,7 @@ impl Editor {
     }
 
     pub fn cur_end(&mut self) {
-        self.set_cur_target(self.cur.y, self.buf.len_line_chars(self.cur.y), false);
+        self.set_cur_target(self.cur.y, self.buf.len_row_chars(self.cur.y), false);
         self.scroll();
         self.scroll_horizontal();
     }
@@ -169,7 +169,7 @@ impl Editor {
 
     pub fn ctrl_end(&mut self) {
         let y = self.buf.len_rows() - 1;
-        let len_line_chars = self.buf.len_line_chars(y);
+        let len_line_chars = self.buf.len_row_chars(y);
         self.set_cur_target(y, len_line_chars, false);
         self.scroll();
         self.scroll_horizontal();
@@ -179,13 +179,13 @@ impl Editor {
     }
 
     pub fn page_down(&mut self) {
-        self.cur.y = min(self.cur.y + self.row_len, self.buf.len_rows() - 1);
+        self.cur.y = min(self.cur.y + self.row_disp_len, self.buf.len_rows() - 1);
         self.cur_updown_com();
         self.scroll();
     }
 
     pub fn page_up(&mut self) {
-        self.cur.y = if self.cur.y > self.row_len { self.cur.y - self.row_len } else { 0 };
+        self.cur.y = if self.cur.y > self.row_disp_len { self.cur.y - self.row_disp_len } else { 0 };
         self.cur_updown_com();
         self.scroll();
     }

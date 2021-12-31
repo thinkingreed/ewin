@@ -13,19 +13,33 @@ impl Editor {
         Log::debug_key("editor.set_draw_range");
 
         // judgment redraw
-        self.draw_range = if (!self.sel.is_selected() && self.sel_org.is_selected()) ||
+        Log::debug("self.draw_range Before setting", &self.draw_range);
+
+        self.draw_range = if (!self.sel.is_selected() && self.sel_org.is_selected()) 
         // enable_syntax_highlight edit
-        (Editor::is_edit(&self.e_cmd, true) && self.is_enable_syntax_highlight)
+        ||  (Editor::is_edit(&self.e_cmd, true) && self.is_enable_syntax_highlight)
+        || self.rnw_org != self.get_rnw() || (self.offset_x > 0 && self.cur_y_org != self.cur.y) || self.offset_x_org != self.offset_x 
+             // All draw at the end of key record
+             || self.state.key_macro.is_exec_end
         {
             E_DrawRange::All
+        } else if self.offset_y_org != self.offset_y {
+            match self.e_cmd {
+                E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::MouseDragLeftUp(_, _) => E_DrawRange::ScrollUp(self.offset_y, self.offset_y + Editor::SCROLL_UP_DOWN_MARGIN + 1),
+                E_Cmd::CursorDown | E_Cmd::MouseScrollDown | E_Cmd::MouseDragLeftDown(_, _) => {
+                    let y = self.offset_y + self.row_disp_len - 1;
+                    E_DrawRange::ScrollDown(y - Editor::SCROLL_UP_DOWN_MARGIN - 1, y)
+                }
+                _ => E_DrawRange::All,
+            }
         } else {
             match &self.e_cmd {
-                E_Cmd::CursorLeft | E_Cmd::CursorRight | E_Cmd::CursorLeftSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd  | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect | E_Cmd::MouseDragLeftBox(_, _) => {
+                E_Cmd::CursorLeft | E_Cmd::CursorRight | E_Cmd::CursorLeftSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect | E_Cmd::MouseDragLeftBox(_, _) => {
                     if self.sel.mode == SelMode::BoxSelect {
                         let sel = self.sel.get_range();
                         E_DrawRange::Target(sel.sy, sel.ey)
                     } else if self.cur.y == self.cur_y_org {
-                        if matches!(self.e_cmd, E_Cmd::CursorRightSelect) || matches!(self.e_cmd, E_Cmd::CursorLeftSelect) || matches!(self.e_cmd, E_Cmd::CursorRowHomeSelect)|| matches!(self.e_cmd, E_Cmd::CursorRowEndSelect){
+                        if matches!(self.e_cmd, E_Cmd::CursorRightSelect) || matches!(self.e_cmd, E_Cmd::CursorLeftSelect) || matches!(self.e_cmd, E_Cmd::CursorRowHomeSelect) || matches!(self.e_cmd, E_Cmd::CursorRowEndSelect) {
                             E_DrawRange::Target(self.cur.y, self.cur.y)
                         } else {
                             E_DrawRange::MoveCur
@@ -34,19 +48,36 @@ impl Editor {
                         E_DrawRange::Target(min(self.cur.y, self.cur_y_org), max(self.cur.y, self.cur_y_org))
                     }
                 }
-                E_Cmd::DelNextChar | E_Cmd::DelPrevChar => {
-                    if self.e_cmd == E_Cmd::DelPrevChar && self.cur.y != self.cur_y_org || self.e_cmd == E_Cmd::DelNextChar && self.buf.len_rows() != self.row_len_org {
+                E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Cut => {
+                    if self.buf.len_rows() != self.row_len_org {
+                        E_DrawRange::All
+                    } else if self.e_cmd == E_Cmd::DelPrevChar && self.cur.y != self.cur_y_org || self.e_cmd == E_Cmd::DelNextChar && self.buf.len_rows() != self.row_len_org {
                         E_DrawRange::After(self.cur.y)
                     } else {
-                        E_DrawRange::Target(self.cur.y, self.cur.y)
+                        E_DrawRange::Target(min(self.cur.y, self.cur_y_org), max(self.cur.y, self.cur_y_org))
                     }
                 }
                 E_Cmd::InsertRow => E_DrawRange::After(self.cur.y - 1),
                 E_Cmd::InsertStr(str) => {
                     if str.is_empty() {
-                        E_DrawRange::After(self.cur_y_org)
+                        if self.rnw != self.rnw_org {
+                            E_DrawRange::All
+                        } else {
+                            E_DrawRange::After(self.cur_y_org)
+                        }
                     } else {
                         E_DrawRange::Target(self.cur.y, self.cur.y)
+                    }
+                }
+                E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) if self.scrl_h.is_enable => {
+                    // MouseDragLeftLeft
+                    if matches!(self.e_cmd, E_Cmd::MouseDragLeftLeft(_,_)) && self.scrl_h.clm_posi_org ==0 
+                    // MouseDragLeftRight
+                    ||    matches!(self.e_cmd, E_Cmd::MouseDragLeftRight(_,_)) &&self.scrl_h.clm_posi_org+ self.scrl_h.bar_len == self.col_len
+                    {
+                        E_DrawRange::Not
+                    } else {
+                        E_DrawRange::All
                     }
                 }
                 E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) => E_DrawRange::Target(self.cur.y, self.cur.y),
@@ -66,33 +97,10 @@ impl Editor {
                     }
                 }
                 E_Cmd::AllSelect | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::CursorFileHome | E_Cmd::CursorFileEnd | E_Cmd::FindNext | E_Cmd::FindBack | E_Cmd::CancelModeAndSearchResult | E_Cmd::ReplaceExec(_, _, _) | E_Cmd::BoxSelectMode => E_DrawRange::All,
-
                 _ => E_DrawRange::Not,
             }
         };
-
-        Log::debug("self.draw_range 111", &self.draw_range);
-
-        if self.draw_range != E_DrawRange::All {
-            if self.rnw_org != self.get_rnw() || (self.offset_x > 0 && self.cur_y_org != self.cur.y) || self.offset_x_org != self.offset_x {
-                self.draw_range = E_DrawRange::All;
-            } else if self.offset_y_org != self.offset_y {
-                match self.e_cmd {
-                    E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::MouseDragLeftUp(_, _) => {
-                        self.draw_range = E_DrawRange::ScrollUp(self.offset_y, self.offset_y + Editor::SCROLL_UP_DOWN_EXTRA + 1);
-                    }
-                    E_Cmd::CursorDown | E_Cmd::MouseScrollDown | E_Cmd::MouseDragLeftDown(_, _) => {
-                        let y = self.offset_y + self.row_len - 1;
-                        self.draw_range = E_DrawRange::ScrollDown(y - Editor::SCROLL_UP_DOWN_EXTRA - 1, y);
-                    }
-                    _ => {}
-                }
-                // All draw at the end of key record
-            } else if self.state.key_macro.is_exec_end {
-                self.draw_range = E_DrawRange::All;
-            }
-        }
-        Log::debug("self.draw_range 222", &self.draw_range);
+        Log::debug("self.draw_range After setting", &self.draw_range);
     }
 
     pub fn set_draw_parts(&mut self, keycmd: &KeyCmd) -> DParts {
@@ -120,4 +128,5 @@ impl Editor {
             _ => DParts::Editor,
         };
     }
+   
 }

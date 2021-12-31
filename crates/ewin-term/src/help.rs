@@ -26,8 +26,8 @@ impl Help {
         let tab = term.tabs.get_mut(term.idx).unwrap();
         if term.help.mode == HelpMode::Show {
             // Cursor moves out of help display area
-            if tab.editor.cur.y - tab.editor.offset_y > tab.editor.row_len - 1 {
-                tab.editor.cur.y = tab.editor.offset_y + tab.editor.row_len - 1;
+            if tab.editor.cur.y - tab.editor.offset_y > tab.editor.row_disp_len - 1 {
+                tab.editor.cur.y = tab.editor.offset_y + tab.editor.row_disp_len - 1;
                 tab.editor.cur.x = 0;
                 tab.editor.cur.disp_x = 0;
             }

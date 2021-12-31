@@ -95,13 +95,13 @@ impl History {
                     // Delimiter unit
                     2 => {
                         let (sx, ex) = get_delim_x(row, cur.x);
-                        sel.set_s(cur.y, sx, get_row_x_disp_x(&row[..sx], 0, false).1);
-                        sel.set_e(cur.y, ex, get_row_x_disp_x(&row[..ex], 0, false).1);
+                        sel.set_s(cur.y, sx, get_row_cur_x_disp_x(&row[..sx], 0, false).1);
+                        sel.set_e(cur.y, ex, get_row_cur_x_disp_x(&row[..ex], 0, false).1);
                     }
                     // One row
                     3 => {
                         sel.set_s(cur.y, 0, 0);
-                        let (cur_x, width) = get_row_x_disp_x(row, 0, true);
+                        let (cur_x, width) = get_row_cur_x_disp_x(row, 0, true);
                         sel.set_e(cur.y, cur_x, width);
                     }
                     _ => {}

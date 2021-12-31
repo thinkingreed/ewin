@@ -24,7 +24,7 @@ impl EditorDraw {
         match editor.draw_range {
             E_DrawRange::After(sy) => {
                 self.sy = sy;
-                self.ey = min(editor.offset_y + editor.row_len - 1, editor.buf.len_rows() - 1);
+                self.ey = min(editor.offset_y + editor.row_disp_len - 1, editor.buf.len_rows() - 1);
             }
             E_DrawRange::Target(sy, ey) | E_DrawRange::ScrollDown(sy, ey) | E_DrawRange::ScrollUp(sy, ey) => {
                 self.sy = sy;
@@ -32,7 +32,7 @@ impl EditorDraw {
             }
             E_DrawRange::All | E_DrawRange::None => {
                 self.sy = editor.offset_y;
-                self.ey = if editor.row_len == 0 { 0 } else { min(editor.offset_y + editor.row_len - 1, editor.buf.len_rows() - 1) };
+                self.ey = if editor.row_disp_len == 0 { 0 } else { min(editor.offset_y + editor.row_disp_len - 1, editor.buf.len_rows() - 1) };
             }
             _ => {}
         }
@@ -53,8 +53,12 @@ impl EditorDraw {
 
         for y in sy..=ey {
             let row_vec = editor.buf.char_vec_line(y);
-            let sx = if y == editor.cur.y { editor.offset_x } else { 0 };
-            let ex = min(sx + editor.col_num, editor.buf.len_line_chars(y));
+            let (sx, ex) = if editor.offset_x > row_vec.len() {
+                (0, 0)
+            } else {
+                let sx = editor.offset_x;
+                (sx, min(sx + editor.col_len, row_vec.len()))
+            };
 
             if editor.is_enable_syntax_highlight {
                 self.set_regions_highlight(&cfg, editor, y, row_vec, sx, ex);

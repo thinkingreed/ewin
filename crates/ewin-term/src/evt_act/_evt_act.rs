@@ -61,7 +61,6 @@ impl EvtAct {
         }
     }
     pub fn check_next_process<T: Write>(out: &mut T, term: &mut Terminal, act_type: ActType) -> Option<bool> {
-        Log::debug("check_next_process::act_type", &act_type);
         return match &act_type {
             ActType::Next => None,
             ActType::Draw(_) => {
@@ -146,6 +145,9 @@ impl EvtAct {
                     term.keycmd = KeyCmd::Null;
                     return ActType::Cancel;
                 }
+                // Because the same key occurs multiple times in the case of Windows.
+                #[cfg(target_os = "windows")]
+                Keys::MouseDragLeft(_, _) if keys == term.keys_org => return ActType::Cancel,
                 _ => Log::info("Pressed key", &keys),
             };
         }

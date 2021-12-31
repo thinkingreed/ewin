@@ -4,7 +4,7 @@ impl Editor {
     pub fn all_select(&mut self) {
         self.sel.clear();
         self.sel.set_s(0, 0, 0);
-        let (cur_x, width) = get_row_x_disp_x(&self.buf.char_vec_line(self.buf.len_rows() - 1)[..], 0, false);
+        let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_line(self.buf.len_rows() - 1)[..], 0, false);
         self.sel.set_e(self.buf.len_rows() - 1, cur_x, width);
     }
 
