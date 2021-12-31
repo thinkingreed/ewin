@@ -1,8 +1,8 @@
 use crate::{def::*, file::*, global::*, log::Log, model::*};
-#[cfg(target_os = "linux")]
+#[cfg(not(target_os = "windows"))]
 use anyhow::Context;
 use crossterm::terminal::size;
-#[cfg(target_os = "linux")]
+#[cfg(not(target_os = "windows"))]
 use std::io::Read;
 use std::{self, fs, path::*, process::*, *};
 use unicode_width::*;
