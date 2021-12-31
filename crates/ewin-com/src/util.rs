@@ -122,7 +122,7 @@ pub fn get_char_width_tgt_os(_c: &char) -> Option<usize> {
     return None;
 }
 
-#[cfg(target_os = "linux")]
+#[cfg(not(target_os = "windows"))]
 pub fn get_env_platform() -> Env {
     let child = Command::new("uname").arg("-r").stdout(Stdio::piped()).spawn().unwrap();
     let mut stdout = child.stdout.context("take stdout").unwrap();
