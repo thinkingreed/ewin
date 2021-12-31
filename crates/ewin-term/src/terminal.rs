@@ -100,7 +100,7 @@ impl Terminal {
         Log::info_key("Terminal.draw end");
     }
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     pub fn draw_flush<T: Write>(&mut self, out: &mut T, str_vec: Vec<String>) {
         let _ = out.write(str_vec.concat().as_bytes());
         out.flush().unwrap();

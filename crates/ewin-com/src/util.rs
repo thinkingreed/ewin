@@ -1,8 +1,8 @@
 use crate::{def::*, file::*, global::*, log::Log, model::*};
-#[cfg(not(target_os = "windows"))]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use anyhow::Context;
 use crossterm::terminal::size;
-#[cfg(not(target_os = "windows"))]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::io::Read;
 use std::{self, fs, path::*, process::*, *};
 use unicode_width::*;
@@ -117,12 +117,12 @@ pub fn get_char_width_tgt_os(c: &char) -> Option<usize> {
     return None;
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 pub fn get_char_width_tgt_os(_c: &char) -> Option<usize> {
     return None;
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(any(target_os = "linux", target_os = "macos"))]
 pub fn get_env_platform() -> Env {
     let child = Command::new("uname").arg("-r").stdout(Stdio::piped()).spawn().unwrap();
     let mut stdout = child.stdout.context("take stdout").unwrap();
