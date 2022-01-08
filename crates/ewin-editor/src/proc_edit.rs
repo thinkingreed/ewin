@@ -1,3 +1,5 @@
+use std::cmp::{max, min};
+
 use crate::{
     ewin_com::{_cfg::key::keycmd::*, def::*, log::*, model::*, util::*},
     model::*,
@@ -6,63 +8,71 @@ use crate::{
 impl Editor {
     pub fn edit_proc(&mut self, e_cmd: E_Cmd) {
         Log::debug_s("edit_proc");
+        Log::debug("e_cmd", &e_cmd);
 
-        if self.init_evtproc(&e_cmd) {
-            return;
+        // Editing Editor from other than KeyWhen::EditorFocus
+        if self.e_cmd == E_Cmd::Null {
+            self.e_cmd = e_cmd.clone();
         }
+
         let mut evt_proc = EvtProc::default();
         let is_selected_org = self.sel.is_selected_width();
-        let mut ep_del = Proc::default();
+        let mut proc_del = Proc::default();
 
         // selected range delete
         if self.sel.is_selected_width() && Editor::is_edit(&e_cmd, false) {
-            ep_del = Proc { e_cmd: if e_cmd == E_Cmd::DelNextChar { E_Cmd::DelNextChar } else { E_Cmd::DelPrevChar }, ..Proc::default() };
-            ep_del.cur_s = Cur { y: self.sel.sy, x: self.sel.sx, disp_x: self.sel.s_disp_x };
-            ep_del.cur_e = self.cur;
+            Log::debug("is_selected", &true);
+            proc_del = Proc { e_cmd: if e_cmd == E_Cmd::DelNextChar { E_Cmd::DelNextChar } else { E_Cmd::DelPrevChar }, ..Proc::default() };
+            proc_del.cur_s = Cur { y: self.sel.sy, x: self.sel.sx, disp_x: self.sel.s_disp_x };
+            proc_del.cur_e = self.cur;
             match self.sel.mode {
-                SelMode::Normal => ep_del.str = self.buf.slice(self.sel.get_range()),
-                SelMode::BoxSelect => self.set_box_sel(&mut ep_del),
+                SelMode::Normal => proc_del.str = self.buf.slice(self.sel.get_range()),
+                SelMode::BoxSelect => self.set_box_sel(&mut proc_del),
             }
-            ep_del.sel = self.sel;
-            self.del_sel_range(&ep_del);
+            proc_del.sel = self.sel;
+            self.del_sel_range(&proc_del);
             self.sel.clear();
-            ep_del.draw_type = self.draw_range;
-            evt_proc.sel_proc = Some(ep_del.clone());
+            // ep_del.draw_type = self.draw_range;
+            evt_proc.sel_proc = Some(proc_del.clone());
         }
 
         // not selected Del, BS, Cut or InsertChar, Paste, Enter
         match e_cmd {
             E_Cmd::DelNextChar | E_Cmd::DelPrevChar if is_selected_org => {}
             _ => {
-                let mut ep = Proc { e_cmd: e_cmd.clone(), ..Proc::default() };
-
-                ep.cur_s = self.cur;
-                self.set_box_sel_vec(&ep_del, &mut ep);
+                let mut proc = Proc { e_cmd: e_cmd.clone(), ..Proc::default() };
+                proc.cur_s = self.cur;
+                self.set_box_sel_vec(&proc_del, &mut proc);
 
                 match &e_cmd {
-                    E_Cmd::InsertStr(str) => self.edit_proc_set_insert_str(str, &mut ep),
-                    E_Cmd::InsertBox(box_sel_vec) => ep.box_sel_vec = box_sel_vec.clone(),
-                    _ => {}
-                }
-                match &e_cmd {
-                    E_Cmd::DelNextChar => self.delete(&mut ep),
-                    E_Cmd::DelPrevChar => self.backspace(&mut ep),
+                    E_Cmd::DelNextChar => self.delete(&mut proc),
+                    E_Cmd::DelPrevChar => self.backspace(&mut proc),
                     E_Cmd::InsertRow => self.insert_row(),
-                    E_Cmd::Cut => self.cut(ep_del),
-                    E_Cmd::InsertStr(_) | E_Cmd::InsertBox(_) => self.insert_str(&mut ep),
-                    E_Cmd::DelBox(box_sel_vec) => self.undo_del_box(box_sel_vec),
+                    E_Cmd::Cut => self.cut(proc_del),
+                    E_Cmd::InsertStr(_) | E_Cmd::InsertBox(_) => {
+                        if let E_Cmd::InsertStr(ref str) = e_cmd {
+                            self.edit_proc_set_insert_str(str, &mut proc);
+                        } else if let E_Cmd::InsertBox(ref box_sel_vec) = e_cmd {
+                            proc.box_sel_vec = box_sel_vec.clone();
+                        }
+                        self.insert_str(&mut proc);
+                    }
+                    E_Cmd::DelBox(box_sel_vec) => {
+                        proc.box_sel_vec = box_sel_vec.clone();
+                        self.undo_del_box(box_sel_vec);
+                    }
                     // In case of replace, only registration of Evt process
-                    E_Cmd::ReplaceExec(is_regex, replace_str, search_map) => self.replace(&mut ep, *is_regex, replace_str.clone(), search_map.clone()),
+                    E_Cmd::ReplaceExec(is_regex, search_str, replace_str, idx_set) => self.replace(&mut proc, *is_regex, search_str, replace_str, idx_set),
                     _ => {}
                 }
                 if e_cmd != E_Cmd::Cut {
-                    ep.cur_e = self.cur;
-                    ep.draw_type = self.draw_range;
-                    evt_proc.evt_proc = Some(ep.clone());
+                    proc.cur_e = self.cur;
+                    // ep.draw_type = self.draw_range;
+                    evt_proc.proc = Some(proc.clone());
                 }
             }
         }
-        self.recalc_scrlbar_h_row(&evt_proc);
+        self.recalc_scrlbar_h(&evt_proc);
 
         // Register edit history
         if self.e_cmd != E_Cmd::Undo && self.e_cmd != E_Cmd::Redo {
@@ -76,6 +86,7 @@ impl Editor {
     pub fn slice_box_sel(&mut self) -> (String, Vec<(SelRange, String)>) {
         let (sy, ey) = if self.sel.is_selected() { (self.sel.sy, self.sel.ey) } else { (self.box_insert.vec.first().unwrap().0.sy, self.box_insert.vec.last().unwrap().0.sy) };
 
+        let (sy, ey) = (min(sy, ey), max(sy, ey));
         let mut string = String::new();
         let mut vec: Vec<(SelRange, String)> = vec![];
 
@@ -83,7 +94,7 @@ impl Editor {
             let mut row_sel = self.sel;
             let mut slice_str = String::new();
             if row_sel.is_selected_width() {
-                let (slice_string, sx, ex) = self.get_disp_x_range_string(self.buf.char_vec_line(y));
+                let (slice_string, sx, ex) = self.get_disp_x_range_string(self.buf.char_vec_row(y));
                 slice_str = slice_string;
                 row_sel.sx = sx;
                 row_sel.ex = ex;
@@ -101,7 +112,6 @@ impl Editor {
             string.push_str(&slice_str);
             string.push_str(&NL::get_nl(&self.h_file.nl));
         }
-
         (string, vec)
     }
 
@@ -153,81 +163,58 @@ impl Editor {
     }
 
     pub fn exit_box_mode(&mut self) {
+        Log::debug_key("exit_box_mode");
         self.sel.mode = SelMode::Normal;
         self.box_insert.mode = BoxInsertMode::Normal;
     }
-    pub fn edit_proc_set_insert_str(&mut self, str: &str, ep: &mut Proc) {
+
+    pub fn edit_proc_set_insert_str(&mut self, str: &str, proc: &mut Proc) {
         if self.box_insert.mode == BoxInsertMode::Insert {
             // paste
             if str.is_empty() {
-                let is_box_insert_exit = self.get_clipboard(ep);
                 // highlight data reset
-                if is_box_insert_exit {
+                if self.get_clipboard(proc) {
                     self.exit_box_mode();
                 } else {
                     // Move cur.y to the beginning of a Box insert
                     self.cur.y = self.box_insert.vec.first().unwrap().0.sy;
                 }
                 if !self.box_insert.vec.is_empty() {
-                    self.set_box_str_vec(&"".to_string(), ep);
-                    self.box_insert.vec = ep.box_sel_vec.clone();
+                    self.set_box_str_vec(&"".to_string(), proc);
+                    self.box_insert.vec = proc.box_sel_vec.clone();
                 }
                 // Range selection with a width of 0
             } else {
-                self.set_box_sel(ep);
-                self.set_box_str_vec(str, ep);
-                self.box_insert.vec = ep.box_sel_vec.clone();
+                self.set_box_sel(proc);
+                self.set_box_str_vec(str, proc);
+                self.box_insert.vec = proc.box_sel_vec.clone();
             }
         } else {
             // paste
             if str.is_empty() {
-                self.get_clipboard(ep);
+                self.get_clipboard(proc);
             } else {
-                ep.str = if str == TAB_CHAR.to_string() { get_tab_str() } else { str.to_string() };
+                proc.str = if str == TAB_CHAR.to_string() { get_tab_str() } else { str.to_string() };
             }
         }
-    }
-    pub fn set_evtproc(&mut self, ep: &Proc, cur: &Cur) {
-        self.cur.y = cur.y;
-        self.cur.x = cur.x;
-        self.cur.disp_x = cur.disp_x;
-        self.draw_range = ep.draw_type;
     }
 
-    pub fn init_evtproc(&mut self, e_cmd: &E_Cmd) -> bool {
-        // Editing Editor from other than KeyWhen::EditorFocus
-        if self.e_cmd == E_Cmd::Null {
-            self.e_cmd = e_cmd.clone();
-        }
-
-        if e_cmd == &E_Cmd::DelNextChar {
-            // End of last line
-            if !self.sel.is_selected() && self.cur.y == self.buf.len_rows() - 1 && self.cur.x == self.buf.len_row_chars(self.cur.y) - 1 {
-                self.draw_range = E_DrawRange::Not;
-                return true;
-            }
-        } else if e_cmd == &E_Cmd::DelPrevChar {
-            // For the starting point
-            if !self.sel.is_selected() && self.cur.y == 0 && self.cur.x == 0 {
-                self.draw_range = E_DrawRange::Not;
-                return true;
-            }
-        }
-        false
-    }
     pub fn del_sel_range(&mut self, ep: &Proc) {
         let sel = self.sel.get_range();
         self.buf.remove_range(sel, ep);
-        self.set_cur_target(sel.sy, sel.sx, false);
-        self.scroll();
-        self.scroll_horizontal();
+        match self.sel.mode {
+            SelMode::Normal => self.set_cur_target(sel.sy, sel.sx, false),
+            SelMode::BoxSelect => {
+                let sel = ep.box_sel_vec.last().unwrap().0;
+                self.set_cur_target(sel.sy, sel.sx, false);
+            }
+        }
     }
 
     pub fn set_box_sel(&mut self, ep: &mut Proc) {
         Log::debug_key("set_box_sel");
 
         let (slice_str, vec) = self.slice_box_sel();
-
         ep.str = slice_str;
         ep.box_sel_vec = vec;
 

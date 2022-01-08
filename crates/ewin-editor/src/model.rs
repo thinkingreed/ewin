@@ -8,6 +8,9 @@ pub struct Editor {
     pub buf: TextBuffer,
     /// current cursor position
     pub cur: Cur,
+    // Used for display position setting regardless of cursor position
+    pub disp_y: usize,
+    pub disp_y_org: usize,
     pub offset_y: usize,
     pub offset_y_org: usize,
     pub offset_x: usize,
@@ -31,6 +34,7 @@ pub struct Editor {
     pub row_len_org: usize,
     pub row_posi: usize,
     pub col_len: usize,
+    pub col_len_org: usize,
     pub search: Search,
     // pub draw: Draw,
     pub draw_range: E_DrawRange,
@@ -50,6 +54,8 @@ impl Editor {
         Editor {
             buf: TextBuffer::default(),
             cur: Cur::default(),
+            disp_y: 0,
+            disp_y_org: 0,
             offset_y: 0,
             offset_y_org: 0,
             offset_x: 0,
@@ -67,6 +73,7 @@ impl Editor {
             row_disp_len: TERM_MINIMUM_HEIGHT - HEADERBAR_ROW_NUM - STATUSBAR_ROW_NUM,
             row_posi: 1,
             col_len: TERM_MINIMUM_WIDTH - Editor::RNW_MARGIN,
+            col_len_org: 0,
             search: Search::default(),
             draw_range: E_DrawRange::default(),
             history: History::default(),
@@ -156,12 +163,13 @@ impl Default for ScrollbarV {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScrollbarH {
     pub is_show: bool,
+    pub is_show_org: bool,
     pub is_enable: bool,
     pub max_width_row_idx: usize,
     pub row_max_width: usize,
     pub row_max_chars: usize,
-    pub row_chars_vec: Vec<usize>,
-    pub row_width_vec: Vec<usize>,
+    // pub row_chars_vec: Vec<usize>,
+    pub row_width_chars_vec: Vec<(usize, usize)>,
     pub row_posi: usize,
     pub clm_posi: usize,
     pub clm_posi_org: usize,
@@ -173,10 +181,8 @@ pub struct ScrollbarH {
 
 impl Default for ScrollbarH {
     fn default() -> Self {
-        ScrollbarH { is_show: false, is_enable: false, row_chars_vec: vec![], row_width_vec: vec![], row_posi: USIZE_UNDEFINED, max_width_row_idx: 0, clm_posi: 0, clm_posi_org: 0, bar_len: 0, row_max_width: 0, row_max_width_org: 0, row_max_chars: 0, move_cur_x: 0, scrl_range: 0 }
+        ScrollbarH { is_show: false, is_show_org: false, is_enable: false, row_width_chars_vec: vec![], row_posi: USIZE_UNDEFINED, max_width_row_idx: 0, clm_posi: 0, clm_posi_org: 0, bar_len: 0, row_max_width: 0, row_max_width_org: 0, row_max_chars: 0, move_cur_x: 0, scrl_range: 0 }
     }
 }
 
-impl ScrollbarH {
-    pub fn clear(&mut self) {}
-}
+impl ScrollbarH {}

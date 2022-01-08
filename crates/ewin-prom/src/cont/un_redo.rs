@@ -8,7 +8,7 @@ impl PromptCont {
         Log::debug_s("PromptCont.undo");
 
         if let Some(evt_proc) = self.history.get_undo_last() {
-            if let Some(ep) = evt_proc.evt_proc {
+            if let Some(ep) = evt_proc.proc {
                 self.undo_init(&ep);
                 self.undo_exec(&ep);
                 self.undo_finalize(&ep);
@@ -81,7 +81,7 @@ impl PromptCont {
             if let Some(sp) = evt_proc.sel_proc {
                 self.redo_exec(sp);
             }
-            if let Some(ep) = evt_proc.evt_proc {
+            if let Some(ep) = evt_proc.proc {
                 self.redo_exec(ep);
             }
             if let Some(redo_ep) = self.history.pop_redo() {

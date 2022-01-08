@@ -53,7 +53,7 @@ impl PromptCont {
             }
             ep.cur_e = self.cur;
             if p_cmd != P_Cmd::Cut {
-                evt_proc.evt_proc = Some(ep.clone());
+                evt_proc.proc = Some(ep.clone());
             }
         }
 

@@ -28,6 +28,14 @@ width = 2
 # 0 is hide
 height = 1
 
+[general.editor.cursor]
+move_position_by_scrolling_enable = false
+
+[general.editor.column_char_alignment_space]
+character = " "
+# start_of_line is always enable
+end_of_line_enable = false
+
 [general.prompt.open_file]
 # Valid only for Windows
 # "" is Not set or "current_directory"
@@ -85,6 +93,10 @@ foreground = "#000000"
 
 [colors.editor.control_char]
 foreground = "#6e6e6e"
+
+[colors.editor.column_char_alignment_space]
+foreground = "#565656"
+background = "#282828"
 
 [colors.editor.scrollbar]
 horizontal_background = "#282828"

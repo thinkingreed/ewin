@@ -15,7 +15,7 @@ use crossterm::{
 use std::{io::stdout, usize};
 
 impl Editor {
-    const MOVE_ROW_EXTRA_NUM: usize = 3;
+    pub const MOVE_ROW_EXTRA_NUM: usize = 3;
     pub const RNW_MARGIN: usize = 1;
 
     // move to row
@@ -26,21 +26,6 @@ impl Editor {
         } else if self.cur.y < self.offset_y {
             self.offset_y = if self.cur.y > Editor::MOVE_ROW_EXTRA_NUM { self.cur.y - Editor::MOVE_ROW_EXTRA_NUM } else { 0 };
         }
-    }
-
-    /// Get x_offset from the specified y・x
-    pub fn get_x_offset(&mut self, y: usize, x: usize) -> usize {
-        let (mut cur_x, mut width) = (0, 0);
-        let char_vec = self.buf.char_vec_range(y, ..x);
-
-        for c in char_vec.iter().rev() {
-            width += get_char_width(c, width);
-            if width > self.col_len {
-                break;
-            }
-            cur_x += 1;
-        }
-        x - cur_x
     }
 
     pub fn set_cur_default(&mut self) {
@@ -68,7 +53,9 @@ impl Editor {
     pub fn set_org_state(&mut self) {
         // let tab = term.tabs.get_mut(term.idx).unwrap();
 
+        self.col_len_org = self.col_len;
         self.cur_y_org = self.cur.y;
+        self.disp_y_org = self.disp_y;
         self.offset_y_org = self.offset_y;
         self.offset_x_org = self.offset_x;
         self.rnw_org = self.get_rnw();
@@ -78,6 +65,7 @@ impl Editor {
         self.scrl_v.row_posi_org = self.scrl_v.row_posi;
         self.scrl_h.row_max_width_org = self.scrl_h.row_max_width;
         self.scrl_h.clm_posi_org = self.scrl_h.clm_posi;
+        self.scrl_h.is_show_org = self.scrl_h.is_show;
     }
 
     pub fn set_cmd(&mut self, keycmd: KeyCmd) {
@@ -127,13 +115,50 @@ impl Editor {
         }
         // Box Mode
         match self.e_cmd {
-            E_Cmd::InsertStr(_) if self.sel.mode == SelMode::BoxSelect => self.box_insert.mode = BoxInsertMode::Insert,
+            E_Cmd::InsertStr(_) => {
+                if self.sel.mode == SelMode::BoxSelect {
+                    self.box_insert.mode = BoxInsertMode::Insert;
+                }
+            }
             E_Cmd::Undo | E_Cmd::Redo | E_Cmd::DelNextChar | E_Cmd::DelPrevChar => {}
             _ => self.box_insert.mode = BoxInsertMode::Normal,
         }
     }
+
+    pub fn set_vertical_val(&mut self, vertical_val: usize) {
+        if !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable {
+            self.disp_y = vertical_val;
+        } else {
+            self.cur.y = vertical_val;
+        }
+    }
+    pub fn get_vertical_val(&self) -> usize {
+        if !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable && (matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) {
+            return self.disp_y;
+        } else {
+            return self.cur.y;
+        }
+    }
+    pub fn increment_vertical_val(&mut self) {
+        if !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable && (matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) {
+            self.disp_y += 1;
+        } else {
+            self.cur.y += 1;
+        }
+    }
+
+    pub fn decrement_vertical_val(&mut self) {
+        if !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable && (matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) {
+            self.disp_y -= 1;
+        } else {
+            self.cur.y -= 1;
+        }
+    }
+
     pub fn finalize(&mut self) {
         Log::debug_key("EvtAct.finalize");
+
+        Log::debug("self.sel 111", &self.sel);
 
         // set sel draw range, Clear sel range
         match self.e_cmd {
@@ -146,13 +171,13 @@ impl Editor {
             // mouse
             E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) 
            // | E_Cmd::MouseDownRight(_, _) | E_Cmd::MouseDragRight(_, _)
-             | E_Cmd::MouseMove(_, _) | E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) |
+              |E_Cmd::MouseMove(_, _) | E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) |
             // other
             E_Cmd::CtxtMenu(_,_) | E_Cmd::BoxSelectMode => {}
             _ => {
                 if self.sel.mode == SelMode::BoxSelect {
                     match self.e_cmd {
-                        E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorLeft | E_Cmd::CursorRight => {}
+                         E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorLeft | E_Cmd::CursorRight => {}
                         _ => {
                             self.sel.clear();
                             self.sel.mode = SelMode::Normal;
@@ -164,6 +189,7 @@ impl Editor {
                 }
             }
         }
+        Log::debug("self.sel 222", &self.sel);
 
         // Re-search when searching
         if Editor::is_edit(&self.e_cmd, true) && !self.search.ranges.is_empty() {
@@ -179,29 +205,15 @@ impl Editor {
             return ActType::Cancel;
         }
         match self.e_cmd {
-            E_Cmd::Cut | E_Cmd::Copy => {
-                if !self.sel.is_selected() {
-                    return ActType::Draw(DParts::MsgBar(Lang::get().no_sel_range.to_string()));
-                }
-            }
-            E_Cmd::Undo => {
-                if self.history.len_undo() == 0 {
-                    return ActType::Draw(DParts::MsgBar(Lang::get().no_undo_operation.to_string()));
-                }
-            }
-            E_Cmd::Redo => {
-                if self.history.len_redo() == 0 {
-                    return ActType::Draw(DParts::MsgBar(Lang::get().no_redo_operation.to_string()));
-                }
-            }
-            E_Cmd::ExecRecordKey => {
-                if self.key_vec.is_empty() {
-                    return ActType::Draw(DParts::MsgBar(Lang::get().no_key_record_exec.to_string()));
-                }
-            }
+            E_Cmd::DelNextChar if self.sel.mode != SelMode::BoxSelect && !self.sel.is_selected() && self.cur.y == self.buf.len_rows() - 1 && self.cur.x == self.buf.len_row_chars(self.cur.y) - 1 => return ActType::Cancel,
+            E_Cmd::DelNextChar if !self.sel.is_selected() && self.cur.y == 0 && self.cur.x == 0 => return ActType::Cancel,
+            E_Cmd::Cut | E_Cmd::Copy if !self.sel.is_selected() => return ActType::Draw(DParts::MsgBar(Lang::get().no_sel_range.to_string())),
+            E_Cmd::Undo if self.history.len_undo() == 0 => return ActType::Draw(DParts::MsgBar(Lang::get().no_undo_operation.to_string())),
+            E_Cmd::Redo if self.history.len_redo() == 0 => return ActType::Draw(DParts::MsgBar(Lang::get().no_redo_operation.to_string())),
+            E_Cmd::ExecRecordKey if self.key_vec.is_empty() => return ActType::Draw(DParts::MsgBar(Lang::get().no_key_record_exec.to_string())),
             _ => {}
         }
-        ActType::Next
+        return ActType::Next;
     }
 
     pub fn ctrl_mouse_capture(&mut self) {
@@ -225,8 +237,8 @@ impl Editor {
         if self.cur.y > self.buf.len_rows() - 1 {
             self.set_cur_target(self.buf.len_rows() - 1, 0, false);
             self.scroll();
-        } else if self.cur.x > self.buf.char_vec_line(self.cur.y).len() {
-            self.set_cur_target(self.cur.y, self.buf.char_vec_line(self.cur.y).len(), false);
+        } else if self.cur.x > self.buf.char_vec_row(self.cur.y).len() {
+            self.set_cur_target(self.cur.y, self.buf.char_vec_row(self.cur.y).len(), false);
             self.scroll_horizontal();
         } else {
             self.set_cur_target(self.cur.y, self.cur.x, false);

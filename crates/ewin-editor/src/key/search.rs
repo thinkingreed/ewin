@@ -8,7 +8,7 @@ use crate::{
     },
     model::*,
 };
-use std::{cmp::min, collections::BTreeMap};
+use std::{cmp::min, collections::BTreeSet};
 
 impl Editor {
     pub fn exec_search_incremental(&mut self, search_str: String) {
@@ -16,12 +16,15 @@ impl Editor {
         self.search.str = search_str;
         let regex = CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex;
 
-        let s_row_idx = if regex { self.buf.line_to_byte(self.offset_y) } else { self.buf.line_to_char(self.offset_y) };
+        let s_row_idx = if regex { self.buf.row_to_byte(self.offset_y) } else { self.buf.row_to_char(self.offset_y) };
         let ey = min(self.offset_y + self.row_disp_len, self.buf.len_rows());
-        let e_row_idx = if regex { self.buf.line_to_byte(ey) } else { self.buf.line_to_char(ey) };
+        let e_row_idx = if regex { self.buf.row_to_byte(ey) } else { self.buf.row_to_char(ey) };
         let search_org = self.search.clone();
 
         self.search.ranges = if self.search.str.is_empty() { vec![] } else { self.get_search_ranges(&self.search.str, s_row_idx, e_row_idx, 0, &CFG.get().unwrap().try_lock().unwrap().general.editor.search) };
+
+        Log::debug("self.search.ranges", &self.search.ranges);
+
         if !search_org.ranges.is_empty() || !self.search.ranges.is_empty() {
             // Search in advance for drawing
             if !self.search.ranges.is_empty() {
@@ -80,7 +83,10 @@ impl Editor {
                 return;
             }
             if self.search.row_num == USIZE_UNDEFINED {
+                Log::debug("self.search.idx 111", &self.search.idx);
+
                 self.search.idx = self.get_search_str_index(is_asc);
+                Log::debug("self.search.idx 222", &self.search.idx);
             } else {
                 self.search.idx = self.get_search_row_no_index(self.search.row_num);
                 self.search.row_num = USIZE_UNDEFINED;
@@ -97,22 +103,24 @@ impl Editor {
     }
 
     pub fn get_search_ranges(&self, search_str: &str, s_idx: usize, e_idx: usize, ignore_prefix_len: usize, cfg_search: &CfgSearch) -> Vec<SearchRange> {
-        let search_map = self.buf.search(search_str, s_idx, e_idx, cfg_search);
+        let search_set = self.buf.search(search_str, s_idx, e_idx, cfg_search);
         let mut rtn_vec = vec![];
 
         // Case regex: Use the number of bytes
         //      normal: Use the number of characters
-        for ((sx, ex), _) in search_map {
+        let search_str_byte_len = search_str.len();
+        let search_str_chars_len = search_str.chars().count();
+        for s_idx in search_set {
             // Ignore file name and line number match when grep
             if ignore_prefix_len != 0 {
-                let line_s_idx = if cfg_search.regex { self.buf.line_to_byte(self.buf.byte_to_line(sx)) } else { self.buf.line_to_char(self.buf.char_to_line(sx)) };
-                if sx - line_s_idx < ignore_prefix_len {
+                let line_s_idx = if cfg_search.regex { self.buf.row_to_byte(self.buf.byte_to_line(s_idx)) } else { self.buf.row_to_char(self.buf.char_to_row(s_idx)) };
+                if s_idx - line_s_idx < ignore_prefix_len {
                     continue;
                 }
             }
-            let y = if cfg_search.regex { self.buf.byte_to_line(sx) } else { self.buf.char_to_line(sx) };
-            let sx = if cfg_search.regex { self.buf.byte_to_line_char_idx(sx) } else { self.buf.char_to_line_char_idx(sx) };
-            let ex = if cfg_search.regex { self.buf.byte_to_line_char_idx(ex) } else { self.buf.char_to_line_char_idx(ex) };
+            let y = if cfg_search.regex { self.buf.byte_to_line(s_idx) } else { self.buf.char_to_row(s_idx) };
+            let sx = if cfg_search.regex { self.buf.byte_to_line_char_idx(s_idx) } else { self.buf.char_to_line_char_idx(s_idx) };
+            let ex = if cfg_search.regex { self.buf.byte_to_line_char_idx(s_idx + search_str_byte_len) } else { self.buf.char_to_line_char_idx(s_idx + search_str_chars_len) };
 
             rtn_vec.push(SearchRange { y, sx, ex });
         }
@@ -160,37 +168,35 @@ impl Editor {
         0
     }
 
-    pub fn replace(&mut self, ep: &mut Proc, is_regex: bool, replace_str: String, replace_map: BTreeMap<(usize, usize), String>) {
-        let ((s_idx, _), _) = replace_map.iter().min().unwrap();
-        let (y, x) = if is_regex { (self.buf.byte_to_line(*s_idx), self.buf.byte_to_line_char_idx(*s_idx)) } else { (self.buf.char_to_line(*s_idx), self.buf.char_to_line_char_idx(*s_idx)) };
+    pub fn replace(&mut self, proc: &mut Proc, is_regex: bool, search_str: &str, replace_str: &str, replace_set: &BTreeSet<usize>) {
+        let s_idx = replace_set.iter().min().unwrap();
+        let (y, x) = if is_regex { (self.buf.byte_to_line(*s_idx), self.buf.byte_to_line_char_idx(*s_idx)) } else { (self.buf.char_to_row(*s_idx), self.buf.char_to_line_char_idx(*s_idx)) };
         self.set_cur_target(y, x, false);
-        ep.cur_s = self.cur;
+        proc.cur_s = self.cur;
 
         Log::debug("replace is_regex", &is_regex);
         Log::debug("replace replace_str", &replace_str);
-        Log::debug("replace search_map", &replace_map);
+        Log::debug("replace search_map", &replace_set);
 
-        let end_char_idx = self.buf.replace(is_regex, &replace_str, &replace_map);
+        let end_char_idx = self.buf.replace(is_regex, search_str, replace_str, replace_set);
 
-        //  self.set_draw_range_each_process(EditorDrawRange::After(self.offset_y));
-
-        let y = self.buf.char_to_line(end_char_idx);
-        let x = end_char_idx - self.buf.line_to_char(y);
+        let y = self.buf.char_to_row(end_char_idx);
+        let x = end_char_idx - self.buf.row_to_char(y);
         self.set_cur_target(y, x, false);
-        ep.cur_e = self.cur;
+        proc.cur_e = self.cur;
     }
 
-    pub fn get_replace_map(&mut self, is_regex: bool, replace_str: &str, org_map: &BTreeMap<(usize, usize), String>) -> BTreeMap<(usize, usize), String> {
-        let mut replace_map: BTreeMap<(usize, usize), String> = BTreeMap::new();
+    pub fn get_idx_set(&mut self, is_regex: bool, search_str: &str, replace_str: &str, org_map: &BTreeSet<usize>) -> BTreeSet<usize> {
+        let mut replace_set: BTreeSet<usize> = BTreeSet::new();
         let mut total = 0;
 
-        for (i, ((sx, _), search_str)) in org_map.iter().enumerate() {
-            let replace_str_len = if is_regex { replace_str.len() } else { replace_str.chars().count() };
+        for (i, sx) in org_map.iter().enumerate() {
+            // let replace_str_len = if is_regex { replace_str.len() } else { replace_str.chars().count() };
             let diff: isize = if is_regex { replace_str.len() as isize - search_str.len() as isize } else { replace_str.chars().count() as isize - search_str.chars().count() as isize };
             let sx = if i == 0 || is_regex { *sx } else { (*sx as isize + total) as usize };
-            replace_map.insert((sx as usize, sx as usize + replace_str_len), search_str.clone());
+            replace_set.insert(sx);
             total += diff;
         }
-        replace_map
+        return replace_set;
     }
 }

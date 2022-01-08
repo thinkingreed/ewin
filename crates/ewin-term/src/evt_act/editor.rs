@@ -54,11 +54,14 @@ impl EvtAct {
                 E_Cmd::MoveRow => term.curt().prom_move_row(),
                 E_Cmd::Grep => term.curt().prom_grep(),
                 E_Cmd::OpenMenu | E_Cmd::OpenMenuFile | E_Cmd::OpenMenuConvert | E_Cmd::OpenMenuEdit | E_Cmd::OpenMenuSearch | E_Cmd::OpenMenuMacro => term.curt().prom_menu(),
-                //  E_Cmd::Encoding => term.curt().prom_enc_nl(),
-                E_Cmd::Encoding => {
+                E_Cmd::Encoding => term.curt().prom_enc_nl(),
+                // Test
+                /*
+                  E_Cmd::Encoding => {
                     let h_file = term.curt_h_file().clone();
                     term.curt().prom_save_forced(h_file);
                 }
+                */
                 // Help
                 E_Cmd::Help => Help::disp_toggle(term),
                 /*

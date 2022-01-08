@@ -15,7 +15,8 @@ impl Editor {
         Log::debug("d_range", &d_range);
 
         match d_range {
-            E_DrawRange::Not | E_DrawRange::MoveCur => {}
+            E_DrawRange::Not => {}
+            E_DrawRange::MoveCur => {}
             E_DrawRange::None => {
                 self.set_bg_color(str_vec);
                 str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, self.row_posi as u16).to_string()));
@@ -33,8 +34,7 @@ impl Editor {
         }
 
         // If you need to edit the previous row_num
-        if !(draw.sy <= self.cur_y_org && self.cur_y_org <= draw.ey) && self.buf.len_rows() >= self.cur_y_org {
-            //  if self.offset_y <= self.cur_y_org && self.cur_y_org <= self.offset_y + self.row_disp_len && !(draw.sy <= self.cur_y_org && self.cur_y_org <= draw.ey) {
+        if self.offset_y == self.offset_y_org && !(draw.sy <= self.cur_y_org && self.cur_y_org <= draw.ey) && self.buf.len_rows() >= self.cur_y_org && CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable {
             str_vec.push(format!("{}", MoveTo(0, (self.cur_y_org - self.offset_y + self.row_posi) as u16)));
             self.set_row_num(self.cur_y_org, str_vec);
             str_vec.push(format!("{}", MoveTo(0, (draw.sy - self.offset_y + self.row_posi) as u16)));
@@ -84,11 +84,13 @@ impl Editor {
                 str_vec.push(NEW_LINE_CRLF.to_string());
             }
         }
+
+        str_vec.push(Colors::get_default_bg());
+
         self.draw_scrlbar_v(str_vec);
         self.draw_scrlbar_h(str_vec);
 
         self.draw_range = E_DrawRange::Not;
-        self.sel_org.clear();
     }
 
     fn set_row_num(&mut self, i: usize, str_vec: &mut Vec<String>) {

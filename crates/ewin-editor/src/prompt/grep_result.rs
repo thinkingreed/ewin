@@ -23,8 +23,8 @@ impl Editor {
             let row = self.buf.len_rows() - 2;
 
             let (start_idx, end_idx, ignore_prefix_len) = match regex {
-                true => (self.buf.line_to_byte(row), self.buf.len_bytes(), ignore_prefix_str.len()),
-                false => (self.buf.line_to_char(row), self.buf.len_chars(), ignore_prefix_str.chars().count()),
+                true => (self.buf.row_to_byte(row), self.buf.len_bytes(), ignore_prefix_str.len()),
+                false => (self.buf.row_to_char(row), self.buf.len_chars(), ignore_prefix_str.chars().count()),
             };
 
             let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;

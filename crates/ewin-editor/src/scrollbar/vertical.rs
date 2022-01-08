@@ -8,8 +8,12 @@ use std::cmp::{max, min};
 impl Editor {
     pub fn set_scrlbar_v_posi(&mut self, y: usize) {
         self.set_cur_scrlbar_v(y);
-        self.set_offset_y_move_row();
-        self.scroll_horizontal();
+        if self.disp_y >= self.offset_y + self.row_disp_len {
+            // last page
+            self.offset_y = if self.buf.len_rows() - 1 - self.disp_y < self.row_disp_len { self.buf.len_rows() - self.row_disp_len } else { self.disp_y - Editor::MOVE_ROW_EXTRA_NUM }
+        } else if self.disp_y < self.offset_y {
+            self.offset_y = if self.disp_y > Editor::MOVE_ROW_EXTRA_NUM { self.disp_y - Editor::MOVE_ROW_EXTRA_NUM } else { 0 };
+        }
     }
 
     pub fn set_cur_scrlbar_v(&mut self, y: usize) {
@@ -39,9 +43,11 @@ impl Editor {
                 Log::debug("row_posi 222", &self.scrl_v.row_posi);
             }
         }
-        self.cur.y = min(self.scrl_v.row_posi * move_len, self.buf.len_rows() - 1);
+        self.set_vertical_val(min(self.scrl_v.row_posi * move_len, self.buf.len_rows() - 1));
         self.cur_updown_com();
-        self.set_cur_target(self.cur.y, self.cur.x, false);
+        if CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable {
+            self.set_cur_target(self.cur.y, self.cur.x, false);
+        }
     }
 
     pub fn draw_scrlbar_v(&mut self, str_vec: &mut Vec<String>) {

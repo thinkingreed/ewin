@@ -24,10 +24,6 @@ pub fn get_row_x(char_arr: &[char], disp_x: usize, is_ctrlchar_incl: bool, is_re
     for c in char_arr {
         if c == &EOF_MARK || c == &NEW_LINE_LF || c == &NEW_LINE_CR {
             if is_ctrlchar_incl && (c == &NEW_LINE_LF || c == &NEW_LINE_CR) {
-                if width < disp_x {
-                    width += 1;
-                    cur_x += 1;
-                }
             } else if width >= disp_x {
                 return Some(cur_x);
             } else {
@@ -49,33 +45,33 @@ pub fn get_row_x(char_arr: &[char], disp_x: usize, is_ctrlchar_incl: bool, is_re
 
 /// Get cur_x and disp_x of the target string
 pub fn get_row_cur_x_disp_x(char_arr: &[char], offset_disp_x: usize, is_ctrlchar_incl: bool) -> (usize, usize) {
-    let (mut cur_x, mut width) = (0, 0);
+    let (mut cur_x, mut disp_x) = (0, 0);
 
     for c in char_arr {
         if c == &EOF_MARK || c == &NEW_LINE_LF || c == &NEW_LINE_CR {
             if is_ctrlchar_incl && (c == &NEW_LINE_LF || c == &NEW_LINE_CR) {
-                width += 1;
+                disp_x += 1;
                 cur_x += 1;
             }
             break;
         }
 
-        let c_len = get_char_width(c, width + offset_disp_x);
-        width += c_len;
+        let c_len = get_char_width(c, disp_x + offset_disp_x);
+        disp_x += c_len;
         cur_x += 1;
     }
-    (cur_x, width)
+    (cur_x, disp_x)
 }
 
 /// Calculate disp_x and cursor_x by adding the widths up to x.
-pub fn get_until_x(char_vec: &[char], x: usize) -> (usize, usize) {
+pub fn get_until_disp_x(char_vec: &[char], disp_x: usize) -> (usize, usize) {
     let (mut cur_x, mut width) = (0, 0);
     for c in char_vec {
         if c == &NEW_LINE_LF || c == &EOF_MARK || c == &NEW_LINE_CR {
             break;
         }
         let c_len = get_char_width(c, width);
-        if width + c_len > x {
+        if width + c_len > disp_x {
             break;
         } else {
             width += c_len;
@@ -83,6 +79,23 @@ pub fn get_until_x(char_vec: &[char], x: usize) -> (usize, usize) {
         }
     }
     (cur_x, width)
+}
+
+/// Get x_offset from the specified cur_x
+pub fn get_x_offset_by_cur_x(chars: &[char], x: usize, col_len: usize) -> usize {
+    let (mut cur_x, mut width) = (0, 0);
+
+    if chars.len() < col_len {
+        return 0;
+    }
+    for c in chars.iter().rev() {
+        width += get_char_width(c, width);
+        if width > col_len {
+            break;
+        }
+        cur_x += 1;
+    }
+    x - cur_x
 }
 
 // Everything including tab
@@ -135,6 +148,7 @@ pub fn get_env_platform() -> Env {
         Env::Linux
     }
 }
+
 #[cfg(target_os = "windows")]
 pub fn get_env_platform() -> Env {
     return Env::Windows;
@@ -154,18 +168,22 @@ pub fn change_output_encoding() {
     Log::debug("change output encoding chcp 65001 ", &result.is_ok());
 }
 
-pub fn is_line_end_char(c: char) -> bool {
+pub fn is_row_end_char(c: char) -> bool {
     // LF, CR
     [NEW_LINE_LF, NEW_LINE_CR].contains(&c)
 }
 
-pub fn is_line_end_str(s: &str) -> bool {
+pub fn is_row_end_str(s: &str) -> bool {
     for c in s.chars() {
-        if is_line_end_char(c) {
+        if is_row_end_char(c) {
             return true;
         }
     }
     return false;
+}
+pub fn is_ctrl_char(c: char) -> bool {
+    // LF, CR, EOF
+    [NEW_LINE_LF, NEW_LINE_CR, EOF_MARK].contains(&c)
 }
 
 pub fn is_enable_syntax_highlight(ext: &str) -> bool {
@@ -423,14 +441,14 @@ mod tests {
     #[test]
     fn test_get_until_x() {
         Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
-        assert_eq!(get_until_x(&['a'], 0), (0, 0));
-        assert_eq!(get_until_x(&['a', 'あ',], 2), (1, 1));
-        assert_eq!(get_until_x(&['a', 'あ',], 2), (1, 1));
-        assert_eq!(get_until_x(&['a', 'あ',], 3), (2, 3));
-        assert_eq!(get_until_x(&['a', TAB_CHAR,], 3), (1, 1));
-        assert_eq!(get_until_x(&['a', TAB_CHAR,], 4), (2, 4));
-        assert_eq!(get_until_x(&['a', 'あ', NEW_LINE_LF], 4), (2, 3));
-        assert_eq!(get_until_x(&['a', 'あ', EOF_MARK], 4), (2, 3));
+        assert_eq!(get_until_disp_x(&['a'], 0), (0, 0));
+        assert_eq!(get_until_disp_x(&['a', 'あ',], 2), (1, 1));
+        assert_eq!(get_until_disp_x(&['a', 'あ',], 2), (1, 1));
+        assert_eq!(get_until_disp_x(&['a', 'あ',], 3), (2, 3));
+        assert_eq!(get_until_disp_x(&['a', TAB_CHAR,], 3), (1, 1));
+        assert_eq!(get_until_disp_x(&['a', TAB_CHAR,], 4), (2, 4));
+        assert_eq!(get_until_disp_x(&['a', 'あ', NEW_LINE_LF], 4), (2, 3));
+        assert_eq!(get_until_disp_x(&['a', 'あ', EOF_MARK], 4), (2, 3));
     }
     #[test]
     fn test_get_char_width() {

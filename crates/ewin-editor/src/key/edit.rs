@@ -4,30 +4,29 @@ use crate::{
 };
 
 impl Editor {
-    pub fn insert_str(&mut self, ep: &mut Proc) {
-        Log::debug_key("insert_str");
-        Log::debug("ep", &ep);
+    pub fn insert_str(&mut self, proc: &mut Proc) {
+        Log::debug_key("    ");
+        Log::debug("ep", &proc);
+        Log::debug("self.box_insert.mode", &self.box_insert.mode);
+        Log::debug("proc.box_sel_vec", &proc.box_sel_vec);
+        Log::debug("self.cur 111", &self.cur);
 
-        self.draw_range = if self.is_enable_syntax_highlight || self.box_insert.mode == BoxInsertMode::Insert { E_DrawRange::All } else { E_DrawRange::After(self.cur.y) };
-
-        ep.draw_type = self.draw_range;
-        ep.sel.set_s(self.cur.y, self.cur.x, self.cur.disp_x);
-        if ep.box_sel_vec.is_empty() {
-            self.ins_str(&ep.str);
-            ep.sel.set_e(self.cur.y, self.cur.x, self.cur.disp_x);
-            ep.cur_e = self.cur;
+        proc.sel.set_s(self.cur.y, self.cur.x, self.cur.disp_x);
+        if proc.box_sel_vec.is_empty() {
+            self.ins_str(&proc.str);
         } else {
-            let first_sel = ep.box_sel_vec.first().unwrap().0;
-            if self.sel.is_selected() {
-                if !ep.str.is_empty() {
-                    self.insert_box(ep, first_sel.sy, first_sel.sx, first_sel.s_disp_x)
+            // Box insert
+            match proc.e_cmd {
+                E_Cmd::InsertStr(ref str) if str.is_empty() => self.insert_box(proc, self.cur.y, self.cur.x, self.cur.disp_x),
+                _ => {
+                    let first_sel = proc.box_sel_vec.first().unwrap().0;
+                    self.insert_box(proc, first_sel.sy, first_sel.sx, first_sel.s_disp_x)
                 }
-            } else if self.box_insert.mode == BoxInsertMode::Insert {
-                self.insert_box(ep, first_sel.sy, first_sel.sx, first_sel.s_disp_x)
-            } else {
-                self.insert_box(ep, self.cur.y, self.cur.x, self.cur.disp_x)
             }
         }
+        proc.sel.set_e(self.cur.y, self.cur.x, self.cur.disp_x);
+        proc.cur_e = self.cur;
+        Log::debug("self.cur 222", &self.cur);
     }
 
     pub fn get_clipboard(&mut self, ep: &mut Proc) -> bool {
@@ -61,34 +60,29 @@ impl Editor {
         ep.box_sel_vec.clear();
     }
 
-    pub fn insert_box(&mut self, ep: &mut Proc, sy: usize, sx: usize, s_disp_x: usize) {
+    pub fn insert_box(&mut self, proc: &mut Proc, sy: usize, sx: usize, s_disp_x: usize) {
         Log::debug_key("insert_box");
-        Log::debug("ep.box_sel_vec", &ep.box_sel_vec);
-        let (mut ex, mut box_sel_redo_vec, mut box_sel_undo_vec) = (0, vec![], vec![]);
-
-        let vec_len = ep.box_sel_vec.len() - 1;
-        for (i, (_, sel_str)) in ep.box_sel_vec.iter().enumerate() {
+        Log::debug("ep.box_sel_vec", &proc.box_sel_vec);
+        let (mut box_sel_redo_vec, mut box_sel_undo_vec) = (vec![], vec![]);
+        let mut ex;
+        for (i, (_, sel_str)) in proc.box_sel_vec.iter().enumerate() {
             // Exist row
             if sy + i <= self.buf.len_rows() - 1 {
                 // If there are characters up to the column to insert
-                if let Some(cur_x) = get_row_x(&self.buf.char_vec_line(sy + i)[..], s_disp_x, false, false) {
+                if let Some(cur_x) = get_row_x(&self.buf.char_vec_row(sy + i)[..], s_disp_x, false, false) {
                     self.buf.insert(sy + i, cur_x, sel_str);
                     let sel = SelRange { sy: sy + i, sx: cur_x, ex: cur_x + sel_str.chars().count(), s_disp_x, e_disp_x: s_disp_x + get_str_width(sel_str), ..SelRange::default() };
                     box_sel_undo_vec.push((sel, sel_str.clone()));
                     box_sel_redo_vec.push((sel, sel_str.clone()));
-                    if i == 0 {
-                        ex = cur_x + sel_str.chars().count();
-                    }
+                    ex = cur_x + sel_str.chars().count();
                 } else {
-                    let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_line(sy + i)[..], 0, false);
-
+                    // If there are not characters
+                    let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(sy + i)[..], 0, false);
                     let insert_str = format!("{}{}", " ".repeat(s_disp_x - width), &sel_str);
                     self.buf.insert(sy + i, cur_x, &insert_str);
                     box_sel_undo_vec.push((SelRange { sy: sy + i, sx: cur_x, ex: cur_x + insert_str.chars().count(), s_disp_x: width, e_disp_x: width + get_str_width(&insert_str), ..SelRange::default() }, sel_str.to_string()));
                     box_sel_redo_vec.push((SelRange { sy: sy + i, sx: cur_x + s_disp_x - width, s_disp_x, ex: sx + insert_str.chars().count(), ..SelRange::default() }, sel_str.to_string()));
-                    if i == 0 {
-                        ex = " ".repeat(s_disp_x - width).chars().count() + sel_str.chars().count();
-                    }
+                    ex = " ".repeat(s_disp_x - width).chars().count() + sel_str.chars().count();
                 }
             } else {
                 //// Not exist row, Create new row
@@ -98,7 +92,7 @@ impl Editor {
                 // Insert a new line at the end of the current last line
                 let nl_code = &NL::get_nl(&self.h_file.nl);
                 let end_idx = self.buf.len_row_chars(self.buf.len_rows() - 1);
-                let (_, width) = get_row_cur_x_disp_x(&self.buf.char_vec_line(self.buf.len_rows() - 1)[..], 0, false);
+                let (_, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(self.buf.len_rows() - 1)[..], 0, false);
 
                 self.buf.insert_end(nl_code);
                 box_sel_undo_vec.push((SelRange { sy: sy + i - 1, sx: end_idx, ex: end_idx + nl_code.chars().count(), s_disp_x: width, e_disp_x: width + get_str_width(nl_code), ..SelRange::default() }, "".to_string()));
@@ -110,27 +104,18 @@ impl Editor {
                 box_sel_redo_vec.push((SelRange { sy: sy + i, sx: s_disp_x, s_disp_x, ex: sx + sel_str.chars().count(), ..SelRange::default() }, sel_str.to_string()));
 
                 self.buf.insert_end(&EOF_MARK.to_string());
-                if i == 0 {
-                    ex = " ".repeat(s_disp_x).chars().count() + sel_str.chars().count();
-                }
+                ex = " ".repeat(s_disp_x).chars().count() + sel_str.chars().count();
             }
 
-            if i == vec_len {
-                let ey = sy + i;
-                let e_disp_x;
-
-                e_disp_x = get_row_cur_x_disp_x(&self.buf.char_vec_line(sy)[..ex], 0, false).1;
-                self.set_cur_target(sy, sx, false);
-
-                ep.cur_e = self.cur;
-                ep.sel.set_e(ey, ex, e_disp_x);
+            if i == proc.box_sel_vec.len() - 1 {
+                self.set_cur_target(sy + i, ex, false);
             }
         }
-        ep.box_sel_vec = box_sel_undo_vec;
+        proc.box_sel_vec = box_sel_undo_vec;
 
-        ep.box_sel_redo_vec = box_sel_redo_vec;
+        proc.box_sel_redo_vec = box_sel_redo_vec;
         if self.box_insert.mode == BoxInsertMode::Insert {
-            self.box_insert.vec = ep.box_sel_vec.clone();
+            self.box_insert.vec = proc.box_sel_vec.clone();
         }
     }
 
@@ -139,8 +124,8 @@ impl Editor {
         for (sel, _) in box_sel_vec.iter().rev() {
             Log::debug("sel", &sel);
 
-            let s_idx = self.buf.line_to_char(sel.sy) + sel.sx;
-            let e_idx = self.buf.line_to_char(sel.sy) + sel.ex;
+            let s_idx = self.buf.row_to_char(sel.sy) + sel.sx;
+            let e_idx = self.buf.row_to_char(sel.sy) + sel.ex;
             self.buf.remove(s_idx, e_idx);
         }
         self.scroll();
@@ -173,7 +158,7 @@ impl Editor {
         // beginning of the line
         if self.cur.x == 0 {
             self.cur.y -= 1;
-            let (mut cur_x, _) = get_row_cur_x_disp_x(&self.buf.char_vec_line(self.cur.y)[..], 0, true);
+            let (mut cur_x, _) = get_row_cur_x_disp_x(&self.buf.char_vec_row(self.cur.y)[..], 0, true);
             // ' ' is meaningless value
             let c = if cur_x > 0 { self.buf.char(self.cur.y, cur_x - 1) } else { ' ' };
             ep.str = if c == NEW_LINE_CR { NEW_LINE_CRLF.to_string() } else { NEW_LINE_LF.to_string() };
@@ -195,12 +180,12 @@ impl Editor {
             } else {
                 Log::debug("ep.box_sel_vec", &ep.box_sel_vec);
                 for i in 0..=ep.box_sel_vec.len() - 1 {
-                    let s = self.buf.line_to_char(ep.box_sel_vec[i].0.sy) + self.cur.x;
-                    let e = self.buf.line_to_char(ep.box_sel_vec[i].0.sy) + self.cur.x + 1;
+                    let s = self.buf.row_to_char(ep.box_sel_vec[i].0.sy) + self.cur.x;
+                    let e = self.buf.row_to_char(ep.box_sel_vec[i].0.sy) + self.cur.x + 1;
                     let c = self.buf.char_idx(s);
                     ep.box_sel_vec[i].1 = c.to_string().clone();
                     self.buf.remove(s, e);
-                    let (_, width) = get_row_cur_x_disp_x(&self.buf.char_vec_line(ep.box_sel_vec[i].0.sy)[..self.cur.x], 0, false);
+                    let (_, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(ep.box_sel_vec[i].0.sy)[..self.cur.x], 0, false);
                     ep.box_sel_vec[i].0.sx = self.cur.x;
                     ep.box_sel_vec[i].0.s_disp_x = width;
                     ep.box_sel_vec[i].0.ex = self.cur.x + 1;
@@ -216,7 +201,7 @@ impl Editor {
         let c = self.buf.char(self.cur.y, self.cur.x);
         ep.str = if c == NEW_LINE_CR { format!("{}{}", c.to_string(), NEW_LINE_LF) } else { c.to_string() };
         self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelNextChar), self.cur.y, self.cur.x);
-        if is_line_end_char(c) {
+        if is_row_end_char(c) {
             self.set_cur_target(self.cur.y, self.cur.x, false);
             self.scroll();
             self.scroll_horizontal();
@@ -224,6 +209,7 @@ impl Editor {
     }
 
     pub fn cancel_mode_and_search_result(&mut self) {
+        Log::debug_key("cancel_mode_and_search_result");
         self.sel.clear();
         self.sel.mode = SelMode::Normal;
         self.box_insert.mode = BoxInsertMode::Normal;

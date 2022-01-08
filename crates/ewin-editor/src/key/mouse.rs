@@ -75,25 +75,27 @@ impl Editor {
             }
             if matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) && x < self.get_rnw_and_margin() - 1 {
                 self.sel.set_s(y, 0, 0);
-                let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_line(y)[..], 0, true);
+                let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(y)[..], 0, true);
                 self.sel.set_e(y, cur_x, width);
                 self.set_cur_target(y, 0, false);
             } else {
                 x = if x < self.get_rnw_and_margin() { 0 } else { x - self.get_rnw_and_margin() };
                 self.cur.y = y;
-                let vec = self.buf.char_vec_line(self.cur.y);
+                let vec = self.buf.char_vec_row(self.cur.y);
 
                 if self.sel.mode == SelMode::BoxSelect && self.offset_x + x > vec.len() - 1 {
                     self.cur.x = x;
                     self.cur.disp_x = x;
                 } else {
-                    let (cur_x, width) = get_until_x(&vec, x + self.offset_disp_x);
+                    let (cur_x, width) = get_until_disp_x(&vec, x + self.offset_disp_x);
                     self.cur.x = cur_x;
                     self.cur.disp_x = width;
                     self.scroll();
-                    self.scroll_horizontal();
+                    // if !matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) {
+                    //     self.scroll_horizontal();
+                    // }
                 }
-                self.history.set_sel_multi_click(&keys, &mut self.sel, &self.cur, &self.buf.char_vec_line(self.cur.y));
+                self.history.set_sel_multi_click(&keys, &mut self.sel, &self.cur, &self.buf.char_vec_row(self.cur.y));
             }
         }
     }

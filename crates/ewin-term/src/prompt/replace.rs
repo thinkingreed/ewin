@@ -29,11 +29,11 @@ impl EvtAct {
 
                     let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
 
-                    let search_map = term.curt().editor.buf.search(&search_str, 0, end_idx, cfg_search);
-                    if search_map.is_empty() {
+                    let idx_set = term.curt().editor.buf.search(&search_str, 0, end_idx, cfg_search);
+                    if idx_set.is_empty() {
                         return ActType::Draw(DParts::MsgBar(Lang::get().cannot_find_char_search_for.to_string()));
                     }
-                    term.curt().editor.edit_proc(E_Cmd::ReplaceExec(cfg_search.regex, replace_str, search_map));
+                    term.curt().editor.edit_proc(E_Cmd::ReplaceExec(cfg_search.regex, search_str, replace_str, idx_set));
 
                     term.clear_curt_tab(true);
                     term.tabs[term.idx].editor.state.is_changed = true;

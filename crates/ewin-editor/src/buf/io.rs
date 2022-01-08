@@ -89,7 +89,7 @@ impl TextBuffer {
 
         let search_map = self.search(from_nl, 0, self.text.len_chars(), cfg_search);
 
-        self.replace(cfg_search.regex, to_nl, &search_map);
+        self.replace(cfg_search.regex, from_nl_str, to_nl, &search_map);
     }
 
     pub fn write_to(&mut self, path: &str, h_file: &HeaderFile) -> io::Result<bool> {

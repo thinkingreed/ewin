@@ -54,7 +54,10 @@ impl Terminal {
             E_DrawRange::Not => {}
             _ => {
                 if self.curt().editor.draw_range == E_DrawRange::MoveCur {
-                    StatusBar::draw_only(out, &mut self.tabs[self.idx], &self.hbar.file_vec[self.idx]);
+                    StatusBar::draw(&mut str_vec, &mut self.tabs[self.idx], &self.hbar.file_vec[self.idx]);
+                    self.curt().editor.draw_scrlbar_h(&mut str_vec);
+                    self.curt().editor.draw_scrlbar_v(&mut str_vec);
+                    self.draw_flush(out, str_vec);
                     return;
                 } else {
                     self.editor_draw_vec[self.idx].draw_cache(&mut self.tabs[self.idx].editor);
@@ -84,6 +87,7 @@ impl Terminal {
         self.draw_init_info(&mut str_vec, draw_range_org);
 
         Log::debug("cur", &self.curt().editor.cur);
+        Log::debug("self.curt().editor.disp_y", &self.curt().editor.disp_y);
         Log::debug("offset_x", &self.curt().editor.offset_x);
         Log::debug("offset_disp_x", &self.curt().editor.offset_disp_x);
         Log::debug("offset_y", &self.curt().editor.offset_y);
@@ -132,10 +136,10 @@ impl Terminal {
             let editor = &self.curt().editor;
 
             if editor.scrl_h.is_enable {
-                if editor.offset_disp_x <= editor.cur.disp_x && editor.cur.disp_x <= editor.offset_disp_x + editor.col_len {
+                if editor.offset_disp_x <= editor.cur.disp_x && editor.cur.disp_x <= editor.offset_disp_x + editor.col_len && editor.offset_y <= editor.cur.y && editor.cur.y <= editor.row_posi + editor.row_disp_len {
                     str_vec.push(MoveTo((editor.cur.disp_x - editor.offset_disp_x + rnw_margin) as u16, (editor.cur.y - editor.offset_y + editor.row_posi) as u16).to_string());
                 }
-            } else {
+            } else if editor.offset_y <= editor.cur.y && editor.cur.y <= editor.offset_y + editor.row_disp_len {
                 str_vec.push(MoveTo((editor.cur.disp_x - editor.offset_disp_x + rnw_margin) as u16, (editor.cur.y - editor.offset_y + editor.row_posi) as u16).to_string());
             }
             Terminal::show_cur();
@@ -427,7 +431,7 @@ impl Terminal {
         self.hbar.file_vec.push(h_file.clone());
         self.hbar.disp_base_idx = USIZE_UNDEFINED;
 
-        self.curt().editor.calc_scrlbar_h_row();
+        self.curt().editor.calc_scrlbar_h();
 
         self.set_disp_size();
 
@@ -439,7 +443,7 @@ impl Terminal {
         self.editor_draw_vec[self.idx].clear();
 
         self.hbar.file_vec[self.idx] = h_file.clone();
-        self.curt().editor.calc_scrlbar_h_row();
+        self.curt().editor.calc_scrlbar_h();
 
         self.set_disp_size();
 

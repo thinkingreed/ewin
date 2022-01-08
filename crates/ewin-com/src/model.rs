@@ -36,7 +36,7 @@ pub enum Env {
 /// EventProcess
 pub struct EvtProc {
     pub sel_proc: Option<Proc>,
-    pub evt_proc: Option<Proc>,
+    pub proc: Option<Proc>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -51,16 +51,36 @@ pub struct Proc {
     pub box_sel_vec: Vec<(SelRange, String)>,
     pub box_sel_redo_vec: Vec<(SelRange, String)>,
     pub sel: SelRange,
-    pub draw_type: E_DrawRange,
+    // pub draw_type: E_DrawRange,
 }
 impl Default for Proc {
     fn default() -> Self {
-        Proc { p_cmd: P_Cmd::Null, cur_s: Cur::default(), cur_e: Cur::default(), str: String::new(), e_cmd: E_Cmd::Null, sel: SelRange::default(), draw_type: E_DrawRange::default(), box_sel_vec: vec![], box_sel_redo_vec: vec![] }
+        Proc {
+            p_cmd: P_Cmd::Null,
+            cur_s: Cur::default(),
+            cur_e: Cur::default(),
+            str: String::new(),
+            e_cmd: E_Cmd::Null,
+            sel: SelRange::default(),
+            // draw_type: E_DrawRange::default(),
+            box_sel_vec: vec![],
+            box_sel_redo_vec: vec![],
+        }
     }
 }
 impl fmt::Display for Proc {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "EvtProc cur_s:{}, cur_e:{}, str:{}, e_cmd:{:?}, p_cmd:{:?}, sel:{}, d_range:{}", self.cur_s, self.cur_e, self.str, self.e_cmd, self.p_cmd, self.sel, self.draw_type)
+        write!(
+            f,
+            "EvtProc cur_s:{}, cur_e:{}, str:{}, e_cmd:{:?}, p_cmd:{:?}, sel:{}, ",
+            self.cur_s,
+            self.cur_e,
+            self.str,
+            self.e_cmd,
+            self.p_cmd,
+            self.sel,
+            // self.draw_type
+        )
     }
 }
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -216,6 +236,7 @@ pub enum CharStyleType {
     Select,
     Search,
     CtrlChar,
+    ColumnCharAlignmentSpace,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -827,6 +848,35 @@ pub enum MsgType {
     Err,
     KeyRecord,
 }
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum DrawRangX {
+    Range(usize, bool),
+}
+
+impl Default for DrawRangX {
+    fn default() -> Self {
+        DrawRangX::Range(USIZE_UNDEFINED, false)
+    }
+}
+
+impl DrawRangX {
+    pub fn get_x(&self) -> usize {
+        match self {
+            DrawRangX::Range(x, _) => {
+                return *x;
+            }
+        }
+    }
+    pub fn is_margin(&self) -> bool {
+        match self {
+            DrawRangX::Range(_, is_margin) => {
+                return *is_margin;
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FilePath {}
 

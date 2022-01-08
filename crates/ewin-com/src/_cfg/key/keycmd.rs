@@ -1,6 +1,6 @@
 use crate::{def::USIZE_UNDEFINED, model::*};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Keybind {
@@ -232,13 +232,14 @@ pub enum E_Cmd {
     AllSelect,
     // edit
     // InsertChar(char),
+    // For Box Insert redo
     InsertBox(Vec<(SelRange, String)>),
     DelBox(Vec<(SelRange, String)>),
     InsertRow,
     Format(FmtType),
     // find
     Find,
-    ReplaceExec(bool, String, BTreeMap<(usize, usize), String>),
+    ReplaceExec(bool, String, String, BTreeSet<usize>),
     ReplacePrompt,
     MoveRow,
     Grep,

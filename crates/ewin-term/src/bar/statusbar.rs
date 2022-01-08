@@ -3,18 +3,8 @@ use crate::{
     tab::*,
 };
 use crossterm::{cursor::*, terminal::*};
-use std::io::Write;
 
 impl StatusBar {
-    pub fn draw_only<T: Write>(out: &mut T, tab: &mut Tab, h_file: &HeaderFile) {
-        Log::debug_key("StatusBar.draw_only");
-        let mut v: Vec<String> = vec![];
-        // DParts::Editor is dummy
-        StatusBar::draw(&mut v, tab, h_file);
-        let _ = out.write(v.concat().as_bytes());
-        out.flush().unwrap();
-    }
-
     pub fn draw(str_vec: &mut Vec<String>, tab: &mut Tab, h_file: &HeaderFile) {
         Log::info_key("StatusBar.draw");
         if tab.sbar.row_num == 0 {

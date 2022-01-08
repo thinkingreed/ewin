@@ -48,6 +48,11 @@ impl CharStyle {
         let editor = &cfg.colors.editor;
         CharStyle { fg: Color { rgb: Rgb { r: control_char.fg.rgb.r, g: control_char.fg.rgb.g, b: control_char.fg.rgb.b } }, bg: Color { rgb: Rgb { r: editor.bg.rgb.r, g: editor.bg.rgb.g, b: editor.bg.rgb.b } } }
     }
+    pub fn column_char_alignment_space(cfg: &Cfg) -> CharStyle {
+        let fg = &cfg.colors.editor.column_char_alignment_space.fg;
+        let bg = &cfg.colors.editor.column_char_alignment_space.bg;
+        CharStyle { fg: Color { rgb: Rgb { r: fg.rgb.r, g: fg.rgb.g, b: fg.rgb.b } }, bg: Color { rgb: Rgb { r: bg.rgb.r, g: bg.rgb.g, b: bg.rgb.b } } }
+    }
 
     pub fn selected(cfg: &Cfg) -> CharStyle {
         let selection = &cfg.colors.editor.selection;

@@ -103,6 +103,10 @@ impl SelRange {
         }
     }
     pub fn set_sel_posi(&mut self, is_start: bool, cur: Cur) {
+        Log::debug_key("box_select_mode");
+        Log::debug("is_start", &is_start);
+        Log::debug("cur", &cur);
+
         if is_start {
             if !self.is_selected() {
                 self.set_s(cur.y, cur.x, cur.disp_x);

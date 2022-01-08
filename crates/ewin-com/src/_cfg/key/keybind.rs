@@ -13,6 +13,7 @@ use crossterm::event::{Event::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, M
 use directories::BaseDirs;
 use json5;
 use std::{
+    cmp::Ordering,
     collections::HashMap,
     fs::{self, File},
     io::Write,
@@ -153,27 +154,16 @@ impl Keybind {
                     Keys::MouseDragLeft(y, x) => {
                         match keys_org_opt {
                             Some(Keys::MouseDragLeft(y_org, x_org)) | Some(Keys::MouseDownLeft(y_org, x_org)) => {
-                                Log::debug("yyyyyyyyyyyyyyyy", &y);
-                                Log::debug("y_org", &y_org);
-                                Log::debug("xxxxxxxxxxxxxxxx", &x);
-                                Log::debug("x_org", &x_org);
-
-                                let cols = get_term_size().0 as usize;
-                                //    return if y < y_org || (y == &(hbar_row_posi as u16) && x < &((cols - CFG.get().unwrap().try_lock().unwrap().general.editor.scrollbar.vertical.width) as u16)) {
-                                return if y < y_org {
-                                    KeyCmd::Edit(E_Cmd::MouseDragLeftUp(*y as usize, *x as usize))
-                                    // } else if y > y_org || (y == &(sbar_row_posi as u16) && x < &((cols - CFG.get().unwrap().try_lock().unwrap().general.editor.scrollbar.vertical.width) as u16)) {
-                                } else if y > y_org {
-                                    KeyCmd::Edit(E_Cmd::MouseDragLeftDown(*y as usize, *x as usize))
-                                } else if y == y_org {
-                                    if x > x_org || x == &(cols as u16) {
-                                        KeyCmd::Edit(E_Cmd::MouseDragLeftRight(*y as usize, *x as usize))
-                                    } else {
-                                        KeyCmd::Edit(E_Cmd::MouseDragLeftLeft(*y as usize, *x as usize))
+                                return match y.cmp(y_org) {
+                                    Ordering::Less => KeyCmd::Edit(E_Cmd::MouseDragLeftUp(*y as usize, *x as usize)),
+                                    Ordering::Greater => KeyCmd::Edit(E_Cmd::MouseDragLeftDown(*y as usize, *x as usize)),
+                                    Ordering::Equal => {
+                                        if x > x_org || x == &get_term_size().0 {
+                                            KeyCmd::Edit(E_Cmd::MouseDragLeftRight(*y as usize, *x as usize))
+                                        } else {
+                                            KeyCmd::Edit(E_Cmd::MouseDragLeftLeft(*y as usize, *x as usize))
+                                        }
                                     }
-                                } else {
-                                    //     KeyCmd::Edit(E_Cmd::MouseDragLeftDown(*y as usize, *x as usize))
-                                    return KeyCmd::Unsupported;
                                 };
                             }
                             _ => {}
@@ -183,15 +173,12 @@ impl Keybind {
                     Keys::MouseMove(y, x) => return KeyCmd::Edit(E_Cmd::MouseMove(*y as usize, *x as usize)),
                     _ => {}
                 };
-
                 return KeyCmd::Unsupported;
             }
             KeyWhen::PromptFocus => {
                 let p_cmd = match &keys {
                     Keys::Shift(Key::Char(c)) => P_Cmd::InsertStr(c.to_ascii_uppercase().to_string()),
                     Keys::Raw(Key::Char(c)) => P_Cmd::InsertStr(c.to_string()),
-                    //  Keys::Raw(Key::F(3)) => P_Cmd::FindNext,
-                    //  Keys::Shift(Key::F(4)) => P_Cmd::FindBack,
                     Keys::MouseDownLeft(y, x) => P_Cmd::MouseDownLeft(*y as usize, *x as usize),
                     Keys::MouseDragLeft(y, x) => P_Cmd::MouseDragLeft(*y as usize, *x as usize),
                     _ => return KeyCmd::Unsupported,

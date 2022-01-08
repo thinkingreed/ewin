@@ -2,8 +2,22 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "cargo",
-			"command": "build",
+			"linux": {
+				"type": "shell",
+				"command": "mold",
+				"args": [
+					"-run",
+					"cargo",
+					"build"
+				]
+			},
+			"windows": {
+				"type": "shell",
+				"command": "cargo",
+				"args": [
+					"build"
+				]
+			},
 			"problemMatcher": [
 				"$rustc"
 			],

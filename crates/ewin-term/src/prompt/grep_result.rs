@@ -105,7 +105,7 @@ impl EvtAct {
         }
     }
 
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     pub fn get_grep_child(search_str: &str, search_folder: &str, search_filenm: &str) -> Child {
         Log::debug_key("get_grep_child linux");
         // -r:Subfolder search, -H:File name display, -n:Line number display,

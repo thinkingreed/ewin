@@ -48,7 +48,7 @@ impl File {
             path.executable()
         }
     }
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
     pub fn is_root_dir(path: &str) -> bool {
         *path == MAIN_SEPARATOR.to_string()
     }

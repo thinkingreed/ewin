@@ -35,6 +35,8 @@ pub struct CfgEditor {
     pub tab: CfgTab,
     pub format: CfgFormat,
     pub scrollbar: CfgScrl,
+    pub cursor: CfgCur,
+    pub column_char_alignment_space: CfgColumnCharAlignmentSpace,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -85,6 +87,17 @@ pub struct CfgScrlVertical {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CfgScrlHorizontal {
     pub height: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CfgCur {
+    pub move_position_by_scrolling_enable: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CfgColumnCharAlignmentSpace {
+    pub character: char,
+    pub end_of_line_enable: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -148,6 +161,7 @@ pub struct CfgColorEditor {
     pub selection: Selection,
     pub search: CfgColorEditorSearch,
     pub control_char: ControlChar,
+    pub column_char_alignment_space: ColorColumnCharAlignmentSpace,
     pub scrollbar: CfgColorScrollbar,
 }
 
@@ -184,6 +198,16 @@ pub struct ControlChar {
     foreground: String,
     #[serde(skip_deserializing, skip_serializing)]
     pub fg: Color,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ColorColumnCharAlignmentSpace {
+    foreground: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub fg: Color,
+    background: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub bg: Color,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -353,6 +377,10 @@ impl Cfg {
         cfg.colors.editor.search.bg = Colors::hex2rgb(&cfg.colors.editor.search.background);
         cfg.colors.editor.search.fg = Colors::hex2rgb(&cfg.colors.editor.search.foreground);
         cfg.colors.editor.control_char.fg = Colors::hex2rgb(&cfg.colors.editor.control_char.foreground);
+
+        cfg.colors.editor.column_char_alignment_space.fg = Colors::hex2rgb(&cfg.colors.editor.column_char_alignment_space.foreground);
+        cfg.colors.editor.column_char_alignment_space.bg = Colors::hex2rgb(&cfg.colors.editor.column_char_alignment_space.background);
+
         cfg.colors.editor.scrollbar.bg_vertical = Colors::hex2rgb(&cfg.colors.editor.scrollbar.vertical_background);
         cfg.colors.editor.scrollbar.bg_horizontal = Colors::hex2rgb(&cfg.colors.editor.scrollbar.horizontal_background);
 

@@ -14,23 +14,39 @@ impl Editor {
 
         // judgment redraw
         Log::debug("self.draw_range Before setting", &self.draw_range);
+        Log::debug("self.offset_x_org", &self.offset_x_org);
+        Log::debug("self.offset_x", &self.offset_x);
 
         self.draw_range = if (!self.sel.is_selected() && self.sel_org.is_selected()) 
         // enable_syntax_highlight edit
         ||  (Editor::is_edit(&self.e_cmd, true) && self.is_enable_syntax_highlight)
-        || self.rnw_org != self.get_rnw() || (self.offset_x > 0 && self.cur_y_org != self.cur.y) || self.offset_x_org != self.offset_x 
+        || self.rnw_org != self.get_rnw() ||  self.offset_x_org != self.offset_x 
              // All draw at the end of key record
              || self.state.key_macro.is_exec_end
+             || self.scrl_h.is_show_org != self.scrl_h.is_show
         {
             E_DrawRange::All
-        } else if self.offset_y_org != self.offset_y {
-            match self.e_cmd {
-                E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::MouseDragLeftUp(_, _) => E_DrawRange::ScrollUp(self.offset_y, self.offset_y + Editor::SCROLL_UP_DOWN_MARGIN + 1),
-                E_Cmd::CursorDown | E_Cmd::MouseScrollDown | E_Cmd::MouseDragLeftDown(_, _) => {
+            /*
+            } else if !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable &&  self.offset_y_org != self.offset_y  {
+                if matches!(self.e_cmd, E_Cmd::MouseScrollDown) {
                     let y = self.offset_y + self.row_disp_len - 1;
                     E_DrawRange::ScrollDown(y - Editor::SCROLL_UP_DOWN_MARGIN - 1, y)
+                } else {
+                    E_DrawRange::ScrollUp(self.offset_y, self.offset_y + Editor::SCROLL_UP_DOWN_MARGIN + 1)
                 }
-                _ => E_DrawRange::All,
+                 */
+        } else if self.offset_y_org != self.offset_y {
+            if (self.offset_y_org as isize - self.offset_y as isize).abs() as usize > self.row_disp_len {
+                E_DrawRange::All
+            } else {
+                match self.e_cmd {
+                    E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::MouseDragLeftUp(_, _) => E_DrawRange::ScrollUp(self.offset_y, self.offset_y + Editor::SCROLL_UP_DOWN_MARGIN + 1),
+                    E_Cmd::CursorDown | E_Cmd::MouseScrollDown | E_Cmd::MouseDragLeftDown(_, _) => {
+                        let y = self.offset_y + self.row_disp_len - 1;
+                        E_DrawRange::ScrollDown(y - Editor::SCROLL_UP_DOWN_MARGIN - 1, y)
+                    }
+                    _ => E_DrawRange::All,
+                }
             }
         } else {
             match &self.e_cmd {
@@ -59,12 +75,10 @@ impl Editor {
                 }
                 E_Cmd::InsertRow => E_DrawRange::After(self.cur.y - 1),
                 E_Cmd::InsertStr(str) => {
-                    if str.is_empty() {
-                        if self.rnw != self.rnw_org {
-                            E_DrawRange::All
-                        } else {
-                            E_DrawRange::After(self.cur_y_org)
-                        }
+                    if self.is_enable_syntax_highlight || self.box_insert.mode == BoxInsertMode::Insert {
+                        E_DrawRange::All
+                    } else if str.is_empty() {
+                        E_DrawRange::After(self.cur_y_org)
                     } else {
                         E_DrawRange::Target(self.cur.y, self.cur.y)
                     }
@@ -86,7 +100,7 @@ impl Editor {
                     if self.cur_y_org == self.buf.len_rows() - 1 {
                         E_DrawRange::Not
                     } else {
-                        E_DrawRange::Target(self.cur.y - 1, self.cur.y)
+                        E_DrawRange::Target(self.get_vertical_val() - 1, self.get_vertical_val())
                     }
                 }
                 E_Cmd::CursorUp | E_Cmd::CursorUpSelect | E_Cmd::MouseScrollUp | E_Cmd::MouseDragLeftUp(_, _) => {
@@ -96,7 +110,7 @@ impl Editor {
                         E_DrawRange::Target(self.cur.y, if self.cur.y == 0 { 1 } else { self.cur.y + 1 })
                     }
                 }
-                E_Cmd::AllSelect | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::CursorFileHome | E_Cmd::CursorFileEnd | E_Cmd::FindNext | E_Cmd::FindBack | E_Cmd::CancelModeAndSearchResult | E_Cmd::ReplaceExec(_, _, _) | E_Cmd::BoxSelectMode => E_DrawRange::All,
+                E_Cmd::AllSelect | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::CursorFileHome | E_Cmd::CursorFileEnd | E_Cmd::FindNext | E_Cmd::FindBack | E_Cmd::CancelModeAndSearchResult | E_Cmd::ReplaceExec(_, _, _, _) | E_Cmd::BoxSelectMode => E_DrawRange::All,
                 _ => E_DrawRange::Not,
             }
         };
@@ -128,5 +142,4 @@ impl Editor {
             _ => DParts::Editor,
         };
     }
-   
 }

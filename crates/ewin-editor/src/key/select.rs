@@ -4,7 +4,7 @@ impl Editor {
     pub fn all_select(&mut self) {
         self.sel.clear();
         self.sel.set_s(0, 0, 0);
-        let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_line(self.buf.len_rows() - 1)[..], 0, false);
+        let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(self.buf.len_rows() - 1)[..], 0, false);
         self.sel.set_e(self.buf.len_rows() - 1, cur_x, width);
     }
 
@@ -24,6 +24,9 @@ impl Editor {
                 str
             }
         };
+        Log::debug("self.box_insert.vec", &self.box_insert.vec);
+        Log::debug("copy_str", &copy_str);
+
         set_clipboard(&copy_str);
         self.sel.clear();
     }
