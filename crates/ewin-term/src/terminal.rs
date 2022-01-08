@@ -98,6 +98,8 @@ impl Terminal {
         Log::debug("sel_range", &self.curt().editor.sel);
         // Log::debug("", &self.curt().editor.search);
         // Log::debug("box_sel.mode", &self.curt().editor.box_insert.mode);
+        Log::debug("self.curt().editor.scrl_v.is_enable", &self.curt().editor.scrl_v.is_enable);
+        Log::debug("self.curt().editor.scrl_h.is_enable", &self.curt().editor.scrl_h.is_enable);
 
         self.draw_flush(out, str_vec);
 
@@ -135,13 +137,10 @@ impl Terminal {
             let rnw_margin = if self.curt().editor.state.mouse_mode == MouseMode::Normal { self.curt().editor.get_rnw_and_margin() } else { 0 };
             let editor = &self.curt().editor;
 
-            if editor.scrl_h.is_enable {
-                if editor.offset_disp_x <= editor.cur.disp_x && editor.cur.disp_x <= editor.offset_disp_x + editor.col_len && editor.offset_y <= editor.cur.y && editor.cur.y <= editor.row_posi + editor.row_disp_len {
-                    str_vec.push(MoveTo((editor.cur.disp_x - editor.offset_disp_x + rnw_margin) as u16, (editor.cur.y - editor.offset_y + editor.row_posi) as u16).to_string());
-                }
-            } else if editor.offset_y <= editor.cur.y && editor.cur.y <= editor.offset_y + editor.row_disp_len {
+            if editor.offset_disp_x <= editor.cur.disp_x && editor.cur.disp_x <= editor.offset_disp_x + editor.col_len && editor.offset_y <= editor.cur.y && editor.cur.y <= editor.offset_y + editor.row_disp_len {
                 str_vec.push(MoveTo((editor.cur.disp_x - editor.offset_disp_x + rnw_margin) as u16, (editor.cur.y - editor.offset_y + editor.row_posi) as u16).to_string());
             }
+
             Terminal::show_cur();
         } else if self.curt().state.is_prom_show_cur() {
             Terminal::show_cur();

@@ -8,19 +8,21 @@ use std::cmp::{max, min};
 impl Editor {
     pub fn set_scrlbar_v_posi(&mut self, y: usize) {
         self.set_cur_scrlbar_v(y);
-        if self.disp_y >= self.offset_y + self.row_disp_len {
-            // last page
-            self.offset_y = if self.buf.len_rows() - 1 - self.disp_y < self.row_disp_len { self.buf.len_rows() - self.row_disp_len } else { self.disp_y - Editor::MOVE_ROW_EXTRA_NUM }
-        } else if self.disp_y < self.offset_y {
-            self.offset_y = if self.disp_y > Editor::MOVE_ROW_EXTRA_NUM { self.disp_y - Editor::MOVE_ROW_EXTRA_NUM } else { 0 };
-        }
+        self.set_offset_y_move_row()
     }
 
     pub fn set_cur_scrlbar_v(&mut self, y: usize) {
         Log::debug_key("set_cur_scrlbar_v");
 
         let scrl_range = self.row_disp_len - self.scrl_v.bar_len;
-        let move_len = (self.buf.len_rows() as f64 / scrl_range as f64).ceil() as usize;
+        Log::debug("scrl_range", &scrl_range);
+
+        Log::debug("self.buf.len_rows() - self.row_disp_len", &(self.buf.len_rows() - self.row_disp_len));
+        Log::debug("scrl_range", &scrl_range);
+
+        let move_len = ((self.buf.len_rows() - self.row_disp_len) as f64 / scrl_range as f64).ceil() as usize;
+
+        Log::debug("move_len", &move_len);
 
         // MouseDownLeft
         if matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) {
@@ -35,12 +37,8 @@ impl Editor {
         } else if self.scrl_v.is_enable {
             if matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)) && self.row_disp_len >= self.scrl_v.row_posi + self.scrl_v.bar_len {
                 self.scrl_v.row_posi = if self.scrl_v.row_posi + self.scrl_v.bar_len >= self.row_disp_len { self.scrl_v.row_posi } else { self.scrl_v.row_posi + 1 };
-            } else if (matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftLeft(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftRight(_, _))) && self.row_posi <= self.scrl_v.row_posi {
-                Log::debug("row_posi 111", &self.scrl_v.row_posi);
-
-                self.scrl_v.row_posi = if self.scrl_v.row_posi >= self.row_posi { self.scrl_v.row_posi - 1 } else { self.row_posi };
-
-                Log::debug("row_posi 222", &self.scrl_v.row_posi);
+            } else if (matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _))) && self.row_posi <= y && y < self.row_posi + self.row_disp_len {
+                self.scrl_v.row_posi = if self.scrl_v.row_posi == 0 { self.scrl_v.row_posi } else { self.scrl_v.row_posi - 1 };
             }
         }
         self.set_vertical_val(min(self.scrl_v.row_posi * move_len, self.buf.len_rows() - 1));
@@ -56,6 +54,7 @@ impl Editor {
         if self.scrl_v.is_show {
             if self.scrl_v.bar_len == USIZE_UNDEFINED || self.row_len_org != self.buf.len_rows() {
                 self.scrl_v.bar_len = max(1, (self.row_disp_len as f64 / self.buf.len_rows() as f64 * self.row_disp_len as f64) as usize);
+                Log::debug("Editor.draw_scrlbar_v", &self.scrl_v.bar_len);
             }
             self.scrl_v.row_posi = match self.e_cmd {
                 E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) => self.scrl_v.row_posi,

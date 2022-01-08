@@ -16,6 +16,7 @@ pub struct Editor {
     pub offset_x: usize,
     pub offset_x_org: usize,
     pub offset_disp_x: usize,
+    pub offset_disp_x_org: usize,
     pub cur_y_org: usize,
     pub state: EditorState,
     // Basic x position when moving the cursor up and down  line_num_width + 1 over initial:0
@@ -61,6 +62,7 @@ impl Editor {
             offset_x: 0,
             offset_x_org: 0,
             offset_disp_x: 0,
+            offset_disp_x_org: 0,
             cur_y_org: 0,
             state: EditorState::default(),
             updown_x: 0,

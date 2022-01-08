@@ -4,7 +4,7 @@ use crossterm::{
     terminal::{Clear, ClearType},
 };
 use ewin_com::{_cfg::key::keycmd::*, colors::*, def::*, global::*, log::*, model::*, util::*};
-use std::{cmp::max, time::Instant};
+use std::cmp::max;
 use unicode_width::UnicodeWidthStr;
 
 impl Editor {
@@ -14,7 +14,6 @@ impl Editor {
     pub fn calc_scrlbar_h(&mut self) {
         Log::debug_key("calc_scrlbar_h_row");
 
-        let start = Instant::now();
         self.scrl_h.row_width_chars_vec = vec![(0, 0); self.buf.len_rows()];
         for i in 0..self.buf.len_rows() {
             self.scrl_h.row_width_chars_vec[i] = (self.buf.line(i).to_string().width() + Editor::SCROLL_BAR_H_END_LINE_MARGIN, self.buf.line(i).len_chars() + Editor::SCROLL_BAR_H_END_LINE_MARGIN);
@@ -28,15 +27,10 @@ impl Editor {
                 }
             }
         }
-        Log::debug("self.scrl_h.row_max_width", &self.scrl_h.row_max_width);
-        let end = start.elapsed();
-        Log::debug("calc 経過時間", &format!("{}.{:03}", end.as_secs(), end.subsec_millis()));
     }
 
     pub fn recalc_scrlbar_h(&mut self, evt_proc: &EvtProc) {
         Log::debug_key("recalc_scrlbar_h_row");
-
-        let start = Instant::now();
 
         if let Some(sel_proc) = &evt_proc.sel_proc {
             let sel = sel_proc.sel.get_range();
@@ -85,9 +79,6 @@ impl Editor {
             }
             Log::debug("evt_proc self.scrl_h.row_width_vec 222", &self.scrl_h.row_width_chars_vec);
         };
-
-        let end = start.elapsed();
-        Log::debug("recalc 経過時間", &format!("{}.{:03}", end.as_secs(), end.subsec_millis()));
     }
 
     pub fn recalc_scrlbar_h_row(&mut self, idxs: &[usize]) {
@@ -142,9 +133,6 @@ impl Editor {
                 if self.scrl_h.clm_posi + 1 == self.scrl_h.scrl_range {
                     if self.buf.char_vec_row(self.scrl_h.max_width_row_idx).len() > self.offset_x {
                         if let Some(disp_cur_x) = get_row_x(&self.buf.char_vec_range(self.scrl_h.max_width_row_idx, self.offset_x..), self.col_len, true, true) {
-                            Log::debug("disp_cur_x", &disp_cur_x);
-                            Log::debug("self.offset_x", &self.offset_x);
-                            Log::debug("self.scrl_h.row_max_chars", &self.scrl_h.row_max_chars);
                             let move_cur_x = self.scrl_h.row_max_chars - (self.offset_x + disp_cur_x);
                             self.offset_x += move_cur_x;
                         }
@@ -161,8 +149,7 @@ impl Editor {
 
     pub fn draw_scrlbar_h(&mut self, str_vec: &mut Vec<String>) {
         Log::debug_key("draw_scrlbar_h");
-        if self.scrl_h.is_show {
-            // 数回に1回self.scrl_h.move_cur_xの再計算
+        if self.scrl_h.is_show && !self.scrl_v.is_enable {
             if self.scrl_h.bar_len == USIZE_UNDEFINED || self.scrl_h.row_max_width_org != self.scrl_h.row_max_width || self.col_len != self.col_len_org {
                 self.scrl_h.bar_len = max(2, (self.col_len as f64 / self.scrl_h.row_max_width as f64 * self.col_len as f64).floor() as usize);
 
@@ -170,27 +157,23 @@ impl Editor {
                     self.scrl_h.is_show = true;
                     self.scrl_h.scrl_range = self.col_len - self.scrl_h.bar_len;
                     let rate = self.scrl_h.row_max_width as f64 / self.scrl_h.row_max_chars as f64;
-                    Log::debug("self.scrl_h.move_cur_x 111", &self.scrl_h.move_cur_x);
-                    Log::debug("rate", &rate);
-                    self.scrl_h.move_cur_x = ((self.scrl_h.row_max_width - self.col_len) as f64 / self.scrl_h.scrl_range as f64 / rate).ceil() as usize;
-                    Log::debug("self.scrl_h.scrl_range", &self.scrl_h.scrl_range);
-                    Log::debug("self.col_len", &self.col_len);
-                    Log::debug("self.scrl_h.row_max_width", &self.scrl_h.row_max_width);
-                    Log::debug("self.scrl_h.row_max_chars", &self.scrl_h.row_max_chars);
-                    Log::debug("self.scrl_h.move_cur_x 222", &self.scrl_h.move_cur_x);
-                    let move_cur_x = ((self.scrl_h.row_max_chars as f64 - (self.col_len as f64 * rate)) / self.scrl_h.scrl_range as f64).ceil() as usize;
+                    //  self.scrl_h.move_cur_x = ((self.scrl_h.row_max_width - self.col_len) as f64 / self.scrl_h.scrl_range as f64 / rate).ceil() as usize;
+                    let move_cur_x = ((self.scrl_h.row_max_width - self.col_len) as f64 / self.scrl_h.scrl_range as f64 / rate).ceil() as usize;
+                    //  let move_cur_x = ((self.scrl_h.row_max_chars as f64 - (self.col_len as f64 * rate)) / self.scrl_h.scrl_range as f64).ceil() as usize;
                     self.scrl_h.move_cur_x = if move_cur_x == 0 { 1 } else { move_cur_x };
                     Log::debug("self.scrl_h.move_cur_x 333", &self.scrl_h.move_cur_x);
                 }
             }
+
             if !self.scrl_h.is_enable {
                 if self.cur.x == 0 {
                     self.scrl_h.clm_posi = 0;
                 } else if self.scrl_h.clm_posi + self.scrl_h.bar_len == self.col_len {
-                } else {
+                } else if self.offset_disp_x_org != self.offset_disp_x {
                     self.scrl_h.clm_posi = (self.cur.disp_x as f64 / self.scrl_h.row_max_width as f64 * self.scrl_h.scrl_range as f64).ceil() as usize;
                 }
             }
+            Log::debug("self.scrl_h.clm_posi 222", &self.scrl_h.clm_posi);
 
             let height = CFG.get().unwrap().try_lock().unwrap().general.editor.scrollbar.horizontal.height;
             for i in self.scrl_h.row_posi..self.scrl_h.row_posi + height {

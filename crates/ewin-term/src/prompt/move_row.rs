@@ -37,7 +37,8 @@ impl EvtAct {
                     term.curt().editor.set_cur_target(row_num - 1, 0, false);
 
                     term.clear_curt_tab(true);
-                    term.curt().editor.set_offset_y_move_row();
+                    term.curt().editor.e_cmd = E_Cmd::MoveRow;
+                    term.curt().editor.scroll();
                     term.curt().editor.scroll_horizontal();
                     return ActType::Draw(DParts::All);
                 }

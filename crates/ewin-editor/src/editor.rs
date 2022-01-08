@@ -18,15 +18,7 @@ impl Editor {
     pub const MOVE_ROW_EXTRA_NUM: usize = 3;
     pub const RNW_MARGIN: usize = 1;
 
-    // move to row
-    pub fn set_offset_y_move_row(&mut self) {
-        if self.cur.y >= self.offset_y + self.row_disp_len {
-            // last page
-            self.offset_y = if self.buf.len_rows() - 1 - self.cur.y < self.row_disp_len { self.buf.len_rows() - self.row_disp_len } else { self.cur.y - Editor::MOVE_ROW_EXTRA_NUM }
-        } else if self.cur.y < self.offset_y {
-            self.offset_y = if self.cur.y > Editor::MOVE_ROW_EXTRA_NUM { self.cur.y - Editor::MOVE_ROW_EXTRA_NUM } else { 0 };
-        }
-    }
+   
 
     pub fn set_cur_default(&mut self) {
         self.rnw = self.get_rnw();
@@ -58,6 +50,7 @@ impl Editor {
         self.disp_y_org = self.disp_y;
         self.offset_y_org = self.offset_y;
         self.offset_x_org = self.offset_x;
+        self.offset_disp_x_org = self.offset_disp_x;
         self.rnw_org = self.get_rnw();
         self.sel_org = self.sel;
         self.state.is_changed_org = self.state.is_changed;
@@ -126,21 +119,21 @@ impl Editor {
     }
 
     pub fn set_vertical_val(&mut self, vertical_val: usize) {
-        if !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable {
+        if self.is_disp_y_enable() {
             self.disp_y = vertical_val;
         } else {
             self.cur.y = vertical_val;
         }
     }
     pub fn get_vertical_val(&self) -> usize {
-        if !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable && (matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) {
+        if self.is_disp_y_enable() {
             return self.disp_y;
         } else {
             return self.cur.y;
         }
     }
     pub fn increment_vertical_val(&mut self) {
-        if !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable && (matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) {
+        if self.is_disp_y_enable() {
             self.disp_y += 1;
         } else {
             self.cur.y += 1;
@@ -148,11 +141,15 @@ impl Editor {
     }
 
     pub fn decrement_vertical_val(&mut self) {
-        if !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable && (matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) {
+        if self.is_disp_y_enable() {
             self.disp_y -= 1;
         } else {
             self.cur.y -= 1;
         }
+    }
+
+    pub fn is_disp_y_enable(& self)-> bool {
+        return !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable && ((matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) || (self.scrl_v.is_enable && (matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_,_)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_,_)))) );
     }
 
     pub fn finalize(&mut self) {

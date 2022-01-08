@@ -91,9 +91,6 @@ impl EditorDraw {
                 }
             }
 
-            let sel_range = &editor.sel.get_range();
-            let offset_disp_x = if sel_range.is_selected() && sel_range.sy <= y && y <= sel_range.ey { get_row_cur_x_disp_x(&row_vec[..min(row_vec.len(), editor.offset_x)], 0, false).1 } else { 0 };
-
             for (i, c) in row.iter().enumerate() {
                 width += match *c {
                     NEW_LINE_LF | NEW_LINE_CR => 1,
@@ -104,7 +101,7 @@ impl EditorDraw {
                 let style_type = if (i == 0 && sx_range.is_margin()) || (i == row.len() - 1 && ex_range.is_margin() && cfg.general.editor.column_char_alignment_space.end_of_line_enable) {
                     CharStyleType::ColumnCharAlignmentSpace
                 } else {
-                    self.is_select_or_search_style_type(editor, *c, offset_disp_x + width, y, sx + x)
+                    self.is_select_or_search_style_type(editor, *c, editor.offset_disp_x + width, y, sx + x)
                 };
                 self.set_style(self.get_to_style(&cfg, editor.is_enable_syntax_highlight, style_type, &CharStyle::normal(&cfg)), *c, &mut style_org, &mut cells);
                 x += 1;

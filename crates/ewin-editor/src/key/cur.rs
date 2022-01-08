@@ -51,18 +51,25 @@ impl Editor {
     pub fn cur_updown_com(&mut self) {
         Log::debug_s("cur_updown_com");
 
-        if !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable && (matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) {
+        if !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable && (matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp) || matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _))) {
         } else {
             if self.updown_x == 0 {
                 self.updown_x = self.cur.disp_x;
             }
             // Not set for Left and Right
-            if self.e_cmd == E_Cmd::CursorLeft || self.e_cmd == E_Cmd::CursorRight {
-            } else if !(self.sel.mode == SelMode::BoxSelect && self.buf.char_vec_row(self.cur.y).len() < self.updown_x) {
+            if self.sel.mode != SelMode::BoxSelect && (self.e_cmd == E_Cmd::CursorLeft || self.e_cmd == E_Cmd::CursorRight) {
+                //   } else if !(self.sel.mode == SelMode::BoxSelect && self.buf.char_vec_row(self.cur.y).len() < self.updown_x) {
+                // } else if self.sel.mode == SelMode::BoxSelect {
+            } else {
+                Log::debug("self.cur.disp_x 111", &self.cur.disp_x);
                 let (cur_x, disp_x) = get_until_disp_x(&self.buf.char_vec_row(self.cur.y), self.updown_x);
+                Log::debug("disp_x 222", &disp_x);
+
                 self.cur.disp_x = disp_x;
                 self.cur.x = cur_x;
-                self.scroll_horizontal();
+                if self.sel.mode != SelMode::BoxSelect {
+                    self.scroll_horizontal();
+                }
             }
         }
         self.scroll();

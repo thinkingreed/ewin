@@ -82,7 +82,7 @@ pub fn get_until_disp_x(char_vec: &[char], disp_x: usize) -> (usize, usize) {
 }
 
 /// Get x_offset from the specified cur_x
-pub fn get_x_offset_by_cur_x(chars: &[char], x: usize, col_len: usize) -> usize {
+pub fn get_x_offset_by_cur_x(chars: &[char], col_len: usize) -> usize {
     let (mut cur_x, mut width) = (0, 0);
 
     if chars.len() < col_len {
@@ -95,7 +95,7 @@ pub fn get_x_offset_by_cur_x(chars: &[char], x: usize, col_len: usize) -> usize 
         }
         cur_x += 1;
     }
-    x - cur_x
+    chars.len() - cur_x
 }
 
 // Everything including tab

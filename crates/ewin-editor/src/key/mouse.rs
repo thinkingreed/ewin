@@ -78,7 +78,7 @@ impl Editor {
                 let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(y)[..], 0, true);
                 self.sel.set_e(y, cur_x, width);
                 self.set_cur_target(y, 0, false);
-            } else {
+            } else if self.buf.len_rows() > y {
                 x = if x < self.get_rnw_and_margin() { 0 } else { x - self.get_rnw_and_margin() };
                 self.cur.y = y;
                 let vec = self.buf.char_vec_row(self.cur.y);
@@ -91,9 +91,16 @@ impl Editor {
                     self.cur.x = cur_x;
                     self.cur.disp_x = width;
                     self.scroll();
-                    // if !matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) {
-                    //     self.scroll_horizontal();
-                    // }
+                    self.scroll_horizontal();
+
+                    if matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) {
+                        self.sel.clear();
+                    }
+                    /*
+                    if !matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) {
+                        self.scroll_horizontal();
+                    }
+                     */
                 }
                 self.history.set_sel_multi_click(&keys, &mut self.sel, &self.cur, &self.buf.char_vec_row(self.cur.y));
             }

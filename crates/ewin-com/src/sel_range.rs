@@ -22,12 +22,15 @@ impl SelRange {
     }
 
     pub fn is_selected(&self) -> bool {
+        !(self.sy == USIZE_UNDEFINED && self.ey == USIZE_UNDEFINED)
+        /*
         if self.mode == SelMode::Normal {
             self.sy != USIZE_UNDEFINED && self.ey != USIZE_UNDEFINED && (self.sy != self.ey || self.s_disp_x != self.e_disp_x)
         } else {
             // SelMode::BoxSelect
             !(self.sy == USIZE_UNDEFINED && self.ey == USIZE_UNDEFINED)
         }
+         */
     }
 
     pub fn is_selected_width(&self) -> bool {
