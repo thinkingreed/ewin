@@ -89,18 +89,25 @@ impl Editor {
                 }
                 E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) => E_DrawRange::Target(self.cur.y, self.cur.y),
                 E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftDown(_, _) if self.scrl_v.is_enable => E_DrawRange::All,
-                E_Cmd::CursorDown | E_Cmd::CursorDownSelect | E_Cmd::MouseScrollDown | E_Cmd::MouseDragLeftDown(_, _) => {
-                    if self.cur_y_org == self.buf.len_rows() - 1 || self.get_vertical_val() == 0 {
+                E_Cmd::CursorDown | E_Cmd::CursorDownSelect | E_Cmd::MouseDragLeftDown(_, _) => {
+                    if self.cur_y_org == self.buf.len_rows() - 1 {
                         E_DrawRange::Not
                     } else {
-                        E_DrawRange::Target(self.get_vertical_val() - 1, self.get_vertical_val())
+                        E_DrawRange::Target(self.cur.y - 1, self.cur.y)
                     }
                 }
-                E_Cmd::CursorUp | E_Cmd::CursorUpSelect | E_Cmd::MouseScrollUp | E_Cmd::MouseDragLeftUp(_, _) => {
+                E_Cmd::CursorUp | E_Cmd::CursorUpSelect | E_Cmd::MouseDragLeftUp(_, _) => {
                     if self.cur_y_org == 0 {
                         E_DrawRange::Not
                     } else {
                         E_DrawRange::Target(self.cur.y, if self.cur.y == 0 { 1 } else { self.cur.y + 1 })
+                    }
+                }
+                E_Cmd::MouseScrollDown | E_Cmd::MouseScrollUp => {
+                    if self.get_vertical_org_val() == 0 || self.get_vertical_org_val() == self.buf.len_rows() - 1 {
+                        E_DrawRange::Not
+                    } else {
+                        E_DrawRange::All
                     }
                 }
                 E_Cmd::AllSelect | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::CursorFileHome | E_Cmd::CursorFileEnd | E_Cmd::FindNext | E_Cmd::FindBack | E_Cmd::CancelModeAndSearchResult | E_Cmd::ReplaceExec(_, _, _, _) | E_Cmd::BoxSelectMode => E_DrawRange::All,

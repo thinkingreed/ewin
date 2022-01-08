@@ -17,6 +17,7 @@ impl Editor {
             E_Cmd::CursorRowEnd => self.cur_end(),
             _ => {}
         }
+        self.scroll();
 
         if self.sel.mode == SelMode::BoxSelect {
             self.sel.set_sel_posi(false, self.cur);
@@ -72,7 +73,6 @@ impl Editor {
                 }
             }
         }
-        self.scroll();
     }
 
     pub fn cur_left(&mut self) {

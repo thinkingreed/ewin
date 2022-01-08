@@ -145,8 +145,7 @@ impl EvtAct {
                     term.keycmd = KeyCmd::Null;
                     return ActType::Cancel;
                 }
-                // Because the same key occurs multiple times in the case of Windows.
-                #[cfg(target_os = "windows")]
+                // Because the same key occurs multiple times in the case of Windows and Ubuntu.
                 Keys::MouseDragLeft(_, _) if keys == term.keys_org => return ActType::Cancel,
                 _ => Log::info("Pressed key", &keys),
             };

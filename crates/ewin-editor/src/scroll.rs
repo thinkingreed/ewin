@@ -25,11 +25,11 @@ impl Editor {
 
         if self.cur.y == 0 && CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable {
             self.offset_y = 0
-        } else if !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable && matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp) {
+        } else if !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable && (matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) {
             if matches!(self.e_cmd, E_Cmd::MouseScrollDown) {
                 self.offset_y = min(self.offset_y + 1, self.buf.len_rows() - self.row_disp_len);
             } else {
-                self.offset_y = if self.offset_y > 0 { self.offset_y - 1 } else { 0 };
+                self.offset_y = if self.offset_y == 0 { 0 } else { self.offset_y - 1 };
             }
         } else if !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable && self.scrl_v.is_enable && (matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _))) {
             self.offset_y = self.disp_y;

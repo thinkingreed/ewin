@@ -211,8 +211,6 @@ pub enum E_Cmd {
     MouseDragLeftRight(usize, usize),
     MouseDragLeftUp(usize, usize),
     MouseDragLeftDown(usize, usize),
-    // MouseDownRight(usize, usize),
-    // MouseDragRight(usize, usize),
     MouseScrollUp,
     MouseScrollDown,
     // Internal use as an alternative to paste

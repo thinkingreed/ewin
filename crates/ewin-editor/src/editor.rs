@@ -18,8 +18,6 @@ impl Editor {
     pub const MOVE_ROW_EXTRA_NUM: usize = 3;
     pub const RNW_MARGIN: usize = 1;
 
-   
-
     pub fn set_cur_default(&mut self) {
         self.rnw = self.get_rnw();
         self.cur = Cur { y: 0, x: 0, disp_x: 0 };
@@ -132,6 +130,13 @@ impl Editor {
             return self.cur.y;
         }
     }
+    pub fn get_vertical_org_val(&self) -> usize {
+        if self.is_disp_y_enable() {
+            return self.disp_y_org;
+        } else {
+            return self.cur_y_org;
+        }
+    }
     pub fn increment_vertical_val(&mut self) {
         if self.is_disp_y_enable() {
             self.disp_y += 1;
@@ -141,15 +146,19 @@ impl Editor {
     }
 
     pub fn decrement_vertical_val(&mut self) {
+        Log::debug_s("decrement_vertical_val 111111111111111111");
+
         if self.is_disp_y_enable() {
+            Log::debug_s("222222222222222222222222");
             self.disp_y -= 1;
         } else {
+            Log::debug_s("3333333333333333333");
             self.cur.y -= 1;
         }
     }
 
-    pub fn is_disp_y_enable(& self)-> bool {
-        return !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable && ((matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) || (self.scrl_v.is_enable && (matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_,_)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_,_)))) );
+    pub fn is_disp_y_enable(&self) -> bool {
+        return !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable && ((matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) || (self.scrl_v.is_enable && (matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)))));
     }
 
     pub fn finalize(&mut self) {
