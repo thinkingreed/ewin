@@ -2,7 +2,6 @@ use crate::{
     ewin_com::{
         _cfg::{cfg::*, lang::lang_cfg::*},
         def::*,
-        global::*,
         log::*,
         model::*,
     },
@@ -14,15 +13,17 @@ impl Editor {
     pub fn exec_search_incremental(&mut self, search_str: String) {
         Log::debug_s("exec_search_incremental");
         self.search.str = search_str;
-        let regex = CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex;
+
+        let regex = Cfg::get().general.editor.search.regex;
 
         let s_row_idx = if regex { self.buf.row_to_byte(self.offset_y) } else { self.buf.row_to_char(self.offset_y) };
         let ey = min(self.offset_y + self.row_disp_len, self.buf.len_rows());
         let e_row_idx = if regex { self.buf.row_to_byte(ey) } else { self.buf.row_to_char(ey) };
+
+        let cfg_search = Cfg::get_edit_search();
+        self.search.ranges = if self.search.str.is_empty() { vec![] } else { self.get_search_ranges(&cfg_search, &self.search.str, s_row_idx, e_row_idx, 0) };
+
         let search_org = self.search.clone();
-
-        self.search.ranges = if self.search.str.is_empty() { vec![] } else { self.get_search_ranges(&self.search.str, s_row_idx, e_row_idx, 0, &CFG.get().unwrap().try_lock().unwrap().general.editor.search) };
-
         Log::debug("self.search.ranges", &self.search.ranges);
 
         if !search_org.ranges.is_empty() || !self.search.ranges.is_empty() {
@@ -38,7 +39,7 @@ impl Editor {
         if search_str.is_empty() {
             return Some(Lang::get().not_entered_search_str.clone());
         }
-        let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
+        let cfg_search = &Cfg::get_edit_search();
         let search_vec = self.search(&search_str, cfg_search);
 
         if search_vec.is_empty() {
@@ -58,7 +59,7 @@ impl Editor {
     pub fn search(&mut self, search_str: &str, cfg_search: &CfgSearch) -> Vec<SearchRange> {
         Log::debug_key("search");
 
-        let search_vec = self.get_search_ranges(search_str, 0, self.buf.len_chars(), 0, cfg_search);
+        let search_vec = self.get_search_ranges(cfg_search, search_str, 0, self.buf.len_chars(), 0);
         if search_vec.is_empty() {
             return search_vec;
         } else {
@@ -76,8 +77,8 @@ impl Editor {
 
         if !self.search.str.is_empty() {
             if self.search.ranges.is_empty() {
-                let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
-                self.search.ranges = self.get_search_ranges(&self.search.str, 0, self.buf.len_chars(), 0, cfg_search);
+                let cfg_search = &Cfg::get_edit_search();
+                self.search.ranges = self.get_search_ranges(cfg_search, &self.search.str, 0, self.buf.len_chars(), 0);
             }
             if self.search.ranges.is_empty() {
                 return;
@@ -102,7 +103,7 @@ impl Editor {
         }
     }
 
-    pub fn get_search_ranges(&self, search_str: &str, s_idx: usize, e_idx: usize, ignore_prefix_len: usize, cfg_search: &CfgSearch) -> Vec<SearchRange> {
+    pub fn get_search_ranges(&self, cfg_search: &CfgSearch, search_str: &str, s_idx: usize, e_idx: usize, ignore_prefix_len: usize) -> Vec<SearchRange> {
         let search_set = self.buf.search(search_str, s_idx, e_idx, cfg_search);
         let mut rtn_vec = vec![];
 
@@ -168,17 +169,18 @@ impl Editor {
         0
     }
 
-    pub fn replace(&mut self, proc: &mut Proc, is_regex: bool, search_str: &str, replace_str: &str, replace_set: &BTreeSet<usize>) {
+    pub fn replace(&mut self, proc: &mut Proc, search_str: &str, replace_str: &str, replace_set: &BTreeSet<usize>) {
         let s_idx = replace_set.iter().min().unwrap();
-        let (y, x) = if is_regex { (self.buf.byte_to_line(*s_idx), self.buf.byte_to_line_char_idx(*s_idx)) } else { (self.buf.char_to_row(*s_idx), self.buf.char_to_line_char_idx(*s_idx)) };
+        let cfg_search = Cfg::get_edit_search();
+
+        let (y, x) = if cfg_search.regex { (self.buf.byte_to_line(*s_idx), self.buf.byte_to_line_char_idx(*s_idx)) } else { (self.buf.char_to_row(*s_idx), self.buf.char_to_line_char_idx(*s_idx)) };
         self.set_cur_target(y, x, false);
         proc.cur_s = self.cur;
 
-        Log::debug("replace is_regex", &is_regex);
         Log::debug("replace replace_str", &replace_str);
         Log::debug("replace search_map", &replace_set);
 
-        let end_char_idx = self.buf.replace(is_regex, search_str, replace_str, replace_set);
+        let end_char_idx = self.buf.replace(search_str, replace_str, replace_set);
 
         let y = self.buf.char_to_row(end_char_idx);
         let x = end_char_idx - self.buf.row_to_char(y);
@@ -186,14 +188,15 @@ impl Editor {
         proc.cur_e = self.cur;
     }
 
-    pub fn get_idx_set(&mut self, is_regex: bool, search_str: &str, replace_str: &str, org_map: &BTreeSet<usize>) -> BTreeSet<usize> {
+    pub fn get_idx_set(&mut self, search_str: &str, replace_str: &str, org_map: &BTreeSet<usize>) -> BTreeSet<usize> {
         let mut replace_set: BTreeSet<usize> = BTreeSet::new();
         let mut total = 0;
+        let cfg_search = Cfg::get_edit_search();
 
         for (i, sx) in org_map.iter().enumerate() {
             // let replace_str_len = if is_regex { replace_str.len() } else { replace_str.chars().count() };
-            let diff: isize = if is_regex { replace_str.len() as isize - search_str.len() as isize } else { replace_str.chars().count() as isize - search_str.chars().count() as isize };
-            let sx = if i == 0 || is_regex { *sx } else { (*sx as isize + total) as usize };
+            let diff: isize = if cfg_search.regex { replace_str.len() as isize - search_str.len() as isize } else { replace_str.chars().count() as isize - search_str.chars().count() as isize };
+            let sx = if i == 0 || cfg_search.regex { *sx } else { (*sx as isize + total) as usize };
             replace_set.insert(sx);
             total += diff;
         }

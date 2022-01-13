@@ -61,6 +61,7 @@ impl TextBuffer {
 
         let mut del_num = 1;
         let c = self.char(y, x);
+
         // not select del
         if keycmd == KeyCmd::Edit(E_Cmd::DelNextChar) {
             if NEW_LINE_CR == c && NEW_LINE_LF == self.char(y, x + 1) {
@@ -103,6 +104,13 @@ impl TextBuffer {
             char = self.line(y).char(x);
         }
         return char;
+    }
+    pub fn char_opt(&self, y: usize, x: usize) -> Option<char> {
+        if self.len_row_chars(y) > x {
+            return Some(self.line(y).char(x));
+        }
+        // EOF
+        return None;
     }
 
     pub fn char_idx(&self, i: usize) -> char {
@@ -231,20 +239,21 @@ impl TextBuffer {
         return end_char_idx;
     } */
 
-    pub fn replace(&mut self, is_regex: bool, search_str: &str, replace_str: &str, map: &BTreeSet<usize>) -> usize {
+    pub fn replace(&mut self, search_str: &str, replace_str: &str, map: &BTreeSet<usize>) -> usize {
         let mut idx_diff: isize = 0;
         let mut end_char_idx: usize = 0;
         let replace_str_len = replace_str.chars().count();
+        let cfg_search = Cfg::get_edit_search();
 
         for (i, s_idx) in map.iter().enumerate() {
-            let start = if is_regex { self.text.byte_to_char((*s_idx as isize + idx_diff) as usize) } else { (*s_idx as isize + idx_diff) as usize };
-            let end = if is_regex { (start as isize + search_str.len() as isize + idx_diff) as usize } else { (start as isize + search_str.chars().count() as isize + idx_diff) as usize };
+            let start = if cfg_search.regex { self.text.byte_to_char((*s_idx as isize + idx_diff) as usize) } else { (*s_idx as isize + idx_diff) as usize };
+            let end = if cfg_search.regex { (start as isize + search_str.len() as isize + idx_diff) as usize } else { (start as isize + search_str.chars().count() as isize + idx_diff) as usize };
 
             self.text.remove(start..end);
             self.text.insert(start, replace_str);
 
             // Update the index offset.
-            let match_len = if is_regex { search_str.len() } else { end - start };
+            let match_len = if cfg_search.regex { search_str.len() } else { end - start };
             idx_diff = idx_diff - match_len as isize + replace_str_len as isize;
 
             if i == map.len() - 1 && start + replace_str_len > 0 {

@@ -3,7 +3,14 @@ use crossterm::{
     cursor::MoveTo,
     terminal::{Clear, ClearType},
 };
-use ewin_com::{_cfg::key::keycmd::*, colors::*, def::*, global::*, log::*, model::*, util::*};
+use ewin_com::{
+    _cfg::{cfg::Cfg, key::keycmd::*},
+    colors::*,
+    def::*,
+    log::*,
+    model::*,
+    util::*,
+};
 use std::cmp::max;
 use unicode_width::UnicodeWidthStr;
 
@@ -70,8 +77,8 @@ impl Editor {
                     let last_sel = proc.box_sel_vec.last().unwrap().0;
                     self.recalc_scrlbar_h_row(&(first_sel.sy..=last_sel.sy).collect::<Vec<usize>>());
                 }
-                E_Cmd::ReplaceExec(is_regex, search_str, replace_str, idx_set) => {
-                    let tgt_idx_set = self.get_idx_set(*is_regex, search_str, replace_str, idx_set);
+                E_Cmd::ReplaceExec(search_str, replace_str, idx_set) => {
+                    let tgt_idx_set = self.get_idx_set(search_str, replace_str, idx_set);
                     let row_vec = &tgt_idx_set.iter().map(|x| self.buf.char_to_row(*x)).collect::<Vec<usize>>();
                     self.recalc_scrlbar_h_row(row_vec);
                 }
@@ -132,7 +139,7 @@ impl Editor {
                 // Last move
                 if self.scrl_h.clm_posi + 1 == self.scrl_h.scrl_range {
                     if self.buf.char_vec_row(self.scrl_h.max_width_row_idx).len() > self.offset_x {
-                        if let Some(disp_cur_x) = get_row_x(&self.buf.char_vec_range(self.scrl_h.max_width_row_idx, self.offset_x..), self.col_len, true, true) {
+                        if let Some(disp_cur_x) = get_row_x_opt(&self.buf.char_vec_range(self.scrl_h.max_width_row_idx, self.offset_x..), self.col_len, true, true) {
                             let move_cur_x = self.scrl_h.row_max_chars - (self.offset_x + disp_cur_x);
                             self.offset_x += move_cur_x;
                         }
@@ -149,7 +156,7 @@ impl Editor {
 
     pub fn draw_scrlbar_h(&mut self, str_vec: &mut Vec<String>) {
         Log::debug_key("draw_scrlbar_h");
-        if self.scrl_h.is_show && !self.scrl_v.is_enable {
+        if self.scrl_h.is_show {
             if self.scrl_h.bar_len == USIZE_UNDEFINED || self.scrl_h.row_max_width_org != self.scrl_h.row_max_width || self.col_len != self.col_len_org {
                 self.scrl_h.bar_len = max(2, (self.col_len as f64 / self.scrl_h.row_max_width as f64 * self.col_len as f64).floor() as usize);
 
@@ -175,7 +182,7 @@ impl Editor {
             }
             Log::debug("self.scrl_h.clm_posi 222", &self.scrl_h.clm_posi);
 
-            let height = CFG.get().unwrap().try_lock().unwrap().general.editor.scrollbar.horizontal.height;
+            let height = Cfg::get().general.editor.scrollbar.horizontal.height;
             for i in self.scrl_h.row_posi..self.scrl_h.row_posi + height {
                 str_vec.push(format!("{}{}", MoveTo(0, self.scrl_h.row_posi as u16).to_string(), Clear(ClearType::CurrentLine)));
                 str_vec.push(Colors::get_default_bg());

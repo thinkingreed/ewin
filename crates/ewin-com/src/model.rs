@@ -131,8 +131,7 @@ pub struct Search {
     pub str: String,
     pub idx: usize,
     pub ranges: Vec<SearchRange>,
-    // Full path
-    pub filenm: String,
+    pub fullpath: String,
     pub folder: String,
     pub row_num: usize,
 }
@@ -143,7 +142,7 @@ impl Search {
         self.idx = USIZE_UNDEFINED;
         self.ranges = vec![];
         // file full path
-        self.filenm = String::new();
+        self.fullpath = String::new();
         self.folder = String::new();
     }
 
@@ -157,7 +156,7 @@ impl Search {
 }
 impl Default for Search {
     fn default() -> Self {
-        Search { str: String::new(), idx: USIZE_UNDEFINED, ranges: vec![], filenm: String::new(), folder: String::new(), row_num: USIZE_UNDEFINED }
+        Search { str: String::new(), idx: USIZE_UNDEFINED, ranges: vec![], fullpath: String::new(), folder: String::new(), row_num: USIZE_UNDEFINED }
     }
 }
 
@@ -251,17 +250,23 @@ pub struct Job {
     pub job_type: JobType,
     pub job_evt: Option<JobEvent>,
     pub job_grep: Option<JobGrep>,
+    pub job_watch: Option<JobWatch>,
 }
 
 impl Default for Job {
     fn default() -> Self {
-        Job { job_type: JobType::Event, job_evt: None, job_grep: None }
+        Job { job_type: JobType::Event, job_evt: None, job_grep: None, job_watch: None }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct JobEvent {
     pub evt: Event,
+}
+
+#[derive(Debug, Clone)]
+pub struct JobWatch {
+    pub watch_state: WatchState,
 }
 
 impl Default for JobEvent {
@@ -283,6 +288,7 @@ pub struct JobGrep {
 pub enum JobType {
     Event,
     GrepResult,
+    Watch,
 }
 
 #[derive(Debug, Clone)]
@@ -825,14 +831,6 @@ impl TabState {
         }
         false
     }
-    /*
-    pub fn is_exists_input_field_not_open_file(&self) -> bool {
-        if !self.is_open_file && self.is_exists_input_field() {
-            return true;
-        }
-        false
-    }
-     */
 
     pub fn is_exists_choice(&self) -> bool {
         if self.is_enc_nl || self.is_menu {
@@ -879,6 +877,13 @@ impl DrawRangX {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FilePath {}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct WatchState {
+    // pub is_watch: bool,
+    pub fullpath: String,
+    pub unixtime_seq: u64,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UT {}

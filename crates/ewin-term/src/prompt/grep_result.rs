@@ -1,8 +1,9 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, def::*, global::*, log::Log, model::*},
+    ewin_com::{_cfg::cfg::*, _cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, def::*, log::Log, model::*},
     model::*,
     tab::Tab,
 };
+
 use std::{ffi::OsStr, io::Write, path::*, process};
 use tokio::process::*;
 
@@ -17,9 +18,9 @@ impl EvtAct {
             if job_grep.grep_str.trim().is_empty() {
                 return;
             }
-            let path = PathBuf::from(&term.curt().editor.search.filenm);
+            let path = PathBuf::from(&term.curt().editor.search.fullpath);
             let filenm = path.file_name().unwrap_or_else(|| OsStr::new("")).to_string_lossy().to_string();
-            let replace_folder = term.curt().editor.search.filenm.replace(&filenm, "");
+            let replace_folder = term.curt().editor.search.fullpath.replace(&filenm, "");
             let line_str = job_grep.grep_str.replace(&replace_folder, "");
 
             // New line code is fixed to LF because it is a non-editable file
@@ -58,7 +59,6 @@ impl EvtAct {
 
         let is_grep_result_vec_empty = term.curt().editor.grep_result_vec.is_empty();
         term.curt().prom.set_grep_result(is_grep_result_vec_empty, is_cancel);
-        term.curt().editor.buf.insert_end(&EOF_MARK.to_string());
         term.curt().editor.set_cur_default();
         term.curt().editor.scroll();
         term.curt().editor.scroll_horizontal();
@@ -112,12 +112,12 @@ impl EvtAct {
         // -I:Binary file not applicable, -i:Ignore-case, -F:Fixed-strings
         let mut cmd_option = "-rHnI".to_string();
         {
-            if !CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens {
+            if !Cfg::get_edit_search_case_sens() {
                 cmd_option.push('i');
             };
         }
         {
-            if !CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex {
+            if !!Cfg::get_edit_search_case_sens() {
                 cmd_option.push('F');
             };
         }
@@ -143,12 +143,12 @@ impl EvtAct {
         Log::info_s("              get_grep_child windows");
         let mut cmd_option = "".to_string();
         {
-            if CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens {
+            if !Cfg::get_edit_search_case_sens() {
                 cmd_option.push_str(" -CaseSensitive");
             };
         }
         {
-            if !CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex {
+            if !Cfg::get_edit_search_regex() {
                 cmd_option.push_str(" -SimpleMatch");
             };
         }

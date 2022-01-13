@@ -25,7 +25,6 @@ pub const NEW_LINE_LF_MARK: char = '↓';
 pub const NEW_LINE_CRLF_MARK: char = '↵';
 // Meaningless mark
 pub const EOF_MARK: char = '▚';
-pub const EOF_MARK_STR: &str = "▚";
 pub const EOF_STR: &str = "EOF";
 pub const TAB_MARK: char = '^';
 // "…" is not adopted because the width is handled differently depending on the terminal.

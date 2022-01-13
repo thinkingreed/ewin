@@ -62,7 +62,7 @@ impl Editor {
                         self.undo_del_box(box_sel_vec);
                     }
                     // In case of replace, only registration of Evt process
-                    E_Cmd::ReplaceExec(is_regex, search_str, replace_str, idx_set) => self.replace(&mut proc, *is_regex, search_str, replace_str, idx_set),
+                    E_Cmd::ReplaceExec(search_str, replace_str, idx_set) => self.replace(&mut proc, search_str, replace_str, idx_set),
                     _ => {}
                 }
                 if e_cmd != E_Cmd::Cut {
@@ -120,7 +120,7 @@ impl Editor {
 
         let mut rtn = String::new();
         for (idx, c) in vec.iter().enumerate() {
-            if *c == EOF_MARK || *c == NEW_LINE_LF || *c == NEW_LINE_CR {
+            if *c == NEW_LINE_LF || *c == NEW_LINE_CR {
                 break;
             }
             let width_org = width;

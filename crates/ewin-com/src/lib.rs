@@ -16,7 +16,9 @@ pub mod global {
 
     pub static LANG_MAP: Lazy<HashMap<String, String>> = Lazy::new(Lang::get_lang_map);
     pub static ENV: Lazy<Env> = Lazy::new(get_env_platform);
-    pub static CFG: OnceCell<Mutex<Cfg>> = OnceCell::new();
+    pub static CFG: OnceCell<Cfg> = OnceCell::new();
+    pub static CFG_SYNTAX: OnceCell<CfgSyntax> = OnceCell::new();
+    pub static CFG_EDIT: OnceCell<Mutex<Cfg>> = OnceCell::new();
     pub static LOG: OnceCell<crate::log::Log> = OnceCell::new();
     pub static KEY_CMD_MAP: OnceCell<HashMap<(Keys, KeyWhen), KeyCmd>> = OnceCell::new();
     pub static CMD_KEY_MAP: OnceCell<HashMap<KeyCmd, Keys>> = OnceCell::new();
@@ -26,6 +28,8 @@ pub mod global {
     pub static GREP_INFO_VEC: OnceCell<tokio::sync::Mutex<Vec<GrepState>>> = OnceCell::new();
     // Cancel is defined independently. Because it needs to be obtained when GREP_INFO_VEC is locked
     pub static GREP_CANCEL_VEC: OnceCell<tokio::sync::Mutex<Vec<bool>>> = OnceCell::new();
+
+    pub static WATCH_STATE: OnceCell<tokio::sync::Mutex<WatchState>> = OnceCell::new();
 
     pub static CURT_DIR: Lazy<String> = Lazy::new(|| env::current_dir().unwrap().to_string_lossy().to_string());
 

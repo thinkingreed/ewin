@@ -1,4 +1,5 @@
-use crate::{ewin_com::def::*, ewin_com::global::*, ewin_com::log::*, ewin_com::model::*, model::*};
+use crate::{ewin_com::def::*, ewin_com::log::*, ewin_com::model::*, model::*};
+use ewin_com::_cfg::cfg::Cfg;
 use regex::Regex;
 use std::collections::BTreeSet;
 
@@ -156,7 +157,7 @@ impl FormatXml {
     fn create_indent_arr(nl: String) -> Vec<String> {
         let mut indent_arr = vec![nl]; // array of shifts
         for idx in 0..100 {
-            indent_arr.push(format!("{}{}", indent_arr[idx], &CFG.get().unwrap().try_lock().unwrap().general.editor.format.indent));
+            indent_arr.push(format!("{}{}", indent_arr[idx], &Cfg::get().general.editor.format.indent));
         }
         indent_arr
     }

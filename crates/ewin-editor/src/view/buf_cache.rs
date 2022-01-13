@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{_cfg::cfg::*, _cfg::key::keycmd::*, char_style::*, def::*, global::*, log::*, model::*, util::*},
+    ewin_com::{_cfg::cfg::*, _cfg::key::keycmd::*, char_style::*, def::*, log::*, model::*, util::*},
     model::*,
 };
 use std::cmp::min;
@@ -52,14 +52,12 @@ impl EditorDraw {
     fn set_draw_regions(&mut self, editor: &Editor) {
         let (sy, ey) = if editor.is_enable_syntax_highlight && self.syntax_state_vec.is_empty() { (0, editor.buf.len_rows() - 1) } else { (self.sy, self.ey) };
         for y in sy..=ey {
-            let row_vec = editor.buf.char_vec_row(y);
-            Log::debug("yyyyyy", &y);
-
+            let mut row_vec = editor.buf.char_vec_row(y);
+            if y == editor.buf.len_rows() - 1 {
+                row_vec.append(&mut EOF_STR.chars().collect::<Vec<char>>());
+            }
             let sx_ex_range_opt = EditorDraw::get_draw_x_range(&row_vec, editor.offset_disp_x, editor.col_len);
-            Log::debug("sx_ex_range_opt", &sx_ex_range_opt);
-
             if editor.is_enable_syntax_highlight {
-                // TODO highlight draw_x_range
                 self.set_regions_highlight(editor, y, row_vec, sx_ex_range_opt);
             } else {
                 self.set_regions(editor, y, row_vec, sx_ex_range_opt);
@@ -68,13 +66,11 @@ impl EditorDraw {
     }
 
     fn set_regions(&mut self, editor: &Editor, y: usize, row_vec: Vec<char>, sx_ex_range_opt: Option<(DrawRangX, DrawRangX)>) {
-        let cfg = CFG.get().unwrap().try_lock().unwrap();
         let mut cells: Vec<Cell> = vec![];
         let (mut x, mut width) = (0, 0);
         let mut style_org = CharStyle::none();
 
         let mut row: Vec<char> = vec![];
-        Log::debug("sx_ex_range_opt", &sx_ex_range_opt);
 
         if let Some((sx_range, ex_range)) = sx_ex_range_opt {
             let (sx, ex) = (sx_range.get_x(), ex_range.get_x());
@@ -82,11 +78,11 @@ impl EditorDraw {
             row.copy_from_slice(&row_vec[sx..ex]);
 
             if sx_range.is_margin() || ex_range.is_margin() {
-                let c = cfg.general.editor.column_char_alignment_space.character;
+                let c = Cfg::get().general.editor.column_char_alignment_space.character;
                 if sx_range.is_margin() {
                     row.insert(0, c);
                 }
-                if ex_range.is_margin() && cfg.general.editor.column_char_alignment_space.end_of_line_enable {
+                if ex_range.is_margin() && Cfg::get().general.editor.column_char_alignment_space.end_of_line_enable {
                     row.push(c);
                 }
             }
@@ -94,16 +90,16 @@ impl EditorDraw {
             for (i, c) in row.iter().enumerate() {
                 width += match *c {
                     NEW_LINE_LF | NEW_LINE_CR => 1,
-                    TAB_CHAR => get_tab_width(width, cfg.general.editor.tab.size),
+                    TAB_CHAR => get_tab_width(width, Cfg::get().general.editor.tab.size),
                     _ => c.width().unwrap_or(0),
                 };
 
-                let style_type = if (i == 0 && sx_range.is_margin()) || (i == row.len() - 1 && ex_range.is_margin() && cfg.general.editor.column_char_alignment_space.end_of_line_enable) {
+                let style_type = if (i == 0 && sx_range.is_margin()) || (i == row.len() - 1 && ex_range.is_margin() && Cfg::get().general.editor.column_char_alignment_space.end_of_line_enable) {
                     CharStyleType::ColumnCharAlignmentSpace
                 } else {
                     self.is_select_or_search_style_type(editor, *c, editor.offset_disp_x + width, y, sx + x)
                 };
-                self.set_style(self.get_to_style(&cfg, editor.is_enable_syntax_highlight, style_type, &CharStyle::normal(&cfg)), *c, &mut style_org, &mut cells);
+                self.set_style(self.get_to_style(Cfg::get(), editor.is_enable_syntax_highlight, style_type, &CharStyle::normal(Cfg::get())), *c, &mut style_org, &mut cells);
                 x += 1;
             }
         }
@@ -112,8 +108,7 @@ impl EditorDraw {
     fn set_regions_highlight(&mut self, editor: &Editor, y: usize, row_vec: Vec<char>, sx_ex_range_opt: Option<(DrawRangX, DrawRangX)>) {
         // Log::ep_s("                  set_regions_highlight");
 
-        let cfg = CFG.get().unwrap().try_lock().unwrap();
-        let highlighter = Highlighter::new(&cfg.syntax.theme);
+        let highlighter = Highlighter::new(&CfgSyntax::get().syntax.theme);
         let mut cells: Vec<Cell> = vec![];
         let row = row_vec.iter().collect::<String>();
         let scope;
@@ -131,7 +126,7 @@ impl EditorDraw {
         }
 
         let mut highlight_state = HighlightState::new(&highlighter, scope);
-        let ops = parse.parse_line(&row, &cfg.syntax.syntax_set);
+        let ops = parse.parse_line(&row, &CfgSyntax::get().syntax.syntax_set);
         let iter = HighlightIterator::new(&mut highlight_state, &ops[..], &row, &highlighter);
         let style_vec: Vec<(Style, &str)> = iter.collect();
 
@@ -140,16 +135,16 @@ impl EditorDraw {
 
         // If the target is highlight at the first display, all lines are read for highlight_state, but Style is only the display line.
         for (style, string) in style_vec {
-            let style = CharStyle::from_syntect_style(&cfg, style);
+            let style = CharStyle::from_syntect_style(Cfg::get(), style);
 
             for c in string.chars() {
                 width += match c {
                     NEW_LINE_LF | NEW_LINE_CR => 1,
-                    TAB_CHAR => get_tab_width(width, cfg.general.editor.tab.size),
+                    TAB_CHAR => get_tab_width(width, Cfg::get().general.editor.tab.size),
                     _ => c.width().unwrap_or(0),
                 };
                 let style_type = self.is_select_or_search_style_type(editor, c, width, y, x);
-                self.set_style(self.get_to_style(&cfg, editor.is_enable_syntax_highlight, style_type, &style), c, &mut style_org, &mut cells);
+                self.set_style(self.get_to_style(Cfg::get(), editor.is_enable_syntax_highlight, style_type, &style), c, &mut style_org, &mut cells);
 
                 x += 1;
             }
@@ -190,7 +185,7 @@ impl EditorDraw {
         if sel_range.is_selected() && sel_range.sy <= y && y <= sel_range.ey {
             if editor.sel.mode == SelMode::Normal && editor.box_insert.mode == BoxInsertMode::Normal {
                 // Lines with the same start and end
-                if (sel_range.sy == sel_range.ey &&  sel_range.s_disp_x < width && width <= sel_range.e_disp_x && c != EOF_MARK) 
+                if (sel_range.sy == sel_range.ey &&  sel_range.s_disp_x < width && width <= sel_range.e_disp_x ) 
                 // Start line
                 || (sel_range.sy == y && sel_range.ey != y && sel_range.s_disp_x < width) 
                 // End line
@@ -209,7 +204,6 @@ impl EditorDraw {
                 }
             }
         }
-
         for range in &editor.search.ranges {
             if range.y == y && range.sx <= x && x < range.ex {
                 return CharStyleType::Search;
@@ -220,7 +214,18 @@ impl EditorDraw {
         match c {
             // Ignore NEW_LINE_CR
             NEW_LINE_LF | TAB_CHAR => CharStyleType::CtrlChar,
-            _ => CharStyleType::Nomal,
+            _ => {
+                if y == editor.buf.len_rows() - 1 {
+                    let last_row_chars = editor.buf.line(editor.buf.len_rows() - 1).len_chars();
+                    if x >= last_row_chars {
+                        CharStyleType::CtrlChar
+                    } else {
+                        CharStyleType::Nomal
+                    }
+                } else {
+                    CharStyleType::Nomal
+                }
+            }
         }
     }
 

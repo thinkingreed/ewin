@@ -1,9 +1,11 @@
+use ewin_com::_cfg::cfg::Cfg;
+
 use crate::ewin_com::{_cfg::key::keycmd::*, def::*, global::*, log::*, util::*};
 use std::{collections::HashMap, hash::Hash, slice::Iter};
 
 impl CtxMenuGroup {
     pub fn init(&mut self) {
-        let mut map: HashMap<String, HashMap<String, Vec<HashMap<String, Vec<String>>>>> = serde_json::from_str(&CFG.get().unwrap().try_lock().unwrap().general.ctx_menu.content).unwrap();
+        let mut map: HashMap<String, HashMap<String, Vec<HashMap<String, Vec<String>>>>> = serde_json::from_str(&Cfg::get().general.ctx_menu.content).unwrap();
         self.set_internal_struct(&mut map);
         self.set_disp_name();
     }

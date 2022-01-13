@@ -9,8 +9,6 @@ pub struct Editor {
     /// current cursor position
     pub cur: Cur,
     // Used for display position setting regardless of cursor position
-    pub disp_y: usize,
-    pub disp_y_org: usize,
     pub offset_y: usize,
     pub offset_y_org: usize,
     pub offset_x: usize,
@@ -55,8 +53,6 @@ impl Editor {
         Editor {
             buf: TextBuffer::default(),
             cur: Cur::default(),
-            disp_y: 0,
-            disp_y_org: 0,
             offset_y: 0,
             offset_y_org: 0,
             offset_x: 0,
@@ -154,11 +150,12 @@ pub struct ScrollbarV {
     pub row_posi: usize,
     pub row_posi_org: usize,
     pub bar_len: usize,
+    pub move_len: usize,
 }
 
 impl Default for ScrollbarV {
     fn default() -> Self {
-        ScrollbarV { is_show: false, is_enable: false, row_posi: USIZE_UNDEFINED, row_posi_org: USIZE_UNDEFINED, bar_len: USIZE_UNDEFINED }
+        ScrollbarV { is_show: false, is_enable: false, row_posi: USIZE_UNDEFINED, row_posi_org: USIZE_UNDEFINED, bar_len: USIZE_UNDEFINED, move_len: USIZE_UNDEFINED }
     }
 }
 

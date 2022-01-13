@@ -48,13 +48,12 @@ impl Editor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ewin_com::{_cfg::cfg::*, clipboard::*, def::*, model::*};
+    use ewin_com::{_cfg::cfg::*, clipboard::*, model::*};
 
     #[test]
     fn test_editor_proc_base_edit() {
         Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
         let mut e = Editor::new();
-        e.buf.insert_end(&EOF_MARK.to_string());
 
         // InsertStr
         e.e_cmd = E_Cmd::InsertStr("a".to_string());
@@ -129,7 +128,6 @@ mod tests {
     fn test_editor_proc_base_cur_move() {
         Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
         let mut e = Editor::new();
-        e.buf.insert_end(EOF_MARK_STR);
 
         // CursorLeft
         e.e_cmd = E_Cmd::InsertStr("a".to_string());
@@ -171,7 +169,6 @@ mod tests {
     fn test_editor_proc_base_select() {
         Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
         let mut e = Editor::new();
-        e.buf.insert_end(&EOF_MARK.to_string());
         e.e_cmd = E_Cmd::InsertStr("123\nabc\nABC".to_string());
         e.proc();
 
@@ -202,7 +199,6 @@ mod tests {
         Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
 
         let mut e = Editor::new();
-        e.buf.insert_end(&EOF_MARK.to_string());
         e.e_cmd = E_Cmd::InsertStr("123\nabc\nABC\nabc".to_string());
         e.proc();
 
@@ -226,7 +222,6 @@ mod tests {
         Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
 
         let mut e = Editor::new();
-        e.buf.insert_end(&EOF_MARK.to_string());
         e.e_cmd = E_Cmd::InsertStr("123\nabc\nABC\nabc".to_string());
         e.proc();
 

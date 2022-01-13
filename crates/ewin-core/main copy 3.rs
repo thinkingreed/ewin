@@ -153,8 +153,6 @@ async fn main() {
             }
         }
     });
-
-    /*
     let path___ = if cfg!(target_os = "windows") { "C:\\Users\\hi\\rust\\ewin\\target\\debug\\notify.txt" } else { "/home/thinkingreed/rust/ewin/target/debug/notify.txt" };
 
     let mut watch_state_org = WatchState::default();
@@ -179,13 +177,11 @@ async fn main() {
 
                 let mut fuse = rx_notify.next().fuse();
 
-                Log::debug("fuse 111", &fuse);
+                Log::debug("fuse", &fuse);
 
                 select! {
-                    ss_out = fuse => {
-                        Log::debug("fuse 222", &fuse);
-                        if let  Some(Ok(evt)) = ss_out{
-                            Log::debug("fuse 333", &fuse);
+                ss_out = fuse => {
+                    if let  Some(Ok(evt)) = ss_out{
                             if evt.kind.is_modify() {
                                 let unixtime_seq = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
                                 let job = Job { job_type: JobType::Watch, job_watch: Some(JobWatch { watch_state: WatchState { unixtime_seq, ..WatchState::default() } }), ..Job::default() };
@@ -205,7 +201,6 @@ async fn main() {
             }
         }
     });
-     */
 
     for job in rx {
         match job.job_type {

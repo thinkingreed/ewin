@@ -1,7 +1,8 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, def::*, global::*, log::*, model::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, def::*, log::*, model::*},
     model::*,
 };
+use ewin_com::_cfg::cfg::Cfg;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -27,7 +28,7 @@ impl Editor {
 
                 let value: Value = serde_json::from_str(&slice.to_string())?;
                 let buf = Vec::new();
-                let indent = &CFG.get().unwrap().try_lock().unwrap().general.editor.format.indent;
+                let indent = &Cfg::get().general.editor.format.indent;
                 let formatter = serde_json::ser::PrettyFormatter::with_indent(indent.as_bytes());
                 let mut ser = serde_json::Serializer::with_formatter(buf, formatter);
                 value.serialize(&mut ser).unwrap();

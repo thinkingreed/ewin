@@ -30,7 +30,7 @@ impl Editor {
     // initial cursor posi set
     pub fn undo_init(&mut self, proc: &Proc) {
         match &proc.e_cmd {
-            E_Cmd::InsertStr(_) | E_Cmd::InsertRow | E_Cmd::Cut | E_Cmd::ReplaceExec(_, _, _, _) => self.cur = proc.cur_s,
+            E_Cmd::InsertStr(_) | E_Cmd::InsertRow | E_Cmd::Cut | E_Cmd::ReplaceExec(_, _, _) => self.cur = proc.cur_s,
             E_Cmd::DelNextChar | E_Cmd::DelPrevChar => {
                 self.cur = if proc.sel.is_selected() {
                     if proc.cur_s.x > proc.cur_e.x {
@@ -62,10 +62,10 @@ impl Editor {
             E_Cmd::DelNextChar | E_Cmd::DelPrevChar => {
                 self.edit_proc(if proc.box_sel_vec.is_empty() { E_Cmd::InsertStr(proc.str.clone()) } else { E_Cmd::InsertBox(proc.box_sel_vec.clone()) });
             }
-            E_Cmd::ReplaceExec(is_regex, search_str, replace_str, idx_set) => {
-                let idx_set = self.get_idx_set(*is_regex, search_str, replace_str, idx_set);
+            E_Cmd::ReplaceExec(search_str, replace_str, idx_set) => {
+                let idx_set = self.get_idx_set(search_str, replace_str, idx_set);
 
-                self.edit_proc(E_Cmd::ReplaceExec(*is_regex, replace_str.clone(), search_str.clone(), idx_set));
+                self.edit_proc(E_Cmd::ReplaceExec(replace_str.clone(), search_str.clone(), idx_set));
 
                 /*
                 if *is_regex {
@@ -108,7 +108,7 @@ impl Editor {
                     proc.cur_s
                 }
             }
-            E_Cmd::ReplaceExec(_, _, _, _) => {
+            E_Cmd::ReplaceExec(_, _, _) => {
                 // Return cursor position
                 self.cur = proc.cur_s;
             }
@@ -150,7 +150,7 @@ impl Editor {
                     self.edit_proc(E_Cmd::InsertBox(proc.box_sel_redo_vec.clone()));
                 }
             }
-            E_Cmd::ReplaceExec(is_regex, search_str, replace_str, idx_set) => self.edit_proc(E_Cmd::ReplaceExec(*is_regex, search_str.clone(), replace_str.clone(), idx_set.clone())),
+            E_Cmd::ReplaceExec(search_str, replace_str, idx_set) => self.edit_proc(E_Cmd::ReplaceExec(search_str.clone(), replace_str.clone(), idx_set.clone())),
             _ => {}
         }
     }

@@ -1,3 +1,5 @@
+use ewin_com::_cfg::cfg::Cfg;
+
 use crate::{
     ewin_com::{def::*, global::*, log::*, model::*, util::*},
     model::*,
@@ -19,16 +21,15 @@ impl Editor {
         if vec.len() > 2 && vec[0] != "grep" {
             let ignore_prefix_str = format!("{}:{}:", vec[0], vec[1]);
 
-            let regex = CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex;
+            let regex = Cfg::get().general.editor.search.regex;
             let row = self.buf.len_rows() - 2;
 
             let (start_idx, end_idx, ignore_prefix_len) = match regex {
                 true => (self.buf.row_to_byte(row), self.buf.len_bytes(), ignore_prefix_str.len()),
                 false => (self.buf.row_to_char(row), self.buf.len_chars(), ignore_prefix_str.chars().count()),
             };
-
-            let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
-            let mut search_vec: Vec<SearchRange> = self.get_search_ranges(&self.search.str, start_idx, end_idx, ignore_prefix_len, cfg_search);
+            let cfg_search = &Cfg::get_edit_search();
+            let mut search_vec: Vec<SearchRange> = self.get_search_ranges(cfg_search, &self.search.str, start_idx, end_idx, ignore_prefix_len);
             self.search.ranges.append(&mut search_vec);
         }
 

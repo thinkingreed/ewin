@@ -43,7 +43,7 @@ impl EvtAct {
 
                     let mut grep_tab = Tab::new();
                     grep_tab.editor.search.str = search_str.clone();
-                    grep_tab.editor.search.filenm = path.to_string_lossy().to_string();
+                    grep_tab.editor.search.fullpath = path.to_string_lossy().to_string();
                     grep_tab.editor.search.folder = search_folder.clone();
                     grep_tab.editor.e_cmd = E_Cmd::GrepResult;
 

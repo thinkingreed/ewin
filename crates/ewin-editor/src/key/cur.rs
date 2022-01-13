@@ -1,5 +1,7 @@
+use ewin_com::_cfg::cfg::Cfg;
+
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, def::*, global::*, log::*, model::*, util::*},
+    ewin_com::{_cfg::key::keycmd::*, def::*, log::*, model::*, util::*},
     model::*,
 };
 use std::cmp::min;
@@ -26,51 +28,42 @@ impl Editor {
     }
 
     pub fn cur_up(&mut self) {
-        if self.get_vertical_val() == 0 {
-            return;
+        if !self.is_move_position_by_scrolling_enable_and_e_cmd() {
+            if self.cur.y == 0 {
+                return;
+            }
+            self.cur.y -= 1;
+            self.cur_updown_com();
         }
-        self.decrement_vertical_val();
-        self.cur_updown_com();
     }
 
     pub fn cur_down(&mut self) {
         Log::debug_key("c_d start");
-        Log::debug("self.disp_y 111", &self.disp_y);
         Log::debug("self.buf.len_rows() ", &self.buf.len_rows());
 
-        if self.get_vertical_val() == self.buf.len_rows() - 1 {
-            return;
-        }
-        if self.get_vertical_val() + 1 < self.buf.len_rows() {
-            self.increment_vertical_val();
+        if !self.is_move_position_by_scrolling_enable_and_e_cmd() {
+            if self.cur.y == self.buf.len_rows() - 1 {
+                return;
+            }
+            self.cur.y += 1;
             self.cur_updown_com();
         }
-
-        Log::debug("self.disp_y 222", &self.disp_y);
     }
 
     pub fn cur_updown_com(&mut self) {
         Log::debug_s("cur_updown_com");
 
-        if !CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable && (matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp) || matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _))) {
+        if self.updown_x == 0 {
+            self.updown_x = self.cur.disp_x;
+        }
+        // Not set for Left and Right
+        if self.sel.mode == SelMode::BoxSelect && get_row_x_opt(&self.buf.char_vec_row(self.cur.y), self.cur.disp_x, true, false).is_none() {
         } else {
-            if self.updown_x == 0 {
-                self.updown_x = self.cur.disp_x;
-            }
-            // Not set for Left and Right
-            if self.sel.mode != SelMode::BoxSelect && (self.e_cmd == E_Cmd::CursorLeft || self.e_cmd == E_Cmd::CursorRight) {
-                //   } else if !(self.sel.mode == SelMode::BoxSelect && self.buf.char_vec_row(self.cur.y).len() < self.updown_x) {
-                // } else if self.sel.mode == SelMode::BoxSelect {
-            } else {
-                Log::debug("self.cur.disp_x 111", &self.cur.disp_x);
-                let (cur_x, disp_x) = get_until_disp_x(&self.buf.char_vec_row(self.cur.y), self.updown_x);
-                Log::debug("disp_x 222", &disp_x);
-
-                self.cur.disp_x = disp_x;
-                self.cur.x = cur_x;
-                if self.sel.mode != SelMode::BoxSelect {
-                    self.scroll_horizontal();
-                }
+            let (cur_x, disp_x) = get_until_disp_x(&self.buf.char_vec_row(self.cur.y), self.updown_x, false);
+            self.cur.disp_x = disp_x;
+            self.cur.x = cur_x;
+            if self.sel.mode != SelMode::BoxSelect {
+                self.scroll_horizontal();
             }
         }
     }
@@ -85,9 +78,8 @@ impl Editor {
             self.set_cur_target(self.cur.y, self.buf.len_row_chars(self.cur.y), false);
         } else {
             let c = self.buf.char(self.cur.y, self.cur.x - 1);
-
             if c == TAB_CHAR {
-                let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.size;
+                let cfg_tab_width = Cfg::get().general.editor.tab.size;
                 let (_, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(self.cur.y)[self.offset_x..self.cur.x - 1], self.offset_disp_x, false);
                 self.cur.disp_x -= cfg_tab_width - ((self.offset_disp_x + width) % cfg_tab_width);
                 self.cur.x -= 1;
@@ -106,46 +98,38 @@ impl Editor {
 
     pub fn cur_right(&mut self) {
         let mut is_end_of_line = false;
-        let c = self.buf.char(self.cur.y, self.cur.x);
-        match self.e_cmd {
-            E_Cmd::CursorRight | E_Cmd::InsertStr(_) => {
-                if self.state.mouse_mode == MouseMode::Normal {
-                    if is_row_end_char(c) {
-                        is_end_of_line = true;
+        let char_opt = self.buf.char_opt(self.cur.y, self.cur.x);
+        if let Some(c) = char_opt {
+            match self.e_cmd {
+                E_Cmd::CursorRight | E_Cmd::InsertStr(_) => {
+                    if self.state.mouse_mode == MouseMode::Normal {
+                        if is_row_end_char(c) {
+                            is_end_of_line = true;
+                        }
+                    } else {
+                        let (cur_x, _) = get_row_cur_x_disp_x(&self.buf.char_vec_row(self.cur.y)[..], 0, false);
+                        if self.cur.x == cur_x {
+                            is_end_of_line = true;
+                        }
                     }
-                } else {
-                    let (cur_x, _) = get_row_cur_x_disp_x(&self.buf.char_vec_row(self.cur.y)[..], 0, false);
-                    if self.cur.x == cur_x {
+                }
+                E_Cmd::CursorRightSelect => {
+                    let len_line_chars = self.buf.len_row_chars(self.cur.y);
+                    let x = if c == NEW_LINE_CR { len_line_chars - 1 } else { len_line_chars };
+                    if self.cur.x == x - 1 {
                         is_end_of_line = true;
                     }
                 }
+                _ => {}
             }
-            E_Cmd::CursorRightSelect => {
-                let len_line_chars = self.buf.len_row_chars(self.cur.y);
-                let x = if c == NEW_LINE_CR { len_line_chars - 1 } else { len_line_chars };
-                if self.cur.x == x - 1 {
-                    is_end_of_line = true;
-                }
-            }
-            _ => {}
-        }
-        // End of line
-        if is_end_of_line {
-            // Last line
-            if self.cur.y == self.buf.len_rows() - 1 {
-                return;
-            } else {
+            // End of line
+            if is_end_of_line {
                 self.updown_x = 0;
                 self.cur.disp_x = 0;
                 self.cur.x = 0;
                 self.cur_down();
-            }
-        } else {
-            if c == EOF_MARK {
-                return;
-            }
-            if c == TAB_CHAR {
-                let cfg_tab_width = CFG.get().unwrap().try_lock().unwrap().general.editor.tab.size;
+            } else if c == TAB_CHAR {
+                let cfg_tab_width = Cfg::get().general.editor.tab.size;
                 let tab_width = cfg_tab_width - (self.cur.disp_x % cfg_tab_width);
                 self.cur.disp_x += tab_width;
                 self.cur.x += 1;
@@ -157,9 +141,9 @@ impl Editor {
                     self.cur.x += 1;
                 }
             }
+            self.scroll();
+            self.scroll_horizontal();
         }
-        self.scroll();
-        self.scroll_horizontal();
     }
     pub fn cur_home(&mut self) {
         self.cur.x = 0;

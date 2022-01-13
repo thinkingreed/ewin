@@ -27,6 +27,7 @@ use crossterm::{
     terminal::*,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use ewin_com::_cfg::cfg::{Cfg, CfgSyntax};
 use std::{
     ffi::OsStr,
     fmt,
@@ -87,7 +88,6 @@ impl Terminal {
         self.draw_init_info(&mut str_vec, draw_range_org);
 
         Log::debug("cur", &self.curt().editor.cur);
-        Log::debug("self.curt().editor.disp_y", &self.curt().editor.disp_y);
         Log::debug("offset_x", &self.curt().editor.offset_x);
         Log::debug("offset_disp_x", &self.curt().editor.offset_disp_x);
         Log::debug("offset_y", &self.curt().editor.offset_y);
@@ -98,8 +98,8 @@ impl Terminal {
         Log::debug("sel_range", &self.curt().editor.sel);
         // Log::debug("", &self.curt().editor.search);
         // Log::debug("box_sel.mode", &self.curt().editor.box_insert.mode);
-        Log::debug("self.curt().editor.scrl_v.is_enable", &self.curt().editor.scrl_v.is_enable);
-        Log::debug("self.curt().editor.scrl_h.is_enable", &self.curt().editor.scrl_h.is_enable);
+        Log::debug("scrl_v.is_enable", &self.curt().editor.scrl_v.is_enable);
+        Log::debug("scrl_h.is_enable", &self.curt().editor.scrl_h.is_enable);
 
         self.draw_flush(out, str_vec);
 
@@ -130,7 +130,7 @@ impl Terminal {
 
         if self.state.is_ctx_menu {
             self.ctx_menu_group.draw_cur();
-        } else if self.curt().state.is_editor_cur() {
+        } else if self.curt().state.is_editor_cur() && self.curt().editor.is_cur_y_in_screen() {
             if self.curt().mbar.is_exsist_msg() && self.hbar.row_num + self.curt().editor.cur.y - self.curt().editor.offset_y == self.curt().mbar.disp_row_posi {
                 self.curt().editor.cur_up();
             }
@@ -250,7 +250,7 @@ impl Terminal {
         if self.curt().editor.row_disp_len < self.curt().editor.buf.len_rows() {
             {
                 self.curt().editor.scrl_v.is_show = true;
-                self.curt().editor.col_len -= CFG.get().unwrap().try_lock().unwrap().general.editor.scrollbar.vertical.width;
+                self.curt().editor.col_len -= Cfg::get().general.editor.scrollbar.vertical.width;
             }
         } else {
             self.curt().editor.scrl_v.is_show = false;
@@ -259,7 +259,7 @@ impl Terminal {
         if self.curt().editor.scrl_h.row_max_width > self.curt().editor.col_len {
             self.curt().editor.scrl_h.is_show = true;
             {
-                self.curt().editor.row_disp_len -= CFG.get().unwrap().try_lock().unwrap().general.editor.scrollbar.horizontal.height;
+                self.curt().editor.row_disp_len -= Cfg::get().general.editor.scrollbar.horizontal.height;
                 self.curt().editor.scrl_h.row_posi = self.curt().editor.row_disp_len + 1;
             }
         } else {
@@ -332,11 +332,7 @@ impl Terminal {
             let mut h_file = HeaderFile::new(filenm);
             let mut tab = if let Some(tab) = tab_opt { tab.clone() } else { self.curt().clone() };
 
-            if filenm.is_empty() {
-                if file_open_type == FileOpenType::First || file_open_type == FileOpenType::Nomal {
-                    tab.editor.buf.text.insert_char(tab.editor.buf.text.len_chars(), EOF_MARK);
-                }
-            } else {
+            if !filenm.is_empty() {
                 // read
                 let result = TextBuffer::read_file(filenm);
                 match result {
@@ -392,7 +388,7 @@ impl Terminal {
         let file_meta = metadata(path).unwrap();
         let ext = path.extension().unwrap_or_else(|| OsStr::new("txt")).to_string_lossy().to_string();
         //  self.editor_draw_vec[self.idx].syntax_reference = if let Some(sr) = CFG.get().unwrap().try_lock().unwrap().syntax.syntax_set.find_syntax_by_extension(&ext) { Some(sr.clone()) } else { None };
-        self.editor_draw_vec[self.idx].syntax_reference = CFG.get().unwrap().try_lock().unwrap().syntax.syntax_set.find_syntax_by_extension(&ext).cloned();
+        self.editor_draw_vec[self.idx].syntax_reference = CfgSyntax::get().syntax.syntax_set.find_syntax_by_extension(&ext).cloned();
 
         if self.editor_draw_vec[self.idx].syntax_reference.is_some() && file_meta.len() < ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE && is_enable_syntax_highlight(&ext) {
             self.curt().editor.is_enable_syntax_highlight = true;
@@ -411,6 +407,7 @@ impl Terminal {
         let _ = GREP_INFO_VEC.set(tokio::sync::Mutex::new(vec![GrepState::default()]));
         let _ = GREP_CANCEL_VEC.set(tokio::sync::Mutex::new(vec![]));
         let _ = global_term::TAB.set(tokio::sync::Mutex::new(Tab::new()));
+        let _ = WATCH_STATE.set(tokio::sync::Mutex::new(WatchState::default()));
 
         self.open_file(&args.filenm, Some(&mut Tab::new()), FileOpenType::First);
 
@@ -426,27 +423,28 @@ impl Terminal {
         self.idx = self.tabs.len();
         self.tabs.push(tab);
         self.editor_draw_vec.push(EditorDraw::default());
-
         self.hbar.file_vec.push(h_file.clone());
         self.hbar.disp_base_idx = USIZE_UNDEFINED;
 
-        self.curt().editor.calc_scrlbar_h();
-
-        self.set_disp_size();
-
-        self.curt().editor.h_file = h_file;
+        self.init_tab(h_file);
     }
 
     pub fn change_curt_tab(&mut self, tab: Tab, h_file: HeaderFile) {
         self.tabs[self.idx] = tab;
         self.editor_draw_vec[self.idx].clear();
-
         self.hbar.file_vec[self.idx] = h_file.clone();
+
+        self.init_tab(h_file);
+    }
+    pub fn init_tab(&mut self, h_file: HeaderFile) {
         self.curt().editor.calc_scrlbar_h();
-
+        self.curt().editor.calc_scrlbar_v();
         self.set_disp_size();
+        self.curt().editor.h_file = h_file.clone();
 
-        self.curt().editor.h_file = h_file;
+        {
+            *WATCH_STATE.get().unwrap().try_lock().unwrap() = WatchState { fullpath: h_file.fullpath, unixtime_seq: 0 };
+        }
     }
 
     pub fn del_tab(&mut self, tab_idx: usize) {
@@ -560,7 +558,6 @@ impl Terminal {
 
         let mut new_tab = Tab::new();
         new_tab.editor.set_cur_default();
-        new_tab.editor.buf.insert_end(&EOF_MARK.to_string());
         new_tab.editor.draw_range = E_DrawRange::All;
 
         // let dt: DateTime<Local> = Local::now();

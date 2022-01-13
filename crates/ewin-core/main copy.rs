@@ -17,7 +17,6 @@ use std::{
     collections::HashMap,
     io::*,
     panic,
-    path::Path,
     sync::mpsc::*,
     thread::{self},
     time::{self, SystemTime, UNIX_EPOCH},
@@ -153,59 +152,28 @@ async fn main() {
             }
         }
     });
+    let path = if cfg!(target_os = "windows") { "C:\\Users\\hi\\rust\\ewin\\target\\debug\\notify.txt" } else { "/home/thinkingreed/rust/ewin/target/debug/notify.txt" };
 
-    /*
-    let path___ = if cfg!(target_os = "windows") { "C:\\Users\\hi\\rust\\ewin\\target\\debug\\notify.txt" } else { "/home/thinkingreed/rust/ewin/target/debug/notify.txt" };
-
-    let mut watch_state_org = WatchState::default();
+    let (mut watcher, mut rx_notify) = async_watcher().unwrap();
+    watcher.watch(path.as_ref(), RecursiveMode::NonRecursive).unwrap();
+    let now = SystemTime::now();
+    let unixtime = now.duration_since(UNIX_EPOCH).expect("back to the future");
+    let unixtime_seq = unixtime.as_secs();
+    eprintln!("unixtime = {}", unixtime.as_secs());
 
     tokio::spawn(async move {
         loop {
-            thread::sleep(time::Duration::from_millis(5000));
+            thread::sleep(time::Duration::from_millis(1000));
 
-            Log::debug_s("loop 000");
-            if let Some(Ok(mut watch_state)) = WATCH_STATE.get().map(|watch_state| watch_state.try_lock()) {
-                Log::debug_s("loop 111");
-
-                let (mut watcher, mut rx_notify) = async_watcher().unwrap();
-
-                //  if watch_state.fullpath != watch_state_org.fullpath {
-                if !watch_state.fullpath.is_empty() {
-                    Log::debug("watch_state.fullpath != watch_state_org.fullpath", &(watch_state.fullpath != watch_state_org.fullpath));
-                    let path = Path::new(&watch_state.fullpath);
-                    //   watcher.unwatch(Path::new(path___));
-                    watcher.watch(Path::new(path___), RecursiveMode::NonRecursive).unwrap();
-                }
-
-                let mut fuse = rx_notify.next().fuse();
-
-                Log::debug("fuse 111", &fuse);
-
-                select! {
-                    ss_out = fuse => {
-                        Log::debug("fuse 222", &fuse);
-                        if let  Some(Ok(evt)) = ss_out{
-                            Log::debug("fuse 333", &fuse);
-                            if evt.kind.is_modify() {
-                                let unixtime_seq = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-                                let job = Job { job_type: JobType::Watch, job_watch: Some(JobWatch { watch_state: WatchState { unixtime_seq, ..WatchState::default() } }), ..Job::default() };
-                                let _ = tx_watch.send(job);
-                                if watch_state.unixtime_seq != watch_state_org.unixtime_seq {
-                                    watch_state_org = watch_state.clone();
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Log::debug_s("loop 222");
-                if watch_state_org != *watch_state {
-                    Log::debug("watch_state_org != watch_state", &(watch_state_org != *watch_state));
+            while let Some(Ok(evt)) = rx_notify.next().await {
+                if evt.kind.is_modify() {
+                    let job = Job { job_type: JobType::Watch, job_watch: Some(JobWatch { evt }), ..Job::default() };
+                    let _ = tx_watch.send(job);
+                    // evt_watch_org = evt;
                 }
             }
         }
     });
-     */
 
     for job in rx {
         match job.job_type {

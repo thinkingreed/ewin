@@ -1,20 +1,20 @@
 use crate::{
-    ewin_com::{_cfg::lang::lang_cfg::*, def::*, file::*, global::*, log::*, model::*},
+    ewin_com::{_cfg::lang::lang_cfg::*, def::*, file::*, log::*, model::*},
     model::*,
 };
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
+use ewin_com::_cfg::cfg::Cfg;
 use ropey::RopeBuilder;
 use std::{cmp::min, fs::OpenOptions, io::*, option::Option, time::SystemTime, *};
 
 impl TextBuffer {
     pub fn read_file(path: &str) -> io::Result<(TextBuffer, Encode, String, Option<Encode>, SystemTime)> {
-        let (mut read_str, mut enc, bom, modified_time) = File::read(path)?;
+        let (read_str, mut enc, bom, modified_time) = File::read(path)?;
 
         if read_str.is_empty() {
             enc = Encode::UTF8;
         }
         let mut b = RopeBuilder::new();
-        read_str.push(EOF_MARK);
         b.append(&read_str);
         let text_buf = TextBuffer { text: b.finish() };
 
@@ -31,7 +31,6 @@ impl TextBuffer {
             if decode_str.is_empty() {
                 decode_str = (*String::from_utf8_lossy(&vec)).to_string();
             }
-            decode_str.push(EOF_MARK);
 
             h_file.enc = enc;
             h_file.nl = self.check_nl();
@@ -58,8 +57,9 @@ impl TextBuffer {
     fn check_nl(&self) -> String {
         let mut new_line = NEW_LINE_CRLF_STR.to_string();
         // 2048 Newline character judgment at a specific size
-        let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
-        let crlf_len = self.search(NEW_LINE_CRLF, 0, min(2048, self.len_chars()), cfg_search).len();
+
+        let cfg_search = Cfg::get_edit_search();
+        let crlf_len = self.search(NEW_LINE_CRLF, 0, min(2048, self.len_chars()), &cfg_search).len();
         if crlf_len == 0 {
             new_line = NEW_LINE_LF_STR.to_string();
         };
@@ -85,11 +85,11 @@ impl TextBuffer {
     pub fn change_nl(&mut self, from_nl_str: &str, to_nl_str: &str) {
         let from_nl = &NL::get_nl(from_nl_str);
         let to_nl = &NL::get_nl(to_nl_str);
-        let cfg_search = &CFG.get().unwrap().try_lock().unwrap().general.editor.search;
 
-        let search_map = self.search(from_nl, 0, self.text.len_chars(), cfg_search);
+        let cfg_search = Cfg::get_edit_search();
+        let search_map = self.search(from_nl, 0, self.text.len_chars(), &cfg_search);
 
-        self.replace(cfg_search.regex, from_nl_str, to_nl, &search_map);
+        self.replace(from_nl_str, to_nl, &search_map);
     }
 
     pub fn write_to(&mut self, path: &str, h_file: &HeaderFile) -> io::Result<bool> {
@@ -102,7 +102,6 @@ impl TextBuffer {
         if !enc_errors {
             let vec = self.add_bom(&mut u8_vec, h_file);
             BufWriter::new(fs::File::create(path)?).write_all(&vec[..])?;
-            self.insert_end(EOF_MARK.to_string().as_str());
         }
         Ok(enc_errors)
     }

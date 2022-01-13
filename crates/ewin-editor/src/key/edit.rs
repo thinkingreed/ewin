@@ -1,3 +1,5 @@
+use std::cmp::min;
+
 use crate::{
     ewin_com::{_cfg::key::keycmd::*, clipboard::*, def::*, log::*, model::*, util::*},
     model::*,
@@ -69,7 +71,7 @@ impl Editor {
             // Exist row
             if sy + i <= self.buf.len_rows() - 1 {
                 // If there are characters up to the column to insert
-                if let Some(cur_x) = get_row_x(&self.buf.char_vec_row(sy + i)[..], s_disp_x, false, false) {
+                if let Some(cur_x) = get_row_x_opt(&self.buf.char_vec_row(sy + i)[..], s_disp_x, false, false) {
                     self.buf.insert(sy + i, cur_x, sel_str);
                     let sel = SelRange { sy: sy + i, sx: cur_x, ex: cur_x + sel_str.chars().count(), s_disp_x, e_disp_x: s_disp_x + get_str_width(sel_str), ..SelRange::default() };
                     box_sel_undo_vec.push((sel, sel_str.clone()));
@@ -103,7 +105,6 @@ impl Editor {
                 box_sel_undo_vec.push((SelRange { sy: sy + i, sx: 0, ex: new_row_str.chars().count(), s_disp_x: 0, e_disp_x: get_str_width(new_row_str), ..SelRange::default() }, sel_str.to_string()));
                 box_sel_redo_vec.push((SelRange { sy: sy + i, sx: s_disp_x, s_disp_x, ex: sx + sel_str.chars().count(), ..SelRange::default() }, sel_str.to_string()));
 
-                self.buf.insert_end(&EOF_MARK.to_string());
                 ex = " ".repeat(s_disp_x).chars().count() + sel_str.chars().count();
             }
 
@@ -157,15 +158,16 @@ impl Editor {
         Log::debug_key("back_space");
         // beginning of the line
         if self.cur.x == 0 {
+            if self.cur.y == 0 {
+                return;
+            }
             self.cur.y -= 1;
-            let (mut cur_x, _) = get_row_cur_x_disp_x(&self.buf.char_vec_row(self.cur.y)[..], 0, true);
-            // ' ' is meaningless value
-            let c = if cur_x > 0 { self.buf.char(self.cur.y, cur_x - 1) } else { ' ' };
+            let mut cur_x = self.buf.line(self.cur.y).len_chars() - 1;
+            Log::debug("cur_x", &cur_x);
+            let c = self.buf.char(self.cur.y, cur_x);
             ep.str = if c == NEW_LINE_CR { NEW_LINE_CRLF.to_string() } else { NEW_LINE_LF.to_string() };
-            // Minus for new line code
-            cur_x -= 1;
-
-            self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelPrevChar), self.cur.y, self.buf.len_row_chars(self.cur.y) - 1);
+            self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelPrevChar), self.cur.y, cur_x);
+            cur_x = min(cur_x, self.buf.line(self.cur.y).len_chars());
             self.set_cur_target(self.cur.y, cur_x, false);
             self.scroll();
             self.scroll_horizontal();

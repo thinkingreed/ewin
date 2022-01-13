@@ -1,5 +1,7 @@
+use ewin_com::{_cfg::cfg::Cfg, global::CFG_EDIT};
+
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, colors::*, global::*, log::*, util::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, colors::*, log::*, util::*},
     model::*,
 };
 use std::{cmp::min, usize};
@@ -55,7 +57,9 @@ impl PromptCont {
         let key_str = Keybind::get_key_str(KeyCmd::Prom(P_Cmd::FindCaseSensitive));
         let key_case_sens = format!("{}{}:{}{}", Colors::get_default_fg(), &Lang::get().case_sens, Colors::get_msg_warning_fg(), key_str);
         let sx = get_str_width(&format!("{}:{}", &Lang::get().case_sens, key_str)) as u16;
-        let opt_case_sens = PromptContOpt { key: key_case_sens, is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.case_sens, mouse_area: (sx, sx + 2) };
+        let cfg_search = &Cfg::get_edit_search();
+
+        let opt_case_sens = PromptContOpt { key: key_case_sens, is_check: cfg_search.case_sens, mouse_area: (sx, sx + 2) };
         self.opt_1 = opt_case_sens;
     }
 
@@ -65,19 +69,21 @@ impl PromptCont {
 
         // +2 is the space between options
         let sx = self.opt_1.mouse_area.1 + 2 + get_str_width(&format!("{}:{}", &Lang::get().regex, key_str)) as u16 + 1;
+        let cfg_search = &Cfg::get_edit_search();
 
-        let opt_regex = PromptContOpt { key: key_regex, is_check: CFG.get().unwrap().try_lock().unwrap().general.editor.search.regex, mouse_area: (sx, sx + 2) };
+        let opt_regex = PromptContOpt { key: key_regex, is_check: cfg_search.regex, mouse_area: (sx, sx + 2) };
         self.opt_2 = opt_regex;
     }
 
     pub fn change_opt_case_sens(&mut self) {
         self.opt_1.toggle_check();
-        CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.case_sens = self.opt_1.is_check).unwrap();
+
+        CFG_EDIT.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.case_sens = self.opt_1.is_check).unwrap();
     }
 
     pub fn change_opt_regex(&mut self) {
         self.opt_2.toggle_check();
-        CFG.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.regex = self.opt_2.is_check).unwrap();
+        CFG_EDIT.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.regex = self.opt_2.is_check).unwrap();
     }
 
     pub fn set_cur_target(&mut self, x: usize) {

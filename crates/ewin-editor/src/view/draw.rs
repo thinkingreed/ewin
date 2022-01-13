@@ -1,8 +1,9 @@
 use crate::{
-    ewin_com::{colors::*, def::*, global::*, log::*, model::*, util::*},
+    ewin_com::{colors::*, def::*, log::*, model::*, util::*},
     model::*,
 };
 use crossterm::{cursor::*, terminal::*};
+use ewin_com::_cfg::cfg::{Cfg, CfgSyntax};
 use std::io::Write;
 
 impl Editor {
@@ -34,7 +35,7 @@ impl Editor {
         }
 
         // If you need to edit the previous row_num
-        if self.offset_y == self.offset_y_org && !(draw.sy <= self.cur_y_org && self.cur_y_org <= draw.ey) && self.buf.len_rows() >= self.cur_y_org && CFG.get().unwrap().try_lock().unwrap().general.editor.cursor.move_position_by_scrolling_enable {
+        if self.offset_y == self.offset_y_org && !(draw.sy <= self.cur_y_org && self.cur_y_org <= draw.ey) && self.buf.len_rows() >= self.cur_y_org && self.is_move_cur_posi_scrolling_enable() {
             str_vec.push(format!("{}", MoveTo(0, (self.cur_y_org - self.offset_y + self.row_posi) as u16)));
             self.set_row_num(self.cur_y_org, str_vec);
             str_vec.push(format!("{}", MoveTo(0, (draw.sy - self.offset_y + self.row_posi) as u16)));
@@ -53,28 +54,24 @@ impl Editor {
                     break;
                 }
                 x_width += width;
-
                 if self.state.mouse_mode == MouseMode::Normal {
                     match c {
-                        EOF_MARK => {
-                            // EOF_STR.len() - 1 is rest 2 char
-                            let disp_len = if EOF_STR.len() - 1 + x_width > self.col_len { EOF_STR.len() - (EOF_STR.len() - 1 + x_width - self.col_len) } else { EOF_STR.len() };
-                            Colors::set_eof(str_vec, disp_len)
-                        }
                         NEW_LINE_LF => str_vec.push(if c_org == NEW_LINE_CR { NEW_LINE_CRLF_MARK.to_string() } else { NEW_LINE_LF_MARK.to_string() }),
                         NEW_LINE_CR => {}
                         TAB_CHAR => str_vec.push(format!("{}{}", TAB_MARK, " ".repeat(width - 1))),
                         _ => str_vec.push(c.to_string()),
                     }
+                    // self.state.mouse_mode == MouseMode::Mouse
                 } else {
                     match c {
-                        EOF_MARK | NEW_LINE_LF | NEW_LINE_CR => {}
+                        NEW_LINE_LF | NEW_LINE_CR => {}
                         TAB_CHAR => str_vec.push(" ".repeat(width)),
                         _ => str_vec.push(c.to_string()),
                     }
                 }
                 c_org = c;
             }
+
             y += 1;
             x_width = 0;
 
@@ -84,9 +81,7 @@ impl Editor {
                 str_vec.push(NEW_LINE_CRLF.to_string());
             }
         }
-
         str_vec.push(Colors::get_default_bg());
-
         self.draw_scrlbar_v(str_vec);
         self.draw_scrlbar_h(str_vec);
 
@@ -111,12 +106,12 @@ impl Editor {
             Colors::set_text_color(str_vec);
         }
     }
+
     pub fn set_bg_color(&mut self, str_vec: &mut Vec<String>) {
-        let cfg = CFG.get().unwrap().try_lock().unwrap();
-        if let Some(color) = cfg.syntax.theme.settings.background {
-            str_vec.push(if self.is_enable_syntax_highlight && cfg.colors.theme.theme_bg_enable { Colors::bg(Color::from(color)) } else { Colors::bg(cfg.colors.editor.bg) });
+        if let Some(color) = CfgSyntax::get().syntax.theme.settings.background {
+            str_vec.push(if self.is_enable_syntax_highlight && Cfg::get().colors.theme.theme_bg_enable { Colors::bg(Color::from(color)) } else { Colors::bg(Cfg::get().colors.editor.bg) });
         } else {
-            str_vec.push(Colors::bg(cfg.colors.editor.bg));
+            str_vec.push(Colors::bg(Cfg::get().colors.editor.bg));
         }
     }
     pub fn clear_draw<T: Write>(&self, out: &mut T, sy: usize) {

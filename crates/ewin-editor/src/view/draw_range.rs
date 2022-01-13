@@ -104,13 +104,13 @@ impl Editor {
                     }
                 }
                 E_Cmd::MouseScrollDown | E_Cmd::MouseScrollUp => {
-                    if self.get_vertical_org_val() == 0 || self.get_vertical_org_val() == self.buf.len_rows() - 1 {
+                    if self.cur_y_org == 0 || self.cur_y_org == self.buf.len_rows() - 1 {
                         E_DrawRange::Not
                     } else {
                         E_DrawRange::All
                     }
                 }
-                E_Cmd::AllSelect | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::CursorFileHome | E_Cmd::CursorFileEnd | E_Cmd::FindNext | E_Cmd::FindBack | E_Cmd::CancelModeAndSearchResult | E_Cmd::ReplaceExec(_, _, _, _) | E_Cmd::BoxSelectMode => E_DrawRange::All,
+                E_Cmd::AllSelect | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::CursorFileHome | E_Cmd::CursorFileEnd | E_Cmd::FindNext | E_Cmd::FindBack | E_Cmd::CancelModeAndSearchResult | E_Cmd::ReplaceExec(_, _, _) | E_Cmd::BoxSelectMode => E_DrawRange::All,
                 _ => E_DrawRange::Not,
             }
         };

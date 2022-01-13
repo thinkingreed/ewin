@@ -1,4 +1,4 @@
-use crate::global::*;
+use crate::{_cfg::cfg::Cfg, global::*};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -170,7 +170,7 @@ impl Lang {
     }
 
     pub fn read_lang_cfg() -> Lang {
-        let lang = match &CFG.get().unwrap().try_lock().unwrap().general.lang {
+        let lang = match &Cfg::get().general.lang {
             Some(s) if s == "ja_JP" => "ja_JP".to_string(),
             _ => "en_US".to_string(),
         };

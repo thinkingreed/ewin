@@ -8,15 +8,45 @@ use syntect::{
 };
 
 use super::theme_loader::ThemeLoader;
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Cfg {
     pub general: CfgGeneral,
     pub colors: CfgColors,
-    #[serde(skip_deserializing, skip_serializing)]
-    pub syntax: Syntax,
+}
+impl Cfg {
+    pub fn get() -> &'static Cfg {
+        return CFG.get().unwrap();
+    }
+
+    pub fn get_edit_search() -> CfgSearch {
+        return CfgSearch { regex: Cfg::get_edit_search_regex(), case_sens: Cfg::get_edit_search_case_sens() };
+    }
+
+    pub fn get_edit_search_regex() -> bool {
+        return CFG_EDIT.get().unwrap().try_lock().unwrap().general.editor.search.regex;
+    }
+    pub fn get_edit_search_case_sens() -> bool {
+        return CFG_EDIT.get().unwrap().try_lock().unwrap().general.editor.search.case_sens;
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct CfgSyntax {
+    pub syntax: Syntax,
+}
+
+impl Default for CfgSyntax {
+    fn default() -> Self {
+        CfgSyntax { syntax: Syntax::default() }
+    }
+}
+impl CfgSyntax {
+    pub fn get() -> &'static CfgSyntax {
+        return CFG_SYNTAX.get().unwrap();
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgGeneral {
     pub lang: Option<String>,
     pub log: Option<CfgLog>,
@@ -25,11 +55,11 @@ pub struct CfgGeneral {
     pub ctx_menu: CfgCtxMenu,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgLog {
     pub level: Option<String>,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgEditor {
     pub search: CfgSearch,
     pub tab: CfgTab,
@@ -39,22 +69,22 @@ pub struct CfgEditor {
     pub column_char_alignment_space: CfgColumnCharAlignmentSpace,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgPrompt {
     pub open_file: CfgPromptOpenFile,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgCtxMenu {
     pub content: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgSearch {
     pub case_sens: bool,
     pub regex: bool,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgTab {
     pub size: usize,
     pub tab_input_type: String,
@@ -64,7 +94,7 @@ pub struct CfgTab {
     pub tab: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgFormat {
     pub indent_type: String,
     pub indent_size: usize,
@@ -73,41 +103,41 @@ pub struct CfgFormat {
     #[serde(skip_deserializing, skip_serializing)]
     pub indent: String,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgScrl {
     pub vertical: CfgScrlVertical,
     pub horizontal: CfgScrlHorizontal,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgScrlVertical {
     pub width: usize,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgScrlHorizontal {
     pub height: usize,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgCur {
     pub move_position_by_scrolling_enable: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgColumnCharAlignmentSpace {
     pub character: char,
     pub end_of_line_enable: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CfgPromptOpenFile {
     pub directory_init_value: String,
     #[serde(skip_deserializing, skip_serializing)]
     pub dir_init: OpenFileInitValue,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TabType {
     Tab,
     HalfWidthBlank,
@@ -128,7 +158,7 @@ impl TabType {
         }
     }
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgColors {
     pub theme: CfgColorTheme,
     pub headerbar: CfgColorHeaderBar,
@@ -139,7 +169,7 @@ pub struct CfgColors {
     pub file: CfgColorFile,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgColorTheme {
     pub theme_path: Option<String>,
     pub theme_background_enable: Option<bool>,
@@ -148,7 +178,7 @@ pub struct CfgColorTheme {
     pub disable_syntax_highlight_ext: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgColorEditor {
     background: String,
     foreground: String,
@@ -165,7 +195,7 @@ pub struct CfgColorEditor {
     pub scrollbar: CfgColorScrollbar,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LineNumber {
     background: String,
     foreground: String,
@@ -175,7 +205,7 @@ pub struct LineNumber {
     pub fg: Color,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Selection {
     background: String,
     foreground: String,
@@ -184,7 +214,7 @@ pub struct Selection {
     #[serde(skip_deserializing, skip_serializing)]
     pub fg: Color,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgColorEditorSearch {
     background: String,
     foreground: String,
@@ -193,14 +223,14 @@ pub struct CfgColorEditorSearch {
     #[serde(skip_deserializing, skip_serializing)]
     pub fg: Color,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ControlChar {
     foreground: String,
     #[serde(skip_deserializing, skip_serializing)]
     pub fg: Color,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ColorColumnCharAlignmentSpace {
     foreground: String,
     #[serde(skip_deserializing, skip_serializing)]
@@ -210,7 +240,7 @@ pub struct ColorColumnCharAlignmentSpace {
     pub bg: Color,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CfgColorScrollbar {
     horizontal_background: String,
     #[serde(skip_deserializing, skip_serializing)]
@@ -220,7 +250,7 @@ pub struct CfgColorScrollbar {
     pub bg_vertical: Color,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename = "HeaderBar")]
 pub struct CfgColorHeaderBar {
     foreground: String,
@@ -243,7 +273,7 @@ pub struct CfgColorHeaderBar {
     pub bg_tab_passive: Color,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename = "StatusBar")]
 pub struct CfgColorStatusBar {
     foreground: String,
@@ -251,7 +281,7 @@ pub struct CfgColorStatusBar {
     pub fg: Color,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename = "CtxMenu")]
 pub struct CfgColorCtxMenu {
     non_select_background: String,
@@ -268,7 +298,7 @@ pub struct CfgColorCtxMenu {
     pub fg_sel: Color,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename = "Msg")]
 pub struct CfgColorMsg {
     normal_foreground: String,
@@ -285,7 +315,7 @@ pub struct CfgColorMsg {
     #[serde(skip_deserializing, skip_serializing)]
     pub err_fg: Color,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename = "File")]
 pub struct CfgColorFile {
     normal_foreground: String,
@@ -317,6 +347,7 @@ impl Default for Syntax {
 impl Cfg {
     pub fn init(args: &Args, cfg_str: &str) -> String {
         let mut cfg: Cfg = toml::from_str(cfg_str).unwrap();
+        let mut cfg_syntax = CfgSyntax::default();
         let mut err_str = "".to_string();
         let mut read_str = String::new();
 
@@ -399,12 +430,12 @@ impl Cfg {
         cfg.colors.file.directory_fg = Colors::hex2rgb(&cfg.colors.file.directory_foreground);
         cfg.colors.file.executable_fg = Colors::hex2rgb(&cfg.colors.file.executable_foreground);
 
-        if let Ok((theme, err_string)) = ThemeLoader::new(&cfg.colors.theme.theme_path, &cfg.syntax.theme_set.themes).load() {
+        if let Ok((theme, err_string)) = ThemeLoader::new(&cfg.colors.theme.theme_path, &cfg_syntax.syntax.theme_set.themes).load() {
             if !err_string.is_empty() {
                 err_str = err_string;
             }
-            cfg.syntax.theme = theme;
-            if let Some(c) = cfg.syntax.theme.settings.background {
+            cfg_syntax.syntax.theme = theme;
+            if let Some(c) = cfg_syntax.syntax.theme.settings.background {
                 if let Some(theme_bg_enable) = cfg.colors.theme.theme_background_enable {
                     cfg.colors.editor.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
                     cfg.colors.editor.line_number.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
@@ -421,7 +452,9 @@ impl Cfg {
         if !read_str.is_empty() {
             Log::info("read setting.toml", &read_str);
         }
-        let _ = CFG.set(Mutex::new(cfg));
+        let _ = CFG.set(cfg.clone());
+        let _ = CFG_EDIT.set(Mutex::new(cfg));
+        let _ = CFG_SYNTAX.set(cfg_syntax);
 
         err_str
     }

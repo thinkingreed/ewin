@@ -237,7 +237,7 @@ pub enum E_Cmd {
     Format(FmtType),
     // find
     Find,
-    ReplaceExec(bool, String, String, BTreeSet<usize>),
+    ReplaceExec(String, String, BTreeSet<usize>),
     ReplacePrompt,
     MoveRow,
     Grep,

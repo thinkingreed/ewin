@@ -1,12 +1,9 @@
 use crate::{
-    ewin_com::{
-        _cfg::{cfg::*, key::keycmd::*},
-        log::*,
-        model::*,
-    },
+    ewin_com::{_cfg::key::keycmd::*, log::*, model::*},
     global_term::TAB,
     model::*,
 };
+use ewin_com::_cfg::cfg::CfgSearch;
 use rusty_v8::{self as v8, FunctionCallbackArguments, HandleScope, ReturnValue};
 use v8::{Context, Local};
 
@@ -80,9 +77,8 @@ impl Macros {
             let regex_value: v8::Local<v8::Value> = v8::String::new(scope, "regex").unwrap().into();
             let regex = input_obj.get(scope, regex_value).unwrap().boolean_value(scope);
 
-            let cfg_search = CfgSearch { case_sens, regex };
             if let Some(Ok(mut tab)) = TAB.get().map(|tab| tab.try_lock()) {
-                tab.editor.search(&search_str, &cfg_search);
+                tab.editor.search(&search_str, &CfgSearch { regex, case_sens });
                 Log::macros(MacrosFunc::searchAll, &"");
             }
         }

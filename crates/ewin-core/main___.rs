@@ -9,18 +9,17 @@ use ewin_com::{
     log::*,
     model::*,
 };
+
 use ewin_term::model::*;
-use futures::{channel::mpsc::Receiver, future::FutureExt, select, SinkExt, StreamExt};
-use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
+use futures::{future::FutureExt, select, StreamExt};
 use serde_json::Value;
 use std::{
     collections::HashMap,
     io::*,
     panic,
-    path::Path,
     sync::mpsc::*,
     thread::{self},
-    time::{self, SystemTime, UNIX_EPOCH},
+    time,
 };
 use tokio_util::codec::*;
 
@@ -69,21 +68,20 @@ async fn main() {
     term.activate(&args);
     term.init_draw(&mut out);
 
-    let (tx, rx) = std::sync::mpsc::channel();
+    let (tx, rx) = channel();
     let mut tx_grep = Sender::clone(&tx);
-    let tx_watch = Sender::clone(&tx);
 
     // It also reads a normal Event to support cancellation.
     let mut reader = EventStream::new();
     tokio::spawn(async move {
         loop {
-            if let Some(Ok(evt)) = reader.next().fuse().await {
-                match evt {
+            if let Some(Ok(event)) = reader.next().fuse().await {
+                match event {
                     Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), .. }) => continue,
                     Mouse(M_Event { kind: M_Kind::Up(M_Btn::Right), .. }) => continue,
                     _ => {}
                 }
-                let job = Job { job_type: JobType::Event, job_evt: Some(JobEvent { evt }), ..Job::default() };
+                let job = Job { job_type: JobType::Event, job_evt: Some(JobEvent { evt: event }), ..Job::default() };
                 let _ = tx.send(job);
             }
         }
@@ -154,59 +152,6 @@ async fn main() {
         }
     });
 
-    /*
-    let path___ = if cfg!(target_os = "windows") { "C:\\Users\\hi\\rust\\ewin\\target\\debug\\notify.txt" } else { "/home/thinkingreed/rust/ewin/target/debug/notify.txt" };
-
-    let mut watch_state_org = WatchState::default();
-
-    tokio::spawn(async move {
-        loop {
-            thread::sleep(time::Duration::from_millis(5000));
-
-            Log::debug_s("loop 000");
-            if let Some(Ok(mut watch_state)) = WATCH_STATE.get().map(|watch_state| watch_state.try_lock()) {
-                Log::debug_s("loop 111");
-
-                let (mut watcher, mut rx_notify) = async_watcher().unwrap();
-
-                //  if watch_state.fullpath != watch_state_org.fullpath {
-                if !watch_state.fullpath.is_empty() {
-                    Log::debug("watch_state.fullpath != watch_state_org.fullpath", &(watch_state.fullpath != watch_state_org.fullpath));
-                    let path = Path::new(&watch_state.fullpath);
-                    //   watcher.unwatch(Path::new(path___));
-                    watcher.watch(Path::new(path___), RecursiveMode::NonRecursive).unwrap();
-                }
-
-                let mut fuse = rx_notify.next().fuse();
-
-                Log::debug("fuse 111", &fuse);
-
-                select! {
-                    ss_out = fuse => {
-                        Log::debug("fuse 222", &fuse);
-                        if let  Some(Ok(evt)) = ss_out{
-                            Log::debug("fuse 333", &fuse);
-                            if evt.kind.is_modify() {
-                                let unixtime_seq = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-                                let job = Job { job_type: JobType::Watch, job_watch: Some(JobWatch { watch_state: WatchState { unixtime_seq, ..WatchState::default() } }), ..Job::default() };
-                                let _ = tx_watch.send(job);
-                                if watch_state.unixtime_seq != watch_state_org.unixtime_seq {
-                                    watch_state_org = watch_state.clone();
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Log::debug_s("loop 222");
-                if watch_state_org != *watch_state {
-                    Log::debug("watch_state_org != watch_state", &(watch_state_org != *watch_state));
-                }
-            }
-        }
-    });
-     */
-
     for job in rx {
         match job.job_type {
             JobType::Event => {
@@ -217,7 +162,6 @@ async fn main() {
                 term.keys_org = keys;
             }
             JobType::GrepResult => EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap()),
-            JobType::Watch => Log::debug("JobType::Watch", &job.job_watch),
         }
     }
     Terminal::exit();
@@ -235,18 +179,4 @@ pub fn get_app_version() -> String {
     let mut s = map["package"]["version"].to_string();
     s.retain(|c| c != '"');
     return s;
-}
-
-fn async_watcher() -> notify::Result<(RecommendedWatcher, Receiver<notify::Result<Event>>)> {
-    let (mut tx, rx) = futures::channel::mpsc::channel(1);
-
-    // Automatically select the best implementation for your platform.
-    // You can also access each implementation directly e.g. INotifyWatcher.
-    let watcher = RecommendedWatcher::new(move |res| {
-        futures::executor::block_on(async {
-            tx.send(res).await.unwrap();
-        })
-    })?;
-
-    Ok((watcher, rx))
 }

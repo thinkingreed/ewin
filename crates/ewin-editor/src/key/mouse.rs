@@ -1,8 +1,9 @@
+use ewin_com::_cfg::cfg::Cfg;
+
 use crate::{
     ewin_com::{
         _cfg::key::{keycmd::*, keys::*},
         def::*,
-        global::*,
         log::*,
         model::*,
         util::*,
@@ -45,7 +46,7 @@ impl Editor {
         }
 
         // scrlbar_h
-        let height = CFG.get().unwrap().try_lock().unwrap().general.editor.scrollbar.horizontal.height;
+        let height = Cfg::get().general.editor.scrollbar.horizontal.height;
         match self.e_cmd {
             E_Cmd::MouseDownLeft(_, x) if self.scrl_h.row_posi <= y && y < self.scrl_h.row_posi + height => {
                 self.set_scrlbar_h_posi(x);
@@ -87,7 +88,7 @@ impl Editor {
                     self.cur.x = x;
                     self.cur.disp_x = x;
                 } else {
-                    let (cur_x, width) = get_until_disp_x(&vec, x + self.offset_disp_x);
+                    let (cur_x, width) = get_until_disp_x(&vec, x + self.offset_disp_x, false);
                     self.cur.x = cur_x;
                     self.cur.disp_x = width;
                     self.scroll();

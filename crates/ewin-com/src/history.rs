@@ -84,6 +84,7 @@ impl History {
     }
 
     pub fn set_sel_multi_click(&mut self, keys: &Keys, sel: &mut SelRange, cur: &Cur, row: &[char]) {
+        Log::debug_key("set_sel_multi_click");
         match keys {
             Keys::MouseDownLeft(_, _) => {
                 match self.count_multi_click(keys) {

@@ -130,7 +130,7 @@ impl Prompt {
 
     pub fn set_cur(cont_org: &PromptCont, cont: &mut PromptCont) {
         cont.updown_x = cont_org.cur.disp_x;
-        let (cur_x, width) = get_until_disp_x(&cont.buf, cont.updown_x);
+        let (cur_x, width) = get_until_disp_x(&cont.buf, cont.updown_x, false);
         cont.cur.x = cur_x;
         cont.cur.disp_x = width;
     }

@@ -13,7 +13,7 @@ impl PromptCont {
         if y != self.buf_row_posi {
             return;
         }
-        let (cur_x, width) = get_until_disp_x(&self.buf, x as usize);
+        let (cur_x, width) = get_until_disp_x(&self.buf, x as usize, false);
         self.cur.x = cur_x;
         self.cur.disp_x = width;
 
