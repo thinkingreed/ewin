@@ -95,9 +95,6 @@ impl TextBuffer {
     pub fn write_to(&mut self, path: &str, h_file: &HeaderFile) -> io::Result<bool> {
         Log::debug("Write file info", &h_file);
 
-        // Delete EOF_MARK once
-        self.text.remove(self.text.len_chars() - 1..self.text.len_chars());
-
         let (mut u8_vec, enc_errors) = self.encode(h_file)?;
         if !enc_errors {
             let vec = self.add_bom(&mut u8_vec, h_file);

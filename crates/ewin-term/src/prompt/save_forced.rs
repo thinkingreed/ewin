@@ -21,11 +21,7 @@ impl EvtAct {
                         ActType::Cancel
                     };
                 } else if str == &'r'.to_string() {
-                    let h_file = term.curt_h_file().clone();
-                    // Tab::new() is dummy
-                    term.clear_curt_tab(true);
-                    term.set_disp_size();
-                    term.open_file(&h_file.fullpath, None, FileOpenType::Reopen);
+                    term.reopen_curt_file();
                     return ActType::Draw(DParts::All);
                 } else {
                     return ActType::Cancel;

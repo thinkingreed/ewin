@@ -43,6 +43,7 @@ pub mod prompt {
     pub mod save_forced;
     pub mod save_new_file;
     pub mod search;
+    pub mod watch_result;
 }
 pub mod help;
 pub mod model;

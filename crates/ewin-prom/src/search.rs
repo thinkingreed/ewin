@@ -19,8 +19,8 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_search(&mut self) {
-        self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), Lang::get().set_search);
-        self.key_desc = format!(
+        self.guide_vec.push(format!("{}{}", Colors::get_msg_highlight_fg(), Lang::get().set_search));
+        self.key_desc_vec.push(format!(
             "{}{}:{}{}  {}{}:{}{}  {}{}:{}{}{}",
             Colors::get_default_fg(),
             &Lang::get().search_bottom,
@@ -35,7 +35,7 @@ impl PromptCont {
             Colors::get_msg_highlight_fg(),
             Keybind::get_key_str(KeyCmd::Prom(P_Cmd::EscPrompt)),
             Colors::get_default_fg(),
-        );
+        ));
 
         self.set_opt_case_sens();
         self.set_opt_regex();

@@ -21,6 +21,8 @@ impl EditorDraw {
         }
 
         Log::debug("draw_cache.d_range", &editor.draw_range);
+        Log::debug("editor.buf.len_rows() - 1", &(editor.buf.len_rows() - 1));
+        Log::debug("editor.cur_y_org", &editor.cur_y_org);
         match editor.draw_range {
             E_DrawRange::After(sy) => {
                 self.sy = sy;
@@ -36,7 +38,6 @@ impl EditorDraw {
             }
             _ => {}
         }
-
         Log::debug("draw.sy", &self.sy);
         Log::debug("draw.ey", &self.ey);
         Log::debug("editor.offset_y", &editor.offset_y);
@@ -57,6 +58,7 @@ impl EditorDraw {
                 row_vec.append(&mut EOF_STR.chars().collect::<Vec<char>>());
             }
             let sx_ex_range_opt = EditorDraw::get_draw_x_range(&row_vec, editor.offset_disp_x, editor.col_len);
+
             if editor.is_enable_syntax_highlight {
                 self.set_regions_highlight(editor, y, row_vec, sx_ex_range_opt);
             } else {
@@ -86,7 +88,6 @@ impl EditorDraw {
                     row.push(c);
                 }
             }
-
             for (i, c) in row.iter().enumerate() {
                 width += match *c {
                     NEW_LINE_LF | NEW_LINE_CR => 1,
@@ -108,51 +109,63 @@ impl EditorDraw {
     fn set_regions_highlight(&mut self, editor: &Editor, y: usize, row_vec: Vec<char>, sx_ex_range_opt: Option<(DrawRangX, DrawRangX)>) {
         // Log::ep_s("                  set_regions_highlight");
 
-        let highlighter = Highlighter::new(&CfgSyntax::get().syntax.theme);
         let mut cells: Vec<Cell> = vec![];
-        let row = row_vec.iter().collect::<String>();
-        let scope;
-        let mut parse;
-
-        if self.syntax_state_vec.is_empty() {
-            scope = ScopeStack::new();
-            parse = ParseState::new(&self.syntax_reference.clone().unwrap());
-        } else {
-            let y = if y == 0 { 1 } else { y };
-            // Process from the previous row
-            let syntax_state = self.syntax_state_vec[y - 1].clone();
-            scope = syntax_state.highlight_state.path.clone();
-            parse = syntax_state.parse_state;
-        }
-
-        let mut highlight_state = HighlightState::new(&highlighter, scope);
-        let ops = parse.parse_line(&row, &CfgSyntax::get().syntax.syntax_set);
-        let iter = HighlightIterator::new(&mut highlight_state, &ops[..], &row, &highlighter);
-        let style_vec: Vec<(Style, &str)> = iter.collect();
-
-        let mut style_org = CharStyle::none();
-        let (mut x, mut width) = (0, 0);
-
-        // If the target is highlight at the first display, all lines are read for highlight_state, but Style is only the display line.
-        for (style, string) in style_vec {
-            let style = CharStyle::from_syntect_style(Cfg::get(), style);
-
-            for c in string.chars() {
-                width += match c {
-                    NEW_LINE_LF | NEW_LINE_CR => 1,
-                    TAB_CHAR => get_tab_width(width, Cfg::get().general.editor.tab.size),
-                    _ => c.width().unwrap_or(0),
-                };
-                let style_type = self.is_select_or_search_style_type(editor, c, width, y, x);
-                self.set_style(self.get_to_style(Cfg::get(), editor.is_enable_syntax_highlight, style_type, &style), c, &mut style_org, &mut cells);
-
-                x += 1;
-            }
-        }
-        self.syntax_state_vec.insert(y, SyntaxState { highlight_state, parse_state: parse, ops });
-
         if let Some((sx_range, ex_range)) = sx_ex_range_opt {
+            let column_alignment_space_char = Cfg::get().general.editor.column_char_alignment_space.character;
+            let highlighter = Highlighter::new(&CfgSyntax::get().syntax.theme);
+            let row = row_vec.iter().collect::<String>();
+            let scope;
+            let mut parse;
+
+            if self.syntax_state_vec.is_empty() {
+                scope = ScopeStack::new();
+                parse = ParseState::new(&self.syntax_reference.clone().unwrap());
+            } else {
+                let y = if y == 0 { 1 } else { y };
+                // Process from the previous row
+                let syntax_state = self.syntax_state_vec[y - 1].clone();
+                scope = syntax_state.highlight_state.path.clone();
+                parse = syntax_state.parse_state;
+            }
+
+            let mut highlight_state = HighlightState::new(&highlighter, scope);
+            let ops = parse.parse_line(&row, &CfgSyntax::get().syntax.syntax_set);
+            let iter = HighlightIterator::new(&mut highlight_state, &ops[..], &row, &highlighter);
+            let style_vec: Vec<(Style, &str)> = iter.collect();
+
+            let mut style_org = CharStyle::none();
+            let (mut x, mut width) = (0, 0);
+
+            // If the target is highlight at the first display, all lines are read for highlight_state, but Style is only the display line.
+            for (style, string) in style_vec {
+                let style = CharStyle::from_syntect_style(Cfg::get(), style);
+
+                for c in string.chars() {
+                    width += match c {
+                        NEW_LINE_LF | NEW_LINE_CR => 1,
+                        TAB_CHAR => get_tab_width(width, Cfg::get().general.editor.tab.size),
+                        _ => c.width().unwrap_or(0),
+                    };
+                    let style_type = self.is_select_or_search_style_type(editor, c, width, y, x);
+                    self.set_style(self.get_to_style(Cfg::get(), editor.is_enable_syntax_highlight, style_type, &style), c, &mut style_org, &mut cells);
+
+                    x += 1;
+                }
+            }
+            self.syntax_state_vec.insert(y, SyntaxState { highlight_state, parse_state: parse, ops });
+
             self.cells[y] = cells.drain(sx_range.get_x()..ex_range.get_x()).collect();
+
+            if sx_range.is_margin() || ex_range.is_margin() {
+                let column_char_alignment_space_cell = Cell { c: column_alignment_space_char, to: CharStyle::column_char_alignment_space(Cfg::get()), from: CharStyle::default() };
+                if sx_range.is_margin() {
+                    self.cells[y][0].from = CharStyle::none();
+                    self.cells[y].insert(0, column_char_alignment_space_cell);
+                }
+                if ex_range.is_margin() && Cfg::get().general.editor.column_char_alignment_space.end_of_line_enable {
+                    self.cells[y].push(column_char_alignment_space_cell);
+                }
+            }
         } else {
             self.cells[y] = cells;
         }

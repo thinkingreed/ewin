@@ -16,7 +16,7 @@ use serde::Deserialize;
 use std::usize;
 use std::{
     cmp::{max, min},
-    collections::VecDeque,
+    collections::{BTreeSet, VecDeque},
     ffi::OsStr,
     fmt,
     path::Path,
@@ -216,7 +216,7 @@ impl fmt::Display for Cur {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Cell {
     pub from: CharStyle,
     pub to: CharStyle,
@@ -266,7 +266,8 @@ pub struct JobEvent {
 
 #[derive(Debug, Clone)]
 pub struct JobWatch {
-    pub watch_state: WatchState,
+    pub fullpath_str: String,
+    pub unixtime_str: String,
 }
 
 impl Default for JobEvent {
@@ -621,6 +622,7 @@ pub struct HeaderFile {
     pub nl_org: String,
     pub bom: Option<Encode>,
     pub modified_time: SystemTime,
+    pub watch_mode: WatchMode,
 }
 
 impl Default for HeaderFile {
@@ -639,6 +641,7 @@ impl Default for HeaderFile {
             nl_org: NEW_LINE_LF_STR.to_string(),
             bom: None,
             modified_time: SystemTime::UNIX_EPOCH,
+            watch_mode: WatchMode::default(),
         }
     }
 }
@@ -658,6 +661,20 @@ impl HeaderFile {
         }
 
         HeaderFile { filenm: if filenm.is_empty() { Lang::get().new_file.clone() } else { Path::new(&setting_filenm).file_name().unwrap().to_string_lossy().to_string() }, fullpath: file_fullpath, ..HeaderFile::default() }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WatchMode {
+    // Warning every time it is changed by another app
+    Normal,
+    NotMonitor,
+    NotEditedWillReloadedAuto,
+}
+
+impl Default for WatchMode {
+    fn default() -> Self {
+        WatchMode::Normal
     }
 }
 
@@ -758,6 +775,7 @@ pub struct TabState {
     pub is_enc_nl: bool,
     pub grep: GrepState,
     pub is_menu: bool,
+    pub is_watch_result: bool,
 }
 
 impl fmt::Display for TabState {
@@ -777,11 +795,12 @@ impl TabState {
         self.is_open_file = false;
         self.is_enc_nl = false;
         self.is_menu = false;
+        self.is_watch_result = false;
         self.grep.is_grep = false;
     }
 
     pub fn is_nomal(&self) -> bool {
-        if self.is_save_confirm || self.is_search || self.is_replace || self.is_save_new_file|| self.is_save_forced || self.is_move_row || self.is_open_file || self.is_enc_nl || self.is_menu
+        if self.is_save_confirm || self.is_search || self.is_replace || self.is_save_new_file|| self.is_save_forced || self.is_move_row || self.is_open_file || self.is_enc_nl || self.is_menu|| self.is_watch_result
         // grep, grep result 
         || self.grep.is_grep  || self.grep.is_greping()
         {
@@ -802,6 +821,7 @@ impl TabState {
         }
         return false;
     }
+
     pub fn judge_when_statusbar(&self, keys: &Keys, sbar_row_posi: usize) -> bool {
         if let Keys::MouseDownLeft(y, _) = keys {
             if y == &(sbar_row_posi as u16) {
@@ -811,12 +831,14 @@ impl TabState {
         return false;
     }
 
+    /*
     pub fn is_editor_cur(&self) -> bool {
         if self.is_save_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_save_forced || self.is_move_row || self.is_open_file || self.grep.is_grep || self.grep.is_greping() || self.is_enc_nl || self.is_menu {
             return false;
         }
         true
     }
+     */
 
     pub fn is_prom_show_cur(&self) -> bool {
         if self.is_exists_input_field() || self.is_exists_choice() {
@@ -866,6 +888,7 @@ impl DrawRangX {
             }
         }
     }
+
     pub fn is_margin(&self) -> bool {
         match self {
             DrawRangX::Range(_, is_margin) => {
@@ -878,11 +901,16 @@ impl DrawRangX {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FilePath {}
 
+pub type WatchHistory = BTreeSet<(String, String)>;
+
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct WatchState {
+pub struct WatchInfo {
     // pub is_watch: bool,
     pub fullpath: String,
-    pub unixtime_seq: u64,
+    pub fullpath_org: String,
+    // pub is_reflect_changes: bool,
+    pub mode: WatchMode,
+    pub history_set: WatchHistory,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -39,12 +39,12 @@ impl ThemeLoader {
                     match ThemeSet::load_from_reader(&mut reader) {
                         Ok(theme) => self.theme = Some(theme),
                         Err(e) => {
-                            err_str = format!("{} {} {}", Lang::get().file_loading_failed, theme_path.to_string_lossy().to_string(), e);
+                            err_str = format!("{} {} {}", Lang::get().file_loading_failed, theme_path.to_string_lossy(), e);
                         }
                     }
                 }
             } else {
-                err_str = format!("{} {}", Lang::get().file_not_found, theme_path.to_string_lossy().to_string());
+                err_str = format!("{} {}", Lang::get().file_not_found, theme_path.to_string_lossy());
             }
         }
         err_str

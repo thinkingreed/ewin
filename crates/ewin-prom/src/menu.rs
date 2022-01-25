@@ -75,11 +75,11 @@ impl Prompt {
     pub fn draw_menu(&self, str_vec: &mut Vec<String>) {
         Log::debug_key("draw_menu");
 
-        Prompt::set_draw_vec(str_vec, self.cont_1.buf_desc_row_posi, &self.cont_1.buf_desc.clone());
+        Prompt::set_draw_vec(str_vec, self.cont_1.buf_desc_row_posi, &self.cont_1.buf_desc_vec.clone());
         self.cont_1.draw_choice_menu(str_vec);
-        Prompt::set_draw_vec(str_vec, self.cont_2.buf_desc_row_posi, &self.cont_2.buf_desc.clone());
+        Prompt::set_draw_vec(str_vec, self.cont_2.buf_desc_row_posi, &self.cont_2.buf_desc_vec.clone());
         self.cont_2.draw_choice_menu(str_vec);
-        Prompt::set_draw_vec(str_vec, self.cont_3.buf_desc_row_posi, &self.cont_3.buf_desc.clone());
+        Prompt::set_draw_vec(str_vec, self.cont_3.buf_desc_row_posi, &self.cont_3.buf_desc_vec.clone());
         self.cont_3.draw_choice_menu(str_vec);
     }
 
@@ -133,8 +133,8 @@ impl PromptCont {
             PromptContPosi::First => {
                 self.buf_row_len = 2;
 
-                self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &Lang::get().select_menu);
-                self.key_desc = format!(
+                self.guide_vec.push(format!("{}{}", Colors::get_msg_highlight_fg(), &Lang::get().select_menu));
+                self.key_desc_vec.push(format!(
                     "{}{}:{}{}Click  {}{}:{}{}  {}{}:{}Tab  {}{}:{}↑↓←→",
                     Colors::get_default_fg(),
                     &Lang::get().fixed,
@@ -150,9 +150,9 @@ impl PromptCont {
                     Colors::get_default_fg(),
                     &Lang::get().candidate_change,
                     Colors::get_msg_highlight_fg(),
-                );
+                ));
 
-                self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().menu, Colors::get_default_fg());
+                self.buf_desc_vec.push(format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().menu, Colors::get_default_fg()));
 
                 if prom.keycmd == KeyCmd::Edit(E_Cmd::OpenMenu) && prom.prom_menu.choices_map_cache.get(&PromptContPosi::First).is_some() {
                     self.choices_map = prom.prom_menu.choices_map_cache.get(&PromptContPosi::First).unwrap().clone();
@@ -175,7 +175,7 @@ impl PromptCont {
             PromptContPosi::Second => {
                 self.buf_row_len = 2;
 
-                self.buf_desc = format!("{}{} 1{}", Colors::get_msg_highlight_fg(), &Lang::get().contents, Colors::get_default_fg());
+                self.buf_desc_vec.push(format!("{}{} 1{}", Colors::get_msg_highlight_fg(), &Lang::get().contents, Colors::get_default_fg()));
 
                 if prom.keycmd == KeyCmd::Edit(E_Cmd::OpenMenu) && prom.prom_menu.choices_map_cache.get(&PromptContPosi::Second).is_some() {
                     self.choices_map = prom.prom_menu.choices_map_cache.get(&PromptContPosi::Second).unwrap().clone();
@@ -211,7 +211,7 @@ impl PromptCont {
             PromptContPosi::Third => {
                 self.buf_row_len = 2;
 
-                self.buf_desc = format!("{}{} 2{}", Colors::get_msg_highlight_fg(), &Lang::get().contents, Colors::get_default_fg());
+                self.buf_desc_vec.push(format!("{}{} 2{}", Colors::get_msg_highlight_fg(), &Lang::get().contents, Colors::get_default_fg()));
 
                 if prom.keycmd == KeyCmd::Edit(E_Cmd::OpenMenu) && prom.prom_menu.choices_map_cache.get(&PromptContPosi::Third).is_some() {
                     self.choices_map = prom.prom_menu.choices_map_cache.get(&PromptContPosi::Third).unwrap().clone();

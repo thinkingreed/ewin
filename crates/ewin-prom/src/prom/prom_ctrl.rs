@@ -20,11 +20,11 @@ impl Prompt {
             if self.is_first_draw() || !tab_state.is_search {
                 self.draw_set_posi(tab_state, prom_disp_row_posi, h_file);
                 if tab_state.grep.is_greping() {
-                    Prompt::set_draw_vec_for_greping(str_vec, self.cont_1.guide_row_posi, &self.cont_1.guide);
-                    Prompt::set_draw_vec_for_greping(str_vec, self.cont_1.key_desc_row_posi, &self.cont_1.key_desc);
+                    Prompt::set_draw_vec_for_greping(str_vec, self.cont_1.guide_row_posi, &self.cont_1.guide_vec);
+                    Prompt::set_draw_vec_for_greping(str_vec, self.cont_1.key_desc_row_posi, &self.cont_1.key_desc_vec);
                 } else {
-                    Prompt::set_draw_vec(str_vec, self.cont_1.guide_row_posi, &self.cont_1.guide);
-                    Prompt::set_draw_vec(str_vec, self.cont_1.key_desc_row_posi, &self.cont_1.key_desc);
+                    Prompt::set_draw_vec(str_vec, self.cont_1.guide_row_posi, &self.cont_1.guide_vec);
+                    Prompt::set_draw_vec(str_vec, self.cont_1.key_desc_row_posi, &self.cont_1.key_desc_vec);
                 }
             }
             if tab_state.is_save_new_file || tab_state.is_move_row {
@@ -43,21 +43,28 @@ impl Prompt {
                 self.draw_grep(str_vec);
             } else if tab_state.is_enc_nl {
                 self.draw_enc_nl(str_vec);
+            } else if tab_state.is_watch_result {
+                self.draw_watch_result(str_vec);
             }
         }
     }
 
-    pub fn get_serach_opt(&self) -> String {
+    pub fn get_serach_opt(&self) -> Vec<String> {
         let o1 = &self.cont_1.opt_1;
         let o2 = &self.cont_1.opt_2;
-        return format!("{}{}  {}{}", o1.key, o1.get_check_str(), o2.key, o2.get_check_str());
+        return vec![format!("{}{}  {}{}", o1.key, o1.get_check_str(), o2.key, o2.get_check_str())];
     }
 
-    pub fn set_draw_vec(str_vec: &mut Vec<String>, posi: u16, str: &str) {
-        str_vec.push(format!("{}{}{}", MoveTo(0, posi), Clear(CurrentLine), str));
+    pub fn set_draw_vec(str_vec: &mut Vec<String>, posi: u16, key_desc_vec: &[String]) {
+        for (i, desc) in key_desc_vec.iter().enumerate() {
+            str_vec.push(format!("{}{}{}", MoveTo(0, posi + i as u16), Clear(CurrentLine), desc));
+        }
     }
-    pub fn set_draw_vec_for_greping(str_vec: &mut Vec<String>, posi: u16, str: &str) {
-        str_vec.push(format!("{}{}", MoveTo(0, posi), str));
+
+    pub fn set_draw_vec_for_greping(str_vec: &mut Vec<String>, posi: u16, key_desc_vec: &[String]) {
+        for (i, desc) in key_desc_vec.iter().enumerate() {
+            str_vec.push(format!("{}{}", MoveTo(0, posi + i as u16), desc));
+        }
     }
 
     pub fn draw_only<T: Write>(&mut self, out: &mut T, tab_state: &TabState, is_exsist_msg: bool, h_file: &HeaderFile) {
@@ -365,9 +372,9 @@ impl TabComp {
                     if !is_dir_only {
                         let path = Path::new(&file.name);
                         //  let path = Path::new(&os_str);
-                        rtn_string = if path.metadata().unwrap().is_file() { file.name.to_string() } else { format!("{}{}", file.name.to_string(), path::MAIN_SEPARATOR) };
+                        rtn_string = if path.metadata().unwrap().is_file() { file.name.to_string() } else { format!("{}{}", file.name, path::MAIN_SEPARATOR) };
                     } else {
-                        rtn_string = format!("{}{}", file.name.to_string(), path::MAIN_SEPARATOR);
+                        rtn_string = format!("{}{}", file.name, path::MAIN_SEPARATOR);
                     }
                     self.clear_tab_comp();
                     break;

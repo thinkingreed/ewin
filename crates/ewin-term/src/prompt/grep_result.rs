@@ -34,12 +34,12 @@ impl EvtAct {
                 term.curt().editor.draw_range = E_DrawRange::ScrollDown(y - 2, y);
 
                 if cfg!(target_os = "windows") {
-                    term.draw(out, &DParts::All);
+                    term.render(out, &DParts::All);
                 } else {
-                    term.draw(out, &DParts::ScrollUpDown(ScrollUpDownType::Grep));
+                    term.render(out, &DParts::ScrollUpDown(ScrollUpDownType::Grep));
                 }
             } else {
-                term.draw(out, &DParts::All);
+                term.render(out, &DParts::All);
             }
         } else {
             Log::debug_s("grep is end");
@@ -62,7 +62,7 @@ impl EvtAct {
         term.curt().editor.set_cur_default();
         term.curt().editor.scroll();
         term.curt().editor.scroll_horizontal();
-        term.draw_all(out, DParts::All);
+        term.render_all(out, DParts::All);
     }
 
     pub fn grep_result(term: &mut Terminal) -> ActType {
@@ -90,7 +90,7 @@ impl EvtAct {
                     Log::debug("tab.editor.search", &tab_grep.editor.search);
 
                     let folder = if term.curt().editor.search.folder.is_empty() { "".to_string() } else { format!("{}{}", &term.curt().editor.search.folder, MAIN_SEPARATOR) };
-                    let act_type = term.open_file(&format!("{}{}", &folder, &grep_result.filenm), Some(&mut tab_grep), FileOpenType::Nomal);
+                    let act_type = term.open_file(&format!("{}{}", &folder, &grep_result.filenm), FileOpenType::Nomal, Some(&mut tab_grep), None);
 
                     if let ActType::Draw(DParts::MsgBar(_)) = act_type {
                         return act_type;
@@ -117,7 +117,7 @@ impl EvtAct {
             };
         }
         {
-            if !!Cfg::get_edit_search_case_sens() {
+            if !Cfg::get_edit_search_case_sens() {
                 cmd_option.push('F');
             };
         }

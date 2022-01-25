@@ -37,7 +37,7 @@ impl Keybind {
                         read_str = str;
                         Log::info("read keybind.json5", &read_str);
                     }
-                    Err(e) => err_str = format!("{} {} {}", Lang::get().file_loading_failed, keybind_file.to_string_lossy().to_string(), e),
+                    Err(e) => err_str = format!("{} {} {}", Lang::get().file_loading_failed, keybind_file.to_string_lossy(), e),
                 }
 
                 if err_str.is_empty() {
@@ -51,7 +51,7 @@ impl Keybind {
                                 }
                             }
                         }
-                        Err(e) => err_str = format!("{}{} {} {}", Lang::get().file, Lang::get().parsing_failed, keybind_file.to_string_lossy().to_string(), e),
+                        Err(e) => err_str = format!("{}{} {} {}", Lang::get().file, Lang::get().parsing_failed, keybind_file.to_string_lossy(), e),
                     };
                 }
             } else if args.out_config_flg {
@@ -69,19 +69,20 @@ impl Keybind {
             Log::debug("keybind", &keybind);
             cmd_key_map.insert(KeyCmd::cmd_when_to_keycmd(&keybind.cmd, &keybind.when), Keys::from_str(&keybind.key).unwrap());
 
-            if keybind.when == KeyWhen::InputFocus.to_string() || keybind.when == KeyWhen::AllFocus.to_string() {
+            if keybind.when == KeyWhen::AllFocus.to_string() {
+                key_cmd_map.insert((Keys::from_str(&keybind.key).unwrap(), KeyWhen::AllFocus), KeyCmd::cmd_when_to_keycmd(&keybind.cmd, &KeyWhen::EditorFocus.to_string()));
+                key_cmd_map.insert((Keys::from_str(&keybind.key).unwrap(), KeyWhen::AllFocus), KeyCmd::cmd_when_to_keycmd(&keybind.cmd, &KeyWhen::PromptFocus.to_string()));
+            } else if keybind.when == KeyWhen::InputFocus.to_string() {
                 key_cmd_map.insert((Keys::from_str(&keybind.key).unwrap(), KeyWhen::EditorFocus), KeyCmd::cmd_when_to_keycmd(&keybind.cmd, &KeyWhen::EditorFocus.to_string()));
                 key_cmd_map.insert((Keys::from_str(&keybind.key).unwrap(), KeyWhen::PromptFocus), KeyCmd::cmd_when_to_keycmd(&keybind.cmd, &KeyWhen::PromptFocus.to_string()));
                 cmd_key_map.insert(KeyCmd::cmd_when_to_keycmd(&keybind.cmd, &KeyWhen::EditorFocus.to_string()), Keys::from_str(&keybind.key).unwrap());
                 cmd_key_map.insert(KeyCmd::cmd_when_to_keycmd(&keybind.cmd, &KeyWhen::PromptFocus.to_string()), Keys::from_str(&keybind.key).unwrap());
-            //  } else if keybind.when == KeyWhen::AllFocus.to_string() {
-            //      key_cmd_map.insert((Keys::from_str(&keybind.key).unwrap(), KeyWhen::EditorFocus), KeyCmd::cmd_when_to_keycmd(&keybind.cmd, &KeyWhen::EditorFocus.to_string()));
-            //      key_cmd_map.insert((Keys::from_str(&keybind.key).unwrap(), KeyWhen::PromptFocus), KeyCmd::cmd_when_to_keycmd(&keybind.cmd, &KeyWhen::PromptFocus.to_string()));
             } else {
                 key_cmd_map.insert((Keys::from_str(&keybind.key).unwrap(), KeyWhen::from_str(&keybind.when).unwrap()), KeyCmd::cmd_when_to_keycmd(&keybind.cmd, &keybind.when));
             }
         }
 
+        // cmd_key_map.insert(KeyCmd::Edit(E_Cmd::InsertStr("".to_string())), Keys::Ctrl(Key::Char('v')));
         Log::debug("cmd_key_map", &cmd_key_map);
 
         key_cmd_map.insert((Keys::Raw(Key::Tab), KeyWhen::EditorFocus), KeyCmd::Edit(E_Cmd::InsertStr(TAB_CHAR.to_string())));
@@ -278,7 +279,7 @@ impl Keybind {
         }
 
         if !msg.is_empty() {
-            err_str = format!("{}{} {} {} setting {}{} {}", Lang::get().file, Lang::get().parsing_failed, KEYBINDING_FILE, msg, (i + 1).to_string(), ordinal_suffix(i + 1), err_key);
+            err_str = format!("{}{} {} {} setting {}{} {}", Lang::get().file, Lang::get().parsing_failed, KEYBINDING_FILE, msg, (i + 1), ordinal_suffix(i + 1), err_key);
         }
         err_str
     }

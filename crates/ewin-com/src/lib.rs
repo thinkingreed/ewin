@@ -28,9 +28,7 @@ pub mod global {
     pub static GREP_INFO_VEC: OnceCell<tokio::sync::Mutex<Vec<GrepState>>> = OnceCell::new();
     // Cancel is defined independently. Because it needs to be obtained when GREP_INFO_VEC is locked
     pub static GREP_CANCEL_VEC: OnceCell<tokio::sync::Mutex<Vec<bool>>> = OnceCell::new();
-
-    pub static WATCH_STATE: OnceCell<tokio::sync::Mutex<WatchState>> = OnceCell::new();
-
+    pub static WATCH_INFO: OnceCell<tokio::sync::Mutex<WatchInfo>> = OnceCell::new();
     pub static CURT_DIR: Lazy<String> = Lazy::new(|| env::current_dir().unwrap().to_string_lossy().to_string());
 
     pub static IS_POWERSHELL_ENABLE: Lazy<bool> = Lazy::new(is_wsl_powershell_enable);
@@ -48,6 +46,7 @@ pub mod log;
 pub mod model;
 pub mod sel_range;
 pub mod util;
+pub mod watcher;
 pub mod _cfg {
     pub mod cfg;
     pub mod key {

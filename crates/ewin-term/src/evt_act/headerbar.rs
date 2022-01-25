@@ -44,8 +44,7 @@ impl EvtAct {
                                 }
                             }
                             if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 {
-                                term.idx = idx;
-                                Terminal::set_title(&h_file.fullpath);
+                                term.change_tab(idx);
                                 term.curt().editor.set_cmd(KeyCmd::Null);
                                 return ActType::Draw(DParts::All);
                             }

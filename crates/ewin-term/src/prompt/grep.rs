@@ -31,7 +31,8 @@ impl EvtAct {
                 } else {
                     term.clear_curt_tab(true);
 
-                    if search_folder.chars().nth(0).unwrap() != '/' && search_folder.chars().nth(0).unwrap() != 'C' {
+                    // if search_folder.chars().nth(0).unwrap() != '/' && search_folder.chars().nth(0).unwrap() != 'C' {
+                    if Path::new(&search_folder).is_relative() {
                         let current_dir = env::current_dir().unwrap().display().to_string();
                         search_folder = format!("{}/{}", current_dir, search_folder);
                     }
@@ -60,7 +61,7 @@ impl EvtAct {
                     }
                     GREP_CANCEL_VEC.get().unwrap().try_lock().unwrap().resize_with(GREP_INFO_VEC.get().unwrap().try_lock().unwrap().len(), || false);
 
-                    term.add_tab(grep_tab, HeaderFile::new(&format!(r#"{} "{}""#, &Lang::get().grep, &search_str)));
+                    term.add_tab(grep_tab, HeaderFile::new(&format!(r#"{} "{}""#, &Lang::get().grep, &search_str)), FileOpenType::Nomal);
                     term.curt().prom.set_grep_working();
 
                     // Clear(ClearType::CurrentLine) is not performed during grep to prevent flicker. Therefore, clear first

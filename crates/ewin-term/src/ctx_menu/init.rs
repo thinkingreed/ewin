@@ -179,7 +179,6 @@ pub enum TermPlaceCond {
 impl TermPlace {
     pub fn iter() -> Iter<'static, TermPlace> {
         static TERM_PLACE: [TermPlace; 3] = [TermPlace::Editor(TermPlaceCond::EditorRangeSelected), TermPlace::Editor(TermPlaceCond::EditorRangeNonSelected), TermPlace::HeaderBar];
-        // static TERM_PLACE: [TermPlace; 1] = [TermPlace::Editor(TermPlaceCond::EditorRangeSelected)];
         TERM_PLACE.iter()
     }
 }

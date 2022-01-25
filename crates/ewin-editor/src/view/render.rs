@@ -20,7 +20,7 @@ impl Editor {
             E_DrawRange::MoveCur => {}
             E_DrawRange::None => {
                 self.set_bg_color(str_vec);
-                str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, self.row_posi as u16).to_string()));
+                str_vec.push(format!("{}{}", Clear(ClearType::All), MoveTo(0, self.row_posi as u16)));
             }
             E_DrawRange::Target(sy, ey) => {
                 for i in sy - self.offset_y..=ey - self.offset_y {
@@ -28,14 +28,14 @@ impl Editor {
                 }
                 str_vec.push(format!("{}", MoveTo(0, (sy - self.offset_y + self.row_posi) as u16)));
             }
-            E_DrawRange::All => self.clear_draw_vec(str_vec, self.row_posi - 1),
+            E_DrawRange::All => self.clear_all(str_vec, self.row_posi - 1),
             E_DrawRange::After(sy) => str_vec.push(format!("{}{}", MoveTo(0, (sy - self.offset_y + self.row_posi) as u16), Clear(ClearType::FromCursorDown))),
             E_DrawRange::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (self.row_disp_len - Editor::SCROLL_UP_DOWN_MARGIN - 1) as u16), Clear(ClearType::FromCursorDown))),
             E_DrawRange::ScrollUp(_, _) => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, (self.row_posi) as u16), Clear(ClearType::CurrentLine))),
         }
 
         // If you need to edit the previous row_num
-        if self.offset_y == self.offset_y_org && !(draw.sy <= self.cur_y_org && self.cur_y_org <= draw.ey) && self.buf.len_rows() >= self.cur_y_org && self.is_move_cur_posi_scrolling_enable() {
+        if self.offset_y == self.offset_y_org && !(draw.sy <= self.cur_y_org && self.cur_y_org <= draw.ey) && self.buf.len_rows() - 1 > self.cur_y_org && self.is_move_cur_posi_scrolling_enable() {
             str_vec.push(format!("{}", MoveTo(0, (self.cur_y_org - self.offset_y + self.row_posi) as u16)));
             self.set_row_num(self.cur_y_org, str_vec);
             str_vec.push(format!("{}", MoveTo(0, (draw.sy - self.offset_y + self.row_posi) as u16)));
@@ -116,12 +116,13 @@ impl Editor {
     }
     pub fn clear_draw<T: Write>(&self, out: &mut T, sy: usize) {
         let mut str_vec: Vec<String> = vec![];
-        self.clear_draw_vec(&mut str_vec, sy);
+        self.clear_all(&mut str_vec, sy);
         let _ = out.write(str_vec.concat().as_bytes());
         out.flush().unwrap();
     }
 
-    pub fn clear_draw_vec(&self, str_vec: &mut Vec<String>, sy: usize) {
+    pub fn clear_all(&self, str_vec: &mut Vec<String>, sy: usize) {
+        Log::debug_key("clear_render_vec");
         if self.row_disp_len > 0 {
             for i in sy..=self.row_posi + self.row_disp_len - 2 {
                 str_vec.push(format!("{}{}", MoveTo(0, (i + self.row_posi) as u16), Clear(ClearType::CurrentLine)));

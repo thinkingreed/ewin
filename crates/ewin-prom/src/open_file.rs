@@ -32,11 +32,11 @@ impl Prompt {
             str_vec.push(format!("{}{}", MoveTo(0, self.cont_1.disp_row_posi - 1), Clear(CurrentLine)));
         }
 
-        Prompt::set_draw_vec(str_vec, self.cont_1.buf_desc_row_posi, &self.cont_1.buf_desc.clone());
+        Prompt::set_draw_vec(str_vec, self.cont_1.buf_desc_row_posi, &self.cont_1.buf_desc_vec.clone());
         Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
 
         let num_of_disp = format!("{}/{}", self.prom_open_file.get_disp_file_count(), self.prom_open_file.file_all_count);
-        let cont_2_buf_desc = format!("{}{}({}){}", Colors::get_msg_highlight_fg(), &Lang::get().file_list, num_of_disp, Colors::get_default_fg());
+        let cont_2_buf_desc = vec![format!("{}{}({}){}", Colors::get_msg_highlight_fg(), &Lang::get().file_list, num_of_disp, Colors::get_default_fg())];
         Prompt::set_draw_vec(str_vec, self.cont_2.buf_desc_row_posi, &cont_2_buf_desc);
 
         // cont_2.buf
@@ -74,9 +74,9 @@ impl PromptCont {
                 OpenFileType::Normal => &Lang::get().set_open_filenm,
                 OpenFileType::JsMacro => &Lang::get().set_exec_mocro_filenm,
             };
-            self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), guide_str);
+            self.guide_vec.push(format!("{}{}", Colors::get_msg_highlight_fg(), guide_str));
 
-            self.key_desc = format!(
+            self.key_desc_vec.push(format!(
                 "{}{}:{}{}  {}{}:{}{}  {}{}:{}Tab  {}{}:{}Click  {}{}:{}↑↓←→",
                 Colors::get_default_fg(),
                 &Lang::get().open,
@@ -95,9 +95,9 @@ impl PromptCont {
                 Colors::get_default_fg(),
                 &Lang::get().movement,
                 Colors::get_msg_highlight_fg(),
-            );
+            ));
 
-            self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().filenm, Colors::get_default_fg());
+            self.buf_desc_vec.push(format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().filenm, Colors::get_default_fg()));
 
             Log::debug("prom.prom_open_file.cache_disp_filenm", &prom.prom_open_file.cache_disp_filenm);
 
@@ -108,7 +108,7 @@ impl PromptCont {
                 match prom.prom_open_file.file_type {
                     OpenFileType::Normal => {
                         if let Ok(path) = env::current_dir() {
-                            self.buf = format!("{}{}", path.to_string_lossy().to_string(), path::MAIN_SEPARATOR).chars().collect();
+                            self.buf = format!("{}{}", path.to_string_lossy(), path::MAIN_SEPARATOR).chars().collect();
                         }
                     }
                     OpenFileType::JsMacro => {
@@ -127,7 +127,7 @@ impl PromptCont {
             self.cur.x = self.buf.len();
             self.cur.disp_x = get_str_width(&self.buf.iter().collect::<String>());
         } else if self.posi == PromptContPosi::Second {
-            self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().file_list, Colors::get_default_fg());
+            self.buf_desc_vec.push(format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().file_list, Colors::get_default_fg()));
         }
         self.clone()
     }

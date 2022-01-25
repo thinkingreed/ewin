@@ -43,7 +43,7 @@ impl EvtAct {
                     if let DParts::MsgBar(_) = draw_parts {
                         term.curt().mbar.draw_only(out);
                     } else if let DParts::AllMsgBar(_) = draw_parts {
-                        term.draw(out, &DParts::All);
+                        term.render(out, &DParts::All);
                     }
                 }
 
@@ -54,7 +54,7 @@ impl EvtAct {
                     if let DParts::MsgBar(_) | DParts::AllMsgBar(_) = &term.draw_parts_org {
                         term.curt().editor.draw_range = E_DrawRange::All;
                     }
-                    term.draw(out, draw_parts);
+                    term.render(out, draw_parts);
                 }
             };
             term.draw_parts_org = draw_parts.clone();
@@ -65,11 +65,11 @@ impl EvtAct {
             ActType::Next => None,
             ActType::Draw(_) => {
                 EvtAct::draw(term, out, &act_type);
-                term.draw_cur(out);
+                term.render_cur(out);
                 Some(false)
             }
             ActType::Cancel => {
-                term.draw_cur(out);
+                term.render_cur(out);
                 Some(false)
             }
             ActType::Exit => Some(true),
@@ -82,9 +82,7 @@ impl EvtAct {
         if let Some(rtn) = EvtAct::check_next_process(out, term, act_type) {
             return rtn;
         }
-        //  term.state.set_org_state();
         Log::debug("term.keycmd", &term.keycmd);
-
         Terminal::hide_cur();
 
         // Pressed keys Pre-check
@@ -138,19 +136,18 @@ impl EvtAct {
     }
 
     pub fn set_keys(keys: Keys, term: &mut Terminal) -> ActType {
-        if !term.state.is_ctx_menu {
-            match keys {
-                Keys::MouseMove(_, _) => {
-                    // Initialized for post-processing
-                    term.keycmd = KeyCmd::Null;
-                    return ActType::Cancel;
-                }
-                // Because the same key occurs multiple times in the case of Windows and Ubuntu.
-                Keys::MouseDragLeft(_, _) if keys == term.keys_org => return ActType::Cancel,
-                _ => Log::info("Pressed key", &keys),
-            };
+        if !term.state.is_ctx_menu && matches!(keys, Keys::MouseMove(_, _)) {
+            // Initialized for post-processing
+            term.keycmd = KeyCmd::Null;
+            return ActType::Cancel;
         }
+        // Because the same key occurs multiple times in the case of Windows and Ubuntu.
+        if matches!(keys, Keys::MouseDragLeft(_, _)) && keys == term.keys_org {
+            return ActType::Cancel;
+        }
+        Log::info("Pressed key", &keys);
         term.set_keys(&keys);
+        Log::info("term.keycmd", &term.keycmd);
         if term.keycmd == KeyCmd::Unsupported {
             return ActType::Draw(DParts::MsgBar(Lang::get().unsupported_operation.to_string()));
         }
@@ -164,6 +161,7 @@ impl EvtAct {
 
     pub fn init_event(term: &mut Terminal) -> ActType {
         Log::debug_key("init_event");
+        Log::debug("term.keycmd", &term.keycmd);
         match &term.keycmd {
             KeyCmd::CtxMenu(C_Cmd::MouseMove(_, _)) => return if term.state.is_ctx_menu { ActType::Next } else { ActType::Cancel },
             KeyCmd::Resize => {

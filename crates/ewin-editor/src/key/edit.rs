@@ -89,7 +89,8 @@ impl Editor {
             } else {
                 //// Not exist row, Create new row
                 // Delete EOF_MARK once
-                self.buf.remove(self.buf.len_chars() - 1, self.buf.len_chars());
+                let len_chars = self.buf.len_chars();
+                self.buf.remove(len_chars - 1, len_chars);
 
                 // Insert a new line at the end of the current last line
                 let nl_code = &NL::get_nl(&self.h_file.nl);
@@ -201,7 +202,7 @@ impl Editor {
     pub fn delete(&mut self, ep: &mut Proc) {
         Log::debug_key("delete");
         let c = self.buf.char(self.cur.y, self.cur.x);
-        ep.str = if c == NEW_LINE_CR { format!("{}{}", c.to_string(), NEW_LINE_LF) } else { c.to_string() };
+        ep.str = if c == NEW_LINE_CR { format!("{}{}", c, NEW_LINE_LF) } else { c.to_string() };
         self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelNextChar), self.cur.y, self.cur.x);
         if is_row_end_char(c) {
             self.set_cur_target(self.cur.y, self.cur.x, false);

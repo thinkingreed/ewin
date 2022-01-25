@@ -50,19 +50,22 @@ impl Log {
     }
 
     #[track_caller]
+    pub fn preprocessing<T: Debug>(m: &str, v: &T, log_level: LogLevel) {
+        let s = &format!("{}: {:?}", m, v);
+        Log::write(s, log_level);
+    }
+    #[track_caller]
     pub fn write(s: &str, log_level: LogLevel) {
         if let Some(log) = LOG.get() {
+            if log.level > log_level {
+                return;
+            }
             let t = Local::now().format("%Y-%m-%d %H:%M:%S%.6f").to_string();
             let caller = Location::caller().to_string();
             let vec: Vec<&str> = caller.split(path::MAIN_SEPARATOR).collect();
             let file_info = vec.last().unwrap();
             let s = if cfg!(debug_assertions) { format!("{} {}", log_level, s) } else { format!("{} {} {} :: {}", t, log_level, s, file_info) };
-
             writeln!(&log.file, "{}", s).unwrap();
-
-            if log.level > log_level {
-                return;
-            }
         } else {
             eprintln!("{}", s);
         }
@@ -73,8 +76,7 @@ impl Log {
 
     #[track_caller]
     pub fn info<T: Debug>(m: &str, v: &T) {
-        let s = &format!("{}: {:?}", m, v);
-        Log::write(s, LogLevel::Info);
+        Log::preprocessing(m, v, LogLevel::Info);
     }
     #[track_caller]
     pub fn info_s(m: &str) {
@@ -86,8 +88,7 @@ impl Log {
     }
     #[track_caller]
     pub fn debug<T: Debug>(m: &str, v: &T) {
-        let s = &format!("{}: {:?}", m, v);
-        Log::write(s, LogLevel::Debug);
+        Log::preprocessing(m, v, LogLevel::Debug);
     }
     #[track_caller]
     pub fn debug_s(m: &str) {
@@ -99,13 +100,11 @@ impl Log {
     }
     #[track_caller]
     pub fn warn<T: Debug>(m: &str, v: &T) {
-        let s = &format!("{}: {:?}", m, v);
-        Log::write(s, LogLevel::Warn);
+        Log::preprocessing(m, v, LogLevel::Warn);
     }
     #[track_caller]
     pub fn error<T: Debug>(m: &str, v: &T) {
-        let s = &format!("{}: {:?}", m, v);
-        Log::write(s, LogLevel::Error);
+        Log::preprocessing(m, v, LogLevel::Error);
     }
     #[track_caller]
     pub fn error_s(m: &str) {

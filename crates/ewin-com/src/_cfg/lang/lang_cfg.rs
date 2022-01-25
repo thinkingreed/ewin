@@ -1,4 +1,4 @@
-use crate::{_cfg::cfg::Cfg, global::*};
+use crate::{_cfg::cfg::Cfg, global::*, log::Log};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -140,6 +140,8 @@ pub struct Lang {
     pub check_log_file: String,
     pub close_other_than_this_tab: String,
     pub no_tab_can_be_switched: String,
+    pub not_edited_will_reloaded_auto: String,
+    pub no_further_monitoring: String,
     // Not sel range
     pub no_sel_range: String,
     // Paste
@@ -174,6 +176,8 @@ impl Lang {
             Some(s) if s == "ja_JP" => "ja_JP".to_string(),
             _ => "en_US".to_string(),
         };
+        Log::debug("lang", &lang);
+
         let lang_str = if lang.starts_with("ja_JP") { include_str!("ja_JP.toml") } else { include_str!("en_US.toml") };
         let lang_cfg: Lang = toml::from_str(lang_str).unwrap();
 

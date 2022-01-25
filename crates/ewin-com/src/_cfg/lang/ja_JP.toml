@@ -142,6 +142,8 @@ no_tab_can_be_switched = "切り替えられるタブはありません"
 file_has_been_modified_by_other_app = "ファイルは他のアプリケーションによって変更されています"
 open_modified_time = "Open時更新時間"
 last_modified_time = "最終更新時間"
+not_edited_will_reloaded_auto = "以後、未編集時は自動で再読込"
+no_further_monitoring = "以後、監視しない"
 
 ## editor info
 simple_help_desc = "簡易ヘルプ: F1"

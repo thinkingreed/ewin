@@ -34,12 +34,12 @@ impl EvtAct {
                     if child_cont_org.is_none() && child_cont.is_none() || term.ctx_menu_group.parent_sel_y == term.ctx_menu_group.parent_sel_y_cache && term.ctx_menu_group.child_sel_y != USIZE_UNDEFINED {
                         return ActType::Draw(DParts::CtxMenu);
                     } else {
-                        term.set_draw_range_ctx_menu();
+                        term.set_render_range_ctx_menu();
                         return ActType::Draw(DParts::Editor);
                     }
                 } else if term.ctx_menu_group.is_mouse_within_range(y, x, true) {
                     term.ctx_menu_group.clear_select_menu();
-                    term.set_draw_range_ctx_menu();
+                    term.set_render_range_ctx_menu();
                     return ActType::Draw(DParts::Editor);
                 } else {
                     return ActType::Cancel;
@@ -53,7 +53,7 @@ impl EvtAct {
                     C_Cmd::CursorLeft => term.ctx_menu_group.cur_move(Direction::Left),
                     _ => {}
                 }
-                term.set_draw_range_ctx_menu();
+                term.set_render_range_ctx_menu();
                 return ActType::Draw(DParts::Editor);
             }
             C_Cmd::CtxMenu(y, x) => {

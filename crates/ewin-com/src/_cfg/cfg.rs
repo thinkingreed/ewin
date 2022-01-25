@@ -30,16 +30,11 @@ impl Cfg {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct CfgSyntax {
     pub syntax: Syntax,
 }
 
-impl Default for CfgSyntax {
-    fn default() -> Self {
-        CfgSyntax { syntax: Syntax::default() }
-    }
-}
 impl CfgSyntax {
     pub fn get() -> &'static CfgSyntax {
         return CFG_SYNTAX.get().unwrap();
@@ -355,12 +350,12 @@ impl Cfg {
             if config_file.exists() {
                 match fs::read_to_string(&config_file) {
                     Ok(str) => read_str = str,
-                    Err(e) => err_str = format!("{} {} {}", Lang::get().file_loading_failed, config_file.to_string_lossy().to_string(), e),
+                    Err(e) => err_str = format!("{} {} {}", Lang::get().file_loading_failed, config_file.to_string_lossy(), e),
                 }
                 if err_str.is_empty() {
                     match toml::from_str(&read_str) {
                         Ok(c) => cfg = c,
-                        Err(e) => err_str = format!("{}{} {} {}", Lang::get().file, Lang::get().parsing_failed, config_file.to_string_lossy().to_string(), e),
+                        Err(e) => err_str = format!("{}{} {} {}", Lang::get().file, Lang::get().parsing_failed, config_file.to_string_lossy(), e),
                     };
                 }
             } else if args.out_config_flg {

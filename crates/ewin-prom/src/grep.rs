@@ -14,11 +14,11 @@ impl Prompt {
 
     pub fn draw_grep(&self, str_vec: &mut Vec<String>) {
         Prompt::set_draw_vec(str_vec, self.cont_1.opt_row_posi, &self.get_serach_opt());
-        Prompt::set_draw_vec(str_vec, self.cont_1.buf_desc_row_posi, &self.cont_1.buf_desc.clone());
+        Prompt::set_draw_vec(str_vec, self.cont_1.buf_desc_row_posi, &self.cont_1.buf_desc_vec.clone());
         Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
-        Prompt::set_draw_vec(str_vec, self.cont_2.buf_desc_row_posi, &self.cont_2.buf_desc);
+        Prompt::set_draw_vec(str_vec, self.cont_2.buf_desc_row_posi, &self.cont_2.buf_desc_vec);
         Prompt::set_draw_vec(str_vec, self.cont_2.buf_row_posi, &self.cont_2.get_draw_buf_str());
-        Prompt::set_draw_vec(str_vec, self.cont_3.buf_desc_row_posi, &self.cont_3.buf_desc);
+        Prompt::set_draw_vec(str_vec, self.cont_3.buf_desc_row_posi, &self.cont_3.buf_desc_vec);
         Prompt::set_draw_vec(str_vec, self.cont_3.buf_row_posi, &self.cont_3.get_draw_buf_str());
     }
 }
@@ -26,8 +26,8 @@ impl Prompt {
 impl PromptCont {
     pub fn get_grep(&mut self, prom: &Prompt) -> PromptCont {
         if self.posi == PromptContPosi::First {
-            self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &Lang::get().set_grep);
-            self.key_desc = format!(
+            self.guide_vec.push(format!("{}{}", Colors::get_msg_highlight_fg(), &Lang::get().set_grep));
+            self.key_desc_vec.push(format!(
                 "{}{}:{}{}  {}{}:{}↓↑  {}{}:{}{}  {}{}:{}Tab {}({})",
                 Colors::get_default_fg(),
                 &Lang::get().search,
@@ -45,13 +45,13 @@ impl PromptCont {
                 Colors::get_msg_highlight_fg(),
                 Colors::get_default_fg(),
                 &Lang::get().search_folder,
-            );
+            ));
             self.set_opt_case_sens();
             self.set_opt_regex();
 
-            self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().search_str, Colors::get_default_fg());
+            self.guide_vec.push(format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().search_str, Colors::get_default_fg()));
         } else if self.posi == PromptContPosi::Second {
-            self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().search_file, Colors::get_default_fg());
+            self.buf_desc_vec.push(format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().search_file, Colors::get_default_fg()));
 
             if !prom.prom_grep.cache_search_filenm.is_empty() {
                 self.buf = prom.prom_grep.cache_search_filenm.chars().collect();
@@ -59,7 +59,7 @@ impl PromptCont {
                 self.buf = "*.*".chars().collect();
             }
         } else {
-            self.buf_desc = format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().search_folder, Colors::get_default_fg());
+            self.buf_desc_vec.push(format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().search_folder, Colors::get_default_fg()));
             if !prom.prom_grep.cache_search_folder.is_empty() {
                 self.buf = prom.prom_grep.cache_search_folder.chars().collect();
             } else if let Ok(path) = env::current_dir() {

@@ -2,9 +2,18 @@ use crate::{_cfg::cfg::Cfg, def::*, file::*, global::*, log::Log, model::*};
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use anyhow::Context;
 use crossterm::terminal::size;
+use serde_json::Value;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::io::Read;
-use std::{self, fs, path::*, process::*, *};
+use std::{
+    self,
+    collections::HashMap,
+    fs,
+    path::*,
+    process::*,
+    time::{SystemTime, UNIX_EPOCH},
+    *,
+};
 use unicode_width::*;
 
 pub fn get_str_width(msg: &str) -> usize {
@@ -395,6 +404,25 @@ fn get_delim(target: &[char], x: usize, is_forward: bool) -> usize {
         char_type_org = char_type;
     }
     rtn_x
+}
+
+/// Get version of app as a whole
+pub fn get_app_version() -> String {
+    let cfg_str = include_str!("../../../Cargo.toml");
+    let map: HashMap<String, Value> = toml::from_str(cfg_str).unwrap();
+    let mut s = map["package"]["version"].to_string();
+    s.retain(|c| c != '"');
+    return s;
+}
+
+pub fn get_unixtime_str() -> String {
+    let unixtime = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+    return format!("{}.{:03}", unixtime.as_secs(), unixtime.subsec_millis());
+}
+
+pub fn to_unixtime_str(sys_time: SystemTime) -> String {
+    let unixtime = sys_time.duration_since(UNIX_EPOCH).unwrap();
+    return format!("{}.{:03}", unixtime.as_secs(), unixtime.subsec_millis());
 }
 
 #[cfg(test)]

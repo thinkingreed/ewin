@@ -97,10 +97,13 @@ impl EvtAct {
             return EvtAct::grep_result(term);
         } else if term.curt().state.is_enc_nl {
             return EvtAct::enc_nl(term);
+        } else if term.curt().state.is_watch_result {
+            return EvtAct::watch_result(term);
         } else {
             return ActType::Next;
         }
     }
+
     pub fn prompt_check_input_field(term: &mut Terminal) -> ActType {
         // contents operation
         if !term.curt().state.is_exists_input_field() {

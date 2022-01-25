@@ -277,6 +277,7 @@ impl<'a> Iterator for SearchIter<'a> {
 
     // Return the start/end char indices of the next match.
     fn next(&mut self) -> Option<(usize, usize)> {
+        Log::debug_key("SearchIter.next");
         for next_char in &mut self.char_iter {
             self.cur_index += 1;
 

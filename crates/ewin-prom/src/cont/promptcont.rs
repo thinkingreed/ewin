@@ -27,7 +27,7 @@ impl PromptCont {
         self.p_cmd = p_cmd;
     }
 
-    pub fn get_draw_buf_str(&self) -> String {
+    pub fn get_draw_buf_str(&self) -> Vec<String> {
         Log::debug_key("PromptCont.get_draw_buf_str");
         let ranges = self.sel.get_range();
 
@@ -43,7 +43,7 @@ impl PromptCont {
             str_vec.push(c.to_string())
         }
         Colors::set_text_color(&mut str_vec);
-        str_vec.join("")
+        return vec![str_vec.join("")];
     }
 
     pub fn del_sel_range(&mut self) {

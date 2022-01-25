@@ -57,11 +57,10 @@ impl EvtAct {
                 E_Cmd::Encoding => term.curt().prom_enc_nl(),
                 // Test
                 /*
-                  E_Cmd::Encoding => {
-                    let h_file = term.curt_h_file().clone();
-                    term.curt().prom_save_forced(h_file);
+                E_Cmd::Encoding => {
+                    term.curt().prom_watch_result();
                 }
-                */
+                 */
                 // Help
                 E_Cmd::Help => Help::disp_toggle(term),
                 /*

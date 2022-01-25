@@ -142,9 +142,11 @@ close_other_than_this_tab = "Close other than this tab"
 no_tab_can_be_switched = "No tab that can be switched"
 file_has_been_modified = "File has been modified"
 file_has_been_modified_by_other_app = "file has been modified by other application"
-
 open_modified_time = "Modified time when opened "
 last_modified_time = "Last update time"
+not_edited_will_reloaded_auto = "After that, if it is not edited, it will be reloaded auto"
+no_further_monitoring = "No further monitoring"
+
 
 ## macro
 script_run_error = "script run error"

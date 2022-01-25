@@ -193,12 +193,22 @@
   {
     key: 'F3',
     cmd: 'findNext',
-    when: 'allFocus'
+    when: 'editorFocus'
+  },
+    {
+    key: 'F3',
+    cmd: 'findNext',
+    when: 'promptFocus'
   },
   {
     key: 'shift+F4',
     cmd: 'findBack',
-    when: 'allFocus'
+    when: 'editorFocus'
+  },
+  {
+    key: 'shift+F4',
+    cmd: 'findBack',
+    when: 'promptFocus'
   },
   {
     key: 'ctrl+r',

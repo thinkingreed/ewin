@@ -36,4 +36,5 @@ regex = "1.4.3"
 whoami = "1.2.0"
 subprocess = "0.2.8"
 notify="5.0.0-pre.13"
+crossbeam-channel = "0.5.2"
 

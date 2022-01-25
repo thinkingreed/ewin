@@ -64,9 +64,9 @@ impl StatusBar {
         let len_lines = tab.editor.buf.len_rows();
         let len_line_chars = tab.editor.buf.len_row_chars(tab.editor.cur.y);
 
-        let row_str = format!("{}({}/{})", &Lang::get().row, (cur.y + 1).to_string(), len_lines.to_string());
+        let row_str = format!("{}({}/{})", &Lang::get().row, (cur.y + 1), len_lines);
         let len_line_chars = if len_line_chars == 0 { 0 } else { len_line_chars - 1 };
-        let col_str = format!("{}({}/{})", &Lang::get().col, cur.x + 1, len_line_chars.to_string());
+        let col_str = format!("{}({}/{})", &Lang::get().col, cur.x + 1, len_line_chars);
         let cur_posi = format!("{} {}", row_str, col_str,);
         return cur_posi;
     }

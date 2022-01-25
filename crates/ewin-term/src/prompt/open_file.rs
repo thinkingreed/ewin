@@ -111,7 +111,7 @@ impl EvtAct {
                         }
                         Log::debug("tgt_idx", &tgt_idx);
                         if tgt_idx == USIZE_UNDEFINED {
-                            let act_type = term.open_file(&path.display().to_string(), Some(&mut Tab::new()), FileOpenType::Nomal);
+                            let act_type = term.open_file(&path.display().to_string(), FileOpenType::Nomal, Some(&mut Tab::new()), None);
                             if act_type == ActType::Next {
                                 term.clear_pre_tab_status();
                             } else {
@@ -176,7 +176,7 @@ impl EvtAct {
                 let base_path = term.curt().prom.prom_open_file.base_path.clone();
                 let base_path = term.curt().prom.prom_open_file.select_open_file(&base_path);
 
-                let act_type = term.open_file(&format!("{}{}", &base_path, op_file.file.name), Some(&mut Tab::new()), FileOpenType::Nomal);
+                let act_type = term.open_file(&format!("{}{}", &base_path, op_file.file.name), FileOpenType::Nomal, Some(&mut Tab::new()), None);
                 if act_type == ActType::Next {
                     term.clear_pre_tab_status();
                 } else {

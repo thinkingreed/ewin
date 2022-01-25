@@ -16,9 +16,9 @@ impl Prompt {
 
     pub fn draw_replace(&self, str_vec: &mut Vec<String>) {
         Prompt::set_draw_vec(str_vec, self.cont_1.opt_row_posi, &self.get_serach_opt());
-        Prompt::set_draw_vec(str_vec, self.cont_1.buf_desc_row_posi, &self.cont_1.buf_desc.clone());
+        Prompt::set_draw_vec(str_vec, self.cont_1.buf_desc_row_posi, &self.cont_1.buf_desc_vec.clone());
         Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
-        Prompt::set_draw_vec(str_vec, self.cont_2.buf_desc_row_posi, &self.cont_2.buf_desc);
+        Prompt::set_draw_vec(str_vec, self.cont_2.buf_desc_row_posi, &self.cont_2.buf_desc_vec);
         Prompt::set_draw_vec(str_vec, self.cont_2.buf_row_posi, &self.cont_2.get_draw_buf_str());
     }
 }
@@ -26,8 +26,8 @@ impl Prompt {
 impl PromptCont {
     pub fn set_replace(&mut self) {
         if self.posi == PromptContPosi::First {
-            self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), &Lang::get().set_replace);
-            self.key_desc = format!(
+            self.guide_vec.push(format!("{}{}", Colors::get_msg_highlight_fg(), &Lang::get().set_replace));
+            self.key_desc_vec.push(format!(
                 "{}{}:{}{}  {}{}:{}Tab ↓↑  {}{}:{}{}",
                 Colors::get_default_fg(),
                 &Lang::get().all_replace,
@@ -40,10 +40,10 @@ impl PromptCont {
                 &Lang::get().close,
                 Colors::get_msg_highlight_fg(),
                 Keybind::get_key_str(KeyCmd::Prom(P_Cmd::EscPrompt)),
-            );
-            self.buf_desc = format!("{}{}", Colors::get_default_fg(), &Lang::get().search_str,);
+            ));
+            self.buf_desc_vec.push(format!("{}{}", Colors::get_default_fg(), &Lang::get().search_str,));
         } else {
-            self.buf_desc = format!("{}{}", Colors::get_default_fg(), &Lang::get().replace_char,);
+            self.buf_desc_vec.push(format!("{}{}", Colors::get_default_fg(), &Lang::get().replace_char,));
         }
         self.set_opt_case_sens();
         self.set_opt_regex();

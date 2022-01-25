@@ -1,26 +1,26 @@
 #![allow(clippy::needless_return, clippy::iter_nth_zero)]
-
 use clap::*;
 use crossterm::event::{Event::Mouse, EventStream, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use ewin_com::{
     _cfg::{cfg::*, key::keycmd::*, lang::lang_cfg::*},
     def::*,
+    file::*,
     global::*,
     log::*,
     model::*,
+    util::*,
+    watcher::*,
 };
 use ewin_term::model::*;
-use futures::{channel::mpsc::Receiver, future::FutureExt, select, SinkExt, StreamExt};
-use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
-use serde_json::Value;
+use futures::{future::FutureExt, select, StreamExt};
 use std::{
-    collections::HashMap,
     io::*,
     panic,
-    path::Path,
+    path::PathBuf,
+    str::FromStr,
     sync::mpsc::*,
     thread::{self},
-    time::{self, SystemTime, UNIX_EPOCH},
+    time::{self},
 };
 use tokio_util::codec::*;
 
@@ -52,15 +52,12 @@ async fn main() {
     if args.out_config_flg {
         return;
     }
-
     let _ = LANG.set(Lang::read_lang_cfg());
-
     // Processing ends when the terminal size is small
     if !Terminal::check_displayable() {
         println!("{:?}", &Lang::get().terminal_size_small);
         return;
     }
-
     let out = stdout();
     let mut out = BufWriter::new(out.lock());
 
@@ -92,7 +89,6 @@ async fn main() {
     tokio::spawn(async move {
         loop {
             thread::sleep(time::Duration::from_millis(1000));
-
             if let Some(Ok(mut grep_info_vec)) = GREP_INFO_VEC.get().map(|vec| vec.try_lock()) {
                 if grep_info_vec.is_empty() {
                     continue;
@@ -107,7 +103,6 @@ async fn main() {
                         loop {
                             // Sleep to receive key event
                             thread::sleep(time::Duration::from_millis(50));
-
                             {
                                 if let Some(Ok(grep_cancel_vec)) = GREP_CANCEL_VEC.get().map(|vec| vec.try_lock()) {
                                     let is_cancel = grep_cancel_vec[grep_info_idx];
@@ -154,58 +149,39 @@ async fn main() {
         }
     });
 
-    /*
-    let path___ = if cfg!(target_os = "windows") { "C:\\Users\\hi\\rust\\ewin\\target\\debug\\notify.txt" } else { "/home/thinkingreed/rust/ewin/target/debug/notify.txt" };
-
-    let mut watch_state_org = WatchState::default();
-
     tokio::spawn(async move {
+        //  let (tx, _) = unbounded();
+        let (tx, _) = std::sync::mpsc::channel();
+        let mut watcher = FileWatcher::new(tx);
         loop {
-            thread::sleep(time::Duration::from_millis(5000));
-
-            Log::debug_s("loop 000");
-            if let Some(Ok(mut watch_state)) = WATCH_STATE.get().map(|watch_state| watch_state.try_lock()) {
-                Log::debug_s("loop 111");
-
-                let (mut watcher, mut rx_notify) = async_watcher().unwrap();
-
-                //  if watch_state.fullpath != watch_state_org.fullpath {
-                if !watch_state.fullpath.is_empty() {
-                    Log::debug("watch_state.fullpath != watch_state_org.fullpath", &(watch_state.fullpath != watch_state_org.fullpath));
-                    let path = Path::new(&watch_state.fullpath);
-                    //   watcher.unwatch(Path::new(path___));
-                    watcher.watch(Path::new(path___), RecursiveMode::NonRecursive).unwrap();
+            if let Some(Ok(mut watch_info)) = WATCH_INFO.get().map(|watch_info| watch_info.try_lock()) {
+                if watch_info.mode == WatchMode::NotMonitor {
+                    continue;
+                }
+                Log::debug("watch_info.history_set", &watch_info.history_set);
+                if watch_info.fullpath_org != watch_info.fullpath {
+                    if watch_info.fullpath_org != String::default() {
+                        Log::debug_s("w.unwatch");
+                        watcher.unwatch(&PathBuf::from_str(&watch_info.fullpath_org).unwrap());
+                    }
+                    set_watch_history(watch_info.fullpath.clone(), &mut watch_info, &mut watcher, true);
+                    Log::debug("watch watch_info.fullpath", &watch_info.fullpath);
+                    watcher.watch(&PathBuf::from_str(&watch_info.fullpath).unwrap());
+                } else {
+                    set_watch_history(watch_info.fullpath.clone(), &mut watch_info, &mut watcher, false);
                 }
 
-                let mut fuse = rx_notify.next().fuse();
-
-                Log::debug("fuse 111", &fuse);
-
-                select! {
-                    ss_out = fuse => {
-                        Log::debug("fuse 222", &fuse);
-                        if let  Some(Ok(evt)) = ss_out{
-                            Log::debug("fuse 333", &fuse);
-                            if evt.kind.is_modify() {
-                                let unixtime_seq = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-                                let job = Job { job_type: JobType::Watch, job_watch: Some(JobWatch { watch_state: WatchState { unixtime_seq, ..WatchState::default() } }), ..Job::default() };
-                                let _ = tx_watch.send(job);
-                                if watch_state.unixtime_seq != watch_state_org.unixtime_seq {
-                                    watch_state_org = watch_state.clone();
-                                }
-                            }
-                        }
+                for (fullpath_str, unixtime_str) in watch_info.history_set.clone() {
+                    if watch_info.fullpath == fullpath_str {
+                        let job = Job { job_type: JobType::Watch, job_watch: Some(JobWatch { fullpath_str, unixtime_str }), ..Job::default() };
+                        let _ = tx_watch.send(job);
                     }
                 }
-
-                Log::debug_s("loop 222");
-                if watch_state_org != *watch_state {
-                    Log::debug("watch_state_org != watch_state", &(watch_state_org != *watch_state));
-                }
+                watch_info.fullpath_org = watch_info.fullpath.clone();
             }
+            thread::sleep(time::Duration::from_millis(3000));
         }
     });
-     */
 
     for job in rx {
         match job.job_type {
@@ -217,36 +193,37 @@ async fn main() {
                 term.keys_org = keys;
             }
             JobType::GrepResult => EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap()),
-            JobType::Watch => Log::debug("JobType::Watch", &job.job_watch),
+            JobType::Watch => {
+                if let Some(job_watch) = job.job_watch {
+                    if EvtAct::draw_watch_result(&mut out, &mut term) {
+                        WATCH_INFO.get().unwrap().try_lock().map(|mut watch_info| watch_info.history_set.remove(&(job_watch.fullpath_str, job_watch.unixtime_str))).unwrap();
+                    }
+                }
+            }
         }
     }
     Terminal::exit();
 }
+pub fn set_watch_history(path_str: String, watch_info: &mut tokio::sync::MutexGuard<WatchInfo>, watcher: &mut FileWatcher, is_forced: bool) {
+    if is_forced {
+        let unixtime_str = to_unixtime_str(File::get_modified_time(&path_str));
+        watch_info.history_set.insert((path_str, unixtime_str));
+        watcher.state.lock().unwrap().events.clear();
+    } else {
+        let unixtime_str = get_unixtime_str();
+        let events = watcher.take_events();
+        let modified = events.iter().any(|event| watcher.wants_event(event));
 
+        if modified {
+            Log::debug("modified events", &events);
+
+            watch_info.history_set.retain(|(path, _)| *path == path_str);
+            watch_info.history_set.insert((path_str, unixtime_str));
+            watcher.state.lock().unwrap().events.clear();
+        }
+    }
+}
 pub fn send_grep_job(grep_str: String, tx_grep: &mut Sender<Job>, grep_info: &GrepState) {
     let job = Job { job_type: JobType::GrepResult, job_grep: Some(JobGrep { grep_str, is_result: grep_info.is_result, is_cancel: grep_info.is_cancel, is_stdout_end: grep_info.is_stdout_end, is_stderr_end: grep_info.is_stderr_end }), ..Job::default() };
     let _ = tx_grep.send(job);
-}
-
-/// Get version of app as a whole
-pub fn get_app_version() -> String {
-    let cfg_str = include_str!("../../Cargo.toml");
-    let map: HashMap<String, Value> = toml::from_str(cfg_str).unwrap();
-    let mut s = map["package"]["version"].to_string();
-    s.retain(|c| c != '"');
-    return s;
-}
-
-fn async_watcher() -> notify::Result<(RecommendedWatcher, Receiver<notify::Result<Event>>)> {
-    let (mut tx, rx) = futures::channel::mpsc::channel(1);
-
-    // Automatically select the best implementation for your platform.
-    // You can also access each implementation directly e.g. INotifyWatcher.
-    let watcher = RecommendedWatcher::new(move |res| {
-        futures::executor::block_on(async {
-            tx.send(res).await.unwrap();
-        })
-    })?;
-
-    Ok((watcher, rx))
 }

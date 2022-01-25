@@ -184,7 +184,7 @@ impl Editor {
 
             let height = Cfg::get().general.editor.scrollbar.horizontal.height;
             for i in self.scrl_h.row_posi..self.scrl_h.row_posi + height {
-                str_vec.push(format!("{}{}", MoveTo(0, self.scrl_h.row_posi as u16).to_string(), Clear(ClearType::CurrentLine)));
+                str_vec.push(format!("{}{}", MoveTo(0, self.scrl_h.row_posi as u16), Clear(ClearType::CurrentLine)));
                 str_vec.push(Colors::get_default_bg());
                 str_vec.push(MoveTo((self.get_rnw_and_margin() + self.scrl_h.clm_posi) as u16, i as u16).to_string());
                 str_vec.push(Colors::get_scrollbar_h_bg());

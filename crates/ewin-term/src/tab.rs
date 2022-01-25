@@ -113,6 +113,12 @@ impl Tab {
         self.state.is_enc_nl = true;
         self.prom.enc_nl();
     }
+    pub fn prom_watch_result(&mut self) {
+        Log::debug_key("Tab::prom_watch_result");
+        self.state.is_watch_result = true;
+        self.prom.watch_result();
+    }
+
     pub fn new() -> Self {
         Tab { editor: Editor::new(), mbar: MsgBar::new(), prom: Prompt::new(), sbar: StatusBar::new(), state: TabState::default() }
     }

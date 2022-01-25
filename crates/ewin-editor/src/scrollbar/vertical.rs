@@ -49,11 +49,13 @@ impl Editor {
                 self.scrl_v.row_posi = if self.scrl_v.row_posi == 0 { self.scrl_v.row_posi } else { self.scrl_v.row_posi - 1 };
             }
         }
-        self.cur_updown_com();
         if self.is_move_cur_posi_scrolling_enable() {
+            self.cur.y = self.scrl_v.row_posi * self.scrl_v.move_len;
+            self.cur_updown_com();
             self.set_cur_target(self.cur.y, self.cur.x, false);
+        } else {
+            self.scroll();
         }
-        self.scroll();
     }
 
     pub fn draw_scrlbar_v(&mut self, str_vec: &mut Vec<String>) {

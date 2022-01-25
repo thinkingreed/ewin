@@ -14,8 +14,8 @@ impl Prompt {
 
 impl PromptCont {
     pub fn set_move_row(&mut self) {
-        self.guide = format!("{}{}", Colors::get_msg_highlight_fg(), Lang::get().set_move_row);
-        self.key_desc = format!(
+        self.guide_vec.push(format!("{}{}", Colors::get_msg_highlight_fg(), Lang::get().set_move_row));
+        self.key_desc_vec.push(format!(
             "{}{}:{}{}  {}{}:{}{}{}",
             Colors::get_default_fg(),
             &Lang::get().move_to_specified_row,
@@ -26,6 +26,6 @@ impl PromptCont {
             Colors::get_msg_highlight_fg(),
             Keybind::get_key_str(KeyCmd::Prom(P_Cmd::EscPrompt)),
             Colors::get_default_fg(),
-        );
+        ));
     }
 }

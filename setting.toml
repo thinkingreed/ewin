@@ -1,6 +1,6 @@
 [general]
 # "en_US" or "ja_JP"
-#lang = "en_US"  # option default "en_US"
+lang = "en_US"  # option default "en_US"
 
 [general.log] # option
 # "info" or "debug" or "error"

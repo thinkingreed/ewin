@@ -19,8 +19,8 @@ impl Editor {
             E_Cmd::CursorRowEnd => self.cur_end(),
             _ => {}
         }
-        self.scroll();
 
+        self.scroll();
         if self.sel.mode == SelMode::BoxSelect {
             self.sel.set_sel_posi(false, self.cur);
             self.box_insert.vec = self.slice_box_sel().1;
@@ -195,6 +195,7 @@ impl Editor {
             E_Cmd::CursorRowEndSelect => self.cur_end(),
             _ => {}
         }
+        self.scroll();
 
         self.sel.set_sel_posi(false, self.cur);
         self.sel.check_overlap();

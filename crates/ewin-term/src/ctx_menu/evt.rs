@@ -25,6 +25,7 @@ impl CtxMenuGroup {
     }
 
     pub fn select_ctx_menu(term: &mut Terminal) -> ActType {
+        Log::debug_key("select_ctx_menu");
         if let Some((ctx_menu, _)) = term.ctx_menu_group.get_curt_child() {
             return CtxMenuGroup::check_func(term, &term.ctx_menu_group.get_curt_parent().unwrap().0.name, &ctx_menu.name);
         } else if !term.ctx_menu_group.is_exist_child_curt_parent() {
@@ -38,6 +39,7 @@ impl CtxMenuGroup {
         Log::debug_key("check_func");
 
         let mut evt_act_type = ActType::Draw(DParts::Editor);
+        term.clear_ctx_menu();
         if LANG_MAP.get(parent_name).is_some() {
             if &Lang::get().macros == LANG_MAP.get(parent_name).unwrap() {
                 if let Some(base_dirs) = BaseDirs::new() {
@@ -56,12 +58,12 @@ impl CtxMenuGroup {
         } else if LANG_MAP.get(child_name).is_some() {
             evt_act_type = CtxMenuGroup::exec_func(term, child_name);
         }
-        term.clear_ctx_menu();
         return evt_act_type;
     }
 
     pub fn exec_func(term: &mut Terminal, name: &str) -> ActType {
         Log::debug_key("exec_func");
+        Log::debug("select name", &name);
 
         match &LANG_MAP[name] {
             //// editor
@@ -118,7 +120,7 @@ impl CtxMenuGroup {
         Log::debug_key("CtxMenuGroup.draw_only");
         let mut v: Vec<String> = vec![];
         self.draw(&mut v);
-        self.draw_cur();
+        self.render_cur();
         let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();
     }
@@ -147,7 +149,7 @@ impl CtxMenuGroup {
         str_vec.push(Colors::get_default_fg_bg());
     }
 
-    pub fn draw_cur(&mut self) {
+    pub fn render_cur(&mut self) {
         Terminal::hide_cur();
     }
 
@@ -171,6 +173,7 @@ impl CtxMenuGroup {
         }
         return false;
     }
+
     pub fn show_init(term: &mut Terminal, y: usize, x: usize) {
         term.ctx_menu_group.clear();
 

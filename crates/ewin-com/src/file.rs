@@ -181,8 +181,23 @@ impl File {
         }
         None
     }
+    /*
+    pub fn get_modified_time(path: &str) -> Option<SystemTime> {
+        if Path::new(&path).exists() && Path::new(&path).is_file() {
+            let file = std::fs::File::open(path).unwrap();
+            return Some(file.metadata().unwrap().modified().unwrap());
+        } else {
+            return None;
+        }
+    }
+     */
+
     pub fn get_modified_time(path: &str) -> SystemTime {
         let file = std::fs::File::open(path).unwrap();
         return file.metadata().unwrap().modified().unwrap();
+    }
+
+    pub fn is_exist_file(path: &str) -> bool {
+        return Path::new(&path).exists() && Path::new(&path).is_file();
     }
 }

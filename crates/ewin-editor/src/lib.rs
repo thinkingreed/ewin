@@ -8,8 +8,8 @@ pub mod buf {
 }
 pub mod view {
     pub mod buf_cache;
-    pub mod draw;
-    pub mod draw_range;
+    pub mod render;
+    pub mod render_range;
 }
 pub mod prompt {
     pub mod grep_result;
