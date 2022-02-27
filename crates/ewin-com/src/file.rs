@@ -1,14 +1,17 @@
 extern crate ropey;
-use crate::{_cfg::lang::lang_cfg::*, log::*, model::Encode};
+use crate::{_cfg::lang::lang_cfg::*, log::*, model::*};
 use encoding_rs::Encoding;
 use faccess::PathExt;
 #[cfg(target_os = "windows")]
 use regex::Regex;
+use std::io::Write;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::path::MAIN_SEPARATOR;
-use std::{fmt, path::Path};
 use std::{
+    fmt,
+    fs::OpenOptions,
     io::{self, BufReader, ErrorKind, Read, Seek, SeekFrom},
+    path::Path,
     time::SystemTime,
 };
 
@@ -192,12 +195,34 @@ impl File {
     }
      */
 
-    pub fn get_modified_time(path: &str) -> SystemTime {
-        let file = std::fs::File::open(path).unwrap();
-        return file.metadata().unwrap().modified().unwrap();
+    pub fn get_modified_time(path: &str) -> Option<SystemTime> {
+        if File::is_exist_file(path) {
+            return File::get_modified(path).ok();
+        } else {
+            return None;
+        }
+    }
+    fn get_modified(path: &str) -> Result<SystemTime, io::Error> {
+        let file = std::fs::File::open(path)?;
+        let mod_time = file.metadata()?.modified()?;
+        return Ok(mod_time);
     }
 
     pub fn is_exist_file(path: &str) -> bool {
         return Path::new(&path).exists() && Path::new(&path).is_file();
+    }
+
+    pub fn create_write_file(full_path: &Path, s: &str) -> anyhow::Result<()> {
+        File::create_dir_all_full_path(full_path)?;
+        let mut f: std::fs::File = OpenOptions::new().create(true).write(true).open(full_path)?;
+        f.write_all(s.as_bytes())?;
+        f.flush()?;
+        Ok(())
+    }
+
+    pub fn create_dir_all_full_path(full_path: &Path) -> anyhow::Result<()> {
+        let prefix = Path::new(full_path).parent().unwrap();
+        std::fs::create_dir_all(prefix)?;
+        Ok(())
     }
 }

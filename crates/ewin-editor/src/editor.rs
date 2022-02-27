@@ -1,6 +1,5 @@
 use crate::{
     ewin_com::{
-        _cfg::cfg::*,
         _cfg::{key::keycmd::*, lang::lang_cfg::*},
         log::*,
         model::*,
@@ -12,7 +11,14 @@ use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
 };
-use std::{io::stdout, usize};
+use ewin_com::{_cfg::model::default::Cfg, file::File, global::ENV};
+use ropey::RopeBuilder;
+use std::{
+    cmp::min,
+    collections::BTreeSet,
+    io::{self, stdout},
+    usize,
+};
 
 impl Editor {
     pub const MOVE_ROW_EXTRA_NUM: usize = 3;
@@ -41,15 +47,18 @@ impl Editor {
     }
 
     pub fn set_org_state(&mut self) {
+        Log::debug_key("set_org_state");
         // let tab = term.tabs.get_mut(term.idx).unwrap();
 
+        self.row_disp_len_org = self.row_disp_len;
         self.col_len_org = self.col_len;
-        self.cur_y_org = self.cur.y;
+        self.cur_org = self.cur;
         self.offset_y_org = self.offset_y;
         self.offset_x_org = self.offset_x;
         self.offset_disp_x_org = self.offset_disp_x;
         self.rnw_org = self.get_rnw();
         self.sel_org = self.sel;
+
         self.state.is_changed_org = self.state.is_changed;
         self.row_len_org = self.buf.len_rows();
         self.scrl_v.row_posi_org = self.scrl_v.row_posi;
@@ -113,18 +122,8 @@ impl Editor {
             E_Cmd::Undo | E_Cmd::Redo | E_Cmd::DelNextChar | E_Cmd::DelPrevChar => {}
             _ => self.box_insert.mode = BoxInsertMode::Normal,
         }
-    }
 
-    pub fn is_move_position_by_scrolling_enable_and_e_cmd(&self) -> bool {
-        return !self.is_move_cur_posi_scrolling_enable() && ((matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) || (self.scrl_v.is_enable && (matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)))));
-    }
-
-    pub fn is_cur_y_in_screen(&self) -> bool {
-        return self.offset_y <= self.cur.y && self.cur.y <= self.offset_y + self.row_disp_len;
-    }
-
-    pub fn is_move_cur_posi_scrolling_enable(&self) -> bool {
-        return Cfg::get().general.editor.cursor.move_position_by_scrolling_enable;
+        self.change_info = ChangeInfo::default();
     }
 
     pub fn finalize(&mut self) {
@@ -141,9 +140,9 @@ impl Editor {
             // Search
             E_Cmd::FindNext | E_Cmd::FindBack |
             // mouse
-            E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) 
+            E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseUpLeft(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) 
            // | E_Cmd::MouseDownRight(_, _) | E_Cmd::MouseDragRight(_, _)
-              |E_Cmd::MouseMove(_, _) | E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) |
+           |E_Cmd::MouseScrollDown   |E_Cmd::MouseScrollUp      |E_Cmd::MouseMove(_, _) | E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) |
             // other
             E_Cmd::CtxtMenu(_,_) | E_Cmd::BoxSelectMode => {}
             _ => {
@@ -168,6 +167,9 @@ impl Editor {
             let len_chars = self.buf.len_chars();
             let search_str = &self.search.str.clone();
             let cfg_search = Cfg::get_edit_search();
+
+            // self.search.set_range(self.get_search_ranges(&cfg_search, search_str, 0, len_chars, 0));
+
             self.search.ranges = self.get_search_ranges(&cfg_search, search_str, 0, len_chars, 0);
         }
     }
@@ -181,10 +183,10 @@ impl Editor {
         match self.e_cmd {
             E_Cmd::DelNextChar if self.sel.mode != SelMode::BoxSelect && !self.sel.is_selected() && (self.cur.y == self.buf.len_rows() - 1 && self.cur.x == self.buf.len_row_chars(self.cur.y)) => return ActType::Cancel,
             E_Cmd::DelPrevChar if !self.sel.is_selected() && self.cur.y == 0 && self.cur.x == 0 => return ActType::Cancel,
-            E_Cmd::Cut | E_Cmd::Copy if !self.sel.is_selected() => return ActType::Draw(DParts::MsgBar(Lang::get().no_sel_range.to_string())),
-            E_Cmd::Undo if self.history.len_undo() == 0 => return ActType::Draw(DParts::MsgBar(Lang::get().no_undo_operation.to_string())),
-            E_Cmd::Redo if self.history.len_redo() == 0 => return ActType::Draw(DParts::MsgBar(Lang::get().no_redo_operation.to_string())),
-            E_Cmd::ExecRecordKey if self.key_vec.is_empty() => return ActType::Draw(DParts::MsgBar(Lang::get().no_key_record_exec.to_string())),
+            E_Cmd::Cut | E_Cmd::Copy if !self.sel.is_selected() => return ActType::Render(RParts::MsgBar(Lang::get().no_sel_range.to_string())),
+            E_Cmd::Undo if self.history.len_undo() == 0 => return ActType::Render(RParts::MsgBar(Lang::get().no_undo_operation.to_string())),
+            E_Cmd::Redo if self.history.len_redo() == 0 => return ActType::Render(RParts::MsgBar(Lang::get().no_redo_operation.to_string())),
+            E_Cmd::ExecRecordKey if self.key_vec.is_empty() => return ActType::Render(RParts::MsgBar(Lang::get().no_key_record_exec.to_string())),
             _ => {}
         }
         return ActType::Next;
@@ -217,5 +219,89 @@ impl Editor {
         } else {
             self.set_cur_target(self.cur.y, self.cur.x, false);
         };
+    }
+    pub fn is_move_position_by_scrolling_enable_and_e_cmd(&self) -> bool {
+        return !self.is_move_cur_posi_scrolling_enable() && ((matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) || (self.scrl_v.is_enable && (matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)))));
+    }
+
+    pub fn is_move_cur_posi_scrolling_enable(&self) -> bool {
+        return Cfg::get().general.editor.cursor.move_position_by_scrolling_enable;
+    }
+    pub fn is_cur_y_in_screen(&self) -> bool {
+        return self.is_y_in_screen(self.cur.y);
+    }
+    pub fn is_y_in_screen(&self, y: usize) -> bool {
+        return self.offset_y <= y && y < self.offset_y + self.row_disp_len;
+    }
+    pub fn is_cur_disp_x_in_screen(&self) -> bool {
+        return self.offset_disp_x <= self.cur.disp_x && self.cur.disp_x < self.offset_disp_x + self.col_len;
+    }
+
+    pub fn get_row_in_screen(&self) -> BTreeSet<usize> {
+        return (self.offset_y..min(self.offset_y + self.row_disp_len, self.buf.len_rows())).collect::<BTreeSet<usize>>();
+    }
+    pub fn get_candidate_new_filenm(&mut self) -> String {
+        Log::debug_key("get_candidate_new_filenm");
+
+        let mut candidate_new_filenm = String::new();
+
+        if Cfg::get().general.editor.save.use_string_first_line_for_file_name_of_new_file {
+            let len = self.buf.char_vec_row(0).len();
+            candidate_new_filenm = if len > 20 { self.buf.char_vec_row(0)[..=20].iter().collect() } else { self.buf.char_vec_row(0).iter().collect() };
+
+            Log::debug("candidate_new_filenm", &candidate_new_filenm);
+
+            if candidate_new_filenm == "." || candidate_new_filenm == ".." {
+                candidate_new_filenm = "".to_string()
+            } else if cfg!(linux) || cfg!(macos) || *ENV == Env::WSL {
+                candidate_new_filenm = candidate_new_filenm.trim().replace(&['/', '\u{0000}'], "");
+            } else if cfg!(windows) {
+                candidate_new_filenm = candidate_new_filenm.trim().replace(&['¥', '/', ':', '*', '?', '"', '<', '>', '|'], "");
+            };
+            candidate_new_filenm = candidate_new_filenm.to_string();
+        }
+
+        return candidate_new_filenm;
+    }
+    pub fn set_encoding(&mut self, h_file: &mut HeaderFile, to_encode: Encode, nl_item_name: &str, apply_item_name: &str, bom_item_name: &str) -> io::Result<()> {
+        if apply_item_name == Lang::get().file_reload {
+            let (vec, bom, modified_time) = File::read_file(&h_file.filenm)?;
+            h_file.bom = bom;
+
+            let (mut decode_str, enc) = File::read_bytes(&vec, to_encode);
+            if decode_str.is_empty() {
+                decode_str = (*String::from_utf8_lossy(&vec)).to_string();
+            }
+
+            h_file.enc = enc;
+            h_file.nl = self.buf.check_nl();
+            h_file.modified_time = modified_time;
+
+            let mut b = RopeBuilder::new();
+            b.append(&decode_str);
+            self.buf.text = b.finish();
+        } else {
+            h_file.enc = to_encode;
+            h_file.bom = TextBuffer::get_select_item_bom(&to_encode, bom_item_name);
+            h_file.nl_org = h_file.nl.clone();
+            h_file.nl = nl_item_name.to_string();
+
+            if h_file.nl != h_file.nl_org {
+                self.change_nl(&h_file.nl_org, &h_file.nl);
+            }
+        }
+        Log::info("File info", &h_file);
+
+        Ok(())
+    }
+
+    pub fn change_nl(&mut self, from_nl_str: &str, to_nl_str: &str) {
+        let from_nl = &NL::get_nl(from_nl_str);
+        let to_nl = &NL::get_nl(to_nl_str);
+
+        let cfg_search = Cfg::get_edit_search();
+        let search_set = self.buf.search(from_nl, 0, self.buf.text.len_chars(), &cfg_search);
+
+        self.edit_proc(E_Cmd::ReplaceExec(from_nl.clone(), to_nl.clone(), search_set));
     }
 }

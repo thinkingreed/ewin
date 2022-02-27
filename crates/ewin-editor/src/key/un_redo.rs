@@ -66,22 +66,6 @@ impl Editor {
                 let idx_set = self.get_idx_set(search_str, replace_str, idx_set);
 
                 self.edit_proc(E_Cmd::ReplaceExec(replace_str.clone(), search_str.clone(), idx_set));
-
-                /*
-                if *is_regex {
-                    self.edit_proc(E_Cmd::ReplaceExec(*is_regex, replace_str.clone(), search_str.clone(), replace_map));
-
-                    /*
-                    for ((s, e), org_str) in replace_map {
-                        let mut map = BTreeMap::new();
-                        map.insert((s, e), "".to_string());
-                        self.edit_proc(E_Cmd::ReplaceExec(*is_regex, org_str.clone(), map));
-                    }
-                     */
-                } else {
-                    self.edit_proc(E_Cmd::ReplaceExec(*is_regex, replace_str.clone(), search_str.clone(), replace_map));
-                }
-                 */
             }
             _ => {}
         }

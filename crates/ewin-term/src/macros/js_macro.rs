@@ -5,7 +5,7 @@ use crate::{
 };
 use ewin_com::{
     file::File,
-    model::{ActType, DParts},
+    model::{ActType, RParts},
 };
 use rusty_v8::{self as v8, inspector::*, Context, ContextScope, HandleScope, Isolate, Script};
 use std::path::Path;
@@ -29,7 +29,7 @@ impl Macros {
         inspector.context_created(context, 1, StringView::empty());
 
         // Store tab information in global variable
-        let _ = TAB.get().unwrap().try_lock().map(|mut tab| *tab = term.tabs[term.idx].clone());
+        let _ = TAB.get().unwrap().try_lock().map(|mut tab| *tab = term.tabs[term.tab_idx].clone());
 
         Macros::regist_js_func(scope, context);
         let (script_str, err_str) = File::read_external_file(js_filenm);
@@ -47,22 +47,22 @@ impl Macros {
                 script
             } else {
                 Macros::log_exceptions(scope);
-                return ActType::Draw(DParts::MsgBar(format!("{} {}", &Lang::get().script_compile_error, &Lang::get().check_log_file)));
+                return ActType::Render(RParts::MsgBar(format!("{} {}", &Lang::get().script_compile_error, &Lang::get().check_log_file)));
             };
             if let Some(result) = script.run(&mut scope) {
                 Log::debug("script.run result", &result.to_string(&mut scope).unwrap().to_rust_string_lossy(&mut scope));
 
                 if let Some(Ok(tab)) = TAB.get().map(|tab| tab.try_lock()) {
                     Log::debug("tab.editor", &tab.editor);
-                    term.tabs[term.idx] = tab.clone();
+                    term.tabs[term.tab_idx] = tab.clone();
                 }
             } else {
                 Macros::log_exceptions(scope);
-                return ActType::Draw(DParts::MsgBar(format!("{} {}", &Lang::get().script_run_error, &Lang::get().check_log_file)));
+                return ActType::Render(RParts::MsgBar(format!("{} {}", &Lang::get().script_run_error, &Lang::get().check_log_file)));
             };
-            return ActType::Draw(DParts::All);
+            return ActType::Render(RParts::All);
         } else {
-            return ActType::Draw(DParts::MsgBar(err_str));
+            return ActType::Render(RParts::MsgBar(err_str));
         }
     }
 

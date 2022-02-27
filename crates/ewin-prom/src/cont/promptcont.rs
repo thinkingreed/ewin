@@ -1,4 +1,4 @@
-use ewin_com::{_cfg::cfg::Cfg, global::CFG_EDIT};
+use ewin_com::{_cfg::model::default::Cfg, global::CFG_EDIT};
 
 use crate::{
     ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, colors::*, log::*, util::*},

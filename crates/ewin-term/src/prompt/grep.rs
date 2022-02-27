@@ -9,9 +9,9 @@ impl EvtAct {
     pub fn grep(term: &mut Terminal) -> ActType {
         Log::debug_s("EvtAct.grep");
         match term.curt().prom.keycmd {
-            KeyCmd::Resize => {
+            KeyCmd::Prom(P_Cmd::Resize(_, _)) => {
                 term.curt().prom_grep();
-                return ActType::Draw(DParts::All);
+                return ActType::Render(RParts::All);
             }
             KeyCmd::Prom(P_Cmd::ConfirmPrompt) => {
                 let search_str = term.curt().prom.cont_1.buf.iter().collect::<String>();
@@ -23,11 +23,11 @@ impl EvtAct {
                 Log::debug("search_folder", &search_folder);
 
                 if search_str.is_empty() {
-                    return ActType::Draw(DParts::MsgBar(Lang::get().not_entered_search_str.to_string()));
+                    return ActType::Render(RParts::MsgBar(Lang::get().not_entered_search_str.to_string()));
                 } else if search_filenm.is_empty() {
-                    return ActType::Draw(DParts::MsgBar(Lang::get().not_entered_search_file.to_string()));
+                    return ActType::Render(RParts::MsgBar(Lang::get().not_entered_search_file.to_string()));
                 } else if search_folder.is_empty() {
-                    return ActType::Draw(DParts::MsgBar(Lang::get().not_entered_search_folder.to_string()));
+                    return ActType::Render(RParts::MsgBar(Lang::get().not_entered_search_folder.to_string()));
                 } else {
                     term.clear_curt_tab(true);
 
@@ -67,7 +67,7 @@ impl EvtAct {
                     // Clear(ClearType::CurrentLine) is not performed during grep to prevent flicker. Therefore, clear first
                     Terminal::clear_all();
                 }
-                return ActType::Draw(DParts::All);
+                return ActType::Render(RParts::All);
             }
             _ => return ActType::Cancel,
         }

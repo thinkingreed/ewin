@@ -30,7 +30,7 @@ pub const CONTINUE_STR: &str = "..";
 pub const PARENT_FOLDER: &str = "..";
 
 #[cfg(target_os = "windows")]
-pub const MULTI_CLICK_MILLISECONDS: i64 = 1500;
+pub const MULTI_CLICK_MILLISECONDS: i64 = 1000;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 pub const MULTI_CLICK_MILLISECONDS: i64 = 500;
 pub const DELIM_STR: &str = r#"!"\#$%&()*+-',./:;<=>?@[]^`{|}~"#;

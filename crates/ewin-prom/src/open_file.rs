@@ -313,7 +313,7 @@ pub fn get_shaping_file_list(file_vec: &mut Vec<File>, cols: usize) -> (Vec<Vec<
             continue;
         }
         if split_idx == 1 {
-            max_len = get_term_size().0 as usize;
+            max_len = get_term_size().0;
         }
 
         let rest_num = file_vec_len % split_idx;

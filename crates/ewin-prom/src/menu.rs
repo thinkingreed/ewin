@@ -222,9 +222,9 @@ impl PromptCont {
                     let choices = Choices { vec: vec![vec_1, vec_2], ..Default::default() };
                     self.choices_map.insert(((0, 1), (0, 0)), choices);
 
-                    let format_json = Keybind::get_menu_str(&Lang::get().json, KeyCmd::Edit(E_Cmd::Format(FmtType::JSON)));
-                    let format_html = Keybind::get_menu_str(&Lang::get().html, KeyCmd::Edit(E_Cmd::Format(FmtType::HTML)));
-                    let format_xml = Keybind::get_menu_str(&Lang::get().xml, KeyCmd::Edit(E_Cmd::Format(FmtType::XML)));
+                    let format_json = Keybind::get_menu_str(&Lang::get().json, KeyCmd::Edit(E_Cmd::Format(FileType::JSON)));
+                    let format_html = Keybind::get_menu_str(&Lang::get().html, KeyCmd::Edit(E_Cmd::Format(FileType::HTML)));
+                    let format_xml = Keybind::get_menu_str(&Lang::get().xml, KeyCmd::Edit(E_Cmd::Format(FileType::XML)));
                     let vec_1 = vec![Choice::new(&format_json), Choice::new(&format_html), Choice::new(&format_xml)];
                     let choices = Choices { vec: vec![vec_1], ..Default::default() };
                     self.choices_map.insert(((0, 1), (0, 1)), choices);
@@ -246,7 +246,7 @@ impl PromptCont {
                 for (y_idx, vec) in choices.vec.iter().enumerate() {
                     let mut row_width = 1;
                     for (x_idx, item) in vec.iter().enumerate() {
-                        let item_str = if choices.is_show && choices.vec_y == y_idx && choices.vec_x == x_idx { format!("{}{}{}", Colors::get_msg_warning_inversion_fg_bg(), item.disp_name, Colors::get_hbar_fg_bg()) } else { format!("{}{}", Colors::get_hbar_fg_bg(), item.disp_name) };
+                        let item_str = if choices.is_show && choices.vec_y == y_idx && choices.vec_x == x_idx { format!("{}{}{}", Colors::get_msg_warning_inversion_fg_bg(), item.disp_name, Colors::get_default_fg_bg()) } else { format!("{}{}", Colors::get_default_fg_bg(), item.disp_name) };
                         str_vec.push(format!("{}{}", MoveTo(row_width, self.buf_row_posi + y_idx as u16), &item_str));
 
                         row_width += (get_str_width(&item.disp_name) + Choices::ITEM_MARGIN) as u16;

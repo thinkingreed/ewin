@@ -31,7 +31,7 @@ impl Editor {
             E_Cmd::FindNext => self.search_str(true, false),
             E_Cmd::FindBack => self.search_str(false, false),
             // mouse
-            E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) | E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) => self.ctrl_mouse(),
+            E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseUpLeft(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) | E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) => self.ctrl_mouse(),
             E_Cmd::MouseModeSwitch => self.ctrl_mouse_capture(),
             // Mode
             E_Cmd::CancelModeAndSearchResult => self.cancel_mode_and_search_result(),
@@ -48,11 +48,15 @@ impl Editor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ewin_com::{_cfg::cfg::*, clipboard::*, model::*};
+    use ewin_com::{
+        _cfg::model::default::{Cfg, CfgLog},
+        clipboard::*,
+        model::*,
+    };
 
     #[test]
     fn test_editor_proc_base_edit() {
-        Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
+        Log::set_logger(&CfgLog { level: "test".to_string() });
         let mut e = Editor::new();
 
         // InsertStr
@@ -126,7 +130,7 @@ mod tests {
 
     #[test]
     fn test_editor_proc_base_cur_move() {
-        Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
+        Log::set_logger(&CfgLog { level: "test".to_string() });
         let mut e = Editor::new();
 
         // CursorLeft
@@ -167,7 +171,7 @@ mod tests {
 
     #[test]
     fn test_editor_proc_base_select() {
-        Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
+        Log::set_logger(&CfgLog { level: "test".to_string() });
         let mut e = Editor::new();
         e.e_cmd = E_Cmd::InsertStr("123\nabc\nABC".to_string());
         e.proc();
@@ -195,8 +199,8 @@ mod tests {
 
     #[test]
     fn test_editor_proc_base_find_next_back() {
-        Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
-        Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
+        Log::set_logger(&CfgLog { level: "test".to_string() });
+        Cfg::init(&Args { ..Args::default() });
 
         let mut e = Editor::new();
         e.e_cmd = E_Cmd::InsertStr("123\nabc\nABC\nabc".to_string());
@@ -218,8 +222,8 @@ mod tests {
 
     #[test]
     fn test_editor_proc_base_mouse() {
-        Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
-        Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
+        Log::set_logger(&CfgLog { level: "test".to_string() });
+        Cfg::init(&Args { ..Args::default() });
 
         let mut e = Editor::new();
         e.e_cmd = E_Cmd::InsertStr("123\nabc\nABC\nabc".to_string());

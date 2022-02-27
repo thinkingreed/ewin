@@ -1,12 +1,8 @@
 use crate::{
-    ewin_com::{
-        _cfg::{cfg::*, key::keycmd::*},
-        def::*,
-        log::*,
-        model::*,
-    },
+    ewin_com::{_cfg::key::keycmd::*, def::*, log::*, model::*},
     model::*,
 };
+use ewin_com::_cfg::model::default::{Cfg, CfgSearch};
 use regex::RegexBuilder;
 use ropey::{iter::Chars, Rope, RopeSlice};
 use std::collections::BTreeSet;
@@ -240,6 +236,10 @@ impl TextBuffer {
     } */
 
     pub fn replace(&mut self, search_str: &str, replace_str: &str, map: &BTreeSet<usize>) -> usize {
+        Log::debug("search_str", &search_str);
+        Log::debug("replace_str", &replace_str);
+        Log::debug("map", &map);
+
         let mut idx_diff: isize = 0;
         let mut end_char_idx: usize = 0;
         let replace_str_len = replace_str.chars().count();
@@ -247,14 +247,19 @@ impl TextBuffer {
 
         for (i, s_idx) in map.iter().enumerate() {
             let start = if cfg_search.regex { self.text.byte_to_char((*s_idx as isize + idx_diff) as usize) } else { (*s_idx as isize + idx_diff) as usize };
-            let end = if cfg_search.regex { (start as isize + search_str.len() as isize + idx_diff) as usize } else { (start as isize + search_str.chars().count() as isize + idx_diff) as usize };
+            //  let end = if cfg_search.regex { (start as isize + search_str.len() as isize + idx_diff) as usize } else { (start as isize + search_str.chars().count() as isize + idx_diff) as usize };
+            let end = if cfg_search.regex { start + search_str.len() } else { start + search_str.chars().count() };
 
+            Log::debug("start", &start);
+            Log::debug("end", &end);
             self.text.remove(start..end);
             self.text.insert(start, replace_str);
 
             // Update the index offset.
             let match_len = if cfg_search.regex { search_str.len() } else { end - start };
-            idx_diff = idx_diff - match_len as isize + replace_str_len as isize;
+            idx_diff += replace_str_len as isize - match_len as isize;
+
+            Log::debug("idx_diff", &idx_diff);
 
             if i == map.len() - 1 && start + replace_str_len > 0 {
                 end_char_idx = start + replace_str_len;
@@ -277,7 +282,6 @@ impl<'a> Iterator for SearchIter<'a> {
 
     // Return the start/end char indices of the next match.
     fn next(&mut self) -> Option<(usize, usize)> {
-        Log::debug_key("SearchIter.next");
         for next_char in &mut self.char_iter {
             self.cur_index += 1;
 

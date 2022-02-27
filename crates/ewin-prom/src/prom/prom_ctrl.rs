@@ -11,7 +11,7 @@ use std::{
 };
 
 impl Prompt {
-    pub fn draw(&mut self, str_vec: &mut Vec<String>, prom_disp_row_posi: u16, tab_state: &TabState, is_exsist_msg: bool, h_file: &HeaderFile) {
+    pub fn render(&mut self, str_vec: &mut Vec<String>, prom_disp_row_posi: u16, tab_state: &TabState, is_exsist_msg: bool, h_file: &HeaderFile) {
         Log::info_key("Prompt.draw");
 
         if !tab_state.is_nomal_and_not_result() {
@@ -71,7 +71,7 @@ impl Prompt {
         Log::debug_key("Prompt.draw_only");
         let mut v: Vec<String> = vec![];
         let prom_disp_row_posi = self.disp_row_posi;
-        self.draw(&mut v, prom_disp_row_posi, tab_state, is_exsist_msg, h_file);
+        self.render(&mut v, prom_disp_row_posi, tab_state, is_exsist_msg, h_file);
         self.draw_cur(&mut v, tab_state);
         let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();

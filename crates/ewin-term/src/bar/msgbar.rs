@@ -1,5 +1,6 @@
 use crate::{
     ewin_com::{colors::*, log::*, util::*},
+    model::MsgType,
     model::*,
 };
 use crossterm::{cursor::*, terminal::*};
@@ -23,7 +24,7 @@ impl MsgBar {
         self.msg_keyrecord = String::new();
     }
 
-    pub fn draw(&mut self, str_vec: &mut Vec<String>) {
+    pub fn render(&mut self, str_vec: &mut Vec<String>) {
         Log::info_key("MsgBar.draw");
 
         if !self.msg_readonly.is_empty() || !self.msg_keyrecord.is_empty() || !self.msg.str.is_empty() {
@@ -45,7 +46,7 @@ impl MsgBar {
         Log::debug_key("MsgBar.draw_only");
 
         let mut v: Vec<String> = vec![];
-        self.draw(&mut v);
+        self.render(&mut v);
         let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();
     }

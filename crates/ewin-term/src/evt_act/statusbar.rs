@@ -17,7 +17,7 @@ impl EvtAct {
                         } else {
                             term.curt().prom_move_row();
                         }
-                        return ActType::Draw(DParts::All);
+                        return ActType::Render(RParts::All);
                     }
                     if term.curt().sbar.enc_nl_area.0 <= x && x <= term.curt().sbar.enc_nl_area.1 {
                         if term.curt().state.is_enc_nl {
@@ -25,7 +25,7 @@ impl EvtAct {
                         } else {
                             term.curt().prom_enc_nl();
                         }
-                        return ActType::Draw(DParts::All);
+                        return ActType::Render(RParts::All);
                     }
                     return ActType::Cancel;
                 }

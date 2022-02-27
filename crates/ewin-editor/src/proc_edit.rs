@@ -72,7 +72,7 @@ impl Editor {
                 }
             }
         }
-        self.recalc_scrlbar_h(&evt_proc);
+        self.set_change_info_edit(&evt_proc);
 
         // Register edit history
         if self.e_cmd != E_Cmd::Undo && self.e_cmd != E_Cmd::Redo {
@@ -90,11 +90,18 @@ impl Editor {
         let mut string = String::new();
         let mut vec: Vec<(SelRange, String)> = vec![];
 
+        Log::debug("sy", &sy);
+        Log::debug("ey", &ey);
+        Log::debug("self.sel.get_range()", &self.sel.get_range());
+
         for y in sy..=ey {
-            let mut row_sel = self.sel;
+            let mut row_sel = self.sel.get_range();
             let mut slice_str = String::new();
             if row_sel.is_selected_width() {
                 let (slice_string, sx, ex) = self.get_disp_x_range_string(self.buf.char_vec_row(y));
+                Log::debug("sx", &sx);
+                Log::debug("ex", &ex);
+                Log::debug("slice_string", &slice_string);
                 slice_str = slice_string;
                 row_sel.sx = sx;
                 row_sel.ex = ex;
@@ -112,12 +119,17 @@ impl Editor {
             string.push_str(&slice_str);
             string.push_str(&NL::get_nl(&self.h_file.nl));
         }
+
+        Log::debug("string", &string);
+        Log::debug("vec", &vec);
+
         (string, vec)
     }
 
     pub fn get_disp_x_range_string(&mut self, vec: Vec<char>) -> (String, usize, usize) {
         let (mut width, mut cur_x_s, mut cur_x_e) = (0, USIZE_UNDEFINED, 0);
 
+        let sel = self.sel.get_range();
         let mut rtn = String::new();
         for (idx, c) in vec.iter().enumerate() {
             if *c == NEW_LINE_LF || *c == NEW_LINE_CR {
@@ -128,13 +140,13 @@ impl Editor {
             width += c_len;
             cur_x_e += 1;
 
-            if self.sel.s_disp_x < width && width_org < self.sel.e_disp_x {
+            if sel.s_disp_x < width && width_org < sel.e_disp_x {
                 rtn.push(*c);
                 if cur_x_s == USIZE_UNDEFINED {
                     cur_x_s = idx;
                 }
             }
-            if width >= self.sel.e_disp_x {
+            if width >= sel.e_disp_x {
                 break;
             }
         }
@@ -156,7 +168,7 @@ impl Editor {
 
     pub fn is_edit(e_cmd: &E_Cmd, is_incl_unredo: bool) -> bool {
         match e_cmd {
-            E_Cmd::InsertStr(_) | E_Cmd::InsertRow | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Cut => true,
+            E_Cmd::InsertStr(_) | E_Cmd::InsertRow | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Cut | E_Cmd::ReplaceExec(_, _, _) => true,
             E_Cmd::Undo | E_Cmd::Redo => is_incl_unredo,
             _ => false,
         }
@@ -180,7 +192,7 @@ impl Editor {
                     self.cur.y = self.box_insert.vec.first().unwrap().0.sy;
                 }
                 if !self.box_insert.vec.is_empty() {
-                    self.set_box_str_vec(&"".to_string(), proc);
+                    self.set_box_str_vec("", proc);
                     self.box_insert.vec = proc.box_sel_vec.clone();
                 }
                 // Range selection with a width of 0

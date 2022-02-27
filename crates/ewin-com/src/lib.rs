@@ -3,9 +3,9 @@
 pub mod global {
     use crate::{
         _cfg::{
-            cfg::*,
             key::{keycmd::*, keys::*, keywhen::*},
             lang::lang_cfg::*,
+            model::default::*,
         },
         model::*,
         util::*,
@@ -49,6 +49,11 @@ pub mod util;
 pub mod watcher;
 pub mod _cfg {
     pub mod cfg;
+    pub mod model {
+        pub mod default;
+        pub mod user;
+    }
+    pub mod cfg_setting;
     pub mod key {
         pub mod keybind;
         pub mod keycmd;
@@ -58,5 +63,6 @@ pub mod _cfg {
     pub mod lang {
         pub mod lang_cfg;
     }
+    pub mod setting_file_loader;
     pub mod theme_loader;
 }

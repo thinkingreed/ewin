@@ -3,7 +3,6 @@ use crate::{
     model::*,
 };
 use crossterm::{cursor::*, terminal::*};
-use unicode_width::UnicodeWidthChar;
 
 impl Help {
     pub const DISP_ROW_NUM: usize = 5;
@@ -23,7 +22,7 @@ impl Help {
         };
         term.set_disp_size();
 
-        let tab = term.tabs.get_mut(term.idx).unwrap();
+        let tab = term.tabs.get_mut(term.tab_idx).unwrap();
         if term.help.mode == HelpMode::Show {
             // Cursor moves out of help display area
             if tab.editor.cur.y - tab.editor.offset_y > tab.editor.row_disp_len - 1 {
@@ -35,7 +34,7 @@ impl Help {
         tab.editor.draw_range = E_DrawRange::All;
     }
 
-    pub fn draw(&mut self, str_vec: &mut Vec<String>) {
+    pub fn render(&mut self, str_vec: &mut Vec<String>) {
         Log::info_key("Help.draw");
 
         if self.mode == HelpMode::None {
@@ -45,7 +44,7 @@ impl Help {
             let mut vec: Vec<HelpKeybind> = vec![];
 
             // 1st line
-            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::CloseFile), &Lang::get().close);
+            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::CloseFile)), &Lang::get().close);
             self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::SaveFile)), &Lang::get().save);
             self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::Copy)), &Lang::get().copy);
             self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::InsertStr("".to_string()))), &Lang::get().paste);
@@ -75,7 +74,7 @@ impl Help {
             vec.clear();
             // 5th line
             self.set_key_bind_ex(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::Help)), &format!("{}{}", &Lang::get().help, &Lang::get().end), Help::KEY_FUNC_WIDTH, Help::KEY_WIDTH);
-            self.set_key_bind_ex(&mut vec, &HELP_DETAIL.to_string(), &env!("CARGO_PKG_REPOSITORY").to_string(), HELP_DETAIL.chars().count() + 1, Help::KEY_FUNC_WIDTH_WIDE - HELP_DETAIL.chars().count() + 1);
+            self.set_key_bind_ex(&mut vec, HELP_DETAIL, env!("CARGO_PKG_REPOSITORY"), HELP_DETAIL.chars().count() + 1, Help::KEY_FUNC_WIDTH_WIDE - HELP_DETAIL.chars().count() + 1);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
         }
@@ -125,11 +124,11 @@ impl Help {
 
         let mut key_w = 0;
         for c in key.chars() {
-            key_w += c.width().unwrap_or(0);
+            key_w += get_c_width(&c);
         }
         let mut func_w = 0;
         for c in func.chars() {
-            func_w += c.width().unwrap_or(0);
+            func_w += get_c_width(&c);
         }
         let mut row_w = 0;
         for key_bind in vec.iter() {

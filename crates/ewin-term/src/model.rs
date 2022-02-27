@@ -1,10 +1,9 @@
+use crate::{bar::headerbar::*, ctx_menu::init::*, help::*, tab::*};
 use ewin_com::{
-    _cfg::key::{keycmd::KeyCmd, keys::Keys},
-    model::DParts,
+    _cfg::key::{keycmd::*, keys::*},
+    model::*,
 };
-use ewin_editor::model::EditorDraw;
-
-use crate::{bar::headerbar::HeaderBar, ctx_menu::init::CtxMenuGroup, help::Help, tab::Tab};
+use ewin_editor::model::*;
 
 #[derive(Debug, Clone)]
 pub struct Macros {}
@@ -59,10 +58,10 @@ pub struct Terminal {
     pub tabs: Vec<Tab>,
     pub editor_draw_vec: Vec<EditorDraw>,
     // tab index
-    pub idx: usize,
+    pub tab_idx: usize,
     pub state: TerminalState,
     pub ctx_menu_group: CtxMenuGroup,
-    pub draw_parts_org: DParts,
+    pub draw_parts_org: RParts,
 }
 
 #[derive(Debug, Clone)]
@@ -76,9 +75,27 @@ pub struct TerminalState {
     pub is_ctx_menu_hide_draw: bool,
 }
 
+#[derive(Debug, Default, Clone)]
+pub struct HeaderBarState {
+    pub is_dragging: bool,
+}
+
+impl HeaderBarState {
+    pub fn clear(&mut self) {
+        self.is_dragging = false;
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FileOpenType {
     Nomal,
     First,
     Reopen,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SaveType {
+    Normal,
+    Forced,
+    NewName,
 }

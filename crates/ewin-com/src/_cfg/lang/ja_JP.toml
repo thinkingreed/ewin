@@ -78,6 +78,8 @@ to_tab = "半角空白 > Tab"
 html = "HTML"
 xml = "XML"
 json = "JSON"
+json5 = "JSON5"
+toml = "TOML"
 
 box_select = "Box選択"
 box_insert = "Box挿入"
@@ -86,7 +88,7 @@ macros = "マクロ"
 
 ## Msg ##
 save_confirm_to_close = "保存して終了しますか？"
-terminal_size_small = "ターミナルサイズが小さい為に終了します。サイズを大きくして再実行して下さい"
+terminal_size_small = "ターミナルサイズを大きくして再実行して下さい"
 set_new_filenm = "新規に作成するファイル名を入力して下さい"
 set_open_filenm = "新規に開くファイル名を入力して下さい"
 set_exec_mocro_filenm = "実行するマクロファイル名を入力して下さい"
@@ -144,6 +146,7 @@ open_modified_time = "Open時更新時間"
 last_modified_time = "最終更新時間"
 not_edited_will_reloaded_auto = "以後、未編集時は自動で再読込"
 no_further_monitoring = "以後、監視しない"
+auto_assigned_extension = "自動付与拡張子"
 
 ## editor info
 simple_help_desc = "簡易ヘルプ: F1"

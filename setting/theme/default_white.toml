@@ -1,0 +1,63 @@
+[editor]
+#background = "#f4f5f7"
+background = "#fafafa"
+foreground = "#000000"
+
+[editor.line_number]
+active_background = "#ffffff"
+active_foreground = "#c0c0c0"
+passive_background = "#dedede"
+passive_foreground = "#c0c0c0"
+
+[editor.selection]
+background = "#2d5fff"
+foreground = "#ffffff"
+
+[editor.search]
+background = "#ffff50"
+foreground = "#000000"
+
+[editor.control_char]
+foreground = "#c0c0c0"
+
+[editor.column_char_width_gap_space]
+foreground = "#565656"
+background = "#282828"
+
+[editor.scrollbar]
+horizontal_background = "#dedede"
+vertical_background = "#dedede"
+
+[system.btn]
+foreground = "#000000"
+background = "#c0c0c0"
+
+[system.state]
+foreground = "#000000"
+background = "#c0c0c0"
+
+[headerbar]
+tab_active_foreground = "#000000"
+tab_active_background = "#e69b1e"
+tab_passive_foreground = "#ffffff"
+tab_passive_background = "#c0c0c0"
+
+[statusbar]
+foreground = "#c0c0c0"
+
+[ctx_menu]
+non_select_background = "#dedede"
+select_background = "#6495ed"
+non_select_foreground = "#000000"
+select_foreground = "#ffffff"
+
+[msg]
+normal_foreground = "#ffffff"
+highlight_foreground = "#00c800"
+warning_foreground = "#aa6400"
+err_foreground = "#ff0000"
+
+[file]
+normal_foreground = "#c0c0c0"
+directory_foreground = "#1e90ff"
+executable_foreground = "#00c800"

@@ -22,6 +22,7 @@ pub mod fmt {
     pub mod fmt_ctrl;
     pub mod xml_html;
 }
+pub mod change_info;
 pub mod convert;
 pub mod editor;
 pub mod model;

@@ -1,0 +1,96 @@
+[general]
+# "en_US" or "ja_JP"
+lang = "en_US"  # option default "en_US"
+
+[general.log] # option
+# "info" or "debug" or "error"
+level = "debug"
+
+[general.font] # option
+# Set 1 or 2.If not set, Windows=2, Linux=1
+#ambiguous_width = 1
+
+[general.editor.tab]
+size = 4
+# tab or half_width_blank
+input_type = "tab"
+
+[general.editor.search]
+case_sens = true
+regex = false
+
+[general.editor.format]
+# tab or half_width_blank
+indent_type = "half_width_blank"
+# Valid only for half_width_blank
+indent_size = 2
+
+[general.editor.scrollbar.vertical]
+# 0 is hide
+width = 2
+[general.editor.scrollbar.horizontal]
+# 0 is hide
+height = 1
+
+[general.editor.cursor]
+move_position_by_scrolling_enable = false
+
+[general.editor.column_char_width_gap_space]
+character = " "
+# Start_of_line is always enable
+end_of_line_enable = false
+
+[general.editor.save]
+# String of first line within 20 characters
+use_string_first_line_for_file_name_of_new_file=true
+extension_when_saving_new_file="txt"
+
+[general.prompt.open_file]
+# Valid only for Windows
+# "" is Not set or "current_directory"
+directory_init_value = ""
+
+# Context menu
+[general.context_menu]
+content = """
+{
+  "editor": {
+    "range_selected": [
+      {"cut": []},
+      {"copy": []},
+      {"paste": []},
+      {"convert": ["to_uppercase", "to_lowercase", "to_full_width", "to_half_width", "to_space", "to_tab"]},
+      {"format": ["json", "xml", "html"]},
+      {"macros": ["insertString.js", "switch_upper_lower.js"]}
+    ],
+    "range_non_selected": [
+      {"paste": []},
+      {"all_select": []},
+      {"macros": ["insertString.js"]}
+    ]
+  },
+  "header_bar": {
+    "": [
+      {"close": []},
+      {"close_other_than_this_tab": []}
+    ]
+  }
+}
+"""
+[general.mouse]
+mouse_enable = true
+
+# If theme is set, theme color has the highest priority
+[general.colors.theme] # option
+# highlight_theme_path = "tmTheme.tmTheme"
+# highlight_theme_background_enable = true
+disable_highlight_ext = ["txt", "log"]
+
+# Only files below this value will be highlighted(positive number:MByte)
+disable_syntax_highlight_file_size = 12
+# "black" or "white" or "blue" 
+default_color_theme = "white"
+
+[system.os.windows]
+change_output_encoding_utf8 = false
+

@@ -49,7 +49,7 @@ impl PromptCont {
             self.set_opt_case_sens();
             self.set_opt_regex();
 
-            self.guide_vec.push(format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().search_str, Colors::get_default_fg()));
+            self.buf_desc_vec.push(format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().search_str, Colors::get_default_fg()));
         } else if self.posi == PromptContPosi::Second {
             self.buf_desc_vec.push(format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().search_file, Colors::get_default_fg()));
 

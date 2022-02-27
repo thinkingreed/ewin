@@ -1,4 +1,4 @@
-use ewin_com::_cfg::cfg::Cfg;
+use ewin_com::_cfg::model::default::Cfg;
 
 use crate::{
     ewin_com::{
@@ -17,13 +17,21 @@ impl Editor {
 
         let (mut y, mut x, keys) = match self.e_cmd {
             E_Cmd::MouseDownLeft(y, x) => (y, x, Keys::MouseDownLeft(y as u16, x as u16)),
-            E_Cmd::MouseDragLeftUp(y, x) | E_Cmd::MouseDragLeftDown(y, x) | E_Cmd::MouseDragLeftLeft(y, x) | E_Cmd::MouseDragLeftRight(y, x) => (y, x, Keys::MouseDragLeft(y as u16, x as u16)),
+            E_Cmd::MouseUpLeft(_, _) => {
+                self.state.is_dragging = false;
+                return;
+            }
+            E_Cmd::MouseDragLeftUp(y, x) | E_Cmd::MouseDragLeftDown(y, x) | E_Cmd::MouseDragLeftLeft(y, x) | E_Cmd::MouseDragLeftRight(y, x) => {
+                self.state.is_dragging = true;
+                (y, x, Keys::MouseDragLeft(y as u16, x as u16))
+            }
             E_Cmd::MouseDownLeftBox(y, x) => (y, x, Keys::MouseDownLeft(y as u16, x as u16)),
             E_Cmd::MouseDragLeftBox(y, x) => (y, x, Keys::MouseDragLeft(y as u16, x as u16)),
             _ => return,
         };
         Log::debug("y", &y);
         Log::debug("x", &x);
+        Log::debug("self.sel 000", &self.sel);
 
         self.sel.mode = match self.e_cmd {
             E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) => SelMode::BoxSelect,
@@ -45,6 +53,8 @@ impl Editor {
             };
         }
 
+        Log::debug("self.sel 111", &self.sel);
+
         // scrlbar_h
         let height = Cfg::get().general.editor.scrollbar.horizontal.height;
         match self.e_cmd {
@@ -58,6 +68,8 @@ impl Editor {
             }
             _ => self.scrl_h.is_enable = false,
         };
+
+        Log::debug("self.sel 222", &self.sel);
 
         if !self.scrl_v.is_enable && !self.scrl_h.is_enable {
             // y, range check
@@ -74,6 +86,7 @@ impl Editor {
                 }
                 y += self.offset_y
             }
+
             if matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) && x < self.get_rnw_and_margin() - 1 {
                 self.sel.set_s(y, 0, 0);
                 let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(y)[..], 0, true);
@@ -97,13 +110,8 @@ impl Editor {
                     if matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) {
                         self.sel.clear();
                     }
-                    /*
-                    if !matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) {
-                        self.scroll_horizontal();
-                    }
-                     */
                 }
-                self.history.set_sel_multi_click(&keys, &mut self.sel, &self.cur, &self.buf.char_vec_row(self.cur.y));
+                self.history.set_sel_multi_click(&keys, &mut self.sel, &self.cur, &self.cur_org, &self.buf.char_vec_row(self.cur.y));
             }
         }
     }

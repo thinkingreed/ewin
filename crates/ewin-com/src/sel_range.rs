@@ -117,11 +117,19 @@ impl SelRange {
             self.set_e(cur.y, cur.x, cur.disp_x);
         }
     }
+    /*
     pub fn is_another_select(&mut self, sel_org: SelRange) -> bool {
         if self.sy == sel_org.sy && self.s_disp_x == sel_org.s_disp_x {
             return false;
         }
         true
+    }
+     */
+    pub fn is_contain_y(&self, y: usize) -> bool {
+        if self.sy <= y && y <= self.ey {
+            return true;
+        }
+        false
     }
 }
 

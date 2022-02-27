@@ -8,7 +8,9 @@ fn_empty_single_line = false
 fn_single_line = true
 struct_lit_single_line = true
 struct_lit_width = 300
-imports_layout = "Horizontal"
 merge_imports = true
+imports_granularity  ="Module"
+imports_layout = "Horizontal"
+where_single_line = true
 
 

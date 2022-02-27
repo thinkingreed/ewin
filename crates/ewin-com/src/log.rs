@@ -1,9 +1,5 @@
-use crate::{
-    _cfg::{cfg::*, lang::lang_cfg::*},
-    def::*,
-    global::*,
-    model::*,
-};
+use crate::_cfg::model::default::*;
+use crate::{_cfg::lang::lang_cfg::*, def::*, global::*, model::*};
 use chrono::{DateTime, Local};
 use std::{
     fmt::{self, Debug},
@@ -25,7 +21,7 @@ impl Log {
             _ => LogLevel::Info,
         }
     }
-    pub fn set_logger(cfg_log: &Option<CfgLog>) {
+    pub fn set_logger(cfg_log: &CfgLog) {
         let dt: DateTime<Local> = Local::now();
         let mut tmp_path = FilePath::get_app_tmp_path();
 
@@ -34,15 +30,7 @@ impl Log {
         tmp_path.push(format!("{}_{}{}", &APP_NAME, &dt.format("%Y_%m%d").to_string(), ".log"));
 
         if let Ok(file) = OpenOptions::new().create(true).append(true).open(tmp_path) {
-            let log_level = match cfg_log {
-                Some(cfg_log) => match &cfg_log.level {
-                    Some(level) => level,
-                    _ => "info",
-                },
-                _ => "info",
-            };
-
-            let log = Log { file, level: Log::set_log_level(log_level) };
+            let log = Log { file, level: Log::set_log_level(&cfg_log.level) };
             let _ = LOG.set(log);
         } else {
             eprintln!("{}", &Lang::get().log_file_create_failed);
@@ -50,7 +38,7 @@ impl Log {
     }
 
     #[track_caller]
-    pub fn preprocessing<T: Debug>(m: &str, v: &T, log_level: LogLevel) {
+    pub fn pre_processing<T: Debug>(m: &str, v: &T, log_level: LogLevel) {
         let s = &format!("{}: {:?}", m, v);
         Log::write(s, log_level);
     }
@@ -64,10 +52,9 @@ impl Log {
             let caller = Location::caller().to_string();
             let vec: Vec<&str> = caller.split(path::MAIN_SEPARATOR).collect();
             let file_info = vec.last().unwrap();
-            let s = if cfg!(debug_assertions) { format!("{} {}", log_level, s) } else { format!("{} {} {} :: {}", t, log_level, s, file_info) };
+            //  let s = if cfg!(debug_assertions) { format!("{} {}", log_level, s) } else { format!("{} {} {} :: {}", t, log_level, s, file_info) };
+            let s = format!("{} {} {} :: {}", t, log_level, s, file_info);
             writeln!(&log.file, "{}", s).unwrap();
-        } else {
-            eprintln!("{}", s);
         }
         if cfg!(debug_assertions) {
             eprintln!("{}", s);
@@ -76,7 +63,7 @@ impl Log {
 
     #[track_caller]
     pub fn info<T: Debug>(m: &str, v: &T) {
-        Log::preprocessing(m, v, LogLevel::Info);
+        Log::pre_processing(m, v, LogLevel::Info);
     }
     #[track_caller]
     pub fn info_s(m: &str) {
@@ -88,7 +75,7 @@ impl Log {
     }
     #[track_caller]
     pub fn debug<T: Debug>(m: &str, v: &T) {
-        Log::preprocessing(m, v, LogLevel::Debug);
+        Log::pre_processing(m, v, LogLevel::Debug);
     }
     #[track_caller]
     pub fn debug_s(m: &str) {
@@ -100,11 +87,11 @@ impl Log {
     }
     #[track_caller]
     pub fn warn<T: Debug>(m: &str, v: &T) {
-        Log::preprocessing(m, v, LogLevel::Warn);
+        Log::pre_processing(m, v, LogLevel::Warn);
     }
     #[track_caller]
     pub fn error<T: Debug>(m: &str, v: &T) {
-        Log::preprocessing(m, v, LogLevel::Error);
+        Log::pre_processing(m, v, LogLevel::Error);
     }
     #[track_caller]
     pub fn error_s(m: &str) {

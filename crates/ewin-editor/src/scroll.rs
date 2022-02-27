@@ -1,7 +1,5 @@
-use ewin_com::model::SelMode;
-
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, log::*, util::*},
+    ewin_com::{_cfg::key::keycmd::*, log::*, model::*, util::*},
     model::*,
 };
 use std::{
@@ -100,10 +98,12 @@ impl Editor {
     // adjusting horizontal posi of cursor
     pub fn scroll_horizontal(&mut self) {
         Log::debug_key("scroll_horizontal");
+        Log::debug("self.cur", &self.cur);
+        Log::debug("self.e_cmd", &self.e_cmd);
         Log::debug("self.offset_x 111", &self.offset_x);
 
         // offset_x Number of characters for switching judgment
-        const X_MARGIN: usize = 5;
+        const X_MARGIN: usize = 3;
         //  const SEARCH_JUDGE_COLUMN_MARGIN: usize = 5;
         // Number of offset increase / decrease when switching left / right offset
         const SCROLL_ADD_MARGIN: usize = 10;
@@ -117,32 +117,17 @@ impl Editor {
             self.offset_x = 0;
             self.offset_disp_x = 0;
             return;
-        } else if self.sel.mode == SelMode::BoxSelect && self.cur_y_org != self.cur.y {
+        } else if self.sel.mode == SelMode::BoxSelect && self.cur_org.y != self.cur.y {
             self.offset_x = get_until_disp_x(vec, self.offset_disp_x, false).0;
             return;
-        } else if self.cur_y_org != self.cur.y {
-            self.offset_x = get_x_offset(&self.buf.char_vec_range(self.cur.y, ..self.cur.x), self.col_len - X_MARGIN);
+        } else if self.cur_org.y != self.cur.y {
+            if !self.is_cur_disp_x_in_screen() {
+                self.offset_x = get_x_offset(&self.buf.char_vec_range(self.cur.y, ..self.cur.x), self.col_len - X_MARGIN);
+            }
         } else {
             match &self.e_cmd {
                 E_Cmd::ReplaceExec(_, _, _) | E_Cmd::CursorFileEnd | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect | E_Cmd::InsertStr(_) | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::FindNext | E_Cmd::FindBack | E_Cmd::ReOpenFile | E_Cmd::Null => {
                     self.offset_x = get_x_offset(&self.buf.char_vec_range(self.cur.y, ..self.cur.x), self.col_len - X_MARGIN);
-
-                    /*
-                    match &self.e_cmd {
-                        E_Cmd::InsertStr(_) | E_Cmd::CursorFileEnd | E_Cmd::CursorRowEnd | E_Cmd::CursorRowEndSelect | E_Cmd::Undo | E_Cmd::Redo => {
-                            self.add_scroll_margin_offset_x(vec);
-                        }
-                        E_Cmd::FindNext | E_Cmd::FindBack | E_Cmd::Null => {
-                            let str_width = get_str_width(&self.search.str);
-                            let offset_disp_x = get_row_cur_x_disp_x(&vec[..self.offset_x], 0, false).1;
-                            if self.cur.disp_x + str_width + SEARCH_JUDGE_COLUMN_MARGIN > offset_disp_x + self.col_len {
-                                self.offset_x += str_width + SEARCH_JUDGE_COLUMN_MARGIN;
-                            }
-                        }
-
-                        _ => {}
-                    }
-                     */
                 }
                 E_Cmd::CursorRight | E_Cmd::CursorRightSelect | E_Cmd::MouseDragLeftRight(_, _) if self.sel.mode != SelMode::BoxSelect => {
                     let judge_margin = if let E_Cmd::MouseDragLeftRight(_, _) = self.e_cmd { Editor::SCROLL_MOUSE_DRAG_LEFT_JUDGE_MARGIN } else { Editor::SCROLL_LEFT_RIGHT_JUDGE_MARGIN };
@@ -173,7 +158,7 @@ impl Editor {
     }
 
     pub fn set_offset_disp_x(&mut self) {
-        let vec = if self.scrl_h.is_enable { self.buf.char_vec_row(self.scrl_h.max_width_row_idx) } else { self.buf.char_vec_row(self.cur.y) };
+        let vec = if self.scrl_h.is_enable { self.buf.char_vec_row(self.scrl_h.row_max_width_idx) } else { self.buf.char_vec_row(self.cur.y) };
 
         if vec.len() >= self.offset_x {
             self.offset_disp_x = get_row_cur_x_disp_x(&vec[..self.offset_x], 0, false).1;
@@ -195,15 +180,16 @@ impl Editor {
 
 #[cfg(test)]
 mod tests {
+    use ewin_com::_cfg::model::default::CfgLog;
+
     use super::*;
-    use ewin_com::_cfg::cfg::*;
 
     // initial value
     // row_num : 10
     // Cur y:0, x:0, disp_x:0,
     #[test]
     fn test_editor_scroll_base() {
-        Log::set_logger(&Some(CfgLog { level: Some("test".to_string()) }));
+        Log::set_logger(&CfgLog { level: "test".to_string() });
         let mut e = Editor::new();
         e.buf.insert_end_multi(&["1\n2\n3\n4\n5\n6\n7\n8\n9\n10"]);
 

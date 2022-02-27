@@ -38,7 +38,7 @@ impl CtxMenuGroup {
     pub fn check_func(term: &mut Terminal, parent_name: &str, child_name: &str) -> ActType {
         Log::debug_key("check_func");
 
-        let mut evt_act_type = ActType::Draw(DParts::Editor);
+        let mut evt_act_type = ActType::Render(RParts::Editor);
         term.clear_ctx_menu();
         if LANG_MAP.get(parent_name).is_some() {
             if &Lang::get().macros == LANG_MAP.get(parent_name).unwrap() {
@@ -47,7 +47,7 @@ impl CtxMenuGroup {
                     if full_path_str.exists() {
                         evt_act_type = Macros::exec_js_macro(term, &full_path_str.to_string_lossy().to_string());
                     } else {
-                        evt_act_type = ActType::Draw(DParts::MsgBar(Lang::get().file_not_found.clone()));
+                        evt_act_type = ActType::Render(RParts::MsgBar(Lang::get().file_not_found.clone()));
                     }
                 }
             } else if LANG_MAP.get(child_name).is_some() {
@@ -74,11 +74,11 @@ impl CtxMenuGroup {
             }
             // format
             s if s == &Lang::get().json || s == &Lang::get().xml || s == &Lang::get().html => {
-                if let Some(err_str) = term.curt().editor.format(FmtType::from_str_fmt_type(s)) {
-                    return ActType::Draw(DParts::AllMsgBar(err_str));
+                if let Some(err_str) = term.curt().editor.format(FileType::from_str_fmt_type(s)) {
+                    return ActType::Render(RParts::AllMsgBar(err_str));
                 } else {
                     // highlight data reset
-                    term.editor_draw_vec[term.idx].clear();
+                    term.editor_draw_vec[term.tab_idx].clear();
                 }
                 term.curt().editor.sel.clear();
             }
@@ -96,27 +96,26 @@ impl CtxMenuGroup {
             s if s == &Lang::get().all_select => {
                 EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::AllSelect)), &mut stdout(), term);
             }
-
             //// headerbar
             // close
             s if s == &Lang::get().close => {
                 if Tab::prom_save_confirm(term) {
                     Terminal::exit();
                 }
-                return ActType::Draw(DParts::All);
+                return ActType::Render(RParts::All);
             }
             // close other than this tab
             s if s == &Lang::get().close_other_than_this_tab => {
-                let _ = term.close_tabs(term.idx);
-                return ActType::Draw(DParts::All);
+                let _ = term.close_tabs(term.tab_idx);
+                return ActType::Render(RParts::All);
             }
             _ => {}
         };
         term.curt().editor.draw_range = E_DrawRange::All;
-        return ActType::Draw(DParts::Editor);
+        return ActType::Render(RParts::Editor);
     }
 
-    pub fn draw_only<T: Write>(&mut self, out: &mut T) {
+    pub fn render_only<T: Write>(&mut self, out: &mut T) {
         Log::debug_key("CtxMenuGroup.draw_only");
         let mut v: Vec<String> = vec![];
         self.draw(&mut v);
@@ -250,7 +249,6 @@ impl CtxMenuGroup {
         Log::debug_key("set_parent_disp_area");
 
         let (cols, rows) = get_term_size();
-        let (cols, rows) = (cols as usize, rows as usize);
         // rows
         let (sy, ey) = if y + CtxMenuGroup::EXTRA_FROM_CUR_Y + self.curt_cont.height > rows {
             let base_y = y - CtxMenuGroup::EXTRA_FROM_CUR_Y;
@@ -277,7 +275,6 @@ impl CtxMenuGroup {
     pub fn set_child_disp_area(&mut self) {
         if let Some((_, Some(child_cont))) = self.curt_cont.menu_vec.get_mut(self.parent_sel_y) {
             let (cols, rows) = get_term_size();
-            let (cols, rows) = (cols as usize, rows as usize);
             // rows
             let (sy, ey) = if self.curt_cont.y_area.0 + self.parent_sel_y + child_cont.height > rows {
                 (rows - child_cont.height, rows)

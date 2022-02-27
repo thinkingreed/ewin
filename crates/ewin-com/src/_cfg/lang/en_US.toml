@@ -83,10 +83,13 @@ to_tab = "Space > Tab"
 html = "HTML"
 xml = "XML"
 json = "JSON"
+json5 = "JSON5"
+toml = "TOML"
+
 
 ## Msg ##
 save_confirm_to_close = "Do you want to save and exit?"
-terminal_size_small = "It will end because the terminal size is small. Please increase the size and try again"
+terminal_size_small = "Please increase the terminal size and try again"
 set_new_filenm = "Enter the name of the newly created file"
 set_open_filenm = "Enter the name of the newly opened file"
 set_exec_mocro_filenm = "Enter the name of the execute macro file"
@@ -146,7 +149,7 @@ open_modified_time = "Modified time when opened "
 last_modified_time = "Last update time"
 not_edited_will_reloaded_auto = "After that, if it is not edited, it will be reloaded auto"
 no_further_monitoring = "No further monitoring"
-
+auto_assigned_extension = "Auto assigned extension"
 
 ## macro
 script_run_error = "script run error"

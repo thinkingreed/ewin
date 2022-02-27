@@ -22,6 +22,7 @@ impl PromptCont {
             _ => Keys::MouseDownLeft(y as u16, x as u16),
         };
 
-        self.history.set_sel_multi_click(&keys, &mut self.sel, &self.cur, &self.buf);
+        // Second &self.cur is dummy
+        self.history.set_sel_multi_click(&keys, &mut self.sel, &self.cur, &self.cur, &self.buf);
     }
 }

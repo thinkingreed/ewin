@@ -2,12 +2,12 @@ use crate::{
     ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, def::*, log::*, model::*},
     model::*,
 };
-use ewin_com::_cfg::cfg::Cfg;
+use ewin_com::_cfg::model::default::Cfg;
 use serde::Serialize;
 use serde_json::Value;
 
 impl Editor {
-    pub fn format(&mut self, fmt_type: FmtType) -> Option<String> {
+    pub fn format(&mut self, fmt_type: FileType) -> Option<String> {
         if !self.sel.is_selected() {
             Some(Lang::get().no_sel_range.to_string())
         } else if let Err(err) = self.exec_format(fmt_type) {
@@ -19,11 +19,11 @@ impl Editor {
         }
     }
 
-    pub fn exec_format(&mut self, fmt_type: FmtType) -> anyhow::Result<()> {
+    pub fn exec_format(&mut self, fmt_type: FileType) -> anyhow::Result<()> {
         Log::debug_key(&format!("{}:{}", "Editor.format", fmt_type));
 
         let format_str = match fmt_type {
-            FmtType::JSON => {
+            FileType::JSON => {
                 let slice = self.buf.slice_rope(self.sel.get_range());
 
                 let value: Value = serde_json::from_str(&slice.to_string())?;
@@ -39,11 +39,12 @@ impl Editor {
                 }
                 format_str
             }
-            FmtType::XML | FmtType::HTML => {
+            FileType::XML | FileType::HTML => {
                 let slice = self.buf.slice(self.sel.get_range());
                 let nl = NL::get_nl(&self.h_file.nl.to_string());
                 FormatXml::format_xml_html(slice, fmt_type, nl)
             }
+            _ => todo!(),
         };
 
         self.e_cmd = E_Cmd::InsertStr(format_str.clone());

@@ -1,4 +1,4 @@
-use ewin_com::_cfg::cfg::Cfg;
+use ewin_com::_cfg::model::default::Cfg;
 
 use crate::{
     ewin_com::{_cfg::key::keycmd::*, def::*, log::*, model::*, util::*},
@@ -98,37 +98,28 @@ impl Editor {
 
     pub fn cur_right(&mut self) {
         let mut is_end_of_line = false;
+
         let char_opt = self.buf.char_opt(self.cur.y, self.cur.x);
-        if let Some(c) = char_opt {
-            match self.e_cmd {
-                E_Cmd::CursorRight | E_Cmd::InsertStr(_) => {
-                    if self.state.mouse_mode == MouseMode::Normal {
-                        if is_row_end_char(c) {
-                            is_end_of_line = true;
-                        }
-                    } else {
-                        let (cur_x, _) = get_row_cur_x_disp_x(&self.buf.char_vec_row(self.cur.y)[..], 0, false);
-                        if self.cur.x == cur_x {
-                            is_end_of_line = true;
-                        }
-                    }
-                }
-                E_Cmd::CursorRightSelect => {
-                    let len_line_chars = self.buf.len_row_chars(self.cur.y);
-                    let x = if c == NEW_LINE_CR { len_line_chars - 1 } else { len_line_chars };
-                    if self.cur.x == x - 1 {
+
+        match self.e_cmd {
+            E_Cmd::CursorRight | E_Cmd::CursorRightSelect | E_Cmd::InsertStr(_) if self.sel.mode == SelMode::Normal => {
+                if let Some(c) = char_opt {
+                    if is_row_end_char(c) {
                         is_end_of_line = true;
                     }
                 }
-                _ => {}
             }
-            // End of line
-            if is_end_of_line {
-                self.updown_x = 0;
-                self.cur.disp_x = 0;
-                self.cur.x = 0;
-                self.cur_down();
-            } else if c == TAB_CHAR {
+            _ => {}
+        }
+        // End of line
+        Log::debug("is_end_of_line", &is_end_of_line);
+        if is_end_of_line {
+            self.updown_x = 0;
+            self.cur.disp_x = 0;
+            self.cur.x = 0;
+            self.cur_down();
+        } else if let Some(c) = char_opt {
+            if c == TAB_CHAR {
                 let cfg_tab_width = Cfg::get().general.editor.tab.size;
                 let tab_width = cfg_tab_width - (self.cur.disp_x % cfg_tab_width);
                 self.cur.disp_x += tab_width;
@@ -141,6 +132,12 @@ impl Editor {
                     self.cur.x += 1;
                 }
             }
+        } else if self.sel.mode == SelMode::BoxSelect {
+            self.cur.disp_x += 1;
+            self.cur.x += 1;
+        }
+
+        if self.sel.mode == SelMode::Normal {
             self.scroll();
             self.scroll_horizontal();
         }

@@ -15,12 +15,12 @@ impl EvtAct {
         Log::debug_s("Process.open_file");
         Log::debug("term.curt().prom.keycmd", &term.curt().prom.keycmd);
 
-        if term.curt().prom.keycmd == KeyCmd::Resize {
-            term.set_disp_size();
-            PromOpenFile::set_file_list(&mut term.curt().prom);
-            return ActType::Draw(DParts::All);
-        }
         match term.curt().prom.p_cmd {
+            P_Cmd::Resize(_, _) => {
+                term.set_disp_size();
+                PromOpenFile::set_file_list(&mut term.curt().prom);
+                return ActType::Render(RParts::All);
+            }
             P_Cmd::CursorUp => EvtAct::prom_open_file_move_vec(term, Direction::Up),
             P_Cmd::CursorDown => EvtAct::prom_open_file_move_vec(term, Direction::Down),
             P_Cmd::CursorRowHomeSelect | P_Cmd::CursorRowEndSelect => {}
@@ -89,14 +89,14 @@ impl EvtAct {
                 let path = Path::new(&full_path_str);
 
                 if path_str.is_empty() {
-                    return ActType::Draw(DParts::MsgBar(Lang::get().not_entered_filenm.to_string()));
+                    return ActType::Render(RParts::MsgBar(Lang::get().not_entered_filenm.to_string()));
                 } else if !path.exists() {
-                    return ActType::Draw(DParts::MsgBar(Lang::get().file_not_found.to_string()));
+                    return ActType::Render(RParts::MsgBar(Lang::get().file_not_found.to_string()));
                 } else if !File::is_readable(&full_path_str) {
-                    return ActType::Draw(DParts::MsgBar(Lang::get().no_read_permission.to_string()));
+                    return ActType::Render(RParts::MsgBar(Lang::get().no_read_permission.to_string()));
                 } else if path.metadata().unwrap().is_dir() {
                     PromOpenFile::set_file_list(&mut term.curt().prom);
-                    return ActType::Draw(DParts::Prompt);
+                    return ActType::Render(RParts::Prompt);
                 } else {
                     Log::debug("full_path_str", &full_path_str);
                     Log::debug("term.curt().prom.prom_open_file.keycmd", &term.curt().prom.prom_open_file.file_type);
@@ -118,23 +118,24 @@ impl EvtAct {
                                 return act_type;
                             }
                         } else {
-                            term.idx = tgt_idx;
+                            term.tab_idx = tgt_idx;
+                            term.clear_curt_tab(true);
                             term.curt().editor.set_cmd(KeyCmd::Null);
                         }
                     } else if term.curt().prom.prom_open_file.file_type == OpenFileType::JsMacro {
                         let act_type = Macros::exec_js_macro(term, &full_path_str);
-                        if let ActType::Draw(DParts::MsgBar(_)) = act_type {
+                        if let ActType::Render(RParts::MsgBar(_)) = act_type {
                             return act_type;
                         } else {
                             term.clear_curt_tab(true);
                         };
                     }
                 }
-                return ActType::Draw(DParts::All);
+                return ActType::Render(RParts::All);
             }
             _ => return ActType::Cancel,
         };
-        return ActType::Draw(DParts::Prompt);
+        return ActType::Render(RParts::Prompt);
     }
 
     pub fn prom_open_file_move_vec(term: &mut Terminal, cur_direction: Direction) {
@@ -166,7 +167,7 @@ impl EvtAct {
                 let mut path = term.curt().prom.prom_open_file.base_path.clone();
                 path.push_str(&op_file.file.name);
                 if is_confirm && !File::is_readable(&path) {
-                    return ActType::Draw(DParts::MsgBar(Lang::get().no_read_permission.to_string()));
+                    return ActType::Render(RParts::MsgBar(Lang::get().no_read_permission.to_string()));
                 } else {
                     PromOpenFile::chenge_file_path(&mut term.curt().prom, op_file);
                 }
@@ -185,11 +186,11 @@ impl EvtAct {
             } else {
                 PromOpenFile::chenge_file_path(&mut term.curt().prom, op_file);
             }
-            return ActType::Draw(DParts::Prompt);
+            return ActType::Render(RParts::Prompt);
         }
         if is_confirm {
             PromOpenFile::set_file_list(&mut term.curt().prom);
         }
-        return ActType::Draw(DParts::Prompt);
+        return ActType::Render(RParts::Prompt);
     }
 }

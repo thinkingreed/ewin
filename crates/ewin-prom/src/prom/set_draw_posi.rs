@@ -9,7 +9,7 @@ impl Prompt {
     pub fn draw_set_posi(&mut self, tab_state: &TabState, base_posi: u16, h_file: &HeaderFile) {
         Log::debug_key("draw_set_posi");
 
-        if self.cont_1.guide_row_posi == 0 || self.keycmd == KeyCmd::Resize {
+        if self.cont_1.guide_row_posi == 0 || matches!(self.keycmd, KeyCmd::Prom(P_Cmd::Resize(_, _))) {
             let mut idx = 0;
             self.cont_1.disp_row_posi = base_posi;
             self.cont_1.guide_row_posi = base_posi;

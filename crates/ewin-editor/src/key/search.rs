@@ -1,10 +1,7 @@
+use ewin_com::_cfg::model::default::{Cfg, CfgSearch};
+
 use crate::{
-    ewin_com::{
-        _cfg::{cfg::*, lang::lang_cfg::*},
-        def::*,
-        log::*,
-        model::*,
-    },
+    ewin_com::{_cfg::lang::lang_cfg::*, def::*, log::*, model::*},
     model::*,
 };
 use std::{cmp::min, collections::BTreeSet};
@@ -21,7 +18,8 @@ impl Editor {
         let e_row_idx = if regex { self.buf.row_to_byte(ey) } else { self.buf.row_to_char(ey) };
 
         let cfg_search = Cfg::get_edit_search();
-        self.search.ranges = if self.search.str.is_empty() { vec![] } else { self.get_search_ranges(&cfg_search, &self.search.str, s_row_idx, e_row_idx, 0) };
+
+        self.set_search_org_and_raneg(if self.search.str.is_empty() { vec![] } else { self.get_search_ranges(&cfg_search, &self.search.str, s_row_idx, e_row_idx, 0) });
 
         let search_org = self.search.clone();
         Log::debug("self.search.ranges", &self.search.ranges);
@@ -31,7 +29,10 @@ impl Editor {
             if !self.search.ranges.is_empty() {
                 self.search_str(true, true);
             }
-            self.draw_range = E_DrawRange::After(self.offset_y);
+            for s in &self.search.ranges {
+                self.change_info.restayle_row.insert(s.y);
+            }
+            self.draw_range = E_DrawRange::Targetpoint;
         }
     }
     pub fn exec_search_confirm(&mut self, search_str: String) -> Option<String> {
@@ -40,36 +41,34 @@ impl Editor {
             return Some(Lang::get().not_entered_search_str.clone());
         }
         let cfg_search = &Cfg::get_edit_search();
-        let search_vec = self.search(&search_str, cfg_search);
 
-        if search_vec.is_empty() {
+        if self.search(&search_str, cfg_search) {
             return Some(Lang::get().cannot_find_char_search_for.clone());
         } else {
-            self.search.clear();
-            self.search.ranges = search_vec;
-            self.search.str = search_str;
-
-            // Set index to initial value
-            self.search.idx = USIZE_UNDEFINED;
             self.search_str(true, false);
             None
         }
     }
 
-    pub fn search(&mut self, search_str: &str, cfg_search: &CfgSearch) -> Vec<SearchRange> {
+    pub fn search(&mut self, search_str: &str, cfg_search: &CfgSearch) -> bool {
         Log::debug_key("search");
 
         let search_vec = self.get_search_ranges(cfg_search, search_str, 0, self.buf.len_chars(), 0);
         if search_vec.is_empty() {
-            return search_vec;
+            return search_vec.is_empty();
         } else {
             self.search.clear();
-            self.search.ranges = search_vec.clone();
+            self.set_search_org_and_raneg(search_vec.clone());
+            //  self.search.ranges = search_vec.clone();
             self.search.str = search_str.to_string();
             // Set index to initial value
             self.search.idx = USIZE_UNDEFINED;
         }
-        search_vec
+        return search_vec.is_empty();
+    }
+    pub fn set_search_org_and_raneg(&mut self, ranges: Vec<SearchRange>) {
+        self.search_org = self.search.clone();
+        self.search.ranges = ranges;
     }
 
     pub fn search_str(&mut self, is_asc: bool, is_incremental: bool) {
@@ -78,7 +77,7 @@ impl Editor {
         if !self.search.str.is_empty() {
             if self.search.ranges.is_empty() {
                 let cfg_search = &Cfg::get_edit_search();
-                self.search.ranges = self.get_search_ranges(cfg_search, &self.search.str, 0, self.buf.len_chars(), 0);
+                self.set_search_org_and_raneg(self.get_search_ranges(cfg_search, &self.search.str, 0, self.buf.len_chars(), 0))
             }
             if self.search.ranges.is_empty() {
                 return;
@@ -188,12 +187,12 @@ impl Editor {
         proc.cur_e = self.cur;
     }
 
-    pub fn get_idx_set(&mut self, search_str: &str, replace_str: &str, org_map: &BTreeSet<usize>) -> BTreeSet<usize> {
+    pub fn get_idx_set(&mut self, search_str: &str, replace_str: &str, org_set: &BTreeSet<usize>) -> BTreeSet<usize> {
         let mut replace_set: BTreeSet<usize> = BTreeSet::new();
         let mut total = 0;
         let cfg_search = Cfg::get_edit_search();
 
-        for (i, sx) in org_map.iter().enumerate() {
+        for (i, sx) in org_set.iter().enumerate() {
             // let replace_str_len = if is_regex { replace_str.len() } else { replace_str.chars().count() };
             let diff: isize = if cfg_search.regex { replace_str.len() as isize - search_str.len() as isize } else { replace_str.chars().count() as isize - search_str.chars().count() as isize };
             let sx = if i == 0 || cfg_search.regex { *sx } else { (*sx as isize + total) as usize };

@@ -7,9 +7,9 @@ impl EvtAct {
         Log::debug_key("EvtAct.move_row");
 
         match &term.curt().prom.keycmd {
-            KeyCmd::Resize => {
+            KeyCmd::Prom(P_Cmd::Resize(_, _)) => {
                 term.curt().prom_move_row();
-                return ActType::Draw(DParts::All);
+                return ActType::Render(RParts::All);
             }
             KeyCmd::Prom(p_keycmd) => match p_keycmd {
                 P_Cmd::InsertStr(str) => {
@@ -23,16 +23,16 @@ impl EvtAct {
                     }
                     term.curt().prom.insert_str(str);
 
-                    return ActType::Draw(DParts::Prompt);
+                    return ActType::Render(RParts::Prompt);
                 }
                 P_Cmd::ConfirmPrompt => {
                     let str = term.curt().prom.cont_1.buf.iter().collect::<String>();
                     if str.is_empty() {
-                        return ActType::Draw(DParts::MsgBar(Lang::get().not_entered_row_number_to_move.to_string()));
+                        return ActType::Render(RParts::MsgBar(Lang::get().not_entered_row_number_to_move.to_string()));
                     }
                     let row_num: usize = str.parse().unwrap();
                     if row_num > term.curt().editor.buf.len_rows() || row_num == 0 {
-                        return ActType::Draw(DParts::MsgBar(Lang::get().number_within_current_number_of_rows.to_string()));
+                        return ActType::Render(RParts::MsgBar(Lang::get().number_within_current_number_of_rows.to_string()));
                     }
                     term.curt().editor.set_cur_target(row_num - 1, 0, false);
 
@@ -40,9 +40,9 @@ impl EvtAct {
                     term.curt().editor.e_cmd = E_Cmd::MoveRow;
                     term.curt().editor.scroll();
                     term.curt().editor.scroll_horizontal();
-                    return ActType::Draw(DParts::All);
+                    return ActType::Render(RParts::All);
                 }
-                _ => return if EvtAct::is_draw_prompt_tgt_keycmd(&term.curt().prom.p_cmd) { ActType::Draw(DParts::Prompt) } else { ActType::Cancel },
+                _ => return if EvtAct::is_draw_prompt_tgt_keycmd(&term.curt().prom.p_cmd) { ActType::Render(RParts::Prompt) } else { ActType::Cancel },
             },
             _ => return ActType::Cancel,
         }

@@ -35,6 +35,8 @@ fn set_wsl_clipboard(copy_str: &str) -> anyhow::Result<()> {
     let mut file = OpenOptions::new().create(true).write(true).truncate(true).open(&clipboard_file)?;
     file.write_all(copy_str.as_bytes())?;
 
+    // When there is only one character per line in the WSL environment
+    // the copy of the character string fails due to a bug in clip.exe.
     // clip.exe < file
     Exec::shell(format!("{}{}{}", "clip.exe", "<", clipboard_file.to_str().unwrap())).join()?;
     Ok(())

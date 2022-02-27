@@ -7,18 +7,18 @@ impl EvtAct {
     pub fn search(term: &mut Terminal) -> ActType {
         Log::debug_key("EvtAct.search");
         match &term.curt().prom.keycmd {
-            KeyCmd::Resize => {
+            KeyCmd::Prom(P_Cmd::Resize(_, _)) => {
                 term.curt().prom_search();
-                return ActType::Draw(DParts::All);
+                return ActType::Render(RParts::All);
             }
             KeyCmd::Prom(p_cmd) => match p_cmd {
                 P_Cmd::InsertStr(_) | P_Cmd::Cut | P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::Undo | P_Cmd::Redo => {
                     let search_str = term.curt().prom.cont_1.buf.iter().collect::<String>();
                     term.curt().editor.exec_search_incremental(search_str);
-                    return ActType::Draw(DParts::All);
+                    return ActType::Render(RParts::All);
                 }
                 P_Cmd::FindNext | P_Cmd::FindBack => return EvtAct::exec_search_confirm(term),
-                _ => return if EvtAct::is_draw_prompt_tgt_keycmd(&term.curt().prom.p_cmd) { ActType::Draw(DParts::Prompt) } else { ActType::Cancel },
+                _ => return if EvtAct::is_draw_prompt_tgt_keycmd(&term.curt().prom.p_cmd) { ActType::Render(RParts::Prompt) } else { ActType::Cancel },
             },
             _ => return ActType::Cancel,
         };
@@ -37,12 +37,12 @@ impl EvtAct {
 
         let search_str = term.curt().prom.cont_1.buf.iter().collect::<String>();
         if let Some(err_str) = term.curt().editor.exec_search_confirm(search_str) {
-            return ActType::Draw(DParts::MsgBar(err_str));
+            return ActType::Render(RParts::MsgBar(err_str));
         } else {
             // Do not clear grep information in case of grep result
             // Because grep result cannot be judged
             term.clear_curt_tab(false);
-            return ActType::Draw(DParts::All);
+            return ActType::Render(RParts::All);
         }
     }
 }

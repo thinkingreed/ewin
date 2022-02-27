@@ -23,7 +23,7 @@ impl Editor {
         } else if ConvType::Space == conv_type {
             tgt_str.replace(&TAB_CHAR.to_string(), " ")
         } else if ConvType::Tab == conv_type {
-            tgt_str.replace(" ", &TAB_CHAR.to_string())
+            tgt_str.replace(' ', &TAB_CHAR.to_string())
         } else {
             todo!()
         };

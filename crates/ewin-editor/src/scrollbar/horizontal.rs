@@ -4,14 +4,13 @@ use crossterm::{
     terminal::{Clear, ClearType},
 };
 use ewin_com::{
-    _cfg::{cfg::Cfg, key::keycmd::*},
+    _cfg::{key::keycmd::*, model::default::Cfg},
     colors::*,
     def::*,
     log::*,
-    model::*,
     util::*,
 };
-use std::cmp::max;
+use std::{cmp::max, collections::BTreeSet};
 use unicode_width::UnicodeWidthStr;
 
 impl Editor {
@@ -26,7 +25,7 @@ impl Editor {
             self.scrl_h.row_width_chars_vec[i] = (self.buf.line(i).to_string().width() + Editor::SCROLL_BAR_H_END_LINE_MARGIN, self.buf.line(i).len_chars() + Editor::SCROLL_BAR_H_END_LINE_MARGIN);
 
             if self.scrl_h.row_width_chars_vec[i].0 > self.scrl_h.row_max_width {
-                self.scrl_h.max_width_row_idx = i;
+                self.scrl_h.row_max_width_idx = i;
                 self.scrl_h.row_max_width = self.scrl_h.row_width_chars_vec[i].0;
                 self.scrl_h.row_max_chars = self.scrl_h.row_width_chars_vec[i].1;
                 if self.scrl_h.row_max_chars > self.scrl_h.row_max_width {
@@ -36,69 +35,17 @@ impl Editor {
         }
     }
 
-    pub fn recalc_scrlbar_h(&mut self, evt_proc: &EvtProc) {
-        Log::debug_key("recalc_scrlbar_h_row");
-
-        if let Some(sel_proc) = &evt_proc.sel_proc {
-            let sel = sel_proc.sel.get_range();
-            self.scrl_h.row_width_chars_vec.drain(sel.sy..sel.ey);
-            self.recalc_scrlbar_h_row(&[sel_proc.cur_s.y]);
-        };
-
-        if let Some(proc) = &evt_proc.proc {
-            Log::debug("evt_proc self.scrl_h.row_width_vec 111", &self.scrl_h.row_width_chars_vec);
-            match &proc.e_cmd {
-                E_Cmd::DelNextChar | E_Cmd::DelPrevChar => {
-                    if is_row_end_str(&proc.str) {
-                        self.scrl_h.row_width_chars_vec.remove(if proc.e_cmd == E_Cmd::DelNextChar { proc.cur_s.y + 1 } else { proc.cur_s.y });
-                    }
-                    self.recalc_scrlbar_h_row(&[proc.cur_s.y]);
-                }
-                E_Cmd::InsertRow => {
-                    self.scrl_h.row_width_chars_vec.insert(proc.cur_e.y, (0, 0));
-                    self.recalc_scrlbar_h_row(&[proc.cur_s.y, proc.cur_e.y]);
-                }
-                // Not Insert box
-                E_Cmd::InsertStr(_) if proc.box_sel_vec.is_empty() => {
-                    let strings: Vec<&str> = proc.str.split(&NL::get_nl(&self.h_file.nl)).collect();
-                    if !strings.is_empty() {
-                        for i in 1..strings.len() {
-                            self.scrl_h.row_width_chars_vec.insert(proc.cur_s.y + i, (0, 0));
-                        }
-                    }
-                    self.recalc_scrlbar_h_row(&[proc.cur_s.y]);
-                }
-                // Insert box
-                E_Cmd::InsertStr(_) | E_Cmd::InsertBox(_) | E_Cmd::DelBox(_) => {
-                    if self.scrl_h.row_width_chars_vec.len() != self.buf.len_rows() {
-                        self.scrl_h.row_width_chars_vec.resize_with(self.buf.len_rows(), Default::default);
-                    }
-                    let first_sel = proc.box_sel_vec.first().unwrap().0;
-                    let last_sel = proc.box_sel_vec.last().unwrap().0;
-                    self.recalc_scrlbar_h_row(&(first_sel.sy..=last_sel.sy).collect::<Vec<usize>>());
-                }
-                E_Cmd::ReplaceExec(search_str, replace_str, idx_set) => {
-                    let tgt_idx_set = self.get_idx_set(search_str, replace_str, idx_set);
-                    let row_vec = &tgt_idx_set.iter().map(|x| self.buf.char_to_row(*x)).collect::<Vec<usize>>();
-                    self.recalc_scrlbar_h_row(row_vec);
-                }
-                _ => {}
-            }
-            Log::debug("evt_proc self.scrl_h.row_width_vec 222", &self.scrl_h.row_width_chars_vec);
-        };
-    }
-
-    pub fn recalc_scrlbar_h_row(&mut self, idxs: &[usize]) {
-        Log::debug("idxs", &idxs);
+    pub fn recalc_scrlbar_h(&mut self, idxs: BTreeSet<usize>) {
         for i in idxs {
-            if self.scrl_h.row_width_chars_vec.get(*i).is_some() {
-                self.scrl_h.row_width_chars_vec[*i] = (self.buf.line(*i).to_string().width() + Editor::SCROLL_BAR_H_END_LINE_MARGIN, self.buf.line(*i).len_chars() + Editor::SCROLL_BAR_H_END_LINE_MARGIN);
+            if self.scrl_h.row_width_chars_vec.get(i).is_some() {
+                self.scrl_h.row_width_chars_vec[i] = (self.buf.line(i).to_string().width() + Editor::SCROLL_BAR_H_END_LINE_MARGIN, self.buf.line(i).len_chars() + Editor::SCROLL_BAR_H_END_LINE_MARGIN);
             }
         }
-        self.scrl_h.row_max_width = self.scrl_h.row_width_chars_vec.iter().max_by(|(x1, _), (x2, _)| x1.cmp(x2)).unwrap().0;
-        self.scrl_h.max_width_row_idx = self.scrl_h.row_width_chars_vec.iter().position(|(x, _)| x == &self.scrl_h.row_max_width).unwrap();
-        self.scrl_h.row_max_chars = self.buf.char_vec_row(self.scrl_h.max_width_row_idx).len();
-
+        if !self.scrl_h.row_width_chars_vec.is_empty() {
+            self.scrl_h.row_max_width = self.scrl_h.row_width_chars_vec.iter().max_by(|(x1, _), (x2, _)| x1.cmp(x2)).unwrap().0;
+            self.scrl_h.row_max_width_idx = self.scrl_h.row_width_chars_vec.iter().position(|(x, _)| x == &self.scrl_h.row_max_width).unwrap();
+            self.scrl_h.row_max_chars = self.buf.char_vec_row(self.scrl_h.row_max_width_idx).len();
+        }
         self.scrl_h.is_show = self.scrl_h.row_max_width > self.col_len;
     }
 
@@ -138,8 +85,8 @@ impl Editor {
             if self.scrl_h.clm_posi < self.scrl_h.scrl_range {
                 // Last move
                 if self.scrl_h.clm_posi + 1 == self.scrl_h.scrl_range {
-                    if self.buf.char_vec_row(self.scrl_h.max_width_row_idx).len() > self.offset_x {
-                        if let Some(disp_cur_x) = get_row_x_opt(&self.buf.char_vec_range(self.scrl_h.max_width_row_idx, self.offset_x..), self.col_len, true, true) {
+                    if self.buf.char_vec_row(self.scrl_h.row_max_width_idx).len() > self.offset_x {
+                        if let Some(disp_cur_x) = get_row_x_opt(&self.buf.char_vec_range(self.scrl_h.row_max_width_idx, self.offset_x..), self.col_len, true, true) {
                             let move_cur_x = self.scrl_h.row_max_chars - (self.offset_x + disp_cur_x);
                             self.offset_x += move_cur_x;
                         }
@@ -154,11 +101,19 @@ impl Editor {
         self.set_offset_disp_x();
     }
 
-    pub fn draw_scrlbar_h(&mut self, str_vec: &mut Vec<String>) {
+    pub fn render_scrlbar_h(&mut self, str_vec: &mut Vec<String>) {
         Log::debug_key("draw_scrlbar_h");
+
+        Log::debug(" self.curt().editor.scrl_h.row_max_width", &self.scrl_h.is_show);
+        Log::debug(" self.curt().editor.scrl_h.row_max_width", &self.scrl_h.row_max_width);
+
         if self.scrl_h.is_show {
             if self.scrl_h.bar_len == USIZE_UNDEFINED || self.scrl_h.row_max_width_org != self.scrl_h.row_max_width || self.col_len != self.col_len_org {
+                Log::debug("self.col_len", &self.col_len);
+                Log::debug("self.scrl_h.row_max_width", &self.scrl_h.row_max_width);
+                Log::debug("self.scrl_h.bar_len 111", &self.scrl_h.bar_len);
                 self.scrl_h.bar_len = max(2, (self.col_len as f64 / self.scrl_h.row_max_width as f64 * self.col_len as f64).floor() as usize);
+                Log::debug("self.scrl_h.bar_len 222", &self.scrl_h.bar_len);
 
                 if self.scrl_h.row_max_width > self.col_len {
                     self.scrl_h.is_show = true;
@@ -173,9 +128,8 @@ impl Editor {
             }
 
             if !self.scrl_h.is_enable {
-                if self.cur.x == 0 {
-                    self.scrl_h.clm_posi = 0;
-                } else if self.scrl_h.clm_posi + self.scrl_h.bar_len == self.col_len {
+                // scrl_h_bar is rightmost part
+                if self.scrl_h.clm_posi + self.scrl_h.bar_len == self.col_len {
                 } else if self.offset_disp_x_org != self.offset_disp_x {
                     self.scrl_h.clm_posi = (self.cur.disp_x as f64 / self.scrl_h.row_max_width as f64 * self.scrl_h.scrl_range as f64).ceil() as usize;
                 }

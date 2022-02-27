@@ -1,19 +1,12 @@
-use crate::{_cfg::cfg::Cfg, def::*, file::*, global::*, log::Log, model::*};
+use crate::_cfg::model::default::*;
+use crate::{def::*, file::*, global::*, log::Log, model::*};
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use anyhow::Context;
 use crossterm::terminal::size;
 use serde_json::Value;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::io::Read;
-use std::{
-    self,
-    collections::HashMap,
-    fs,
-    path::*,
-    process::*,
-    time::{SystemTime, UNIX_EPOCH},
-    *,
-};
+use std::{self, collections::HashMap, fs, path::*, process::*, time::*, *};
 use unicode_width::*;
 
 pub fn get_str_width(msg: &str) -> usize {
@@ -28,6 +21,7 @@ pub fn get_str_width(msg: &str) -> usize {
 
 /// Get cur_x of any disp_x. If there are no characters, return None.
 pub fn get_row_x_opt(char_arr: &[char], disp_x: usize, is_ctrlchar_incl: bool, is_return_on_the_way: bool) -> Option<usize> {
+    Log::debug_key("get_row_x_opt");
     let (mut cur_x, mut width) = (0, 0);
 
     for c in char_arr {
@@ -92,11 +86,9 @@ pub fn get_until_disp_x(char_vec: &[char], disp_x: usize, is_ctrlchar_incl: bool
 
 /// Get x_offset from the specified cur_x
 pub fn get_x_offset(chars: &[char], col_len: usize) -> usize {
+    Log::debug_key("get_x_offset");
     let (mut cur_x, mut width) = (0, 0);
 
-    if chars.len() < col_len {
-        return 0;
-    }
     for c in chars.iter().rev() {
         width += get_char_width(c, width);
         if width > col_len {
@@ -120,28 +112,28 @@ pub fn get_tab_width(width: usize, cfg_tab_width: usize) -> usize {
     return cfg_tab_width - width % cfg_tab_width;
 }
 
+pub fn get_c_width(c: &char) -> usize {
+    let width = if let Some(ambiguous_width) = Cfg::get().general.font.ambiguous_width {
+        if ambiguous_width == 2 {
+            c.width_cjk().unwrap_or(0)
+        } else {
+            // ambiguous_width == 1
+            c.width().unwrap_or(0)
+        }
+    } else if cfg!(target_os = "linux") || cfg!(target_os = "macos") {
+        c.width().unwrap_or(0)
+    } else {
+        // Windows
+        c.width_cjk().unwrap_or(0)
+    };
+    return width;
+}
+
 pub fn get_char_width_not_tab(c: &char) -> usize {
     if c == &NEW_LINE_LF {
         return 1;
     }
-    // Correspondence for each OS of characters whose judgment is wrong in unicode_width
-    if let Some(width) = get_char_width_tgt_os(c) {
-        return width;
-    };
-    return c.width().unwrap_or(0);
-}
-
-#[cfg(target_os = "windows")]
-pub fn get_char_width_tgt_os(c: &char) -> Option<usize> {
-    if [NEW_LINE_LF, '■', '●', '◆', '□', '○', '◇', '→', '←', '↑', '↓', '⇒', '⇔', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'].contains(c) {
-        return Some(2);
-    }
-    return None;
-}
-
-#[cfg(any(target_os = "linux", target_os = "macos"))]
-pub fn get_char_width_tgt_os(_c: &char) -> Option<usize> {
-    return None;
+    return get_c_width(c);
 }
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
@@ -173,7 +165,9 @@ pub fn is_wsl_powershell_enable() -> bool {
 }
 
 pub fn change_output_encoding() {
-    let result = Command::new("powershell.exe").arg("chcp 65001").stdout(Stdio::null()).stdin(Stdio::null()).stderr(Stdio::null()).spawn();
+    // If it is executed asynchronously, it will be reflected after the screen is drawn, and there will be a problem with the display
+    // so wait for the end with synchronous execution.
+    let result = Command::new("powershell.exe").arg("chcp 65001").stdout(Stdio::null()).stdin(Stdio::null()).stderr(Stdio::null()).output();
     Log::debug("change output encoding chcp 65001 ", &result.is_ok());
 }
 
@@ -190,13 +184,13 @@ pub fn is_row_end_str(s: &str) -> bool {
     }
     return false;
 }
-pub fn is_ctrl_char(c: char) -> bool {
-    // LF, CR, EOF
+pub fn is_newline_char(c: char) -> bool {
+    // LF, CR
     [NEW_LINE_LF, NEW_LINE_CR].contains(&c)
 }
 
 pub fn is_enable_syntax_highlight(ext: &str) -> bool {
-    !(ext.is_empty() || Cfg::get().colors.theme.disable_syntax_highlight_ext.contains(&ext.to_string()))
+    !(ext.is_empty() || Cfg::get().general.colors.theme.disable_highlight_ext.contains(&ext.to_string()))
 }
 
 pub fn get_char_type(c: char) -> CharType {
@@ -334,9 +328,9 @@ pub fn change_regex(string: String) -> String {
         let string = string.replace("\\n", &'\n'.to_string());
         let string = string.replace("\\t", &'\t'.to_string());
         let string = string.replace("\\r", &'\r'.to_string());
-        let string = string.replace("\\", &r"\".to_string());
-        let string = string.replace("\\'", &"\'".to_string());
-        let string = string.replace("\\\"", &"\"".to_string());
+        let string = string.replace('\\', r"\");
+        let string = string.replace("\\'", "\'");
+        let string = string.replace("\\\"", "\"");
         return string;
     }
     string
@@ -360,24 +354,24 @@ pub fn is_include_path(src: &str, dst: &str) -> bool {
     is_include
 }
 
-pub fn get_term_size() -> (u16, u16) {
+pub fn get_term_size() -> (usize, usize) {
     Log::debug("get_term_size", &size());
 
     let (columns, rows) = size().unwrap_or((TERM_MINIMUM_WIDTH as u16, TERM_MINIMUM_HEIGHT as u16));
 
     // (1, 1) is judged as test
     if (columns, rows) == (1, 1) {
-        (TERM_MINIMUM_WIDTH as u16, TERM_MINIMUM_HEIGHT as u16)
+        (TERM_MINIMUM_WIDTH, TERM_MINIMUM_HEIGHT)
     } else {
-        (columns, rows)
+        (columns as usize, rows as usize)
     }
 }
 pub fn get_delim_x(row: &[char], x: usize) -> (usize, usize) {
     Log::debug_key("get_delim_x");
 
     let (mut sx, mut ex) = (0, 0);
-    if row.len() > x + 1 {
-        let mut forward = row[..x + 1].to_vec();
+    if row.len() - 1 > x {
+        let mut forward = row[..=x].to_vec();
         forward.reverse();
         sx = get_delim(&forward, x, true);
         let backward = row[x..].to_vec();
@@ -399,7 +393,7 @@ fn get_delim(target: &[char], x: usize, is_forward: bool) -> usize {
             rtn_x = if is_forward { x - i + 1 } else { x + i };
             break;
         } else if i == target.len() - 1 {
-            rtn_x = if is_forward { x - i } else { x + i + 1 };
+            rtn_x = if is_forward { x - i } else { x + i };
         }
         char_type_org = char_type;
     }
@@ -428,7 +422,7 @@ pub fn to_unixtime_str(sys_time: SystemTime) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{_cfg::cfg::Cfg, model::Args};
+    use crate::model::Args;
 
     #[test]
     fn test_get_str_width() {
@@ -438,7 +432,7 @@ mod tests {
     }
     #[test]
     fn test_get_row_x() {
-        Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
+        Cfg::init(&Args { ..Args::default() });
 
         assert_eq!(get_row_x_opt(&['a'], 0, false, false,), Some(0));
         assert_eq!(get_row_x_opt(&['a', 'b'], 1, false, false,), Some(1));
@@ -453,7 +447,7 @@ mod tests {
 
     #[test]
     fn test_get_row_width() {
-        Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
+        Cfg::init(&Args { ..Args::default() });
 
         assert_eq!(get_row_cur_x_disp_x(&['a'], 0, false), (1, 1));
         assert_eq!(get_row_cur_x_disp_x(&['あ'], 0, false), (1, 2));
@@ -469,7 +463,7 @@ mod tests {
 
     #[test]
     fn test_get_until_x() {
-        Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
+        Cfg::init(&Args { ..Args::default() });
         assert_eq!(get_until_disp_x(&['a'], 0, false), (0, 0));
         assert_eq!(get_until_disp_x(&['a', 'あ',], 2, false), (1, 1));
         assert_eq!(get_until_disp_x(&['a', 'あ',], 2, false), (1, 1));
@@ -480,7 +474,7 @@ mod tests {
     }
     #[test]
     fn test_get_char_width() {
-        Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
+        Cfg::init(&Args { ..Args::default() });
         assert_eq!(get_char_width(&'a', 0), 1);
         assert_eq!(get_char_width(&'あ', 0), 2);
         assert_eq!(get_char_width(&TAB_CHAR, 1), 3);
@@ -501,7 +495,7 @@ mod tests {
 
     #[test]
     fn test_is_enable_syntax_highlight() {
-        Cfg::init(&Args { ..Args::default() }, include_str!("../../../setting.toml"));
+        Cfg::init(&Args { ..Args::default() });
 
         assert!(!is_enable_syntax_highlight("txt"));
         assert!(is_enable_syntax_highlight("rs"));
@@ -538,9 +532,9 @@ mod tests {
     }
     #[test]
     fn test_get_dir_path() {
-        assert_eq!(get_dir_path(&"/home/".to_string()), "/home/".to_string());
-        assert_eq!(get_dir_path(&"/home/ewin".to_string()), "/home/".to_string());
-        assert_eq!(get_dir_path(&"".to_string()), "".to_string());
+        assert_eq!(get_dir_path("/home/"), "/home/".to_string());
+        assert_eq!(get_dir_path("/home/ewin"), "/home/".to_string());
+        assert_eq!(get_dir_path(""), "".to_string());
     }
     #[test]
     fn test_is_include_path() {

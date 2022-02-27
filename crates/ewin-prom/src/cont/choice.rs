@@ -58,7 +58,7 @@ impl PromptCont {
     }
 
     pub fn get_choice(&self) -> Choice {
-        let dummy = Choice::new(&"".to_string());
+        let dummy = Choice::new("");
         for (_, choices) in self.choices_map.iter() {
             if choices.is_show {
                 for (y_idx, v) in choices.vec.iter().enumerate() {

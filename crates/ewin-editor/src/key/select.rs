@@ -18,8 +18,13 @@ impl Editor {
 
         let copy_str = match self.sel.mode {
             SelMode::Normal => self.buf.slice(self.sel.get_range()),
+            //
             SelMode::BoxSelect => {
                 let (str, box_sel_vec) = self.slice_box_sel();
+
+                Log::debug("str", &str);
+                Log::debug("box_sel_vec", &box_sel_vec);
+
                 self.box_insert.vec = box_sel_vec;
                 str
             }

@@ -1,6 +1,6 @@
 use ewin_com::{
     _cfg::key::keycmd::KeyCmd,
-    model::{ActType, DParts},
+    model::{ActType, RParts},
 };
 
 use crate::{
@@ -15,11 +15,11 @@ impl Tab {
         if self.editor.state.key_macro.is_record {
             self.editor.state.key_macro.is_record = false;
             self.mbar.clear_key_record();
-            return ActType::Draw(DParts::Editor);
+            return ActType::Render(RParts::Editor);
         } else {
             self.editor.state.key_macro.is_record = true;
             self.editor.key_vec = vec![];
-            return ActType::Draw(DParts::MsgBar(Lang::get().key_recording.to_string()));
+            return ActType::Render(RParts::MsgBar(Lang::get().key_recording.to_string()));
         }
     }
 

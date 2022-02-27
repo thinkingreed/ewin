@@ -4,7 +4,7 @@ use ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, colors::*};
 use std::time::SystemTime;
 
 impl Prompt {
-    pub fn save_forced(&mut self, open_modified_time: SystemTime, last_modified_time: SystemTime) {
+    pub fn save_forced(&mut self, open_modified_time: &SystemTime, last_modified_time: SystemTime) {
         self.disp_row_num = 3;
         let mut cont = PromptCont::new(None);
         cont.set_save_forced(open_modified_time, last_modified_time);
@@ -16,8 +16,8 @@ impl Prompt {
     }
 }
 impl PromptCont {
-    pub fn set_save_forced(&mut self, open_modified_time: SystemTime, last_modified_time: SystemTime) {
-        let open_datetime = DateTime::<Local>::from(open_modified_time);
+    pub fn set_save_forced(&mut self, open_modified_time: &SystemTime, last_modified_time: SystemTime) {
+        let open_datetime = DateTime::<Local>::from(*open_modified_time);
         let open_str = open_datetime.format("%m-%d %H:%M:%S.%3f").to_string();
 
         let last_datetime = DateTime::<Local>::from(last_modified_time);

@@ -32,15 +32,15 @@ impl EvtAct {
 
                     // Only parent meun move || Only child meun move
                     if child_cont_org.is_none() && child_cont.is_none() || term.ctx_menu_group.parent_sel_y == term.ctx_menu_group.parent_sel_y_cache && term.ctx_menu_group.child_sel_y != USIZE_UNDEFINED {
-                        return ActType::Draw(DParts::CtxMenu);
+                        return ActType::Render(RParts::CtxMenu);
                     } else {
                         term.set_render_range_ctx_menu();
-                        return ActType::Draw(DParts::Editor);
+                        return ActType::Render(RParts::Editor);
                     }
                 } else if term.ctx_menu_group.is_mouse_within_range(y, x, true) {
                     term.ctx_menu_group.clear_select_menu();
                     term.set_render_range_ctx_menu();
-                    return ActType::Draw(DParts::Editor);
+                    return ActType::Render(RParts::Editor);
                 } else {
                     return ActType::Cancel;
                 }
@@ -54,15 +54,15 @@ impl EvtAct {
                     _ => {}
                 }
                 term.set_render_range_ctx_menu();
-                return ActType::Draw(DParts::Editor);
+                return ActType::Render(RParts::Editor);
             }
             C_Cmd::CtxMenu(y, x) => {
                 CtxMenuGroup::show_init(term, y, x);
-                return ActType::Draw(DParts::All);
+                return ActType::Render(RParts::All);
             }
             C_Cmd::ConfirmCtxMenu => {
                 CtxMenuGroup::select_ctx_menu(term);
-                return ActType::Draw(DParts::All);
+                return ActType::Render(RParts::All);
             }
             C_Cmd::Null => return ActType::Cancel,
         }

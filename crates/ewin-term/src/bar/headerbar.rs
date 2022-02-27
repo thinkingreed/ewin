@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use crate::{
     ewin_com::{colors::*, def::*, log::*, model::*, util::*},
     model::*,
@@ -13,7 +15,7 @@ impl HeaderBar {
     // Front and back margins of the file
     const FILENM_MARGIN: usize = 3;
 
-    pub fn draw(term: &Terminal, str_vec: &mut Vec<String>) {
+    pub fn render(term: &Terminal, str_vec: &mut Vec<String>) {
         Log::info_key("HeaderBar.draw");
 
         let plus_btn = format!(" {} ", '+');
@@ -22,23 +24,31 @@ impl HeaderBar {
         let left_arrow_btn = "< ".to_string();
         let right_arrow_btn = " >".to_string();
 
-        let mut hber_str = format!("{}{}{}", MoveTo(0, term.hbar.row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_hbar_fg_bg());
+        let mut hber_str = format!("{}{}{}", MoveTo(0, term.hbar.row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_default_fg_bg());
         if term.hbar.is_left_arrow_disp {
-            hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_inversion_fg_bg_active(), left_arrow_btn, &Colors::get_hbar_fg_bg()));
+            hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_active_fg_bg(), left_arrow_btn, &Colors::get_default_fg_bg()));
         }
         for (i, h_file) in term.hbar.file_vec.iter().enumerate() {
             if !h_file.is_disp {
                 continue;
             }
-            let state_color = if i == term.idx { Colors::get_hbar_inversion_fg_bg_active() } else { Colors::get_hbar_inversion_fg_bg_passive() };
-            hber_str.push_str(&format!("{}{}{}", &state_color, &h_file.filenm_disp.clone(), &Colors::get_hbar_fg_bg()));
+            let state_color = if i == term.tab_idx { Colors::get_hbar_active_fg_bg() } else { Colors::get_hbar_passive_fg_bg() };
+            hber_str.push_str(&format!("{}{}{}", &state_color, &h_file.filenm_disp.clone(), &Colors::get_default_fg_bg()));
         }
         hber_str.push_str(&format!("{}{}", &Colors::get_default_bg(), &" ".repeat(term.hbar.all_filenm_rest)));
         if term.hbar.is_right_arrow_disp {
-            hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_inversion_fg_bg_active(), right_arrow_btn, &Colors::get_hbar_fg_bg()));
+            hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_active_fg_bg(), right_arrow_btn, &Colors::get_default_fg_bg()));
         }
-        hber_str = format!("{}{}{}{} {}{}{} {}{}{}", hber_str, Colors::get_hbar_inversion_fg_bg_active(), plus_btn, Colors::get_default_bg(), Colors::get_hbar_inversion_fg_bg_active(), menu_btn, Colors::get_default_bg(), Colors::get_hbar_inversion_fg_bg_active(), close_btn, Colors::get_default_bg());
+        hber_str = format!("{}{}{}{} {}{}{} {}{}{}", hber_str, Colors::get_sytem_btn_fg_bg(), plus_btn, Colors::get_default_bg(), Colors::get_sytem_btn_fg_bg(), menu_btn, Colors::get_default_bg(), Colors::get_sytem_btn_fg_bg(), close_btn, Colors::get_default_bg());
         str_vec.push(hber_str);
+    }
+
+    pub fn render_only<T: Write>(term: &Terminal, out: &mut T) {
+        Log::debug_key("HeaderBar::render_only");
+        let mut v: Vec<String> = vec![];
+        HeaderBar::render(term, &mut v);
+        let _ = out.write(v.concat().as_bytes());
+        out.flush().unwrap();
     }
 
     pub fn set_posi(&mut self, cols_w: usize) {
@@ -60,7 +70,7 @@ impl HeaderBar {
         term.hbar.init();
 
         let mut max_len = HeaderBar::FILENM_LEN_LIMMIT;
-        let cols = get_term_size().0 as usize;
+        let cols = get_term_size().0;
         Log::debug("cols", &cols);
         let left_allow_len = if term.hbar.file_vec.len() == 1 { 0 } else { HeaderBar::ALLOW_BTN_WITH };
 
@@ -199,12 +209,12 @@ pub struct HeaderBar {
     pub is_right_arrow_disp: bool,
     pub right_arrow_area: (usize, usize),
     pub left_arrow_area: (usize, usize),
-
     // Position on the terminal
     pub row_num: usize,
     pub row_posi: usize,
     pub col_num: usize,
     pub history: History,
+    pub state: HeaderBarState,
 }
 
 impl Default for HeaderBar {
@@ -226,6 +236,7 @@ impl Default for HeaderBar {
             row_posi: 0,
             col_num: 0,
             history: History::default(),
+            state: HeaderBarState::default(),
         }
     }
 }

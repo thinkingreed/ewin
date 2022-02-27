@@ -15,9 +15,11 @@ impl KeyCmd {
          * All
          */
 
+        /*
         if keycmd == "closeFile" {
             return KeyCmd::CloseFile;
         }
+         */
 
         return match keywhen {
             "headerBarFocus" => KeyCmd::Unsupported,
@@ -52,6 +54,10 @@ impl KeyCmd {
                 "confirmPrompt" => KeyCmd::Prom(P_Cmd::ConfirmPrompt),
                 "findCaseSensitive" => KeyCmd::Prom(P_Cmd::FindCaseSensitive),
                 "findRegex" => KeyCmd::Prom(P_Cmd::FindRegex),
+                /*
+                 * Other
+                 */
+                "closeFile" => KeyCmd::Prom(P_Cmd::CloseFile),
                 _ => KeyCmd::Unsupported,
             },
             "editorFocus" => match keycmd {
@@ -93,9 +99,9 @@ impl KeyCmd {
                 "boxSelectModeStart" => KeyCmd::Edit(E_Cmd::BoxSelectMode),
                 // edit
                 "insertLine" => KeyCmd::Edit(E_Cmd::InsertRow),
-                "formatJSON" => KeyCmd::Edit(E_Cmd::Format(FmtType::JSON)),
-                "formatXML" => KeyCmd::Edit(E_Cmd::Format(FmtType::XML)),
-                "formatHTML" => KeyCmd::Edit(E_Cmd::Format(FmtType::HTML)),
+                "formatJSON" => KeyCmd::Edit(E_Cmd::Format(FileType::JSON)),
+                "formatXML" => KeyCmd::Edit(E_Cmd::Format(FileType::XML)),
+                "formatHTML" => KeyCmd::Edit(E_Cmd::Format(FileType::HTML)),
 
                 // prompt
                 "find" => KeyCmd::Edit(E_Cmd::Find),
@@ -103,6 +109,7 @@ impl KeyCmd {
                 "moveLine" => KeyCmd::Edit(E_Cmd::MoveRow),
                 "grep" => KeyCmd::Edit(E_Cmd::Grep),
                 // file
+                "closeFile" => KeyCmd::Edit(E_Cmd::CloseFile),
                 "newTab" => KeyCmd::Edit(E_Cmd::NewTab),
                 "openFile" => KeyCmd::Edit(E_Cmd::OpenFile(OpenFileType::Normal)),
                 "encoding" => KeyCmd::Edit(E_Cmd::Encoding),
@@ -144,8 +151,8 @@ pub enum KeyCmd {
     CtxMenu(C_Cmd),
     HeaderBar(H_Cmd),
     StatusBar(S_Cmd),
-    CloseFile,
-    Resize,
+    // CloseFile,
+    // Resize,
     Unsupported,
     Null,
 }
@@ -186,6 +193,8 @@ pub enum P_Cmd {
     ConfirmPrompt,
     FindCaseSensitive,
     FindRegex,
+    Resize(usize, usize),
+    CloseFile,
     Null,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -207,6 +216,7 @@ pub enum E_Cmd {
     CursorRowHomeSelect,
     CursorRowEndSelect,
     MouseDownLeft(usize, usize),
+    MouseUpLeft(usize, usize),
     MouseDragLeftLeft(usize, usize),
     MouseDragLeftRight(usize, usize),
     MouseDragLeftUp(usize, usize),
@@ -234,7 +244,7 @@ pub enum E_Cmd {
     InsertBox(Vec<(SelRange, String)>),
     DelBox(Vec<(SelRange, String)>),
     InsertRow,
-    Format(FmtType),
+    Format(FileType),
     // find
     Find,
     ReplaceExec(String, String, BTreeSet<usize>),
@@ -246,6 +256,7 @@ pub enum E_Cmd {
     // file
     NewTab,
     OpenFile(OpenFileType),
+    CloseFile,
     CloseAllFile,
     SaveFile,
     // key record
@@ -273,6 +284,7 @@ pub enum E_Cmd {
     SwitchTabRight,
     SwitchTabLeft,
     // Other
+    Resize(usize, usize),
     Null,
 }
 
@@ -294,7 +306,11 @@ pub enum C_Cmd {
 #[allow(non_camel_case_types)]
 pub enum H_Cmd {
     MouseDownLeft(usize, usize),
+    MouseUpLeft(usize, usize),
     MouseDragLeftUp(usize, usize),
+    MouseDragLeftDown(usize, usize),
+    MouseDragLeftRight(usize, usize),
+    MouseDragLeftLeft(usize, usize),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

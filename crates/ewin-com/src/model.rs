@@ -11,11 +11,9 @@ use chrono::NaiveDateTime;
 use clap::ArgMatches;
 use crossterm::event::{Event, KeyCode::Null};
 use encoding_rs::Encoding;
-use serde::Deserialize;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::usize;
 use std::{
-    cmp::{max, min},
     collections::{BTreeSet, VecDeque},
     ffi::OsStr,
     fmt,
@@ -303,10 +301,11 @@ pub struct SyntaxState {
 /// DrawType
 #[allow(non_camel_case_types)]
 pub enum E_DrawRange {
-    Target(usize, usize), // Target row only redraw
-    After(usize),         // Redraw after the specified line
-    None,                 // First time
+    TargetRange(usize, usize), // Target row only redraw
+    After(usize),              // Redraw after the specified line
     All,
+    Targetpoint,
+    Init,
     ScrollDown(usize, usize),
     ScrollUp(usize, usize),
     MoveCur,
@@ -315,26 +314,29 @@ pub enum E_DrawRange {
 
 impl Default for E_DrawRange {
     fn default() -> Self {
-        E_DrawRange::None
+        E_DrawRange::Init
     }
 }
 
 impl E_DrawRange {
+    /*
     pub fn get_type(sel_mode: SelMode, sy: usize, ey: usize) -> E_DrawRange {
         match sel_mode {
             SelMode::Normal => E_DrawRange::Target(min(sy, ey), max(sy, ey)),
             SelMode::BoxSelect => E_DrawRange::All,
         }
     }
+     */
 }
 
 impl fmt::Display for E_DrawRange {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            E_DrawRange::Target(_, _) => write!(f, "Target"),
+            E_DrawRange::TargetRange(_, _) => write!(f, "Target"),
             E_DrawRange::After(_) => write!(f, "After"),
-            E_DrawRange::None => write!(f, "None"),
             E_DrawRange::All => write!(f, "All"),
+            E_DrawRange::Init => write!(f, "Init"),
+            E_DrawRange::Targetpoint => write!(f, "AllDiff"),
             E_DrawRange::ScrollDown(_, _) => write!(f, "ScrollDown"),
             E_DrawRange::ScrollUp(_, _) => write!(f, "ScrollUp"),
             E_DrawRange::MoveCur => write!(f, "MoveCur"),
@@ -576,7 +578,7 @@ impl fmt::Display for SelMode {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct Args {
     pub filenm: String,
     pub out_config_flg: bool,
@@ -588,6 +590,7 @@ impl Args {
         Args { filenm: file_path, out_config_flg: matches.is_present("output-config") }
     }
 }
+/*
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub enum OpenFileInitValue {
     None,
@@ -599,6 +602,7 @@ impl Default for OpenFileInitValue {
         OpenFileInitValue::CurtDir
     }
 }
+ */
 
 // Keys without modifiers
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
@@ -707,29 +711,37 @@ impl fmt::Display for BoxInsertMode {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 // FormatType
-pub enum FmtType {
+pub enum FileType {
     JSON,
+    JSON5,
+    TOML,
     XML,
     HTML,
 }
 
-impl fmt::Display for FmtType {
+impl fmt::Display for FileType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            FmtType::JSON => write!(f, "JSON"),
-            FmtType::XML => write!(f, "XML"),
-            FmtType::HTML => write!(f, "HTML"),
+            FileType::JSON => write!(f, "JSON"),
+            FileType::JSON5 => write!(f, "JSON5"),
+            FileType::TOML => write!(f, "TOML"),
+            FileType::XML => write!(f, "XML"),
+            FileType::HTML => write!(f, "HTML"),
         }
     }
 }
-impl FmtType {
-    pub fn from_str_fmt_type(s: &str) -> FmtType {
+impl FileType {
+    pub fn from_str_fmt_type(s: &str) -> FileType {
         if s == Lang::get().json {
-            FmtType::JSON
+            FileType::JSON
+        } else if s == Lang::get().json5 {
+            FileType::JSON5
+        } else if s == Lang::get().toml {
+            FileType::TOML
         } else if s == Lang::get().xml {
-            FmtType::XML
+            FileType::XML
         } else {
-            FmtType::HTML
+            FileType::HTML
         }
     }
 }
@@ -740,17 +752,18 @@ pub enum ActType {
     Cancel, // Cancel process
     Exit,
     Next, // Next Process
-    Draw(DParts),
+    Render(RParts),
 }
 
 #[derive(Debug, PartialEq, Clone)]
 // DrawParts
-pub enum DParts {
+pub enum RParts {
     Editor, // and StatuusBar
     Prompt,
     MsgBar(String),
     CtxMenu,
     All,
+    HeaderBar,
     ScrollUpDown(ScrollUpDownType),
     AllMsgBar(String),
     None,
@@ -822,23 +835,13 @@ impl TabState {
         return false;
     }
 
-    pub fn judge_when_statusbar(&self, keys: &Keys, sbar_row_posi: usize) -> bool {
-        if let Keys::MouseDownLeft(y, _) = keys {
-            if y == &(sbar_row_posi as u16) {
-                return true;
-            }
+    pub fn judge_when_statusbar(&self, keys: &Keys, sbar_row_posi: usize, editor_is_dragging: bool) -> bool {
+        match &keys {
+            Keys::MouseDownLeft(y, _) if y == &(sbar_row_posi as u16) => return true,
+            Keys::MouseDragLeft(y, _) if y == &(sbar_row_posi as u16) => return !editor_is_dragging,
+            _ => return false,
         }
-        return false;
     }
-
-    /*
-    pub fn is_editor_cur(&self) -> bool {
-        if self.is_save_confirm || self.is_search || self.is_replace || self.is_save_new_file || self.is_save_forced || self.is_move_row || self.is_open_file || self.grep.is_grep || self.grep.is_greping() || self.is_enc_nl || self.is_menu {
-            return false;
-        }
-        true
-    }
-     */
 
     pub fn is_prom_show_cur(&self) -> bool {
         if self.is_exists_input_field() || self.is_exists_choice() {

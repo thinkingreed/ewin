@@ -171,7 +171,7 @@ impl Prompt {
                         }
                         _ => {}
                     }
-                    let item_str = if enable_choice { format!("{}{}{}", Colors::get_msg_warning_inversion_fg_bg(), item.name, Colors::get_hbar_fg_bg()) } else { format!("{}{}", Colors::get_hbar_fg_bg(), item.name) };
+                    let item_str = if enable_choice { format!("{}{}{}", Colors::get_msg_warning_inversion_fg_bg(), item.name, Colors::get_default_fg_bg()) } else { format!("{}{}", Colors::get_default_fg_bg(), item.name) };
                     str_vec.push(format!("{}{}", MoveTo(row_width, prom_cont.buf_row_posi + y_idx as u16), &item_str));
 
                     row_width += (get_str_width(&item.name) + Choices::ITEM_MARGIN) as u16;
@@ -203,7 +203,7 @@ impl PromptCont {
                     Colors::get_msg_highlight_fg(),
                 ));
 
-                self.guide_vec.push(format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().method_of_applying, Colors::get_default_fg()));
+                self.buf_desc_vec.push(format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().method_of_applying, Colors::get_default_fg()));
 
                 let mut choices = Choices::default();
                 let vec = vec![vec![Choice::new(&Lang::get().file_reload.clone()), Choice::new(&Lang::get().keep_and_apply_string)]];
@@ -212,7 +212,7 @@ impl PromptCont {
                 self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (USIZE_UNDEFINED, USIZE_UNDEFINED)), choices);
             }
             PromptContPosi::Second => {
-                self.guide_vec.push(format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().encoding, Colors::get_default_fg()));
+                self.buf_desc_vec.push(format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().encoding, Colors::get_default_fg()));
 
                 let mut utf_vec = vec![Choice::new(&Encode::UTF8.to_string()), Choice::new(&Encode::UTF16LE.to_string()), Choice::new(&Encode::UTF16BE.to_string())];
                 let mut local_vec = vec![Choice::new(&Encode::SJIS.to_string()), Choice::new(&Encode::JIS.to_string()), Choice::new(&Encode::EucJp.to_string()), Choice::new(&Encode::GBK.to_string())];
@@ -221,13 +221,13 @@ impl PromptCont {
                 self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 0)), choices);
             }
             PromptContPosi::Third => {
-                self.guide_vec.push(format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().new_line_code, Colors::get_default_fg()));
-                let nl_vec: Vec<Vec<Choice>> = vec![vec![Choice::new(&NEW_LINE_LF_STR.to_string()), Choice::new(&NEW_LINE_CRLF_STR.to_string())]];
+                self.buf_desc_vec.push(format!("{}{}{}", Colors::get_msg_highlight_fg(), &Lang::get().new_line_code, Colors::get_default_fg()));
+                let nl_vec: Vec<Vec<Choice>> = vec![vec![Choice::new(NEW_LINE_LF_STR), Choice::new(NEW_LINE_CRLF_STR)]];
                 let choices = Choices { is_show: true, vec: nl_vec, ..Default::default() };
                 self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 0)), choices);
             }
             PromptContPosi::Fourth => {
-                self.guide_vec.push(format!("{}BOM{}({}){}", Colors::get_msg_highlight_fg(), &Lang::get().presence_or_absence, &Lang::get().selectable_only_for_utf8, Colors::get_default_fg()));
+                self.buf_desc_vec.push(format!("{}BOM{}({}){}", Colors::get_msg_highlight_fg(), &Lang::get().presence_or_absence, &Lang::get().selectable_only_for_utf8, Colors::get_default_fg()));
                 let bom_vec: Vec<Vec<Choice>> = vec![vec![Choice::new(&format!("BOM{}", &Lang::get().with)), Choice::new(&format!("BOM{}", &Lang::get().without))]];
                 let choices = Choices { is_show: true, vec: bom_vec, ..Default::default() };
                 self.choices_map.insert(((USIZE_UNDEFINED, USIZE_UNDEFINED), (0, 0)), choices);

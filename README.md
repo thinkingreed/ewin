@@ -19,6 +19,9 @@ It provides basic features as a minimal text editor:
 - Box select・Inseret support
 - Change detection of another process of file (when saving)
 - When using WSL, it can be linked with the Windows Clipboard.
+- File change monitoring.
+- Color theme(Cursor color is out of scope)
+
 
 [![Rust](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml/badge.svg)](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml)
 [![crate-name at crates.io](https://img.shields.io/crates/v/ewin.svg)](https://crates.io/crates/ewin)

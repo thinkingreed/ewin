@@ -1,4 +1,4 @@
-use ewin_com::_cfg::cfg::Cfg;
+use ewin_com::_cfg::model::default::Cfg;
 
 use crate::{
     ewin_com::{def::*, global::*, log::*, model::*, util::*},
@@ -47,7 +47,7 @@ impl Editor {
                         // If the grep search folder contains the current folder,
                         // the relative path is returned in the grep result, otherwise the absolute path is returned.
                         if is_include_path(&*CURT_DIR, &self.search.folder) {
-                            let path = PathBuf::from(&*CURT_DIR).join(&vec[0].to_string());
+                            let path = PathBuf::from(&*CURT_DIR).join(&vec[0]);
                             filenm = path.to_string_lossy().to_string().replace(&self.search.folder, "");
                         } else {
                             filenm = vec[0].to_string();

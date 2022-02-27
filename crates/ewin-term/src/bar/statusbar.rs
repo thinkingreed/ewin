@@ -5,7 +5,7 @@ use crate::{
 use crossterm::{cursor::*, terminal::*};
 
 impl StatusBar {
-    pub fn draw(str_vec: &mut Vec<String>, tab: &mut Tab, h_file: &HeaderFile) {
+    pub fn render(str_vec: &mut Vec<String>, tab: &mut Tab, h_file: &HeaderFile) {
         Log::info_key("StatusBar.draw");
         if tab.sbar.row_num == 0 {
             return;
@@ -45,7 +45,7 @@ impl StatusBar {
             &select_mode_disp_str,
             Colors::get_sbar_fg_bg(),
             tab.sbar.cur_str,
-            Colors::get_sbar_inversion_fg_bg(),
+            Colors::get_sytem_btn_fg_bg(),
             &enc_nl,
             Colors::get_sbar_fg_bg()
         );

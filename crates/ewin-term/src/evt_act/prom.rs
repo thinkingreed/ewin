@@ -15,7 +15,7 @@ impl EvtAct {
             if ActType::Next != act_type {
                 return act_type;
             }
-            EvtAct::clear_tab_comp(&mut term.tabs[term.idx]);
+            EvtAct::clear_tab_comp(&mut term.tabs[term.tab_idx]);
             act_type = EvtAct::check_prom(term);
         }
         return act_type;
@@ -32,7 +32,7 @@ impl EvtAct {
         Log::debug_key("check_prom");
 
         if !EvtAct::check_promt_suport_keycmd(term) {
-            return ActType::Draw(DParts::MsgBar(Lang::get().unsupported_operation.to_string()));
+            return ActType::Render(RParts::MsgBar(Lang::get().unsupported_operation.to_string()));
         }
 
         // Close・Esc
@@ -55,7 +55,7 @@ impl EvtAct {
                 } else {
                     term.clear_curt_tab(true);
                 }
-                return ActType::Draw(DParts::All);
+                return ActType::Render(RParts::All);
             }
             _ => {
                 //
@@ -135,7 +135,7 @@ impl EvtAct {
         }
         // draw Prompt
         if !state.is_move_row && !state.is_search && !state.is_open_file {
-            return if EvtAct::is_draw_prompt_tgt_keycmd(&term.curt().prom.p_cmd) { ActType::Draw(DParts::Prompt) } else { ActType::Next };
+            return if EvtAct::is_draw_prompt_tgt_keycmd(&term.curt().prom.p_cmd) { ActType::Render(RParts::Prompt) } else { ActType::Next };
         } else {
             return ActType::Next;
         };
@@ -156,21 +156,21 @@ impl EvtAct {
             match term.curt().prom.p_cmd {
                 P_Cmd::FindCaseSensitive => {
                     term.curt().prom.cont_1.change_opt_case_sens();
-                    return Some(ActType::Draw(DParts::Prompt));
+                    return Some(ActType::Render(RParts::Prompt));
                 }
                 P_Cmd::FindRegex => {
                     term.curt().prom.cont_1.change_opt_regex();
-                    return Some(ActType::Draw(DParts::Prompt));
+                    return Some(ActType::Render(RParts::Prompt));
                 }
                 P_Cmd::MouseDownLeft(y, x) => {
                     let (y, x) = (y as u16, x as u16);
                     if term.curt().prom.cont_1.opt_row_posi == y {
                         if term.curt().prom.cont_1.opt_1.mouse_area.0 <= x && x <= term.curt().prom.cont_1.opt_1.mouse_area.1 {
                             term.curt().prom.cont_1.change_opt_case_sens();
-                            return Some(ActType::Draw(DParts::Prompt));
+                            return Some(ActType::Render(RParts::Prompt));
                         } else if term.curt().prom.cont_1.opt_2.mouse_area.0 <= x && x <= term.curt().prom.cont_1.opt_2.mouse_area.1 {
                             term.curt().prom.cont_1.change_opt_regex();
-                            return Some(ActType::Draw(DParts::Prompt));
+                            return Some(ActType::Render(RParts::Prompt));
                         }
                     }
                 }
@@ -180,7 +180,7 @@ impl EvtAct {
 
         return None;
     }
-    pub fn draw_prompt<T: Write>(out: &mut T, term: &mut Terminal) {
+    pub fn render_prompt<T: Write>(out: &mut T, term: &mut Terminal) {
         // Hide the cursor at this position to target anything other than mouse move
         Terminal::hide_cur();
         term.set_disp_size();
@@ -228,13 +228,13 @@ impl EvtAct {
                         PromptContPosi::Fourth => term.curt().prom.cont_4.sel.is_selected(),
                     };
                     if !is_selected {
-                        return ActType::Draw(DParts::MsgBar(Lang::get().no_sel_range.to_string()));
+                        return ActType::Render(RParts::MsgBar(Lang::get().no_sel_range.to_string()));
                     }
                 }
                 P_Cmd::InsertStr(str) => {
                     if str.is_empty() {
                         if let Some(err_str) = EvtAct::check_clipboard(term) {
-                            return ActType::Draw(DParts::MsgBar(err_str));
+                            return ActType::Render(RParts::MsgBar(err_str));
                         };
                     };
                 }
@@ -246,7 +246,7 @@ impl EvtAct {
                         PromptContPosi::Fourth => term.curt().prom.cont_4.history.undo_vec.is_empty(),
                     };
                     if is_empty_undo {
-                        return ActType::Draw(DParts::MsgBar(Lang::get().no_undo_operation.to_string()));
+                        return ActType::Render(RParts::MsgBar(Lang::get().no_undo_operation.to_string()));
                     }
                 }
                 P_Cmd::Redo => {
@@ -257,7 +257,7 @@ impl EvtAct {
                         PromptContPosi::Fourth => term.curt().prom.cont_4.history.redo_vec.is_empty(),
                     };
                     if is_empty_redo {
-                        return ActType::Draw(DParts::MsgBar(Lang::get().no_redo_operation.to_string()));
+                        return ActType::Render(RParts::MsgBar(Lang::get().no_redo_operation.to_string()));
                     }
                 }
                 _ => return ActType::Next,
@@ -287,7 +287,7 @@ impl EvtAct {
         Log::debug("term.curt().prom.p_cmd", &term.curt().prom.p_cmd);
 
         match term.keycmd {
-            KeyCmd::Resize | KeyCmd::CloseFile => return true,
+            KeyCmd::Prom(P_Cmd::Resize(_, _)) | KeyCmd::Prom(P_Cmd::CloseFile) => return true,
             _ => {}
         }
         return matches!(

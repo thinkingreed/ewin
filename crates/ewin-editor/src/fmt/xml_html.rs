@@ -1,10 +1,10 @@
 use crate::{ewin_com::def::*, ewin_com::log::*, ewin_com::model::*, model::*};
-use ewin_com::_cfg::cfg::Cfg;
+use ewin_com::_cfg::model::default::Cfg;
 use regex::Regex;
 use std::collections::BTreeSet;
 
 impl FormatXml {
-    pub fn format_xml_html(text: String, fmt_type: FmtType, nl: String) -> String {
+    pub fn format_xml_html(text: String, fmt_type: FileType, nl: String) -> String {
         Log::debug_key("format_xml_html");
         Log::debug("fmt_type", &fmt_type);
         Log::debug("nl", &nl);
@@ -51,11 +51,11 @@ impl FormatXml {
                 in_comment = false;
 
                 // function
-            } else if fmt_type == FmtType::HTML && (Regex::new(r"\(function\(").unwrap().is_match(str_array[idx]) || Regex::new(r"function\s").unwrap().is_match(str_array[idx])) {
+            } else if fmt_type == FileType::HTML && (Regex::new(r"\(function\(").unwrap().is_match(str_array[idx]) || Regex::new(r"function\s").unwrap().is_match(str_array[idx])) {
                 string = if !in_comment { format!("{}{}{}", string, indent[deep], str_array[idx]) } else { format!("{}{}", string, str_array[idx]) };
 
                 // <elm>..</elm> or <elm></elm>
-            } else if idx > 0 && Regex::new(r"^<\w").unwrap().is_match(str_array[idx - 1]) && Regex::new(r"^</\w").unwrap().is_match(str_array[idx]) && Regex::new(r"^<[\w:\-\.,]+").unwrap().captures(str_array[idx - 1]).unwrap()[0] == Regex::new(r"</[\w:\-\.,]+").unwrap().captures(str_array[idx]).unwrap()[0].replace("/", "") {
+            } else if idx > 0 && Regex::new(r"^<\w").unwrap().is_match(str_array[idx - 1]) && Regex::new(r"^</\w").unwrap().is_match(str_array[idx]) && Regex::new(r"^<[\w:\-\.,]+").unwrap().captures(str_array[idx - 1]).unwrap()[0] == Regex::new(r"</[\w:\-\.,]+").unwrap().captures(str_array[idx]).unwrap()[0].replace('/', "") {
                 string += &FormatXml::remove_space_between_tag_and_elm(in_comment, str_array[idx], r"</[\s\S]*?>");
                 FormatXml::unmemorize_tag(str_array[idx].trim(), &mut start_tag_map);
                 if !in_comment {
@@ -114,7 +114,7 @@ impl FormatXml {
         // let OPTIONAL_TAG_VEC: Vec<&'static str> = vec!["p", "dt", "dd", "li", "option", "thead", "tfoot", "th", "tr", "td", "rt", "rp", "optgroup", "caption"];
 
         let caps = Regex::new(r"<\s{0,}\w*").unwrap().captures(node).unwrap();
-        let tag = caps[0].to_string().replace("<", "").replace("/", "");
+        let tag = caps[0].to_string().replace('<', "").replace('/', "");
 
         let end_tag_prefix = r"<\s{0,}/\s{0,}";
         let regex = format!("{}{}", end_tag_prefix, tag);
@@ -128,7 +128,7 @@ impl FormatXml {
         // Get tag name
         let caps = Regex::new(r"<\s{0,}\w*\s{0,}").unwrap().captures(node).unwrap();
         let node_tag = caps[0].to_string();
-        let tagnm = node_tag.replace("<", "").trim().to_string();
+        let tagnm = node_tag.replace('<', "").trim().to_string();
 
         start_tag_map.insert((tagnm, indent_deep));
     }
@@ -138,7 +138,7 @@ impl FormatXml {
         // Get tag name
         let caps = Regex::new(r"<\s{0,}/\s{0,}\w*\s{0,}").unwrap().captures(node).unwrap();
         let mut end_tag = caps[0].to_string();
-        end_tag = end_tag.replace("<", "").replace("/", "");
+        end_tag = end_tag.replace('<', "").replace('/', "");
 
         let (mut del_tag, mut del_indent) = ("".to_string(), USIZE_UNDEFINED);
         for (start_tag, indent_deep) in start_tag_map.iter().rev() {

@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{_cfg::cfg::*, _cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, def::*, log::Log, model::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, _cfg::model::default::*, def::*, log::Log, model::*},
     model::*,
     tab::Tab,
 };
@@ -34,12 +34,12 @@ impl EvtAct {
                 term.curt().editor.draw_range = E_DrawRange::ScrollDown(y - 2, y);
 
                 if cfg!(target_os = "windows") {
-                    term.render(out, &DParts::All);
+                    term.render(out, &RParts::All);
                 } else {
-                    term.render(out, &DParts::ScrollUpDown(ScrollUpDownType::Grep));
+                    term.render(out, &RParts::ScrollUpDown(ScrollUpDownType::Grep));
                 }
             } else {
-                term.render(out, &DParts::All);
+                term.render(out, &RParts::All);
             }
         } else {
             Log::debug_s("grep is end");
@@ -62,19 +62,19 @@ impl EvtAct {
         term.curt().editor.set_cur_default();
         term.curt().editor.scroll();
         term.curt().editor.scroll_horizontal();
-        term.render_all(out, DParts::All);
+        term.render_all(out, RParts::All);
     }
 
     pub fn grep_result(term: &mut Terminal) -> ActType {
         Log::debug_key("EvtAct::grep_result");
 
         match term.curt().prom.keycmd {
-            KeyCmd::Resize => {
+            KeyCmd::Prom(P_Cmd::Resize(_, _)) => {
                 term.set_disp_size();
                 let is_grep_result_vec_empty = term.curt().editor.grep_result_vec.is_empty();
                 let is_cancel = term.curt().state.grep.is_cancel;
                 term.curt().prom.set_grep_result(is_grep_result_vec_empty, is_cancel);
-                return ActType::Draw(DParts::All);
+                return ActType::Render(RParts::All);
             }
             KeyCmd::Prom(P_Cmd::ConfirmPrompt) => {
                 let y = term.curt().editor.cur.y;
@@ -92,14 +92,14 @@ impl EvtAct {
                     let folder = if term.curt().editor.search.folder.is_empty() { "".to_string() } else { format!("{}{}", &term.curt().editor.search.folder, MAIN_SEPARATOR) };
                     let act_type = term.open_file(&format!("{}{}", &folder, &grep_result.filenm), FileOpenType::Nomal, Some(&mut tab_grep), None);
 
-                    if let ActType::Draw(DParts::MsgBar(_)) = act_type {
+                    if let ActType::Render(RParts::MsgBar(_)) = act_type {
                         return act_type;
                     };
                     Log::debug("term.curt().editor.search", &term.curt().editor.search);
 
                     term.curt().editor.search_str(true, false);
                 }
-                return ActType::Draw(DParts::All);
+                return ActType::Render(RParts::All);
             }
             _ => return ActType::Cancel,
         }
@@ -110,6 +110,7 @@ impl EvtAct {
         Log::debug_key("get_grep_child linux");
         // -r:Subfolder search, -H:File name display, -n:Line number display,
         // -I:Binary file not applicable, -i:Ignore-case, -F:Fixed-strings
+
         let mut cmd_option = "-rHnI".to_string();
         {
             if !Cfg::get_edit_search_case_sens() {

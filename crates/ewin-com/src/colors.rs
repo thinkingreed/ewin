@@ -1,9 +1,9 @@
-use std::usize;
-
-use crate::_cfg::cfg::Cfg;
+use crate::_cfg::model::default::*;
 use colors_transform::{Color as transform_Color, Rgb as transform_Rgb};
 use crossterm::style::{Color as CrosstermColor, SetBackgroundColor, SetForegroundColor};
 use serde::{Deserialize, Serialize};
+use std::usize;
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Color {
     pub rgb: Rgb,
@@ -22,12 +22,12 @@ impl Colors {
         str_vec.push(Colors::bg(Cfg::get().colors.editor.bg));
     }
     pub fn set_rownum_curt_color(str_vec: &mut Vec<String>) {
-        str_vec.push(Colors::fg(Cfg::get().colors.editor.line_number.fg));
-        str_vec.push(Colors::bg(Cfg::get().colors.editor.bg));
+        str_vec.push(Colors::fg(Cfg::get().colors.editor.line_number.active_fg));
+        str_vec.push(Colors::bg(Cfg::get().colors.editor.line_number.active_bg));
     }
     pub fn set_rownum_color(str_vec: &mut Vec<String>) {
-        str_vec.push(Colors::fg(Cfg::get().colors.editor.line_number.fg));
-        str_vec.push(Colors::bg(Cfg::get().colors.editor.line_number.bg));
+        str_vec.push(Colors::fg(Cfg::get().colors.editor.line_number.passive_fg));
+        str_vec.push(Colors::bg(Cfg::get().colors.editor.line_number.passive_bg));
     }
 
     pub fn set_select_color(str_vec: &mut Vec<String>) {
@@ -63,28 +63,48 @@ impl Colors {
         Colors::bg(Cfg::get().colors.editor.scrollbar.bg_horizontal)
     }
     //
+    // Sytem.btn
+    //
+    pub fn get_sytem_btn_bg() -> String {
+        Colors::bg(Cfg::get().colors.system.btn.bg)
+    }
+    pub fn get_sytem_btn_fg() -> String {
+        Colors::fg(Cfg::get().colors.system.btn.fg)
+    }
+    pub fn get_sytem_btn_fg_bg() -> String {
+        format!("{}{}", Colors::get_sytem_btn_bg(), Colors::get_sytem_btn_fg())
+    }
+    //
+    // Sytem.state
+    //
+    pub fn get_sytem_state_bg() -> String {
+        Colors::bg(Cfg::get().colors.system.state.bg)
+    }
+    pub fn get_sytem_state_fg() -> String {
+        Colors::fg(Cfg::get().colors.system.state.fg)
+    }
+
+    //
     // HeaderBar
     //
-    fn get_hbar_bg() -> String {
-        Colors::bg(Cfg::get().colors.editor.bg)
+
+    pub fn get_hbar_passive_fg() -> String {
+        Colors::fg(Cfg::get().colors.headerbar.fg_tab_passive)
     }
-    fn get_hbar_fg() -> String {
-        Colors::fg(Cfg::get().colors.headerbar.fg)
+    pub fn get_hbar_passive_bg() -> String {
+        Colors::bg(Cfg::get().colors.headerbar.bg_tab_passive)
     }
-    pub fn get_hbar_fg_bg() -> String {
-        format!("{}{}", Colors::get_hbar_fg(), Colors::get_hbar_bg())
+    pub fn get_hbar_passive_fg_bg() -> String {
+        format!("{}{}", Colors::get_hbar_passive_bg(), Colors::get_hbar_passive_fg())
     }
-    pub fn get_hbar_inversion_bg_passive() -> String {
-        Colors::bg(Cfg::get().colors.editor.control_char.fg)
+    pub fn get_hbar_bg_active() -> String {
+        Colors::bg(Cfg::get().colors.headerbar.bg_tab_active)
     }
-    pub fn get_hbar_inversion_fg_bg_passive() -> String {
-        format!("{}{}", Colors::get_hbar_inversion_bg_passive(), Colors::get_default_inversion_fg())
+    pub fn get_hbar_fg_active() -> String {
+        Colors::fg(Cfg::get().colors.headerbar.fg_tab_active)
     }
-    pub fn get_hbar_inversion_bg_active() -> String {
-        Colors::bg(Cfg::get().colors.headerbar.fg)
-    }
-    pub fn get_hbar_inversion_fg_bg_active() -> String {
-        format!("{}{}", Colors::get_hbar_inversion_bg_active(), Colors::get_default_inversion_fg())
+    pub fn get_hbar_active_fg_bg() -> String {
+        format!("{}{}", Colors::get_hbar_bg_active(), Colors::get_hbar_fg_active())
     }
     //
     // StatusBar

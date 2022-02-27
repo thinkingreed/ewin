@@ -3,7 +3,7 @@ use crate::{
     global_term::TAB,
     model::*,
 };
-use ewin_com::_cfg::cfg::CfgSearch;
+use ewin_com::_cfg::model::default::CfgSearch;
 use rusty_v8::{self as v8, FunctionCallbackArguments, HandleScope, ReturnValue};
 use v8::{Context, Local};
 

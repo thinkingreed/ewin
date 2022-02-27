@@ -16,16 +16,16 @@ impl FilePath {
         return clipboard_file.clone();
     }
 
-    pub fn get_app_config_file_path() -> Option<PathBuf> {
-        if let Some(app_dir) = FilePath::get_app_config_path() {
-            let config_file = &app_dir.join(SETTING_FILE);
+    pub fn get_app_config_file_path(filenm: &str) -> Option<PathBuf> {
+        if let Some(app_dir) = FilePath::get_app_config_dir() {
+            let config_file = &app_dir.join(filenm);
             return Some(config_file.clone());
         } else {
             return None;
         }
     }
 
-    pub fn get_app_config_path() -> Option<PathBuf> {
+    pub fn get_app_config_dir() -> Option<PathBuf> {
         if let Some(base_dirs) = BaseDirs::new() {
             let config_dir = base_dirs.config_dir();
             let app_dir = config_dir.join(APP_NAME);
@@ -34,6 +34,18 @@ impl FilePath {
                 return None;
             };
             return Some(app_dir);
+        } else {
+            return None;
+        }
+    }
+    pub fn get_config_path() -> Option<PathBuf> {
+        if let Some(base_dirs) = BaseDirs::new() {
+            let config_dir = base_dirs.config_dir();
+            if config_dir.exists() {
+                return Some(config_dir.to_path_buf());
+            } else {
+                return None;
+            }
         } else {
             return None;
         }
