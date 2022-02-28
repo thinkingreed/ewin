@@ -17,7 +17,8 @@ impl Editor {
 
         // judgment redraw
         Log::debug("self.draw_range Before setting", &self.draw_range);
-        Log::debug("self.offset_y_org", &self.offset_y_org);
+        Log::debug("self.e_cmd", &self.e_cmd);
+  Log::debug("self.offset_y_org", &self.offset_y_org);
         Log::debug("self.offset_y", &self.offset_y);
         Log::debug("self.sel", &self.sel);
         Log::debug("self.sel_org", &self.sel_org);
@@ -25,8 +26,7 @@ impl Editor {
         Log::debug("self.search.ranges_org", &self.search_org);
         Log::debug("self.buf.len_rows()", &self.buf.len_rows());
         Log::debug("self.row_len_org", &self.row_len_org);
-        Log::debug("self.row_len_org", &self.row_len_org);
-
+      
         self.draw_range = if matches!(self.e_cmd, E_Cmd::Resize(_, _))
         // enable_syntax_highlight edit
       ||  (Editor::is_edit(&self.e_cmd, true) && self.is_enable_syntax_highlight)
@@ -36,7 +36,7 @@ impl Editor {
              || self.scrl_h.is_show_org != self.scrl_h.is_show
         {
             E_DrawRange::All
-        } else if !self.sel.is_selected() && self.sel_org.is_selected() {
+        } else if !Editor::is_edit(&self.e_cmd, true)&& !self.sel.is_selected() && self.sel_org.is_selected() {
             let sel_org = self.sel_org.get_range();
             E_DrawRange::TargetRange(sel_org.sy, sel_org.ey)
         } else if (matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftLeft(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftRight(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _))) && self.scrl_v.is_enable {
@@ -75,9 +75,11 @@ impl Editor {
                     }
                 }
                 E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Cut => {
-                    if self.e_cmd == E_Cmd::DelPrevChar && self.cur.y != self.cur_org.y || self.e_cmd == E_Cmd::DelNextChar && self.buf.len_rows() != self.row_len_org {
-                        E_DrawRange::After(self.cur.y)
-                    } else {
+                    if self.buf.len_rows() != self.row_len_org {
+                        Log::debug_s("1111111111111111111111111111111");
+                        E_DrawRange::After(min(self.cur.y,self.cur_org.y))
+                     } else {
+                        Log::debug_s("2222222222222222222222222222222222");
                         E_DrawRange::TargetRange(min(self.cur.y, self.cur_org.y), max(self.cur.y, self.cur_org.y))
                     }
                 }

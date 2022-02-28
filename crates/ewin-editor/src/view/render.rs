@@ -80,15 +80,13 @@ impl Editor {
                 str_vec.push(NEW_LINE_CRLF.to_string());
             }
         }
-
-        std::mem::swap(&mut draw.cells_from, &mut draw.cells_to);
+        draw.cells_from = std::mem::take(&mut draw.cells_to);
+        //  std::mem::swap(&mut draw.cells_from, &mut draw.cells_to);
         // draw.cells_from = draw.cells_to.clone();
 
         str_vec.push(Colors::get_default_bg());
         self.render_scrlbar_v(str_vec);
         self.render_scrlbar_h(str_vec);
-
-        //  self.draw_range = E_DrawRange::Not;
     }
 
     pub fn render_row_num(&mut self, str_vec: &mut Vec<String>, change_row_vec_opt: Option<&Vec<usize>>) {
@@ -96,13 +94,10 @@ impl Editor {
         // If you need to edit the previous row_num
 
         if self.state.mouse_mode == MouseMode::Normal && self.cur.y != self.cur_org.y {
-            Log::debug_s("111111111111111111111111111");
             if change_row_vec_opt.is_none() || self.cur_org.y < self.buf.len_rows() - 1 && !change_row_vec_opt.unwrap().contains(&self.cur_org.y) && self.offset_y < self.cur_org.y && self.cur_org.y <= self.offset_y + self.row_disp_len {
-                Log::debug_s("222222222222222222222222");
                 self.move_render_row_num(str_vec, self.cur_org.y);
             }
             if change_row_vec_opt.is_none() || self.cur.y < self.buf.len_rows() - 1 && !change_row_vec_opt.unwrap().contains(&self.cur.y) && self.offset_y < self.cur.y && self.cur.y <= self.offset_y + self.row_disp_len {
-                Log::debug_s("33333333333333333333333333");
                 self.move_render_row_num(str_vec, self.cur.y);
             }
         }

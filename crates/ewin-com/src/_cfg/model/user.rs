@@ -43,12 +43,19 @@ pub struct CfgUserLog {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CfgUserEditor {
+    #[serde(default)]
     pub search: CfgUserSearch,
+    #[serde(default)]
     pub tab: CfgUserTab,
+    #[serde(default)]
     pub format: CfgUserFormat,
+    #[serde(default)]
     pub scrollbar: CfgUserScrl,
+    #[serde(default)]
     pub cursor: CfgUserCur,
+    #[serde(default)]
     pub column_char_width_gap_space: CfgUserEditorColumnCharWidthGap,
+    #[serde(default)]
     pub save: CfgUserEditorSave,
 }
 

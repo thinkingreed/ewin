@@ -263,12 +263,10 @@ impl Terminal {
         }
         if self.curt().editor.row_disp_len < self.curt().editor.buf.len_rows() {
             {
-                Log::debug_s("1111111111111111111111111111111111");
                 self.curt().editor.scrl_v.is_show = true;
                 self.curt().editor.col_len -= Cfg::get().general.editor.scrollbar.vertical.width;
             }
         } else {
-            Log::debug_s("2222222222222222222222222222222222");
             self.curt().editor.scrl_v.is_show = false;
         }
 

@@ -144,7 +144,7 @@ impl EditorDraw {
         };
 
         self.change_row_vec = change_style_vec;
-        Log::debug("self.change_row_vec", &self.change_row_vec);
+        Log::debug("self.change_style_vec", &self.change_row_vec);
     }
 
     fn set_regions(&mut self, editor: &Editor, y: usize, row_vec: Vec<char>, sx_ex_range_opt: Option<(DrawRangX, DrawRangX)>) {
@@ -160,8 +160,6 @@ impl EditorDraw {
 
             if !self.cells_to_all[y].is_empty() && self.cells_to_all[y].len() >= ex {
                 Log::debug_s("111111      1111111111111111");
-
-                Log::debug("self.cells_to_all[y]", &self.cells_to_all[y]);
 
                 self.cells_to.insert(y, self.cells_to_all[y][sx..ex].to_vec());
             } else {

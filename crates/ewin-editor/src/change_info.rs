@@ -15,6 +15,9 @@ impl Editor {
             let sel = sel_proc.sel.get_range();
             self.scrl_h.row_width_chars_vec.drain(sel.sy..sel.ey);
             Log::debug("evt_proc self.scrl_h.row_width_vec 111", &self.scrl_h.row_width_chars_vec);
+
+            // let range = if sel.sy == sel.ey { BTreeSet::from([sel_proc.cur_s.y]) } else { (sel_proc.cur_s.y..self.buf.len_rows()).collect::<BTreeSet<usize>>() };
+
             self.recalc_change_tgt(BTreeSet::from([sel_proc.cur_s.y]));
             Log::debug("evt_proc self.scrl_h.row_width_vec 222", &self.scrl_h.row_width_chars_vec);
 
