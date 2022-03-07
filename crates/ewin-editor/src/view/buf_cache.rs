@@ -3,7 +3,7 @@ use crate::{
     model::*,
 };
 use ewin_com::_cfg::model::default::{Cfg, CfgSyntax};
-use std::cmp::min;
+use std::cmp::{min, max};
 use syntect::highlighting::{HighlightIterator, HighlightState, Highlighter, Style};
 use syntect::parsing::{ParseState, ScopeStack};
 
@@ -31,8 +31,8 @@ impl EditorDraw {
                 self.ey = min(editor.offset_y + editor.row_disp_len - 1, editor.buf.len_rows() - 1);
             }
             E_DrawRange::TargetRange(sy, ey) | E_DrawRange::ScrollDown(sy, ey) | E_DrawRange::ScrollUp(sy, ey) => {
-                self.sy = sy;
-                self.ey = min(ey, editor.buf.len_rows() - 1);
+                self.sy = max(sy,editor.offset_y);
+                self.ey = min(ey,  min(editor.offset_y + editor.row_disp_len - 1, editor.buf.len_rows() - 1));
             }
             E_DrawRange::Init | E_DrawRange::All | E_DrawRange::Targetpoint => {
                 self.sy = editor.offset_y;

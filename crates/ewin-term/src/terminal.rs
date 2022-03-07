@@ -4,7 +4,7 @@ use crate::{
     ewin_com::{
         _cfg::key::{keycmd::*, keys::*, keywhen::*},
         _cfg::lang::lang_cfg::*,
-        _cfg::model::default::{Cfg, CfgSyntax},
+        _cfg::model::default::*,
         colors::*,
         def::*,
         file::*,
@@ -48,7 +48,6 @@ impl Terminal {
 
         let mut str_vec: Vec<String> = vec![];
         match draw_parts {
-            // RParts::All | RParts::AllMsgBar(_) if self.curt().editor.draw_range != E_DrawRange::None => self.curt().editor.draw_range = E_DrawRange::All,
             RParts::All | RParts::AllMsgBar(_) => {
                 if self.curt().editor.draw_range != E_DrawRange::Init {
                     self.curt().editor.draw_range = E_DrawRange::All;
@@ -76,9 +75,7 @@ impl Terminal {
 
         if &RParts::All == draw_parts || matches!(draw_parts, &RParts::ScrollUpDown(_)) {
             HeaderBar::render(self, &mut str_vec);
-            //  self.render_flush(out, &mut str_vec);
             self.help.render(&mut str_vec);
-            //  self.render_flush(out, &mut str_vec);
             self.curt().mbar.render(&mut str_vec);
             let is_msg_changed = self.curt().mbar.is_msg_changed();
             let prom_disp_row_posi = self.curt().prom.disp_row_posi;
@@ -88,7 +85,6 @@ impl Terminal {
         }
         if draw_parts == &RParts::All || draw_parts == &RParts::Editor {
             Log::info("self.state.is_ctx_menu", &self.state.is_ctx_menu);
-
             if self.state.is_ctx_menu {
                 // self.set_draw_range_ctx_menu();
                 self.ctx_menu_group.draw(&mut str_vec);
@@ -126,7 +122,6 @@ impl Terminal {
         for string in str_vec.iter() {
             let _ = out.write_all(string.as_bytes());
         }
-
         out.flush().unwrap();
 
         str_vec.clear();
@@ -145,7 +140,6 @@ impl Terminal {
             }
             let rnw_margin = if self.curt().editor.state.mouse_mode == MouseMode::Normal { self.curt().editor.get_rnw_and_margin() } else { 0 };
             let editor = &self.curt().editor;
-
             if editor.offset_disp_x <= editor.cur.disp_x && editor.cur.disp_x <= editor.offset_disp_x + editor.col_len && editor.offset_y <= editor.cur.y && editor.cur.y <= editor.offset_y + editor.row_disp_len {
                 str_vec.push(MoveTo((editor.cur.disp_x - editor.offset_disp_x + rnw_margin) as u16, (editor.cur.y - editor.offset_y + editor.row_posi) as u16).to_string());
             }
@@ -304,13 +298,6 @@ impl Terminal {
             change_output_encoding();
         }
     }
-
-    /*
-    pub fn finalize_initial() {
-        disable_raw_mode().unwrap();
-        execute!(stdout(), LeaveAlternateScreen, DisableMouseCapture, Show).unwrap();
-    }
-     */
 
     pub fn finalize() {
         Macros::exit_js_engine();

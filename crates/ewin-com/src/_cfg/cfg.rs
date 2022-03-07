@@ -56,8 +56,8 @@ impl Cfg {
 
         let default_color_theme_file_path = &format!("theme/default_{}.toml", default_color_theme);
         let (user_colors, err_str) = SettingFileLoader::new(FileType::TOML, args, FilePath::get_app_config_dir(), default_color_theme_file_path).load::<CfgUserColors>();
-        Log::error("err_str", &err_str);
         if !err_str.is_empty() {
+            Log::error("err_str", &err_str);
             return err_str;
         }
         cfg.colors = toml::from_str(default_theme_str).unwrap();

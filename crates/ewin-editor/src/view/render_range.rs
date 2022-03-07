@@ -38,6 +38,7 @@ impl Editor {
             E_DrawRange::All
         } else if !Editor::is_edit(&self.e_cmd, true)&& !self.sel.is_selected() && self.sel_org.is_selected() {
             let sel_org = self.sel_org.get_range();
+           // E_DrawRange::TargetRange(max(sel_org.sy,self.offset_y), min(sel_org.ey,self.offset_y + self.row_disp_len))
             E_DrawRange::TargetRange(sel_org.sy, sel_org.ey)
         } else if (matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftLeft(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftRight(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _))) && self.scrl_v.is_enable {
             if self.offset_y_org == self.offset_y && self.scrl_v.row_posi_org == self.scrl_v.row_posi {
@@ -152,6 +153,9 @@ impl Editor {
             self.change_info.change_type = EditerChangeType::StyleOnly;
             if let E_DrawRange::TargetRange(sy, ey) = self.draw_range {
                 self.change_info.restayle_row.append(&mut (sy..=ey).collect::<BTreeSet<usize>>());
+            }
+            if let E_DrawRange::All = self.draw_range {
+                self.change_info.restayle_row.append(&mut (0..self.buf.len_rows()).collect::<BTreeSet<usize>>());
             }
         }
 

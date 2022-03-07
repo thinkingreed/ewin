@@ -22,10 +22,14 @@ impl Editor {
                 return;
             }
             E_DrawRange::TargetRange(sy, ey) => {
-                for i in sy - self.offset_y..=ey - self.offset_y {
+                // for e_cmd::AllSelect
+                let start_y = if sy >= self.offset_y { sy - self.offset_y } else { self.offset_y };
+                let end_y = if ey <= self.offset_y + self.row_disp_len { ey - self.offset_y } else { self.offset_y + self.row_disp_len };
+
+                for i in start_y..=end_y {
                     str_vec.push(format!("{}{}", MoveTo(0, (i + self.row_posi) as u16), Clear(ClearType::CurrentLine)));
                 }
-                str_vec.push(format!("{}", MoveTo(0, (sy - self.offset_y + self.row_posi) as u16)));
+                str_vec.push(format!("{}", MoveTo(0, (start_y + self.row_posi) as u16)));
             }
             E_DrawRange::Targetpoint => self.clear_all_diff(str_vec, &draw.change_row_vec),
             E_DrawRange::Init | E_DrawRange::All => self.clear_all(str_vec, self.row_posi - 1),
@@ -94,7 +98,8 @@ impl Editor {
         // If you need to edit the previous row_num
 
         if self.state.mouse_mode == MouseMode::Normal && self.cur.y != self.cur_org.y {
-            if change_row_vec_opt.is_none() || self.cur_org.y < self.buf.len_rows() - 1 && !change_row_vec_opt.unwrap().contains(&self.cur_org.y) && self.offset_y < self.cur_org.y && self.cur_org.y <= self.offset_y + self.row_disp_len {
+            // Correspondence of line number of previous cursor position
+            if change_row_vec_opt.is_none() || self.cur_org.y < self.buf.len_rows() - 1 && !change_row_vec_opt.unwrap().contains(&self.cur_org.y) && self.offset_y <= self.cur_org.y && self.cur_org.y <= self.offset_y + self.row_disp_len {
                 self.move_render_row_num(str_vec, self.cur_org.y);
             }
             if change_row_vec_opt.is_none() || self.cur.y < self.buf.len_rows() - 1 && !change_row_vec_opt.unwrap().contains(&self.cur.y) && self.offset_y < self.cur.y && self.cur.y <= self.offset_y + self.row_disp_len {
