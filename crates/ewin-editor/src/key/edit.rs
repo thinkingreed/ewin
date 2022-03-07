@@ -205,7 +205,7 @@ impl Editor {
         let c = self.buf.char(self.cur.y, self.cur.x);
         ep.str = if c == NEW_LINE_CR { format!("{}{}", c, NEW_LINE_LF) } else { c.to_string() };
         self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelNextChar), self.cur.y, self.cur.x);
-        if is_row_end_char(c) {
+        if is_nl_char(c) {
             self.set_cur_target(self.cur.y, self.cur.x, false);
             self.scroll();
             self.scroll_horizontal();

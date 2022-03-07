@@ -1,0 +1,18 @@
+[package]
+name = "ewin-window"
+version = "0.0.2"
+rust-version = "1.56.0"
+description = "Simple editor for Window(GUI) users.No need to remember commands."
+authors = ["thinkingreed"]
+edition = "2021"
+repository = "https://github.com/thinkingreed/ewin"
+license = "MIT"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+crossterm  = {version ="0.23.0", features = ["event-stream"]} 
+serde_json = "1.0"
+
+ewin-com = {version = "0.0.2", path = "../ewin-com" }

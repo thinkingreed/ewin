@@ -1,9 +1,10 @@
-use crate::{bar::headerbar::*, ctx_menu::init::*, help::*, tab::*};
+use crate::{bar::headerbar::*, help::*, tab::*};
 use ewin_com::{
     _cfg::key::{keycmd::*, keys::*},
     model::*,
 };
 use ewin_editor::model::*;
+use ewin_window::model::CtxMenu;
 
 #[derive(Debug, Clone)]
 pub struct Macros {}
@@ -60,7 +61,7 @@ pub struct Terminal {
     // tab index
     pub tab_idx: usize,
     pub state: TerminalState,
-    pub ctx_menu_group: CtxMenuGroup,
+    pub ctx_menu: CtxMenu,
     pub draw_parts_org: RParts,
 }
 

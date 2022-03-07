@@ -14,6 +14,8 @@ pub fn watching_file(tx_watch: Sender<Job>) {
         let mut watcher = FileWatcher::new(tx);
         loop {
             if let Some(Ok(mut watch_info)) = WATCH_INFO.get().map(|watch_info| watch_info.try_lock()) {
+                // Log::debug("watch_info", &watch_info);
+
                 if watch_info.mode == WatchMode::NotMonitor {
                     continue;
                 }

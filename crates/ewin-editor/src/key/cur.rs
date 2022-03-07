@@ -104,7 +104,7 @@ impl Editor {
         match self.e_cmd {
             E_Cmd::CursorRight | E_Cmd::CursorRightSelect | E_Cmd::InsertStr(_) if self.sel.mode == SelMode::Normal => {
                 if let Some(c) = char_opt {
-                    if is_row_end_char(c) {
+                    if is_nl_char(c) {
                         is_end_of_line = true;
                     }
                 }

@@ -6,7 +6,7 @@ use crate::{
 };
 use std::{
     cmp::min,
-    path::{self, Path},
+    path::{self, Path, MAIN_SEPARATOR},
     usize,
 };
 
@@ -42,7 +42,7 @@ impl EvtAct {
                 } else {
                     // File path
                     if y == term.curt().prom.cont_1.buf_row_posi as usize {
-                        let disp_vec = split_inclusive(&term.curt().prom.cont_1.buf.iter().collect::<String>(), path::MAIN_SEPARATOR);
+                        let disp_vec = split_chars(&term.curt().prom.cont_1.buf.iter().collect::<String>(), true, &[MAIN_SEPARATOR]);
 
                         // Identifying the path of the clicked position
                         let (mut all_width, mut path_str) = (0, String::new());

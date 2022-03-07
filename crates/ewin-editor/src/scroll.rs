@@ -1,3 +1,5 @@
+use ewin_com::def::USIZE_UNDEFINED;
+
 use crate::{
     ewin_com::{_cfg::key::keycmd::*, log::*, model::*, util::*},
     model::*,
@@ -10,7 +12,7 @@ use std::{
 impl Editor {
     pub const SCROLL_UP_DOWN_MARGIN: usize = 1;
     const OFFSET_Y_MARGIN: usize = 3;
-    const DISP_ROWS_MARGIN: usize = 1;
+    const DISP_ROWS_MARGIN: usize = 3;
     const SCROLL_LEFT_RIGHT_JUDGE_MARGIN: usize = 3;
     const SCROLL_MOUSE_DRAG_LEFT_JUDGE_MARGIN: usize = 8;
 
@@ -82,7 +84,11 @@ impl Editor {
         Log::debug("self.offset_y after", &self.offset_y);
     }
     pub fn get_disp_rows(&self) -> usize {
-        return self.buf.len_rows() + Editor::DISP_ROWS_MARGIN;
+        if self.scrl_v.bar_len != USIZE_UNDEFINED && self.scrl_v.bar_len > 0 {
+            self.row_disp_len + (self.row_disp_len - self.scrl_v.bar_len) * self.scrl_v.move_len
+        } else {
+            return self.buf.len_rows() + Editor::DISP_ROWS_MARGIN;
+        }
     }
     pub fn set_offset_move_row(&mut self) {
         Log::debug_key("set_offset_move_row");

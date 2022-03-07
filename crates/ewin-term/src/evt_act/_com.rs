@@ -1,3 +1,5 @@
+use ewin_window::window::Window;
+
 use crate::{
     bar::headerbar::*,
     ewin_com::{
@@ -42,9 +44,9 @@ impl EvtAct {
                         term.render(out, &RParts::All);
                     }
                 }
-                RParts::HeaderBar => HeaderBar::render_only(term, out),
-                RParts::Prompt => EvtAct::render_prompt(out, term),
-                RParts::CtxMenu => term.ctx_menu_group.render_only(out),
+                RParts::HeaderBar => HeaderBar::draw_only(term, out),
+                RParts::Prompt => EvtAct::draw_prompt(out, term),
+                RParts::CtxMenu => term.ctx_menu.draw_only(out),
                 RParts::All | RParts::Editor | RParts::ScrollUpDown(_) => {
                     if let RParts::MsgBar(_) | RParts::AllMsgBar(_) = &term.draw_parts_org {
                         term.curt().editor.draw_range = E_DrawRange::All;
@@ -169,7 +171,7 @@ impl EvtAct {
             return ActType::Render(RParts::MsgBar(Lang::get().unsupported_operation.to_string()));
         }
         let keycmd = term.keycmd.clone();
-        term.ctx_menu_group.set_cmd(keycmd.clone());
+        term.ctx_menu.set_ctx_menu_cmd(keycmd.clone());
         term.curt().editor.set_cmd(keycmd.clone());
         term.curt().prom.set_cmd(keycmd);
 

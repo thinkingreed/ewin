@@ -13,8 +13,6 @@ impl Editor {
             if self.scrl_v.bar_len == USIZE_UNDEFINED || self.row_len_org != self.buf.len_rows() || self.row_disp_len_org != self.row_disp_len {
                 Log::debug("self.row_disp_len", &self.row_disp_len);
                 Log::debug("self.buf.len_rows()", &self.buf.len_rows());
-
-                Log::debug("self.row_disp_len - 1", &(self.row_disp_len - 1));
                 Log::debug("(self.row_disp_len as f64 / self.buf.len_rows() as f64 * self.row_disp_len as f64).ceil() as usize", &((self.row_disp_len as f64 / self.buf.len_rows() as f64 * self.row_disp_len as f64).ceil() as usize));
 
                 self.scrl_v.bar_len = max(1, min((self.row_disp_len as f64 / self.buf.len_rows() as f64 * self.row_disp_len as f64).ceil() as usize, self.row_disp_len - 1));

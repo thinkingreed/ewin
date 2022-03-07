@@ -171,14 +171,14 @@ pub fn change_output_encoding() {
     Log::debug("change output encoding chcp 65001 ", &result.is_ok());
 }
 
-pub fn is_row_end_char(c: char) -> bool {
+pub fn is_nl_char(c: char) -> bool {
     // LF, CR
     [NEW_LINE_LF, NEW_LINE_CR].contains(&c)
 }
 
 pub fn is_row_end_str(s: &str) -> bool {
     for c in s.chars() {
-        if is_row_end_char(c) {
+        if is_nl_char(c) {
             return true;
         }
     }
@@ -235,17 +235,19 @@ pub fn cut_str(str: String, limit_width: usize, is_from_before: bool, is_add_con
     str
 }
 
-pub fn split_inclusive(target: &str, split_char: char) -> Vec<String> {
+pub fn split_chars(target: &str, is_inclusive: bool, split_char: &[char]) -> Vec<String> {
     let mut vec: Vec<String> = vec![];
     let mut string = String::new();
 
     let chars: Vec<char> = target.chars().collect();
     for (i, c) in chars.iter().enumerate() {
-        if *c == split_char {
+        if split_char.contains(c) {
             if !string.is_empty() {
                 vec.push(string.clone());
             }
-            vec.push(split_char.to_string());
+            if is_inclusive {
+                vec.push(c.to_string());
+            }
             string.clear();
         } else {
             string.push(*c);
@@ -293,7 +295,7 @@ pub fn get_tab_comp_files(target_path: String, is_dir_only: bool, is_full_path_f
     rtn_vec
 }
 pub fn get_dir_path(path_str: &str) -> String {
-    let mut vec = split_inclusive(path_str, MAIN_SEPARATOR);
+    let mut vec = split_chars(path_str, true, &[MAIN_SEPARATOR]);
     // Deleted when characters were entered
 
     if !vec.is_empty() && vec.last().unwrap() != &MAIN_SEPARATOR.to_string() {
@@ -419,6 +421,13 @@ pub fn to_unixtime_str(sys_time: SystemTime) -> String {
     return format!("{}.{:03}", unixtime.as_secs(), unixtime.subsec_millis());
 }
 
+pub fn get_cfg_lang_name(name_str: &str) -> &str {
+    if let Some(name) = LANG_MAP.get(name_str) {
+        return name;
+    } else {
+        return name_str;
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -526,9 +535,9 @@ mod tests {
     }
     #[test]
     fn test_split_inclusive() {
-        assert_eq!(split_inclusive("a,b", ','), vec!["a".to_string(), ",".to_string(), "b".to_string()]);
-        assert_eq!(split_inclusive(",ab", ','), vec![",".to_string(), "ab".to_string()]);
-        assert_eq!(split_inclusive("ab,", ','), vec!["ab".to_string(), ",".to_string()]);
+        assert_eq!(split_chars("a,b:c", true, &[',', ':']), vec!["a".to_string(), ",".to_string(), "b".to_string(), ":".to_string(), "c".to_string(),]);
+        assert_eq!(split_chars(",ab", true, &[',']), vec![",".to_string(), "ab".to_string()]);
+        assert_eq!(split_chars("ab,", true, &[',']), vec!["ab".to_string(), ",".to_string()]);
     }
     #[test]
     fn test_get_dir_path() {

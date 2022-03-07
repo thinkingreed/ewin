@@ -19,10 +19,10 @@ impl Cfg {
         };
 
         /* general.log */
-        self.general.log.level = match &cfg_user.general.log.level {
-            Some(s) if s == "debug" => "debug".to_string(),
-            Some(s) if s == "error" => "error".to_string(),
-            _ => "info".to_string(),
+        match &cfg_user.general.log.level {
+            Some(s) if s == "debug" => self.general.log.level = "debug".to_string(),
+            Some(s) if s == "error" => self.general.log.level = "error".to_string(),
+            _ => {}
         };
         /* general.font */
         if let Some(u) = cfg_user.general.font.ambiguous_width {

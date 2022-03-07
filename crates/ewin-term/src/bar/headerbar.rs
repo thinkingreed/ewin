@@ -43,7 +43,7 @@ impl HeaderBar {
         str_vec.push(hber_str);
     }
 
-    pub fn render_only<T: Write>(term: &Terminal, out: &mut T) {
+    pub fn draw_only<T: Write>(term: &Terminal, out: &mut T) {
         Log::debug_key("HeaderBar::render_only");
         let mut v: Vec<String> = vec![];
         HeaderBar::render(term, &mut v);

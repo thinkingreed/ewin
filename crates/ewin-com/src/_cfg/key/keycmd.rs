@@ -318,3 +318,17 @@ pub enum H_Cmd {
 pub enum S_Cmd {
     MouseDownLeft(usize, usize),
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[allow(non_camel_case_types)]
+pub enum I_Cmd {
+    MouseMove(usize, usize),
+    MouseDownLeft(usize, usize),
+    InputCompletion,
+    CursorDown,
+    CursorUp,
+    CursorRight,
+    CursorLeft,
+    ConfirmCtxMenu,
+    Null,
+}

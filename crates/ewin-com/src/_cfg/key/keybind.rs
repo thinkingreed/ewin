@@ -33,41 +33,6 @@ impl Keybind {
         }
         keybind_vec.append(&mut keybind_vec_user);
 
-        /*        if let Some(keybind_file) = FilePath::get_app_config_file_path(KEYBINDING_FILE) {
-            if keybind_file.exists() {
-                let mut read_str = String::new();
-
-                match fs::read_to_string(&keybind_file) {
-                    Ok(str) => {
-                        read_str = str;
-                        Log::info("read keybind.json5", &read_str);
-                    }
-                    Err(e) => err_str = format!("{} {} {}", Lang::get().file_loading_failed, keybind_file.to_string_lossy(), e),
-                }
-
-                if err_str.is_empty() {
-                    match json5::from_str(&read_str) {
-                        Ok(vec) => {
-                            keybind_vec = vec;
-                            for (i, keybind) in keybind_vec.iter().enumerate() {
-                                let err_str = Keybind::check_keybind_file(keybind, i);
-                                if !err_str.is_empty() {
-                                    return err_str;
-                                }
-                            }
-                        }
-                        Err(e) => err_str = format!("{}{} {} {}", Lang::get().file, Lang::get().parsing_failed, keybind_file.to_string_lossy(), e),
-                    };
-                }
-            } else if args.out_config_flg {
-                if let Ok(mut file) = File::create(keybind_file) {
-                    let _ = write!(&mut file, "{}", keybind_str);
-                    let _ = &mut file.flush().unwrap();
-                }
-            }
-        }
-         */
-
         let mut key_cmd_map: HashMap<(Keys, KeyWhen), KeyCmd> = HashMap::new();
         let mut cmd_key_map: HashMap<KeyCmd, Keys> = HashMap::new();
 

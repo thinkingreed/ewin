@@ -180,7 +180,7 @@ impl EvtAct {
 
         return None;
     }
-    pub fn render_prompt<T: Write>(out: &mut T, term: &mut Terminal) {
+    pub fn draw_prompt<T: Write>(out: &mut T, term: &mut Terminal) {
         // Hide the cursor at this position to target anything other than mouse move
         Terminal::hide_cur();
         term.set_disp_size();

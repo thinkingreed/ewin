@@ -1,6 +1,5 @@
 use crate::{
     bar::{headerbar::*, statusbar::*},
-    ctx_menu::init::*,
     ewin_com::{
         _cfg::key::{keycmd::*, keys::*, keywhen::*},
         _cfg::lang::lang_cfg::*,
@@ -29,6 +28,7 @@ use crossterm::{
     terminal::*,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use ewin_window::{model::CtxMenu, window::Window};
 use std::{
     ffi::OsStr,
     fmt,
@@ -87,7 +87,7 @@ impl Terminal {
             Log::info("self.state.is_ctx_menu", &self.state.is_ctx_menu);
             if self.state.is_ctx_menu {
                 // self.set_draw_range_ctx_menu();
-                self.ctx_menu_group.draw(&mut str_vec);
+                self.ctx_menu.draw(&mut str_vec);
             }
         }
         self.render_init_info(&mut str_vec);
@@ -130,10 +130,8 @@ impl Terminal {
     pub fn render_cur<T: Write>(&mut self, out: &mut T) {
         let mut str_vec: Vec<String> = vec![];
 
-        if !self.state.is_displayable {
+        if !self.state.is_displayable || self.state.is_ctx_menu {
             Terminal::hide_cur();
-        } else if self.state.is_ctx_menu {
-            self.ctx_menu_group.render_cur();
         } else if self.curt().state.is_nomal() && self.curt().editor.is_cur_y_in_screen() {
             if self.curt().mbar.is_exsist_msg() && self.hbar.row_num + self.curt().editor.cur.y - self.curt().editor.offset_y == self.curt().mbar.disp_row_posi {
                 self.curt().editor.cur_up();
@@ -417,7 +415,7 @@ impl Terminal {
 
         self.open_file(&args.filenm, FileOpenType::First, Some(&mut Tab::new()), None);
 
-        self.ctx_menu_group.init();
+        self.ctx_menu.init();
     }
 
     pub fn set_bg_color(&mut self) {
@@ -473,9 +471,9 @@ impl Terminal {
     }
 
     pub fn init_tab(&mut self, h_file: &HeaderFile, file_open_type: FileOpenType) {
+        self.set_disp_size();
         self.curt().editor.calc_scrlbar_h();
         self.curt().editor.calc_scrlbar_v();
-        self.set_disp_size();
         self.curt().editor.h_file = h_file.clone();
         if file_open_type != FileOpenType::Reopen && File::is_exist_file(&h_file.fullpath) {
             if let Some(Ok(mut watch_info)) = WATCH_INFO.get().map(|watch_info| watch_info.try_lock()) {
@@ -662,21 +660,21 @@ impl Terminal {
         Log::debug_key("clear_ctx_menu");
         self.state.is_ctx_menu = false;
         self.state.is_ctx_menu_hide_draw = true;
-        self.ctx_menu_group.clear();
+        self.ctx_menu.clear();
     }
 
     pub fn set_render_range_ctx_menu(&mut self) {
         Log::debug_key("set_draw_range_ctx_menu");
         match self.keycmd {
             KeyCmd::CtxMenu(C_Cmd::MouseDownLeft(y, x)) => {
-                if self.state.is_ctx_menu && !self.ctx_menu_group.is_mouse_within_range(y, x, false) {
+                if self.state.is_ctx_menu && !self.ctx_menu.popup.is_mouse_within_range(y, x, false) {
                     self.state.is_ctx_menu = false;
-                    self.ctx_menu_group.clear();
+                    self.ctx_menu.clear();
                     self.curt().editor.draw_range = E_DrawRange::All;
                 }
             }
             KeyCmd::CtxMenu(C_Cmd::MouseMove(y, x)) => {
-                if self.state.is_ctx_menu && self.ctx_menu_group.is_mouse_within_range(y, x, false) {
+                if self.state.is_ctx_menu && self.ctx_menu.popup.is_mouse_within_range(y, x, false) {
                     self.set_editor_render_target_for_ctxmenu_rerender();
                 }
             }
@@ -689,7 +687,7 @@ impl Terminal {
 
     pub fn set_editor_render_target_for_ctxmenu_rerender(&mut self) {
         let (offset_y, hbar_disp_row_num, editor_row_len) = (self.curt().editor.offset_y, self.hbar.row_num, self.curt().editor.row_disp_len);
-        self.curt().editor.draw_range = if let Some((sy, ey)) = self.ctx_menu_group.get_draw_range(offset_y, hbar_disp_row_num, editor_row_len) { E_DrawRange::TargetRange(sy, ey) } else { E_DrawRange::Not }
+        self.curt().editor.draw_range = if let Some((sy, ey)) = self.ctx_menu.get_draw_range_y(offset_y, hbar_disp_row_num, editor_row_len) { E_DrawRange::TargetRange(sy, ey) } else { E_DrawRange::Not }
     }
 
     pub fn set_keys(&mut self, keys: &Keys) {
@@ -748,7 +746,7 @@ impl Terminal {
 
 impl Default for Terminal {
     fn default() -> Self {
-        Terminal { draw_parts_org: RParts::All, keycmd: KeyCmd::Null, keys: Keys::Null, keys_org: Keys::Null, hbar: HeaderBar::new(), tabs: vec![], editor_draw_vec: vec![], tab_idx: 0, help: Help::new(), state: TerminalState::default(), ctx_menu_group: CtxMenuGroup::default() }
+        Terminal { draw_parts_org: RParts::All, keycmd: KeyCmd::Null, keys: Keys::Null, keys_org: Keys::Null, hbar: HeaderBar::new(), tabs: vec![], editor_draw_vec: vec![], tab_idx: 0, help: Help::new(), state: TerminalState::default(), ctx_menu: CtxMenu::default() }
     }
 }
 

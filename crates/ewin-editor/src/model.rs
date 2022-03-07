@@ -192,13 +192,13 @@ pub struct ScrollbarH {
     pub clm_posi_org: usize,
     pub bar_len: usize,
     pub row_max_width_org: usize,
-    pub move_cur_x: usize,
+    pub move_char_x: usize,
     pub scrl_range: usize,
 }
 
 impl Default for ScrollbarH {
     fn default() -> Self {
-        ScrollbarH { is_show: false, is_show_org: false, is_enable: false, row_width_chars_vec: vec![], row_posi: USIZE_UNDEFINED, row_max_width_idx: 0, clm_posi: 0, clm_posi_org: 0, bar_len: 0, row_max_width: 0, row_max_width_org: 0, row_max_chars: 0, move_cur_x: 0, scrl_range: 0 }
+        ScrollbarH { is_show: false, is_show_org: false, is_enable: false, row_width_chars_vec: vec![], row_posi: USIZE_UNDEFINED, row_max_width_idx: 0, clm_posi: 0, clm_posi_org: 0, bar_len: 0, row_max_width: 0, row_max_width_org: 0, row_max_chars: 0, move_char_x: 0, scrl_range: 0 }
     }
 }
 

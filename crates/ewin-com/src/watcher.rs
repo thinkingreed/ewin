@@ -116,20 +116,4 @@ impl FileWatcher {
             _ => false,
         }
     }
-
-    /*
-    pub fn recv_all<T>(rx: &crossbeam_channel::Receiver<T>, duration: Duration) -> Vec<T> {
-        let start = Instant::now();
-        let mut events = Vec::new();
-
-        while start.elapsed() < duration {
-            match rx.recv_timeout(Duration::from_millis(50)) {
-                Ok(event) => events.push(event),
-                Err(crossbeam_channel::RecvTimeoutError::Timeout) => (),
-                Err(e) => panic!("unexpected channel err: {:?}", e),
-            }
-        }
-        events
-    }
-     */
 }

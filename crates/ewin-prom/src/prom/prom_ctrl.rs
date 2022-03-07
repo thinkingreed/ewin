@@ -17,7 +17,8 @@ impl Prompt {
         if !tab_state.is_nomal_and_not_result() {
             //
             // is_search is for incremental search
-            if self.is_first_draw() || !tab_state.is_search {
+            //  if self.is_first_draw() || !tab_state.is_search {
+            if self.is_first_draw() {
                 self.draw_set_posi(tab_state, prom_disp_row_posi, h_file);
                 if tab_state.grep.is_greping() {
                     Prompt::set_draw_vec_for_greping(str_vec, self.cont_1.guide_row_posi, &self.cont_1.guide_vec);

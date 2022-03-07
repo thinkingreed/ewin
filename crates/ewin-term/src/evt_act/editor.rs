@@ -1,5 +1,4 @@
 use crate::{
-    ctx_menu::init::*,
     ewin_com::{_cfg::key::keycmd::*, def::*, log::*, model::*},
     help::*,
     model::*,
@@ -68,7 +67,7 @@ impl EvtAct {
              * ctx_menu
              */
             // E_Cmd::MouseDownRight(_, _) | E_Cmd::MouseDragRight(_, _) => CtxMenuGroup::show_init(term),
-            E_Cmd::CtxtMenu(y, x) => CtxMenuGroup::show_init(term, *y, *x),
+            E_Cmd::CtxtMenu(y, x) => EvtAct::show_init_ctx_menu(term, *y, *x),
             // switch_tab
             E_Cmd::SwitchTabRight => return term.switch_tab(Direction::Right),
             E_Cmd::SwitchTabLeft => return term.switch_tab(Direction::Left),

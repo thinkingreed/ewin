@@ -12,7 +12,7 @@ use ewin_com::{
 };
 use ewin_term::model::*;
 use futures::{future::FutureExt, StreamExt};
-use std::{io::*, panic, sync::mpsc::*};
+use std::{io::*, panic, sync::mpsc::*, time::Duration};
 mod watch_file;
 use watch_file::*;
 mod watch_grep;
@@ -84,20 +84,23 @@ async fn main() {
     watching_file(tx_watch);
     watching_grep(tx_grep);
 
-    for job in rx {
-        match job.job_type {
-            JobType::Event => {
-                let keys = Keybind::evt_to_keys(&job.job_evt.unwrap().evt);
-                if EvtAct::match_event(keys, &mut out, &mut term) {
-                    break;
+    loop {
+        // for job in rx {
+        if let Ok(job) = rx.recv_timeout(Duration::from_millis(16)) {
+            match job.job_type {
+                JobType::Event => {
+                    let keys = Keybind::evt_to_keys(&job.job_evt.unwrap().evt);
+                    if EvtAct::match_event(keys, &mut out, &mut term) {
+                        break;
+                    }
+                    term.keys_org = keys;
                 }
-                term.keys_org = keys;
-            }
-            JobType::GrepResult => EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap()),
-            JobType::Watch => {
-                if let Some(job_watch) = job.job_watch {
-                    if EvtAct::draw_watch_result(&mut out, &mut term) {
-                        WATCH_INFO.get().unwrap().try_lock().map(|mut watch_info| watch_info.history_set.remove(&(job_watch.fullpath_str, job_watch.unixtime_str))).unwrap();
+                JobType::GrepResult => EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap()),
+                JobType::Watch => {
+                    if let Some(job_watch) = job.job_watch {
+                        if EvtAct::draw_watch_result(&mut out, &mut term) {
+                            WATCH_INFO.get().unwrap().try_lock().map(|mut watch_info| watch_info.history_set.remove(&(job_watch.fullpath_str, job_watch.unixtime_str))).unwrap();
+                        }
                     }
                 }
             }

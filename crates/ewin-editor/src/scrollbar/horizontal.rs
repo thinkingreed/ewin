@@ -54,12 +54,19 @@ impl Editor {
 
         // MouseDownLeft
         if matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) {
-            self.calc_scrlbar_h();
+            // self.calc_scrlbar_h();
             self.scrl_h.is_enable = true;
             // Except on scrl_h
             if self.get_rnw_and_margin() - 1 <= x && x < self.get_rnw_and_margin() + self.col_len {
                 // Excluded if within bar range
+                Log::debug_s("11111111111111111111111111111111");
+                Log::debug(" xxx", &x);
+                Log::debug(" self.get_rnw_and_margin() + self.scrl_h.clm_posi", &(self.get_rnw_and_margin() + self.scrl_h.clm_posi));
+                Log::debug(" self.get_rnw_and_margin() + self.scrl_h.clm_posi + self.scrl_h.bar_len", &(self.get_rnw_and_margin() + self.scrl_h.clm_posi + self.scrl_h.bar_len));
+
                 if !(self.get_rnw_and_margin() + self.scrl_h.clm_posi <= x && x < self.get_rnw_and_margin() + self.scrl_h.clm_posi + self.scrl_h.bar_len) {
+                    Log::debug_s("2222222222222222222222222222222222");
+
                     self.scrl_h.clm_posi = if x + self.scrl_h.bar_len < self.get_rnw_and_margin() + self.col_len {
                         if x >= self.get_rnw_and_margin() {
                             x - self.get_rnw_and_margin()
@@ -69,6 +76,8 @@ impl Editor {
                     } else {
                         self.scrl_h.scrl_range
                     };
+                } else {
+                    return;
                 }
             } else {
                 return;
@@ -76,7 +85,7 @@ impl Editor {
             // MouseDragLeftDown・MouseDragLeftUp
         } else if matches!(self.e_cmd, E_Cmd::MouseDragLeftLeft(_, _)) {
             if 0 < self.scrl_h.clm_posi {
-                self.offset_x = if self.offset_x >= self.scrl_h.move_cur_x { self.offset_x - self.scrl_h.move_cur_x } else { 0 };
+                self.offset_x = if self.offset_x >= self.scrl_h.move_char_x { self.offset_x - self.scrl_h.move_char_x } else { 0 };
                 self.scrl_h.clm_posi -= 1;
             } else {
                 self.offset_x = 0;
@@ -92,7 +101,7 @@ impl Editor {
                         }
                     }
                 } else {
-                    self.offset_x += self.scrl_h.move_cur_x;
+                    self.offset_x += self.scrl_h.move_char_x;
                 }
                 self.scrl_h.clm_posi += 1;
             }
@@ -122,8 +131,8 @@ impl Editor {
                     //  self.scrl_h.move_cur_x = ((self.scrl_h.row_max_width - self.col_len) as f64 / self.scrl_h.scrl_range as f64 / rate).ceil() as usize;
                     let move_cur_x = ((self.scrl_h.row_max_width - self.col_len) as f64 / self.scrl_h.scrl_range as f64 / rate).ceil() as usize;
                     //  let move_cur_x = ((self.scrl_h.row_max_chars as f64 - (self.col_len as f64 * rate)) / self.scrl_h.scrl_range as f64).ceil() as usize;
-                    self.scrl_h.move_cur_x = if move_cur_x == 0 { 1 } else { move_cur_x };
-                    Log::debug("self.scrl_h.move_cur_x 333", &self.scrl_h.move_cur_x);
+                    self.scrl_h.move_char_x = if move_cur_x == 0 { 1 } else { move_cur_x };
+                    Log::debug("self.scrl_h.move_cur_x 333", &self.scrl_h.move_char_x);
                 }
             }
 
@@ -131,7 +140,8 @@ impl Editor {
                 // scrl_h_bar is rightmost part
                 if self.scrl_h.clm_posi + self.scrl_h.bar_len == self.col_len {
                 } else if self.offset_disp_x_org != self.offset_disp_x {
-                    self.scrl_h.clm_posi = (self.cur.disp_x as f64 / self.scrl_h.row_max_width as f64 * self.scrl_h.scrl_range as f64).ceil() as usize;
+                    //     self.scrl_h.clm_posi = (self.cur.disp_x as f64 / self.scrl_h.row_max_width as f64 * self.scrl_h.scrl_range as f64).ceil() as usize;
+                    self.scrl_h.clm_posi = (self.offset_disp_x as f64 / self.scrl_h.row_max_width as f64 * self.scrl_h.scrl_range as f64).ceil() as usize;
                 }
             }
             Log::debug("self.scrl_h.clm_posi 222", &self.scrl_h.clm_posi);

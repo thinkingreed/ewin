@@ -10,7 +10,7 @@ pub mod global_term {
     pub static TAB: OnceCell<tokio::sync::Mutex<Tab>> = OnceCell::new();
 }
 pub mod evt_act {
-    pub mod _evt_act;
+    pub mod _com;
     pub mod ctx_menu;
     pub mod editor;
     pub mod headerbar;
@@ -21,10 +21,6 @@ pub mod bar {
     pub mod headerbar;
     pub mod msgbar;
     pub mod statusbar;
-}
-pub mod ctx_menu {
-    pub mod evt;
-    pub mod init;
 }
 pub mod macros {
     pub mod js_func;

@@ -29,3 +29,4 @@ chrono= "0.4.19"
 ewin-com = {version = "0.0.2", path = "../ewin-com" }
 ewin-editor = {version = "0.0.2", path = "../ewin-editor" }
 ewin-prom = {version = "0.0.2", path = "../ewin-prom" }
+ewin-window = {version = "0.0.2", path = "../ewin-window" }

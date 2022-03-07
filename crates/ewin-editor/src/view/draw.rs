@@ -18,7 +18,7 @@ impl Editor {
             E_DrawRange::MoveCur => {
                 self.render_scrlbar_h(str_vec);
                 self.render_scrlbar_v(str_vec);
-                self.render_row_num(str_vec, None);
+                self.render_row_num(str_vec);
                 return;
             }
             E_DrawRange::TargetRange(sy, ey) => {
@@ -41,7 +41,7 @@ impl Editor {
         Log::debug("draw.change_row_vec", &draw.change_row_vec);
 
         // Judg redraw row_num
-        self.render_row_num(str_vec, Some(&draw.change_row_vec));
+        self.render_row_num(str_vec);
 
         for i in draw.change_row_vec.iter() {
             str_vec.push(format!("{}", MoveTo(0, (*i - self.offset_y + self.row_posi) as u16)));
@@ -80,9 +80,12 @@ impl Editor {
 
             if y >= self.row_disp_len {
                 break;
-            } else {
+            }
+            /*
+            else {
                 str_vec.push(NEW_LINE_CRLF.to_string());
             }
+             */
         }
         draw.cells_from = std::mem::take(&mut draw.cells_to);
         //  std::mem::swap(&mut draw.cells_from, &mut draw.cells_to);
@@ -93,22 +96,23 @@ impl Editor {
         self.render_scrlbar_h(str_vec);
     }
 
-    pub fn render_row_num(&mut self, str_vec: &mut Vec<String>, change_row_vec_opt: Option<&Vec<usize>>) {
+    pub fn render_row_num(&mut self, str_vec: &mut Vec<String>) {
         Log::debug_key("render_row_num");
         // If you need to edit the previous row_num
-
-        if self.state.mouse_mode == MouseMode::Normal && self.cur.y != self.cur_org.y {
+        if self.state.mouse_mode == MouseMode::Normal {
             // Correspondence of line number of previous cursor position
-            if change_row_vec_opt.is_none() || self.cur_org.y < self.buf.len_rows() - 1 && !change_row_vec_opt.unwrap().contains(&self.cur_org.y) && self.offset_y <= self.cur_org.y && self.cur_org.y <= self.offset_y + self.row_disp_len {
+            if self.cur_org.y < self.buf.len_rows() - 1 && self.is_y_in_screen(self.cur_org.y) && self.cur.y != self.cur_org.y {
                 self.move_render_row_num(str_vec, self.cur_org.y);
             }
-            if change_row_vec_opt.is_none() || self.cur.y < self.buf.len_rows() - 1 && !change_row_vec_opt.unwrap().contains(&self.cur.y) && self.offset_y < self.cur.y && self.cur.y <= self.offset_y + self.row_disp_len {
+            if self.is_y_in_screen(self.cur.y) {
                 self.move_render_row_num(str_vec, self.cur.y);
             }
         }
     }
 
     fn move_render_row_num(&mut self, str_vec: &mut Vec<String>, y: usize) {
+        Log::debug("yyyyyyyyyyyyyyyyyyyyyyyyyyyyy", &y);
+
         str_vec.push(format!("{}", MoveTo(0, (self.row_posi + y - self.offset_y) as u16)));
         self.set_row_num(y, str_vec);
     }

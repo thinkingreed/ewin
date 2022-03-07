@@ -12,6 +12,10 @@ impl Prompt {
     }
 
     pub fn draw_search(&self, str_vec: &mut Vec<String>) {
+        // Set every time for incremental search measures
+        Prompt::set_draw_vec(str_vec, self.cont_1.guide_row_posi, &self.cont_1.guide_vec);
+        Prompt::set_draw_vec(str_vec, self.cont_1.key_desc_row_posi, &self.cont_1.key_desc_vec);
+
         Prompt::set_draw_vec(str_vec, self.cont_1.opt_row_posi, &self.get_serach_opt());
         Prompt::set_draw_vec(str_vec, self.cont_1.buf_row_posi, &self.cont_1.get_draw_buf_str());
     }
