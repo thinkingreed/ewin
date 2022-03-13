@@ -87,7 +87,7 @@ impl Editor {
                     }
                 }
                 E_Cmd::InsertRow => E_DrawRange::After(self.cur.y - 1),
-                E_Cmd::InsertStr(_) if !self.is_input_imple_mode(true) && self.is_input_imple_mode(false) =>  E_DrawRange::All,
+                E_Cmd::InsertStr(_) if !self.is_input_imple_mode(true) && self.is_input_imple_mode(false) => E_DrawRange::All,
                 E_Cmd::InsertStr(str) => {
                     if self.is_enable_syntax_highlight || self.box_insert.mode == BoxInsertMode::Insert {
                         E_DrawRange::All

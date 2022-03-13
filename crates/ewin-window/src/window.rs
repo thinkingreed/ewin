@@ -203,17 +203,16 @@ impl Window {
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>, sel_color: &str, not_sel_color: &str) {
         Log::debug_key("Window.draw");
-        let menu_vec = self.curt_cont.menu_vec.clone();
-        Log::debug("menu_vec.len()", &menu_vec.len());
+        Log::debug("self.curt_cont.menu_vec.len()", &self.curt_cont.menu_vec.len());
 
-        if menu_vec.len() > Window::MAX_HEIGHT {
+        let menu_vec = if self.curt_cont.menu_vec.len() > Window::MAX_HEIGHT {
             Log::debug("self.parent_sel_y", &self.parent_sel_y);
             Log::debug("self.offset_y", &self.offset_y);
 
             if self.parent_sel_y == 0 {
                 self.offset_y = 0;
-            } else if self.parent_sel_y == menu_vec.len() - 1 {
-                self.offset_y = menu_vec.len() - Window::MAX_HEIGHT;
+            } else if self.parent_sel_y == self.curt_cont.menu_vec.len() - 1 {
+                self.offset_y = self.curt_cont.menu_vec.len() - Window::MAX_HEIGHT;
             } else if self.parent_sel_y == Window::MAX_HEIGHT + self.offset_y - 1 {
                 Log::debug("self.offset_y 000", &self.offset_y);
                 self.offset_y += 1;
@@ -224,8 +223,11 @@ impl Window {
                 self.offset_y -= 1;
                 Log::debug("self.offset_y 333", &self.offset_y);
             }
-        }
-        let menu_vec = &menu_vec[self.offset_y..self.offset_y + Window::MAX_HEIGHT];
+            self.curt_cont.menu_vec[self.offset_y..self.offset_y + Window::MAX_HEIGHT].to_vec()
+        } else {
+            self.curt_cont.menu_vec.clone()
+        };
+
         Log::debug("menu_vec 111", &menu_vec);
 
         for (parent_idx, (parent_menu, child_cont_option)) in menu_vec.iter().enumerate() {
