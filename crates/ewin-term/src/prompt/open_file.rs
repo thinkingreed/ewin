@@ -42,7 +42,7 @@ impl EvtAct {
                 } else {
                     // File path
                     if y == term.curt().prom.cont_1.buf_row_posi as usize {
-                        let disp_vec = split_chars(&term.curt().prom.cont_1.buf.iter().collect::<String>(), true, &[MAIN_SEPARATOR]);
+                        let disp_vec = split_chars(&term.curt().prom.cont_1.buf.iter().collect::<String>(), true, true, &[MAIN_SEPARATOR]);
 
                         // Identifying the path of the clicked position
                         let (mut all_width, mut path_str) = (0, String::new());

@@ -3,7 +3,7 @@
      // Raw
          left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, esc, F1～F12
      // Ctrl
-         ctrl+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12)
+         ctrl+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12, space)
      // Shit
          shit+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12)
      // Alt
@@ -137,7 +137,7 @@
   {
     key: 'esc',
     cmd: 'cancelMode',
-    when: 'editorFocus'
+    when: 'allFocus'
   },
   /*
    * edit
@@ -258,7 +258,6 @@
     cmd: 'encoding',
     when: 'editorFocus'
   },
-
   {
     key: 'alt+w',
     cmd: 'closeAllFile',
@@ -267,6 +266,11 @@
   {
     key: 'ctrl+s',
     cmd: 'saveFile',
+    when: 'editorFocus'
+  },
+    {
+    key: 'ctrl+space',
+    cmd: 'inputComplement',
     when: 'editorFocus'
   },
   /*
@@ -347,14 +351,14 @@
     cmd: 'findRegex',
     when: 'promptFocus'
   },
-  /*
-   * dummy
-   */
   {
     key: 'F10',
     cmd: 'contextMenu',
     when: 'editorFocus'
   },
+   /*
+   * dummy
+   */
   {
     key: 'ctrl+d',
     cmd: 'formatXML',

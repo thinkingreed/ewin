@@ -19,6 +19,13 @@ impl EvtAct {
         let e_cmd = &term.curt().editor.e_cmd.clone();
         Log::debug("e_cmd", &e_cmd);
 
+        if term.curt().editor.is_input_imple_mode(true) {
+            let act_type = EvtAct::ctrl_input_comple_before(term);
+            if act_type != ActType::Next {
+                return act_type;
+            }
+        }
+
         match e_cmd {
             E_Cmd::CloseFile => {
                 if Tab::prom_save_confirm(term) {
@@ -71,10 +78,16 @@ impl EvtAct {
             // switch_tab
             E_Cmd::SwitchTabRight => return term.switch_tab(Direction::Right),
             E_Cmd::SwitchTabLeft => return term.switch_tab(Direction::Left),
-
             //
             // Operation editor
             _ => term.curt().editor.proc(),
+        }
+
+        if term.curt().editor.is_input_imple_mode(true) {
+            let act_type = EvtAct::ctrl_input_comple_after(term);
+            if act_type != ActType::Next {
+                return act_type;
+            }
         }
 
         if term.curt().editor.state.key_macro.is_record {

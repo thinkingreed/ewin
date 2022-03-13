@@ -60,11 +60,13 @@ impl Editor {
         self.sel_org = self.sel;
 
         self.state.is_changed_org = self.state.is_changed;
-        self.row_len_org = self.buf.len_rows();
+        self.len_rows_org = self.buf.len_rows();
         self.scrl_v.row_posi_org = self.scrl_v.row_posi;
         self.scrl_h.row_max_width_org = self.scrl_h.row_max_width;
         self.scrl_h.clm_posi_org = self.scrl_h.clm_posi;
         self.scrl_h.is_show_org = self.scrl_h.is_show;
+
+        self.state.input_comple_mode_org = self.state.input_comple_mode;
     }
 
     pub fn set_cmd(&mut self, keycmd: KeyCmd) {

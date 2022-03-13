@@ -57,33 +57,28 @@ impl EditorDraw {
         let (sy, ey) = if editor.is_enable_syntax_highlight && self.syntax_state_vec.is_empty() { (0, editor.buf.len_rows() - 1) } else { (self.sy, self.ey) };
 
         Log::debug("self.cells_to_all.len() before", &self.cells_to_all.len());
-        Log::debug("editor.change_info.change_type", &editor.change_info.change_type);
-        Log::debug("editor.change_info.del_row", &editor.change_info.del_row);
+        Log::debug("editor.change_info.del_row", &editor.change_info.del_row_set);
         Log::debug("editor.change_info.new_row", &editor.change_info.new_row);
-        Log::debug("editor.change_info.restayle_row", &editor.change_info.restayle_row);
+        Log::debug("editor.change_info.restayle_row", &editor.change_info.restayle_row_set);
 
         if !self.cells_to_all.is_empty() {
-            if editor.change_info.change_type == EditerChangeType::Edit {
-                for (i, del_i) in editor.change_info.del_row.iter().enumerate() {
-                    self.cells_to_all.remove(*del_i - i);
+            for (i, del_i) in editor.change_info.del_row_set.iter().enumerate() {
+                self.cells_to_all.remove(*del_i - i);
 
-                    if editor.is_enable_syntax_highlight {
-                        self.style_vecs.remove(*del_i - i);
-                    }
+                if editor.is_enable_syntax_highlight {
+                    self.style_vecs.remove(*del_i - i);
                 }
-                for i in &editor.change_info.new_row {
-                    self.cells_to_all.insert(*i, Vec::new());
-                    if editor.is_enable_syntax_highlight {
-                        self.style_vecs.insert(*i, Vec::new());
-                    }
+            }
+            for i in &editor.change_info.new_row {
+                self.cells_to_all.insert(*i, Vec::new());
+                if editor.is_enable_syntax_highlight {
+                    self.style_vecs.insert(*i, Vec::new());
                 }
-            };
-            if editor.change_info.change_type == EditerChangeType::Edit || editor.change_info.change_type == EditerChangeType::StyleOnly {
-                for i in &editor.change_info.restayle_row {
-                    self.cells_to_all[*i] = Vec::new();
-                    if editor.is_enable_syntax_highlight && Editor::is_edit(&editor.e_cmd, true) {
-                        self.style_vecs[*i] = Vec::new();
-                    }
+            }
+            for i in &editor.change_info.restayle_row_set {
+                self.cells_to_all[*i] = Vec::new();
+                if editor.is_enable_syntax_highlight && Editor::is_edit(&editor.e_cmd, true) {
+                    self.style_vecs[*i] = Vec::new();
                 }
             }
         }

@@ -3,7 +3,7 @@ use crate::{
     model::*,
 };
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
-use ewin_com::_cfg::{key::keycmd::E_Cmd, model::default::Cfg};
+use ewin_com::_cfg::model::default::Cfg;
 use ropey::RopeBuilder;
 use std::{cmp::min, fs::OpenOptions, io::*, option::Option, time::SystemTime, *};
 

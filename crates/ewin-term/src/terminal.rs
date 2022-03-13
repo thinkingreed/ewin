@@ -28,7 +28,7 @@ use crossterm::{
     terminal::*,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ewin_window::{model::CtxMenu, window::Window};
+use ewin_window::{model::CtxMenu, window::WindowTrait};
 use std::{
     ffi::OsStr,
     fmt,
@@ -62,12 +62,12 @@ impl Terminal {
             _ => {
                 if self.curt().editor.draw_range == E_DrawRange::MoveCur {
                     StatusBar::render(&mut str_vec, &mut self.tabs[self.tab_idx], &self.hbar.file_vec[self.tab_idx]);
-                    self.tabs[self.tab_idx].editor.render(&mut str_vec, &mut self.editor_draw_vec[self.tab_idx]);
+                    self.tabs[self.tab_idx].editor.draw(&mut str_vec, &mut self.editor_draw_vec[self.tab_idx]);
                     self.render_flush(out, &mut str_vec);
                     return;
                 } else {
                     self.editor_draw_vec[self.tab_idx].draw_cache(&mut self.tabs[self.tab_idx].editor);
-                    self.tabs[self.tab_idx].editor.render(&mut str_vec, &mut self.editor_draw_vec[self.tab_idx]);
+                    self.tabs[self.tab_idx].editor.draw(&mut str_vec, &mut self.editor_draw_vec[self.tab_idx]);
                     StatusBar::render(&mut str_vec, &mut self.tabs[self.tab_idx], &self.hbar.file_vec[self.tab_idx]);
                 }
             }
@@ -86,8 +86,12 @@ impl Terminal {
         if draw_parts == &RParts::All || draw_parts == &RParts::Editor {
             Log::info("self.state.is_ctx_menu", &self.state.is_ctx_menu);
             if self.state.is_ctx_menu {
-                // self.set_draw_range_ctx_menu();
                 self.ctx_menu.draw(&mut str_vec);
+            }
+            Log::info("self.curt().editor.state.input_comple_mode", &self.curt().editor.state.input_comple_mode);
+            if self.curt().editor.is_input_imple_mode(true) {
+                Log::info("self.curt().editor.input_comple.window", &self.curt().editor.input_comple.window);
+                self.curt().editor.input_comple.draw(&mut str_vec);
             }
         }
         self.render_init_info(&mut str_vec);
@@ -105,6 +109,7 @@ impl Terminal {
         // Log::debug("box_sel.mode", &self.curt().editor.box_insert.mode);
         Log::debug("scrl_v.is_enable", &self.curt().editor.scrl_v.is_enable);
         Log::debug("scrl_h.is_enable", &self.curt().editor.scrl_h.is_enable);
+        Log::debug("self.curt().editor.state.input_comple_mode", &self.curt().editor.state.input_comple_mode);
 
         self.render_flush(out, &mut str_vec);
 
@@ -261,7 +266,6 @@ impl Terminal {
         } else {
             self.curt().editor.scrl_v.is_show = false;
         }
-
         return true;
     }
 
@@ -373,6 +377,13 @@ impl Terminal {
             if !filenm.is_empty() {
                 self.enable_syntax_highlight(path);
             }
+
+            // for input complement
+
+            for i in 0..tab.editor.buf.len_rows() {
+                self.curt().editor.input_comple.analysis_new(i, &tab.editor.buf.char_vec_row(i));
+            }
+
             Log::info_s("File open end");
             return ActType::Next;
         }
@@ -412,9 +423,7 @@ impl Terminal {
         let _ = GREP_CANCEL_VEC.set(tokio::sync::Mutex::new(vec![]));
         let _ = global_term::TAB.set(tokio::sync::Mutex::new(Tab::new()));
         let _ = WATCH_INFO.set(tokio::sync::Mutex::new(WatchInfo::default()));
-
         self.open_file(&args.filenm, FileOpenType::First, Some(&mut Tab::new()), None);
-
         self.ctx_menu.init();
     }
 
@@ -433,8 +442,14 @@ impl Terminal {
     }
     pub fn init_draw<T: Write>(&mut self, out: &mut T) {
         self.state.is_show_init_info = true;
+        Log::debug_s("1111111111111111111111");
+
         self.set_bg_color();
+        Log::debug_s("22222222222222222222222");
+
         self.render(out, &RParts::All);
+        Log::debug_s("3333333333333333333333");
+
         self.render_cur(out);
     }
 
@@ -642,6 +657,7 @@ impl Terminal {
         }
         self.curt().mbar.clear();
         // self.set_disp_size();
+        self.curt().editor.cancel_state();
         self.curt().editor.draw_range = E_DrawRange::All;
     }
 
@@ -664,30 +680,31 @@ impl Terminal {
     }
 
     pub fn set_render_range_ctx_menu(&mut self) {
-        Log::debug_key("set_draw_range_ctx_menu");
+        Log::debug_key("set_render_range_window");
         match self.keycmd {
             KeyCmd::CtxMenu(C_Cmd::MouseDownLeft(y, x)) => {
-                if self.state.is_ctx_menu && !self.ctx_menu.popup.is_mouse_within_range(y, x, false) {
-                    self.state.is_ctx_menu = false;
-                    self.ctx_menu.clear();
+                if self.state.is_ctx_menu && !self.ctx_menu.window.is_mouse_within_range(y, x, false) {
+                    self.clear_ctx_menu();
                     self.curt().editor.draw_range = E_DrawRange::All;
                 }
             }
             KeyCmd::CtxMenu(C_Cmd::MouseMove(y, x)) => {
-                if self.state.is_ctx_menu && self.ctx_menu.popup.is_mouse_within_range(y, x, false) {
-                    self.set_editor_render_target_for_ctxmenu_rerender();
+                if self.state.is_ctx_menu && self.ctx_menu.window.is_mouse_within_range(y, x, false) {
+                    self.set_editor_render_target_ctx_menu();
                 }
             }
             KeyCmd::CtxMenu(C_Cmd::CursorDown) | KeyCmd::CtxMenu(C_Cmd::CursorUp) | KeyCmd::CtxMenu(C_Cmd::CursorRight) | KeyCmd::CtxMenu(C_Cmd::CursorLeft) => {
-                self.set_editor_render_target_for_ctxmenu_rerender();
+                self.set_editor_render_target_ctx_menu();
             }
+
             _ => {}
         }
     }
 
-    pub fn set_editor_render_target_for_ctxmenu_rerender(&mut self) {
+    pub fn set_editor_render_target_ctx_menu(&mut self) {
         let (offset_y, hbar_disp_row_num, editor_row_len) = (self.curt().editor.offset_y, self.hbar.row_num, self.curt().editor.row_disp_len);
-        self.curt().editor.draw_range = if let Some((sy, ey)) = self.ctx_menu.get_draw_range_y(offset_y, hbar_disp_row_num, editor_row_len) { E_DrawRange::TargetRange(sy, ey) } else { E_DrawRange::Not }
+        let draw_range_y_opt = self.ctx_menu.window.get_draw_range_y(offset_y, hbar_disp_row_num, editor_row_len);
+        self.curt().editor.draw_range = if let Some((sy, ey)) = draw_range_y_opt { E_DrawRange::TargetRange(sy, ey) } else { E_DrawRange::Not };
     }
 
     pub fn set_keys(&mut self, keys: &Keys) {
@@ -703,6 +720,7 @@ impl Terminal {
         Log::debug("self.state", &self.state);
         Log::debug("self.curt().state", &self.curt().state);
         Log::debug("self.state.is_ctx_menu", &self.state.is_ctx_menu);
+        Log::debug("self.curt().editor.state.input_comple_mode", &self.curt().editor.state.input_comple_mode);
         let editor_is_dragging = self.curt().editor.state.is_dragging;
 
         return if self.judge_when_headerbar(keys, self.hbar.row_posi, editor_is_dragging) {
@@ -710,9 +728,7 @@ impl Terminal {
         } else if self.curt().state.judge_when_prompt(keys) {
             KeyWhen::PromptFocus
         } else if self.state.is_ctx_menu {
-            // KeyWhen::CtxMenuFocus
-
-            if EvtAct::is_ctrl_ctx_keys(keys, self) {
+            if EvtAct::is_ctx_menu_keys(keys, self) {
                 KeyWhen::CtxMenuFocus
             } else {
                 self.clear_ctx_menu();
@@ -722,6 +738,7 @@ impl Terminal {
             let sbar_row_posi = self.curt().sbar.row_posi;
             if self.curt().state.judge_when_statusbar(keys, sbar_row_posi, editor_is_dragging) {
                 KeyWhen::StatusBarFocus
+                // } else if EvtAct::is_input_comple_keys(keys, self) {
             } else {
                 KeyWhen::EditorFocus
             }

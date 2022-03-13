@@ -4,7 +4,10 @@ use crate::{
 };
 use ewin_com::_cfg::model::default::{Cfg, CfgSearch};
 use regex::RegexBuilder;
-use ropey::{iter::Chars, Rope, RopeSlice};
+use ropey::{
+    iter::{Chars, Lines},
+    Rope, RopeSlice,
+};
 use std::collections::BTreeSet;
 use std::ops::RangeBounds;
 
@@ -12,7 +15,9 @@ impl TextBuffer {
     pub fn line(&self, i: usize) -> RopeSlice {
         self.text.line(i)
     }
-
+    pub fn lines(&self) -> Lines {
+        self.text.lines()
+    }
     pub fn len_row_chars(&self, i: usize) -> usize {
         self.text.line(i).len_chars()
     }

@@ -9,7 +9,6 @@ pub enum KeyWhen {
     StatusBarFocus,
     PromptFocus,
     CtxMenuFocus,
-    InputCompletionFocus,
 }
 
 impl FromStr for KeyWhen {
@@ -37,7 +36,6 @@ impl fmt::Display for KeyWhen {
             KeyWhen::InputFocus => write!(f, "inputFocus"),
             KeyWhen::AllFocus => write!(f, "allFocus"),
             KeyWhen::CtxMenuFocus => write!(f, "ctxMenuFocus"),
-            KeyWhen::InputCompletionFocus => write!(f, "InputCompletionFocus"),
         }
     }
 }

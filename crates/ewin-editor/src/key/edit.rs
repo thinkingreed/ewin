@@ -212,18 +212,15 @@ impl Editor {
         }
     }
 
-    pub fn cancel_mode_and_search_result(&mut self) {
-        Log::debug_key("cancel_mode_and_search_result");
+    pub fn cancel_state(&mut self) {
+        Log::debug_key("cancel_state");
         self.sel.clear();
         self.sel.mode = SelMode::Normal;
         self.box_insert.mode = BoxInsertMode::Normal;
-        /*
-        if !self.search.ranges.is_empty() {
-            mem::swap(&mut self.search, &mut self.search_org);
-        }
-         */
         self.search_org = self.search.clone();
         self.search.clear();
+        self.state.input_comple_mode = InputCompleMode::None;
+        self.input_comple.clear();
     }
 }
 

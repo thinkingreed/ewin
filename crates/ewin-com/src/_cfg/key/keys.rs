@@ -255,6 +255,7 @@ impl FromStr for Keys {
             "ctrl+F10" => Ok(Keys::Ctrl(Key::F(10))),
             "ctrl+F11" => Ok(Keys::Ctrl(Key::F(11))),
             "ctrl+F12" => Ok(Keys::Ctrl(Key::F(12))),
+            "ctrl+space" => Ok(Keys::Ctrl(Key::Char(' '))),
             // Shift
             "shift+left" => Ok(Keys::Shift(Key::Left)),
             "shift+right" => Ok(Keys::Shift(Key::Right)),

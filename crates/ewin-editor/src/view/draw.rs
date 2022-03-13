@@ -5,7 +5,7 @@ use crate::{
 use crossterm::{cursor::*, terminal::*};
 
 impl Editor {
-    pub fn render(&mut self, str_vec: &mut Vec<String>, draw: &mut EditorDraw) {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>, draw: &mut EditorDraw) {
         Log::info_key("Editor.draw");
 
         // let mut str_vec: Vec<String> = vec![];
@@ -16,9 +16,9 @@ impl Editor {
         match d_range {
             E_DrawRange::Not => {}
             E_DrawRange::MoveCur => {
-                self.render_scrlbar_h(str_vec);
-                self.render_scrlbar_v(str_vec);
-                self.render_row_num(str_vec);
+                self.draw_scrlbar_h(str_vec);
+                self.draw_scrlbar_v(str_vec);
+                self.draw_row_num(str_vec);
                 return;
             }
             E_DrawRange::TargetRange(sy, ey) => {
@@ -41,7 +41,7 @@ impl Editor {
         Log::debug("draw.change_row_vec", &draw.change_row_vec);
 
         // Judg redraw row_num
-        self.render_row_num(str_vec);
+        self.draw_row_num(str_vec);
 
         for i in draw.change_row_vec.iter() {
             str_vec.push(format!("{}", MoveTo(0, (*i - self.offset_y + self.row_posi) as u16)));
@@ -92,12 +92,12 @@ impl Editor {
         // draw.cells_from = draw.cells_to.clone();
 
         str_vec.push(Colors::get_default_bg());
-        self.render_scrlbar_v(str_vec);
-        self.render_scrlbar_h(str_vec);
+        self.draw_scrlbar_v(str_vec);
+        self.draw_scrlbar_h(str_vec);
     }
 
-    pub fn render_row_num(&mut self, str_vec: &mut Vec<String>) {
-        Log::debug_key("render_row_num");
+    pub fn draw_row_num(&mut self, str_vec: &mut Vec<String>) {
+        Log::debug_key("draw_row_num");
         // If you need to edit the previous row_num
         if self.state.mouse_mode == MouseMode::Normal {
             // Correspondence of line number of previous cursor position
@@ -111,8 +111,6 @@ impl Editor {
     }
 
     fn move_render_row_num(&mut self, str_vec: &mut Vec<String>, y: usize) {
-        Log::debug("yyyyyyyyyyyyyyyyyyyyyyyyyyyyy", &y);
-
         str_vec.push(format!("{}", MoveTo(0, (self.row_posi + y - self.offset_y) as u16)));
         self.set_row_num(y, str_vec);
     }
@@ -148,11 +146,11 @@ impl Editor {
         Log::debug_key("Editor.clear_all_diff");
 
         for i in change_row_vec {
-            str_vec.push(format!("{}{}", MoveTo(0, (i + self.row_posi) as u16), Clear(ClearType::CurrentLine)));
+            str_vec.push(format!("{}{}", MoveTo(0, (*i - self.offset_y + self.row_posi) as u16), Clear(ClearType::CurrentLine)));
         }
         // Clear the previously displayed part when the number of lines becomes shorter than the height of the screen
-        if self.buf.len_rows() <= self.get_disp_rows() && self.row_len_org > self.buf.len_rows() {
-            for i in self.buf.len_rows() - 1..=self.row_len_org - 1 {
+        if self.buf.len_rows() <= self.get_disp_rows() && self.len_rows_org > self.buf.len_rows() {
+            for i in self.buf.len_rows() - 1..=self.len_rows_org - 1 {
                 str_vec.push(format!("{}{}", MoveTo(0, (i + self.row_posi) as u16), Clear(ClearType::CurrentLine)));
             }
         }

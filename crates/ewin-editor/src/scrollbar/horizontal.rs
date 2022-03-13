@@ -110,7 +110,7 @@ impl Editor {
         self.set_offset_disp_x();
     }
 
-    pub fn render_scrlbar_h(&mut self, str_vec: &mut Vec<String>) {
+    pub fn draw_scrlbar_h(&mut self, str_vec: &mut Vec<String>) {
         Log::debug_key("draw_scrlbar_h");
 
         Log::debug(" self.curt().editor.scrl_h.row_max_width", &self.scrl_h.is_show);

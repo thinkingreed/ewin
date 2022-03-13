@@ -10,7 +10,7 @@ impl Editor {
     pub fn calc_scrlbar_v(&mut self) {
         Log::debug_key("calc_scrlbar_v");
         if self.scrl_v.is_show {
-            if self.scrl_v.bar_len == USIZE_UNDEFINED || self.row_len_org != self.buf.len_rows() || self.row_disp_len_org != self.row_disp_len {
+            if self.scrl_v.bar_len == USIZE_UNDEFINED || self.len_rows_org != self.buf.len_rows() || self.row_disp_len_org != self.row_disp_len {
                 Log::debug("self.row_disp_len", &self.row_disp_len);
                 Log::debug("self.buf.len_rows()", &self.buf.len_rows());
                 Log::debug("(self.row_disp_len as f64 / self.buf.len_rows() as f64 * self.row_disp_len as f64).ceil() as usize", &((self.row_disp_len as f64 / self.buf.len_rows() as f64 * self.row_disp_len as f64).ceil() as usize));
@@ -67,7 +67,7 @@ impl Editor {
         self.scroll();
     }
 
-    pub fn render_scrlbar_v(&mut self, str_vec: &mut Vec<String>) {
+    pub fn draw_scrlbar_v(&mut self, str_vec: &mut Vec<String>) {
         Log::debug_key("Editor.draw_scrlbar_v");
         Log::debug("self.scrl_v.is_show", &self.scrl_v.is_show);
 

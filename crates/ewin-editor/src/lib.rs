@@ -25,6 +25,7 @@ pub mod fmt {
 pub mod change_info;
 pub mod convert;
 pub mod editor;
+pub mod input_comple;
 pub mod model;
 pub mod proc;
 pub mod proc_edit;

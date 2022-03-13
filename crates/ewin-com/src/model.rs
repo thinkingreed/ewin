@@ -381,6 +381,13 @@ pub enum MouseMode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+
+pub enum InputCompleMode {
+    None,
+    WordComple,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Encode {
     UTF8,
     UTF16LE,

@@ -11,7 +11,7 @@ use crate::{
     tab::*,
 };
 use directories::BaseDirs;
-use ewin_window::{ctx_menu::org::*, window::Window};
+use ewin_window::{ctx_menu::org::*, window::WindowTrait};
 use std::io::stdout;
 
 impl EvtAct {
@@ -20,30 +20,30 @@ impl EvtAct {
 
         match term.ctx_menu.c_cmd {
             C_Cmd::MouseDownLeft(y, x) => {
-                if term.ctx_menu.popup.is_mouse_within_range(y, x, false) {
+                if term.ctx_menu.window.is_mouse_within_range(y, x, false) {
                     return EvtAct::select_ctx_menu(term);
                 }
                 return ActType::Cancel;
             }
             C_Cmd::MouseMove(y, x) => {
-                if term.ctx_menu.popup.is_mouse_within_range(y, x, false) {
-                    let child_cont_org = &term.ctx_menu.popup.curt_cont.menu_vec.get(term.ctx_menu.popup.parent_sel_y).and_then(|cont| cont.1.clone());
-                    term.ctx_menu.popup.ctrl_mouse_move(y, x);
+                if term.ctx_menu.window.is_mouse_within_range(y, x, false) {
+                    let child_cont_org = &term.ctx_menu.window.curt_cont.menu_vec.get(term.ctx_menu.window.parent_sel_y).and_then(|cont| cont.1.clone());
+                    term.ctx_menu.window.ctrl_mouse_move(y, x);
 
-                    if !term.ctx_menu.popup.is_menu_change() {
+                    if !term.ctx_menu.window.is_menu_change() {
                         return ActType::Cancel;
                     }
-                    let child_cont = &term.ctx_menu.popup.curt_cont.menu_vec.get(term.ctx_menu.popup.parent_sel_y).and_then(|cont| cont.1.clone());
+                    let child_cont = &term.ctx_menu.window.curt_cont.menu_vec.get(term.ctx_menu.window.parent_sel_y).and_then(|cont| cont.1.clone());
 
                     // Only parent meun move || Only child meun move
-                    if child_cont_org.is_none() && child_cont.is_none() || term.ctx_menu.popup.parent_sel_y == term.ctx_menu.popup.parent_sel_y_cache && term.ctx_menu.popup.child_sel_y != USIZE_UNDEFINED {
+                    if child_cont_org.is_none() && child_cont.is_none() || term.ctx_menu.window.parent_sel_y == term.ctx_menu.window.parent_sel_y_cache && term.ctx_menu.window.child_sel_y != USIZE_UNDEFINED {
                         return ActType::Render(RParts::CtxMenu);
                     } else {
                         term.set_render_range_ctx_menu();
                         return ActType::Render(RParts::Editor);
                     }
-                } else if term.ctx_menu.popup.is_mouse_within_range(y, x, true) {
-                    term.ctx_menu.popup.clear_select_menu();
+                } else if term.ctx_menu.window.is_mouse_within_range(y, x, true) {
+                    term.ctx_menu.window.clear_select_menu();
                     term.set_render_range_ctx_menu();
                     return ActType::Render(RParts::Editor);
                 } else {
@@ -52,10 +52,10 @@ impl EvtAct {
             }
             C_Cmd::CursorDown | C_Cmd::CursorUp | C_Cmd::CursorRight | C_Cmd::CursorLeft => {
                 match term.ctx_menu.c_cmd {
-                    C_Cmd::CursorDown => term.ctx_menu.popup.cur_move(Direction::Down),
-                    C_Cmd::CursorUp => term.ctx_menu.popup.cur_move(Direction::Up),
-                    C_Cmd::CursorRight => term.ctx_menu.popup.cur_move(Direction::Right),
-                    C_Cmd::CursorLeft => term.ctx_menu.popup.cur_move(Direction::Left),
+                    C_Cmd::CursorDown => term.ctx_menu.window.cur_move(Direction::Down),
+                    C_Cmd::CursorUp => term.ctx_menu.window.cur_move(Direction::Up),
+                    C_Cmd::CursorRight => term.ctx_menu.window.cur_move(Direction::Right),
+                    C_Cmd::CursorLeft => term.ctx_menu.window.cur_move(Direction::Left),
                     _ => {}
                 }
                 term.set_render_range_ctx_menu();
@@ -73,12 +73,12 @@ impl EvtAct {
         }
     }
 
-    pub fn is_ctrl_ctx_keys(keys: &Keys, term: &mut Terminal) -> bool {
+    pub fn is_ctx_menu_keys(keys: &Keys, term: &mut Terminal) -> bool {
         if term.state.is_ctx_menu {
             let rtn = match keys {
                 Keys::Raw(Key::Left) | Keys::Raw(Key::Right) | Keys::Raw(Key::Up) | Keys::Raw(Key::Down) => true,
                 Keys::MouseMove(_, _) => true,
-                Keys::MouseDownLeft(y, x) => term.ctx_menu.popup.is_mouse_within_range(*y as usize, *x as usize, false),
+                Keys::MouseDownLeft(y, x) => term.ctx_menu.window.is_mouse_within_range(*y as usize, *x as usize, false),
                 Keys::MouseDragRight(_, _) => true,
                 _ => true,
             };
@@ -88,10 +88,10 @@ impl EvtAct {
     }
     pub fn select_ctx_menu(term: &mut Terminal) -> ActType {
         Log::debug_key("select_ctx_menu");
-        if let Some((ctx_menu, _)) = term.ctx_menu.popup.get_curt_child() {
-            return EvtAct::check_ctx_menu_func(term, &term.ctx_menu.popup.get_curt_parent().unwrap().0.name, &ctx_menu.name);
-        } else if !term.ctx_menu.popup.is_exist_child_curt_parent() {
-            if let Some((parent_ctx_menu, _)) = term.ctx_menu.popup.get_curt_parent() {
+        if let Some((ctx_menu, _)) = term.ctx_menu.window.get_curt_child() {
+            return EvtAct::check_ctx_menu_func(term, &term.ctx_menu.window.get_curt_parent().unwrap().0.name, &ctx_menu.name);
+        } else if !term.ctx_menu.window.is_exist_child_curt_parent() {
+            if let Some((parent_ctx_menu, _)) = term.ctx_menu.window.get_curt_parent() {
                 return EvtAct::check_ctx_menu_func(term, &parent_ctx_menu.name, "");
             }
         }
@@ -179,10 +179,10 @@ impl EvtAct {
 
     pub fn set_ctx_menu_curt_term_place(term: &mut Terminal, y: usize) {
         if term.hbar.row_posi == y {
-            term.ctx_menu.popup.curt_cont = term.ctx_menu.ctx_menu_place_map[&TermPlace::HeaderBar].clone();
+            term.ctx_menu.window.curt_cont = term.ctx_menu.ctx_menu_place_map[&TermPlace::HeaderBar].clone();
         } else if term.curt().editor.row_posi <= y && y <= term.curt().editor.row_posi + term.curt().editor.row_disp_len {
             let place_cond = if term.curt().editor.sel.is_selected() { TermPlace::Editor(TermPlaceCond::EditorRangeSelected) } else { TermPlace::Editor(TermPlaceCond::EditorRangeNonSelected) };
-            term.ctx_menu.popup.curt_cont = term.ctx_menu.ctx_menu_place_map[&place_cond].clone();
+            term.ctx_menu.window.curt_cont = term.ctx_menu.ctx_menu_place_map[&place_cond].clone();
         }
     }
 
@@ -210,7 +210,7 @@ impl EvtAct {
             };
             term.state.is_ctx_menu = true;
             EvtAct::set_ctx_menu_curt_term_place(term, y);
-            term.ctx_menu.popup.set_parent_disp_area(y, x);
+            term.ctx_menu.window.set_parent_disp_area(y, x);
         } else if term.state.is_ctx_menu {
             term.state.is_ctx_menu = false;
         }

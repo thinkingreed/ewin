@@ -24,3 +24,4 @@ serde_json = "1.0"
 anyhow = "1"
 
 ewin-com = {version = "0.0.2", path = "../ewin-com" }
+ewin-window = {version = "0.0.2", path = "../ewin-window" }

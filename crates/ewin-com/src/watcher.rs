@@ -99,13 +99,6 @@ impl FileWatcher {
         };
 
         return VecDeque::new();
-        /*
-        let mut state = self.state.lock().unwrap();
-        let WatcherState { ref mut events, .. } = *state;
-        //     mem::take(events)
-        return events.clone();
-        // return mem::take(events);
-         */
     }
 
     pub fn wants_event(&self, event: &Event) -> bool {

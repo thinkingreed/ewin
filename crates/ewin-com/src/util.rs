@@ -176,7 +176,7 @@ pub fn is_nl_char(c: char) -> bool {
     [NEW_LINE_LF, NEW_LINE_CR].contains(&c)
 }
 
-pub fn is_row_end_str(s: &str) -> bool {
+pub fn is_contain_row_end_str(s: &str) -> bool {
     for c in s.chars() {
         if is_nl_char(c) {
             return true;
@@ -235,7 +235,7 @@ pub fn cut_str(str: String, limit_width: usize, is_from_before: bool, is_add_con
     str
 }
 
-pub fn split_chars(target: &str, is_inclusive: bool, split_char: &[char]) -> Vec<String> {
+pub fn split_chars(target: &str, is_inclusive: bool, is_new_line_code_ignore: bool, split_char: &[char]) -> Vec<String> {
     let mut vec: Vec<String> = vec![];
     let mut string = String::new();
 
@@ -249,15 +249,16 @@ pub fn split_chars(target: &str, is_inclusive: bool, split_char: &[char]) -> Vec
                 vec.push(c.to_string());
             }
             string.clear();
-        } else {
+        } else if !(is_new_line_code_ignore && [NEW_LINE_LF, NEW_LINE_CR].contains(c)) {
             string.push(*c);
         }
         if i == chars.len() - 1 && !string.is_empty() {
             vec.push(string.clone());
         }
     }
-    vec
+    return vec;
 }
+
 pub fn get_tab_comp_files(target_path: String, is_dir_only: bool, is_full_path_filenm: bool) -> Vec<File> {
     Log::debug_key("get_tab_comp_files");
 
@@ -295,7 +296,7 @@ pub fn get_tab_comp_files(target_path: String, is_dir_only: bool, is_full_path_f
     rtn_vec
 }
 pub fn get_dir_path(path_str: &str) -> String {
-    let mut vec = split_chars(path_str, true, &[MAIN_SEPARATOR]);
+    let mut vec = split_chars(path_str, true, true, &[MAIN_SEPARATOR]);
     // Deleted when characters were entered
 
     if !vec.is_empty() && vec.last().unwrap() != &MAIN_SEPARATOR.to_string() {
@@ -358,7 +359,6 @@ pub fn is_include_path(src: &str, dst: &str) -> bool {
 
 pub fn get_term_size() -> (usize, usize) {
     Log::debug("get_term_size", &size());
-
     let (columns, rows) = size().unwrap_or((TERM_MINIMUM_WIDTH as u16, TERM_MINIMUM_HEIGHT as u16));
 
     // (1, 1) is judged as test
@@ -401,7 +401,17 @@ fn get_delim(target: &[char], x: usize, is_forward: bool) -> usize {
     }
     rtn_x
 }
-
+pub fn get_until_delim_sx(rows: &[char]) -> usize {
+    let mut rows = rows.to_vec();
+    rows.reverse();
+    let row_len = rows.len();
+    for (i, c) in (0_usize..).zip(rows) {
+        if DELIM_STR.contains(c) {
+            return row_len - i;
+        }
+    }
+    return 0;
+}
 /// Get version of app as a whole
 pub fn get_app_version() -> String {
     let cfg_str = include_str!("../../../Cargo.toml");
@@ -535,9 +545,9 @@ mod tests {
     }
     #[test]
     fn test_split_inclusive() {
-        assert_eq!(split_chars("a,b:c", true, &[',', ':']), vec!["a".to_string(), ",".to_string(), "b".to_string(), ":".to_string(), "c".to_string(),]);
-        assert_eq!(split_chars(",ab", true, &[',']), vec![",".to_string(), "ab".to_string()]);
-        assert_eq!(split_chars("ab,", true, &[',']), vec!["ab".to_string(), ",".to_string()]);
+        assert_eq!(split_chars("a,b:c", true, true, &[',', ':']), vec!["a".to_string(), ",".to_string(), "b".to_string(), ":".to_string(), "c".to_string(),]);
+        assert_eq!(split_chars(",ab", true, true, &[',']), vec![",".to_string(), "ab".to_string()]);
+        assert_eq!(split_chars("ab,", true, true, &[',']), vec!["ab".to_string(), ",".to_string()]);
     }
     #[test]
     fn test_get_dir_path() {
@@ -567,5 +577,11 @@ mod tests {
         assert_eq!(get_delim_x(&"<12<<345>".chars().collect::<Vec<char>>(), 4), (3, 5));
         assert_eq!(get_delim_x(&"<12  345>".chars().collect::<Vec<char>>(), 4), (3, 5));
         assert_eq!(get_delim_x(&"<12　　345>".chars().collect::<Vec<char>>(), 4), (3, 5));
+    }
+    #[test]
+    fn test_get_until_delim_sx() {
+        assert_eq!(get_until_delim_sx(&"123".chars().collect::<Vec<char>>()), 0);
+        assert_eq!(get_until_delim_sx(&"1:23".chars().collect::<Vec<char>>()), 2);
+        assert_eq!(get_until_delim_sx(&"123:".chars().collect::<Vec<char>>()), 4);
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, log::*},
+    ewin_com::{_cfg::key::keycmd::*, log::*, model::*},
     model::*,
 };
 
@@ -34,12 +34,13 @@ impl Editor {
             E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseUpLeft(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) | E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) => self.ctrl_mouse(),
             E_Cmd::MouseModeSwitch => self.ctrl_mouse_capture(),
             // Mode
-            E_Cmd::CancelModeAndSearchResult => self.cancel_mode_and_search_result(),
+            E_Cmd::CancelState => self.cancel_state(),
             E_Cmd::BoxSelectMode => self.box_select_mode(),
-            // empty
-            E_Cmd::Null => {}
             // If CtxMenu = true and there is no Mouse on CtxMenu
             E_Cmd::MouseMove(_, _) => {}
+            E_Cmd::InputComple => self.init_input_comple(true),
+            // empty
+            E_Cmd::Null => {}
             _ => unreachable!(),
         }
     }
@@ -51,7 +52,6 @@ mod tests {
     use ewin_com::{
         _cfg::model::default::{Cfg, CfgLog},
         clipboard::*,
-        model::*,
     };
 
     #[test]
@@ -274,7 +274,7 @@ mod tests {
         e.box_insert.mode = BoxInsertMode::Insert;
 
         // CancelMode
-        e.e_cmd = E_Cmd::CancelModeAndSearchResult;
+        e.e_cmd = E_Cmd::CancelState;
         e.proc();
         assert_eq!(e.sel.mode, SelMode::Normal);
         assert_eq!(e.box_insert.mode, BoxInsertMode::Normal);
@@ -282,7 +282,7 @@ mod tests {
         e.e_cmd = E_Cmd::CursorLeftSelect;
         e.proc();
         assert_eq!(e.sel, SelRange { sy: 2, sx: 2, s_disp_x: 2, ey: 2, ex: 1, e_disp_x: 1, ..SelRange::default() });
-        e.e_cmd = E_Cmd::CancelModeAndSearchResult;
+        e.e_cmd = E_Cmd::CancelState;
         e.proc();
         assert_eq!(e.sel, SelRange { ..SelRange::default() });
     }

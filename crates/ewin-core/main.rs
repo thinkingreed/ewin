@@ -85,8 +85,8 @@ async fn main() {
     watching_grep(tx_grep);
 
     loop {
-        // for job in rx {
         if let Ok(job) = rx.recv_timeout(Duration::from_millis(16)) {
+            // for job in rx {
             match job.job_type {
                 JobType::Event => {
                     let keys = Keybind::evt_to_keys(&job.job_evt.unwrap().evt);

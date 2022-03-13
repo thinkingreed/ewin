@@ -33,7 +33,7 @@ pub const PARENT_FOLDER: &str = "..";
 pub const MULTI_CLICK_MILLISECONDS: i64 = 1000;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 pub const MULTI_CLICK_MILLISECONDS: i64 = 500;
-pub const DELIM_STR: &str = r#"!"\#$%&()*+-',./:;<=>?@[]^`{|}~"#;
+pub const DELIM_STR: &str = r#" 　!"\#$%&()*+-',./:;<=>?@[]^`{|}~"#;
 pub const HALF_SPACE: &str = " ";
 pub const FULL_SPACE: &str = "　";
 pub const ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE: u64 = 1048576;

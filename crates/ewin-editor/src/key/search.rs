@@ -30,7 +30,7 @@ impl Editor {
                 self.search_str(true, true);
             }
             for s in &self.search.ranges {
-                self.change_info.restayle_row.insert(s.y);
+                self.change_info.restayle_row_set.insert(s.y);
             }
             self.draw_range = E_DrawRange::Targetpoint;
         }

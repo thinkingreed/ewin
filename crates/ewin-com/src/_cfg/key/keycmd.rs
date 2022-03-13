@@ -15,12 +15,6 @@ impl KeyCmd {
          * All
          */
 
-        /*
-        if keycmd == "closeFile" {
-            return KeyCmd::CloseFile;
-        }
-         */
-
         return match keywhen {
             "headerBarFocus" => KeyCmd::Unsupported,
             "promptFocus" => match keycmd {
@@ -128,12 +122,14 @@ impl KeyCmd {
                 "openMenuEdit" => KeyCmd::Edit(E_Cmd::OpenMenuEdit),
                 "openMenuSearch" => KeyCmd::Edit(E_Cmd::OpenMenuSearch),
                 // mode
-                "cancelMode" => KeyCmd::Edit(E_Cmd::CancelModeAndSearchResult),
+                "cancelMode" => KeyCmd::Edit(E_Cmd::CancelState),
                 // ContextMenu
                 "contextMenu" => KeyCmd::Edit(E_Cmd::CtxtMenu(USIZE_UNDEFINED, USIZE_UNDEFINED)),
                 // switchTab
                 "switchTabLeft" => KeyCmd::Edit(E_Cmd::SwitchTabLeft),
                 "switchTabRight" => KeyCmd::Edit(E_Cmd::SwitchTabRight),
+                // Input Complement
+                "inputComplement" => KeyCmd::Edit(E_Cmd::InputComple),
                 _ => KeyCmd::Unsupported,
             },
 
@@ -151,8 +147,6 @@ pub enum KeyCmd {
     CtxMenu(C_Cmd),
     HeaderBar(H_Cmd),
     StatusBar(S_Cmd),
-    // CloseFile,
-    // Resize,
     Unsupported,
     Null,
 }
@@ -223,8 +217,6 @@ pub enum E_Cmd {
     MouseDragLeftDown(usize, usize),
     MouseScrollUp,
     MouseScrollDown,
-    // Internal use as an alternative to paste
-    InsertStr(String),
     DelPrevChar,
     DelNextChar,
     Cut,
@@ -239,7 +231,7 @@ pub enum E_Cmd {
     // select
     AllSelect,
     // edit
-    // InsertChar(char),
+    InsertStr(String),
     // For Box Insert redo
     InsertBox(Vec<(SelRange, String)>),
     DelBox(Vec<(SelRange, String)>),
@@ -278,12 +270,13 @@ pub enum E_Cmd {
     CtxtMenu(usize, usize),
     // mode
     BoxSelectMode,
-    CancelModeAndSearchResult,
+    CancelState,
     ReOpenFile,
     // SwitchTab
     SwitchTabRight,
     SwitchTabLeft,
     // Other
+    InputComple,
     Resize(usize, usize),
     Null,
 }
@@ -317,18 +310,4 @@ pub enum H_Cmd {
 #[allow(non_camel_case_types)]
 pub enum S_Cmd {
     MouseDownLeft(usize, usize),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[allow(non_camel_case_types)]
-pub enum I_Cmd {
-    MouseMove(usize, usize),
-    MouseDownLeft(usize, usize),
-    InputCompletion,
-    CursorDown,
-    CursorUp,
-    CursorRight,
-    CursorLeft,
-    ConfirmCtxMenu,
-    Null,
 }

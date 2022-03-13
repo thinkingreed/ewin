@@ -42,6 +42,7 @@ impl Keybind {
             cmd_key_map.insert(KeyCmd::cmd_when_to_keycmd(&keybind.cmd, &keybind.when), Keys::from_str(&keybind.key).unwrap());
 
             if keybind.when == KeyWhen::AllFocus.to_string() {
+                key_cmd_map.insert((Keys::from_str(&keybind.key).unwrap(), KeyWhen::AllFocus), KeyCmd::cmd_when_to_keycmd(&keybind.cmd, &KeyWhen::AllFocus.to_string()));
                 key_cmd_map.insert((Keys::from_str(&keybind.key).unwrap(), KeyWhen::EditorFocus), KeyCmd::cmd_when_to_keycmd(&keybind.cmd, &KeyWhen::EditorFocus.to_string()));
                 key_cmd_map.insert((Keys::from_str(&keybind.key).unwrap(), KeyWhen::PromptFocus), KeyCmd::cmd_when_to_keycmd(&keybind.cmd, &KeyWhen::PromptFocus.to_string()));
             } else if keybind.when == KeyWhen::InputFocus.to_string() {
@@ -76,10 +77,23 @@ impl Keybind {
         key_cmd_map.insert((Keys::Raw(Key::Down), KeyWhen::CtxMenuFocus), KeyCmd::CtxMenu(C_Cmd::CursorDown));
         key_cmd_map.insert((Keys::Raw(Key::Enter), KeyWhen::CtxMenuFocus), KeyCmd::CtxMenu(C_Cmd::ConfirmCtxMenu));
 
+        // InputCompletion
+        /*
+               key_cmd_map.insert((Keys::Null, KeyWhen::InputCompleFocus), KeyCmd::InputComple(I_Cmd::Null));
+               key_cmd_map.insert((Keys::Raw(Key::Left), KeyWhen::InputCompleFocus), KeyCmd::InputComple(I_Cmd::CursorLeft));
+               key_cmd_map.insert((Keys::Raw(Key::Right), KeyWhen::InputCompleFocus), KeyCmd::InputComple(I_Cmd::CursorRight));
+               key_cmd_map.insert((Keys::Raw(Key::Up), KeyWhen::InputCompleFocus), KeyCmd::InputComple(I_Cmd::CursorUp));
+               key_cmd_map.insert((Keys::Raw(Key::Down), KeyWhen::InputCompleFocus), KeyCmd::InputComple(I_Cmd::CursorDown));
+               key_cmd_map.insert((Keys::Raw(Key::Enter), KeyWhen::InputCompleFocus), KeyCmd::InputComple(I_Cmd::ConfirmInputComple));
+        */
         Log::debug("key_cmd_map", &key_cmd_map);
 
-        let _ = KEY_CMD_MAP.set(key_cmd_map);
         let _ = CMD_KEY_MAP.set(cmd_key_map);
+
+        // Set the same key as when forcus is editor
+        //  key_cmd_map.insert((Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::InputComple)), KeyWhen::InputCompleFocus), KeyCmd::InputComple(I_Cmd::InputComple));
+
+        let _ = KEY_CMD_MAP.set(key_cmd_map);
         err_str
     }
 
@@ -134,6 +148,19 @@ impl Keybind {
                 }
                 return KeyCmd::Unsupported;
             }
+            /*
+            KeyWhen::InputCompleFocus => {
+                let i_cmd = match &keys {
+                    Keys::Shift(Key::Char(c)) => return KeyCmd::InputComple(I_Cmd::InsertStr(c.to_ascii_uppercase().to_string())),
+                    Keys::Raw(Key::Char(c)) => return KeyCmd::InputComple(I_Cmd::InsertStr(c.to_string())),
+                    Keys::MouseDownLeft(y, x) => I_Cmd::MouseDownLeft(*y as usize, *x as usize),
+                    Keys::MouseDragRight(_, _) => I_Cmd::Null,
+                    Keys::MouseMove(y, x) => I_Cmd::MouseMove(*y as usize, *x as usize),
+                    _ => return KeyCmd::Unsupported,
+                };
+                return KeyCmd::InputComple(i_cmd);
+            }
+             */
             KeyWhen::EditorFocus => {
                 match &keys {
                     Keys::Resize(x, y) => return KeyCmd::Edit(E_Cmd::Resize(*x as usize, *y as usize)),

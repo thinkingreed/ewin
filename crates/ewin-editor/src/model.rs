@@ -1,4 +1,5 @@
 use crate::ewin_com::{_cfg::key::keycmd::*, def::*, model::*};
+use ewin_window::model::InputComple;
 use ropey::Rope;
 use std::{
     collections::{BTreeSet, HashMap},
@@ -34,7 +35,7 @@ pub struct Editor {
     /// number displayed on the terminal
     pub row_disp_len: usize,
     pub row_disp_len_org: usize,
-    pub row_len_org: usize,
+    pub len_rows_org: usize,
     pub row_posi: usize,
     pub col_len: usize,
     pub col_len_org: usize,
@@ -52,6 +53,7 @@ pub struct Editor {
     pub scrl_v: ScrollbarV,
     pub scrl_h: ScrollbarH,
     pub change_info: ChangeInfo,
+    pub input_comple: InputComple,
 }
 
 impl Editor {
@@ -84,15 +86,15 @@ impl Editor {
             draw_range: E_DrawRange::default(),
             history: History::default(),
             grep_result_vec: vec![],
-
             key_vec: vec![],
             is_enable_syntax_highlight: false,
             h_file: HeaderFile::default(),
             box_insert: BoxInsert::default(),
             scrl_v: ScrollbarV::default(),
             scrl_h: ScrollbarH::default(),
-            row_len_org: 0,
+            len_rows_org: 0,
             change_info: ChangeInfo::default(),
+            input_comple: InputComple::default(),
         }
     }
 }
@@ -111,11 +113,13 @@ pub struct EditorState {
     pub is_dragging: bool,
     pub key_macro: KeyMacroState,
     pub mouse_mode: MouseMode,
+    pub input_comple_mode: InputCompleMode,
+    pub input_comple_mode_org: InputCompleMode,
 }
 
 impl Default for EditorState {
     fn default() -> Self {
-        EditorState { is_changed: false, is_changed_org: false, is_read_only: false, is_dragging: false, key_macro: KeyMacroState::default(), mouse_mode: MouseMode::Normal }
+        EditorState { is_changed: false, is_changed_org: false, is_read_only: false, is_dragging: false, key_macro: KeyMacroState::default(), mouse_mode: MouseMode::Normal, input_comple_mode: InputCompleMode::None, input_comple_mode_org: InputCompleMode::None }
     }
 }
 impl EditorState {
@@ -204,20 +208,7 @@ impl Default for ScrollbarH {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ChangeInfo {
-    pub change_type: EditerChangeType,
     pub new_row: BTreeSet<usize>,
-    pub restayle_row: BTreeSet<usize>,
-    pub del_row: BTreeSet<usize>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum EditerChangeType {
-    StyleOnly,
-    Edit,
-    None,
-}
-impl Default for EditerChangeType {
-    fn default() -> Self {
-        EditerChangeType::None
-    }
+    pub restayle_row_set: BTreeSet<usize>,
+    pub del_row_set: BTreeSet<usize>,
 }

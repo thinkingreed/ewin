@@ -14,6 +14,7 @@ pub mod evt_act {
     pub mod ctx_menu;
     pub mod editor;
     pub mod headerbar;
+    pub mod input_comple;
     pub mod prom;
     pub mod statusbar;
 }
