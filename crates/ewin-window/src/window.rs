@@ -14,6 +14,8 @@ impl Window {
     const EXTRA_FROM_CUR_X: usize = 1;
     const EXTRA_FROM_CUR_Y: usize = 1;
 
+    pub const MAX_HEIGHT: usize = 8;
+
     pub fn set_init_menu(&mut self) {
         if self.parent_sel_y == USIZE_UNDEFINED && !self.curt_cont.menu_vec.is_empty() {
             self.parent_sel_y = 0;
@@ -107,6 +109,7 @@ impl Window {
     }
     pub fn set_parent_disp_area(&mut self, y: usize, x: usize) {
         Log::debug_key("Window.set_parent_disp_area");
+        Log::debug("self.curt_cont.height", &self.curt_cont.height);
 
         let (cols, rows) = get_term_size();
         // rows
@@ -200,9 +203,33 @@ impl Window {
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>, sel_color: &str, not_sel_color: &str) {
         Log::debug_key("Window.draw");
+        let menu_vec = self.curt_cont.menu_vec.clone();
+        Log::debug("menu_vec.len()", &menu_vec.len());
 
-        for (parent_idx, (parent_menu, child_cont_option)) in self.curt_cont.menu_vec.iter_mut().enumerate() {
-            let color = if parent_idx == self.parent_sel_y { sel_color } else { not_sel_color };
+        if menu_vec.len() > Window::MAX_HEIGHT {
+            Log::debug("self.parent_sel_y", &self.parent_sel_y);
+            Log::debug("self.offset_y", &self.offset_y);
+
+            if self.parent_sel_y == 0 {
+                self.offset_y = 0;
+            } else if self.parent_sel_y == menu_vec.len() - 1 {
+                self.offset_y = menu_vec.len() - Window::MAX_HEIGHT;
+            } else if self.parent_sel_y == Window::MAX_HEIGHT + self.offset_y - 1 {
+                Log::debug("self.offset_y 000", &self.offset_y);
+                self.offset_y += 1;
+                Log::debug("self.offset_y 111", &self.offset_y);
+                // }
+            } else if self.parent_sel_y == self.offset_y {
+                Log::debug("self.offset_y 222", &self.offset_y);
+                self.offset_y -= 1;
+                Log::debug("self.offset_y 333", &self.offset_y);
+            }
+        }
+        let menu_vec = &menu_vec[self.offset_y..self.offset_y + Window::MAX_HEIGHT];
+        Log::debug("menu_vec 111", &menu_vec);
+
+        for (parent_idx, (parent_menu, child_cont_option)) in menu_vec.iter().enumerate() {
+            let color = if parent_idx == self.parent_sel_y - self.offset_y { sel_color } else { not_sel_color };
             let name = format!("{}{}", color, parent_menu.name_disp,);
 
             str_vec.push(format!("{}{}", MoveTo((self.curt_cont.x_area.0) as u16, (self.curt_cont.y_area.0 + parent_idx) as u16), name));
@@ -221,7 +248,7 @@ impl Window {
         str_vec.push(Colors::get_default_fg_bg());
     }
 
-    pub fn get_draw_range_y(&mut self, offset_y: usize, hbar_disp_row_num: usize, editor_row_len: usize) -> Option<(usize, usize)> {
+    pub fn get_draw_range_y(&mut self, editor_offset_y: usize, hbar_disp_row_num: usize, editor_row_len: usize) -> Option<(usize, usize)> {
         Log::debug_key("Window.get_draw_range");
         Log::debug("Window.self", &self);
         if !self.is_menu_change() {
@@ -237,7 +264,7 @@ impl Window {
             // -1 is the correspondence when the previous child menu exists.
             sy = min(sy, child_cont.y_area.0 - 1);
         }
-        return Some((offset_y + min(sy, ey), min(offset_y + max(sy, ey), offset_y + editor_row_len)));
+        return Some((editor_offset_y + min(sy, ey), min(editor_offset_y + max(sy, ey), editor_offset_y + editor_row_len)));
     }
 }
 

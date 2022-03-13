@@ -90,7 +90,6 @@ impl Terminal {
             }
             Log::info("self.curt().editor.state.input_comple_mode", &self.curt().editor.state.input_comple_mode);
             if self.curt().editor.is_input_imple_mode(true) {
-                Log::info("self.curt().editor.input_comple.window", &self.curt().editor.input_comple.window);
                 self.curt().editor.input_comple.draw(&mut str_vec);
             }
         }

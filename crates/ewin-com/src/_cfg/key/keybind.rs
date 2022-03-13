@@ -2,7 +2,7 @@ use crate::{
     _cfg::{
         key::{keycmd::*, keys::Key, keys::*, keywhen::*},
         lang::lang_cfg::*,
-        model::default::Cfg,
+        model::default::*,
         setting_file_loader::*,
     },
     def::*,
@@ -16,10 +16,14 @@ use json5;
 use std::{cmp::Ordering::*, collections::HashMap, str::FromStr};
 
 impl Keybind {
-    pub fn init(args: &Args, keybind_str: &str) -> String {
-        let mut keybind_vec: Vec<Keybind> = json5::from_str(keybind_str).unwrap();
+    pub fn init(args: &Args) -> String {
+        #[cfg(target_family = "unix")]
+        let mut keybind_vec: Vec<Keybind> = json5::from_str(include_str!("../../../../../setting/keybind/keybind_unix_family.json5")).unwrap();
+        #[cfg(target_family = "windows")]
+        let mut keybind_vec: Vec<Keybind> = json5::from_str(include_str!("../../../../../setting/keybind/keybind_windows.json5")).unwrap();
 
         let (mut keybind_vec_user, err_str) = SettingFileLoader::new(FileType::JSON5, args, FilePath::get_app_config_dir(), KEYBINDING_FILE).load::<Vec<Keybind>>();
+
         if !err_str.is_empty() {
             return err_str;
         }
@@ -148,19 +152,6 @@ impl Keybind {
                 }
                 return KeyCmd::Unsupported;
             }
-            /*
-            KeyWhen::InputCompleFocus => {
-                let i_cmd = match &keys {
-                    Keys::Shift(Key::Char(c)) => return KeyCmd::InputComple(I_Cmd::InsertStr(c.to_ascii_uppercase().to_string())),
-                    Keys::Raw(Key::Char(c)) => return KeyCmd::InputComple(I_Cmd::InsertStr(c.to_string())),
-                    Keys::MouseDownLeft(y, x) => I_Cmd::MouseDownLeft(*y as usize, *x as usize),
-                    Keys::MouseDragRight(_, _) => I_Cmd::Null,
-                    Keys::MouseMove(y, x) => I_Cmd::MouseMove(*y as usize, *x as usize),
-                    _ => return KeyCmd::Unsupported,
-                };
-                return KeyCmd::InputComple(i_cmd);
-            }
-             */
             KeyWhen::EditorFocus => {
                 match &keys {
                     Keys::Resize(x, y) => return KeyCmd::Edit(E_Cmd::Resize(*x as usize, *y as usize)),

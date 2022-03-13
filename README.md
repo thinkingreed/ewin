@@ -21,6 +21,7 @@ It provides basic features as a minimal text editor:
 - When using WSL, it can be linked with the Windows Clipboard.
 - File change monitoring.
 - Color theme(Cursor color is out of scope)
+- Input completion(word completion)
 
 
 [![Rust](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml/badge.svg)](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml)
@@ -122,6 +123,8 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `F12`            | Mouse capture changes.Used for clipboard access via terminal app                                                    | ―             |
 |                  | when connecting to a remote terminal                                                                                | ―             |
 | `F10`            | Display Context menu.                                                                                               | ―             |
+| `Ctrl` + `space` | Input completion on Unix family.| ―             |
+| `Shift` + `space`| Input completion on Windows.(※Ctrl+space cannot be read at Crossterm on Windows)| ―             |
 
 - **Moving cursor**
 
@@ -165,7 +168,8 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `Shift` + `END`            | Select the end of line.                                                                       | target        |
 | `Ctrl` + `a`               | Select all.                                                                                   | target        |
 | `F3`                       | Search for characters below. 　　　　　                                                       | target        |
-| `Shift` + `F4`             | Search for above characters below.　　　　　                                                  | target        |
+| `Shift` + `F3`             | Search for above characters below on Winodws                                                | target        |
+| `Shift` + `F4`             | Search for above characters below on Unix family(※Shift+F3 cannot be read at Crossterm on Unix family)　　　　　                                                  | target        |
 | `Mouse Left.Down` + `Drag` | Select a range.                                                                               | ―             |
 | `Mouse Double click`       | Select a range.Delimiter is `` ! "\#$%&()*+-',./:;<=>?@[]^`{|}~ ``                            | ―             |
 | `Mouse Triple click`       | Select a line.                                                                                | ―             |

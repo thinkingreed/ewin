@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, log::*, model::*},
+    ewin_com::{_cfg::key::keycmd::*, log::*},
     model::*,
 };
 
@@ -52,6 +52,7 @@ mod tests {
     use ewin_com::{
         _cfg::model::default::{Cfg, CfgLog},
         clipboard::*,
+        model::*,
     };
 
     #[test]

@@ -8,8 +8,6 @@ impl Editor {
         Log::debug_key("Editor.init_input_comple");
         let search_str = self.get_until_delim_str();
         let set = self.input_comple.search(&search_str);
-        Log::debug("search_str", &search_str);
-        Log::debug("set", &set);
 
         if !is_first && search_str.is_empty() {
             self.state.input_comple_mode = InputCompleMode::None;
@@ -26,7 +24,7 @@ impl Editor {
         } else {
             self.state.input_comple_mode = InputCompleMode::WordComple;
             self.input_comple.set_disp_name(&search_str);
-            self.input_comple.window.set_parent_disp_area(self.cur.y + self.row_posi, self.cur.disp_x + self.get_rnw_and_margin() - 1);
+            self.input_comple.window.set_parent_disp_area(self.cur.y + self.row_posi - self.offset_y, self.cur.disp_x + self.get_rnw_and_margin() - 1);
             self.input_comple.window.set_init_menu();
         }
     }

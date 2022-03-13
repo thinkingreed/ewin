@@ -36,11 +36,13 @@ impl Editor {
     }
 
     pub fn recalc_scrlbar_h(&mut self, idxs: BTreeSet<usize>) {
+        Log::debug_key("recalc_scrlbar_h");
         for i in idxs {
             if self.scrl_h.row_width_chars_vec.get(i).is_some() {
                 self.scrl_h.row_width_chars_vec[i] = (self.buf.line(i).to_string().width() + Editor::SCROLL_BAR_H_END_LINE_MARGIN, self.buf.line(i).len_chars() + Editor::SCROLL_BAR_H_END_LINE_MARGIN);
             }
         }
+
         if !self.scrl_h.row_width_chars_vec.is_empty() {
             self.scrl_h.row_max_width = self.scrl_h.row_width_chars_vec.iter().max_by(|(x1, _), (x2, _)| x1.cmp(x2)).unwrap().0;
             self.scrl_h.row_max_width_idx = self.scrl_h.row_width_chars_vec.iter().position(|(x, _)| x == &self.scrl_h.row_max_width).unwrap();
@@ -50,7 +52,7 @@ impl Editor {
     }
 
     pub fn set_scrlbar_h_posi(&mut self, x: usize) {
-        Log::debug_key("set_cur_scrlbar_h");
+        Log::debug_key("set_scrlbar_h_posi");
 
         // MouseDownLeft
         if matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) {
@@ -59,14 +61,7 @@ impl Editor {
             // Except on scrl_h
             if self.get_rnw_and_margin() - 1 <= x && x < self.get_rnw_and_margin() + self.col_len {
                 // Excluded if within bar range
-                Log::debug_s("11111111111111111111111111111111");
-                Log::debug(" xxx", &x);
-                Log::debug(" self.get_rnw_and_margin() + self.scrl_h.clm_posi", &(self.get_rnw_and_margin() + self.scrl_h.clm_posi));
-                Log::debug(" self.get_rnw_and_margin() + self.scrl_h.clm_posi + self.scrl_h.bar_len", &(self.get_rnw_and_margin() + self.scrl_h.clm_posi + self.scrl_h.bar_len));
-
                 if !(self.get_rnw_and_margin() + self.scrl_h.clm_posi <= x && x < self.get_rnw_and_margin() + self.scrl_h.clm_posi + self.scrl_h.bar_len) {
-                    Log::debug_s("2222222222222222222222222222222222");
-
                     self.scrl_h.clm_posi = if x + self.scrl_h.bar_len < self.get_rnw_and_margin() + self.col_len {
                         if x >= self.get_rnw_and_margin() {
                             x - self.get_rnw_and_margin()
@@ -113,16 +108,9 @@ impl Editor {
     pub fn draw_scrlbar_h(&mut self, str_vec: &mut Vec<String>) {
         Log::debug_key("draw_scrlbar_h");
 
-        Log::debug(" self.curt().editor.scrl_h.row_max_width", &self.scrl_h.is_show);
-        Log::debug(" self.curt().editor.scrl_h.row_max_width", &self.scrl_h.row_max_width);
-
         if self.scrl_h.is_show {
             if self.scrl_h.bar_len == USIZE_UNDEFINED || self.scrl_h.row_max_width_org != self.scrl_h.row_max_width || self.col_len != self.col_len_org {
-                Log::debug("self.col_len", &self.col_len);
-                Log::debug("self.scrl_h.row_max_width", &self.scrl_h.row_max_width);
-                Log::debug("self.scrl_h.bar_len 111", &self.scrl_h.bar_len);
                 self.scrl_h.bar_len = max(2, (self.col_len as f64 / self.scrl_h.row_max_width as f64 * self.col_len as f64).floor() as usize);
-                Log::debug("self.scrl_h.bar_len 222", &self.scrl_h.bar_len);
 
                 if self.scrl_h.row_max_width > self.col_len {
                     self.scrl_h.is_show = true;
@@ -132,7 +120,6 @@ impl Editor {
                     let move_cur_x = ((self.scrl_h.row_max_width - self.col_len) as f64 / self.scrl_h.scrl_range as f64 / rate).ceil() as usize;
                     //  let move_cur_x = ((self.scrl_h.row_max_chars as f64 - (self.col_len as f64 * rate)) / self.scrl_h.scrl_range as f64).ceil() as usize;
                     self.scrl_h.move_char_x = if move_cur_x == 0 { 1 } else { move_cur_x };
-                    Log::debug("self.scrl_h.move_cur_x 333", &self.scrl_h.move_char_x);
                 }
             }
 
@@ -144,7 +131,6 @@ impl Editor {
                     self.scrl_h.clm_posi = (self.offset_disp_x as f64 / self.scrl_h.row_max_width as f64 * self.scrl_h.scrl_range as f64).ceil() as usize;
                 }
             }
-            Log::debug("self.scrl_h.clm_posi 222", &self.scrl_h.clm_posi);
 
             let height = Cfg::get().general.editor.scrollbar.horizontal.height;
             for i in self.scrl_h.row_posi..self.scrl_h.row_posi + height {

@@ -4,6 +4,7 @@
          left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, esc, F1～F12
      // Ctrl
          ctrl+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12, space)
+         ※Ctrl + space cannot be read at Crossterm on Windows
      // Shit
          shit+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12)
      // Alt
@@ -201,7 +202,7 @@
     when: 'promptFocus'
   },
   {
-    key: 'shift+F4',
+    key: 'shift+F3',
     cmd: 'findBack',
     when: 'editorFocus'
   },
@@ -269,7 +270,7 @@
     when: 'editorFocus'
   },
     {
-    key: 'ctrl+space',
+    key: 'shift+space',
     cmd: 'inputComplement',
     when: 'editorFocus'
   },

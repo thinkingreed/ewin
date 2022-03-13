@@ -10,8 +10,8 @@ impl Editor {
             Log::debug("proc.e_cmd sel_proc.sel", &sel_proc.sel);
             let sel = sel_proc.sel.get_range();
 
-            self.mod_change_tgt(BTreeSet::from([sel_proc.cur_s.y]));
             self.del_change_tgt((sel.sy..sel.ey).collect::<BTreeSet<usize>>());
+            self.mod_change_tgt(BTreeSet::from([sel_proc.cur_s.y]));
         };
 
         if let Some(proc) = &evt_proc.proc {
@@ -77,8 +77,8 @@ impl Editor {
         self.input_comple.analysis_del(&idxs);
 
         self.change_info.del_row_set.extend(&idxs);
-        for idx in idxs {
-            self.scrl_h.row_width_chars_vec.remove(idx);
+        for (i, idx) in idxs.iter().enumerate() {
+            self.scrl_h.row_width_chars_vec.remove(idx - i);
         }
     }
 

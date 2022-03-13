@@ -40,7 +40,7 @@ async fn main() {
         //   Log::info_s(&err_str);
         Terminal::exit_file_open(&err_str);
     }
-    let err_str = Keybind::init(&args, include_str!("../../keybind.json5"));
+    let err_str = Keybind::init(&args);
     if !err_str.is_empty() {
         Terminal::exit_file_open(&err_str);
     }

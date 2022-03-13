@@ -26,11 +26,12 @@ pub struct Window {
     pub disp_sy: usize,
     // Bottom of PopUp
     pub disp_ey: usize,
+    pub offset_y: usize,
 }
 
 impl Default for Window {
     fn default() -> Self {
-        Window { curt_cont: WindowCont::default(), parent_sel_y: USIZE_UNDEFINED, parent_sel_y_cache: USIZE_UNDEFINED, child_sel_y: USIZE_UNDEFINED, child_sel_y_cache: USIZE_UNDEFINED, disp_sy: USIZE_UNDEFINED, disp_ey: 0 }
+        Window { curt_cont: WindowCont::default(), parent_sel_y: USIZE_UNDEFINED, parent_sel_y_cache: USIZE_UNDEFINED, child_sel_y: USIZE_UNDEFINED, child_sel_y_cache: USIZE_UNDEFINED, disp_sy: USIZE_UNDEFINED, disp_ey: 0, offset_y: 0 }
     }
 }
 

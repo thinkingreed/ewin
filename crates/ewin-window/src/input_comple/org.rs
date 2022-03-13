@@ -1,6 +1,6 @@
 use crate::model::*;
 use ewin_com::{_cfg::key::keycmd::*, def::DELIM_STR, log::Log, util::*};
-use std::collections::BTreeSet;
+use std::{cmp::min, collections::BTreeSet};
 
 impl InputComple {
     pub fn init(&mut self) {
@@ -39,7 +39,7 @@ impl InputComple {
             parent_menu.name_disp = format!(" {}{} ", perent_str, " ".repeat(space),);
         }
 
-        self.window.curt_cont.height = self.window.curt_cont.menu_vec.len();
+        self.window.curt_cont.height = min(self.window.curt_cont.menu_vec.len(), Window::MAX_HEIGHT);
         // +1 is Extra
         self.window.curt_cont.width = parent_max_len + 1;
     }
@@ -110,6 +110,7 @@ impl InputComple {
             Log::debug_key("4444444444444444444444444");
             self.analysis_new(idx, row_char);
         }
+        Log::debug_key("55555555555555555555555555");
     }
 
     pub fn search(&self, search_str: &str) -> BTreeSet<String> {
