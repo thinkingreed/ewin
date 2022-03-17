@@ -1,5 +1,5 @@
 use crate::ctx_menu::org::*;
-use ewin_com::{_cfg::key::keycmd::*, def::*};
+use ewin_com::{_cfg::key::keycmd::*, def::*, model::ScrollbarV};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -17,21 +17,23 @@ impl Default for CtxMenu {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Window {
+    pub e_cmd: E_Cmd,
     pub curt_cont: WindowCont,
     pub parent_sel_y: usize,
-    pub parent_sel_y_cache: usize,
+    pub parent_sel_y_org: usize,
     pub child_sel_y: usize,
-    pub child_sel_y_cache: usize,
+    pub child_sel_y_org: usize,
     // Top of PopUp
     pub disp_sy: usize,
     // Bottom of PopUp
     pub disp_ey: usize,
     pub offset_y: usize,
+    pub scrl_v: ScrollbarV,
 }
 
 impl Default for Window {
     fn default() -> Self {
-        Window { curt_cont: WindowCont::default(), parent_sel_y: USIZE_UNDEFINED, parent_sel_y_cache: USIZE_UNDEFINED, child_sel_y: USIZE_UNDEFINED, child_sel_y_cache: USIZE_UNDEFINED, disp_sy: USIZE_UNDEFINED, disp_ey: 0, offset_y: 0 }
+        Window { e_cmd: E_Cmd::Null, curt_cont: WindowCont::default(), parent_sel_y: USIZE_UNDEFINED, parent_sel_y_org: USIZE_UNDEFINED, child_sel_y: USIZE_UNDEFINED, child_sel_y_org: USIZE_UNDEFINED, disp_sy: USIZE_UNDEFINED, disp_ey: 0, offset_y: 0, scrl_v: ScrollbarV::default() }
     }
 }
 
@@ -64,11 +66,18 @@ pub struct WindowMenu {
     pub name_disp: String,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InputComple {
     pub window: Window,
     pub all_words_map: BTreeMap<String, BTreeSet<usize>>,
     pub row_words_vec: Vec<RowWords>,
+}
+
+impl Default for InputComple {
+    fn default() -> Self {
+        // row_words_vec: vec![RowWords::default()] is Correspondence of initial state
+        InputComple { window: Window::default(), all_words_map: BTreeMap::default(), row_words_vec: vec![RowWords::default()] }
+    }
 }
 
 impl InputComple {

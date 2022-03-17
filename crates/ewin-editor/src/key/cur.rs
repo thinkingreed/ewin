@@ -75,7 +75,7 @@ impl Editor {
         // 行頭の場合
         } else if self.cur.x == 0 {
             self.cur_up();
-            self.set_cur_target(self.cur.y, self.buf.len_row_chars(self.cur.y), false);
+            self.set_cur_target_by_x(self.cur.y, self.buf.len_row_chars(self.cur.y), false);
         } else {
             let c = self.buf.char(self.cur.y, self.cur.x - 1);
             if c == TAB_CHAR {
@@ -149,7 +149,7 @@ impl Editor {
     }
 
     pub fn cur_end(&mut self) {
-        self.set_cur_target(self.cur.y, self.buf.len_row_chars(self.cur.y), false);
+        self.set_cur_target_by_x(self.cur.y, self.buf.len_row_chars(self.cur.y), false);
         self.scroll();
         self.scroll_horizontal();
     }
@@ -163,7 +163,7 @@ impl Editor {
     pub fn ctrl_end(&mut self) {
         let y = self.buf.len_rows() - 1;
         let len_line_chars = self.buf.len_row_chars(y);
-        self.set_cur_target(y, len_line_chars, false);
+        self.set_cur_target_by_x(y, len_line_chars, false);
         self.scroll();
         self.scroll_horizontal();
         if self.updown_x == 0 {

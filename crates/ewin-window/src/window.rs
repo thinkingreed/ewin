@@ -3,7 +3,7 @@ use crossterm::{
     cursor::{Hide, MoveTo},
     execute,
 };
-use ewin_com::{colors::Colors, def::*, log::Log, model::*, util::*};
+use ewin_com::{colors::*, def::*, log::Log, model::*, util::*};
 use std::{
     cmp::{max, min},
     io::Write,
@@ -22,6 +22,9 @@ impl Window {
         };
     }
     pub fn get_curt_parent(&self) -> Option<(WindowMenu, Option<WindowCont>)> {
+        Log::debug_key("Window.cur_move");
+        Log::debug("self.parent_sel_y", &self.parent_sel_y);
+
         if let Some((ctx_menu, child_cont_option)) = self.curt_cont.menu_vec.get(self.parent_sel_y) {
             return Some((ctx_menu.clone(), child_cont_option.clone()));
         }
@@ -48,7 +51,7 @@ impl Window {
     pub fn cur_move(&mut self, direction: Direction) {
         Log::debug_key("Window.cur_move");
         if self.child_sel_y == USIZE_UNDEFINED {
-            self.parent_sel_y_cache = self.parent_sel_y;
+            self.parent_sel_y_org = self.parent_sel_y;
             match direction {
                 Direction::Down => self.parent_sel_y = if self.parent_sel_y == USIZE_UNDEFINED || self.curt_cont.menu_vec.get_mut(self.parent_sel_y + 1).is_none() { 0 } else { self.parent_sel_y + 1 },
                 Direction::Up => self.parent_sel_y = if self.parent_sel_y == USIZE_UNDEFINED || self.parent_sel_y == 0 { self.curt_cont.menu_vec.len() - 1 } else { self.parent_sel_y - 1 },
@@ -136,15 +139,19 @@ impl Window {
         Log::debug("set_parent_disp_area window.self ", &self);
     }
     pub fn ctrl_mouse_move(&mut self, y: usize, x: usize) {
+        Log::debug_key("ctrl_mouse_move");
         if self.curt_cont.y_area.0 <= y && y <= self.curt_cont.y_area.1 && self.curt_cont.x_area.0 <= x && x <= self.curt_cont.x_area.1 {
-            self.parent_sel_y_cache = self.parent_sel_y;
-            self.parent_sel_y = y - self.curt_cont.y_area.0;
+            Log::debug_key("set self.parent_sel_y ");
+            self.parent_sel_y_org = self.parent_sel_y;
+            self.parent_sel_y = y - self.curt_cont.y_area.0 + self.offset_y;
         }
+        Log::debug("self.parent_sel_y", &self.parent_sel_y);
+
         self.set_child_disp_area();
 
         if let Some((_, Some(child_cont))) = self.curt_cont.menu_vec.get(self.parent_sel_y) {
             if child_cont.y_area.0 <= y && y <= child_cont.y_area.1 && child_cont.x_area.0 <= x && x <= child_cont.x_area.1 {
-                self.child_sel_y_cache = self.child_sel_y;
+                self.child_sel_y_org = self.child_sel_y;
                 self.child_sel_y = y - child_cont.y_area.0;
             } else {
                 self.child_sel_y = USIZE_UNDEFINED;
@@ -158,11 +165,6 @@ impl Window {
     pub fn is_mouse_within_range(&mut self, y: usize, x: usize, is_around: bool) -> bool {
         Log::debug_key("Window.is_mouse_within_range");
         Log::debug("is_around_check", &is_around);
-
-        Log::debug("yyy", &y);
-        Log::debug("xxx", &x);
-        Log::debug("self.curt_cont.y_area", &self.curt_cont.y_area);
-        Log::debug("self.curt_cont.x_area", &self.curt_cont.x_area);
 
         if is_around {
             if self.curt_cont.y_area.0 - 1 == y || y == self.curt_cont.y_area.1 + 1 || self.curt_cont.x_area.0 - 1 == x || x == self.curt_cont.x_area.1 + 1 {
@@ -190,12 +192,12 @@ impl Window {
 
         return false;
     }
-    pub fn is_menu_change(&mut self) -> bool {
-        return self.parent_sel_y == USIZE_UNDEFINED || self.parent_sel_y != self.parent_sel_y_cache || self.child_sel_y != USIZE_UNDEFINED && self.child_sel_y != self.child_sel_y_cache;
+    pub fn is_menu_change(&self) -> bool {
+        return self.parent_sel_y == USIZE_UNDEFINED || self.parent_sel_y != self.parent_sel_y_org || self.child_sel_y != USIZE_UNDEFINED && self.child_sel_y != self.child_sel_y_org;
     }
     pub fn clear(&mut self) {
         self.parent_sel_y = USIZE_UNDEFINED;
-        self.parent_sel_y_cache = USIZE_UNDEFINED;
+        self.parent_sel_y_org = USIZE_UNDEFINED;
         self.child_sel_y = USIZE_UNDEFINED;
         self.disp_sy = USIZE_UNDEFINED;
         self.disp_ey = 0;
@@ -205,40 +207,31 @@ impl Window {
         Log::debug_key("Window.draw");
         Log::debug("self.curt_cont.menu_vec.len()", &self.curt_cont.menu_vec.len());
 
-        let menu_vec = if self.curt_cont.menu_vec.len() > Window::MAX_HEIGHT {
-            Log::debug("self.parent_sel_y", &self.parent_sel_y);
-            Log::debug("self.offset_y", &self.offset_y);
+        // calc offset
+        let menu_vec = self.get_tgt_menu_vec();
+        self.calc_scrlbar_v();
 
-            if self.parent_sel_y == 0 {
-                self.offset_y = 0;
-            } else if self.parent_sel_y == self.curt_cont.menu_vec.len() - 1 {
-                self.offset_y = self.curt_cont.menu_vec.len() - Window::MAX_HEIGHT;
-            } else if self.parent_sel_y == Window::MAX_HEIGHT + self.offset_y - 1 {
-                Log::debug("self.offset_y 000", &self.offset_y);
-                self.offset_y += 1;
-                Log::debug("self.offset_y 111", &self.offset_y);
-                // }
-            } else if self.parent_sel_y == self.offset_y {
-                Log::debug("self.offset_y 222", &self.offset_y);
-                self.offset_y -= 1;
-                Log::debug("self.offset_y 333", &self.offset_y);
-            }
-            self.curt_cont.menu_vec[self.offset_y..self.offset_y + Window::MAX_HEIGHT].to_vec()
-        } else {
-            self.curt_cont.menu_vec.clone()
-        };
-
-        Log::debug("menu_vec 111", &menu_vec);
+        Log::debug("self.scrl_v", &self.scrl_v);
+        Log::debug("self.curt_cont.menu_vec.len()", &self.curt_cont.menu_vec.len());
+        Log::debug(" self.parent_sel_y", &self.parent_sel_y);
+        Log::debug("self.offset_y", &self.offset_y);
 
         for (parent_idx, (parent_menu, child_cont_option)) in menu_vec.iter().enumerate() {
             let color = if parent_idx == self.parent_sel_y - self.offset_y { sel_color } else { not_sel_color };
             let name = format!("{}{}", color, parent_menu.name_disp,);
 
+            // Parent menu
             str_vec.push(format!("{}{}", MoveTo((self.curt_cont.x_area.0) as u16, (self.curt_cont.y_area.0 + parent_idx) as u16), name));
+
+            // Parent scrl_v
+            if self.scrl_v.is_show && self.scrl_v.row_posi <= parent_idx && parent_idx < self.scrl_v.row_posi + self.scrl_v.bar_len {
+                str_vec.push(format!("{}{}{}", Colors::get_scrollbar_v_bg(), MoveTo((self.curt_cont.x_area.1) as u16 + 1, (self.curt_cont.y_area.0 + parent_idx) as u16), "  ",));
+            }
+
             if parent_idx == self.parent_sel_y {
                 if let Some(cont) = child_cont_option {
                     for (child_idx, (child_menu, _)) in cont.menu_vec.iter().enumerate() {
-                        let c_name = cut_str(child_menu.name_disp.clone(), cont.x_area.1 + 1 - cont.x_area.0, false, false);
+                        let c_name = cut_str(&child_menu.name_disp, cont.x_area.1 + 1 - cont.x_area.0, false, false);
 
                         let color = if child_idx == self.child_sel_y { sel_color } else { not_sel_color };
                         let name = format!("{}{}", color, c_name,);
@@ -250,23 +243,73 @@ impl Window {
         str_vec.push(Colors::get_default_fg_bg());
     }
 
-    pub fn get_draw_range_y(&mut self, editor_offset_y: usize, hbar_disp_row_num: usize, editor_row_len: usize) -> Option<(usize, usize)> {
+    pub fn draw_only<T: Write>(&mut self, out: &mut T, sel_color: &str, not_sel_color: &str) {
+        Log::debug_key("Window.draw_only");
+        let mut v: Vec<String> = vec![];
+        self.draw(&mut v, sel_color, not_sel_color);
+        let _ = out.write(v.concat().as_bytes());
+        out.flush().unwrap();
+    }
+
+    pub fn get_draw_range_y(&self, editor_offset_y: usize, hbar_disp_row_num: usize, editor_row_len: usize) -> E_DrawRange {
         Log::debug_key("Window.get_draw_range");
         Log::debug("Window.self", &self);
         if !self.is_menu_change() {
-            return None;
+            return E_DrawRange::Not;
         };
         let mut sy = self.disp_sy - hbar_disp_row_num;
         let ey = self.disp_ey - hbar_disp_row_num;
 
-        if self.parent_sel_y_cache != USIZE_UNDEFINED {
-            sy = min(sy, self.curt_cont.y_area.0 + self.parent_sel_y_cache);
+        if self.parent_sel_y_org != USIZE_UNDEFINED {
+            sy = min(sy, self.curt_cont.y_area.0 + self.parent_sel_y_org);
         }
         if let Some((_, Some(child_cont))) = self.get_curt_parent() {
             // -1 is the correspondence when the previous child menu exists.
             sy = min(sy, child_cont.y_area.0 - 1);
         }
-        return Some((editor_offset_y + min(sy, ey), min(editor_offset_y + max(sy, ey), editor_offset_y + editor_row_len)));
+
+        return if let Some((sy, ey)) = Some((editor_offset_y + min(sy, ey), min(editor_offset_y + max(sy, ey), editor_offset_y + editor_row_len))) { E_DrawRange::TargetRange(sy, ey) } else { E_DrawRange::Not };
+    }
+
+    pub fn calc_scrlbar_v(&mut self) {
+        Log::debug_key("calc_scrlbar_v");
+        if self.scrl_v.is_show {
+            if self.scrl_v.bar_len == USIZE_UNDEFINED {
+                self.scrl_v.calc_com_scrlbar_v(false, self.curt_cont.height, self.curt_cont.menu_vec.len());
+            }
+            // self.scrl_v.calc_com_scrlbar_v_roe_posi(false, self.curt_cont.height, &self.e_cmd, self.offset_y, self.scrl_v.move_len);
+
+            Log::debug("self.offset_y + self.curt_cont.height == self.curt_cont.menu_vec.len()", &(self.offset_y + self.curt_cont.height == self.curt_cont.menu_vec.len()));
+            Log::debug("self.offset_y ", &self.offset_y);
+            Log::debug("self.curt_cont.height", &self.curt_cont.height);
+            Log::debug("self.curt_cont.menu_vec.len()", &self.curt_cont.menu_vec.len());
+
+            self.scrl_v.row_posi = if self.offset_y + self.curt_cont.height == self.curt_cont.menu_vec.len() {
+                self.curt_cont.height - self.scrl_v.bar_len
+            } else {
+                let mut row_posi = (self.offset_y as f64 / self.scrl_v.move_len as f64).ceil() as usize;
+                if row_posi + self.scrl_v.bar_len == self.curt_cont.height && self.offset_y + self.curt_cont.height < self.curt_cont.menu_vec.len() {
+                    row_posi -= 1;
+                }
+                row_posi
+            }
+        }
+    }
+    pub fn get_tgt_menu_vec(&mut self) -> Vec<(WindowMenu, Option<WindowCont>)> {
+        return if self.curt_cont.menu_vec.len() > Window::MAX_HEIGHT {
+            if self.parent_sel_y == 0 {
+                self.offset_y = 0;
+            } else if self.parent_sel_y == self.curt_cont.menu_vec.len() - 1 {
+                self.offset_y = self.curt_cont.menu_vec.len() - Window::MAX_HEIGHT;
+            } else if self.parent_sel_y == Window::MAX_HEIGHT + self.offset_y - 1 {
+                self.offset_y += 1;
+            } else if self.parent_sel_y == self.offset_y {
+                self.offset_y -= 1;
+            }
+            self.curt_cont.menu_vec[self.offset_y..self.offset_y + Window::MAX_HEIGHT].to_vec()
+        } else {
+            self.curt_cont.menu_vec.clone()
+        };
     }
 }
 

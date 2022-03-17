@@ -5,7 +5,7 @@ foreground = "#000000"
 
 [editor.line_number]
 active_background = "#ffffff"
-active_foreground = "#c0c0c0"
+active_foreground = "#000000"
 passive_background = "#dedede"
 passive_foreground = "#c0c0c0"
 
@@ -46,7 +46,7 @@ tab_passive_background = "#c0c0c0"
 foreground = "#c0c0c0"
 
 [ctx_menu]
-non_select_background = "#dedede"
+non_select_background = "#c0c0c0"
 select_background = "#6495ed"
 non_select_foreground = "#000000"
 select_foreground = "#ffffff"

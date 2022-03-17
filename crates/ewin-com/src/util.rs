@@ -205,13 +205,13 @@ pub fn get_char_type(c: char) -> CharType {
     }
 }
 
-pub fn cut_str(str: String, limit_width: usize, is_from_before: bool, is_add_continue_str: bool) -> String {
+pub fn cut_str(str: &str, limit_width: usize, is_from_before: bool, is_add_continue_str: bool) -> String {
     let mut chars: Vec<char> = if is_from_before { str.chars().rev().collect() } else { str.chars().collect() };
     let mut width = 0;
 
-    let str_width = get_str_width(&str);
+    let str_width = get_str_width(str);
     if limit_width >= str_width {
-        return str;
+        return str.to_string();
     } else {
         let limit_width = if is_add_continue_str { limit_width - get_str_width(CONTINUE_STR) } else { limit_width };
         for i in 0..chars.len() {
@@ -232,7 +232,7 @@ pub fn cut_str(str: String, limit_width: usize, is_from_before: bool, is_add_con
             }
         }
     }
-    str
+    str.to_string()
 }
 
 pub fn split_chars(target: &str, is_inclusive: bool, is_new_line_code_ignore: bool, split_char: &[char]) -> Vec<String> {
@@ -438,6 +438,7 @@ pub fn get_cfg_lang_name(name_str: &str) -> &str {
         return name_str;
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -530,19 +531,21 @@ mod tests {
         assert_eq!(get_char_type('a'), CharType::Nomal);
         assert_eq!(get_char_type('z'), CharType::Nomal);
     }
+
     #[test]
     fn test_cut_str() {
-        assert_eq!(cut_str("abc".to_string(), 0, false, false), "".to_string());
-        assert_eq!(cut_str("abc".to_string(), 4, false, false), "abc".to_string());
-        assert_eq!(cut_str("abc".to_string(), 2, false, false), "ab".to_string());
-        assert_eq!(cut_str("abc".to_string(), 2, true, false), "bc".to_string());
-        assert_eq!(cut_str("abc".to_string(), 3, false, true), "abc".to_string());
-        assert_eq!(cut_str("aあbcd".to_string(), 5, true, false), "あbcd".to_string());
-        assert_eq!(cut_str("aあbcd".to_string(), 5, true, true), "..bcd".to_string());
-        assert_eq!(cut_str("aあbcd".to_string(), 5, false, false), "aあbc".to_string());
-        assert_eq!(cut_str("aあbcd".to_string(), 5, false, true), "aあ..".to_string());
-        assert_eq!(cut_str("aあbcd".to_string(), 6, false, true), "aあbcd".to_string());
+        assert_eq!(cut_str("abc", 0, false, false), "".to_string());
+        assert_eq!(cut_str("abc", 4, false, false), "abc".to_string());
+        assert_eq!(cut_str("abc", 2, false, false), "ab".to_string());
+        assert_eq!(cut_str("abc", 2, true, false), "bc".to_string());
+        assert_eq!(cut_str("abc", 3, false, true), "abc".to_string());
+        assert_eq!(cut_str("aあbcd", 5, true, false), "あbcd".to_string());
+        assert_eq!(cut_str("aあbcd", 5, true, true), "..bcd".to_string());
+        assert_eq!(cut_str("aあbcd", 5, false, false), "aあbc".to_string());
+        assert_eq!(cut_str("aあbcd", 5, false, true), "aあ..".to_string());
+        assert_eq!(cut_str("aあbcd", 6, false, true), "aあbcd".to_string());
     }
+
     #[test]
     fn test_split_inclusive() {
         assert_eq!(split_chars("a,b:c", true, true, &[',', ':']), vec!["a".to_string(), ",".to_string(), "b".to_string(), ":".to_string(), "c".to_string(),]);

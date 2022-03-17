@@ -27,8 +27,11 @@ impl Editor {
                     Log::debug("self.input_comple.row_words_vec 222", &self.input_comple.row_words_vec);
                 }
                 E_Cmd::InsertRow => {
+                    Log::debug("self.input_comple.row_words_vec 111", &self.input_comple.row_words_vec);
+
                     self.new_change_tgt(BTreeSet::from([proc.cur_e.y]));
                     self.mod_change_tgt(BTreeSet::from([proc.cur_s.y, proc.cur_e.y]));
+                    Log::debug("self.input_comple.row_words_vec 222", &self.input_comple.row_words_vec);
                 }
                 // Not Insert box
                 E_Cmd::InsertStr(_) if proc.box_sel_vec.is_empty() => {
@@ -65,11 +68,25 @@ impl Editor {
         Log::debug("idxs", &idxs);
 
         self.change_info.new_row.extend(&idxs);
+
+        Log::debug_key("1111111111111111111");
+
+        /*
+        if self.scrl_h.row_width_chars_vec.is_empty() {
+            self.scrl_h.row_width_chars_vec.resize(1, (0, 0))
+        }
+         */
+        Log::debug_key("2222222222222222222222");
+
         for idx in idxs {
             self.scrl_h.row_width_chars_vec.insert(idx, (0, 0));
-            self.change_info.new_row.insert(idx);
+            //  self.change_info.new_row.insert(idx);
+            Log::debug_key("333333333333333333333333");
             self.input_comple.analysis_new(idx, &self.buf.char_vec_row(idx));
+            Log::debug_key("44444444444444444444");
         }
+
+        Log::debug_key("55555555555555555555");
     }
     pub fn del_change_tgt(&mut self, idxs: BTreeSet<usize>) {
         Log::debug_key("del_change_tgt");

@@ -215,10 +215,10 @@ impl Editor {
         let sel = self.sel.get_range();
         self.buf.remove_range(sel, ep);
         match self.sel.mode {
-            SelMode::Normal => self.set_cur_target(sel.sy, sel.sx, false),
+            SelMode::Normal => self.set_cur_target_by_x(sel.sy, sel.sx, false),
             SelMode::BoxSelect => {
                 let sel = ep.box_sel_vec.last().unwrap().0;
-                self.set_cur_target(sel.sy, sel.sx, false);
+                self.set_cur_target_by_x(sel.sy, sel.sx, false);
             }
         }
     }

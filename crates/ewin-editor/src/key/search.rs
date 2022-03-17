@@ -94,7 +94,7 @@ impl Editor {
 
             if !is_incremental {
                 let range = self.search.ranges[self.search.idx];
-                self.set_cur_target(range.y, range.sx, false);
+                self.set_cur_target_by_x(range.y, range.sx, false);
             }
 
             self.scroll();
@@ -173,7 +173,7 @@ impl Editor {
         let cfg_search = Cfg::get_edit_search();
 
         let (y, x) = if cfg_search.regex { (self.buf.byte_to_line(*s_idx), self.buf.byte_to_line_char_idx(*s_idx)) } else { (self.buf.char_to_row(*s_idx), self.buf.char_to_line_char_idx(*s_idx)) };
-        self.set_cur_target(y, x, false);
+        self.set_cur_target_by_x(y, x, false);
         proc.cur_s = self.cur;
 
         Log::debug("replace replace_str", &replace_str);
@@ -183,7 +183,7 @@ impl Editor {
 
         let y = self.buf.char_to_row(end_char_idx);
         let x = end_char_idx - self.buf.row_to_char(y);
-        self.set_cur_target(y, x, false);
+        self.set_cur_target_by_x(y, x, false);
         proc.cur_e = self.cur;
     }
 

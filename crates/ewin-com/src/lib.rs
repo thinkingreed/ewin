@@ -44,6 +44,7 @@ pub mod file_path;
 pub mod history;
 pub mod log;
 pub mod model;
+pub mod scrollbar_v;
 pub mod sel_range;
 pub mod util;
 pub mod watcher;

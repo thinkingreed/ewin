@@ -164,22 +164,6 @@ impl fmt::Display for EditorDraw {
 }
 pub struct FormatXml {}
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ScrollbarV {
-    pub is_show: bool,
-    pub is_enable: bool,
-    // Not include　editor.row_posi
-    pub row_posi: usize,
-    pub row_posi_org: usize,
-    pub bar_len: usize,
-    pub move_len: usize,
-}
-
-impl Default for ScrollbarV {
-    fn default() -> Self {
-        ScrollbarV { is_show: false, is_enable: false, row_posi: USIZE_UNDEFINED, row_posi_org: USIZE_UNDEFINED, bar_len: USIZE_UNDEFINED, move_len: USIZE_UNDEFINED }
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScrollbarH {

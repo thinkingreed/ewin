@@ -34,7 +34,7 @@ impl EvtAct {
                     if row_num > term.curt().editor.buf.len_rows() || row_num == 0 {
                         return ActType::Render(RParts::MsgBar(Lang::get().number_within_current_number_of_rows.to_string()));
                     }
-                    term.curt().editor.set_cur_target(row_num - 1, 0, false);
+                    term.curt().editor.set_cur_target_by_x(row_num - 1, 0, false);
 
                     term.clear_curt_tab(true);
                     term.curt().editor.e_cmd = E_Cmd::MoveRow;

@@ -38,7 +38,10 @@ impl Editor {
             E_Cmd::BoxSelectMode => self.box_select_mode(),
             // If CtxMenu = true and there is no Mouse on CtxMenu
             E_Cmd::MouseMove(_, _) => {}
+
+            // InputComple
             E_Cmd::InputComple => self.init_input_comple(true),
+            // E_Cmd::InputCompleConfirm => {}
             // empty
             E_Cmd::Null => {}
             _ => unreachable!(),

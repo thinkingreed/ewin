@@ -74,7 +74,7 @@ impl Terminal {
         };
 
         if &RParts::All == draw_parts || matches!(draw_parts, &RParts::ScrollUpDown(_)) {
-            HeaderBar::render(self, &mut str_vec);
+            HeaderBar::draw(self, &mut str_vec);
             self.help.render(&mut str_vec);
             self.curt().mbar.render(&mut str_vec);
             let is_msg_changed = self.curt().mbar.is_msg_changed();
@@ -487,7 +487,7 @@ impl Terminal {
     pub fn init_tab(&mut self, h_file: &HeaderFile, file_open_type: FileOpenType) {
         self.set_disp_size();
         self.curt().editor.calc_scrlbar_h();
-        self.curt().editor.calc_scrlbar_v();
+        self.curt().editor.calc_editor_scrlbar_v();
         self.curt().editor.h_file = h_file.clone();
         if file_open_type != FileOpenType::Reopen && File::is_exist_file(&h_file.fullpath) {
             if let Some(Ok(mut watch_info)) = WATCH_INFO.get().map(|watch_info| watch_info.try_lock()) {
@@ -635,7 +635,7 @@ impl Terminal {
         self.set_disp_size();
         self.curt().editor.draw_range = E_DrawRange::All;
 
-        self.curt().editor.calc_scrlbar_v();
+        self.curt().editor.calc_editor_scrlbar_v();
         self.curt().editor.calc_scrlbar_h();
     }
 
@@ -689,22 +689,26 @@ impl Terminal {
             }
             KeyCmd::CtxMenu(C_Cmd::MouseMove(y, x)) => {
                 if self.state.is_ctx_menu && self.ctx_menu.window.is_mouse_within_range(y, x, false) {
-                    self.set_editor_render_target_ctx_menu();
+                    let (offset_y, editor_row_len) = (self.curt().editor.offset_y, self.curt().editor.row_disp_len);
+                    self.curt().editor.draw_range = self.ctx_menu.window.get_draw_range_y(offset_y, HEADERBAR_ROW_NUM, editor_row_len);
                 }
             }
             KeyCmd::CtxMenu(C_Cmd::CursorDown) | KeyCmd::CtxMenu(C_Cmd::CursorUp) | KeyCmd::CtxMenu(C_Cmd::CursorRight) | KeyCmd::CtxMenu(C_Cmd::CursorLeft) => {
-                self.set_editor_render_target_ctx_menu();
+                let (offset_y, editor_row_len) = (self.curt().editor.offset_y, self.curt().editor.row_disp_len);
+                self.curt().editor.draw_range = self.ctx_menu.window.get_draw_range_y(offset_y, HEADERBAR_ROW_NUM, editor_row_len);
             }
 
             _ => {}
         }
     }
 
+    /*
     pub fn set_editor_render_target_ctx_menu(&mut self) {
         let (offset_y, hbar_disp_row_num, editor_row_len) = (self.curt().editor.offset_y, self.hbar.row_num, self.curt().editor.row_disp_len);
         let draw_range_y_opt = self.ctx_menu.window.get_draw_range_y(offset_y, hbar_disp_row_num, editor_row_len);
         self.curt().editor.draw_range = if let Some((sy, ey)) = draw_range_y_opt { E_DrawRange::TargetRange(sy, ey) } else { E_DrawRange::Not };
     }
+     */
 
     pub fn set_keys(&mut self, keys: &Keys) {
         let keywhen = self.get_when(keys);

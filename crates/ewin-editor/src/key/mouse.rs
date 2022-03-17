@@ -91,7 +91,7 @@ impl Editor {
                 self.sel.set_s(y, 0, 0);
                 let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(y)[..], 0, true);
                 self.sel.set_e(y, cur_x, width);
-                self.set_cur_target(y, 0, false);
+                self.set_cur_target_by_x(y, 0, false);
             } else if self.buf.len_rows() > y {
                 x = if x < self.get_rnw_and_margin() { 0 } else { x - self.get_rnw_and_margin() };
                 self.cur.y = y;
@@ -101,9 +101,7 @@ impl Editor {
                     self.cur.x = x;
                     self.cur.disp_x = x;
                 } else {
-                    let (cur_x, width) = get_until_disp_x(&vec, x + self.offset_disp_x, false);
-                    self.cur.x = cur_x;
-                    self.cur.disp_x = width;
+                    self.set_cur_target_by_disp_x(y, x);
                     self.scroll();
                     self.scroll_horizontal();
 

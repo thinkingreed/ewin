@@ -79,9 +79,11 @@ impl Keybind {
         key_cmd_map.insert((Keys::Raw(Key::Right), KeyWhen::CtxMenuFocus), KeyCmd::CtxMenu(C_Cmd::CursorRight));
         key_cmd_map.insert((Keys::Raw(Key::Up), KeyWhen::CtxMenuFocus), KeyCmd::CtxMenu(C_Cmd::CursorUp));
         key_cmd_map.insert((Keys::Raw(Key::Down), KeyWhen::CtxMenuFocus), KeyCmd::CtxMenu(C_Cmd::CursorDown));
-        key_cmd_map.insert((Keys::Raw(Key::Enter), KeyWhen::CtxMenuFocus), KeyCmd::CtxMenu(C_Cmd::ConfirmCtxMenu));
+        key_cmd_map.insert((Keys::Raw(Key::Enter), KeyWhen::CtxMenuFocus), KeyCmd::CtxMenu(C_Cmd::CtxMenuConfirm));
 
         // InputCompletion
+        // key_cmd_map.insert((Keys::Raw(Key::Enter), KeyWhen::EditorFocus), KeyCmd::Edit(E_Cmd::InputCompleConfirm));
+
         /*
                key_cmd_map.insert((Keys::Null, KeyWhen::InputCompleFocus), KeyCmd::InputComple(I_Cmd::Null));
                key_cmd_map.insert((Keys::Raw(Key::Left), KeyWhen::InputCompleFocus), KeyCmd::InputComple(I_Cmd::CursorLeft));

@@ -9,6 +9,7 @@ use crate::{
     },
     model::*,
 };
+use ewin_com::colors::Colors;
 use ewin_window::window::*;
 use std::io::Write;
 
@@ -51,7 +52,11 @@ impl EvtAct {
                         term.curt().editor.draw_range = E_DrawRange::All;
                     }
                     term.render(out, draw_parts);
-                }
+                } /*
+                  RParts::EditorInputImple => {
+                      term.curt().editor.input_comple.window.draw_only(out, &Colors::get_ctx_menu_fg_bg_sel(), &Colors::get_ctx_menu_fg_bg_non_sel());
+                  }
+                   */
             };
             term.draw_parts_org = draw_parts.clone();
         }

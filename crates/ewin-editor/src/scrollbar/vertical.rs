@@ -4,31 +4,23 @@ use crate::{
 };
 use crossterm::cursor::MoveTo;
 use ewin_com::_cfg::model::default::Cfg;
-use std::cmp::{max, min};
+use std::cmp::min;
 
 impl Editor {
-    pub fn calc_scrlbar_v(&mut self) {
+    pub fn calc_editor_scrlbar_v(&mut self) {
         Log::debug_key("calc_scrlbar_v");
         if self.scrl_v.is_show {
             if self.scrl_v.bar_len == USIZE_UNDEFINED || self.len_rows_org != self.buf.len_rows() || self.row_disp_len_org != self.row_disp_len {
-                Log::debug("self.row_disp_len", &self.row_disp_len);
-                Log::debug("self.buf.len_rows()", &self.buf.len_rows());
-                Log::debug("(self.row_disp_len as f64 / self.buf.len_rows() as f64 * self.row_disp_len as f64).ceil() as usize", &((self.row_disp_len as f64 / self.buf.len_rows() as f64 * self.row_disp_len as f64).ceil() as usize));
-
-                self.scrl_v.bar_len = max(1, min((self.row_disp_len as f64 / self.buf.len_rows() as f64 * self.row_disp_len as f64).ceil() as usize, self.row_disp_len - 1));
-                Log::debug("self.scrl_v.bar_len", &self.scrl_v.bar_len);
-                Log::debug("Editor.draw_scrlbar_v", &self.scrl_v.bar_len);
-                let scrl_range = self.row_disp_len - self.scrl_v.bar_len;
-                Log::debug("scrl_range", &scrl_range);
-                self.scrl_v.move_len = if self.is_move_cur_posi_scrolling_enable() { (self.buf.len_rows() as f64 / scrl_range as f64).ceil() as usize } else { ((self.buf.len_rows() - self.row_disp_len) as f64 / scrl_range as f64).ceil() as usize };
-                Log::debug("move_len", &self.scrl_v.move_len);
+                self.scrl_v.calc_com_scrlbar_v(true, self.row_disp_len, self.buf.len_rows());
             }
+            // self.scrl_v.calc_com_scrlbar_v_roe_posi(true, self.row_disp_len, &self.e_cmd, self.offset_y, self.scrl_v.move_len);
             self.scrl_v.row_posi = match self.e_cmd {
-                E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) if self.scrl_v.is_enable => self.scrl_v.row_posi,
+                E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) if self.scrl_v.is_enable => self.row_posi,
                 _ => (self.offset_y as f64 / self.scrl_v.move_len as f64).ceil() as usize,
             };
         }
     }
+
     pub fn set_scrlbar_v_posi(&mut self, y: usize) {
         Log::debug_key("set_cur_scrlbar_v");
 
@@ -62,7 +54,7 @@ impl Editor {
                 self.cur.y
             };
             self.cur_updown_com();
-            self.set_cur_target(self.cur.y, self.cur.x, false);
+            self.set_cur_target_by_x(self.cur.y, self.cur.x, false);
         }
         self.scroll();
     }
@@ -72,7 +64,7 @@ impl Editor {
         Log::debug("self.scrl_v.is_show", &self.scrl_v.is_show);
 
         if self.scrl_v.is_show {
-            self.calc_scrlbar_v();
+            self.calc_editor_scrlbar_v();
 
             Log::debug("self.scrl_v.row_posi 111", &self.scrl_v.row_posi);
             Log::debug("self.scrl_v.row_posi 222", &self.scrl_v.row_posi);

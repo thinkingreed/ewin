@@ -139,7 +139,7 @@ impl PromOpenFile {
     pub fn set_file_path(prom: &mut Prompt, path: &str) {
         let path = &path.replace(CONTINUE_STR, &prom.prom_open_file.omitted_path_str);
         // -2 is margin
-        let disp_path = cut_str(path.clone(), prom.disp_col_num - 2, true, true);
+        let disp_path = cut_str(path, prom.disp_col_num - 2, true, true);
 
         let tmp = disp_path.replace(CONTINUE_STR, "");
         prom.prom_open_file.omitted_path_str = path.replace(&tmp, "");
@@ -338,7 +338,7 @@ pub fn get_shaping_file_list(file_vec: &mut Vec<File>, cols: usize) -> (Vec<Vec<
             for op_file in vec.iter_mut() {
                 let mut filenm_len = get_str_width(&op_file.file.name);
                 if filenm_len > max_len {
-                    let cut_str = cut_str(op_file.file.name.clone(), max_len, false, true);
+                    let cut_str = cut_str(&op_file.file.name, max_len, false, true);
                     filenm_len = get_str_width(&cut_str);
                     op_file.filenm_disp = cut_str;
                 } else {

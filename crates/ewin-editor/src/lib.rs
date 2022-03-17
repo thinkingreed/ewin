@@ -1,7 +1,5 @@
 #![allow(clippy::needless_return, clippy::iter_nth_zero, clippy::type_complexity)]
-
 extern crate ewin_com;
-
 pub mod buf {
     pub mod edit;
     pub mod io;

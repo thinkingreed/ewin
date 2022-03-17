@@ -110,7 +110,7 @@ impl Editor {
             }
 
             if i == proc.box_sel_vec.len() - 1 {
-                self.set_cur_target(sy + i, ex, false);
+                self.set_cur_target_by_x(sy + i, ex, false);
             }
         }
         proc.box_sel_vec = box_sel_undo_vec;
@@ -144,12 +144,12 @@ impl Editor {
 
         let last_str_len = insert_strs.last().unwrap().chars().count();
         let x = if insert_strs.len() == 1 { self.cur.x + last_str_len } else { last_str_len };
-        self.set_cur_target(self.cur.y, x, false);
+        self.set_cur_target_by_x(self.cur.y, x, false);
     }
 
     pub fn insert_row(&mut self) {
         self.buf.insert(self.cur.y, self.cur.x, &NL::get_nl(&self.h_file.nl));
-        self.set_cur_target(self.cur.y + 1, 0, false);
+        self.set_cur_target_by_x(self.cur.y + 1, 0, false);
 
         self.scroll();
         self.scroll_horizontal();
@@ -169,7 +169,7 @@ impl Editor {
             ep.str = if c == NEW_LINE_CR { NEW_LINE_CRLF.to_string() } else { NEW_LINE_LF.to_string() };
             self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelPrevChar), self.cur.y, cur_x);
             cur_x = min(cur_x, self.buf.line(self.cur.y).len_chars());
-            self.set_cur_target(self.cur.y, cur_x, false);
+            self.set_cur_target_by_x(self.cur.y, cur_x, false);
             self.scroll();
             self.scroll_horizontal();
         } else {
@@ -206,7 +206,7 @@ impl Editor {
         ep.str = if c == NEW_LINE_CR { format!("{}{}", c, NEW_LINE_LF) } else { c.to_string() };
         self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelNextChar), self.cur.y, self.cur.x);
         if is_nl_char(c) {
-            self.set_cur_target(self.cur.y, self.cur.x, false);
+            self.set_cur_target_by_x(self.cur.y, self.cur.x, false);
             self.scroll();
             self.scroll_horizontal();
         }

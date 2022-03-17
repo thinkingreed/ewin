@@ -277,6 +277,7 @@ pub enum E_Cmd {
     SwitchTabLeft,
     // Other
     InputComple,
+    // InputCompleConfirm,
     Resize(usize, usize),
     Null,
 }
@@ -291,7 +292,7 @@ pub enum C_Cmd {
     CursorUp,
     CursorRight,
     CursorLeft,
-    ConfirmCtxMenu,
+    CtxMenuConfirm,
     Null,
 }
 

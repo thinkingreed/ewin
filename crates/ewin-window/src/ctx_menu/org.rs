@@ -97,12 +97,12 @@ impl CtxMenu {
                 let mut parent_menu_vec: Vec<(WindowMenu, Option<WindowCont>)> = vec![];
                 for parent_map in condition_vec {
                     for (parent_name, c_vec) in parent_map.iter_mut() {
-                        let parent_ctx_menu = WindowMenu { name: cut_str(parent_name.clone(), menunm_max_len, false, true), ..WindowMenu::default() };
+                        let parent_ctx_menu = WindowMenu { name: cut_str(parent_name, menunm_max_len, false, true), ..WindowMenu::default() };
                         let mut child_cont = WindowCont { ..WindowCont::default() };
                         let mut child_menu_vec: Vec<(WindowMenu, Option<WindowCont>)> = vec![];
 
                         for child_name in c_vec {
-                            let child_ctx_menu = WindowMenu { name: cut_str(child_name.clone(), menunm_max_len, false, true), ..WindowMenu::default() };
+                            let child_ctx_menu = WindowMenu { name: cut_str(child_name, menunm_max_len, false, true), ..WindowMenu::default() };
                             child_menu_vec.push((child_ctx_menu, None));
                         }
                         child_cont.menu_vec = child_menu_vec;

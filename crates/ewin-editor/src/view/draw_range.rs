@@ -64,7 +64,7 @@ impl Editor {
             }
         } else {
             match &self.e_cmd {
-                E_Cmd::InsertRow | E_Cmd::CursorDown | E_Cmd::CursorUp | E_Cmd::CursorRight | E_Cmd::CursorLeft if self.is_input_imple_mode(true) => self.get_input_comple_draw_range_y(),
+              //  E_Cmd::InsertRow | E_Cmd::CursorDown | E_Cmd::CursorUp | E_Cmd::CursorRight | E_Cmd::CursorLeft if self.is_input_imple_mode(true) =>    self.input_comple.window.get_draw_range_y(self.offset_y, HEADERBAR_ROW_NUM, self.row_disp_len),
                 E_Cmd::CursorLeft | E_Cmd::CursorRight | E_Cmd::CursorLeftSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect | E_Cmd::MouseDragLeftBox(_, _) => {
                     if self.sel.mode == SelMode::BoxSelect {
                         let sel = self.sel.get_range();
@@ -105,13 +105,16 @@ impl Editor {
                         E_DrawRange::All
                     }
                 }
+                /* 
                 E_Cmd::MouseMove(y, x) if self.is_input_imple_mode(true) => {
                     if self.input_comple.window.is_mouse_within_range(*y, *x, false) {
-                        self.get_input_comple_draw_range_y()
+                       // self.input_comple.window. get_input_comple_draw_range_y()
+                        self.input_comple.window.get_draw_range_y(self.offset_y, HEADERBAR_ROW_NUM, self.row_disp_len)
                     } else {
                         E_DrawRange::Not
                     }
                 }
+                */
                 E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) if self.scrl_h.is_enable => {
                     if matches!(self.e_cmd, E_Cmd::MouseDragLeftLeft(_, _)) && self.scrl_h.clm_posi_org == 0 || matches!(self.e_cmd, E_Cmd::MouseDragLeftRight(_, _)) && self.scrl_h.clm_posi_org + self.scrl_h.bar_len == self.col_len {
                         E_DrawRange::Not
@@ -166,6 +169,7 @@ impl Editor {
                 }
 
                 E_Cmd::InputComple => E_DrawRange::All,
+               // E_Cmd::InputCompleConfirm =>  E_DrawRange::TargetRange(self.cur.y ,self.cur.y ),
                 _ => E_DrawRange::Not,
             }
         };
@@ -183,15 +187,18 @@ impl Editor {
         Log::debug("self.draw_range After setting", &self.draw_range);
     }
 
+    /*
     pub fn get_input_comple_draw_range_y(&mut self) -> E_DrawRange {
         let (offset_y, editor_row_len) = (self.offset_y, self.row_disp_len);
-        let draw_range_y_opt = self.input_comple.window.get_draw_range_y(offset_y, HEADERBAR_ROW_NUM, editor_row_len);
-        if let Some((sy, ey)) = draw_range_y_opt {
+        self.input_comple.window.get_draw_range_y(self.offset_y, HEADERBAR_ROW_NUM, self.row_disp_len)
+        let draw_range_y_opt = ;
+        if let Some(sy, ey) = draw_range_y_opt {
             E_DrawRange::TargetRange(min(sy, self.cur.y), max(ey, self.cur.y))
         } else {
             E_DrawRange::Not
         }
     }
+     */
 
     pub fn set_draw_parts(&mut self, keycmd: &KeyCmd) -> RParts {
         Log::debug_s("editor.set_draw_parts");

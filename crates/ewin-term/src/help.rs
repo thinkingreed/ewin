@@ -94,12 +94,12 @@ impl Help {
                             row_str.push_str(&format!("{}{}", Colors::get_msg_normal_fg(), bind.funcnm));
                             width += get_str_width(&bind.funcnm);
                         } else {
-                            let funcnm = cut_str(bind.funcnm.clone(), self.disp_col_num - width, false, false);
+                            let funcnm = cut_str(&bind.funcnm, self.disp_col_num - width, false, false);
                             row_str.push_str(&format!("{}{}", Colors::get_msg_normal_fg(), funcnm));
                             break;
                         }
                     } else {
-                        let key = cut_str(bind.key.clone(), self.disp_col_num - width, false, false);
+                        let key = cut_str(&bind.key, self.disp_col_num - width, false, false);
                         row_str.push_str(&format!("{}{}", Colors::get_msg_highlight_fg(), key));
                         break;
                     }

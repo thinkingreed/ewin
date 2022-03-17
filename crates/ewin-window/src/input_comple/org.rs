@@ -1,14 +1,8 @@
 use crate::model::*;
-use ewin_com::{_cfg::key::keycmd::*, def::DELIM_STR, log::Log, util::*};
+use ewin_com::{def::*, log::Log, util::*};
 use std::{cmp::min, collections::BTreeSet};
 
 impl InputComple {
-    pub fn init(&mut self) {
-        Log::debug_key("InputComple.init");
-
-        //     self.set_disp_name();
-    }
-
     pub fn get_candidates_count(&mut self, search_str: &str) -> usize {
         return self.search(search_str).len();
     }
@@ -19,22 +13,25 @@ impl InputComple {
         let menunm_max_len = cols as usize / 2 - 8;
 
         let menu_set = self.search(search_str);
+        self.window.scrl_v.is_show = menu_set.len() > Window::MAX_HEIGHT;
 
         let mut cont = WindowCont { ..WindowCont::default() };
         for menu_str in menu_set {
-            cont.menu_vec.push((WindowMenu { name: cut_str(menu_str, menunm_max_len, false, true), ..WindowMenu::default() }, None))
+            cont.menu_vec.push((WindowMenu { name: menu_str.clone(), name_disp: cut_str(&menu_str, menunm_max_len, false, true) }, None));
+            // cont.menu_vec.push((WindowMenu { name: menu_str.clone(), ..WindowMenu::default() }, None))
         }
+        Log::debug("cont", &cont);
         self.window.curt_cont = cont;
 
         let mut parent_max_len = 0;
         for (parent_menu, _) in self.window.curt_cont.menu_vec.iter() {
-            let parent_name_len = get_str_width(get_cfg_lang_name(&parent_menu.name));
+            let parent_name_len = get_str_width(&parent_menu.name_disp);
             parent_max_len = if parent_name_len > parent_max_len { parent_name_len } else { parent_max_len };
         }
 
         // set name_disp
         for (parent_menu, _) in self.window.curt_cont.menu_vec.iter_mut() {
-            let perent_str = get_cfg_lang_name(&parent_menu.name);
+            let perent_str = get_cfg_lang_name(&parent_menu.name_disp);
             let space = parent_max_len - get_str_width(perent_str);
             parent_menu.name_disp = format!(" {}{} ", perent_str, " ".repeat(space),);
         }

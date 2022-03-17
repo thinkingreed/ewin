@@ -29,13 +29,21 @@ impl Editor {
         self.cur = Cur { y: 0, x: 0, disp_x: 0 };
     }
 
-    pub fn set_cur_target(&mut self, y: usize, x: usize, is_ctrlchar_incl: bool) {
+    pub fn set_cur_target_by_x(&mut self, y: usize, x: usize, is_ctrlchar_incl: bool) {
         self.cur.y = y;
 
         let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_range(y, ..x), 0, is_ctrlchar_incl);
         self.rnw = self.get_rnw();
         self.cur.disp_x = width;
         self.cur.x = cur_x;
+    }
+    pub fn set_cur_target_by_disp_x(&mut self, y: usize, x: usize) {
+        self.cur.y = y;
+
+        let (cur_x, width) = get_until_disp_x(&self.buf.char_vec_row(y), x + self.offset_disp_x, false);
+        self.rnw = self.get_rnw();
+        self.cur.x = cur_x;
+        self.cur.disp_x = width;
     }
 
     pub fn get_rnw(&self) -> usize {
@@ -213,13 +221,13 @@ impl Editor {
         Log::debug_key("Editor.adjust_cur_posi");
 
         if self.cur.y > self.buf.len_rows() - 1 {
-            self.set_cur_target(self.buf.len_rows() - 1, 0, false);
+            self.set_cur_target_by_x(self.buf.len_rows() - 1, 0, false);
             self.scroll();
         } else if self.cur.x > self.buf.char_vec_row(self.cur.y).len() {
-            self.set_cur_target(self.cur.y, self.buf.char_vec_row(self.cur.y).len(), false);
+            self.set_cur_target_by_x(self.cur.y, self.buf.char_vec_row(self.cur.y).len(), false);
             self.scroll_horizontal();
         } else {
-            self.set_cur_target(self.cur.y, self.cur.x, false);
+            self.set_cur_target_by_x(self.cur.y, self.cur.x, false);
         };
     }
     pub fn is_move_position_by_scrolling_enable_and_e_cmd(&self) -> bool {

@@ -15,7 +15,7 @@ impl HeaderBar {
     // Front and back margins of the file
     const FILENM_MARGIN: usize = 3;
 
-    pub fn render(term: &Terminal, str_vec: &mut Vec<String>) {
+    pub fn draw(term: &Terminal, str_vec: &mut Vec<String>) {
         Log::info_key("HeaderBar.draw");
 
         let plus_btn = format!(" {} ", '+');
@@ -44,9 +44,9 @@ impl HeaderBar {
     }
 
     pub fn draw_only<T: Write>(term: &Terminal, out: &mut T) {
-        Log::debug_key("HeaderBar::render_only");
+        Log::debug_key("HeaderBar::draw_only");
         let mut v: Vec<String> = vec![];
-        HeaderBar::render(term, &mut v);
+        HeaderBar::draw(term, &mut v);
         let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();
     }
@@ -85,7 +85,7 @@ impl HeaderBar {
         // Temperatures stored in Vec for ascending / descending sorting
         for (idx, h_file) in term.hbar.file_vec.iter_mut().enumerate() {
             // cut str
-            h_file.filenm_disp = if get_str_width(&h_file.filenm) > max_len { cut_str(h_file.filenm.clone(), max_len, true, true) } else { h_file.filenm.clone() };
+            h_file.filenm_disp = if get_str_width(&h_file.filenm) > max_len { cut_str(&h_file.filenm, max_len, true, true) } else { h_file.filenm.clone() };
 
             let filenm_disp = h_file.filenm_disp.clone();
             h_file.filenm_disp = if term.tabs[idx].editor.state.is_changed { format!("* {} x", filenm_disp) } else { format!(" {} x", filenm_disp) };

@@ -36,7 +36,7 @@ impl EvtAct {
                     let child_cont = &term.ctx_menu.window.curt_cont.menu_vec.get(term.ctx_menu.window.parent_sel_y).and_then(|cont| cont.1.clone());
 
                     // Only parent meun move || Only child meun move
-                    if child_cont_org.is_none() && child_cont.is_none() || term.ctx_menu.window.parent_sel_y == term.ctx_menu.window.parent_sel_y_cache && term.ctx_menu.window.child_sel_y != USIZE_UNDEFINED {
+                    if child_cont_org.is_none() && child_cont.is_none() || term.ctx_menu.window.parent_sel_y == term.ctx_menu.window.parent_sel_y_org && term.ctx_menu.window.child_sel_y != USIZE_UNDEFINED {
                         return ActType::Render(RParts::CtxMenu);
                     } else {
                         term.set_render_range_ctx_menu();
@@ -65,7 +65,7 @@ impl EvtAct {
                 EvtAct::show_init_ctx_menu(term, y, x);
                 return ActType::Render(RParts::All);
             }
-            C_Cmd::ConfirmCtxMenu => {
+            C_Cmd::CtxMenuConfirm => {
                 EvtAct::select_ctx_menu(term);
                 return ActType::Render(RParts::All);
             }
@@ -204,7 +204,7 @@ impl EvtAct {
 
         if EvtAct::is_ctx_menu_displayed_area(term, y, x) {
             let (y, x) = if y == USIZE_UNDEFINED {
-                (term.curt().editor.cur.y - term.curt().editor.offset_y + term.hbar.row_num, if term.curt().editor.state.mouse_mode == MouseMode::Normal { term.curt().editor.cur.disp_x + term.curt().editor.get_rnw_and_margin() } else { term.curt().editor.cur.disp_x })
+                (term.curt().editor.cur.y - term.curt().editor.offset_y + HEADERBAR_ROW_NUM, if term.curt().editor.state.mouse_mode == MouseMode::Normal { term.curt().editor.cur.disp_x + term.curt().editor.get_rnw_and_margin() } else { term.curt().editor.cur.disp_x })
             } else {
                 (y, x)
             };
