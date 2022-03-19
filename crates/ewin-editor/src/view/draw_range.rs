@@ -1,4 +1,3 @@
-use ewin_com::def::HEADERBAR_ROW_NUM;
 
 use crate::{
     ewin_com::{

@@ -59,7 +59,7 @@ impl PromptCont {
         let sx = get_str_width(&format!("{}:{}", &Lang::get().case_sens, key_str)) as u16;
         let cfg_search = &Cfg::get_edit_search();
 
-        let opt_case_sens = PromptContOpt { key: key_case_sens, is_check: cfg_search.case_sens, mouse_area: (sx, sx + 2) };
+        let opt_case_sens = PromptContOpt { key: key_case_sens, is_check: cfg_search.case_sensitive, mouse_area: (sx, sx + 2) };
         self.opt_1 = opt_case_sens;
     }
 
@@ -78,7 +78,7 @@ impl PromptCont {
     pub fn change_opt_case_sens(&mut self) {
         self.opt_1.toggle_check();
 
-        CFG_EDIT.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.case_sens = self.opt_1.is_check).unwrap();
+        CFG_EDIT.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.search.case_sensitive = self.opt_1.is_check).unwrap();
     }
 
     pub fn change_opt_regex(&mut self) {

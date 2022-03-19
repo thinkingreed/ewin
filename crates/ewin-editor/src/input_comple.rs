@@ -6,7 +6,7 @@ use crate::{
 impl Editor {
     pub fn init_input_comple(&mut self, is_first: bool) {
         Log::debug_key("Editor.init_input_comple");
-        let search_str = self.get_until_delim_str();
+        let search_str = self.get_until_delim_str().0;
         let set = self.input_comple.search(&search_str);
 
         if !is_first && search_str.is_empty() {
@@ -34,14 +34,14 @@ impl Editor {
         self.state.input_comple_mode = InputCompleMode::None;
     }
 
-    pub fn get_until_delim_str(&self) -> String {
+    pub fn get_until_delim_str(&self) -> (String, usize) {
         let y = self.cur.y;
         let sx = get_until_delim_sx(&self.buf.char_vec_row(y)[..self.cur.x]);
-        return self.buf.char_vec_row(y)[sx..self.cur.x].iter().collect::<String>();
+        return (self.buf.char_vec_row(y)[sx..self.cur.x].iter().collect::<String>(), sx);
     }
 
     pub fn get_input_comple_addstr(&mut self, candidate_str: &str) -> String {
-        let ignore_str = self.get_until_delim_str();
+        let ignore_str = self.get_until_delim_str().0;
         let ignore_idx = if let Some(i) = candidate_str.find(&ignore_str) { i } else { 0 };
         Log::debug("ignore_idx", &ignore_idx);
         let add_str = candidate_str[ignore_idx + ignore_str.chars().count()..].to_string();

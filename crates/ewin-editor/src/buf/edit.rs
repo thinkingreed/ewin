@@ -1,8 +1,7 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, def::*, log::*, model::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::model::default::*, def::*, log::*, model::*},
     model::*,
 };
-use ewin_com::_cfg::model::default::{Cfg, CfgSearch};
 use regex::RegexBuilder;
 use ropey::{
     iter::{Chars, Lines},
@@ -209,7 +208,7 @@ impl TextBuffer {
             }
         } else {
             // regex
-            let result = RegexBuilder::new(search_pattern).case_insensitive(!cfg_search.case_sens).build();
+            let result = RegexBuilder::new(search_pattern).case_insensitive(!cfg_search.case_sensitive).build();
             let re = match result {
                 Ok(re) => re,
                 Err(_) => return rtn_set,
@@ -298,7 +297,7 @@ impl<'a> Iterator for SearchIter<'a> {
             while i < self.possible_matches.len() {
                 let pattern_char = self.possible_matches[i].next().unwrap();
 
-                let equal = if self.cfg_search.case_sens { next_char == pattern_char } else { next_char.to_ascii_lowercase() == pattern_char.to_ascii_lowercase() };
+                let equal = if self.cfg_search.case_sensitive { next_char == pattern_char } else { next_char.to_ascii_lowercase() == pattern_char.to_ascii_lowercase() };
                 if equal {
                     if self.possible_matches[i].clone().next() == None {
                         // We have a match!  Reset possible matches and

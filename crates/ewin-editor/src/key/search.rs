@@ -174,7 +174,6 @@ impl Editor {
 
         let (y, x) = if cfg_search.regex { (self.buf.byte_to_line(*s_idx), self.buf.byte_to_line_char_idx(*s_idx)) } else { (self.buf.char_to_row(*s_idx), self.buf.char_to_line_char_idx(*s_idx)) };
         self.set_cur_target_by_x(y, x, false);
-        proc.cur_s = self.cur;
 
         Log::debug("replace replace_str", &replace_str);
         Log::debug("replace search_map", &replace_set);

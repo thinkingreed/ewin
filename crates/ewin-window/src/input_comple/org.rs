@@ -1,5 +1,5 @@
 use crate::model::*;
-use ewin_com::{def::*, log::Log, util::*};
+use ewin_com::{_cfg::model::default::Cfg, log::Log, util::*};
 use std::{cmp::min, collections::BTreeSet};
 
 impl InputComple {
@@ -18,7 +18,6 @@ impl InputComple {
         let mut cont = WindowCont { ..WindowCont::default() };
         for menu_str in menu_set {
             cont.menu_vec.push((WindowMenu { name: menu_str.clone(), name_disp: cut_str(&menu_str, menunm_max_len, false, true) }, None));
-            // cont.menu_vec.push((WindowMenu { name: menu_str.clone(), ..WindowMenu::default() }, None))
         }
         Log::debug("cont", &cont);
         self.window.curt_cont = cont;
@@ -43,7 +42,7 @@ impl InputComple {
 
     pub fn analysis_new(&mut self, idx: usize, row_char: &[char]) {
         let s = String::from_iter(row_char);
-        let str_vec = split_chars(&s, false, true, &DELIM_STR.chars().collect::<Vec<char>>());
+        let str_vec = split_chars(&s, false, true, &Cfg::get().general.editor.input_comple.word_delimiter.chars().collect::<Vec<char>>());
         let words_new_set = str_vec.iter().cloned().collect::<BTreeSet<String>>();
 
         self.row_words_vec.insert(idx, RowWords { words: words_new_set.clone() });
@@ -77,7 +76,7 @@ impl InputComple {
         Log::debug_key("analysis_mod");
         let s = String::from_iter(row_char);
 
-        let str_vec = split_chars(&s, false, true, &DELIM_STR.chars().collect::<Vec<char>>());
+        let str_vec = split_chars(&s, false, true, &Cfg::get().general.editor.input_comple.word_delimiter.chars().collect::<Vec<char>>());
         let words_new_set = str_vec.iter().cloned().collect::<BTreeSet<String>>();
 
         Log::debug_key("1111111111111111111111111111");
@@ -111,10 +110,16 @@ impl InputComple {
     }
 
     pub fn search(&self, search_str: &str) -> BTreeSet<String> {
+        Log::debug_key("InputComple.search");
+
         let mut result_set = BTreeSet::new();
         let mut is_find = false;
+
+        let search_str_tmp = if Cfg::get().general.editor.input_comple.case_sensitive { search_str.to_string() } else { search_str.to_lowercase() };
+
         for (word, _) in self.all_words_map.iter() {
-            if let Some(idx) = word.find(search_str) {
+            let word_tmp = if Cfg::get().general.editor.input_comple.case_sensitive { word.to_string() } else { word.to_lowercase() };
+            if let Some(idx) = word_tmp.find(&search_str_tmp) {
                 if idx == 0 {
                     is_find = true;
                     result_set.insert(word.clone());

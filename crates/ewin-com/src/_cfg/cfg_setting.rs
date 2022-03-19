@@ -33,8 +33,8 @@ impl Cfg {
          */
         /* general.editor.search */
         // case_sens
-        if let Some(b) = cfg_user.general.editor.search.case_sens {
-            self.general.editor.search.case_sens = b;
+        if let Some(b) = cfg_user.general.editor.search.case_sensitive {
+            self.general.editor.search.case_sensitive = b;
         }
         // regex
         if let Some(b) = cfg_user.general.editor.search.regex {
@@ -88,6 +88,20 @@ impl Cfg {
         // extension_when_saving_new_file
         if let Some(s) = cfg_user.general.editor.save.extension_when_saving_new_file {
             self.general.editor.save.extension_when_saving_new_file = s;
+        }
+        /* general.editor.word */
+        // word_delimiter
+        if let Some(s) = cfg_user.general.editor.word.word_delimiter {
+            self.general.editor.word.word_delimiter = s;
+        }
+        /* general.editor.input_comple */
+        // word_delimiter
+        if let Some(s) = cfg_user.general.editor.input_comple.word_delimiter {
+            self.general.editor.input_comple.word_delimiter = s;
+        }
+        // case_sens
+        if let Some(b) = cfg_user.general.editor.input_comple.case_sensitive {
+            self.general.editor.input_comple.case_sensitive = b;
         }
         /*
          * general.prompt

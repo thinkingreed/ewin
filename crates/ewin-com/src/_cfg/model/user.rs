@@ -32,7 +32,9 @@ pub struct CfgUserGeneral {
     #[serde(default)]
     pub context_menu: CfgUserCtxMenu,
     #[serde(default)]
-    pub mouse: CfgGeneralMouse,
+    pub mouse: CfgUserGeneralMouse,
+    #[serde(default)]
+    pub word: CfgUserEditorWord,
     pub colors: CfgUserGeneralColors,
 }
 
@@ -57,6 +59,10 @@ pub struct CfgUserEditor {
     pub column_char_width_gap_space: CfgUserEditorColumnCharWidthGap,
     #[serde(default)]
     pub save: CfgUserEditorSave,
+    #[serde(default)]
+    pub word: CfgUserEditorWord,
+    #[serde(default)]
+    pub input_comple: CfgUserEditorInputComple,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -76,7 +82,7 @@ pub struct CfgUserCtxMenu {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CfgUserSearch {
-    pub case_sens: Option<bool>,
+    pub case_sensitive: Option<bool>,
     pub regex: Option<bool>,
 }
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -124,13 +130,24 @@ pub struct CfgUserEditorSave {
     pub extension_when_saving_new_file: Option<String>,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct CfgUserEditorWord {
+    pub word_delimiter: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Default, Deserialize, PartialEq)]
+pub struct CfgUserEditorInputComple {
+    pub word_delimiter: Option<String>,
+    pub case_sensitive: Option<bool>,
+}
+
 #[derive(Debug, Clone, Serialize, Default, Deserialize, PartialEq)]
 pub struct CfgUserPromptOpenFile {
     pub directory_init_value: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct CfgGeneralMouse {
+pub struct CfgUserGeneralMouse {
     pub mouse_enable: Option<bool>,
 }
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]

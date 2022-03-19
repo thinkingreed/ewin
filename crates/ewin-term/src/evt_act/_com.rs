@@ -9,7 +9,6 @@ use crate::{
     },
     model::*,
 };
-use ewin_com::colors::Colors;
 use ewin_window::window::*;
 use std::io::Write;
 

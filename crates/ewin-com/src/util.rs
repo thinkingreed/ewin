@@ -194,7 +194,7 @@ pub fn is_enable_syntax_highlight(ext: &str) -> bool {
 }
 
 pub fn get_char_type(c: char) -> CharType {
-    if DELIM_STR.contains(c) {
+    if Cfg::get().general.editor.word.word_delimiter.contains(c) {
         CharType::Delim
     } else if HALF_SPACE.contains(c) {
         CharType::HalfSpace
@@ -406,7 +406,7 @@ pub fn get_until_delim_sx(rows: &[char]) -> usize {
     rows.reverse();
     let row_len = rows.len();
     for (i, c) in (0_usize..).zip(rows) {
-        if DELIM_STR.contains(c) {
+        if Cfg::get().general.editor.word.word_delimiter.contains(c) {
             return row_len - i;
         }
     }

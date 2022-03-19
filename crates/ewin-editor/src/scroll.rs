@@ -60,7 +60,6 @@ impl Editor {
                     }
                 }
                 E_Cmd::MoveRow => self.set_offset_move_row(),
-
                 E_Cmd::MouseDragLeftLeft(y, _) | E_Cmd::MouseDragLeftRight(y, _) => {
                     if self.sel.is_selected() {
                         if *y >= self.row_posi + self.row_disp_len && self.get_disp_rows() - self.offset_y > self.row_disp_len {
@@ -95,7 +94,8 @@ impl Editor {
 
         if self.cur.y >= self.offset_y + self.row_disp_len {
             // last page
-            self.offset_y = if self.get_disp_rows() - 1 - self.cur.y < self.row_disp_len { self.get_disp_rows() - self.row_disp_len } else { self.cur.y - Editor::MOVE_ROW_EXTRA_NUM }
+            self.offset_y = self.cur.y + Editor::MOVE_ROW_EXTRA_NUM - self.row_disp_len;
+            //     self.offset_y = if self.get_disp_rows() - 1 - self.cur.y < self.row_disp_len { self.get_disp_rows() - self.row_disp_len } else { self.cur.y - Editor::MOVE_ROW_EXTRA_NUM }
         } else if self.cur.y < self.offset_y {
             self.offset_y = if self.cur.y > Editor::MOVE_ROW_EXTRA_NUM { self.cur.y - Editor::MOVE_ROW_EXTRA_NUM } else { 0 };
         }

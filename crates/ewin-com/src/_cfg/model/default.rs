@@ -20,14 +20,14 @@ impl Cfg {
     }
 
     pub fn get_edit_search() -> CfgSearch {
-        return CfgSearch { regex: Cfg::get_edit_search_regex(), case_sens: Cfg::get_edit_search_case_sens() };
+        return CfgSearch { regex: Cfg::get_edit_search_regex(), case_sensitive: Cfg::get_edit_search_case_sens() };
     }
 
     pub fn get_edit_search_regex() -> bool {
         return CFG_EDIT.get().unwrap().try_lock().unwrap().general.editor.search.regex;
     }
     pub fn get_edit_search_case_sens() -> bool {
-        return CFG_EDIT.get().unwrap().try_lock().unwrap().general.editor.search.case_sens;
+        return CFG_EDIT.get().unwrap().try_lock().unwrap().general.editor.search.case_sensitive;
     }
 }
 
@@ -83,6 +83,8 @@ pub struct CfgEditor {
     pub cursor: CfgCur,
     pub column_char_width_gap_space: CfgUserEditorColumnCharWidthGap,
     pub save: CfgEditorSave,
+    pub word: CfgEditorWord,
+    pub input_comple: CfgEditorInputComple,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -102,7 +104,7 @@ pub struct CfgCtxMenu {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CfgSearch {
-    pub case_sens: bool,
+    pub case_sensitive: bool,
     pub regex: bool,
 }
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -155,6 +157,17 @@ pub struct CfgUserEditorColumnCharWidthGap {
 pub struct CfgEditorSave {
     pub use_string_first_line_for_file_name_of_new_file: bool,
     pub extension_when_saving_new_file: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct CfgEditorWord {
+    pub word_delimiter: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct CfgEditorInputComple {
+    pub word_delimiter: String,
+    pub case_sensitive: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Default, Deserialize, PartialEq)]

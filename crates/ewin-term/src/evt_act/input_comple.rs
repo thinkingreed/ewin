@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use crate::{
     ewin_com::{_cfg::key::keycmd::*, log::*, model::*},
     model::*,
@@ -98,8 +100,27 @@ impl EvtAct {
             Log::debug_s("2222222222222222222222");
             if let Some((menu, _)) = term.curt().editor.input_comple.window.get_curt_parent() {
                 Log::debug_s("3333333333333333333333");
+                let (search_str, str_sx) = term.curt().editor.get_until_delim_str();
+                let y = term.curt().editor.cur.y;
+                let s_idx = term.curt().editor.buf.row_to_char(y) + str_sx;
+
+                /*
+                let s_idx = term.curt().editor.buf.row_to_char(y) + str_sx;
+                let e_idx = term.curt().editor.buf.row_to_char(y) + term.curt().editor.cur.x;
+                term.curt().editor.buf.remove(s_idx, e_idx);
+
                 let add_str = term.curt().editor.get_input_comple_addstr(&menu.name);
                 term.curt().editor.edit_proc(E_Cmd::InsertStr(add_str));
+
+                let (search_str, str_sx) = term.curt().editor.get_until_delim_str();
+                 */
+
+                Log::debug("term.curt().editor.cur 111", &term.curt().editor.cur);
+
+                term.curt().editor.edit_proc(E_Cmd::ReplaceExec(search_str, menu.name, BTreeSet::from([s_idx])));
+
+                Log::debug("term.curt().editor.cur 222", &term.curt().editor.cur);
+
                 return ActType::Render(RParts::All);
             }
         }

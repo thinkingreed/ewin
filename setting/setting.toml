@@ -1,6 +1,6 @@
 [general]
 # "en_US" or "ja_JP"
-lang = "en_US"  # option default "en_US"
+lang = "ja_JP"  # option default "en_US"
 
 [general.log] # option
 # "info" or "debug" or "error"
@@ -16,7 +16,7 @@ size = 4
 input_type = "tab"
 
 [general.editor.search]
-case_sens = true
+case_sensitive = true
 regex = false
 
 [general.editor.format]
@@ -44,6 +44,13 @@ end_of_line_enable = false
 # String of first line within 20 characters
 use_string_first_line_for_file_name_of_new_file=true
 extension_when_saving_new_file="txt"
+
+[general.editor.word]
+word_delimiter=" 　!\"\\#$%&()*+-',./:;<=>?@[]^`{|}~"
+
+[general.editor.input_comple]
+word_delimiter = " 　"
+case_sensitive = false
 
 [general.prompt.open_file]
 # Valid only for Windows
