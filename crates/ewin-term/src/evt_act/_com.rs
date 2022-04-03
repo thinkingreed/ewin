@@ -9,7 +9,7 @@ use crate::{
     },
     model::*,
 };
-use ewin_window::window::*;
+use ewin_window::core::*;
 use std::io::Write;
 
 impl EvtAct {
@@ -162,7 +162,10 @@ impl EvtAct {
             if let Some(key_cmd) = KEY_CMD_MAP.get().unwrap().get(&(keys, KeyWhen::EditorFocus)) {
                 if key_cmd == &KeyCmd::Edit(E_Cmd::CloseFile) || key_cmd == &KeyCmd::Edit(E_Cmd::CancelState) {
                     term.clear_ctx_menu();
-                    term.clear_curt_tab(true);
+                    // let is_clear_grep_info = !term.curt().state.grep.is_greping();
+                    if !term.curt().state.grep.is_greping() {
+                        term.clear_curt_tab(true, true);
+                    }
                 }
             }
         }

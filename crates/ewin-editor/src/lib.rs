@@ -28,12 +28,11 @@ pub mod model;
 pub mod proc;
 pub mod proc_edit;
 pub mod scroll;
-
+pub mod search;
 pub mod key {
     pub mod cur;
     pub mod edit;
     pub mod mouse;
-    pub mod search;
     pub mod select;
     pub mod un_redo;
 }

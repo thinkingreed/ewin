@@ -126,13 +126,16 @@ impl TextBuffer {
         self.text.slice(s..e).to_string()
     }
 
-    pub fn slice_rope(&self, sel: SelRange) -> RopeSlice {
+    pub fn slice_string(&self, sel: SelRange) -> String {
         Log::debug("slice sel", &sel);
+        if sel.is_selected() {
+            let s = self.text.line_to_char(sel.sy) + sel.sx;
+            let e = self.text.line_to_char(sel.ey) + sel.ex;
 
-        let s = self.text.line_to_char(sel.sy) + sel.sx;
-        let e = self.text.line_to_char(sel.ey) + sel.ex;
-
-        self.text.slice(s..e)
+            return self.text.slice(s..e).to_string();
+        } else {
+            return String::new();
+        }
     }
 
     pub fn slice_chars(&self, sel: SelRange) -> Vec<char> {

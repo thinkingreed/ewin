@@ -47,7 +47,7 @@ impl EvtAct {
         if is_click && (term.curt().prom.cont_posi == PromptContPosi::First || (term.curt().prom.cont_posi == PromptContPosi::Second && !choice_3.is_none())) {
             return ActType::Render(RParts::All);
         }
-        term.clear_curt_tab(true);
+        term.clear_curt_tab(true, true);
         // file
         if choice_1.name.contains(&Lang::get().file) {
             if choice_2.name.contains(&Lang::get().encode) {
@@ -77,7 +77,7 @@ impl EvtAct {
                     term.curt().editor.format(FileType::from_str_fmt_type(&choice_3.name));
                 }
             } else {
-                term.clear_curt_tab(true);
+                term.clear_curt_tab(true, true);
                 return ActType::Render(RParts::AllMsgBar(Lang::get().no_sel_range.to_string()));
             }
             // macros

@@ -41,7 +41,7 @@ impl EvtAct {
         } else {
             // Do not clear grep information in case of grep result
             // Because grep result cannot be judged
-            term.clear_curt_tab(false);
+            term.clear_curt_tab(false, false);
             return ActType::Render(RParts::All);
         }
     }

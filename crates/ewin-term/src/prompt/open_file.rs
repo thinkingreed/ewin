@@ -119,7 +119,7 @@ impl EvtAct {
                             }
                         } else {
                             term.tab_idx = tgt_idx;
-                            term.clear_curt_tab(true);
+                            term.clear_curt_tab(true, true);
                             term.curt().editor.set_cmd(KeyCmd::Null);
                         }
                     } else if term.curt().prom.prom_open_file.file_type == OpenFileType::JsMacro {
@@ -127,7 +127,7 @@ impl EvtAct {
                         if let ActType::Render(RParts::MsgBar(_)) = act_type {
                             return act_type;
                         } else {
-                            term.clear_curt_tab(true);
+                            term.clear_curt_tab(true, true);
                         };
                     }
                 }

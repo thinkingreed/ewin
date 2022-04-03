@@ -35,7 +35,7 @@ impl EvtAct {
                         return ActType::Render(RParts::MsgBar(err_str.to_string()));
                     }
                 }
-                term.clear_curt_tab(true);
+                term.clear_curt_tab(true, true);
                 return ActType::Render(RParts::All);
             }
             _ => return ActType::Cancel,

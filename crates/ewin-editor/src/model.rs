@@ -164,7 +164,6 @@ impl fmt::Display for EditorDraw {
 }
 pub struct FormatXml {}
 
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ScrollbarH {
     pub is_show: bool,
@@ -192,7 +191,19 @@ impl Default for ScrollbarH {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ChangeInfo {
+    pub change_type: EditerChangeType,
     pub new_row: BTreeSet<usize>,
     pub restayle_row_set: BTreeSet<usize>,
     pub del_row_set: BTreeSet<usize>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EditerChangeType {
+    Edit,
+    None,
+}
+impl Default for EditerChangeType {
+    fn default() -> Self {
+        EditerChangeType::None
+    }
 }

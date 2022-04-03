@@ -1,7 +1,10 @@
-use ewin_com::_cfg::model::default::{Cfg, CfgSearch};
-
 use crate::{
-    ewin_com::{_cfg::lang::lang_cfg::*, def::*, log::*, model::*},
+    ewin_com::{
+        _cfg::{key::keycmd::*, lang::lang_cfg::*, model::default::*},
+        def::*,
+        log::*,
+        model::*,
+    },
     model::*,
 };
 use std::{cmp::min, collections::BTreeSet};
@@ -19,17 +22,22 @@ impl Editor {
 
         let cfg_search = Cfg::get_edit_search();
 
-        self.set_search_org_and_raneg(if self.search.str.is_empty() { vec![] } else { self.get_search_ranges(&cfg_search, &self.search.str, s_row_idx, e_row_idx, 0) });
+        // self.search_org = self.search.clone();
+        self.search.ranges = if self.search.str.is_empty() { vec![] } else { self.get_search_ranges(&cfg_search, &self.search.str, s_row_idx, e_row_idx, 0) };
 
-        let search_org = self.search.clone();
+        // self.set_search_org_and_raneg();
+
         Log::debug("self.search.ranges", &self.search.ranges);
 
-        if !search_org.ranges.is_empty() || !self.search.ranges.is_empty() {
+        if !self.search_org.ranges.is_empty() || !self.search.ranges.is_empty() {
             // Search in advance for drawing
             if !self.search.ranges.is_empty() {
                 self.search_str(true, true);
             }
             for s in &self.search.ranges {
+                self.change_info.restayle_row_set.insert(s.y);
+            }
+            for s in &self.search_org.ranges {
                 self.change_info.restayle_row_set.insert(s.y);
             }
             self.draw_range = E_DrawRange::Targetpoint;
@@ -38,12 +46,12 @@ impl Editor {
     pub fn exec_search_confirm(&mut self, search_str: String) -> Option<String> {
         Log::debug_s("exec_search_confirm");
         if search_str.is_empty() {
-            return Some(Lang::get().not_entered_search_str.clone());
+            return Some(Lang::get().not_set_search_str.clone());
         }
         let cfg_search = &Cfg::get_edit_search();
 
         if self.search(&search_str, cfg_search) {
-            return Some(Lang::get().cannot_find_char_search_for.clone());
+            return Some(Lang::get().cannot_find_search_char.clone());
         } else {
             self.search_str(true, false);
             None
@@ -58,7 +66,8 @@ impl Editor {
             return search_vec.is_empty();
         } else {
             self.search.clear();
-            self.set_search_org_and_raneg(search_vec.clone());
+            self.search.ranges = search_vec.clone();
+            // self.set_search_org_and_raneg(search_vec.clone());
             //  self.search.ranges = search_vec.clone();
             self.search.str = search_str.to_string();
             // Set index to initial value
@@ -66,40 +75,35 @@ impl Editor {
         }
         return search_vec.is_empty();
     }
-    pub fn set_search_org_and_raneg(&mut self, ranges: Vec<SearchRange>) {
-        self.search_org = self.search.clone();
-        self.search.ranges = ranges;
-    }
 
     pub fn search_str(&mut self, is_asc: bool, is_incremental: bool) {
         Log::debug_key("search_str");
 
-        if !self.search.str.is_empty() {
-            if self.search.ranges.is_empty() {
-                let cfg_search = &Cfg::get_edit_search();
-                self.set_search_org_and_raneg(self.get_search_ranges(cfg_search, &self.search.str, 0, self.buf.len_chars(), 0))
-            }
-            if self.search.ranges.is_empty() {
-                return;
-            }
-            if self.search.row_num == USIZE_UNDEFINED {
-                Log::debug("self.search.idx 111", &self.search.idx);
-
-                self.search.idx = self.get_search_str_index(is_asc);
-                Log::debug("self.search.idx 222", &self.search.idx);
-            } else {
-                self.search.idx = self.get_search_row_no_index(self.search.row_num);
-                self.search.row_num = USIZE_UNDEFINED;
-            }
-
-            if !is_incremental {
-                let range = self.search.ranges[self.search.idx];
-                self.set_cur_target_by_x(range.y, range.sx, false);
-            }
-
-            self.scroll();
-            self.scroll_horizontal();
+        if self.search.ranges.is_empty() {
+            let cfg_search = &Cfg::get_edit_search();
+            // self.set_search_org_and_raneg()
+            self.search.ranges = self.get_search_ranges(cfg_search, &self.search.str, 0, self.buf.len_chars(), 0);
         }
+        if self.search.ranges.is_empty() {
+            return;
+        }
+        if self.search.row_num == USIZE_UNDEFINED {
+            Log::debug("self.search.idx 111", &self.search.idx);
+
+            self.search.idx = self.get_search_str_index(is_asc);
+            Log::debug("self.search.idx 222", &self.search.idx);
+        } else {
+            self.search.idx = self.get_search_row_no_index(self.search.row_num);
+            self.search.row_num = USIZE_UNDEFINED;
+        }
+
+        if !is_incremental {
+            let range = self.search.ranges[self.search.idx];
+            self.set_cur_target_by_x(range.y, range.sx, false);
+        }
+
+        self.scroll();
+        self.scroll_horizontal();
     }
 
     pub fn get_search_ranges(&self, cfg_search: &CfgSearch, search_str: &str, s_idx: usize, e_idx: usize, ignore_prefix_len: usize) -> Vec<SearchRange> {
@@ -199,5 +203,28 @@ impl Editor {
             total += diff;
         }
         return replace_set;
+    }
+
+    pub fn find_next_back(&mut self) -> ActType {
+        Log::debug_key("Editor.find_next_back");
+        // Quick search
+        Log::debug("self.search.ranges.is_empty()", &self.search.ranges.is_empty());
+        Log::debug("self.search.str", &self.search.str);
+        Log::debug("self.search_org.str", &self.search_org.str);
+
+        let sel_str = self.buf.slice_string(self.sel);
+        if self.search.ranges.is_empty() || (!sel_str.is_empty() && self.search.str != sel_str) {
+            Log::debug_key("11111111111111111111111111111");
+            //  self.search.clear();
+            if sel_str.is_empty() {
+                return ActType::Render(RParts::MsgBar(Lang::get().not_set_search_str.to_string()));
+            }
+            self.search.str = sel_str.clone();
+            self.search(&sel_str, &Cfg::get_edit_search());
+        }
+        Log::debug_key("2222222222222222222222222222");
+
+        self.search_str(self.e_cmd == E_Cmd::FindNext, false);
+        return ActType::Next;
     }
 }

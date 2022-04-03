@@ -9,7 +9,7 @@ impl EvtAct {
     pub fn ctrl_editor(term: &mut Terminal) -> ActType {
         Log::debug_key("EvtAct::ctrl_editor");
 
-        let act_type = term.curt().editor.editor_check_err();
+        let act_type = term.curt().editor.editor_overall_check_err();
         if ActType::Next != act_type {
             return act_type;
         }
@@ -51,7 +51,7 @@ impl EvtAct {
             E_Cmd::Format(fmt_type) => return EvtAct::evt_editor_format(term, *fmt_type),
             // key record
             E_Cmd::StartEndRecordKey => return term.curt().record_key_macro_start(),
-            E_Cmd::ExecRecordKey => Tab::exec_key_macro(term),
+            E_Cmd::ExecRecordKey => return Tab::exec_key_macro(term),
             /*
              * Prompt
              */
@@ -80,7 +80,12 @@ impl EvtAct {
             E_Cmd::SwitchTabLeft => return term.switch_tab(Direction::Left),
             //
             // Operation editor
-            _ => term.curt().editor.proc(),
+            _ => {
+                let evt_act = term.curt().editor.proc();
+                if evt_act != ActType::Next {
+                    return evt_act;
+                }
+            }
         }
 
         if term.curt().editor.is_input_imple_mode(true) {

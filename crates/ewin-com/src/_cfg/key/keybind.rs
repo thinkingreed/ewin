@@ -16,7 +16,7 @@ use json5;
 use std::{cmp::Ordering::*, collections::HashMap, str::FromStr};
 
 impl Keybind {
-    pub fn init(args: &Args) -> String {
+    pub fn init(args: &AppArgs) -> String {
         #[cfg(target_family = "unix")]
         let mut keybind_vec: Vec<Keybind> = json5::from_str(include_str!("../../../../../setting/keybind/keybind_unix_family.json5")).unwrap();
         #[cfg(target_family = "windows")]

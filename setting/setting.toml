@@ -2,13 +2,19 @@
 # "en_US" or "ja_JP"
 lang = "ja_JP"  # option default "en_US"
 
-[general.log] # option
+[general.log]
 # "info" or "debug" or "error"
 level = "debug"
 
 [general.font] # option
 # Set 1 or 2.If not set, Windows=2, Linux=1
 #ambiguous_width = 1
+
+[general.view] # option
+# not If not set, ""
+tab_characters_as_symbols = "^"
+# not If not set, ""
+full_width_space_characters_as_symbols  = "⬜"
 
 [general.editor.tab]
 size = 4
@@ -51,6 +57,9 @@ word_delimiter=" 　!\"\\#$%&()*+-',./:;<=>?@[]^`{|}~"
 [general.editor.input_comple]
 word_delimiter = " 　"
 case_sensitive = false
+# Only files below this value are subject to input completion (positive number: MByte)
+# disable_input_comple_file_size = 3
+
 
 [general.prompt.open_file]
 # Valid only for Windows
@@ -59,6 +68,7 @@ directory_init_value = ""
 
 # Context menu
 [general.context_menu]
+# No more than the screen area is displayed
 content = """
 {
   "editor": {
@@ -94,7 +104,7 @@ mouse_enable = true
 disable_highlight_ext = ["txt", "log"]
 
 # Only files below this value will be highlighted(positive number:MByte)
-disable_syntax_highlight_file_size = 12
+disable_syntax_highlight_file_size = 3
 # "black" or "white" or "blue" 
 default_color_theme = "white"
 

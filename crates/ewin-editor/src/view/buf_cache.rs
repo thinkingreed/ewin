@@ -1,8 +1,7 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, char_style::*, def::*, log::*, model::*, util::*},
+    ewin_com::{_cfg::key::keycmd::*,_cfg::model::default::*, char_style::*, def::*, log::*, model::*, util::*},
     model::*,
 };
-use ewin_com::_cfg::model::default::{Cfg, CfgSyntax};
 use std::cmp::{max, min};
 use syntect::highlighting::{HighlightIterator, HighlightState, Highlighter, Style};
 use syntect::parsing::{ParseState, ScopeStack};
@@ -59,7 +58,7 @@ impl EditorDraw {
         Log::debug("self.cells_to_all.len() before", &self.cells_to_all.len());
         Log::debug("editor.change_info.del_row", &editor.change_info.del_row_set);
         Log::debug("editor.change_info.new_row", &editor.change_info.new_row);
-        Log::debug("editor.change_info.restayle_row", &editor.change_info.restayle_row_set);
+        Log::debug("editor.change_info.restayle_row_set", &editor.change_info.restayle_row_set);
 
         if !self.cells_to_all.is_empty() {
             for (i, del_i) in editor.change_info.del_row_set.iter().enumerate() {
@@ -77,7 +76,7 @@ impl EditorDraw {
             }
             for i in &editor.change_info.restayle_row_set {
                 self.cells_to_all[*i] = Vec::new();
-                if editor.is_enable_syntax_highlight && Editor::is_edit(&editor.e_cmd, true) {
+                if editor.is_enable_syntax_highlight && editor.change_info.change_type == EditerChangeType::Edit {
                     self.style_vecs[*i] = Vec::new();
                 }
             }
@@ -100,7 +99,6 @@ impl EditorDraw {
 
         for y in sy..=ey {
             Log::debug("yyy", &y);
-
             let mut row_vec = editor.buf.char_vec_row(y);
 
             if y == editor.buf.len_rows() - 1 && editor.state.mouse_mode == MouseMode::Normal {
@@ -108,9 +106,7 @@ impl EditorDraw {
             }
             let sx_ex_range_opt = EditorDraw::get_draw_x_range(&row_vec, editor.offset_disp_x, editor.col_len);
 
-            Log::debug("sx_ex_range_opt", &sx_ex_range_opt);
-            Log::debug("row_vec", &row_vec);
-
+           
             if editor.is_enable_syntax_highlight {
                 self.set_regions_highlight(editor, y, row_vec, sx_ex_range_opt, &highlighter);
             } else {
@@ -119,9 +115,7 @@ impl EditorDraw {
         }
 
         let mut change_style_vec: Vec<usize> = vec![];
-        Log::debug("editor.draw_range", &editor.draw_range);
-        Log::debug("editor.e_cmd", &editor.e_cmd);
-
+      
         // let (sy, ey) = if editor.is_enable_syntax_highlight && (self.syntax_state_vec.is_empty() || Editor::is_edit(&editor.e_cmd, true)) { (editor.offset_y, min(editor.offset_y + editor.row_disp_len, editor.buf.len_rows() - 1)) } else { (self.sy, self.ey) };
 
         match editor.draw_range {
@@ -155,12 +149,10 @@ impl EditorDraw {
             let (sx, ex) = (sx_range.get_x(), ex_range.get_x());
 
             if !self.cells_to_all[y].is_empty() && self.cells_to_all[y].len() >= ex {
-                Log::debug_s("111111      1111111111111111");
-
+              
                 self.cells_to.insert(y, self.cells_to_all[y][sx..ex].to_vec());
             } else {
-                Log::debug_s("22222      22222222222222222");
-
+             
                 for c in row_vec[sx..ex].iter() {
                     width += match *c {
                         NEW_LINE_LF | NEW_LINE_CR => 1,
@@ -195,18 +187,14 @@ impl EditorDraw {
             let mut parse;
 
             if !self.cells_to_all[y].is_empty() && self.cells_to_all[y].len() >= ex {
-                Log::debug_s("1111111111111111111111");
-
+        
                 self.cells_to.insert(y, self.cells_to_all[y][sx..ex].to_vec());
             } else {
                 if self.style_vecs[y].is_empty() {
-                    Log::debug_s("222222222222222222");
                     if self.syntax_state_vec.is_empty() {
-                        Log::debug_s("33333333333333333333");
                         scope = ScopeStack::new();
                         parse = ParseState::new(&self.syntax_reference.clone().unwrap());
                     } else {
-                        Log::debug_s("4444444444444444444444");
                         // Process from the previous row
                         let syntax_state = self.syntax_state_vec[if y == 0 { 1 } else { y } - 1].clone();
                         scope = syntax_state.highlight_state.path.clone();
@@ -242,7 +230,7 @@ impl EditorDraw {
                         x += 1;
                     }
                 }
-
+              
                 self.cells_to.insert(y, cells[sx_range.get_x()..ex_range.get_x()].to_vec());
                 self.cells_to_all[y] = cells;
             }
@@ -294,7 +282,7 @@ impl EditorDraw {
             } else {
                 let width_org = width - get_char_width(&c, width);
 
-                if sel_range.s_disp_x < width && width_org < sel_range.e_disp_x && !is_newline_char(c) {
+                if sel_range.s_disp_x < width && width_org < sel_range.e_disp_x && !is_nl_char(c) {
                     return CharStyleType::Select;
                 }
             }
@@ -308,7 +296,7 @@ impl EditorDraw {
         }
         match c {
             // Ignore NEW_LINE_CR
-            NEW_LINE_LF | TAB_CHAR => CharStyleType::CtrlChar,
+            NEW_LINE_LF | TAB_CHAR | FULL_SPACE => CharStyleType::CtrlChar,
             _ => {
                 if y == editor.buf.len_rows() - 1 {
                     let last_row_chars = editor.buf.line(editor.buf.len_rows() - 1).len_chars();

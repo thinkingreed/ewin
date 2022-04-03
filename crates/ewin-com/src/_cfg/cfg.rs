@@ -11,7 +11,7 @@ use crate::{
 use std::{path::Path, sync::Mutex};
 
 impl Cfg {
-    pub fn init(args: &Args) -> String {
+    pub fn init(args: &AppArgs) -> String {
         let mut cfg: Cfg = toml::from_str(include_str!("../../../../setting/setting.toml")).unwrap();
 
         let (cfg_user, err_str) = SettingFileLoader::new(FileType::TOML, args, FilePath::get_app_config_dir(), SETTING_FILE).load::<CfgUser>();
@@ -80,7 +80,7 @@ impl Cfg {
         return err_str;
     }
 
-    pub fn write_setting_file(args: &Args, filenm: &str, write_str: &str) -> String {
+    pub fn write_setting_file(args: &AppArgs, filenm: &str, write_str: &str) -> String {
         let mut err_str = String::new();
         if args.out_config_flg {
             if FilePath::get_app_config_dir().is_some() {

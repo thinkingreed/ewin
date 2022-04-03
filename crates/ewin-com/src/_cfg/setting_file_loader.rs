@@ -9,13 +9,13 @@ use std::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SettingFileLoader<'a> {
     file_type: FileType,
-    args: &'a Args,
+    args: &'a AppArgs,
     filedir_opt: Option<PathBuf>,
     filenm: &'a str,
 }
 
 impl<'a> SettingFileLoader<'a> {
-    pub fn new(file_type: FileType, args: &'a Args, filedir_opt: Option<PathBuf>, filenm: &'a str) -> SettingFileLoader<'a> {
+    pub fn new(file_type: FileType, args: &'a AppArgs, filedir_opt: Option<PathBuf>, filenm: &'a str) -> SettingFileLoader<'a> {
         SettingFileLoader { file_type, args, filedir_opt, filenm }
     }
 

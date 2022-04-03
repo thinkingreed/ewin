@@ -147,20 +147,26 @@ impl Editor {
         self.set_cur_target_by_x(self.cur.y, x, false);
     }
 
-    pub fn insert_row(&mut self) {
+    pub fn insert_row(&mut self) -> ActType {
         self.buf.insert(self.cur.y, self.cur.x, &NL::get_nl(&self.h_file.nl));
         self.set_cur_target_by_x(self.cur.y + 1, 0, false);
 
         self.scroll();
         self.scroll_horizontal();
+
+        return ActType::Next;
     }
 
-    pub fn backspace(&mut self, ep: &mut Proc) {
+    pub fn backspace(&mut self, ep: &mut Proc) -> ActType {
         Log::debug_key("back_space");
         // beginning of the line
+
+        if !self.sel.is_selected() && self.cur.y == 0 && self.cur.x == 0 {
+            return ActType::Cancel;
+        }
         if self.cur.x == 0 {
             if self.cur.y == 0 {
-                return;
+                return ActType::Cancel;
             }
             self.cur.y -= 1;
             let mut cur_x = self.buf.line(self.cur.y).len_chars() - 1;
@@ -198,10 +204,16 @@ impl Editor {
                 ep.cur_e = self.cur;
             }
         }
+        return ActType::Next;
     }
 
-    pub fn delete(&mut self, ep: &mut Proc) {
+    pub fn delete(&mut self, ep: &mut Proc) -> ActType {
         Log::debug_key("delete");
+
+        if self.sel.mode != SelMode::BoxSelect && !self.sel.is_selected() && (self.cur.y == self.buf.len_rows() - 1 && self.cur.x == self.buf.len_row_chars(self.cur.y)) {
+            return ActType::Cancel;
+        }
+
         let c = self.buf.char(self.cur.y, self.cur.x);
         ep.str = if c == NEW_LINE_CR { format!("{}{}", c, NEW_LINE_LF) } else { c.to_string() };
         self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelNextChar), self.cur.y, self.cur.x);
@@ -210,6 +222,8 @@ impl Editor {
             self.scroll();
             self.scroll_horizontal();
         }
+
+        return ActType::Next;
     }
 
     pub fn cancel_state(&mut self) {
@@ -217,7 +231,7 @@ impl Editor {
         self.sel.clear();
         self.sel.mode = SelMode::Normal;
         self.box_insert.mode = BoxInsertMode::Normal;
-        self.search_org = self.search.clone();
+        // self.search_org = self.search.clone();
         self.search.clear();
         self.state.input_comple_mode = InputCompleMode::None;
         self.input_comple.clear();

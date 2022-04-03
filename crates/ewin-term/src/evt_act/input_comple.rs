@@ -1,29 +1,23 @@
-use std::collections::BTreeSet;
-
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, log::*, model::*},
+    ewin_com::{_cfg::key::keycmd::*, def::*, log::*, model::*},
     model::*,
 };
-use ewin_com::def::*;
 use ewin_editor::model::*;
 
 impl EvtAct {
     pub fn ctrl_input_comple_before(term: &mut Terminal) -> ActType {
-        Log::debug_key("EvtAct.ctrl_input_comple");
-
+        Log::debug_key("EvtAct::ctrl_input_comple_before");
         let e_cmd = &term.curt().editor.e_cmd.clone();
-        term.curt().editor.input_comple.window.e_cmd = e_cmd.clone();
         Log::debug("e_cmd", &e_cmd);
-        Log::debug("input_comple.window 000", &term.curt().editor.input_comple.window);
 
         match e_cmd {
             E_Cmd::InputComple => {
                 term.curt().editor.init_input_comple(false);
                 return ActType::Render(RParts::All);
             }
-
             E_Cmd::MouseDownLeft(y, x) => {
                 if term.curt().editor.input_comple.window.is_mouse_within_range(*y, *x, false) {
+                    Log::debug_s("is_mouse_within_range");
                     let evt_act = EvtAct::select_input_comple(term);
                     term.curt().editor.clear_input_comple();
                     return evt_act;
@@ -93,52 +87,10 @@ impl EvtAct {
 
     pub fn select_input_comple(term: &mut Terminal) -> ActType {
         Log::debug_key("select_input_comple");
-        if let Some((_, _)) = term.curt().editor.input_comple.window.get_curt_child() {
-            Log::debug_s("1111111111111111111111111");
-            // parent
-        } else if !term.curt().editor.input_comple.window.is_exist_child_curt_parent() {
-            Log::debug_s("2222222222222222222222");
-            if let Some((menu, _)) = term.curt().editor.input_comple.window.get_curt_parent() {
-                Log::debug_s("3333333333333333333333");
-                let (search_str, str_sx) = term.curt().editor.get_until_delim_str();
-                let y = term.curt().editor.cur.y;
-                let s_idx = term.curt().editor.buf.row_to_char(y) + str_sx;
-
-                /*
-                let s_idx = term.curt().editor.buf.row_to_char(y) + str_sx;
-                let e_idx = term.curt().editor.buf.row_to_char(y) + term.curt().editor.cur.x;
-                term.curt().editor.buf.remove(s_idx, e_idx);
-
-                let add_str = term.curt().editor.get_input_comple_addstr(&menu.name);
-                term.curt().editor.edit_proc(E_Cmd::InsertStr(add_str));
-
-                let (search_str, str_sx) = term.curt().editor.get_until_delim_str();
-                 */
-
-                Log::debug("term.curt().editor.cur 111", &term.curt().editor.cur);
-
-                term.curt().editor.edit_proc(E_Cmd::ReplaceExec(search_str, menu.name, BTreeSet::from([s_idx])));
-
-                Log::debug("term.curt().editor.cur 222", &term.curt().editor.cur);
-
-                return ActType::Render(RParts::All);
-            }
+        if let Some((menu, _)) = term.curt().editor.input_comple.window.get_curt_parent() {
+            term.curt().editor.replace_input_comple(menu.name);
+            return ActType::Render(RParts::All);
         }
         return ActType::Cancel;
     }
-
-    /*
-    pub fn is_input_comple_displayed_area(term: &mut Terminal, y: usize, x: usize) -> bool {
-        if y == term.hbar.row_posi {
-            for h_file in term.hbar.file_vec.iter() {
-                if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 || h_file.close_area.0 <= x && x <= h_file.close_area.1 {
-                    return true;
-                }
-            }
-        } else {
-            return true;
-        }
-        return false;
-    }
-     */
 }

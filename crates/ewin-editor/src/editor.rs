@@ -17,7 +17,6 @@ use std::{
     cmp::min,
     collections::BTreeSet,
     io::{self, stdout},
-    usize,
 };
 
 impl Editor {
@@ -66,6 +65,8 @@ impl Editor {
         self.offset_disp_x_org = self.offset_disp_x;
         self.rnw_org = self.get_rnw();
         self.sel_org = self.sel;
+
+        self.search_org = self.search.clone();
 
         self.state.is_changed_org = self.state.is_changed;
         self.len_rows_org = self.buf.len_rows();
@@ -117,11 +118,6 @@ impl Editor {
             _ => self.updown_x = 0,
         }
 
-        // Edit is_change=true, Clear redo_vec,
-        if Editor::is_edit(&self.e_cmd, false) {
-            self.state.is_changed = true;
-            self.history.clear_redo_vec();
-        }
         // Box Mode
         match self.e_cmd {
             E_Cmd::InsertStr(_) => {
@@ -183,21 +179,12 @@ impl Editor {
             self.search.ranges = self.get_search_ranges(&cfg_search, search_str, 0, len_chars, 0);
         }
     }
-    pub fn editor_check_err(&mut self) -> ActType {
-        Log::debug_key("editor_check_err");
 
+    pub fn editor_overall_check_err(&mut self) -> ActType {
+        Log::debug_key("editor_check_err");
         // read_only
         if self.state.is_read_only && Editor::is_edit(&self.e_cmd, true) {
             return ActType::Cancel;
-        }
-        match self.e_cmd {
-            E_Cmd::DelNextChar if self.sel.mode != SelMode::BoxSelect && !self.sel.is_selected() && (self.cur.y == self.buf.len_rows() - 1 && self.cur.x == self.buf.len_row_chars(self.cur.y)) => return ActType::Cancel,
-            E_Cmd::DelPrevChar if !self.sel.is_selected() && self.cur.y == 0 && self.cur.x == 0 => return ActType::Cancel,
-            E_Cmd::Cut | E_Cmd::Copy if !self.sel.is_selected() => return ActType::Render(RParts::MsgBar(Lang::get().no_sel_range.to_string())),
-            E_Cmd::Undo if self.history.len_undo() == 0 => return ActType::Render(RParts::MsgBar(Lang::get().no_undo_operation.to_string())),
-            E_Cmd::Redo if self.history.len_redo() == 0 => return ActType::Render(RParts::MsgBar(Lang::get().no_redo_operation.to_string())),
-            E_Cmd::ExecRecordKey if self.key_vec.is_empty() => return ActType::Render(RParts::MsgBar(Lang::get().no_key_record_exec.to_string())),
-            _ => {}
         }
         return ActType::Next;
     }

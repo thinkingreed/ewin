@@ -14,15 +14,14 @@ impl Window {
     const EXTRA_FROM_CUR_X: usize = 1;
     const EXTRA_FROM_CUR_Y: usize = 1;
 
-    pub const MAX_HEIGHT: usize = 8;
-
     pub fn set_init_menu(&mut self) {
         if self.parent_sel_y == USIZE_UNDEFINED && !self.curt_cont.menu_vec.is_empty() {
             self.parent_sel_y = 0;
         };
     }
+
     pub fn get_curt_parent(&self) -> Option<(WindowMenu, Option<WindowCont>)> {
-        Log::debug_key("Window.cur_move");
+        Log::debug_key("Window.get_curt_parent");
         Log::debug("self.parent_sel_y", &self.parent_sel_y);
 
         if let Some((ctx_menu, child_cont_option)) = self.curt_cont.menu_vec.get(self.parent_sel_y) {
@@ -84,9 +83,12 @@ impl Window {
     pub fn set_child_disp_area(&mut self) {
         if let Some((_, Some(child_cont))) = self.curt_cont.menu_vec.get_mut(self.parent_sel_y) {
             let (cols, rows) = get_term_size();
+            let editor_disp_y_len = rows - HEADERBAR_ROW_NUM - STATUSBAR_ROW_NUM;
+            child_cont.height = min(child_cont.menu_vec.len(), editor_disp_y_len);
             // rows
-            let (sy, ey) = if self.curt_cont.y_area.0 + self.parent_sel_y + child_cont.height > rows {
-                (rows - child_cont.height, rows)
+            let (sy, ey) = if self.curt_cont.y_area.0 + self.parent_sel_y + child_cont.height > editor_disp_y_len {
+                let base_y = if child_cont.height > editor_disp_y_len { HEADERBAR_ROW_NUM } else { HEADERBAR_ROW_NUM + editor_disp_y_len - child_cont.height };
+                (base_y, base_y + child_cont.height)
             } else {
                 let child_base_y = self.curt_cont.y_area.0 + self.parent_sel_y;
                 (child_base_y, child_base_y + child_cont.height - 1)
@@ -115,14 +117,20 @@ impl Window {
         Log::debug("self.curt_cont.height", &self.curt_cont.height);
 
         let (cols, rows) = get_term_size();
+        let editor_disp_y_len = rows - HEADERBAR_ROW_NUM - STATUSBAR_ROW_NUM;
         // rows
-        let (sy, ey) = if y + Window::EXTRA_FROM_CUR_Y + self.curt_cont.height > rows {
-            let base_y = y - Window::EXTRA_FROM_CUR_Y;
-            (base_y - self.curt_cont.height + 1, base_y)
+        self.curt_cont.height = match self.window_type {
+            WindowType::CtxMenu => min(self.curt_cont.menu_vec.len(), editor_disp_y_len),
+            WindowType::InputComple => min(self.curt_cont.menu_vec.len(), InputComple::MAX_HEIGHT),
+        };
+        let (sy, ey) = if y + Window::EXTRA_FROM_CUR_Y + self.curt_cont.height > editor_disp_y_len {
+            let base_y = if self.curt_cont.height > editor_disp_y_len { HEADERBAR_ROW_NUM } else { HEADERBAR_ROW_NUM + editor_disp_y_len - self.curt_cont.height };
+            (base_y, base_y + self.curt_cont.height)
         } else {
             let base_y = y + Window::EXTRA_FROM_CUR_Y;
             (base_y, base_y + self.curt_cont.height - 1)
         };
+
         // cols
         let (sx, ex) = if x + Window::EXTRA_FROM_CUR_X + self.curt_cont.width > cols {
             let base_x = x + Window::EXTRA_FROM_CUR_Y;
@@ -165,6 +173,10 @@ impl Window {
     pub fn is_mouse_within_range(&mut self, y: usize, x: usize, is_around: bool) -> bool {
         Log::debug_key("Window.is_mouse_within_range");
         Log::debug("is_around_check", &is_around);
+        Log::debug("y", &y);
+        Log::debug("x", &x);
+        Log::debug("self.curt_cont.y_area", &self.curt_cont.y_area);
+        Log::debug("self.curt_cont.x_area", &self.curt_cont.x_area);
 
         if is_around {
             if self.curt_cont.y_area.0 - 1 == y || y == self.curt_cont.y_area.1 + 1 || self.curt_cont.x_area.0 - 1 == x || x == self.curt_cont.x_area.1 + 1 {
@@ -195,6 +207,7 @@ impl Window {
     pub fn is_menu_change(&self) -> bool {
         return self.parent_sel_y == USIZE_UNDEFINED || self.parent_sel_y != self.parent_sel_y_org || self.child_sel_y != USIZE_UNDEFINED && self.child_sel_y != self.child_sel_y_org;
     }
+    /*
     pub fn clear(&mut self) {
         self.parent_sel_y = USIZE_UNDEFINED;
         self.parent_sel_y_org = USIZE_UNDEFINED;
@@ -202,36 +215,42 @@ impl Window {
         self.disp_sy = USIZE_UNDEFINED;
         self.disp_ey = 0;
     }
+     */
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>, sel_color: &str, not_sel_color: &str) {
         Log::debug_key("Window.draw");
         Log::debug("self.curt_cont.menu_vec.len()", &self.curt_cont.menu_vec.len());
 
         // calc offset
-        let menu_vec = self.get_tgt_menu_vec();
-        self.calc_scrlbar_v();
-
+        self.set_offset_y();
+        if self.window_type == WindowType::InputComple {
+            self.calc_scrlbar_v();
+        }
         Log::debug("self.scrl_v", &self.scrl_v);
         Log::debug("self.curt_cont.menu_vec.len()", &self.curt_cont.menu_vec.len());
         Log::debug(" self.parent_sel_y", &self.parent_sel_y);
         Log::debug("self.offset_y", &self.offset_y);
 
-        for (parent_idx, (parent_menu, child_cont_option)) in menu_vec.iter().enumerate() {
+        for (parent_idx, (parent_menu, child_cont_option)) in (0..self.curt_cont.height).zip(self.curt_cont.menu_vec[self.offset_y..].iter()) {
             let color = if parent_idx == self.parent_sel_y - self.offset_y { sel_color } else { not_sel_color };
             let name = format!("{}{}", color, parent_menu.name_disp,);
 
             // Parent menu
             str_vec.push(format!("{}{}", MoveTo((self.curt_cont.x_area.0) as u16, (self.curt_cont.y_area.0 + parent_idx) as u16), name));
 
-            // Parent scrl_v
-            if self.scrl_v.is_show && self.scrl_v.row_posi <= parent_idx && parent_idx < self.scrl_v.row_posi + self.scrl_v.bar_len {
-                str_vec.push(format!("{}{}{}", Colors::get_scrollbar_v_bg(), MoveTo((self.curt_cont.x_area.1) as u16 + 1, (self.curt_cont.y_area.0 + parent_idx) as u16), "  ",));
+            if self.window_type == WindowType::InputComple {
+                // Parent scrl_v
+                if self.scrl_v.is_show && self.scrl_v.row_posi <= parent_idx && parent_idx < self.scrl_v.row_posi + self.scrl_v.bar_len {
+                    str_vec.push(format!("{}{}{}", Colors::get_scrollbar_v_bg(), MoveTo((self.curt_cont.x_area.1) as u16 + 1, (self.curt_cont.y_area.0 + parent_idx) as u16), "  ",));
+                }
             }
-
             if parent_idx == self.parent_sel_y {
                 if let Some(cont) = child_cont_option {
-                    for (child_idx, (child_menu, _)) in cont.menu_vec.iter().enumerate() {
+                    for (child_idx, (child_menu, _)) in (0..cont.height).zip(cont.menu_vec.iter()) {
                         let c_name = cut_str(&child_menu.name_disp, cont.x_area.1 + 1 - cont.x_area.0, false, false);
+
+                        Log::debug("child_idx", &child_idx);
+                        Log::debug("self.child_sel_y", &self.child_sel_y);
 
                         let color = if child_idx == self.child_sel_y { sel_color } else { not_sel_color };
                         let name = format!("{}{}", color, c_name,);
@@ -295,21 +314,18 @@ impl Window {
             }
         }
     }
-    pub fn get_tgt_menu_vec(&mut self) -> Vec<(WindowMenu, Option<WindowCont>)> {
-        return if self.curt_cont.menu_vec.len() > Window::MAX_HEIGHT {
+    pub fn set_offset_y(&mut self) {
+        if self.window_type == WindowType::InputComple && self.curt_cont.menu_vec.len() > InputComple::MAX_HEIGHT {
             if self.parent_sel_y == 0 {
                 self.offset_y = 0;
             } else if self.parent_sel_y == self.curt_cont.menu_vec.len() - 1 {
-                self.offset_y = self.curt_cont.menu_vec.len() - Window::MAX_HEIGHT;
-            } else if self.parent_sel_y == Window::MAX_HEIGHT + self.offset_y - 1 {
+                self.offset_y = self.curt_cont.menu_vec.len() - InputComple::MAX_HEIGHT;
+            } else if self.parent_sel_y == InputComple::MAX_HEIGHT + self.offset_y - 1 {
                 self.offset_y += 1;
             } else if self.parent_sel_y == self.offset_y {
                 self.offset_y -= 1;
             }
-            self.curt_cont.menu_vec[self.offset_y..self.offset_y + Window::MAX_HEIGHT].to_vec()
-        } else {
-            self.curt_cont.menu_vec.clone()
-        };
+        }
     }
 }
 
@@ -325,10 +341,4 @@ pub trait WindowTrait {
         let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum WindowType {
-    CtxMenu,
-    InputComple,
 }

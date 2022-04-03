@@ -40,20 +40,20 @@ impl EvtAct {
             P_Cmd::EscPrompt => {
                 if term.state.is_all_close_confirm {
                     term.cancel_close_all_tab();
-                    term.clear_curt_tab(true);
+                    term.clear_curt_tab(true, true);
                 } else if term.state.is_all_save {
                     term.cancel_save_all_tab();
-                    term.clear_curt_tab(true);
+                    term.clear_curt_tab(true, true);
                 } else if term.curt().state.grep.is_greping() {
-                    GREP_CANCEL_VEC.get().unwrap().try_lock().map(|mut vec| *vec.last_mut().unwrap() = true).unwrap();
+                    GREP_CANCEL_VEC.get().unwrap().try_lock().map(|mut vec| *vec.last_mut().unwrap() = GrepCancelType::Canceling).unwrap();
                     // term.curt().state.grep.clear();
                 } else if term.curt().state.grep.is_grep_finished() {
-                    term.clear_curt_tab(false);
+                    term.clear_curt_tab(false, true);
                 } else if term.curt().state.is_search {
                     term.curt().editor.search.clear();
-                    term.clear_curt_tab(true);
+                    term.clear_curt_tab(true, true);
                 } else {
-                    term.clear_curt_tab(true);
+                    term.clear_curt_tab(true, true);
                 }
                 return ActType::Render(RParts::All);
             }
@@ -142,11 +142,10 @@ impl EvtAct {
     }
 
     pub fn is_draw_prompt_tgt_keycmd(p_cmd: &P_Cmd) -> bool {
-        match p_cmd {
-            P_Cmd::InsertStr(_) | P_Cmd::CursorLeft | P_Cmd::CursorRight | P_Cmd::CursorRowHome | P_Cmd::CursorRowEnd | P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::CursorLeftSelect | P_Cmd::CursorRightSelect | P_Cmd::CursorRowHomeSelect | P_Cmd::CursorRowEndSelect | P_Cmd::BackTabBackFocus | P_Cmd::Copy | P_Cmd::Cut | P_Cmd::Undo | P_Cmd::Redo | P_Cmd::CursorUp | P_Cmd::CursorDown | P_Cmd::TabNextFocus | P_Cmd::MouseDownLeft(_, _) | P_Cmd::MouseDragLeft(_, _) => {
-                return true;
-            }
-            _ => return false,
+        if let P_Cmd::InsertStr(_) | P_Cmd::CursorLeft | P_Cmd::CursorRight | P_Cmd::CursorRowHome | P_Cmd::CursorRowEnd | P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::CursorLeftSelect | P_Cmd::CursorRightSelect | P_Cmd::CursorRowHomeSelect | P_Cmd::CursorRowEndSelect | P_Cmd::BackTabBackFocus | P_Cmd::Copy | P_Cmd::Cut | P_Cmd::Undo | P_Cmd::Redo | P_Cmd::CursorUp | P_Cmd::CursorDown | P_Cmd::TabNextFocus | P_Cmd::MouseDownLeft(_, _) | P_Cmd::MouseDragLeft(_, _) = p_cmd {
+            return true;
+        } else {
+            return false;
         };
     }
 

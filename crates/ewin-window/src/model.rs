@@ -1,5 +1,5 @@
-use crate::ctx_menu::org::*;
-use ewin_com::{_cfg::key::keycmd::*, def::*, model::ScrollbarV};
+use crate::window::ctx_menu::*;
+use ewin_com::{_cfg::key::keycmd::*, def::*, model::*};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -11,13 +11,13 @@ pub struct CtxMenu {
 
 impl Default for CtxMenu {
     fn default() -> Self {
-        CtxMenu { c_cmd: C_Cmd::Null, ctx_menu_place_map: HashMap::new(), window: Window::default() }
+        CtxMenu { c_cmd: C_Cmd::Null, ctx_menu_place_map: HashMap::new(), window: Window::new(WindowType::CtxMenu) }
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Window {
-    pub e_cmd: E_Cmd,
+    pub window_type: WindowType,
     pub curt_cont: WindowCont,
     pub parent_sel_y: usize,
     pub parent_sel_y_org: usize,
@@ -31,10 +31,36 @@ pub struct Window {
     pub scrl_v: ScrollbarV,
 }
 
+impl Window {
+    pub fn new(window_type: WindowType) -> Self {
+        let mut window = Window { ..Window::default() };
+        window.window_type = window_type;
+        window
+    }
+
+    pub fn clear(&mut self) {
+        self.curt_cont = WindowCont::default();
+        self.parent_sel_y = USIZE_UNDEFINED;
+        self.parent_sel_y_org = USIZE_UNDEFINED;
+        self.child_sel_y = USIZE_UNDEFINED;
+        self.child_sel_y_org = USIZE_UNDEFINED;
+        self.disp_sy = USIZE_UNDEFINED;
+        self.disp_ey = 0;
+        self.offset_y = 0;
+        self.scrl_v = ScrollbarV::default();
+    }
+}
+
 impl Default for Window {
     fn default() -> Self {
-        Window { e_cmd: E_Cmd::Null, curt_cont: WindowCont::default(), parent_sel_y: USIZE_UNDEFINED, parent_sel_y_org: USIZE_UNDEFINED, child_sel_y: USIZE_UNDEFINED, child_sel_y_org: USIZE_UNDEFINED, disp_sy: USIZE_UNDEFINED, disp_ey: 0, offset_y: 0, scrl_v: ScrollbarV::default() }
+        Window { window_type: WindowType::InputComple, curt_cont: WindowCont::default(), parent_sel_y: USIZE_UNDEFINED, parent_sel_y_org: USIZE_UNDEFINED, child_sel_y: USIZE_UNDEFINED, child_sel_y_org: USIZE_UNDEFINED, disp_sy: USIZE_UNDEFINED, disp_ey: 0, offset_y: 0, scrl_v: ScrollbarV::default() }
     }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum WindowType {
+    CtxMenu,
+    InputComple,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -71,18 +97,20 @@ pub struct InputComple {
     pub window: Window,
     pub all_words_map: BTreeMap<String, BTreeSet<usize>>,
     pub row_words_vec: Vec<RowWords>,
+    pub search_set: BTreeSet<String>,
 }
 
 impl Default for InputComple {
     fn default() -> Self {
         // row_words_vec: vec![RowWords::default()] is Correspondence of initial state
-        InputComple { window: Window::default(), all_words_map: BTreeMap::default(), row_words_vec: vec![RowWords::default()] }
+        InputComple { window: Window::new(WindowType::InputComple), all_words_map: BTreeMap::default(), row_words_vec: vec![RowWords::default()], search_set: BTreeSet::default() }
     }
 }
 
 impl InputComple {
     pub fn clear(&mut self) {
-        self.window = Window::default();
+        self.window.clear();
+        self.search_set = BTreeSet::default();
     }
 }
 

@@ -1,30 +1,41 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, _cfg::model::default::*, def::*, log::Log, model::*},
+    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, _cfg::model::default::*, def::*, global::*, log::Log, model::*},
     model::*,
-    tab::Tab,
+    tab::*,
 };
-
 use std::{ffi::OsStr, io::Write, path::*, process};
 use tokio::process::*;
 
 impl EvtAct {
     pub fn draw_grep_result<T: Write>(out: &mut T, term: &mut Terminal, job_grep: JobGrep) {
         Log::debug_key("draw_grep_result");
+        // Log::debug("job_grep", &job_grep);
 
-        if job_grep.is_cancel {
-            Log::debug_s("grep is canceled");
+        if EvtAct::is_grep_canceling() {
+            Log::debug_s("EvtAct::is_grep_Canceling()");
+            GREP_CANCEL_VEC.get().unwrap().try_lock().map(|mut vec| *vec.last_mut().unwrap() = GrepCancelType::Canceled).unwrap();
             EvtAct::exit_grep_result(out, term, job_grep, true);
-        } else if !(job_grep.is_stdout_end && job_grep.is_stderr_end) {
+        } else if EvtAct::is_grep_canceled() {
+            Log::debug_s("EvtAct::is_grep_canceled()");
+            return;
+        } else if job_grep.is_end {
+            Log::debug_s("grep is end");
+            EvtAct::exit_grep_result(out, term, job_grep, false);
+        } else {
             if job_grep.grep_str.trim().is_empty() {
                 return;
             }
             let path = PathBuf::from(&term.curt().editor.search.fullpath);
             let filenm = path.file_name().unwrap_or_else(|| OsStr::new("")).to_string_lossy().to_string();
             let replace_folder = term.curt().editor.search.fullpath.replace(&filenm, "");
-            let line_str = job_grep.grep_str.replace(&replace_folder, "");
+            let mut line_str = job_grep.grep_str.replace(&replace_folder, "");
+            if !line_str.contains(NEW_LINE_LF) {
+                line_str.push(NEW_LINE_LF);
+            }
+            Log::debug("line_str", &line_str);
 
             // New line code is fixed to LF because it is a non-editable file
-            term.curt().editor.buf.insert_end(&format!("{}{}", line_str, NEW_LINE_LF));
+            term.curt().editor.buf.insert_end(&line_str);
 
             let rnw_org = term.curt().editor.rnw;
             term.curt().editor.set_grep_result(line_str);
@@ -41,16 +52,13 @@ impl EvtAct {
             } else {
                 term.render(out, &RParts::All);
             }
-        } else {
-            Log::debug_s("grep is end");
-            EvtAct::exit_grep_result(out, term, job_grep, false);
         }
     }
 
     pub fn exit_grep_result<T: Write>(out: &mut T, term: &mut Terminal, job_grep: JobGrep, is_cancel: bool) {
         term.curt().prom.clear();
-        term.curt().state.grep.is_stdout_end = job_grep.is_stdout_end;
-        term.curt().state.grep.is_stderr_end = job_grep.is_stderr_end;
+
+        term.curt().state.grep.is_end = job_grep.is_end;
         term.curt().state.grep.is_cancel = job_grep.is_cancel;
 
         term.curt().mbar.clear();
@@ -103,73 +111,5 @@ impl EvtAct {
             }
             _ => return ActType::Cancel,
         }
-    }
-
-    #[cfg(any(target_os = "linux", target_os = "macos"))]
-    pub fn get_grep_child(search_str: &str, search_folder: &str, search_filenm: &str) -> Child {
-        Log::debug_key("get_grep_child linux");
-        // -r:Subfolder search, -H:File name display, -n:Line number display,
-        // -I:Binary file not applicable, -i:Ignore-case, -F:Fixed-strings
-
-        let mut cmd_option = "-rHnI".to_string();
-        {
-            if !Cfg::get_edit_search_case_sens() {
-                cmd_option.push('i');
-            };
-        }
-        {
-            if !Cfg::get_edit_search_case_sens() {
-                cmd_option.push('F');
-            };
-        }
-
-        let mut cmd = Command::new("grep");
-        cmd.arg(cmd_option.clone())
-            .arg(search_str)
-            .arg(format!("--include={}", search_filenm))
-            // folder
-            .arg(search_folder)
-            // Arguments that read everything as text
-            // Processing takes time
-            // .arg("--text")
-            ;
-
-        Log::info("Grep command", &cmd);
-        let child = cmd.kill_on_drop(true).stdout(process::Stdio::piped()).stderr(process::Stdio::piped()).spawn().unwrap();
-
-        return child;
-    }
-    #[cfg(target_os = "windows")]
-    pub fn get_grep_child(search_str: &str, search_folder: &str, search_filenm: &str) -> Child {
-        Log::info_s("              get_grep_child windows");
-        let mut cmd_option = "".to_string();
-        {
-            if !Cfg::get_edit_search_case_sens() {
-                cmd_option.push_str(" -CaseSensitive");
-            };
-        }
-        {
-            if !Cfg::get_edit_search_regex() {
-                cmd_option.push_str(" -SimpleMatch");
-            };
-        }
-        let path = Path::new(&search_folder).join(&search_filenm);
-        Log::debug("search_str", &search_str);
-
-        // The character code to be searched is UTF8 and UTF16 with the default specifications of Select-String.
-        // Do it only with "Select-String" without using dir, but adopt the dir method because an error occurs
-        let mut cmd = Command::new("powershell.exe");
-        cmd.args(&["dir", "-recurse", &format!(r#""{}""#, path.display()), "-Exclude"])
-            .arg("*.exe,*.zip,*.lzh,*.gz,*.Z,*.bz2,*.gif,*.jpg,*.png,*.bmp,*.tif,*.xls,*.doc,*.ppt,*.dvi,*.pdf,*.o,*.a,*.lib,*.rlib,*.rmeta,*.bin,*.pdb,*.dll,*.exp")
-            .arg("|")
-            .arg("Select-String")
-            .arg(format!(r#""{}""#, search_str))
-            .arg(cmd_option)
-            // Do not adjust the width of the output
-            .args(&["|", "Out-String", "-Width", "409600"]);
-
-        Log::info("Grep command", &cmd);
-        let child = cmd.kill_on_drop(true).stdout(process::Stdio::piped()).stderr(process::Stdio::piped()).spawn().unwrap();
-        return child;
     }
 }

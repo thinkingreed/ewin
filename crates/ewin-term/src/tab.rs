@@ -98,7 +98,7 @@ impl Tab {
         Log::debug_key("Tab::prom_save_confirm");
         if term.tabs[term.tab_idx].editor.state.is_changed {
             if !term.curt().state.is_nomal() {
-                term.clear_curt_tab(true);
+                term.clear_curt_tab(true, true);
             }
             term.curt().prom.save_confirm();
             term.curt().state.is_save_confirm = true;

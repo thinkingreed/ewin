@@ -11,7 +11,7 @@ use crate::{
     tab::*,
 };
 use directories::BaseDirs;
-use ewin_window::{ctx_menu::org::*, window::WindowTrait};
+use ewin_window::{core::*, window::ctx_menu::*};
 use std::io::stdout;
 
 impl EvtAct {

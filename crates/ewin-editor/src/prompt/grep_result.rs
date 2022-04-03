@@ -22,13 +22,16 @@ impl Editor {
             let ignore_prefix_str = format!("{}:{}:", vec[0], vec[1]);
 
             let regex = Cfg::get().general.editor.search.regex;
-            let row = self.buf.len_rows() - 2;
+            let row = self.buf.len_rows() - 1;
 
             let (start_idx, end_idx, ignore_prefix_len) = match regex {
                 true => (self.buf.row_to_byte(row), self.buf.len_bytes(), ignore_prefix_str.len()),
                 false => (self.buf.row_to_char(row), self.buf.len_chars(), ignore_prefix_str.chars().count()),
             };
             let cfg_search = &Cfg::get_edit_search();
+
+            Log::debug("self.search", &self.search);
+
             let mut search_vec: Vec<SearchRange> = self.get_search_ranges(cfg_search, &self.search.str, start_idx, end_idx, ignore_prefix_len);
             self.search.ranges.append(&mut search_vec);
         }

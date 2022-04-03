@@ -15,7 +15,8 @@ impl Cfg {
         /* general.lang */
         self.general.lang = match &cfg_user.general.lang {
             Some(s) if s == "ja_JP" => "ja_JP".to_string(),
-            _ => "en_US".to_string(),
+            //  _ => "en_US".to_string(),
+            _ => "ja_JP".to_string(),
         };
 
         /* general.log */
@@ -123,6 +124,21 @@ impl Cfg {
          */
         if let Some(b) = cfg_user.general.mouse.mouse_enable {
             self.general.mouse.mouse_enable = b;
+        }
+        /*
+         * general.view
+         */
+        // tab_characters_as_symbols
+        if let Some(s) = cfg_user.general.view.tab_characters_as_symbols {
+            self.general.view.tab_characters_as_symbols = s;
+        } else {
+            self.general.view.tab_characters_as_symbols = "^".to_string();
+        }
+        // full_width_space_characters_as_symbols
+        if let Some(s) = cfg_user.general.view.full_width_space_characters_as_symbols {
+            self.general.view.full_width_space_characters_as_symbols = s;
+        } else {
+            self.general.view.full_width_space_characters_as_symbols = "⬜".to_string();
         }
         /*
          * general.colors
@@ -310,16 +326,16 @@ impl CfgColors {
         /* search */
         // background
         if let Some(s) = cfg_user_colors.editor.search.background {
-            self.editor.selection.background = s;
+            self.editor.search.background = s;
         }
         // foreground
         if let Some(s) = cfg_user_colors.editor.search.foreground {
-            self.editor.selection.foreground = s;
+            self.editor.search.foreground = s;
         }
         /* control_char */
         // foreground
         if let Some(s) = cfg_user_colors.editor.control_char.foreground {
-            self.editor.selection.foreground = s;
+            self.editor.control_char.foreground = s;
         }
         /* column_char_width_gap */
         // background

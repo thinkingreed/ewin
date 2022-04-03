@@ -58,14 +58,14 @@ impl EvtAct {
 
                     if term.hbar.plus_btn_area.0 <= x && x <= term.hbar.plus_btn_area.1 {
                         if term.curt().state.is_open_file {
-                            term.clear_curt_tab(true);
+                            term.clear_curt_tab(true, true);
                         } else {
                             term.curt().prom_open_file(OpenFileType::Normal);
                         }
                         return ActType::Render(RParts::All);
                     } else if term.hbar.menu_btn_area.0 <= x && x <= term.hbar.menu_btn_area.1 {
                         if term.curt().state.is_menu {
-                            term.clear_curt_tab(true);
+                            term.clear_curt_tab(true, true);
                         } else {
                             term.curt().prom_menu();
                         }

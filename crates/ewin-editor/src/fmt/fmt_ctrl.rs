@@ -24,9 +24,7 @@ impl Editor {
 
         let format_str = match fmt_type {
             FileType::JSON => {
-                let slice = self.buf.slice_rope(self.sel.get_range());
-
-                let value: Value = serde_json::from_str(&slice.to_string())?;
+                let value: Value = serde_json::from_str(&self.buf.slice_string(self.sel.get_range()))?;
                 let buf = Vec::new();
                 let indent = &Cfg::get().general.editor.format.indent;
                 let formatter = serde_json::ser::PrettyFormatter::with_indent(indent.as_bytes());

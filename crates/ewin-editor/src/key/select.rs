@@ -1,3 +1,5 @@
+use ewin_com::_cfg::lang::lang_cfg::Lang;
+
 use crate::{ewin_com::clipboard::*, ewin_com::log::*, ewin_com::model::*, ewin_com::util::*, model::*};
 
 impl Editor {
@@ -8,14 +10,20 @@ impl Editor {
         self.sel.set_e(self.buf.len_rows() - 1, cur_x, width);
     }
 
-    pub fn cut(&mut self, ep: Proc) {
+    pub fn cut(&mut self, ep: Proc) -> ActType {
+        if !self.sel.is_selected() {
+            return ActType::Render(RParts::MsgBar(Lang::get().no_sel_range.to_string()));
+        }
         Log::debug_key("cut");
         set_clipboard(&ep.str);
+        return ActType::Next;
     }
 
-    pub fn copy(&mut self) {
+    pub fn copy(&mut self) -> ActType {
         Log::debug_key("copy");
-
+        if !self.sel.is_selected() {
+            return ActType::Render(RParts::MsgBar(Lang::get().no_sel_range.to_string()));
+        }
         let copy_str = match self.sel.mode {
             SelMode::Normal => self.buf.slice(self.sel.get_range()),
             //
@@ -34,5 +42,7 @@ impl Editor {
 
         set_clipboard(&copy_str);
         self.sel.clear();
+
+        return ActType::Next;
     }
 }

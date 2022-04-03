@@ -48,7 +48,7 @@ impl EvtAct {
                 } else if c == &'n'.to_string() {
                     term.curt_h_file().watch_mode = WatchMode::NotMonitor;
                     WATCH_INFO.get().unwrap().try_lock().map(|mut watch_info| watch_info.mode = WatchMode::NotMonitor).unwrap();
-                    term.clear_curt_tab(true);
+                    term.clear_curt_tab(true, true);
                     return ActType::Render(RParts::All);
                 } else {
                     return ActType::Cancel;

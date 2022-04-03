@@ -61,6 +61,7 @@ pub struct CfgGeneral {
     pub context_menu: CfgCtxMenu,
     pub mouse: CfgGeneralMouse,
     pub colors: CfgGeneralColors,
+    pub view: CfgGeneralView,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -205,6 +206,12 @@ pub struct CfgGeneralColors {
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct CfgGeneralMouse {
     pub mouse_enable: bool,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgGeneralView {
+    pub tab_characters_as_symbols: String,
+    pub full_width_space_characters_as_symbols: String,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]

@@ -1,8 +1,8 @@
+use crossbeam::channel::Sender;
 use ewin_com::{file::*, global::*, log::*, model::*, util::*, watcher::*};
 use std::{
     path::PathBuf,
     str::FromStr,
-    sync::mpsc::*,
     thread::{self},
     time::{self},
 };

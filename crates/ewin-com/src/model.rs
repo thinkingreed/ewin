@@ -6,16 +6,16 @@ use crate::{
     char_style::*,
     def::*,
     global::*,
+    log::Log,
 };
 use chrono::NaiveDateTime;
-use clap::ArgMatches;
+use clap::Parser;
 use crossterm::event::{Event, KeyCode::Null};
 use encoding_rs::Encoding;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::usize;
 use std::{
     collections::{BTreeSet, VecDeque},
-    ffi::OsStr,
     fmt,
     path::Path,
     time::SystemTime,
@@ -136,6 +136,8 @@ pub struct Search {
 
 impl Search {
     pub fn clear(&mut self) {
+        Log::debug_key("Search.clear");
+
         self.str = String::new();
         self.idx = USIZE_UNDEFINED;
         self.ranges = vec![];
@@ -242,8 +244,9 @@ pub enum CharType {
     Delim,
     HalfSpace,
     FullSpace,
+    NewLineCode,
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct Job {
     pub job_type: JobType,
     pub job_evt: Option<JobEvent>,
@@ -257,12 +260,12 @@ impl Default for Job {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct JobEvent {
     pub evt: Event,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub struct JobWatch {
     pub fullpath_str: String,
     pub unixtime_str: String,
@@ -274,16 +277,16 @@ impl Default for JobEvent {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Hash, Default, Eq, PartialEq, Clone)]
 pub struct JobGrep {
     pub grep_str: String,
     pub is_result: bool,
-    pub is_stdout_end: bool,
-    pub is_stderr_end: bool,
+    pub is_end: bool,
+    // pub is_stderr_end: bool,
     pub is_cancel: bool,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, Copy, PartialEq, Eq)]
 pub enum JobType {
     Event,
     GrepResult,
@@ -346,32 +349,31 @@ impl fmt::Display for E_DrawRange {
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
-pub struct GrepState {
+pub struct GrepInfo {
     pub is_grep: bool,
     pub is_result: bool,
-    pub is_stdout_end: bool,
-    pub is_stderr_end: bool,
+    pub is_end: bool,
+    // pub is_stderr_end: bool,
     pub is_cancel: bool,
     pub search_str: String,
     pub search_folder: String,
     pub search_filenm: String,
 }
 
-impl GrepState {
+impl GrepInfo {
     pub fn clear(&mut self) {
         self.is_grep = false;
-        self.is_stdout_end = false;
-        self.is_stderr_end = false;
+        self.is_end = false;
         // self.is_result = false;
         self.search_str = String::new();
         self.search_folder = String::new();
         self.search_filenm = String::new();
     }
     pub fn is_greping(&self) -> bool {
-        self.is_result && !(self.is_stdout_end && self.is_stderr_end) && !self.is_cancel
+        self.is_result && !self.is_end && !self.is_cancel
     }
     pub fn is_grep_finished(&self) -> bool {
-        self.is_result && ((self.is_stdout_end && self.is_stderr_end) || self.is_cancel)
+        self.is_result && (self.is_end || self.is_cancel)
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -585,32 +587,26 @@ impl fmt::Display for SelMode {
     }
 }
 
-#[derive(Debug, Default, PartialEq, Eq, Clone)]
+#[derive(Debug, Parser)]
+#[clap(name = "ewin", author, version)]
 pub struct Args {
+    filenm: Option<String>,
+    #[clap(short, long, help = "Configuration file output flag")]
+    out_config_flg: bool,
+}
+
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
+pub struct AppArgs {
     pub filenm: String,
     pub out_config_flg: bool,
 }
 
-impl Args {
-    pub fn new(matches: &ArgMatches) -> Self {
-        let file_path: String = matches.value_of_os("file").unwrap_or_else(|| OsStr::new("")).to_string_lossy().to_string();
-        Args { filenm: file_path, out_config_flg: matches.is_present("output-config") }
+impl AppArgs {
+    pub fn new(arg: &Args) -> Self {
+        let filenm: String = if let Some(filenm) = arg.filenm.clone() { filenm } else { "".to_string() };
+        AppArgs { filenm, out_config_flg: arg.out_config_flg }
     }
 }
-/*
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-pub enum OpenFileInitValue {
-    None,
-    CurtDir,
-}
-
-impl Default for OpenFileInitValue {
-    fn default() -> Self {
-        OpenFileInitValue::CurtDir
-    }
-}
- */
-
 // Keys without modifiers
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum OpenFileType {
@@ -793,7 +789,7 @@ pub struct TabState {
     //  pub is_key_record: bool,
     pub is_open_file: bool,
     pub is_enc_nl: bool,
-    pub grep: GrepState,
+    pub grep: GrepInfo,
     pub is_menu: bool,
     pub is_watch_result: bool,
 }
@@ -938,6 +934,13 @@ impl Default for ScrollbarV {
     fn default() -> Self {
         ScrollbarV { is_show: false, is_enable: false, row_posi: USIZE_UNDEFINED, row_posi_org: USIZE_UNDEFINED, bar_len: USIZE_UNDEFINED, move_len: USIZE_UNDEFINED }
     }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum GrepCancelType {
+    None,
+    Canceling,
+    Canceled,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -12,7 +12,7 @@ impl EvtAct {
             P_Cmd::InsertStr(str) => {
                 if str == &'y'.to_string() {
                     let act_type = Tab::save(term, SaveType::Forced);
-                    term.clear_curt_tab(true);
+                    term.clear_curt_tab(true, true);
                     return if let ActType::Render(_) = act_type {
                         act_type
                     } else if let ActType::Next = act_type {

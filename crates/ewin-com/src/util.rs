@@ -177,16 +177,12 @@ pub fn is_nl_char(c: char) -> bool {
 }
 
 pub fn is_contain_row_end_str(s: &str) -> bool {
-    for c in s.chars() {
+    for c in s.chars().rev() {
         if is_nl_char(c) {
             return true;
         }
     }
     return false;
-}
-pub fn is_newline_char(c: char) -> bool {
-    // LF, CR
-    [NEW_LINE_LF, NEW_LINE_CR].contains(&c)
 }
 
 pub fn is_enable_syntax_highlight(ext: &str) -> bool {
@@ -198,8 +194,10 @@ pub fn get_char_type(c: char) -> CharType {
         CharType::Delim
     } else if HALF_SPACE.contains(c) {
         CharType::HalfSpace
-    } else if FULL_SPACE.contains(c) {
+    } else if FULL_SPACE == c {
         CharType::FullSpace
+    } else if is_nl_char(c) {
+        CharType::NewLineCode
     } else {
         CharType::Nomal
     }
@@ -372,7 +370,7 @@ pub fn get_delim_x(row: &[char], x: usize) -> (usize, usize) {
     Log::debug_key("get_delim_x");
 
     let (mut sx, mut ex) = (0, 0);
-    if row.len() - 1 > x {
+    if row.len() > x {
         let mut forward = row[..=x].to_vec();
         forward.reverse();
         sx = get_delim(&forward, x, true);
@@ -395,7 +393,13 @@ fn get_delim(target: &[char], x: usize, is_forward: bool) -> usize {
             rtn_x = if is_forward { x - i + 1 } else { x + i };
             break;
         } else if i == target.len() - 1 {
-            rtn_x = if is_forward { x - i } else { x + i };
+            rtn_x = if is_forward {
+                x - i
+            } else {
+                // +1 is last row
+                x + i + 1
+            };
+            break;
         }
         char_type_org = char_type;
     }
@@ -406,7 +410,7 @@ pub fn get_until_delim_sx(rows: &[char]) -> usize {
     rows.reverse();
     let row_len = rows.len();
     for (i, c) in (0_usize..).zip(rows) {
-        if Cfg::get().general.editor.word.word_delimiter.contains(c) {
+        if Cfg::get().general.editor.input_comple.word_delimiter.contains(c) {
             return row_len - i;
         }
     }
@@ -442,7 +446,7 @@ pub fn get_cfg_lang_name(name_str: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::Args;
+    use crate::model::AppArgs;
 
     #[test]
     fn test_get_str_width() {
@@ -452,7 +456,7 @@ mod tests {
     }
     #[test]
     fn test_get_row_x() {
-        Cfg::init(&Args { ..Args::default() });
+        Cfg::init(&AppArgs { ..AppArgs::default() });
 
         assert_eq!(get_row_x_opt(&['a'], 0, false, false,), Some(0));
         assert_eq!(get_row_x_opt(&['a', 'b'], 1, false, false,), Some(1));
@@ -467,7 +471,7 @@ mod tests {
 
     #[test]
     fn test_get_row_width() {
-        Cfg::init(&Args { ..Args::default() });
+        Cfg::init(&AppArgs { ..AppArgs::default() });
 
         assert_eq!(get_row_cur_x_disp_x(&['a'], 0, false), (1, 1));
         assert_eq!(get_row_cur_x_disp_x(&['あ'], 0, false), (1, 2));
@@ -483,7 +487,7 @@ mod tests {
 
     #[test]
     fn test_get_until_x() {
-        Cfg::init(&Args { ..Args::default() });
+        Cfg::init(&AppArgs { ..AppArgs::default() });
         assert_eq!(get_until_disp_x(&['a'], 0, false), (0, 0));
         assert_eq!(get_until_disp_x(&['a', 'あ',], 2, false), (1, 1));
         assert_eq!(get_until_disp_x(&['a', 'あ',], 2, false), (1, 1));
@@ -494,7 +498,7 @@ mod tests {
     }
     #[test]
     fn test_get_char_width() {
-        Cfg::init(&Args { ..Args::default() });
+        Cfg::init(&AppArgs { ..AppArgs::default() });
         assert_eq!(get_char_width(&'a', 0), 1);
         assert_eq!(get_char_width(&'あ', 0), 2);
         assert_eq!(get_char_width(&TAB_CHAR, 1), 3);
@@ -515,7 +519,7 @@ mod tests {
 
     #[test]
     fn test_is_enable_syntax_highlight() {
-        Cfg::init(&Args { ..Args::default() });
+        Cfg::init(&AppArgs { ..AppArgs::default() });
 
         assert!(!is_enable_syntax_highlight("txt"));
         assert!(is_enable_syntax_highlight("rs"));

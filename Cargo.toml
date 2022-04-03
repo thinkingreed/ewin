@@ -41,12 +41,22 @@ assets = [
 
 [dependencies]
 crossterm  = {version ="0.23.0", features = ["event-stream"]} 
-tokio = { version = "1.4.0", features = ["process", "macros", "rt-multi-thread"] }
+tokio = { version = "1.4.0", features = [ "macros", "rt-multi-thread"] }
 tokio-util = { version = "0.7.0", features = ["codec"] }
 futures = "0.3"
 futures-util = "0.3.12"
-clap = "2.34.0"
+
+clap = { version = "3.1.6", features = ["derive", "env"]}
 notify="5.0.0-pre.13"
+# grep
+regex = "1.5.5"
+grep = "0.2.8"
+grep-matcher = "0.1.5"
+grep-regex = "0.1.9"
+grep-searcher = "0.1.8"
+ignore = "0.4.18"
+globset = "0.4.8"
+crossbeam= "0.8.1"
 
 ewin-com = {version = "0.0.2", path = "crates/ewin-com" }
 ewin-term = {version = "0.0.2", path = "crates/ewin-term" }

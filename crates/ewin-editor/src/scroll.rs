@@ -1,13 +1,8 @@
-use ewin_com::def::USIZE_UNDEFINED;
-
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, log::*, model::*, util::*},
+    ewin_com::{_cfg::key::keycmd::*, def::*, log::*, model::*, util::*},
     model::*,
 };
-use std::{
-    cmp::{max, min},
-    usize,
-};
+use std::{cmp::min, usize};
 
 impl Editor {
     pub const SCROLL_UP_DOWN_MARGIN: usize = 1;
@@ -22,6 +17,7 @@ impl Editor {
         Log::debug("self.cur.y", &self.cur.y);
         Log::debug("self.e_cmd", &self.e_cmd);
         Log::debug("self.buf.len_rows()", &self.buf.len_rows());
+        Log::debug("self.scrl_v.is_enable", &self.scrl_v.is_enable);
         Log::debug("self.offset_y before", &self.offset_y);
 
         if self.cur.y == 0 && self.is_move_cur_posi_scrolling_enable() {
@@ -36,9 +32,8 @@ impl Editor {
             }
         } else if !self.is_move_cur_posi_scrolling_enable() && self.scrl_v.is_enable && (matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _))) {
             self.offset_y = min(self.scrl_v.row_posi * self.scrl_v.move_len, self.get_disp_rows() - self.row_disp_len);
-
             // When cursor is off the screen
-        } else if !self.is_cur_y_in_screen() {
+        } else if !self.is_cur_y_in_screen() && !matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _)) && !matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)) && !matches!(self.e_cmd, E_Cmd::MouseDragLeftLeft(_, _)) && !matches!(self.e_cmd, E_Cmd::MouseDragLeftRight(_, _)) {
             self.set_offset_move_row();
         } else {
             match &self.e_cmd {
@@ -53,10 +48,9 @@ impl Editor {
                         self.offset_y
                     }
                 }
-                E_Cmd::ReplaceExec(_, _, _) | E_Cmd::GrepResult | E_Cmd::CursorDown | E_Cmd::CursorDownSelect | E_Cmd::MouseScrollDown | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::CursorFileEnd | E_Cmd::InsertStr(_) | E_Cmd::InsertRow | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::FindNext | E_Cmd::FindBack => {
-                    if self.cur.y + Editor::SCROLL_UP_DOWN_MARGIN >= self.row_disp_len {
-                        // "self.buf.len_lines() - self.row_num" is For the last row
-                        self.offset_y = max(self.offset_y, min(self.get_disp_rows() - self.row_disp_len, self.cur.y + 1 + Editor::SCROLL_UP_DOWN_MARGIN - self.row_disp_len));
+                E_Cmd::ReplaceExec(_, _, _) | E_Cmd::GrepResult | E_Cmd::CursorDown | E_Cmd::CursorDownSelect | E_Cmd::MouseScrollDown | E_Cmd::CursorFileEnd | E_Cmd::InsertStr(_) | E_Cmd::InsertRow | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::FindNext | E_Cmd::FindBack => {
+                    if self.cur.y + Editor::SCROLL_UP_DOWN_MARGIN >= self.row_disp_len + self.offset_y {
+                        self.offset_y = min(self.get_disp_rows() - self.row_disp_len, self.cur.y + 1 + Editor::SCROLL_UP_DOWN_MARGIN - self.row_disp_len);
                     }
                 }
                 E_Cmd::MoveRow => self.set_offset_move_row(),
@@ -69,7 +63,17 @@ impl Editor {
                         }
                     }
                 }
-                E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::CursorUpSelect => {
+                E_Cmd::MouseDragLeftDown(y, _) => {
+                    if *y == self.row_posi + self.get_disp_rows() {
+                        self.offset_y += Editor::SCROLL_UP_DOWN_MARGIN;
+                    }
+                }
+                E_Cmd::MouseDragLeftUp(y, _) => {
+                    if *y == 0 && self.offset_y >= Editor::SCROLL_UP_DOWN_MARGIN {
+                        self.offset_y -= Editor::SCROLL_UP_DOWN_MARGIN;
+                    }
+                }
+                E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::CursorUpSelect => {
                     // -1 is to maintain consistency with the 0 standard of cur.y
                     if self.offset_y >= Editor::SCROLL_UP_DOWN_MARGIN && self.cur.y < Editor::SCROLL_UP_DOWN_MARGIN + self.offset_y {
                         self.offset_y -= Editor::SCROLL_UP_DOWN_MARGIN;

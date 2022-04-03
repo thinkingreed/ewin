@@ -21,13 +21,20 @@ impl Colors {
         str_vec.push(Colors::fg(Cfg::get().colors.editor.fg));
         str_vec.push(Colors::bg(Cfg::get().colors.editor.bg));
     }
+
     pub fn set_rownum_curt_color(str_vec: &mut Vec<String>) {
         str_vec.push(Colors::fg(Cfg::get().colors.editor.line_number.active_fg));
         str_vec.push(Colors::bg(Cfg::get().colors.editor.line_number.active_bg));
     }
-    pub fn set_rownum_color(str_vec: &mut Vec<String>) {
-        str_vec.push(Colors::fg(Cfg::get().colors.editor.line_number.passive_fg));
-        str_vec.push(Colors::bg(Cfg::get().colors.editor.line_number.passive_bg));
+
+    pub fn set_rownum_not_curt_color(str_vec: &mut Vec<String>) {
+        let cfg = Cfg::get();
+        if cfg.colors.editor.line_number.passive_fg != cfg.colors.editor.fg {
+            str_vec.push(Colors::fg(Cfg::get().colors.editor.line_number.passive_fg));
+        }
+        if cfg.colors.editor.line_number.passive_bg != cfg.colors.editor.bg {
+            str_vec.push(Colors::bg(Cfg::get().colors.editor.line_number.passive_bg));
+        }
     }
 
     pub fn set_select_color(str_vec: &mut Vec<String>) {

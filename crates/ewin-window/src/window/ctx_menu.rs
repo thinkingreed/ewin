@@ -1,4 +1,4 @@
-use crate::model::*;
+use crate::{core::WindowTrait, model::*};
 use ewin_com::{
     _cfg::{key::keycmd::*, model::default::Cfg},
     log::Log,
@@ -63,7 +63,7 @@ impl CtxMenu {
                         let diff = child_max_len_vec[idx] - get_str_width(child_str);
                         child_menu.name_disp = format!("  {}{}  ", child_str, " ".repeat(diff));
                     }
-                    child_cont.height = child_cont.menu_vec.len();
+                    // child_cont.height = child_cont.menu_vec.len();
                     // +4 is extra
                     child_cont.width = child_max_len_vec[idx] + 4;
                 } else {
@@ -71,7 +71,7 @@ impl CtxMenu {
                     parent_menu.name_disp = format!("  {}{}{}", perent_str, " ".repeat(space), exist_child_mark_space);
                 }
             }
-            self.ctx_menu_place_map.get_mut(term_place).unwrap().height = self.ctx_menu_place_map[term_place].menu_vec.len();
+            //  self.ctx_menu_place_map.get_mut(term_place).unwrap().height = self.ctx_menu_place_map[term_place].menu_vec.len();
             // +1 is Extra
             self.ctx_menu_place_map.get_mut(term_place).unwrap().width = parent_max_len_map[term_place] + 1;
         }
@@ -150,5 +150,27 @@ impl TermPlace {
             "header_bar" => TermPlace::HeaderBar,
             _ => TermPlace::None,
         }
+    }
+}
+
+use ewin_com::colors::*;
+
+impl WindowTrait for CtxMenu {
+    fn clear(&mut self) {
+        self.window.clear();
+        for (_, parent_cont) in self.ctx_menu_place_map.iter_mut() {
+            parent_cont.clear();
+            for (_, child_cont_option) in parent_cont.menu_vec.iter_mut() {
+                if let Some(child_cont) = child_cont_option {
+                    child_cont.clear();
+                }
+            }
+        }
+    }
+    fn draw(&mut self, str_vec: &mut Vec<String>) {
+        Log::debug_key("CtxMenu.draw");
+        Log::debug("CtxMenu", &self);
+
+        self.window.draw(str_vec, &Colors::get_ctx_menu_fg_bg_sel(), &Colors::get_ctx_menu_fg_bg_non_sel());
     }
 }

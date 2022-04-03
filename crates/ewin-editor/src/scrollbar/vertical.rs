@@ -66,9 +66,7 @@ impl Editor {
         if self.scrl_v.is_show {
             self.calc_editor_scrlbar_v();
 
-            Log::debug("self.scrl_v.row_posi 111", &self.scrl_v.row_posi);
-            Log::debug("self.scrl_v.row_posi 222", &self.scrl_v.row_posi);
-            for i in self.row_posi..=self.row_posi + self.row_disp_len {
+            for i in self.row_posi..self.row_posi + self.row_disp_len {
                 str_vec.push(MoveTo((self.get_rnw_and_margin() + self.col_len) as u16, i as u16).to_string());
                 str_vec.push(if self.row_posi + self.scrl_v.row_posi <= i && i < self.row_posi + self.scrl_v.row_posi + self.scrl_v.bar_len { Colors::get_scrollbar_v_bg() } else { Colors::get_default_bg() });
                 str_vec.push(" ".to_string().repeat(Cfg::get().general.editor.scrollbar.vertical.width));

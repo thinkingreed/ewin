@@ -13,7 +13,7 @@ impl EvtAct {
                     let (x, _) = (*x as usize, *y as usize);
                     if term.curt().sbar.cur_area.0 <= x && x <= term.curt().sbar.cur_area.1 {
                         if term.curt().state.is_move_row {
-                            term.clear_curt_tab(true);
+                            term.clear_curt_tab(true, true);
                         } else {
                             term.curt().prom_move_row();
                         }
@@ -21,7 +21,7 @@ impl EvtAct {
                     }
                     if term.curt().sbar.enc_nl_area.0 <= x && x <= term.curt().sbar.enc_nl_area.1 {
                         if term.curt().state.is_enc_nl {
-                            term.clear_curt_tab(true);
+                            term.clear_curt_tab(true, true);
                         } else {
                             term.curt().prom_enc_nl();
                         }

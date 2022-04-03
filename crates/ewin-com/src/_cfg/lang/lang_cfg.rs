@@ -110,12 +110,12 @@ pub struct Lang {
 
     /// Long msg
     pub not_entered_filenm: String,
-    pub not_entered_search_str: String,
+    pub not_set_search_str: String,
     pub not_entered_search_file: String,
     pub not_entered_search_folder: String,
     pub not_entered_replace_str: String,
     pub not_entered_row_number_to_move: String,
-    pub cannot_find_char_search_for: String,
+    pub cannot_find_search_char: String,
     pub long_time_to_search: String,
     pub show_search_result: String,
     pub show_search_no_result: String,
@@ -159,6 +159,8 @@ pub struct Lang {
     pub script_run_error: String,
     pub script_compile_error: String,
     pub specify_file_and_exec_macro: String,
+    // input comple
+    pub no_input_comple_candidates: String,
     // other
     pub unsupported_operation: String,
     pub increase_height_width_terminal: String,
@@ -175,12 +177,6 @@ impl Lang {
     }
 
     pub fn read_lang_cfg() -> Lang {
-        /*
-        let lang = match &Cfg::get().general.lang {
-            Some(s) if s == "ja_JP" => "ja_JP".to_string(),
-            _ => "en_US".to_string(),
-        };
-         */
         let lang = &Cfg::get().general.lang;
         Log::debug("lang", &lang);
 

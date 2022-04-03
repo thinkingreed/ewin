@@ -28,7 +28,7 @@ use crossterm::{
     terminal::*,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ewin_window::{model::CtxMenu, window::WindowTrait};
+use ewin_window::{core::*, model::*};
 use std::{
     ffi::OsStr,
     fmt,
@@ -103,8 +103,8 @@ impl Terminal {
         Log::debug("history.undo_vec", &self.curt().editor.history.undo_vec);
         // Log::debug("self.curt().state.key_record_state", &self.curt().state.key_record_state);
         //  Log::debug("self.curt().state", &self.curt().state);
-        Log::debug("sel_range", &self.curt().editor.sel);
-        // Log::debug("", &self.curt().editor.search);
+        // Log::debug("sel_range", &self.curt().editor.sel);
+        //  Log::debug("", &self.curt().editor.search);
         // Log::debug("box_sel.mode", &self.curt().editor.box_insert.mode);
         Log::debug("scrl_v.is_enable", &self.curt().editor.scrl_v.is_enable);
         Log::debug("scrl_h.is_enable", &self.curt().editor.scrl_h.is_enable);
@@ -389,7 +389,7 @@ impl Terminal {
     }
 
     pub fn reopen_curt_file(&mut self) {
-        self.clear_curt_tab(true);
+        self.clear_curt_tab(true, true);
         self.set_disp_size();
         let h_file = self.curt_h_file().clone();
         self.open_file(&h_file.fullpath, FileOpenType::Reopen, None, Some(&h_file));
@@ -415,10 +415,9 @@ impl Terminal {
         Terminal::exit();
     }
 
-    pub fn activate(&mut self, args: &Args) {
+    pub fn activate(&mut self, args: &AppArgs) {
         Log::info_key("activate");
 
-        let _ = GREP_INFO_VEC.set(tokio::sync::Mutex::new(vec![GrepState::default()]));
         let _ = GREP_CANCEL_VEC.set(tokio::sync::Mutex::new(vec![]));
         let _ = global_term::TAB.set(tokio::sync::Mutex::new(Tab::new()));
         let _ = WATCH_INFO.set(tokio::sync::Mutex::new(WatchInfo::default()));
@@ -508,11 +507,6 @@ impl Terminal {
         self.hbar.disp_base_idx = USIZE_UNDEFINED;
         self.change_tab(self.tab_idx);
 
-        if let Some(Ok(mut grep_info_vec)) = GREP_INFO_VEC.get().map(|vec| vec.try_lock()) {
-            if grep_info_vec.len() > tab_idx {
-                grep_info_vec.remove(tab_idx);
-            }
-        }
         if let Some(Ok(mut grep_cancel_vec)) = GREP_CANCEL_VEC.get().map(|vec| vec.try_lock()) {
             if grep_cancel_vec.len() > tab_idx {
                 grep_cancel_vec.remove(tab_idx);
@@ -647,7 +641,7 @@ impl Terminal {
         return self.hbar.file_vec.get_mut(self.tab_idx).unwrap();
     }
 
-    pub fn clear_curt_tab(&mut self, is_clear_grep_info: bool) {
+    pub fn clear_curt_tab(&mut self, is_clear_grep_info: bool, is_clear_editor_state: bool) {
         Log::debug_key("clear_curt_tab");
         self.curt().prom.clear();
         self.curt().state.clear();
@@ -656,7 +650,9 @@ impl Terminal {
         }
         self.curt().mbar.clear();
         // self.set_disp_size();
-        self.curt().editor.cancel_state();
+        if is_clear_editor_state {
+            self.curt().editor.cancel_state();
+        }
         self.curt().editor.draw_range = E_DrawRange::All;
     }
 
@@ -722,6 +718,11 @@ impl Terminal {
         Log::debug("keys", &keys);
         Log::debug("self.state", &self.state);
         Log::debug("self.curt().state", &self.curt().state);
+
+        Log::debug("self.curt().state.grep", &self.curt().state.grep);
+        Log::debug("self.curt().state.grep.is_grep_finished()", &self.curt().state.grep.is_grep_finished());
+
+        //  self.curt().state
         Log::debug("self.state.is_ctx_menu", &self.state.is_ctx_menu);
         Log::debug("self.curt().editor.state.input_comple_mode", &self.curt().editor.state.input_comple_mode);
         let editor_is_dragging = self.curt().editor.state.is_dragging;

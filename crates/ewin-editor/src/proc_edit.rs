@@ -6,7 +6,7 @@ use crate::{
 };
 
 impl Editor {
-    pub fn edit_proc(&mut self, e_cmd: E_Cmd) {
+    pub fn edit_proc(&mut self, e_cmd: E_Cmd) -> ActType {
         Log::debug_s("edit_proc");
         Log::debug("e_cmd", &e_cmd);
 
@@ -44,7 +44,7 @@ impl Editor {
                 proc.cur_s = self.cur;
                 self.set_box_sel_vec(&proc_del, &mut proc);
 
-                match &e_cmd {
+                let act_type = match &e_cmd {
                     E_Cmd::DelNextChar => self.delete(&mut proc),
                     E_Cmd::DelPrevChar => self.backspace(&mut proc),
                     E_Cmd::InsertRow => self.insert_row(),
@@ -56,14 +56,22 @@ impl Editor {
                             proc.box_sel_vec = box_sel_vec.clone();
                         }
                         self.insert_str(&mut proc);
+                        ActType::Next
                     }
                     E_Cmd::DelBox(box_sel_vec) => {
                         proc.box_sel_vec = box_sel_vec.clone();
                         self.undo_del_box(box_sel_vec);
+                        ActType::Next
                     }
                     // In case of replace, only registration of Evt process
-                    E_Cmd::ReplaceExec(search_str, replace_str, idx_set) => self.replace(&mut proc, search_str, replace_str, idx_set),
-                    _ => {}
+                    E_Cmd::ReplaceExec(search_str, replace_str, idx_set) => {
+                        self.replace(&mut proc, search_str, replace_str, idx_set);
+                        ActType::Next
+                    }
+                    _ => return ActType::Cancel,
+                };
+                if act_type != ActType::Next {
+                    return act_type;
                 }
                 if e_cmd != E_Cmd::Cut {
                     proc.cur_e = self.cur;
@@ -72,6 +80,8 @@ impl Editor {
                 }
             }
         }
+        self.state.is_changed = true;
+        self.history.clear_redo_vec();
         self.set_change_info_edit(&evt_proc);
 
         // Register edit history
@@ -81,6 +91,8 @@ impl Editor {
 
         self.scroll();
         self.scroll_horizontal();
+
+        return ActType::Next;
     }
 
     pub fn slice_box_sel(&mut self) -> (String, Vec<(SelRange, String)>) {

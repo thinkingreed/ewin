@@ -6,7 +6,7 @@ foreground = "#000000"
 [editor.line_number]
 active_background = "#ffffff"
 active_foreground = "#000000"
-passive_background = "#dedede"
+passive_background = "#ffffff"
 passive_foreground = "#c0c0c0"
 
 [editor.selection]

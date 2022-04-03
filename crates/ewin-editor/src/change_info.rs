@@ -6,6 +6,10 @@ impl Editor {
     pub fn set_change_info_edit(&mut self, evt_proc: &EvtProc) {
         Log::debug_key("recalc_scrlbar_h_row");
 
+        self.change_info.change_type = EditerChangeType::Edit;
+
+        Log::debug("self.change_info.restayle_row_set before", &self.change_info.restayle_row_set);
+
         if let Some(sel_proc) = &evt_proc.sel_proc {
             Log::debug("proc.e_cmd sel_proc.sel", &sel_proc.sel);
             let sel = sel_proc.sel.get_range();
@@ -24,14 +28,10 @@ impl Editor {
                         self.del_change_tgt(BTreeSet::from([y]));
                     }
                     self.mod_change_tgt(BTreeSet::from([min(proc.cur_s.y, self.buf.len_rows() - 1)]));
-                    Log::debug("self.input_comple.row_words_vec 222", &self.input_comple.row_words_vec);
                 }
                 E_Cmd::InsertRow => {
-                    Log::debug("self.input_comple.row_words_vec 111", &self.input_comple.row_words_vec);
-
                     self.new_change_tgt(BTreeSet::from([proc.cur_e.y]));
                     self.mod_change_tgt(BTreeSet::from([proc.cur_s.y, proc.cur_e.y]));
-                    Log::debug("self.input_comple.row_words_vec 222", &self.input_comple.row_words_vec);
                 }
                 // Not Insert box
                 E_Cmd::InsertStr(_) if proc.box_sel_vec.is_empty() => {
@@ -61,6 +61,8 @@ impl Editor {
                 _ => {}
             }
         };
+
+        Log::debug("self.change_info.restayle_row_set after", &self.change_info.restayle_row_set);
     }
 
     pub fn new_change_tgt(&mut self, idxs: BTreeSet<usize>) {
@@ -70,7 +72,6 @@ impl Editor {
         self.change_info.new_row.extend(&idxs);
 
         Log::debug_key("1111111111111111111");
-
         /*
         if self.scrl_h.row_width_chars_vec.is_empty() {
             self.scrl_h.row_width_chars_vec.resize(1, (0, 0))

@@ -102,12 +102,12 @@ selectable_only_for_utf8 = "Selectable only for UTF8"
 move_to_specified_row = "move to specified line"
 open_target_file = "open target file"
 not_entered_filenm = "File name is not entered"
-not_entered_search_str = "Search charctor is not entered"
+not_set_search_str = "Search charctor is not set"
 not_entered_search_file = "Search file is not entered"
 not_entered_search_folder = "Search folder is not entered"
 not_entered_replace_str = "Replace charctor is not entered"
 not_entered_row_number_to_move = "Line number to move is not entered "
-cannot_find_char_search_for = "Cannot find the character to search for"
+cannot_find_search_char = "Cannot find the character to search for"
 long_time_to_search = "It may take a long time if there are many files to be searched"
 show_search_result = "show search result"
 show_search_no_result = "There was no search target"
@@ -152,11 +152,13 @@ no_further_monitoring = "No further monitoring"
 auto_assigned_extension = "Auto assigned extension"
 
 ## macro
-script_run_error = "script run error"
-script_compile_error = "script syntax error"
-specify_file_and_exec_macro = "specify_file_and_exec_macro"
+script_run_error = "Script run error"
+script_compile_error = "Script syntax error"
+specify_file_and_exec_macro = "Specify file and exec macro"
 
 ## editor info
 simple_help_desc = "Simple help: F1"
 detailed_help_desc = "Detailed help: https://github.com/thinkingreed/ewin"
+## input comple
+no_input_comple_candidates = "No input completion candidates"
 

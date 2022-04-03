@@ -1,6 +1,5 @@
 use crate::colors::*;
 use serde::{Deserialize, Serialize};
-
 use syntect::{
     self,
     highlighting::{Highlighter, Theme, ThemeSet},
@@ -36,6 +35,8 @@ pub struct CfgUserGeneral {
     #[serde(default)]
     pub word: CfgUserEditorWord,
     pub colors: CfgUserGeneralColors,
+    #[serde(default)]
+    pub view: CfgUserGeneralView,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -150,6 +151,12 @@ pub struct CfgUserPromptOpenFile {
 pub struct CfgUserGeneralMouse {
     pub mouse_enable: Option<bool>,
 }
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgUserGeneralView {
+    pub tab_characters_as_symbols: Option<String>,
+    pub full_width_space_characters_as_symbols: Option<String>,
+}
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct CfgUserGeneralColors {
     pub theme: CfgUserColorTheme,
@@ -160,11 +167,17 @@ pub struct CfgUserColors {
     // #[serde(skip_serializing)]
     #[serde(default)]
     pub system: CfgUserColorSystem,
+    #[serde(default)]
     pub headerbar: CfgUserColorHeaderBar,
+    #[serde(default)]
     pub editor: CfgUserColorEditor,
+    #[serde(default)]
     pub statusbar: CfgUserColorStatusBar,
+    #[serde(default)]
     pub ctx_menu: CfgUserColorCtxMenu,
+    #[serde(default)]
     pub msg: CfgUserColorMsg,
+    #[serde(default)]
     pub file: CfgUserColorFile,
 }
 

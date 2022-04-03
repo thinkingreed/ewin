@@ -1,14 +1,13 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, log::*},
+    ewin_com::{_cfg::key::keycmd::*, log::*, model::*},
     model::*,
 };
-
 impl Editor {
-    pub fn proc(&mut self) {
+    pub fn proc(&mut self) -> ActType {
         Log::debug_key("Editor.proc");
 
         let e_cmd = self.e_cmd.clone();
-        match e_cmd {
+        let act_type = match e_cmd {
             // edit
             E_Cmd::InsertStr(str) => self.edit_proc(E_Cmd::InsertStr(str)),
             E_Cmd::InsertRow => self.edit_proc(E_Cmd::InsertRow),
@@ -18,8 +17,25 @@ impl Editor {
             E_Cmd::Copy => self.copy(),
             E_Cmd::Undo => self.undo(),
             E_Cmd::Redo => self.redo(),
+            // Search
+            E_Cmd::FindNext | E_Cmd::FindBack => self.find_next_back(),
+            // If CtxMenu = true and there is no Mouse on CtxMenu
+            E_Cmd::MouseMove(_, _) => return ActType::Cancel,
+            // InputComple
+            E_Cmd::InputComple => self.init_input_comple(true),
+            E_Cmd::Null => return ActType::Cancel,
+            _ => ActType::Cancel,
+        };
+        if act_type != ActType::Cancel {
+            return act_type;
+        }
+
+        let e_cmd = self.e_cmd.clone();
+        match e_cmd {
             // cursor move
-            E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::CursorDown | E_Cmd::MouseScrollDown | E_Cmd::CursorLeft | E_Cmd::CursorRight | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd => self.cur_move_com(),
+            E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::CursorDown | E_Cmd::MouseScrollDown | E_Cmd::CursorLeft | E_Cmd::CursorRight | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd => {
+                self.cur_move_com();
+            }
             E_Cmd::CursorFileHome => self.ctrl_home(),
             E_Cmd::CursorFileEnd => self.ctrl_end(),
             E_Cmd::CursorPageUp => self.page_up(),
@@ -27,25 +43,16 @@ impl Editor {
             // select
             E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::CursorLeftSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect => self.shift_move_com(),
             E_Cmd::AllSelect => self.all_select(),
-            // Search
-            E_Cmd::FindNext => self.search_str(true, false),
-            E_Cmd::FindBack => self.search_str(false, false),
             // mouse
             E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseUpLeft(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) | E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) => self.ctrl_mouse(),
             E_Cmd::MouseModeSwitch => self.ctrl_mouse_capture(),
             // Mode
             E_Cmd::CancelState => self.cancel_state(),
             E_Cmd::BoxSelectMode => self.box_select_mode(),
-            // If CtxMenu = true and there is no Mouse on CtxMenu
-            E_Cmd::MouseMove(_, _) => {}
-
-            // InputComple
-            E_Cmd::InputComple => self.init_input_comple(true),
-            // E_Cmd::InputCompleConfirm => {}
             // empty
-            E_Cmd::Null => {}
-            _ => unreachable!(),
-        }
+            _ => {}
+        };
+        return ActType::Next;
     }
 }
 
@@ -55,7 +62,6 @@ mod tests {
     use ewin_com::{
         _cfg::model::default::{Cfg, CfgLog},
         clipboard::*,
-        model::*,
     };
 
     #[test]
@@ -204,7 +210,7 @@ mod tests {
     #[test]
     fn test_editor_proc_base_find_next_back() {
         Log::set_logger(&CfgLog { level: "test".to_string() });
-        Cfg::init(&Args { ..Args::default() });
+        Cfg::init(&AppArgs { ..AppArgs::default() });
 
         let mut e = Editor::new();
         e.e_cmd = E_Cmd::InsertStr("123\nabc\nABC\nabc".to_string());
@@ -227,7 +233,7 @@ mod tests {
     #[test]
     fn test_editor_proc_base_mouse() {
         Log::set_logger(&CfgLog { level: "test".to_string() });
-        Cfg::init(&Args { ..Args::default() });
+        Cfg::init(&AppArgs { ..AppArgs::default() });
 
         let mut e = Editor::new();
         e.e_cmd = E_Cmd::InsertStr("123\nabc\nABC\nabc".to_string());

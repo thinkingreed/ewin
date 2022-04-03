@@ -1,11 +1,9 @@
-use crate::model::*;
-use ewin_com::{_cfg::model::default::Cfg, log::Log, util::*};
-use std::{cmp::min, collections::BTreeSet};
+use crate::{core::WindowTrait, model::*};
+use ewin_com::{_cfg::model::default::*, colors::*, log::Log, util::*};
+use std::collections::BTreeSet;
 
 impl InputComple {
-    pub fn get_candidates_count(&mut self, search_str: &str) -> usize {
-        return self.search(search_str).len();
-    }
+    pub const MAX_HEIGHT: usize = 10;
 
     pub fn set_disp_name(&mut self, search_str: &str) {
         Log::debug_key("set_disp_name");
@@ -13,13 +11,12 @@ impl InputComple {
         let menunm_max_len = cols as usize / 2 - 8;
 
         let menu_set = self.search(search_str);
-        self.window.scrl_v.is_show = menu_set.len() > Window::MAX_HEIGHT;
+        self.window.scrl_v.is_show = menu_set.len() > InputComple::MAX_HEIGHT;
 
         let mut cont = WindowCont { ..WindowCont::default() };
         for menu_str in menu_set {
             cont.menu_vec.push((WindowMenu { name: menu_str.clone(), name_disp: cut_str(&menu_str, menunm_max_len, false, true) }, None));
         }
-        Log::debug("cont", &cont);
         self.window.curt_cont = cont;
 
         let mut parent_max_len = 0;
@@ -35,7 +32,6 @@ impl InputComple {
             parent_menu.name_disp = format!(" {}{} ", perent_str, " ".repeat(space),);
         }
 
-        self.window.curt_cont.height = min(self.window.curt_cont.menu_vec.len(), Window::MAX_HEIGHT);
         // +1 is Extra
         self.window.curt_cont.width = parent_max_len + 1;
     }
@@ -79,13 +75,8 @@ impl InputComple {
         let str_vec = split_chars(&s, false, true, &Cfg::get().general.editor.input_comple.word_delimiter.chars().collect::<Vec<char>>());
         let words_new_set = str_vec.iter().cloned().collect::<BTreeSet<String>>();
 
-        Log::debug_key("1111111111111111111111111111");
-        Log::debug(" self.row_words_vec", &self.row_words_vec);
-
         if let Some(row_words_old) = self.row_words_vec.get_mut(idx) {
-            Log::debug_key("2222222222222222222222222222");
             let diff_new_set = words_new_set.difference(&row_words_old.words);
-            Log::debug_key("3333333333333333333333333");
 
             for word in diff_new_set {
                 self.all_words_map.entry(word.clone()).or_insert_with(|| BTreeSet::from([idx])).insert(idx);
@@ -103,32 +94,37 @@ impl InputComple {
             }
             row_words_old.words = words_new_set;
         } else {
-            Log::debug_key("4444444444444444444444444");
             self.analysis_new(idx, row_char);
         }
-        Log::debug_key("55555555555555555555555555");
     }
 
     pub fn search(&self, search_str: &str) -> BTreeSet<String> {
         Log::debug_key("InputComple.search");
 
         let mut result_set = BTreeSet::new();
-        let mut is_find = false;
 
         let search_str_tmp = if Cfg::get().general.editor.input_comple.case_sensitive { search_str.to_string() } else { search_str.to_lowercase() };
 
         for (word, _) in self.all_words_map.iter() {
             let word_tmp = if Cfg::get().general.editor.input_comple.case_sensitive { word.to_string() } else { word.to_lowercase() };
             if let Some(idx) = word_tmp.find(&search_str_tmp) {
-                if idx == 0 {
-                    is_find = true;
+                if idx == 0 && word_tmp != search_str_tmp {
                     result_set.insert(word.clone());
                 }
-            } else if is_find {
-                break;
             }
         }
         result_set.remove(search_str);
         return result_set;
+    }
+}
+
+impl WindowTrait for InputComple {
+    fn clear(&mut self) {
+        self.window.clear();
+    }
+
+    fn draw(&mut self, str_vec: &mut Vec<String>) {
+        Log::debug_key("InputComple.draw");
+        self.window.draw(str_vec, &Colors::get_ctx_menu_fg_bg_sel(), &Colors::get_ctx_menu_fg_bg_non_sel());
     }
 }

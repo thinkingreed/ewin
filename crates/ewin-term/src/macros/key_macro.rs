@@ -23,7 +23,10 @@ impl Tab {
         }
     }
 
-    pub fn exec_key_macro(term: &mut Terminal) {
+    pub fn exec_key_macro(term: &mut Terminal) -> ActType {
+        if term.curt().editor.key_vec.is_empty() {
+            return ActType::Render(RParts::MsgBar(Lang::get().no_key_record_exec.to_string()));
+        }
         Log::debug("key_record_vec", &term.curt().editor.key_vec);
 
         term.curt().editor.state.key_macro.is_exec = true;
@@ -40,5 +43,7 @@ impl Tab {
         }
         term.curt().editor.state.key_macro.is_exec = false;
         term.curt().editor.state.key_macro.is_exec_end = false;
+
+        return ActType::Next;
     }
 }

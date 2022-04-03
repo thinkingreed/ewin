@@ -22,7 +22,7 @@ It provides basic features as a minimal text editor:
 - File change monitoring.
 - Color theme(Cursor color is out of scope)
 - Input completion(word completion)
-
+- Symbol display of specific characters (tab, Full-width space, ..)
 
 [![Rust](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml/badge.svg)](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml)
 [![crate-name at crates.io](https://img.shields.io/crates/v/ewin.svg)](https://crates.io/crates/ewin)
@@ -252,7 +252,7 @@ Built-in v8 engine using rusty_v8.
 
 ## Future Works
 
-- Swap file
+- Extension by WASM
 - Auto save file
 
 ## License

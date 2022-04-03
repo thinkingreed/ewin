@@ -1,8 +1,7 @@
-use ewin_com::_cfg::model::default::Cfg;
-
 use crate::{
     ewin_com::{
         _cfg::key::{keycmd::*, keys::*},
+        _cfg::model::default::*,
         def::*,
         log::*,
         model::*,
@@ -10,6 +9,7 @@ use crate::{
     },
     model::*,
 };
+use std::cmp::min;
 
 impl Editor {
     pub fn ctrl_mouse(&mut self) {
@@ -29,7 +29,7 @@ impl Editor {
             E_Cmd::MouseDragLeftBox(y, x) => (y, x, Keys::MouseDragLeft(y as u16, x as u16)),
             _ => return,
         };
-        Log::debug("y", &y);
+        Log::debug("y 111", &y);
         Log::debug("x", &x);
         Log::debug("self.sel 000", &self.sel);
 
@@ -70,33 +70,37 @@ impl Editor {
         };
 
         Log::debug("self.sel 222", &self.sel);
+        Log::debug("self.scrl_v.is_enable", &self.scrl_v.is_enable);
+        Log::debug("self.scrl_h.is_enable", &self.scrl_h.is_enable);
+
+        Log::debug("self.offset_y", &self.offset_y);
 
         if !self.scrl_v.is_enable && !self.scrl_h.is_enable {
-            // y, range check
-            if self.buf.len_rows() < y || HEADERBAR_ROW_NUM + self.row_disp_len - 1 + STATUSBAR_ROW_NUM == y {
-                // In case of MouseMode::Mouse, this function is not executed, so ignore it.
-                if self.buf.len_rows() < y {
-                    y = self.buf.len_rows() - 1;
-                } else if HEADERBAR_ROW_NUM + self.row_disp_len - 1 + STATUSBAR_ROW_NUM == y {
-                    y = self.offset_y + self.row_disp_len - 1;
-                }
-            } else {
-                if y >= HEADERBAR_ROW_NUM {
-                    y -= HEADERBAR_ROW_NUM;
-                }
-                y += self.offset_y
-            }
-
             if matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) && x < self.get_rnw_and_margin() - 1 {
                 self.sel.set_s(y, 0, 0);
                 let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(y)[..], 0, true);
                 self.sel.set_e(y, cur_x, width);
                 self.set_cur_target_by_x(y, 0, false);
-            } else if self.buf.len_rows() > y {
+            } else {
+                // y, range check
+                if y == 0 {
+                    if self.cur.y > 0 {
+                        y = self.cur.y - 1;
+                    }
+                } else if self.buf.len_rows() < y + self.offset_y - HEADERBAR_ROW_NUM {
+                    y = self.buf.len_rows() - 1;
+                } else if self.row_posi + self.row_disp_len + STATUSBAR_ROW_NUM == y {
+                    y = self.offset_y + self.row_disp_len;
+                } else {
+                    if y >= HEADERBAR_ROW_NUM {
+                        y -= HEADERBAR_ROW_NUM;
+                    }
+                    y = min(y + self.offset_y, self.buf.len_rows() - 1)
+                }
+
                 x = if x < self.get_rnw_and_margin() { 0 } else { x - self.get_rnw_and_margin() };
                 self.cur.y = y;
                 let vec = self.buf.char_vec_row(self.cur.y);
-
                 if self.sel.mode == SelMode::BoxSelect && self.offset_x + x > vec.len() - 1 {
                     self.cur.x = x;
                     self.cur.disp_x = x;
@@ -111,6 +115,6 @@ impl Editor {
                 }
                 self.history.set_sel_multi_click(&keys, &mut self.sel, &self.cur, &self.cur_org, &self.buf.char_vec_row(self.cur.y));
             }
-        }
+        };
     }
 }

@@ -1,22 +1,21 @@
 #![allow(clippy::needless_return, clippy::iter_nth_zero)]
 
-use clap::*;
+use clap::Parser;
+use crossbeam::channel::Sender;
 use crossterm::event::{Event::Mouse, EventStream, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use ewin_com::{
     _cfg::{key::keycmd::*, lang::lang_cfg::*, model::default::*},
-    def::*,
     global::*,
     log::*,
     model::*,
     util::*,
 };
+
 use ewin_term::model::*;
 use futures::{future::FutureExt, StreamExt};
-use std::{io::*, panic, sync::mpsc::*, time::Duration};
+use std::{io::*, panic, time::Duration};
 mod watch_file;
 use watch_file::*;
-mod watch_grep;
-use watch_grep::*;
 
 #[tokio::main]
 async fn main() {
@@ -30,11 +29,7 @@ async fn main() {
         default_hook(panic_info);
     }));
 
-    let matches = App::new(APP_NAME).version(env!("CARGO_PKG_VERSION")).bin_name(APP_NAME).setting(AppSettings::DeriveDisplayOrder).arg(Arg::with_name("file").required(false)).arg(Arg::from_usage("[output-config] -o --output-config 'output config file'")).get_matches();
-    let args = Args::new(&matches);
-
-    Log::info("args", &args);
-
+    let args = AppArgs::new(&Args::parse());
     let err_str = Cfg::init(&args);
     if !err_str.is_empty() {
         //   Log::info_s(&err_str);
@@ -63,8 +58,13 @@ async fn main() {
     term.activate(&args);
     term.init_draw(&mut out);
 
-    let (tx, rx) = std::sync::mpsc::channel();
-    let tx_grep = Sender::clone(&tx);
+    let (tx, rx) = crossbeam::channel::unbounded(); // PriorityChannel::<Job, usize>::init(false);
+
+    // If it is processed asynchronously, the line number of the matched file in the grep process will shift,
+    // so it will be executed synchronously.
+    let (tx_grep, rx_grep) = std::sync::mpsc::channel();
+    let _ = TX_JOB.set(tokio::sync::Mutex::new(std::sync::mpsc::Sender::clone(&tx_grep)));
+
     let tx_watch = Sender::clone(&tx);
 
     // It also reads a normal Event to support cancellation.
@@ -82,11 +82,9 @@ async fn main() {
     });
 
     watching_file(tx_watch);
-    watching_grep(tx_grep);
 
     loop {
         if let Ok(job) = rx.recv_timeout(Duration::from_millis(16)) {
-            // for job in rx {
             match job.job_type {
                 JobType::Event => {
                     let keys = Keybind::evt_to_keys(&job.job_evt.unwrap().evt);
@@ -95,7 +93,6 @@ async fn main() {
                     }
                     term.keys_org = keys;
                 }
-                JobType::GrepResult => EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap()),
                 JobType::Watch => {
                     if let Some(job_watch) = job.job_watch {
                         if EvtAct::draw_watch_result(&mut out, &mut term) {
@@ -103,6 +100,12 @@ async fn main() {
                         }
                     }
                 }
+                JobType::GrepResult => {}
+            }
+        }
+        if let Ok((job, _)) = rx_grep.recv_timeout(Duration::from_millis(16)) {
+            if job.job_type == JobType::GrepResult {
+                EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap());
             }
         }
     }

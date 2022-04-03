@@ -35,9 +35,13 @@ pub const MULTI_CLICK_MILLISECONDS: i64 = 1000;
 pub const MULTI_CLICK_MILLISECONDS: i64 = 500;
 // pub const DELIM_STR: &str = r#" 　!"\#$%&()*+-',./:;<=>?@[]^`{|}~"#;
 pub const HALF_SPACE: &str = " ";
-pub const FULL_SPACE: &str = "　";
+pub const FULL_SPACE: char = '　';
 pub const ENABLE_SYNTAX_HIGHLIGHT_FILE_SIZE: u64 = 1048576;
 
 // Key
 pub const KEY_SELECT_KEY: &str = "+↑↓←→/Mouse";
 pub const HELP_DETAIL: &str = "Help detail";
+
+// channel priority
+pub const CHANNEL_PRIORITY_HIGHT: usize = 10;
+pub const CHANNEL_PRIORITY_LOW: usize = 0;

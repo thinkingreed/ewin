@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{colors::*, def::*, log::*, model::*, util::*},
+    ewin_com::{_cfg::model::default::*, colors::*, def::*, log::*, model::*, util::*},
     model::*,
 };
 use crossterm::{cursor::*, terminal::*};
@@ -61,7 +61,9 @@ impl Editor {
                     match c {
                         NEW_LINE_LF => str_vec.push(if c_org == NEW_LINE_CR { NEW_LINE_CRLF_MARK.to_string() } else { NEW_LINE_LF_MARK.to_string() }),
                         NEW_LINE_CR => {}
-                        TAB_CHAR => str_vec.push(format!("{}{}", TAB_MARK, " ".repeat(width - 1))),
+                        TAB_CHAR => str_vec.push(format!("{}{}", Cfg::get().general.view.tab_characters_as_symbols, " ".repeat(width - 1))),
+                        FULL_SPACE => str_vec.push(Cfg::get().general.view.full_width_space_characters_as_symbols.to_string()),
+
                         _ => str_vec.push(c.to_string()),
                     }
                     // self.state.mouse_mode == MouseMode::Mouse
@@ -69,6 +71,7 @@ impl Editor {
                     match c {
                         NEW_LINE_LF | NEW_LINE_CR => {}
                         TAB_CHAR => str_vec.push(" ".repeat(width)),
+                        FULL_SPACE => str_vec.push(Cfg::get().general.view.full_width_space_characters_as_symbols.to_string()),
                         _ => str_vec.push(c.to_string()),
                     }
                 }
@@ -81,11 +84,6 @@ impl Editor {
             if y >= self.row_disp_len {
                 break;
             }
-            /*
-            else {
-                str_vec.push(NEW_LINE_CRLF.to_string());
-            }
-             */
         }
         draw.cells_from = std::mem::take(&mut draw.cells_to);
         //  std::mem::swap(&mut draw.cells_from, &mut draw.cells_to);
@@ -101,7 +99,7 @@ impl Editor {
         // If you need to edit the previous row_num
         if self.state.mouse_mode == MouseMode::Normal {
             // Correspondence of line number of previous cursor position
-            if self.cur_org.y < self.buf.len_rows() - 1 && self.is_y_in_screen(self.cur_org.y) && self.cur.y != self.cur_org.y {
+            if self.cur_org.y < self.buf.len_rows() && self.is_y_in_screen(self.cur_org.y) && self.cur.y != self.cur_org.y {
                 self.move_render_row_num(str_vec, self.cur_org.y);
             }
             if self.is_y_in_screen(self.cur.y) {
@@ -120,9 +118,8 @@ impl Editor {
             if i == self.cur.y {
                 Colors::set_rownum_curt_color(str_vec);
             } else {
-                Colors::set_rownum_color(str_vec);
+                Colors::set_rownum_not_curt_color(str_vec);
             }
-
             if self.get_rnw() > 0 {
                 str_vec.push(" ".repeat(self.get_rnw() - (i + 1).to_string().len()));
             }
