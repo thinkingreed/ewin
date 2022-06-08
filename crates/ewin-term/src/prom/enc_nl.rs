@@ -13,14 +13,14 @@ impl EvtAct {
 
         match term.curt().prom.p_cmd {
             P_Cmd::MouseDownLeft(y, x) => {
-                term.curt().prom.curt.downcast_mut::<PromPluginEncNl>().unwrap().click_choice(y as u16, x as u16);
+                term.curt().prom.curt.downcast_mut::<PromEncNl>().unwrap().click_choice(y as u16, x as u16);
                 return ActType::Draw(DParts::Prompt);
             }
             P_Cmd::CursorLeft | P_Cmd::CursorRight => {
                 let p_cmd = term.curt().prom.p_cmd.clone();
                 let choice = term.curt().prom.curt.as_mut_base().get_curt_cont_mut().unwrap().downcast_mut::<PromContChoice>().unwrap();
                 choice.move_left_right(&p_cmd);
-                term.curt().prom.curt.downcast_mut::<PromPluginEncNl>().unwrap().ctrl_parts();
+                term.curt().prom.curt.downcast_mut::<PromEncNl>().unwrap().ctrl_parts();
                 return ActType::Draw(DParts::Prompt);
             }
             P_Cmd::CursorUp | P_Cmd::CursorDown => {
@@ -28,7 +28,7 @@ impl EvtAct {
                 if choice.set_cont_posi_or_is_up_down_cont_posi() {
                     term.curt().prom.curt.as_mut_base().set_next_back_cont_idx();
                 }
-                term.curt().prom.curt.downcast_mut::<PromPluginEncNl>().unwrap().ctrl_parts();
+                term.curt().prom.curt.downcast_mut::<PromEncNl>().unwrap().ctrl_parts();
 
                 return ActType::Draw(DParts::Prompt);
             }

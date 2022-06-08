@@ -2,9 +2,9 @@ use crate::{cont::parts::info::*, cont::parts::key_desc::*, ewin_com::_cfg::key:
 use ewin_cfg::{colors::*, lang::lang_cfg::*};
 use ewin_const::def::*;
 
-impl PromPluginSaveConfirm {
+impl PromSaveConfirm {
     pub fn new() -> Self {
-        let mut plugin = PromPluginSaveConfirm { ..PromPluginSaveConfirm::default() };
+        let mut plugin = PromSaveConfirm { ..PromSaveConfirm::default() };
         let guide = PromContInfo { desc_str_vec: vec![Lang::get().save_confirm_to_close.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() };
         plugin.base.cont_vec.push(Box::new(guide));
 
@@ -19,10 +19,10 @@ impl PromPluginSaveConfirm {
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct PromPluginSaveConfirm {
+pub struct PromSaveConfirm {
     pub base: PromPluginBase,
 }
-impl PromPluginTrait for PromPluginSaveConfirm {
+impl PromPluginTrait for PromSaveConfirm {
     fn as_base(&self) -> &PromPluginBase {
         &self.base
     }

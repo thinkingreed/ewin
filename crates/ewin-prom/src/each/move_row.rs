@@ -6,9 +6,9 @@ use crate::{
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*};
 
-impl PromPluginMoveRow {
+impl PromMoveRow {
     pub fn new() -> Self {
-        let mut plugin = PromPluginMoveRow { ..PromPluginMoveRow::default() };
+        let mut plugin = PromMoveRow { ..PromMoveRow::default() };
 
         plugin.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().set_move_row.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 
@@ -25,10 +25,10 @@ impl PromPluginMoveRow {
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct PromPluginMoveRow {
+pub struct PromMoveRow {
     pub base: PromPluginBase,
 }
-impl PromPluginTrait for PromPluginMoveRow {
+impl PromPluginTrait for PromMoveRow {
     fn as_base(&self) -> &PromPluginBase {
         &self.base
     }

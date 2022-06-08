@@ -6,9 +6,9 @@ use crate::{
 };
 use ewin_cfg::{colors::Colors, lang::lang_cfg::*, model::default::*};
 
-impl PromPluginReplace {
+impl PromReplace {
     pub fn new() -> Self {
-        let mut plugin = PromPluginReplace { base: PromPluginBase { config: PromptPluginConfig { is_updown_valid: true, ..PromptPluginConfig::default() }, ..PromPluginBase::default() } };
+        let mut plugin = PromReplace { base: PromPluginBase { config: PromptPluginConfig { is_updown_valid: true, ..PromptPluginConfig::default() }, ..PromPluginBase::default() } };
 
         plugin.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().set_replace.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 
@@ -30,11 +30,11 @@ impl PromPluginReplace {
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct PromPluginReplace {
+pub struct PromReplace {
     pub base: PromPluginBase,
 }
 
-impl PromPluginTrait for PromPluginReplace {
+impl PromPluginTrait for PromReplace {
     fn as_base(&self) -> &PromPluginBase {
         &self.base
     }

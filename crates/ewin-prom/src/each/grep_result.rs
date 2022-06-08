@@ -6,9 +6,9 @@ use crate::{
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*};
 
-impl PromPluginGrepResult {
+impl PromGrepResult {
     pub fn new(is_grep_empty: bool, is_cancel: bool) -> Self {
-        let mut plugin = PromPluginGrepResult { ..PromPluginGrepResult::default() };
+        let mut plugin = PromGrepResult { ..PromGrepResult::default() };
 
         let cancel_str = if is_cancel { Lang::get().processing_canceled.to_string() } else { "".to_string() };
 
@@ -28,11 +28,11 @@ impl PromPluginGrepResult {
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct PromPluginGrepResult {
+pub struct PromGrepResult {
     pub base: PromPluginBase,
 }
 
-impl PromPluginTrait for PromPluginGrepResult {
+impl PromPluginTrait for PromGrepResult {
     fn as_base(&self) -> &PromPluginBase {
         &self.base
     }

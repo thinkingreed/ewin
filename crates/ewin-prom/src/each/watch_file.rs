@@ -7,9 +7,9 @@ use crate::{
 use ewin_cfg::{colors::*, lang::lang_cfg::*};
 use ewin_const::def::*;
 
-impl PromPluginWatchFile {
+impl PromWatchFile {
     pub fn new() -> Self {
-        let mut plugin = PromPluginWatchFile { ..PromPluginWatchFile::default() };
+        let mut plugin = PromWatchFile { ..PromWatchFile::default() };
 
         plugin.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().file_has_been_modified_by_other_app.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 
@@ -28,11 +28,11 @@ impl PromPluginWatchFile {
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct PromPluginWatchFile {
+pub struct PromWatchFile {
     pub base: PromPluginBase,
 }
 
-impl PromPluginTrait for PromPluginWatchFile {
+impl PromPluginTrait for PromWatchFile {
     fn as_base(&self) -> &PromPluginBase {
         &self.base
     }

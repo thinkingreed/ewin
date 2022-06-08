@@ -25,7 +25,7 @@ pub struct Prom {
 
 impl Default for Prom {
     fn default() -> Self {
-        Self { row_num: 0, row_posi: 0, col_num: 0, curt: Box::new(PromPluginSearch::new()), keycmd: KeyCmd::Null, p_cmd: P_Cmd::Null }
+        Self { row_num: 0, row_posi: 0, col_num: 0, curt: Box::new(PromSearch::new()), keycmd: KeyCmd::Null, p_cmd: P_Cmd::Null }
     }
 }
 

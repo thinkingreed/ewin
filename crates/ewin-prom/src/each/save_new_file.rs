@@ -9,9 +9,9 @@ use ewin_cfg::{colors::*, lang::lang_cfg::*, model::default::*};
 use ewin_widget::widget::pulldown::*;
 use indexmap::*;
 
-impl PromPluginSaveNewFile {
+impl PromSaveNewFile {
     pub fn new(candidate_new_filenm: String) -> Self {
-        let mut plugin = PromPluginSaveNewFile { base: PromPluginBase { config: PromptPluginConfig { is_updown_valid: true }, ..PromPluginBase::default() }, ..PromPluginSaveNewFile::default() };
+        let mut plugin = PromSaveNewFile { base: PromPluginBase { config: PromptPluginConfig { is_updown_valid: true }, ..PromPluginBase::default() }, ..PromSaveNewFile::default() };
         plugin.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![format!("{}", &Lang::get().set_new_filenm,)], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 
         let confirm = PromContKeyMenu { disp_str: Lang::get().search_top.to_string(), key: PromContKeyMenuType::PCmd(P_Cmd::Confirm) };
@@ -42,10 +42,10 @@ impl PromPluginSaveNewFile {
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct PromPluginSaveNewFile {
+pub struct PromSaveNewFile {
     pub base: PromPluginBase,
 }
-impl PromPluginTrait for PromPluginSaveNewFile {
+impl PromPluginTrait for PromSaveNewFile {
     fn as_base(&self) -> &PromPluginBase {
         &self.base
     }

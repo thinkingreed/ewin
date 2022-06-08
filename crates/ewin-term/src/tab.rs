@@ -80,14 +80,14 @@ impl Tab {
 
     pub fn prom_search(&mut self) -> ActType {
         self.state.prom = PromState::Search;
-        self.prom.init(Box::new(PromPluginSearch::new()));
+        self.prom.init(Box::new(PromSearch::new()));
         return ActType::Draw(DParts::All);
     }
 
     pub fn prom_save_new_file(&mut self) {
         Log::debug_key("Tab::prom_save_new_file");
         self.state.prom = PromState::SaveNewFile;
-        self.prom.init(Box::new(PromPluginSaveNewFile::new(self.editor.get_candidate_new_filenm())));
+        self.prom.init(Box::new(PromSaveNewFile::new(self.editor.get_candidate_new_filenm())));
         if let Ok(pulldown_cont) = self.prom.curt.as_mut_base().get_tgt_cont(3).unwrap().downcast_mut::<PromContPulldown>() {
             let height = min(pulldown_cont.pulldown.widget.cont.cont_vec.len(), Editor::get_disp_row_num());
             pulldown_cont.pulldown.widget.init_menu(pulldown_cont.base.row_posi_range.end, Pulldown::MARGIN, height);
@@ -98,7 +98,7 @@ impl Tab {
         Log::debug_key("Tab::prom_save_forced");
         let last_modified_time = File::get_modified_time(fullpath).unwrap();
         self.state.prom = PromState::SaveForced;
-        self.prom.init(Box::new(PromPluginSaveForced::new(modified_time, last_modified_time)));
+        self.prom.init(Box::new(PromSaveForced::new(modified_time, last_modified_time)));
         return ActType::Draw(DParts::All);
     }
 
@@ -109,7 +109,7 @@ impl Tab {
                 term.curt().clear_curt_tab(true);
             }
 
-            term.curt().prom.init(Box::new(PromPluginSaveConfirm::new()));
+            term.curt().prom.init(Box::new(PromSaveConfirm::new()));
             // term.curt().state.is_save_confirm = true;
             term.curt().state.prom = PromState::SaveConfirm;
             return false;
@@ -126,7 +126,7 @@ impl Tab {
 
     pub fn prom_replace(&mut self) -> ActType {
         self.state.prom = PromState::Replase;
-        self.prom.init(Box::new(PromPluginReplace::new()));
+        self.prom.init(Box::new(PromReplace::new()));
         return ActType::Draw(DParts::All);
     }
 
@@ -137,33 +137,33 @@ impl Tab {
     }
     pub fn prom_move_row(&mut self) -> ActType {
         self.state.prom = PromState::MoveRow;
-        self.prom.init(Box::new(PromPluginMoveRow::new()));
+        self.prom.init(Box::new(PromMoveRow::new()));
         return ActType::Draw(DParts::All);
     }
 
     pub fn prom_grep(&mut self) -> ActType {
         self.state.prom = PromState::Grep;
-        self.prom.init(Box::new(PromPluginGrep::new()));
+        self.prom.init(Box::new(PromGrep::new()));
         return ActType::Draw(DParts::All);
     }
     pub fn prom_greping(&mut self) {
         self.state.prom = PromState::Greping;
-        self.prom.init(Box::new(PromPluginGreping::new()));
+        self.prom.init(Box::new(PromGreping::new()));
     }
     pub fn prom_grep_result(&mut self) {
         self.state.prom = PromState::GrepResult;
-        self.prom.init(Box::new(PromPluginGrepResult::new(self.state.grep.is_empty, self.state.grep.is_cancel)));
+        self.prom.init(Box::new(PromGrepResult::new(self.state.grep.is_empty, self.state.grep.is_cancel)));
     }
     pub fn prom_enc_nl(&mut self, h_file: &HeaderFile) -> ActType {
         self.state.prom = PromState::EncNl;
-        self.prom.init(Box::new(PromPluginEncNl::new()));
-        self.prom.curt.downcast_mut::<PromPluginEncNl>().unwrap().set_default_choice_enc_nl(h_file);
+        self.prom.init(Box::new(PromEncNl::new()));
+        self.prom.curt.downcast_mut::<PromEncNl>().unwrap().set_default_choice_enc_nl(h_file);
         return ActType::Draw(DParts::All);
     }
     pub fn prom_watch_result(&mut self) -> ActType {
         Log::debug_key("Tab::prom_watch_result");
         self.state.prom = PromState::WatchFile;
-        self.prom.init(Box::new(PromPluginWatchFile::new()));
+        self.prom.init(Box::new(PromWatchFile::new()));
         return ActType::Draw(DParts::All);
     }
 

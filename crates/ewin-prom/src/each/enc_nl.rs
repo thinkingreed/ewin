@@ -7,9 +7,9 @@ use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
 use ewin_com::{_cfg::key::keycmd::*, model::*, util::*};
 use ewin_const::def::*;
 
-impl PromPluginEncNl {
+impl PromEncNl {
     pub fn new() -> Self {
-        let mut plugin = PromPluginEncNl { base: PromPluginBase { config: PromptPluginConfig { is_updown_valid: true, ..PromptPluginConfig::default() }, ..PromPluginBase::default() } };
+        let mut plugin = PromEncNl { base: PromPluginBase { config: PromptPluginConfig { is_updown_valid: true, ..PromptPluginConfig::default() }, ..PromPluginBase::default() } };
         plugin.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().set_enc_nl.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 
         let fixed = PromContKeyMenu { disp_str: Lang::get().fixed.to_string(), key: PromContKeyMenuType::PCmd(P_Cmd::Confirm) };
@@ -140,10 +140,10 @@ impl PromPluginEncNl {
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct PromPluginEncNl {
+pub struct PromEncNl {
     pub base: PromPluginBase,
 }
-impl PromPluginTrait for PromPluginEncNl {
+impl PromPluginTrait for PromEncNl {
     fn as_base(&self) -> &PromPluginBase {
         &self.base
     }

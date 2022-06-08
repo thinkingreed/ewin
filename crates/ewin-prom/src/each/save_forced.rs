@@ -9,9 +9,9 @@ use ewin_cfg::{colors::*, lang::lang_cfg::*};
 use ewin_const::def::*;
 use std::time::SystemTime;
 
-impl PromPluginSaveForced {
+impl PromSaveForced {
     pub fn new(open_modified_time: &SystemTime, last_modified_time: SystemTime) -> Self {
-        let mut plugin = PromPluginSaveForced { ..PromPluginSaveForced::default() };
+        let mut plugin = PromSaveForced { ..PromSaveForced::default() };
 
         plugin.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().file_has_been_modified_by_other_app.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 
@@ -32,10 +32,10 @@ impl PromPluginSaveForced {
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct PromPluginSaveForced {
+pub struct PromSaveForced {
     pub base: PromPluginBase,
 }
-impl PromPluginTrait for PromPluginSaveForced {
+impl PromPluginTrait for PromSaveForced {
     fn as_base(&self) -> &PromPluginBase {
         &self.base
     }

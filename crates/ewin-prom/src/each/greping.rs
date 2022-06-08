@@ -6,9 +6,9 @@ use crate::{
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*};
 
-impl PromPluginGreping {
+impl PromGreping {
     pub fn new() -> Self {
-        let mut plugin = PromPluginGreping { ..PromPluginGreping::default() };
+        let mut plugin = PromGreping { ..PromGreping::default() };
         plugin.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().long_time_to_search.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
         let cancel = PromContKeyMenu { disp_str: Lang::get().cancel.to_string(), key: PromContKeyMenuType::PCmd(P_Cmd::Cancel) };
         plugin.base.cont_vec.push(Box::new(PromContKeyDesc { desc_vecs: vec![vec![cancel]], ..PromContKeyDesc::default() }));
@@ -18,10 +18,10 @@ impl PromPluginGreping {
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct PromPluginGreping {
+pub struct PromGreping {
     pub base: PromPluginBase,
 }
-impl PromPluginTrait for PromPluginGreping {
+impl PromPluginTrait for PromGreping {
     fn as_base(&self) -> &PromPluginBase {
         &self.base
     }

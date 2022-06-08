@@ -8,9 +8,9 @@ use crate::{
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*, model::default::*};
 
-impl PromPluginGrep {
+impl PromGrep {
     pub fn new() -> Self {
-        let mut plugin = PromPluginGrep { base: PromPluginBase { config: PromptPluginConfig { is_updown_valid: true, ..PromptPluginConfig::default() }, ..PromPluginBase::default() } };
+        let mut plugin = PromGrep { base: PromPluginBase { config: PromptPluginConfig { is_updown_valid: true, ..PromptPluginConfig::default() }, ..PromPluginBase::default() } };
 
         plugin.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().set_grep.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 
@@ -42,10 +42,10 @@ impl PromPluginGrep {
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct PromPluginGrep {
+pub struct PromGrep {
     pub base: PromPluginBase,
 }
-impl PromPluginTrait for PromPluginGrep {
+impl PromPluginTrait for PromGrep {
     fn as_base(&self) -> &PromPluginBase {
         &self.base
     }

@@ -6,9 +6,9 @@ use crate::{
 };
 use ewin_cfg::{colors::Colors, lang::lang_cfg::*, model::default::*};
 
-impl PromPluginSearch {
+impl PromSearch {
     pub fn new() -> Self {
-        let mut plugin = PromPluginSearch { ..PromPluginSearch::default() };
+        let mut plugin = PromSearch { ..PromSearch::default() };
 
         plugin.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().set_search.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 
@@ -28,10 +28,10 @@ impl PromPluginSearch {
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct PromPluginSearch {
+pub struct PromSearch {
     pub base: PromPluginBase,
 }
-impl PromPluginTrait for PromPluginSearch {
+impl PromPluginTrait for PromSearch {
     fn as_base(&self) -> &PromPluginBase {
         &self.base
     }
