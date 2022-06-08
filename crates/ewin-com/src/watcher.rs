@@ -1,4 +1,5 @@
 use crossbeam_channel::unbounded;
+use ewin_cfg::log::Log;
 use notify::{event::*, RecommendedWatcher, RecursiveMode, Watcher};
 use std::{
     collections::VecDeque,
@@ -6,8 +7,6 @@ use std::{
     sync::{Arc, Mutex},
     thread,
 };
-
-use crate::log::Log;
 
 pub struct FileWatcher {
     inner: RecommendedWatcher,

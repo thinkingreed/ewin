@@ -1,18 +1,26 @@
-use crate::{
-    ewin_com::{clipboard::*, log::Log, model::*},
-    model::*,
-};
+use super::parts::input_area::*;
+use crate::ewin_com::{clipboard::*, model::*};
+use ewin_cfg::{lang::lang_cfg::*, log::*};
 
-impl PromptCont {
-    pub fn copy(&mut self) {
-        Log::debug_key("copy");
+impl PromContInputArea {
+    pub fn copy(&mut self) -> ActType {
+        Log::debug_key("PromContInputArea.copy");
+        if !self.sel.is_selected() {
+            return ActType::Draw(DParts::MsgBar(Lang::get().no_sel_range.to_string()));
+        }
         let sel = self.sel.get_range();
         let str = self.buf[sel.sx..sel.ex].iter().collect::<String>();
         set_clipboard(&str);
+        return ActType::Next;
     }
-    pub fn cut(&mut self, cut_str: String) {
+    pub fn cut(&mut self, cut_str: String) -> ActType {
+        Log::debug_key("copy");
+        if self.sel.is_selected() {
+            return ActType::Draw(DParts::MsgBar(Lang::get().no_sel_range.to_string()));
+        }
         Log::debug_key("cut");
         set_clipboard(&cut_str);
+        return ActType::Next;
     }
 
     pub fn set_evtproc(&mut self, cur: &Cur) {

@@ -1,5 +1,6 @@
 use crossbeam::channel::Sender;
-use ewin_com::{file::*, global::*, log::*, model::*, util::*, watcher::*};
+use ewin_cfg::log::*;
+use ewin_com::{files::file::*, global::*, model::*, util::*, watcher::*};
 use std::{
     path::PathBuf,
     str::FromStr,

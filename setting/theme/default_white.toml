@@ -28,6 +28,10 @@ background = "#282828"
 horizontal_background = "#dedede"
 vertical_background = "#dedede"
 
+[editor.scale]
+foreground = "#C4C4C4"
+background = "#dedede"
+
 [system.btn]
 foreground = "#000000"
 background = "#c0c0c0"
@@ -36,11 +40,19 @@ background = "#c0c0c0"
 foreground = "#000000"
 background = "#c0c0c0"
 
-[headerbar]
-tab_active_foreground = "#000000"
-tab_active_background = "#e69b1e"
-tab_passive_foreground = "#ffffff"
-tab_passive_background = "#c0c0c0"
+[menubar]
+active_foreground = "#000000"
+active_background = "#a0a0a0"
+passive_foreground = "#000000"
+passive_background = "#dedede"
+default_background = "#dedede"
+
+[filebar]
+active_foreground = "#ffffff"
+active_background = "#333333"
+passive_foreground = "#ffffff"
+passive_background = "#c0c0c0"
+default_background = "#dedede"
 
 [statusbar]
 foreground = "#c0c0c0"
@@ -52,7 +64,7 @@ non_select_foreground = "#000000"
 select_foreground = "#ffffff"
 
 [msg]
-normal_foreground = "#ffffff"
+normal_foreground = "#000000"
 highlight_foreground = "#00c800"
 warning_foreground = "#aa6400"
 err_foreground = "#ff0000"

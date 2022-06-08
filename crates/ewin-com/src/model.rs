@@ -1,34 +1,25 @@
 use crate::{
-    _cfg::{
-        key::{keycmd::*, keys::*},
-        lang::lang_cfg::*,
-    },
+    _cfg::key::{keycmd::*, keys::*},
     char_style::*,
-    def::*,
     global::*,
-    log::Log,
 };
 use chrono::NaiveDateTime;
-use clap::Parser;
 use crossterm::event::{Event, KeyCode::Null};
 use encoding_rs::Encoding;
+use ewin_cfg::{lang::lang_cfg::Lang, log::Log};
+use ewin_const::def::*;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::usize;
 use std::{
     collections::{BTreeSet, VecDeque},
     fmt,
+    ops::Range,
     path::Path,
     time::SystemTime,
 };
 use syntect::highlighting::HighlightState;
 use syntect::parsing::{ParseState, ScopeStackOp};
 
-#[derive(Debug, PartialEq)]
-pub enum Env {
-    WSL,
-    Linux,
-    Windows,
-}
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 /// undo,redo範囲
 /// EventProcess
@@ -130,11 +121,16 @@ pub struct Search {
     pub idx: usize,
     pub ranges: Vec<SearchRange>,
     pub fullpath: String,
-    pub folder: String,
+    pub dir: String,
     pub row_num: usize,
 }
 
 impl Search {
+    pub fn set_info(&mut self, search_str: String, search_filenm: String, search_dir: String) {
+        self.str = search_str;
+        self.fullpath = search_filenm;
+        self.dir = search_dir;
+    }
     pub fn clear(&mut self) {
         Log::debug_key("Search.clear");
 
@@ -143,7 +139,7 @@ impl Search {
         self.ranges = vec![];
         // file full path
         self.fullpath = String::new();
-        self.folder = String::new();
+        self.dir = String::new();
     }
 
     pub fn get_y_range(&self) -> (usize, usize) {
@@ -156,7 +152,7 @@ impl Search {
 }
 impl Default for Search {
     fn default() -> Self {
-        Search { str: String::new(), idx: USIZE_UNDEFINED, ranges: vec![], fullpath: String::new(), folder: String::new(), row_num: USIZE_UNDEFINED }
+        Search { str: String::new(), idx: USIZE_UNDEFINED, ranges: vec![], fullpath: String::new(), dir: String::new(), row_num: USIZE_UNDEFINED }
     }
 }
 
@@ -280,10 +276,7 @@ impl Default for JobEvent {
 #[derive(Debug, Hash, Default, Eq, PartialEq, Clone)]
 pub struct JobGrep {
     pub grep_str: String,
-    pub is_result: bool,
     pub is_end: bool,
-    // pub is_stderr_end: bool,
-    pub is_cancel: bool,
 }
 
 #[derive(Debug, Clone, Hash, Copy, PartialEq, Eq)]
@@ -321,17 +314,6 @@ impl Default for E_DrawRange {
     }
 }
 
-impl E_DrawRange {
-    /*
-    pub fn get_type(sel_mode: SelMode, sy: usize, ey: usize) -> E_DrawRange {
-        match sel_mode {
-            SelMode::Normal => E_DrawRange::Target(min(sy, ey), max(sy, ey)),
-            SelMode::BoxSelect => E_DrawRange::All,
-        }
-    }
-     */
-}
-
 impl fmt::Display for E_DrawRange {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -348,38 +330,31 @@ impl fmt::Display for E_DrawRange {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct GrepInfo {
-    pub is_grep: bool,
-    pub is_result: bool,
-    pub is_end: bool,
-    // pub is_stderr_end: bool,
-    pub is_cancel: bool,
     pub search_str: String,
-    pub search_folder: String,
-    pub search_filenm: String,
+    pub is_empty: bool,
+    pub is_cancel: bool,
 }
 
 impl GrepInfo {
     pub fn clear(&mut self) {
-        self.is_grep = false;
-        self.is_end = false;
-        // self.is_result = false;
         self.search_str = String::new();
-        self.search_folder = String::new();
-        self.search_filenm = String::new();
-    }
-    pub fn is_greping(&self) -> bool {
-        self.is_result && !self.is_end && !self.is_cancel
-    }
-    pub fn is_grep_finished(&self) -> bool {
-        self.is_result && (self.is_end || self.is_cancel)
     }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MouseMode {
-    Normal,
-    Mouse,
+pub enum Mouse {
+    Enable,
+    Disable,
+}
+
+impl fmt::Display for Mouse {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Mouse::Enable => write!(f, ""),
+            Mouse::Disable => write!(f, "{}", Lang::get().mouse_disable),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -523,26 +498,6 @@ impl ConvType {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[allow(non_camel_case_types)]
-pub enum MacrosFunc {
-    insertString,
-    getSelectedString,
-    getAllString,
-    searchAll,
-}
-
-impl fmt::Display for MacrosFunc {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            MacrosFunc::insertString => write!(f, "insertString"),
-            MacrosFunc::getSelectedString => write!(f, "getSelectedString"),
-            MacrosFunc::getAllString => write!(f, "getAllString"),
-            MacrosFunc::searchAll => write!(f, "searchAll"),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 /// SelectRange
 pub struct SelRange {
@@ -587,31 +542,17 @@ impl fmt::Display for SelMode {
     }
 }
 
-#[derive(Debug, Parser)]
-#[clap(name = "ewin", author, version)]
-pub struct Args {
-    filenm: Option<String>,
-    #[clap(short, long, help = "Configuration file output flag")]
-    out_config_flg: bool,
-}
-
-#[derive(Debug, Default, PartialEq, Eq, Clone)]
-pub struct AppArgs {
-    pub filenm: String,
-    pub out_config_flg: bool,
-}
-
-impl AppArgs {
-    pub fn new(arg: &Args) -> Self {
-        let filenm: String = if let Some(filenm) = arg.filenm.clone() { filenm } else { "".to_string() };
-        AppArgs { filenm, out_config_flg: arg.out_config_flg }
-    }
-}
 // Keys without modifiers
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
 pub enum OpenFileType {
     Normal,
     JsMacro,
+}
+
+impl Default for OpenFileType {
+    fn default() -> Self {
+        OpenFileType::Normal
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -626,9 +567,8 @@ pub struct HeaderFile {
     pub enc: Encode,
     // new line
     pub nl: String,
-    pub nl_org: String,
     pub bom: Option<Encode>,
-    pub modified_time: SystemTime,
+    pub mod_time: SystemTime,
     pub watch_mode: WatchMode,
 }
 
@@ -645,9 +585,8 @@ impl Default for HeaderFile {
             close_area: (0, 0),
             enc: Encode::UTF8,
             nl: NEW_LINE_LF_STR.to_string(),
-            nl_org: NEW_LINE_LF_STR.to_string(),
             bom: None,
-            modified_time: SystemTime::UNIX_EPOCH,
+            mod_time: SystemTime::UNIX_EPOCH,
             watch_mode: WatchMode::default(),
         }
     }
@@ -712,61 +651,29 @@ impl fmt::Display for BoxInsertMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-// FormatType
-pub enum FileType {
-    JSON,
-    JSON5,
-    TOML,
-    XML,
-    HTML,
-}
-
-impl fmt::Display for FileType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            FileType::JSON => write!(f, "JSON"),
-            FileType::JSON5 => write!(f, "JSON5"),
-            FileType::TOML => write!(f, "TOML"),
-            FileType::XML => write!(f, "XML"),
-            FileType::HTML => write!(f, "HTML"),
-        }
-    }
-}
-impl FileType {
-    pub fn from_str_fmt_type(s: &str) -> FileType {
-        if s == Lang::get().json {
-            FileType::JSON
-        } else if s == Lang::get().json5 {
-            FileType::JSON5
-        } else if s == Lang::get().toml {
-            FileType::TOML
-        } else if s == Lang::get().xml {
-            FileType::XML
-        } else {
-            FileType::HTML
-        }
-    }
-}
-
 #[derive(Debug, PartialEq)]
 // ActionType
 pub enum ActType {
     Cancel, // Cancel process
+    Nothing,
     Exit,
     Next, // Next Process
-    Render(RParts),
+    Draw(DParts),
 }
 
 #[derive(Debug, PartialEq, Clone)]
 // DrawParts
-pub enum RParts {
-    Editor, // and StatuusBar
+pub enum DParts {
+    Editor(E_DrawRange), // and StatuusBar
+    InputComple,
+    Absolute(Range<usize>),
     Prompt,
     MsgBar(String),
+    MenuBar,
+    MenuWidget,
+    FileBar,
     CtxMenu,
     All,
-    HeaderBar,
     ScrollUpDown(ScrollUpDownType),
     AllMsgBar(String),
     None,
@@ -778,93 +685,37 @@ pub enum ScrollUpDownType {
     Grep,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct TabState {
-    pub is_search: bool,
-    pub is_replace: bool,
-    pub is_save_confirm: bool,
-    pub is_save_new_file: bool,
-    pub is_save_forced: bool,
-    pub is_move_row: bool,
+    pub prom: PromState,
+    // pub is_save_new_file: bool,
+    // pub is_save_forced: bool,
     //  pub is_key_record: bool,
     pub is_open_file: bool,
-    pub is_enc_nl: bool,
     pub grep: GrepInfo,
-    pub is_menu: bool,
-    pub is_watch_result: bool,
+    // pub is_watch_result: bool,
 }
 
-impl fmt::Display for TabState {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "TabState is_search:{:?},", self.is_search)
-    }
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum PromState {
+    None,
+    Search,
+    SaveConfirm,
+    SaveNewFile,
+    SaveForced,
+    Replase,
+    MoveRow,
+    OpenFile,
+    Grep,
+    Greping,
+    GrepResult,
+    EncNl,
+    WatchFile,
 }
 
-impl TabState {
-    pub fn clear(&mut self) {
-        self.is_save_confirm = false;
-        self.is_search = false;
-        self.is_replace = false;
-        self.is_save_new_file = false;
-        self.is_save_forced = false;
-        self.is_move_row = false;
-        self.is_open_file = false;
-        self.is_enc_nl = false;
-        self.is_menu = false;
-        self.is_watch_result = false;
-        self.grep.is_grep = false;
-    }
-
-    pub fn is_nomal(&self) -> bool {
-        if self.is_save_confirm || self.is_search || self.is_replace || self.is_save_new_file|| self.is_save_forced || self.is_move_row || self.is_open_file || self.is_enc_nl || self.is_menu|| self.is_watch_result
-        // grep, grep result 
-        || self.grep.is_grep  || self.grep.is_greping()
-        {
-            return false;
-        }
-        true
-    }
-    pub fn is_nomal_and_not_result(&self) -> bool {
-        if !self.is_nomal() || self.grep.is_result {
-            return false;
-        }
-        true
-    }
-
-    pub fn judge_when_prompt(&self, keys: &Keys) -> bool {
-        if !self.is_nomal() || (self.grep.is_grep_finished() && keys == &Keys::Raw(Key::Enter)) {
-            return true;
-        }
-        return false;
-    }
-
-    pub fn judge_when_statusbar(&self, keys: &Keys, sbar_row_posi: usize, editor_is_dragging: bool) -> bool {
-        match &keys {
-            Keys::MouseDownLeft(y, _) if y == &(sbar_row_posi as u16) => return true,
-            Keys::MouseDragLeft(y, _) if y == &(sbar_row_posi as u16) => return !editor_is_dragging,
-            _ => return false,
-        }
-    }
-
-    pub fn is_prom_show_cur(&self) -> bool {
-        if self.is_exists_input_field() || self.is_exists_choice() {
-            return true;
-        }
-        false
-    }
-
-    pub fn is_exists_input_field(&self) -> bool {
-        if self.is_save_new_file || self.is_search || self.is_replace || self.grep.is_grep || self.is_move_row || self.is_open_file {
-            return true;
-        }
-        false
-    }
-
-    pub fn is_exists_choice(&self) -> bool {
-        if self.is_enc_nl || self.is_menu {
-            return true;
-        }
-        false
+impl Default for PromState {
+    fn default() -> Self {
+        PromState::None
     }
 }
 
@@ -904,9 +755,6 @@ impl DrawRangX {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FilePath {}
-
 pub type WatchHistory = BTreeSet<(String, String)>;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -939,8 +787,15 @@ impl Default for ScrollbarV {
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum GrepCancelType {
     None,
+    Greping,
     Canceling,
     Canceled,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct TermSize {
+    pub cols: u16,
+    pub rows: u16,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

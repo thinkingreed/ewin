@@ -1,7 +1,9 @@
-use crate::{def::USIZE_UNDEFINED, model::*};
+use crate::model::*;
+use ewin_cfg::model::modal::FileType;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
+use ewin_const::def::*;
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Keybind {
     pub key: String,
@@ -10,14 +12,14 @@ pub struct Keybind {
 }
 
 impl KeyCmd {
-    pub fn cmd_when_to_keycmd(keycmd: &str, keywhen: &str) -> KeyCmd {
+    pub fn cmd_when_to_keycmd(keycmd_str: &str, keywhen_str: &str) -> KeyCmd {
         /*
          * All
          */
 
-        return match keywhen {
+        return match keywhen_str {
             "headerBarFocus" => KeyCmd::Unsupported,
-            "promptFocus" => match keycmd {
+            "promptFocus" => match keycmd_str {
                 /*
                  * Input
                  */
@@ -39,13 +41,15 @@ impl KeyCmd {
                 "undo" => KeyCmd::Prom(P_Cmd::Undo),
                 "redo" => KeyCmd::Prom(P_Cmd::Redo),
                 // Find
-                "findNext" => KeyCmd::Prom(P_Cmd::FindNext),
-                "findBack" => KeyCmd::Prom(P_Cmd::FindBack),
+                "findNextProm" => KeyCmd::Prom(P_Cmd::FindNext),
+                "findBackProm" => KeyCmd::Prom(P_Cmd::FindBack),
                 /*
                  * Prompt
                  */
-                "escPrompt" => KeyCmd::Prom(P_Cmd::EscPrompt),
-                "confirmPrompt" => KeyCmd::Prom(P_Cmd::ConfirmPrompt),
+                "escPrompt" => KeyCmd::Prom(P_Cmd::Cancel),
+                "confirmPrompt" => KeyCmd::Prom(P_Cmd::Confirm),
+                "nextContent" => KeyCmd::Prom(P_Cmd::NextContent),
+                "backContent" => KeyCmd::Prom(P_Cmd::BackContent),
                 "findCaseSensitive" => KeyCmd::Prom(P_Cmd::FindCaseSensitive),
                 "findRegex" => KeyCmd::Prom(P_Cmd::FindRegex),
                 /*
@@ -54,89 +58,103 @@ impl KeyCmd {
                 "closeFile" => KeyCmd::Prom(P_Cmd::CloseFile),
                 _ => KeyCmd::Unsupported,
             },
-            "editorFocus" => match keycmd {
-                // Find
-                "findNext" => KeyCmd::Edit(E_Cmd::FindNext),
-                "findBack" => KeyCmd::Edit(E_Cmd::FindBack),
-                /*
-                 * Input
-                 */
-                // cursor move
-                "cursorLeft" => KeyCmd::Edit(E_Cmd::CursorLeft),
-                "cursorRight" => KeyCmd::Edit(E_Cmd::CursorRight),
-                "cursorUp" => KeyCmd::Edit(E_Cmd::CursorUp),
-                "cursorDown" => KeyCmd::Edit(E_Cmd::CursorDown),
-                "cursorRowHome" => KeyCmd::Edit(E_Cmd::CursorRowHome),
-                "cursorRowEnd" => KeyCmd::Edit(E_Cmd::CursorRowEnd),
-                "cursorLeftSelect" => KeyCmd::Edit(E_Cmd::CursorLeftSelect),
-                "cursorRightSelect" => KeyCmd::Edit(E_Cmd::CursorRightSelect),
-                "cursorUpSelect" => KeyCmd::Edit(E_Cmd::CursorUpSelect),
-                "cursorDownSelect" => KeyCmd::Edit(E_Cmd::CursorDownSelect),
-                "cursorRowHomeSelect" => KeyCmd::Edit(E_Cmd::CursorRowHomeSelect),
-                "cursorRowEndSelect" => KeyCmd::Edit(E_Cmd::CursorRowEndSelect),
-                "deleteNextChar" => KeyCmd::Edit(E_Cmd::DelNextChar),
-                "deletePrevChar" => KeyCmd::Edit(E_Cmd::DelPrevChar),
-                "paste" => KeyCmd::Edit(E_Cmd::InsertStr("".to_string())),
-                "cutSelect" => KeyCmd::Edit(E_Cmd::Cut),
-                "copySelect" => KeyCmd::Edit(E_Cmd::Copy),
-                "undo" => KeyCmd::Edit(E_Cmd::Undo),
-                "redo" => KeyCmd::Edit(E_Cmd::Redo),
-                /*
-                 * Editor
-                 */
-                "cursorFileHome" => KeyCmd::Edit(E_Cmd::CursorFileHome),
-                "cursorFileEnd" => KeyCmd::Edit(E_Cmd::CursorFileEnd),
-                "cursorPageUp" => KeyCmd::Edit(E_Cmd::CursorPageUp),
-                "cursorPageDown" => KeyCmd::Edit(E_Cmd::CursorPageDown),
-                // select
-                "allSelect" => KeyCmd::Edit(E_Cmd::AllSelect),
-                "boxSelectModeStart" => KeyCmd::Edit(E_Cmd::BoxSelectMode),
-                // edit
-                "insertLine" => KeyCmd::Edit(E_Cmd::InsertRow),
-                "formatJSON" => KeyCmd::Edit(E_Cmd::Format(FileType::JSON)),
-                "formatXML" => KeyCmd::Edit(E_Cmd::Format(FileType::XML)),
-                "formatHTML" => KeyCmd::Edit(E_Cmd::Format(FileType::HTML)),
-
-                // prompt
-                "find" => KeyCmd::Edit(E_Cmd::Find),
-                "replace" => KeyCmd::Edit(E_Cmd::ReplacePrompt),
-                "moveLine" => KeyCmd::Edit(E_Cmd::MoveRow),
-                "grep" => KeyCmd::Edit(E_Cmd::Grep),
-                // file
-                "closeFile" => KeyCmd::Edit(E_Cmd::CloseFile),
-                "newTab" => KeyCmd::Edit(E_Cmd::NewTab),
-                "openFile" => KeyCmd::Edit(E_Cmd::OpenFile(OpenFileType::Normal)),
-                "encoding" => KeyCmd::Edit(E_Cmd::Encoding),
-                "closeAllFile" => KeyCmd::Edit(E_Cmd::CloseAllFile),
-                "saveFile" => KeyCmd::Edit(E_Cmd::SaveFile),
-                // key macro
-                "startEndRecordKey" => KeyCmd::Edit(E_Cmd::StartEndRecordKey),
-                "execRecordKey" => KeyCmd::Edit(E_Cmd::ExecRecordKey),
-                // mouse
-                "mouseOpeSwitch" => KeyCmd::Edit(E_Cmd::MouseModeSwitch),
-                // menu
-                "help" => KeyCmd::Edit(E_Cmd::Help),
-                "openMenu" => KeyCmd::Edit(E_Cmd::OpenMenu),
-                "openMenuFile" => KeyCmd::Edit(E_Cmd::OpenMenuFile),
-                "openMenuConvert" => KeyCmd::Edit(E_Cmd::OpenMenuConvert),
-                "openMenuEdit" => KeyCmd::Edit(E_Cmd::OpenMenuEdit),
-                "openMenuSearch" => KeyCmd::Edit(E_Cmd::OpenMenuSearch),
-                // mode
-                "cancelMode" => KeyCmd::Edit(E_Cmd::CancelState),
-                // ContextMenu
-                "contextMenu" => KeyCmd::Edit(E_Cmd::CtxtMenu(USIZE_UNDEFINED, USIZE_UNDEFINED)),
-                // switchTab
-                "switchTabLeft" => KeyCmd::Edit(E_Cmd::SwitchTabLeft),
-                "switchTabRight" => KeyCmd::Edit(E_Cmd::SwitchTabRight),
-                // Input Complement
-                "inputComplement" => KeyCmd::Edit(E_Cmd::InputComple),
-                _ => KeyCmd::Unsupported,
-            },
-
+            "editorFocus" => {
+                let cmd = KeyCmd::to_edit_cmd(keycmd_str);
+                if cmd == E_Cmd::Null {
+                    KeyCmd::Unsupported
+                } else {
+                    KeyCmd::Edit(cmd)
+                }
+            }
             // unreachable
             "inputFocus" | "allFocus" => KeyCmd::Null,
             _ => KeyCmd::Null,
         };
+    }
+
+    pub fn to_edit_cmd(keycmd_str: &str) -> E_Cmd {
+        match keycmd_str {
+            // Find
+            "findNext" => E_Cmd::FindNext,
+            "findBack" => E_Cmd::FindBack,
+            /*
+             * Input
+             */
+            // cursor move
+            "cursorLeft" => E_Cmd::CursorLeft,
+            "cursorRight" => E_Cmd::CursorRight,
+            "cursorUp" => E_Cmd::CursorUp,
+            "cursorDown" => E_Cmd::CursorDown,
+            "cursorRowHome" => E_Cmd::CursorRowHome,
+            "cursorRowEnd" => E_Cmd::CursorRowEnd,
+            "cursorLeftSelect" => E_Cmd::CursorLeftSelect,
+            "cursorRightSelect" => E_Cmd::CursorRightSelect,
+            "cursorUpSelect" => E_Cmd::CursorUpSelect,
+            "cursorDownSelect" => E_Cmd::CursorDownSelect,
+            "cursorRowHomeSelect" => E_Cmd::CursorRowHomeSelect,
+            "cursorRowEndSelect" => E_Cmd::CursorRowEndSelect,
+            "deleteNextChar" => E_Cmd::DelNextChar,
+            "deletePrevChar" => E_Cmd::DelPrevChar,
+            "paste" => E_Cmd::InsertStr("".to_string()),
+            "cutSelect" => E_Cmd::Cut,
+            "copySelect" => E_Cmd::Copy,
+            "undo" => E_Cmd::Undo,
+            "redo" => E_Cmd::Redo,
+            /*
+             * Editor
+             */
+            "cursorFileHome" => E_Cmd::CursorFileHome,
+            "cursorFileEnd" => E_Cmd::CursorFileEnd,
+            "cursorPageUp" => E_Cmd::CursorPageUp,
+            "cursorPageDown" => E_Cmd::CursorPageDown,
+            // select
+            "allSelect" => E_Cmd::AllSelect,
+            "boxSelectModeStart" => E_Cmd::BoxSelectMode,
+            // edit
+            "insertLine" => E_Cmd::InsertRow,
+            "formatJSON" => E_Cmd::Format(FileType::JSON),
+            "formatXML" => E_Cmd::Format(FileType::XML),
+            "formatHTML" => E_Cmd::Format(FileType::HTML),
+
+            // prompt
+            "find" => E_Cmd::Find,
+            "replace" => E_Cmd::ReplacePrompt,
+            "moveLine" => E_Cmd::MoveRow,
+            "grep" => E_Cmd::Grep,
+            // file
+            "closeFile" => E_Cmd::CloseFile,
+            "createNewFile" => E_Cmd::CreateNewFile,
+            "openFile" => E_Cmd::OpenFile(OpenFileType::Normal),
+            "encoding" => E_Cmd::Encoding,
+            "closeAllFile" => E_Cmd::CloseAllFile,
+            "saveFile" => E_Cmd::SaveFile,
+            // key macro
+            "startEndRecordKey" => E_Cmd::StartEndRecordKey,
+            "execRecordKey" => E_Cmd::ExecRecordKey,
+            // mouse
+            "mouseOpeSwitch" => E_Cmd::MouseModeSwitch,
+            // menu
+            "help" => E_Cmd::Help,
+            "openMenuFile" => E_Cmd::OpenMenuFile,
+            "openMenuConvert" => E_Cmd::OpenMenuConvert,
+            "openMenuEdit" => E_Cmd::OpenMenuEdit,
+            "openMenuSearch" => E_Cmd::OpenMenuSearch,
+            // mode
+            "cancelMode" => E_Cmd::CancelState,
+            // ContextMenu
+            "contextMenu" => E_Cmd::CtxtMenu(USIZE_UNDEFINED, USIZE_UNDEFINED),
+            // switchTab
+            "switchTabLeft" => E_Cmd::SwitchTabLeft,
+            "switchTabRight" => E_Cmd::SwitchTabRight,
+            // Input Complement
+            "inputComplement" => E_Cmd::InputComple,
+            /*
+             * Display
+             */
+            "scale" => E_Cmd::SwitchDispScale,
+            "rowNo" => E_Cmd::SwitchDispRowNo,
+            _ => E_Cmd::Null,
+        }
     }
 }
 
@@ -144,14 +162,21 @@ impl KeyCmd {
 pub enum KeyCmd {
     Edit(E_Cmd),
     Prom(P_Cmd),
+    MenuBar(M_Cmd),
     CtxMenu(C_Cmd),
-    HeaderBar(H_Cmd),
+    FileBar(F_Cmd),
     StatusBar(S_Cmd),
     Unsupported,
     Null,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+impl Default for KeyCmd {
+    fn default() -> Self {
+        KeyCmd::Null
+    }
+}
+
+#[derive(PartialEq, PartialOrd, Eq, Hash, Ord, Debug, Clone)]
 #[allow(non_camel_case_types)]
 pub enum P_Cmd {
     // All
@@ -168,6 +193,7 @@ pub enum P_Cmd {
     CursorRightSelect,
     CursorRowHomeSelect,
     CursorRowEndSelect,
+    MouseMove(usize, usize),
     MouseDownLeft(usize, usize),
     MouseDragLeft(usize, usize),
     MouseScrollUp,
@@ -181,16 +207,23 @@ pub enum P_Cmd {
     Undo,
     Redo,
     // other
-    TabNextFocus,
-    BackTabBackFocus,
-    EscPrompt,
-    ConfirmPrompt,
+    NextContent,
+    BackContent,
+    Cancel,
+    Confirm,
     FindCaseSensitive,
     FindRegex,
     Resize(usize, usize),
     CloseFile,
     Null,
 }
+
+impl Default for P_Cmd {
+    fn default() -> Self {
+        P_Cmd::Null
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[allow(non_camel_case_types)]
 pub enum E_Cmd {
@@ -246,7 +279,7 @@ pub enum E_Cmd {
     GrepResult,
     Encoding,
     // file
-    NewTab,
+    CreateNewFile,
     OpenFile(OpenFileType),
     CloseFile,
     CloseAllFile,
@@ -261,7 +294,6 @@ pub enum E_Cmd {
     MouseModeSwitch,
     // menu
     Help,
-    OpenMenu,
     OpenMenuFile,
     OpenMenuConvert,
     OpenMenuEdit,
@@ -279,11 +311,30 @@ pub enum E_Cmd {
     InputComple,
     // InputCompleConfirm,
     Resize(usize, usize),
+    // Display
+    SwitchDispScale,
+    SwitchDispRowNo,
     Null,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[allow(non_camel_case_types)]
+// Menubar
+pub enum M_Cmd {
+    MouseMove(usize, usize),
+    MouseDownLeft(usize, usize),
+    MenuWidget(usize, usize),
+    CursorDown,
+    CursorUp,
+    CursorRight,
+    CursorLeft,
+    Confirm,
+    Null,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[allow(non_camel_case_types)]
+// Ctx_menu
 pub enum C_Cmd {
     MouseMove(usize, usize),
     MouseDownLeft(usize, usize),
@@ -292,13 +343,14 @@ pub enum C_Cmd {
     CursorUp,
     CursorRight,
     CursorLeft,
-    CtxMenuConfirm,
+    Confirm,
     Null,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[allow(non_camel_case_types)]
-pub enum H_Cmd {
+// Filebar
+pub enum F_Cmd {
     MouseDownLeft(usize, usize),
     MouseUpLeft(usize, usize),
     MouseDragLeftUp(usize, usize),
@@ -309,6 +361,7 @@ pub enum H_Cmd {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[allow(non_camel_case_types)]
+// Statusbar
 pub enum S_Cmd {
     MouseDownLeft(usize, usize),
 }

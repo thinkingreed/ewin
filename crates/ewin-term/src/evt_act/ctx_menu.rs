@@ -1,97 +1,92 @@
 use crate::{
     ewin_com::{
         _cfg::key::{keycmd::*, keys::*},
-        _cfg::lang::lang_cfg::*,
-        def::*,
-        global::*,
-        log::*,
         model::*,
     },
     model::*,
-    tab::*,
 };
 use directories::BaseDirs;
-use ewin_window::{core::*, window::ctx_menu::*};
-use std::io::stdout;
+use ewin_cfg::{
+    global::*,
+    lang::lang_cfg::*,
+    log::*,
+    model::{default::*, modal::*},
+};
+use ewin_const::def::*;
+use ewin_editor::model::*;
+use ewin_widget::{core::*, widget::ctx_menu::*};
+use std::{cmp::min, io::stdout};
 
 impl EvtAct {
     pub fn ctrl_ctx_menu(term: &mut Terminal) -> ActType {
         Log::debug_key("EvtAct.ctrl_ctx_menu");
 
-        match term.ctx_menu.c_cmd {
+        match term.ctx_widget.c_cmd {
             C_Cmd::MouseDownLeft(y, x) => {
-                if term.ctx_menu.window.is_mouse_within_range(y, x, false) {
+                if term.ctx_widget.widget.is_mouse_within_area(y, x) {
                     return EvtAct::select_ctx_menu(term);
                 }
                 return ActType::Cancel;
             }
             C_Cmd::MouseMove(y, x) => {
-                if term.ctx_menu.window.is_mouse_within_range(y, x, false) {
-                    let child_cont_org = &term.ctx_menu.window.curt_cont.menu_vec.get(term.ctx_menu.window.parent_sel_y).and_then(|cont| cont.1.clone());
-                    term.ctx_menu.window.ctrl_mouse_move(y, x);
+                if term.ctx_widget.widget.is_mouse_within_area(y, x) {
+                    let child_cont_org = &term.ctx_widget.widget.cont.cont_vec.get(term.ctx_widget.widget.parent_sel_y).and_then(|cont| cont.1.clone());
+                    term.ctx_widget.widget.ctrl_mouse_move(y, x);
 
-                    if !term.ctx_menu.window.is_menu_change() {
+                    if !term.ctx_widget.widget.is_menu_change() {
                         return ActType::Cancel;
                     }
-                    let child_cont = &term.ctx_menu.window.curt_cont.menu_vec.get(term.ctx_menu.window.parent_sel_y).and_then(|cont| cont.1.clone());
+                    let child_cont = &term.ctx_widget.widget.cont.cont_vec.get(term.ctx_widget.widget.parent_sel_y).and_then(|cont| cont.1.clone());
 
                     // Only parent meun move || Only child meun move
-                    if child_cont_org.is_none() && child_cont.is_none() || term.ctx_menu.window.parent_sel_y == term.ctx_menu.window.parent_sel_y_org && term.ctx_menu.window.child_sel_y != USIZE_UNDEFINED {
-                        return ActType::Render(RParts::CtxMenu);
+                    if child_cont_org.is_none() && child_cont.is_none() || term.ctx_widget.widget.parent_sel_y == term.ctx_widget.widget.parent_sel_y_org && term.ctx_widget.widget.child_sel_y != USIZE_UNDEFINED {
+                        return ActType::Draw(DParts::CtxMenu);
                     } else {
-                        term.set_render_range_ctx_menu();
-                        return ActType::Render(RParts::Editor);
+                        // term.set_render_range_ctx_menu();
+                        // return ActType::Draw(DParts::Editor);
+                        return ActType::Draw(DParts::Absolute(term.ctx_widget.widget.get_disp_range_y()));
                     }
-                } else if term.ctx_menu.window.is_mouse_within_range(y, x, true) {
-                    term.ctx_menu.window.clear_select_menu();
-                    term.set_render_range_ctx_menu();
-                    return ActType::Render(RParts::Editor);
+                } else if term.ctx_widget.widget.is_mouse_area_around(y, x) {
+                    term.ctx_widget.widget.clear_select_menu();
+                    // term.set_render_range_ctx_menu();
+                    // return ActType::Draw(DParts::Editor);
+                    return ActType::Draw(DParts::Absolute(term.ctx_widget.widget.get_disp_range_y()));
                 } else {
                     return ActType::Cancel;
                 }
             }
             C_Cmd::CursorDown | C_Cmd::CursorUp | C_Cmd::CursorRight | C_Cmd::CursorLeft => {
-                match term.ctx_menu.c_cmd {
-                    C_Cmd::CursorDown => term.ctx_menu.window.cur_move(Direction::Down),
-                    C_Cmd::CursorUp => term.ctx_menu.window.cur_move(Direction::Up),
-                    C_Cmd::CursorRight => term.ctx_menu.window.cur_move(Direction::Right),
-                    C_Cmd::CursorLeft => term.ctx_menu.window.cur_move(Direction::Left),
+                match term.ctx_widget.c_cmd {
+                    C_Cmd::CursorDown => term.ctx_widget.widget.cur_move(Direction::Down),
+                    C_Cmd::CursorUp => term.ctx_widget.widget.cur_move(Direction::Up),
+                    C_Cmd::CursorRight => term.ctx_widget.widget.cur_move(Direction::Right),
+                    C_Cmd::CursorLeft => term.ctx_widget.widget.cur_move(Direction::Left),
                     _ => {}
                 }
-                term.set_render_range_ctx_menu();
-                return ActType::Render(RParts::Editor);
+                if !term.ctx_widget.widget.is_menu_change() {
+                    return ActType::Cancel;
+                }
+                return ActType::Draw(DParts::Absolute(term.ctx_widget.widget.get_disp_range_y()));
             }
             C_Cmd::CtxMenu(y, x) => {
-                EvtAct::show_init_ctx_menu(term, y, x);
-                return ActType::Render(RParts::All);
+                // let editor_row_posi = term.curt_mut().editor.row_posi;
+                term.init_ctx_menu(y, x);
+                return ActType::Draw(DParts::All);
             }
-            C_Cmd::CtxMenuConfirm => {
+            C_Cmd::Confirm => {
                 EvtAct::select_ctx_menu(term);
-                return ActType::Render(RParts::All);
+                return ActType::Draw(DParts::All);
             }
             C_Cmd::Null => return ActType::Cancel,
         }
     }
 
-    pub fn is_ctx_menu_keys(keys: &Keys, term: &mut Terminal) -> bool {
-        if term.state.is_ctx_menu {
-            let rtn = match keys {
-                Keys::Raw(Key::Left) | Keys::Raw(Key::Right) | Keys::Raw(Key::Up) | Keys::Raw(Key::Down) => true,
-                Keys::MouseMove(_, _) => true,
-                Keys::MouseDownLeft(y, x) => term.ctx_menu.window.is_mouse_within_range(*y as usize, *x as usize, false),
-                Keys::MouseDragRight(_, _) => true,
-                _ => true,
-            };
-            return rtn;
-        }
-        return false;
-    }
     pub fn select_ctx_menu(term: &mut Terminal) -> ActType {
         Log::debug_key("select_ctx_menu");
-        if let Some((ctx_menu, _)) = term.ctx_menu.window.get_curt_child() {
-            return EvtAct::check_ctx_menu_func(term, &term.ctx_menu.window.get_curt_parent().unwrap().0.name, &ctx_menu.name);
-        } else if !term.ctx_menu.window.is_exist_child_curt_parent() {
-            if let Some((parent_ctx_menu, _)) = term.ctx_menu.window.get_curt_parent() {
+        if let Some((ctx_menu, _)) = term.ctx_widget.widget.get_curt_child() {
+            return EvtAct::check_ctx_menu_func(term, &term.ctx_widget.widget.get_curt_parent().unwrap().0.name, &ctx_menu.name);
+        } else if !term.ctx_widget.widget.is_exist_child_curt_parent() {
+            if let Some((parent_ctx_menu, _)) = term.ctx_widget.widget.get_curt_parent() {
                 return EvtAct::check_ctx_menu_func(term, &parent_ctx_menu.name, "");
             }
         }
@@ -100,7 +95,7 @@ impl EvtAct {
     pub fn check_ctx_menu_func(term: &mut Terminal, parent_name: &str, child_name: &str) -> ActType {
         Log::debug_key("check_func");
 
-        let mut evt_act_type = ActType::Render(RParts::Editor);
+        let mut evt_act_type = ActType::Draw(DParts::All);
         term.clear_ctx_menu();
         if LANG_MAP.get(parent_name).is_some() {
             if &Lang::get().macros == LANG_MAP.get(parent_name).unwrap() {
@@ -109,7 +104,7 @@ impl EvtAct {
                     if full_path_str.exists() {
                         evt_act_type = Macros::exec_js_macro(term, &full_path_str.to_string_lossy().to_string());
                     } else {
-                        evt_act_type = ActType::Render(RParts::MsgBar(Lang::get().file_not_found.clone()));
+                        evt_act_type = ActType::Draw(DParts::MsgBar(Lang::get().file_not_found.clone()));
                     }
                 }
             } else if LANG_MAP.get(child_name).is_some() {
@@ -137,7 +132,7 @@ impl EvtAct {
             // format
             s if s == &Lang::get().json || s == &Lang::get().xml || s == &Lang::get().html => {
                 if let Some(err_str) = term.curt().editor.format(FileType::from_str_fmt_type(s)) {
-                    return ActType::Render(RParts::AllMsgBar(err_str));
+                    return ActType::Draw(DParts::AllMsgBar(err_str));
                 } else {
                     // highlight data reset
                     term.editor_draw_vec[term.tab_idx].clear();
@@ -164,31 +159,30 @@ impl EvtAct {
                 if Tab::prom_save_confirm(term) {
                     Terminal::exit();
                 }
-                return ActType::Render(RParts::All);
+                return ActType::Draw(DParts::All);
             }
             // close other than this tab
             s if s == &Lang::get().close_other_than_this_tab => {
                 let _ = term.close_tabs(term.tab_idx);
-                return ActType::Render(RParts::All);
+                return ActType::Draw(DParts::All);
             }
             _ => {}
         };
-        term.curt().editor.draw_range = E_DrawRange::All;
-        return ActType::Render(RParts::Editor);
+        return ActType::Draw(DParts::Editor(E_DrawRange::All));
     }
 
     pub fn set_ctx_menu_curt_term_place(term: &mut Terminal, y: usize) {
-        if term.hbar.row_posi == y {
-            term.ctx_menu.window.curt_cont = term.ctx_menu.ctx_menu_place_map[&TermPlace::HeaderBar].clone();
-        } else if term.curt().editor.row_posi <= y && y <= term.curt().editor.row_posi + term.curt().editor.row_disp_len {
+        if term.fbar.row_posi == y {
+            term.ctx_widget.widget.cont = term.ctx_widget.ctx_menu_place_map[&TermPlace::HeaderBar].clone();
+        } else if term.curt().editor.row_posi <= y && y <= term.curt().editor.row_posi + term.curt().editor.row_len {
             let place_cond = if term.curt().editor.sel.is_selected() { TermPlace::Editor(TermPlaceCond::EditorRangeSelected) } else { TermPlace::Editor(TermPlaceCond::EditorRangeNonSelected) };
-            term.ctx_menu.window.curt_cont = term.ctx_menu.ctx_menu_place_map[&place_cond].clone();
+            term.ctx_widget.widget.cont = term.ctx_widget.ctx_menu_place_map[&place_cond].clone();
         }
     }
 
     pub fn is_ctx_menu_displayed_area(term: &mut Terminal, y: usize, x: usize) -> bool {
-        if y == term.hbar.row_posi {
-            for h_file in term.hbar.file_vec.iter() {
+        if y == term.fbar.row_posi {
+            for h_file in term.fbar.file_vec.iter() {
                 if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 || h_file.close_area.0 <= x && x <= h_file.close_area.1 {
                     return true;
                 }
@@ -198,21 +192,45 @@ impl EvtAct {
         }
         return false;
     }
+}
 
-    pub fn show_init_ctx_menu(term: &mut Terminal, y: usize, x: usize) {
-        term.ctx_menu.clear();
+impl Terminal {
+    pub fn init_ctx_menu(&mut self, y: usize, x: usize) {
+        Log::debug_key("Terminal.init_ctx_menu");
+        self.ctx_widget.clear();
 
-        if EvtAct::is_ctx_menu_displayed_area(term, y, x) {
+        if EvtAct::is_ctx_menu_displayed_area(self, y, x) {
             let (y, x) = if y == USIZE_UNDEFINED {
-                (term.curt().editor.cur.y - term.curt().editor.offset_y + HEADERBAR_ROW_NUM, if term.curt().editor.state.mouse_mode == MouseMode::Normal { term.curt().editor.cur.disp_x + term.curt().editor.get_rnw_and_margin() } else { term.curt().editor.cur.disp_x })
+                (self.curt().editor.cur.y - self.curt().editor.offset_y + self.curt().editor.row_posi, if CfgEdit::get().general.editor.row_no.is_enable { self.curt().editor.cur.disp_x + self.curt().editor.get_rnw_and_margin() } else { self.curt().editor.cur.disp_x })
             } else {
                 (y, x)
             };
-            term.state.is_ctx_menu = true;
-            EvtAct::set_ctx_menu_curt_term_place(term, y);
-            term.ctx_menu.window.set_parent_disp_area(y, x);
-        } else if term.state.is_ctx_menu {
-            term.state.is_ctx_menu = false;
+            self.state.is_ctx_menu = true;
+            EvtAct::set_ctx_menu_curt_term_place(self, y);
+
+            let height = min(self.ctx_widget.widget.cont.cont_vec.len(), Editor::get_disp_row_num());
+            self.ctx_widget.widget.set_parent_disp_area(y, x, height);
+        } else if self.state.is_ctx_menu {
+            self.state.is_ctx_menu = false;
         }
+    }
+    pub fn is_ctx_menu_keys(&mut self, keys: &Keys) -> bool {
+        if self.state.is_ctx_menu {
+            let rtn = match keys {
+                Keys::Raw(Key::Left) | Keys::Raw(Key::Right) | Keys::Raw(Key::Up) | Keys::Raw(Key::Down) => true,
+                Keys::MouseMove(_, _) => true,
+                Keys::MouseDownLeft(y, x) => self.ctx_widget.widget.is_mouse_within_area(*y as usize, *x as usize),
+                Keys::MouseDragRight(_, _) => true,
+                _ => true,
+            };
+            return rtn;
+        }
+        return false;
+    }
+    pub fn clear_ctx_menu(&mut self) {
+        Log::debug_key("clear_ctx_menu");
+        self.state.is_ctx_menu = false;
+        self.state.is_ctx_menu_hide_draw = true;
+        self.ctx_widget.clear();
     }
 }

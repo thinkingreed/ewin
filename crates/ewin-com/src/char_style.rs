@@ -1,7 +1,7 @@
-use crate::{
-    _cfg::model::default::*,
+use crate::model::Cell;
+use ewin_cfg::{
     colors::{Color, Rgb},
-    model::Cell,
+    model::default::Cfg,
 };
 
 use crossterm::style::{Color as CrosstermColor, SetBackgroundColor, SetForegroundColor};
@@ -16,16 +16,6 @@ pub struct CharStyle {
 impl fmt::Display for CharStyle {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "CharStyle fg:{:?}, bg:{:?},", self.fg, self.bg,)
-    }
-}
-impl From<syntect::highlighting::Color> for Color {
-    fn from(scolor: syntect::highlighting::Color) -> Self {
-        Self { rgb: Rgb { r: scolor.r, g: scolor.g, b: scolor.b } }
-    }
-}
-impl From<Color> for CrosstermColor {
-    fn from(c: Color) -> crossterm::style::Color {
-        crossterm::style::Color::Rgb { r: c.rgb.r, g: c.rgb.g, b: c.rgb.b }
     }
 }
 

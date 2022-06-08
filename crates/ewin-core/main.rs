@@ -1,16 +1,14 @@
 #![allow(clippy::needless_return, clippy::iter_nth_zero)]
-
 use clap::Parser;
 use crossbeam::channel::Sender;
 use crossterm::event::{Event::Mouse, EventStream, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
-use ewin_com::{
-    _cfg::{key::keycmd::*, lang::lang_cfg::*, model::default::*},
+use ewin_cfg::{
     global::*,
+    lang::lang_cfg::*,
     log::*,
-    model::*,
-    util::*,
+    model::{default::*, modal::*},
 };
-
+use ewin_com::{_cfg::key::keycmd::*, global::*, model::*, util::*};
 use ewin_term::model::*;
 use futures::{future::FutureExt, StreamExt};
 use std::{io::*, panic, time::Duration};
@@ -29,7 +27,7 @@ async fn main() {
         default_hook(panic_info);
     }));
 
-    let args = AppArgs::new(&Args::parse());
+    let args = AppArgs::new(Args::parse());
     let err_str = Cfg::init(&args);
     if !err_str.is_empty() {
         //   Log::info_s(&err_str);
@@ -50,8 +48,8 @@ async fn main() {
         println!("{}", &Lang::get().terminal_size_small);
         return;
     }
-    let out = stdout();
-    let mut out = BufWriter::new(out.lock());
+    // let out = stdout();
+    let mut out = BufWriter::new(stdout().lock());
 
     Terminal::init();
     let mut term = Terminal::new();
@@ -64,7 +62,6 @@ async fn main() {
     // so it will be executed synchronously.
     let (tx_grep, rx_grep) = std::sync::mpsc::channel();
     let _ = TX_JOB.set(tokio::sync::Mutex::new(std::sync::mpsc::Sender::clone(&tx_grep)));
-
     let tx_watch = Sender::clone(&tx);
 
     // It also reads a normal Event to support cancellation.
@@ -95,7 +92,7 @@ async fn main() {
                 }
                 JobType::Watch => {
                     if let Some(job_watch) = job.job_watch {
-                        if EvtAct::draw_watch_result(&mut out, &mut term) {
+                        if EvtAct::draw_watch_file(&mut out, &mut term) {
                             WATCH_INFO.get().unwrap().try_lock().map(|mut watch_info| watch_info.history_set.remove(&(job_watch.fullpath_str, job_watch.unixtime_str))).unwrap();
                         }
                     }
@@ -103,7 +100,7 @@ async fn main() {
                 JobType::GrepResult => {}
             }
         }
-        if let Ok((job, _)) = rx_grep.recv_timeout(Duration::from_millis(16)) {
+        if let Ok(job) = rx_grep.recv_timeout(Duration::from_millis(16)) {
             if job.job_type == JobType::GrepResult {
                 EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap());
             }

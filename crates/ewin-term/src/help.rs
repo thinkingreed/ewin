@@ -1,8 +1,10 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, colors::*, def::*, log::*, model::*, util::*},
+    ewin_com::{_cfg::key::keycmd::*, model::*, util::*},
     model::*,
 };
 use crossterm::{cursor::*, terminal::*};
+use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
+use ewin_const::def::*;
 
 impl Help {
     pub const DISP_ROW_NUM: usize = 5;
@@ -10,10 +12,6 @@ impl Help {
     const KEY_WIDTH_WIDE: usize = 9;
     const KEY_FUNC_WIDTH: usize = 9;
     const KEY_FUNC_WIDTH_WIDE: usize = 14;
-
-    pub fn new() -> Self {
-        Help { ..Help::default() }
-    }
 
     pub fn disp_toggle(term: &mut Terminal) {
         term.help.mode = match term.help.mode {
@@ -25,8 +23,8 @@ impl Help {
         let tab = term.tabs.get_mut(term.tab_idx).unwrap();
         if term.help.mode == HelpMode::Show {
             // Cursor moves out of help display area
-            if tab.editor.cur.y - tab.editor.offset_y > tab.editor.row_disp_len - 1 {
-                tab.editor.cur.y = tab.editor.offset_y + tab.editor.row_disp_len - 1;
+            if tab.editor.cur.y - tab.editor.offset_y > tab.editor.row_len - 1 {
+                tab.editor.cur.y = tab.editor.offset_y + tab.editor.row_len - 1;
                 tab.editor.cur.x = 0;
                 tab.editor.cur.disp_x = 0;
             }
@@ -34,7 +32,7 @@ impl Help {
         tab.editor.draw_range = E_DrawRange::All;
     }
 
-    pub fn render(&mut self, str_vec: &mut Vec<String>) {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         Log::info_key("Help.draw");
 
         if self.mode == HelpMode::None {
@@ -69,7 +67,7 @@ impl Help {
             self.set_key_bind_ex(&mut vec, key_select_str, &Lang::get().range_select, key_select_str.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (key_select_str.chars().count() + 1));
             // self.set_key_bind_ex(&mut vec, KEY_MOUSE_SWITCH, &Lang::get().mouse_switch, KEY_MOUSE_SWITCH.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (KEY_MOUSE_SWITCH.chars().count() + 1));
             self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::MouseModeSwitch)), &Lang::get().mouse_switch);
-            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::OpenMenu)), &Lang::get().menu);
+            //  self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::OpenMenu)), &Lang::get().menu);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 5th line
@@ -140,6 +138,9 @@ impl Help {
         // Log::ep("key_bind", &key_bind.clone());
 
         vec.push(key_bind);
+    }
+    pub fn new() -> Self {
+        Help { ..Help::default() }
     }
 }
 

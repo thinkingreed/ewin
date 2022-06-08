@@ -1,11 +1,8 @@
 use crate::{
-    ewin_com::{
-        _cfg::{key::keycmd::*, lang::lang_cfg::*},
-        log::*,
-        model::*,
-    },
+    ewin_com::{_cfg::key::keycmd::*, model::*},
     model::*,
 };
+use ewin_cfg::log::*;
 use std::{
     cmp::{max, min},
     collections::BTreeSet,
@@ -26,20 +23,20 @@ impl Editor {
         Log::debug("self.search.ranges", &self.search);
         Log::debug("self.search.ranges_org", &self.search_org);
         Log::debug("self.buf.len_rows()", &self.buf.len_rows());
-        Log::debug("self.row_len_org", &self.len_rows_org);
+        Log::debug("self.row_len_org", &self.buf_rows_org);
 
         Log::debug("self.change_info.restayle_row before", &self.change_info.restayle_row_set);
 
         self.draw_range = if matches!(self.e_cmd, E_Cmd::Resize(_, _))
         // enable_syntax_highlight edit
-      ||  (Editor::is_edit(&self.e_cmd, true) && self.is_enable_syntax_highlight)
+      ||  (self.cmd_config.is_edit && self.is_enable_syntax_highlight)
         || self.rnw_org != self.get_rnw() ||  self.offset_x_org != self.offset_x 
              // All draw at the end of key record
              || self.state.key_macro.is_exec_end
              || self.scrl_h.is_show_org != self.scrl_h.is_show
-             || !Editor::is_edit(&self.e_cmd, true) && !self.sel.is_selected() && self.sel_org.is_selected()
+             || !self.cmd_config.is_edit && !self.sel.is_selected() && self.sel_org.is_selected()
              || self.search != self.search_org
-              {
+        {
             E_DrawRange::All
         } else if (matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftLeft(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftRight(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _))) && self.scrl_v.is_enable {
             if self.offset_y_org == self.offset_y && self.scrl_v.row_posi_org == self.scrl_v.row_posi {
@@ -48,13 +45,13 @@ impl Editor {
                 E_DrawRange::All
             }
         } else if self.offset_y_org != self.offset_y {
-            if (self.offset_y_org as isize - self.offset_y as isize).abs() as usize > self.row_disp_len {
+            if (self.offset_y_org as isize - self.offset_y as isize).abs() as usize > self.row_len {
                 E_DrawRange::All
             } else {
                 match self.e_cmd {
                     E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::MouseDragLeftUp(_, _) => E_DrawRange::ScrollUp(self.offset_y, self.offset_y + Editor::SCROLL_UP_DOWN_MARGIN + 1),
                     E_Cmd::CursorDown | E_Cmd::MouseScrollDown | E_Cmd::MouseDragLeftDown(_, _) => {
-                        let y = min(self.buf.len_rows() - 1, self.offset_y + self.row_disp_len - 1);
+                        let y = min(self.buf.len_rows() - 1, self.offset_y + self.row_len - 1);
                         E_DrawRange::ScrollDown(y - Editor::SCROLL_UP_DOWN_MARGIN - 1, y)
                     }
                     _ => E_DrawRange::All,
@@ -78,7 +75,7 @@ impl Editor {
                     }
                 }
                 E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Cut => {
-                    if self.buf.len_rows() != self.len_rows_org {
+                    if self.buf.len_rows() != self.buf_rows_org {
                         // E_DrawRange::After(min(self.cur.y, self.cur_org.y))
                         E_DrawRange::All
                     } else {
@@ -97,7 +94,7 @@ impl Editor {
                     }
                 }
                 E_Cmd::MouseDownLeft(y, x) if self.is_input_imple_mode(true) => {
-                    if !self.input_comple.window.is_mouse_within_range(*y, *x, false) {
+                    if !self.input_comple.widget.is_mouse_within_area(*y, *x) {
                         E_DrawRange::All
                     } else {
                         self.clear_input_comple();
@@ -137,16 +134,13 @@ impl Editor {
                     }
                 }
                 E_Cmd::MouseScrollDown | E_Cmd::MouseScrollUp => {
-                    if self.offset_y == 0 || self.offset_y + self.row_disp_len >= self.buf.len_rows() - 1 {
+                    if self.offset_y == 0 || self.offset_y + self.row_len >= self.buf.len_rows() - 1 {
                         E_DrawRange::Not
                     } else {
                         E_DrawRange::All
                     }
                 }
-                E_Cmd::AllSelect => {
-                    //  self.change_info.restayle_row_set = self.get_row_in_screen();
-                    E_DrawRange::All
-                }
+                E_Cmd::AllSelect => E_DrawRange::All,
                 E_Cmd::Undo | E_Cmd::Redo | E_Cmd::CursorFileHome | E_Cmd::CursorFileEnd | E_Cmd::ReplaceExec(_, _, _) | E_Cmd::BoxSelectMode => E_DrawRange::All,
                 E_Cmd::FindNext | E_Cmd::FindBack => {
                     Log::debug_s("E_Cmd::FindNext FindBack");
@@ -179,6 +173,17 @@ impl Editor {
                 _ => E_DrawRange::Not,
             }
         };
+
+        Log::debug("self.search", &self.search);
+        Log::debug("self.search_org", &self.search_org);
+        Log::debug("self.change_info.restayle_row after", &self.change_info.restayle_row_set);
+        Log::debug("self.draw_range After setting", &self.draw_range);
+    }
+
+    pub fn get_draw_parts(&mut self) -> DParts {
+        Log::debug_s("editor.set_draw_parts");
+        self.set_draw_range();
+        // set change_info
         if self.change_info.change_type != EditerChangeType::Edit {
             if let E_DrawRange::TargetRange(sy, ey) = self.draw_range {
                 self.change_info.restayle_row_set.append(&mut (sy..=ey).collect::<BTreeSet<usize>>());
@@ -186,56 +191,29 @@ impl Editor {
             if let E_DrawRange::All = self.draw_range {
                 self.change_info.restayle_row_set = (0..self.buf.len_rows()).collect::<BTreeSet<usize>>();
             }
-          
-
-    
         }
-       
-        Log::debug("self.search", &self.search);
-        Log::debug("self.search_org", &self.search_org);
 
-        Log::debug("self.change_info.restayle_row after", &self.change_info.restayle_row_set);
-
-        Log::debug("self.draw_range After setting", &self.draw_range);
-    }
-
-    /*
-    pub fn get_input_comple_draw_range_y(&mut self) -> E_DrawRange {
-        let (offset_y, editor_row_len) = (self.offset_y, self.row_disp_len);
-        self.input_comple.window.get_draw_range_y(self.offset_y, HEADERBAR_ROW_NUM, self.row_disp_len)
-        let draw_range_y_opt = ;
-        if let Some(sy, ey) = draw_range_y_opt {
-            E_DrawRange::TargetRange(min(sy, self.cur.y), max(ey, self.cur.y))
-        } else {
-            E_DrawRange::Not
-        }
-    }
-     */
-
-    pub fn set_draw_parts(&mut self, keycmd: &KeyCmd) -> RParts {
-        Log::debug_s("editor.set_draw_parts");
-
-        let parts = match keycmd {
-            KeyCmd::Unsupported => RParts::MsgBar(Lang::get().unsupported_operation.to_string()),
-            KeyCmd::Edit(e_keycmd) => match e_keycmd {
-                E_Cmd::ReplacePrompt | E_Cmd::Encoding | E_Cmd::OpenFile(_) | E_Cmd::Find | E_Cmd::MoveRow | E_Cmd::Grep | E_Cmd::OpenMenu | E_Cmd::OpenMenuFile | E_Cmd::OpenMenuConvert | E_Cmd::OpenMenuEdit | E_Cmd::OpenMenuSearch | E_Cmd::OpenMenuMacro => RParts::Prompt,
-                E_Cmd::CloseFile |   E_Cmd::NewTab 
+        let parts = match self.e_cmd {
+          //  KeyCmd::Unsupported => DParts::MsgBar(Lang::get().unsupported_operation.to_string()),
+                E_Cmd::OpenMenuFile | E_Cmd::OpenMenuConvert | E_Cmd::OpenMenuEdit | E_Cmd::OpenMenuSearch | E_Cmd::OpenMenuMacro => DParts::All,
+                E_Cmd::CloseFile |   E_Cmd::CreateNewFile 
                 // | E_Cmd::SaveFile 
-                | E_Cmd::Resize(_,_) | E_Cmd::MouseModeSwitch | E_Cmd::Help | E_Cmd::Null => RParts::All,
+                | E_Cmd::Resize(_,_) | E_Cmd::MouseModeSwitch | E_Cmd::Help | E_Cmd::Null => DParts::All,
                  _ => {
                     if self.state.is_change_changed() {
                         Log::debug("self.state.is_change_changed()",&self.state.is_change_changed());
-                        RParts::All
+                        DParts::All
                     } else {
                         match self.draw_range {
-                            E_DrawRange::ScrollDown(_, _) | E_DrawRange::ScrollUp(_, _) => RParts::ScrollUpDown(ScrollUpDownType::Normal),
-                            _ => RParts::Editor,
+                            E_DrawRange::ScrollDown(_, _) | E_DrawRange::ScrollUp(_, _) => DParts::ScrollUpDown(ScrollUpDownType::Normal),
+                            _ =>
+                                DParts::Editor(self.draw_range),
+                            
                         }
                     }
                 }
-            },
-            _ => RParts::Editor,
-        };
+            
+         };
         Log::debug("editor.set_draw_parts after", &parts);
         return parts;
     }

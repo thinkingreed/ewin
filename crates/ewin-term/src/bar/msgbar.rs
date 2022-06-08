@@ -1,9 +1,6 @@
-use crate::{
-    ewin_com::{colors::*, log::*, util::*},
-    model::MsgType,
-    model::*,
-};
+use crate::{ewin_com::util::*, model::MsgType, model::*};
 use crossterm::{cursor::*, terminal::*};
+use ewin_cfg::{colors::*, log::*};
 use std::io::Write;
 
 impl MsgBar {
@@ -24,7 +21,7 @@ impl MsgBar {
         self.msg_keyrecord = String::new();
     }
 
-    pub fn render(&mut self, str_vec: &mut Vec<String>) {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         Log::info_key("MsgBar.draw");
 
         if !self.msg_readonly.is_empty() || !self.msg_keyrecord.is_empty() || !self.msg.str.is_empty() {
@@ -46,7 +43,7 @@ impl MsgBar {
         Log::debug_key("MsgBar.draw_only");
 
         let mut v: Vec<String> = vec![];
-        self.render(&mut v);
+        self.draw(&mut v);
         let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();
     }
@@ -97,7 +94,8 @@ impl MsgBar {
         return self.msg_keyrecord_org != self.msg_keyrecord;
     }
 
-    pub fn new() -> Self {
-        MsgBar { ..MsgBar::default() }
+    pub fn set_org_state(&mut self) {
+        self.msg_org = self.msg.clone();
+        self.msg_keyrecord_org = self.msg_keyrecord.clone();
     }
 }

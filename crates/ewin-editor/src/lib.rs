@@ -8,9 +8,15 @@ pub mod view {
     pub mod buf_cache;
     pub mod draw;
     pub mod draw_range;
+    pub mod scale;
 }
 pub mod prompt {
     pub mod grep_result;
+}
+pub mod proc {
+    pub mod proc_base;
+    pub mod proc_config;
+    pub mod proc_edit;
 }
 pub mod scrollbar {
     pub mod horizontal;
@@ -25,8 +31,6 @@ pub mod convert;
 pub mod editor;
 pub mod input_comple;
 pub mod model;
-pub mod proc;
-pub mod proc_edit;
 pub mod scroll;
 pub mod search;
 pub mod key {

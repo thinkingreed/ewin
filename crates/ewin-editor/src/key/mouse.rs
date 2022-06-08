@@ -1,14 +1,12 @@
 use crate::{
     ewin_com::{
         _cfg::key::{keycmd::*, keys::*},
-        _cfg::model::default::*,
-        def::*,
-        log::*,
         model::*,
         util::*,
     },
     model::*,
 };
+use ewin_cfg::{log::*, model::default::*};
 use std::cmp::min;
 
 impl Editor {
@@ -31,7 +29,10 @@ impl Editor {
         };
         Log::debug("y 111", &y);
         Log::debug("x", &x);
-        Log::debug("self.sel 000", &self.sel);
+        Log::debug("self.row_posi + self.row_len", &(self.row_posi + self.row_len));
+        Log::debug("self.row_posi", &self.row_posi);
+        Log::debug("self.scrl_v.is_show", &self.scrl_v.is_show);
+        Log::debug("self.scrl_v.is_enable", &self.scrl_v.is_enable);
 
         self.sel.mode = match self.e_cmd {
             E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) => SelMode::BoxSelect,
@@ -39,7 +40,7 @@ impl Editor {
         };
 
         // scrlbar_v
-        if self.scrl_v.is_show && self.row_posi <= y && y <= self.row_posi + self.row_disp_len {
+        if self.scrl_v.is_show && self.row_posi <= y && y <= self.row_posi + self.row_len {
             match self.e_cmd {
                 E_Cmd::MouseDownLeft(y, x) if self.get_rnw_and_margin() + self.col_len <= x => {
                     self.set_scrlbar_v_posi(y);
@@ -87,13 +88,15 @@ impl Editor {
                     if self.cur.y > 0 {
                         y = self.cur.y - 1;
                     }
-                } else if self.buf.len_rows() < y + self.offset_y - HEADERBAR_ROW_NUM {
+                } else if y + self.offset_y <= self.row_posi {
+                    y = 0;
+                } else if self.buf.len_rows() < y + self.offset_y - self.row_posi {
                     y = self.buf.len_rows() - 1;
-                } else if self.row_posi + self.row_disp_len + STATUSBAR_ROW_NUM == y {
-                    y = self.offset_y + self.row_disp_len;
+                } else if get_term_size().1 == y {
+                    y = self.offset_y + self.row_len;
                 } else {
-                    if y >= HEADERBAR_ROW_NUM {
-                        y -= HEADERBAR_ROW_NUM;
+                    if y >= self.row_posi {
+                        y -= self.row_posi;
                     }
                     y = min(y + self.offset_y, self.buf.len_rows() - 1)
                 }

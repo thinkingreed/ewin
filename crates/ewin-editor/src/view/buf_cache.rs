@@ -1,7 +1,9 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*,_cfg::model::default::*, char_style::*, def::*, log::*, model::*, util::*},
+    ewin_com::{_cfg::key::keycmd::*, char_style::*, model::*, util::*},
     model::*,
 };
+use ewin_cfg::{log::*, model::default::*};
+use ewin_const::def::*;
 use std::cmp::{max, min};
 use syntect::highlighting::{HighlightIterator, HighlightState, Highlighter, Style};
 use syntect::parsing::{ParseState, ScopeStack};
@@ -21,21 +23,19 @@ impl EditorDraw {
             }
         }
         Log::debug("draw_cache.d_range", &editor.draw_range);
-        Log::debug("editor.buf.len_rows() - 1", &(editor.buf.len_rows() - 1));
-        Log::debug("editor.cur_org.y", &editor.cur_org.y);
 
         match editor.draw_range {
             E_DrawRange::After(sy) => {
                 self.sy = sy;
-                self.ey = min(editor.offset_y + editor.row_disp_len - 1, editor.buf.len_rows() - 1);
+                self.ey = min(editor.offset_y + editor.row_len - 1, editor.buf.len_rows() - 1);
             }
             E_DrawRange::TargetRange(sy, ey) | E_DrawRange::ScrollDown(sy, ey) | E_DrawRange::ScrollUp(sy, ey) => {
                 self.sy = max(sy, editor.offset_y);
-                self.ey = min(ey, min(editor.offset_y + editor.row_disp_len - 1, editor.buf.len_rows() - 1));
+                self.ey = min(ey, min(editor.offset_y + editor.row_len - 1, editor.buf.len_rows() - 1));
             }
             E_DrawRange::Init | E_DrawRange::All | E_DrawRange::Targetpoint => {
                 self.sy = editor.offset_y;
-                self.ey = if editor.row_disp_len == 0 { 0 } else { min(editor.offset_y + editor.row_disp_len - 1, editor.buf.len_rows() - 1) };
+                self.ey = if editor.row_len == 0 { 0 } else { min(editor.offset_y + editor.row_len - 1, editor.buf.len_rows() - 1) };
             }
             _ => {}
         }
@@ -98,15 +98,13 @@ impl EditorDraw {
         }
 
         for y in sy..=ey {
-            Log::debug("yyy", &y);
             let mut row_vec = editor.buf.char_vec_row(y);
 
-            if y == editor.buf.len_rows() - 1 && editor.state.mouse_mode == MouseMode::Normal {
+            if y == editor.buf.len_rows() - 1 && editor.state.mouse == Mouse::Enable {
                 row_vec.append(&mut EOF_STR.chars().collect::<Vec<char>>());
             }
             let sx_ex_range_opt = EditorDraw::get_draw_x_range(&row_vec, editor.offset_disp_x, editor.col_len);
 
-           
             if editor.is_enable_syntax_highlight {
                 self.set_regions_highlight(editor, y, row_vec, sx_ex_range_opt, &highlighter);
             } else {
@@ -115,7 +113,7 @@ impl EditorDraw {
         }
 
         let mut change_style_vec: Vec<usize> = vec![];
-      
+
         // let (sy, ey) = if editor.is_enable_syntax_highlight && (self.syntax_state_vec.is_empty() || Editor::is_edit(&editor.e_cmd, true)) { (editor.offset_y, min(editor.offset_y + editor.row_disp_len, editor.buf.len_rows() - 1)) } else { (self.sy, self.ey) };
 
         match editor.draw_range {
@@ -139,7 +137,7 @@ impl EditorDraw {
         Log::debug("self.change_style_vec", &self.change_row_vec);
     }
 
-    fn set_regions(&mut self, editor: &Editor, y: usize, row_vec: &mut Vec<char>, sx_ex_range_opt: Option<(DrawRangX, DrawRangX)>) {
+    fn set_regions(&mut self, editor: &Editor, y: usize, row_vec: &mut [char], sx_ex_range_opt: Option<(DrawRangX, DrawRangX)>) {
         let mut cells: Vec<Cell> = vec![];
         let (mut x, mut width) = (0, 0);
         let mut style_org = CharStyle::none();
@@ -149,10 +147,8 @@ impl EditorDraw {
             let (sx, ex) = (sx_range.get_x(), ex_range.get_x());
 
             if !self.cells_to_all[y].is_empty() && self.cells_to_all[y].len() >= ex {
-              
                 self.cells_to.insert(y, self.cells_to_all[y][sx..ex].to_vec());
             } else {
-             
                 for c in row_vec[sx..ex].iter() {
                     width += match *c {
                         NEW_LINE_LF | NEW_LINE_CR => 1,
@@ -187,7 +183,6 @@ impl EditorDraw {
             let mut parse;
 
             if !self.cells_to_all[y].is_empty() && self.cells_to_all[y].len() >= ex {
-        
                 self.cells_to.insert(y, self.cells_to_all[y][sx..ex].to_vec());
             } else {
                 if self.style_vecs[y].is_empty() {
@@ -201,7 +196,7 @@ impl EditorDraw {
                         parse = syntax_state.parse_state;
                     }
                     let mut highlight_state = HighlightState::new(highlighter, scope);
-                    let ops = parse.parse_line(&row, &CfgSyntax::get().syntax.syntax_set);
+                    let ops = parse.parse_line(&row, &CfgSyntax::get().syntax.syntax_set).unwrap();
                     let iter = HighlightIterator::new(&mut highlight_state, &ops[..], &row, highlighter);
                     self.style_vecs[y] = iter.map(|(style, str)| (style, str.to_string())).collect::<Vec<(Style, String)>>();
 
@@ -230,7 +225,7 @@ impl EditorDraw {
                         x += 1;
                     }
                 }
-              
+
                 self.cells_to.insert(y, cells[sx_range.get_x()..ex_range.get_x()].to_vec());
                 self.cells_to_all[y] = cells;
             }
@@ -358,15 +353,6 @@ impl EditorDraw {
         if s_disp_opt.is_some() && e_disp_opt.is_none() {
             e_disp_opt = Some(DrawRangX::Range(cur_x, false));
         }
-
-        /*
-        if let Some(s_disp) = s_disp_opt{
-            char_vec.insert(s_disp.get_x(), column_alignment_space_char);
-        }
-        if let Some(e_disp) = e_disp_opt{
-            char_vec.insert(e_disp.get_x(), column_alignment_space_char);
-        }
-         */
 
         return if let (Some(s_disp), Some(e_disp)) = (s_disp_opt, e_disp_opt) { Some((s_disp, e_disp)) } else { None };
     }

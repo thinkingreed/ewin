@@ -1,5 +1,7 @@
-use crate::{_cfg::key::keys::*, def::*, log::*, model::*, util::*};
+use crate::{_cfg::key::keys::*, model::*, util::*};
 use chrono::prelude::Local;
+use ewin_cfg::log::Log;
+use ewin_const::def::MULTI_CLICK_MILLISECONDS;
 
 impl History {
     pub fn pop_redo(&mut self) -> Option<EvtProc> {
@@ -14,7 +16,7 @@ impl History {
         if self.undo_vec.is_empty() {
             None
         } else {
-            Some(self.undo_vec[self.undo_vec.len() - 1].clone())
+            Some(self.undo_vec.last().unwrap().clone())
         }
     }
     pub fn len_undo(&self) -> usize {
@@ -25,7 +27,7 @@ impl History {
         if self.redo_vec.is_empty() {
             None
         } else {
-            Some(self.redo_vec[self.redo_vec.len() - 1].clone())
+            Some(self.redo_vec.last().unwrap().clone())
         }
     }
 

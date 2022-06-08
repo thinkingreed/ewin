@@ -1,7 +1,9 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, _cfg::model::default::*, def::*, log::*, model::*},
+    ewin_com::{_cfg::key::keycmd::*, model::*},
     model::*,
 };
+use ewin_cfg::{log::*, model::default::*};
+use ewin_const::def::*;
 use regex::RegexBuilder;
 use ropey::{
     iter::{Chars, Lines},
@@ -232,15 +234,6 @@ impl TextBuffer {
 
         rtn_set
     }
-    /*
-    pub fn replace_onece(&mut self, replace_str: &str, sel: &SelRange) -> usize {
-        let i_s = self.text.line_to_char(sel.sy) + sel.sx;
-        let i_e = self.text.line_to_char(sel.ey) + sel.ex;
-        let mut set = BTreeSet::new();
-        set.insert((i_s, i_e));
-        let end_char_idx = self.replace(replace_str, &set);
-        return end_char_idx;
-    } */
 
     pub fn replace(&mut self, search_str: &str, replace_str: &str, map: &BTreeSet<usize>) -> usize {
         Log::debug("search_str", &search_str);
@@ -250,7 +243,7 @@ impl TextBuffer {
         let mut idx_diff: isize = 0;
         let mut end_char_idx: usize = 0;
         let replace_str_len = replace_str.chars().count();
-        let cfg_search = Cfg::get_edit_search();
+        let cfg_search = CfgEdit::get_search();
 
         for (i, s_idx) in map.iter().enumerate() {
             let start = if cfg_search.regex { self.text.byte_to_char((*s_idx as isize + idx_diff) as usize) } else { (*s_idx as isize + idx_diff) as usize };

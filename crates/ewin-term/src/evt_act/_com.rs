@@ -1,16 +1,18 @@
 use crate::{
-    bar::headerbar::*,
+    bar::filebar::*,
     ewin_com::{
         _cfg::key::{keycmd::*, keys::*, keywhen::*},
-        _cfg::lang::lang_cfg::*,
         global::*,
-        log::*,
         model::*,
     },
     model::*,
 };
-use ewin_window::core::*;
-use std::io::Write;
+use crossterm::{cursor::MoveTo, execute};
+use ewin_cfg::{lang::lang_cfg::*, log::*};
+use ewin_com::util::*;
+use ewin_const::def::*;
+use ewin_widget::core::*;
+use std::io::{stdout, Write};
 
 impl EvtAct {
     pub fn draw<T: Write>(term: &mut Terminal, out: &mut T, act_type: &ActType) {
@@ -18,11 +20,12 @@ impl EvtAct {
         Log::debug("EvtAct::draw.evt_act_type", &act_type);
         Log::debug("EvtAct::draw.term.draw_parts_org", &term.draw_parts_org);
 
-        if let ActType::Render(draw_parts) = act_type {
+        if let ActType::Draw(draw_parts) = act_type {
             // Judge whether to delete ctx_menu
-            let draw_parts = if term.state.is_ctx_menu_hide_draw {
+            let draw_parts = if term.state.is_ctx_menu_hide_draw || term.state.is_menuwidget_hide_draw {
                 term.state.is_ctx_menu_hide_draw = false;
-                &RParts::All
+                term.state.is_menuwidget_hide_draw = false;
+                &DParts::All
             } else {
                 draw_parts
             };
@@ -30,46 +33,74 @@ impl EvtAct {
             Log::debug("EvtAct::draw_parts", &draw_parts);
 
             match &draw_parts {
-                RParts::None => {}
-                RParts::MsgBar(msg) | RParts::AllMsgBar(msg) => {
+                DParts::None => {}
+                DParts::MsgBar(msg) | DParts::AllMsgBar(msg) => {
                     if msg == &Lang::get().key_recording {
-                        term.curt().mbar.set_keyrecord(msg);
+                        term.curt().msgbar.set_keyrecord(msg);
                     } else {
-                        term.curt().mbar.set_err(msg);
+                        term.curt().msgbar.set_err(msg);
                     }
-                    if let RParts::MsgBar(_) = draw_parts {
-                        term.curt().mbar.draw_only(out);
-                    } else if let RParts::AllMsgBar(_) = draw_parts {
-                        term.render(out, &RParts::All);
+                    if let DParts::MsgBar(_) = draw_parts {
+                        term.curt().msgbar.draw_only(out);
+                    } else if let DParts::AllMsgBar(_) = draw_parts {
+                        term.draw(out, &DParts::All);
                     }
                 }
-                RParts::HeaderBar => HeaderBar::draw_only(term, out),
-                RParts::Prompt => EvtAct::draw_prompt(out, term),
-                RParts::CtxMenu => term.ctx_menu.draw_only(out),
-                RParts::All | RParts::Editor | RParts::ScrollUpDown(_) => {
-                    if let RParts::MsgBar(_) | RParts::AllMsgBar(_) = &term.draw_parts_org {
+                DParts::MenuBar => term.menubar.draw_only(out),
+                DParts::FileBar => FileBar::draw_only(term, out),
+                DParts::Prompt => EvtAct::draw_prompt(term, out),
+                DParts::MenuWidget => term.menubar.widget.draw_only(out),
+                DParts::InputComple => term.curt().editor.input_comple.draw_only(out),
+                DParts::CtxMenu => term.ctx_widget.draw_only(out),
+                DParts::All | DParts::ScrollUpDown(_) => {
+                    if let DParts::MsgBar(_) | DParts::AllMsgBar(_) = &term.draw_parts_org {
                         term.curt().editor.draw_range = E_DrawRange::All;
                     }
-                    term.render(out, draw_parts);
-                } /*
-                  RParts::EditorInputImple => {
-                      term.curt().editor.input_comple.window.draw_only(out, &Colors::get_ctx_menu_fg_bg_sel(), &Colors::get_ctx_menu_fg_bg_non_sel());
-                  }
-                   */
+                    term.draw(out, draw_parts);
+                }
+                DParts::Editor(_) => term.draw(out, draw_parts),
+                DParts::Absolute(range) => {
+                    Log::debug("DParts::Absolute.range", &range);
+                    // FileBar
+                    if range.contains(&term.fbar.row_posi) {
+                        FileBar::draw_only(term, out);
+                    };
+                    // Editor
+                    if term.curt().editor.get_disp_range_absolute().contains(&range.end) {
+                        let row_posi = term.curt().editor.row_posi;
+                        let offset_y = term.curt().editor.offset_y;
+                        let sy = if range.start < row_posi { 0 } else { range.start - row_posi + offset_y };
+                        term.draw(out, &DParts::Editor(E_DrawRange::TargetRange(sy, range.end + row_posi + offset_y)));
+                    }
+                    // Menubar
+                    if range.contains(&term.menubar.row_posi) {
+                        term.menubar.draw_only(out);
+                    };
+                    // MenuWidget
+                    if range.contains(&term.menubar.widget.curt.disp_sy) {
+                        term.menubar.widget.draw_only(out);
+                    };
+                    // InputComple
+                    if range.contains(&term.curt().editor.input_comple.widget.disp_sy) {
+                        term.curt().editor.input_comple.draw_only(out);
+                    };
+                }
             };
             term.draw_parts_org = draw_parts.clone();
         }
     }
+
     pub fn check_next_process<T: Write>(out: &mut T, term: &mut Terminal, act_type: ActType) -> Option<bool> {
         return match &act_type {
             ActType::Next => None,
-            ActType::Render(_) => {
+            ActType::Draw(_) => {
                 EvtAct::draw(term, out, &act_type);
-                term.render_cur(out);
+                term.draw_cur(out);
                 Some(false)
             }
+            ActType::Nothing => Some(false),
             ActType::Cancel => {
-                term.render_cur(out);
+                term.draw_cur(out);
                 Some(false)
             }
             ActType::Exit => Some(true),
@@ -91,29 +122,35 @@ impl EvtAct {
         Terminal::hide_cur();
 
         // msg
-        EvtAct::set_org_msg(term.curt());
-        term.curt().mbar.clear_mag();
-
+        term.curt().msgbar.set_org_state();
+        term.curt().msgbar.clear_mag();
+        term.menubar.redraw_menubar_on_mouse(&keys);
         let keywhen = term.get_when(&keys);
+
         Log::info("keywhen", &keywhen);
         let keycmd = term.keycmd.clone();
         match keywhen {
             KeyWhen::CtxMenuFocus => {
-                term.ctx_menu.set_ctx_menu_cmd(term.keycmd.clone());
+                term.ctx_widget.set_ctx_menu_cmd(term.keycmd.clone());
                 let act_type = EvtAct::ctrl_ctx_menu(term);
                 if let Some(rtn) = EvtAct::check_next_process(out, term, act_type) {
                     return rtn;
                 }
             }
-            KeyWhen::HeaderBarFocus => {
-                let act_type = EvtAct::ctrl_headerbar(term);
+            KeyWhen::MenuBarFocus => {
+                term.menubar.widget.set_menubar_cmd(term.keycmd.clone());
+                let act_type = EvtAct::ctrl_menubar(term);
                 if let Some(rtn) = EvtAct::check_next_process(out, term, act_type) {
                     return rtn;
                 }
             }
-
+            KeyWhen::FileBarFocus => {
+                let act_type = EvtAct::ctrl_filebar(term);
+                if let Some(rtn) = EvtAct::check_next_process(out, term, act_type) {
+                    return rtn;
+                }
+            }
             KeyWhen::EditorFocus => {
-                term.curt().editor.set_cmd(keycmd);
                 let act_type = EvtAct::ctrl_editor(term);
                 if let Some(rtn) = EvtAct::check_next_process(out, term, act_type) {
                     return rtn;
@@ -124,7 +161,7 @@ impl EvtAct {
                     return rtn;
                 }
             }
-            KeyWhen::PromptFocus => {
+            KeyWhen::PromFocus => {
                 term.curt().prom.set_cmd(keycmd);
                 let act_type = EvtAct::ctrl_prom(term);
                 if let Some(rtn) = EvtAct::check_next_process(out, term, act_type) {
@@ -135,37 +172,55 @@ impl EvtAct {
         };
         return false;
     }
-    pub fn check_keys(keys: Keys, term: &mut Terminal) -> ActType {
-        if matches!(keys, Keys::MouseMove(_, _)) && (!term.state.is_ctx_menu && !term.curt().editor.is_input_imple_mode(true)) || !term.hbar.state.is_dragging && matches!(keys, Keys::MouseUpLeft(_, _)) {
-            // Initialized for post-processing
-            term.keycmd = KeyCmd::Null;
-            return ActType::Cancel;
 
+    pub fn check_keys(keys: Keys, term: &mut Terminal) -> ActType {
+        match keys {
+            Keys::MouseMove(y, x) if y == term.menubar.row_posi as u16 && term.menubar.is_menubar_displayed_area(y as usize, x as usize).0 => {}
+            Keys::MouseMove(y, _) if y > term.menubar.row_posi as u16 && term.menubar.on_mouse_idx != USIZE_UNDEFINED => {}
+            Keys::MouseMove(_, _) if term.state.is_menuwidget || term.state.is_ctx_menu || term.curt().editor.is_input_imple_mode(true) => {}
+            Keys::MouseMove(_, _) if term.curt().is_prom_pulldown() => {}
+            Keys::MouseMove(_, _) => {
+                term.keycmd = KeyCmd::Null;
+                return ActType::Nothing;
+            }
+            Keys::MouseUpLeft(_, _) if term.fbar.state.is_dragging => {}
+            Keys::MouseUpLeft(_, _) => {
+                term.keycmd = KeyCmd::Null;
+                return ActType::Nothing;
+            }
             // Because the same key occurs multiple times
             // MouseDragLeft: in the case of Windows and Ubuntu.
             // Resize: in the case of Windows.
-        } else if (matches!(keys, Keys::MouseDragLeft(_, _)) || matches!(keys, Keys::Resize(_, _))) && keys == term.keys_org {
-            return ActType::Cancel;
-        } else if matches!(keys, Keys::Resize(_, _)) {
-            if Terminal::check_displayable() {
-                term.set_bg_color();
-                term.state.is_displayable = true;
-            } else {
-                term.state.is_displayable = false;
-                Terminal::clear_display();
-                println!("{}", &Lang::get().increase_height_width_terminal);
-                return ActType::Cancel;
+            Keys::MouseDragLeft(_, _) | Keys::Resize(_, _) if keys == term.keys_org => return ActType::Nothing,
+            Keys::Resize(_, _) => {
+                set_term_size();
+                Terminal::clear_all();
+                if Terminal::check_displayable() {
+                    term.set_bg_color();
+                    term.state.is_displayable = true;
+                } else {
+                    term.state.is_displayable = false;
+                    execute!(stdout(), MoveTo(0, 0));
+                    println!("{}", &Lang::get().increase_height_width_terminal);
+                    return ActType::Nothing;
+                }
             }
+            _ => {}
+        };
+        if !term.state.is_displayable {
+            return ActType::Nothing;
         }
+
         // Judg whether keys are CloseFile
-        else if KEY_CMD_MAP.get().unwrap().get(&(keys, KeyWhen::AllFocus)).is_some() {
+        if KEY_CMD_MAP.get().unwrap().get(&(keys, KeyWhen::AllFocus)).is_some() {
             if let Some(key_cmd) = KEY_CMD_MAP.get().unwrap().get(&(keys, KeyWhen::EditorFocus)) {
-                if key_cmd == &KeyCmd::Edit(E_Cmd::CloseFile) || key_cmd == &KeyCmd::Edit(E_Cmd::CancelState) {
+                //  if key_cmd == &KeyCmd::Edit(E_Cmd::CloseFile) || key_cmd == &KeyCmd::Edit(E_Cmd::CancelState) {
+                if key_cmd == &KeyCmd::Edit(E_Cmd::CloseFile) {
                     term.clear_ctx_menu();
-                    // let is_clear_grep_info = !term.curt().state.grep.is_greping();
-                    if !term.curt().state.grep.is_greping() {
-                        term.clear_curt_tab(true, true);
-                    }
+
+                    // if term.curt().state.prom != PromState::GrepResult {
+                    term.curt().clear_curt_tab(true);
+                    // }
                 }
             }
         }
@@ -176,7 +231,7 @@ impl EvtAct {
         term.set_keys(&keys);
         Log::info("term.keycmd", &term.keycmd);
         if term.keycmd == KeyCmd::Unsupported {
-            return ActType::Render(RParts::MsgBar(Lang::get().unsupported_operation.to_string()));
+            return ActType::Draw(DParts::MsgBar(Lang::get().unsupported_operation.to_string()));
         }
 
         return ActType::Next;

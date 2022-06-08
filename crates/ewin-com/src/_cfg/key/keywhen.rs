@@ -5,9 +5,10 @@ pub enum KeyWhen {
     AllFocus,
     InputFocus,
     EditorFocus,
-    HeaderBarFocus,
+    MenuBarFocus,
+    FileBarFocus,
     StatusBarFocus,
-    PromptFocus,
+    PromFocus,
     CtxMenuFocus,
 }
 
@@ -18,9 +19,9 @@ impl FromStr for KeyWhen {
             "allFocus" => Ok(KeyWhen::AllFocus),
             "inputFocus" => Ok(KeyWhen::InputFocus),
             "editorFocus" => Ok(KeyWhen::EditorFocus),
-            "headerBarFocus" => Ok(KeyWhen::HeaderBarFocus),
+            "headerBarFocus" => Ok(KeyWhen::FileBarFocus),
             "statusBarFocus" => Ok(KeyWhen::StatusBarFocus),
-            "promptFocus" => Ok(KeyWhen::PromptFocus),
+            "promptFocus" => Ok(KeyWhen::PromFocus),
             _ => Err(()),
         }
     }
@@ -30,9 +31,10 @@ impl fmt::Display for KeyWhen {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             KeyWhen::EditorFocus => write!(f, "editorFocus"),
-            KeyWhen::HeaderBarFocus => write!(f, "headerBarFocus"),
+            KeyWhen::MenuBarFocus => write!(f, "menuBarFocus"),
+            KeyWhen::FileBarFocus => write!(f, "fileBarFocus"),
             KeyWhen::StatusBarFocus => write!(f, "statusBarFocus"),
-            KeyWhen::PromptFocus => write!(f, "promptFocus"),
+            KeyWhen::PromFocus => write!(f, "promptFocus"),
             KeyWhen::InputFocus => write!(f, "inputFocus"),
             KeyWhen::AllFocus => write!(f, "allFocus"),
             KeyWhen::CtxMenuFocus => write!(f, "ctxMenuFocus"),

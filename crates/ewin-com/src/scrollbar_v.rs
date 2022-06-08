@@ -1,4 +1,6 @@
-use crate::{_cfg::model::default::*, log::*, model::*};
+use ewin_cfg::{log::Log, model::default::Cfg};
+
+use crate::model::*;
 use std::cmp::{max, min};
 
 impl ScrollbarV {

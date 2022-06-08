@@ -1,15 +1,17 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, def::*, log::*, model::*, util::*},
+    ewin_com::{_cfg::key::keycmd::*, model::*, util::*},
     model::*,
 };
+use ewin_cfg::log::*;
+use ewin_const::def::*;
 use std::{cmp::min, usize};
 
 impl Editor {
     pub const SCROLL_UP_DOWN_MARGIN: usize = 1;
     const OFFSET_Y_MARGIN: usize = 3;
     const DISP_ROWS_MARGIN: usize = 3;
-    const SCROLL_LEFT_RIGHT_JUDGE_MARGIN: usize = 3;
-    const SCROLL_MOUSE_DRAG_LEFT_JUDGE_MARGIN: usize = 8;
+    const SCROLL_HORIZONTAL_LEFT_RIGHT_JUDGE_MARGIN: usize = 3;
+    const SCROLL_HORIZONTAL_MOUSE_DRAG_LEFT_JUDGE_MARGIN: usize = 8;
 
     // adjusting vertical posi of cursor
     pub fn scroll(&mut self) {
@@ -23,24 +25,28 @@ impl Editor {
         if self.cur.y == 0 && self.is_move_cur_posi_scrolling_enable() {
             self.offset_y = 0
         } else if !self.is_move_cur_posi_scrolling_enable() && (matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) {
+            Log::debug_s("1111111111111111111111111111111111111111111");
             if matches!(self.e_cmd, E_Cmd::MouseScrollDown) {
-                if self.get_disp_rows() > self.row_disp_len {
-                    self.offset_y = min(self.offset_y + 1, self.get_disp_rows() - self.row_disp_len);
+                if self.get_disp_row_including_extra() > self.row_len {
+                    self.offset_y = min(self.offset_y + 1, self.get_disp_row_including_extra() - self.row_len);
                 }
             } else {
                 self.offset_y = if self.offset_y == 0 { 0 } else { self.offset_y - 1 };
             }
         } else if !self.is_move_cur_posi_scrolling_enable() && self.scrl_v.is_enable && (matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _))) {
-            self.offset_y = min(self.scrl_v.row_posi * self.scrl_v.move_len, self.get_disp_rows() - self.row_disp_len);
+            Log::debug_s("222222222222222222222222222222222222");
+            self.offset_y = min(self.scrl_v.row_posi * self.scrl_v.move_len, self.get_disp_row_including_extra() - self.row_len);
             // When cursor is off the screen
         } else if !self.is_cur_y_in_screen() && !matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _)) && !matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)) && !matches!(self.e_cmd, E_Cmd::MouseDragLeftLeft(_, _)) && !matches!(self.e_cmd, E_Cmd::MouseDragLeftRight(_, _)) {
+            // && !matches!(self.e_cmd, E_Cmd::MoveRow) {
+            Log::debug_s("333333333333333333333333333333333");
             self.set_offset_move_row();
         } else {
             match &self.e_cmd {
                 // When multi rows are deleted
                 E_Cmd::CursorFileHome => self.offset_y = 0,
                 E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::FindNext | E_Cmd::FindBack | E_Cmd::ReOpenFile if self.offset_y > self.cur.y => {
-                    self.offset_y = if self.row_disp_len >= self.get_disp_rows() - 1 {
+                    self.offset_y = if self.row_len >= self.get_disp_row_including_extra() - 1 {
                         0
                     } else if self.cur.y < Editor::OFFSET_Y_MARGIN + self.offset_y && self.cur.y >= Editor::OFFSET_Y_MARGIN {
                         self.cur.y - Editor::OFFSET_Y_MARGIN
@@ -49,14 +55,14 @@ impl Editor {
                     }
                 }
                 E_Cmd::ReplaceExec(_, _, _) | E_Cmd::GrepResult | E_Cmd::CursorDown | E_Cmd::CursorDownSelect | E_Cmd::MouseScrollDown | E_Cmd::CursorFileEnd | E_Cmd::InsertStr(_) | E_Cmd::InsertRow | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::FindNext | E_Cmd::FindBack => {
-                    if self.cur.y + Editor::SCROLL_UP_DOWN_MARGIN >= self.row_disp_len + self.offset_y {
-                        self.offset_y = min(self.get_disp_rows() - self.row_disp_len, self.cur.y + 1 + Editor::SCROLL_UP_DOWN_MARGIN - self.row_disp_len);
+                    if self.cur.y + Editor::SCROLL_UP_DOWN_MARGIN >= self.row_len + self.offset_y {
+                        self.offset_y = min(self.get_disp_row_including_extra() - self.row_len, self.cur.y + 1 + Editor::SCROLL_UP_DOWN_MARGIN - self.row_len);
                     }
                 }
                 E_Cmd::MoveRow => self.set_offset_move_row(),
                 E_Cmd::MouseDragLeftLeft(y, _) | E_Cmd::MouseDragLeftRight(y, _) => {
                     if self.sel.is_selected() {
-                        if *y >= self.row_posi + self.row_disp_len && self.get_disp_rows() - self.offset_y > self.row_disp_len {
+                        if *y >= self.row_posi + self.row_len && self.get_disp_row_including_extra() - self.offset_y > self.row_len {
                             self.offset_y += Editor::SCROLL_UP_DOWN_MARGIN;
                         } else if *y < self.row_posi && self.offset_y >= Editor::SCROLL_UP_DOWN_MARGIN {
                             self.offset_y -= Editor::SCROLL_UP_DOWN_MARGIN;
@@ -64,7 +70,7 @@ impl Editor {
                     }
                 }
                 E_Cmd::MouseDragLeftDown(y, _) => {
-                    if *y == self.row_posi + self.get_disp_rows() {
+                    if *y == self.row_posi + self.get_disp_row_including_extra() {
                         self.offset_y += Editor::SCROLL_UP_DOWN_MARGIN;
                     }
                 }
@@ -79,16 +85,16 @@ impl Editor {
                         self.offset_y -= Editor::SCROLL_UP_DOWN_MARGIN;
                     }
                 }
-                E_Cmd::CursorPageUp => self.offset_y = if self.offset_y >= self.row_disp_len { self.offset_y - self.row_disp_len } else { 0 },
-                E_Cmd::CursorPageDown => self.offset_y = if self.get_disp_rows() - 1 > self.offset_y + self.row_disp_len * 2 { self.offset_y + self.row_disp_len } else { self.get_disp_rows() - self.row_disp_len },
+                E_Cmd::CursorPageUp => self.offset_y = if self.offset_y >= self.row_len { self.offset_y - self.row_len } else { 0 },
+                E_Cmd::CursorPageDown => self.offset_y = if self.get_disp_row_including_extra() - 1 > self.offset_y + self.row_len * 2 { self.offset_y + self.row_len } else { self.get_disp_row_including_extra() - self.row_len },
                 _ => {}
             }
         }
         Log::debug("self.offset_y after", &self.offset_y);
     }
-    pub fn get_disp_rows(&self) -> usize {
+    pub fn get_disp_row_including_extra(&self) -> usize {
         if self.scrl_v.bar_len != USIZE_UNDEFINED && self.scrl_v.bar_len > 0 {
-            self.row_disp_len + (self.row_disp_len - self.scrl_v.bar_len) * self.scrl_v.move_len
+            self.row_len + (self.row_len - self.scrl_v.bar_len) * self.scrl_v.move_len
         } else {
             return self.buf.len_rows() + Editor::DISP_ROWS_MARGIN;
         }
@@ -96,12 +102,18 @@ impl Editor {
     pub fn set_offset_move_row(&mut self) {
         Log::debug_key("set_offset_move_row");
 
-        if self.cur.y >= self.offset_y + self.row_disp_len {
+        if self.cur.y >= self.offset_y + self.row_len {
             // last page
-            self.offset_y = self.cur.y + Editor::MOVE_ROW_EXTRA_NUM - self.row_disp_len;
-            //     self.offset_y = if self.get_disp_rows() - 1 - self.cur.y < self.row_disp_len { self.get_disp_rows() - self.row_disp_len } else { self.cur.y - Editor::MOVE_ROW_EXTRA_NUM }
+            Log::debug("self.offset_y 111", &self.offset_y);
+            Log::debug("self.buf.len_rows() - 1", &(self.buf.len_rows() - 1));
+            Log::debug("self.row_len ", &self.row_len);
+            Log::debug("Editor::OFFSET_Y_MARGIN ", &Editor::OFFSET_Y_MARGIN);
+            self.offset_y = if self.cur.y + self.row_len < self.buf.len_rows() - 1 { self.cur.y - Editor::OFFSET_Y_MARGIN } else { self.buf.len_rows() - 1 - self.row_len + Editor::OFFSET_Y_MARGIN };
+
+            // self.buf.len_rows() - 1 + Editor::MOVE_ROW_EXTRA_NUM - self.row_len;
+            Log::debug("self.offset_y 222", &self.offset_y);
         } else if self.cur.y < self.offset_y {
-            self.offset_y = if self.cur.y > Editor::MOVE_ROW_EXTRA_NUM { self.cur.y - Editor::MOVE_ROW_EXTRA_NUM } else { 0 };
+            self.offset_y = if self.cur.y > Editor::OFFSET_Y_MARGIN { self.cur.y - Editor::OFFSET_Y_MARGIN } else { 0 };
         }
     }
 
@@ -140,7 +152,7 @@ impl Editor {
                     self.offset_x = get_x_offset(&self.buf.char_vec_range(self.cur.y, ..self.cur.x), self.col_len - X_MARGIN);
                 }
                 E_Cmd::CursorRight | E_Cmd::CursorRightSelect | E_Cmd::MouseDragLeftRight(_, _) if self.sel.mode != SelMode::BoxSelect => {
-                    let judge_margin = if let E_Cmd::MouseDragLeftRight(_, _) = self.e_cmd { Editor::SCROLL_MOUSE_DRAG_LEFT_JUDGE_MARGIN } else { Editor::SCROLL_LEFT_RIGHT_JUDGE_MARGIN };
+                    let judge_margin = if let E_Cmd::MouseDragLeftRight(_, _) = self.e_cmd { Editor::SCROLL_HORIZONTAL_MOUSE_DRAG_LEFT_JUDGE_MARGIN } else { Editor::SCROLL_HORIZONTAL_LEFT_RIGHT_JUDGE_MARGIN };
 
                     if self.offset_disp_x + self.col_len < self.cur.disp_x + judge_margin {
                         // Judgment whether the end fits in the width
@@ -151,7 +163,7 @@ impl Editor {
                     }
                 }
                 E_Cmd::CursorLeft | E_Cmd::CursorLeftSelect | E_Cmd::MouseDragLeftLeft(_, _) => {
-                    let judge_margin = if let E_Cmd::MouseDragLeftLeft(_, _) = self.e_cmd { Editor::SCROLL_MOUSE_DRAG_LEFT_JUDGE_MARGIN } else { Editor::SCROLL_LEFT_RIGHT_JUDGE_MARGIN };
+                    let judge_margin = if let E_Cmd::MouseDragLeftLeft(_, _) = self.e_cmd { Editor::SCROLL_HORIZONTAL_MOUSE_DRAG_LEFT_JUDGE_MARGIN } else { Editor::SCROLL_HORIZONTAL_LEFT_RIGHT_JUDGE_MARGIN };
 
                     if self.cur.disp_x - self.offset_disp_x <= judge_margin {
                         self.offset_x = if self.offset_x >= SCROLL_ADD_MARGIN { self.offset_x - SCROLL_ADD_MARGIN } else { 0 };
@@ -190,7 +202,8 @@ impl Editor {
 
 #[cfg(test)]
 mod tests {
-    use ewin_com::_cfg::model::default::CfgLog;
+
+    use ewin_cfg::model::default::CfgLog;
 
     use super::*;
 

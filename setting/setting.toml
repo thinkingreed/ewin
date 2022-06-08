@@ -49,7 +49,8 @@ end_of_line_enable = false
 [general.editor.save]
 # String of first line within 20 characters
 use_string_first_line_for_file_name_of_new_file=true
-extension_when_saving_new_file="txt"
+# "" is None
+candidate_extension_when_saving_new_file = ["txt", "", "csv", "xml"]
 
 [general.editor.word]
 word_delimiter=" 　!\"\\#$%&()*+-',./:;<=>?@[]^`{|}~"
@@ -60,11 +61,39 @@ case_sensitive = false
 # Only files below this value are subject to input completion (positive number: MByte)
 # disable_input_comple_file_size = 3
 
+[general.editor.row_no]
+is_enable = true
+
+[general.editor.scale]
+is_enable = true
 
 [general.prompt.open_file]
 # Valid only for Windows
 # "" is Not set or "current_directory"
 directory_init_value = ""
+
+# Menubar
+[general.menubar]
+# No more than the screen area is displayed
+content = """
+[
+  {"file": [
+      {"createNewFile": []},
+      {"openFile": []},
+      {"encoding": []},
+      {"save_as": []},
+      {"end_of_all_save": []}
+  ]},
+  {"edit": [
+      {"convert": ["to_uppercase", "to_lowercase", "to_full_width", "to_half_width", "to_space", "to_tab"]},
+      {"format": ["JSON", "XML", "HTML"]}
+  ]},
+  {"display": [
+      {"rowNo": []},
+      {"scale": []}
+  ]}
+]
+"""
 
 # Context menu
 [general.context_menu]
@@ -105,7 +134,7 @@ disable_highlight_ext = ["txt", "log"]
 
 # Only files below this value will be highlighted(positive number:MByte)
 disable_syntax_highlight_file_size = 3
-# "black" or "white" or "blue" 
+# "black" or "white"
 default_color_theme = "white"
 
 [system.os.windows]

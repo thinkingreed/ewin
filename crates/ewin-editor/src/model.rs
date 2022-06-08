@@ -1,5 +1,10 @@
-use crate::ewin_com::{_cfg::key::keycmd::*, def::*, model::*};
-use ewin_window::model::InputComple;
+use crate::{
+    ewin_com::{_cfg::key::keycmd::*, model::*},
+    proc::proc_config::*,
+};
+use ewin_cfg::model::default::*;
+use ewin_const::def::*;
+use ewin_widget::widget::input_comple::*;
 use ropey::Rope;
 use std::{
     collections::{BTreeSet, HashMap},
@@ -30,12 +35,13 @@ pub struct Editor {
     pub sel: SelRange,
     pub sel_org: SelRange,
     pub e_cmd: E_Cmd,
+    pub cmd_config: E_CmdConfig,
     // Clipboard on memory
     // pub clipboard: String,
     /// number displayed on the terminal
-    pub row_disp_len: usize,
-    pub row_disp_len_org: usize,
-    pub len_rows_org: usize,
+    pub row_len: usize,
+    pub row_len_org: usize,
+    pub buf_rows_org: usize,
     pub row_posi: usize,
     pub col_len: usize,
     pub col_len_org: usize,
@@ -54,6 +60,7 @@ pub struct Editor {
     pub scrl_h: ScrollbarH,
     pub change_info: ChangeInfo,
     pub input_comple: InputComple,
+    pub scale: Scale,
 }
 
 impl Editor {
@@ -75,10 +82,11 @@ impl Editor {
             sel: SelRange::default(),
             sel_org: SelRange::default(),
             e_cmd: E_Cmd::Null,
+            cmd_config: E_CmdConfig::default(),
             // for UT set
-            row_disp_len: TERM_MINIMUM_HEIGHT - HEADERBAR_ROW_NUM - STATUSBAR_ROW_NUM,
-            row_disp_len_org: 0,
-            row_posi: 1,
+            row_len: TERM_MINIMUM_HEIGHT - FILEBAR_ROW_NUM - STATUSBAR_ROW_NUM,
+            row_len_org: 0,
+            row_posi: Editor::get_row_posi(),
             col_len: TERM_MINIMUM_WIDTH - Editor::RNW_MARGIN,
             col_len_org: 0,
             search: Search::default(),
@@ -92,18 +100,24 @@ impl Editor {
             box_insert: BoxInsert::default(),
             scrl_v: ScrollbarV::default(),
             scrl_h: ScrollbarH::default(),
-            len_rows_org: 0,
+            buf_rows_org: 0,
             change_info: ChangeInfo::default(),
             input_comple: InputComple::default(),
+            scale: Scale::default(),
         }
     }
-}
 
+    pub fn get_row_posi() -> usize {
+        return MENUBAR_ROW_NUM + FILEBAR_ROW_NUM + if CfgEdit::get().general.editor.scale.is_enable { 1 } else { 0 };
+    }
+}
+/*
 impl Default for Editor {
     fn default() -> Self {
         Self::new()
     }
 }
+ */
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EditorState {
@@ -112,14 +126,14 @@ pub struct EditorState {
     pub is_read_only: bool,
     pub is_dragging: bool,
     pub key_macro: KeyMacroState,
-    pub mouse_mode: MouseMode,
+    pub mouse: Mouse,
     pub input_comple_mode: InputCompleMode,
     pub input_comple_mode_org: InputCompleMode,
 }
 
 impl Default for EditorState {
     fn default() -> Self {
-        EditorState { is_changed: false, is_changed_org: false, is_read_only: false, is_dragging: false, key_macro: KeyMacroState::default(), mouse_mode: MouseMode::Normal, input_comple_mode: InputCompleMode::None, input_comple_mode_org: InputCompleMode::None }
+        EditorState { is_changed: false, is_changed_org: false, is_read_only: false, is_dragging: false, key_macro: KeyMacroState::default(), mouse: Mouse::Enable, input_comple_mode: InputCompleMode::None, input_comple_mode_org: InputCompleMode::None }
     }
 }
 impl EditorState {
@@ -206,4 +220,9 @@ impl Default for EditerChangeType {
     fn default() -> Self {
         EditerChangeType::None
     }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Scale {
+    pub is_enable: bool,
 }

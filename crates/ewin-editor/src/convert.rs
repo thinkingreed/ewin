@@ -1,33 +1,37 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, def::*, log::*, model::*},
+    ewin_com::{_cfg::key::keycmd::*, model::*},
     model::*,
 };
-
+use ewin_cfg::{lang::lang_cfg::Lang, log::*};
+use ewin_const::def::*;
 use kana::*;
 
 impl Editor {
-    pub fn convert(&mut self, conv_type: ConvType) {
+    pub fn convert(&mut self, conv_type: ConvType) -> ActType {
         Log::debug_key("Editor.convert");
 
+        if !self.sel.is_selected() {
+            return ActType::Draw(DParts::AllMsgBar(Lang::get().no_sel_range.to_string()));
+        }
         let sel = self.sel.get_range();
+        Log::debug("sel", &sel);
 
         let tgt_str = self.buf.slice(sel);
-        let convert_str = if ConvType::Lowercase == conv_type {
-            tgt_str.chars().map(to_lowercase).collect::<String>()
-        } else if ConvType::Uppercase == conv_type {
-            tgt_str.chars().map(to_uppercase).collect::<String>()
-        } else if ConvType::HalfWidth == conv_type {
-            to_half_width(&tgt_str)
-        } else if ConvType::FullWidth == conv_type {
-            to_full_width(&tgt_str)
-        } else if ConvType::Space == conv_type {
-            tgt_str.replace(&TAB_CHAR.to_string(), " ")
-        } else if ConvType::Tab == conv_type {
-            tgt_str.replace(' ', &TAB_CHAR.to_string())
-        } else {
-            todo!()
+
+        let convert_str = match conv_type {
+            ConvType::Lowercase => tgt_str.chars().map(to_lowercase).collect::<String>(),
+            ConvType::Uppercase => tgt_str.chars().map(to_uppercase).collect::<String>(),
+            ConvType::HalfWidth => to_half_width(&tgt_str),
+            ConvType::FullWidth => to_full_width(&tgt_str),
+            ConvType::Space => tgt_str.replace(&TAB_CHAR.to_string(), " "),
+            ConvType::Tab => tgt_str.replace(' ', &TAB_CHAR.to_string()),
         };
-        self.edit_proc(E_Cmd::InsertStr(convert_str));
+
+        let e_cmd = E_Cmd::InsertStr(convert_str);
+        self.set_keycmd(KeyCmd::Edit(e_cmd.clone()));
+        self.edit_proc(e_cmd);
+
+        return ActType::Draw(DParts::All);
     }
 }
 

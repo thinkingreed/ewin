@@ -1,6 +1,8 @@
-use crate::{global::*, log::*, model::*};
+use crate::{global::*, model::*};
 use anyhow::Context;
 use clipboard::{ClipboardContext, ClipboardProvider};
+use ewin_cfg::{lang::lang_cfg::Lang, log::Log, model::modal::CFgFilePath};
+use ewin_const::{def::NEW_LINE_LF, model::Env};
 use std::{fs::OpenOptions, io::Read, io::Write, process, process::Command};
 use subprocess::Exec;
 
@@ -30,7 +32,7 @@ pub fn set_clipboard(copy_string: &str) {
 }
 
 fn set_wsl_clipboard(copy_str: &str) -> anyhow::Result<()> {
-    let clipboard_file = FilePath::get_app_clipboard_file_path();
+    let clipboard_file = CFgFilePath::get_app_clipboard_file_path();
     // In the case of wsl, there is a length limit when passing a character string as a command argument, so file is used as an argument.
     let mut file = OpenOptions::new().create(true).write(true).truncate(true).open(&clipboard_file)?;
     file.write_all(copy_str.as_bytes())?;
@@ -73,4 +75,20 @@ fn get_wsl_clipboard() -> anyhow::Result<String> {
     buf = buf.chars().take(buf.chars().count() - 2).collect::<String>();
 
     Ok(buf)
+}
+
+pub fn check_clipboard(is_prompt: bool) -> ActType {
+    let clipboard = get_clipboard().unwrap_or_else(|_| "".to_string());
+
+    if clipboard.is_empty() {
+        return ActType::Draw(DParts::MsgBar(Lang::get().no_value_in_clipboard.to_string()));
+    }
+    // Do not paste multiple lines for Prompt
+    if is_prompt {
+        // Check multiple lines
+        if clipboard.match_indices(&NEW_LINE_LF.to_string()).count() > 0 {
+            return ActType::Draw(DParts::MsgBar(Lang::get().cannot_paste_multi_rows.to_string()));
+        };
+    }
+    return ActType::Next;
 }

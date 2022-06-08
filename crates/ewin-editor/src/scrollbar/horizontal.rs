@@ -3,14 +3,13 @@ use crossterm::{
     cursor::MoveTo,
     terminal::{Clear, ClearType},
 };
-use ewin_com::{
-    _cfg::{key::keycmd::*, model::default::Cfg},
-    colors::*,
-    def::*,
-    log::*,
-    util::*,
+use ewin_cfg::{colors::*, log::*, model::default::*};
+use ewin_com::{_cfg::key::keycmd::*, util::*};
+use ewin_const::def::*;
+use std::{
+    cmp::{max, min},
+    collections::BTreeSet,
 };
-use std::{cmp::max, collections::BTreeSet};
 use unicode_width::UnicodeWidthStr;
 
 impl Editor {
@@ -110,26 +109,35 @@ impl Editor {
 
         if self.scrl_h.is_show {
             if self.scrl_h.bar_len == USIZE_UNDEFINED || self.scrl_h.row_max_width_org != self.scrl_h.row_max_width || self.col_len != self.col_len_org {
-                self.scrl_h.bar_len = max(2, (self.col_len as f64 / self.scrl_h.row_max_width as f64 * self.col_len as f64).floor() as usize);
+                Log::debug("self.col_len", &self.col_len);
+                Log::debug("self.scrl_h.row_max_width", &self.scrl_h.row_max_width);
+
+                // self.scrl_h.bar_len = max(2, (self.col_len as f64 / self.scrl_h.row_max_width as f64 * self.col_len as f64).floor() as usize);
+                self.scrl_h.bar_len = max(2, min(self.col_len - 1, (self.col_len as f64 / self.scrl_h.row_max_width as f64 * self.col_len as f64).floor() as usize));
+                Log::debug("self.scrl_h.bar_len", &self.scrl_h.bar_len);
 
                 if self.scrl_h.row_max_width > self.col_len {
                     self.scrl_h.is_show = true;
                     self.scrl_h.scrl_range = self.col_len - self.scrl_h.bar_len;
                     let rate = self.scrl_h.row_max_width as f64 / self.scrl_h.row_max_chars as f64;
-                    //  self.scrl_h.move_cur_x = ((self.scrl_h.row_max_width - self.col_len) as f64 / self.scrl_h.scrl_range as f64 / rate).ceil() as usize;
                     let move_cur_x = ((self.scrl_h.row_max_width - self.col_len) as f64 / self.scrl_h.scrl_range as f64 / rate).ceil() as usize;
-                    //  let move_cur_x = ((self.scrl_h.row_max_chars as f64 - (self.col_len as f64 * rate)) / self.scrl_h.scrl_range as f64).ceil() as usize;
+                    // let move_cur_x = (self.scrl_h.row_max_width as f64 / self.scrl_h.scrl_range as f64).ceil() as usize;
                     self.scrl_h.move_char_x = if move_cur_x == 0 { 1 } else { move_cur_x };
                 }
             }
 
             if !self.scrl_h.is_enable {
                 // scrl_h_bar is rightmost part
-                if self.scrl_h.clm_posi + self.scrl_h.bar_len == self.col_len {
-                } else if self.offset_disp_x_org != self.offset_disp_x {
-                    //     self.scrl_h.clm_posi = (self.cur.disp_x as f64 / self.scrl_h.row_max_width as f64 * self.scrl_h.scrl_range as f64).ceil() as usize;
-                    self.scrl_h.clm_posi = (self.offset_disp_x as f64 / self.scrl_h.row_max_width as f64 * self.scrl_h.scrl_range as f64).ceil() as usize;
-                }
+                // if self.offset_disp_x_org != self.offset_disp_x {
+                Log::debug("self.cur.disp_x", &(self.cur.disp_x as f64));
+                Log::debug("self.scrl_h.row_max_width", &self.scrl_h.row_max_width);
+                Log::debug("self.scrl_h.bar_len", &self.scrl_h.bar_len);
+                Log::debug("self.col_len", &self.col_len);
+
+                //self.scrl_h.clm_posi = (self.cur.disp_x as f64 / self.scrl_h.row_max_width as f64 * self.scrl_h.scrl_range as f64).ceil() as usize
+                //  self.scrl_h.clm_posi = if self.offset_disp_x == 0 { 0 } else { ((self.offset_disp_x + self.col_len) as f64 / self.scrl_h.row_max_width as f64 * self.scrl_h.scrl_range as f64).ceil() as usize }
+                self.scrl_h.clm_posi = (self.cur.disp_x as f64 / self.scrl_h.row_max_width as f64 * self.scrl_h.scrl_range as f64).ceil() as usize
+                // }
             }
 
             let height = Cfg::get().general.editor.scrollbar.horizontal.height;

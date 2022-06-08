@@ -1,29 +1,25 @@
 use crate::{
-    ewin_com::{
-        _cfg::{key::keycmd::*, lang::lang_cfg::*, model::default::*},
-        def::*,
-        log::*,
-        model::*,
-    },
+    ewin_com::{_cfg::key::keycmd::*, model::*},
     model::*,
 };
+use ewin_cfg::{lang::lang_cfg::*, log::*, model::default::*};
+use ewin_const::def::*;
 use std::{cmp::min, collections::BTreeSet};
 
 impl Editor {
     pub fn exec_search_incremental(&mut self, search_str: String) {
-        Log::debug_s("exec_search_incremental");
+        Log::debug_s("Editor.exec_search_incremental");
+        Log::debug("search_str", &search_str);
         self.search.str = search_str;
 
         let regex = Cfg::get().general.editor.search.regex;
 
         let s_row_idx = if regex { self.buf.row_to_byte(self.offset_y) } else { self.buf.row_to_char(self.offset_y) };
-        let ey = min(self.offset_y + self.row_disp_len, self.buf.len_rows());
+        let ey = min(self.offset_y + self.row_len, self.buf.len_rows());
         let e_row_idx = if regex { self.buf.row_to_byte(ey) } else { self.buf.row_to_char(ey) };
 
-        let cfg_search = Cfg::get_edit_search();
-
         // self.search_org = self.search.clone();
-        self.search.ranges = if self.search.str.is_empty() { vec![] } else { self.get_search_ranges(&cfg_search, &self.search.str, s_row_idx, e_row_idx, 0) };
+        self.search.ranges = if self.search.str.is_empty() { vec![] } else { self.get_search_ranges(&self.search.str, s_row_idx, e_row_idx, 0) };
 
         // self.set_search_org_and_raneg();
 
@@ -43,46 +39,27 @@ impl Editor {
             self.draw_range = E_DrawRange::Targetpoint;
         }
     }
-    pub fn exec_search_confirm(&mut self, search_str: String) -> Option<String> {
+    pub fn exec_search_confirm(&mut self, search_str: String) -> ActType {
         Log::debug_s("exec_search_confirm");
         if search_str.is_empty() {
-            return Some(Lang::get().not_set_search_str.clone());
+            return ActType::Draw(DParts::MsgBar(Lang::get().not_set_search_str.clone()));
         }
-        let cfg_search = &Cfg::get_edit_search();
-
-        if self.search(&search_str, cfg_search) {
-            return Some(Lang::get().cannot_find_search_char.clone());
+        let ranges = self.get_search_ranges(&search_str, 0, self.buf.len_chars(), 0);
+        if ranges.is_empty() {
+            return ActType::Draw(DParts::MsgBar(Lang::get().cannot_find_search_char.clone()));
         } else {
+            self.search.ranges = ranges;
             self.search_str(true, false);
-            None
+            return ActType::Next;
         }
-    }
-
-    pub fn search(&mut self, search_str: &str, cfg_search: &CfgSearch) -> bool {
-        Log::debug_key("search");
-
-        let search_vec = self.get_search_ranges(cfg_search, search_str, 0, self.buf.len_chars(), 0);
-        if search_vec.is_empty() {
-            return search_vec.is_empty();
-        } else {
-            self.search.clear();
-            self.search.ranges = search_vec.clone();
-            // self.set_search_org_and_raneg(search_vec.clone());
-            //  self.search.ranges = search_vec.clone();
-            self.search.str = search_str.to_string();
-            // Set index to initial value
-            self.search.idx = USIZE_UNDEFINED;
-        }
-        return search_vec.is_empty();
     }
 
     pub fn search_str(&mut self, is_asc: bool, is_incremental: bool) {
         Log::debug_key("search_str");
 
         if self.search.ranges.is_empty() {
-            let cfg_search = &Cfg::get_edit_search();
             // self.set_search_org_and_raneg()
-            self.search.ranges = self.get_search_ranges(cfg_search, &self.search.str, 0, self.buf.len_chars(), 0);
+            self.search.ranges = self.get_search_ranges(&self.search.str, 0, self.buf.len_chars(), 0);
         }
         if self.search.ranges.is_empty() {
             return;
@@ -99,14 +76,19 @@ impl Editor {
 
         if !is_incremental {
             let range = self.search.ranges[self.search.idx];
+            Log::debug("tgt range", &range);
             self.set_cur_target_by_x(range.y, range.sx, false);
+            Log::debug("self.cur", &self.cur);
         }
 
         self.scroll();
         self.scroll_horizontal();
     }
 
-    pub fn get_search_ranges(&self, cfg_search: &CfgSearch, search_str: &str, s_idx: usize, e_idx: usize, ignore_prefix_len: usize) -> Vec<SearchRange> {
+    pub fn get_search_ranges(&self, search_str: &str, s_idx: usize, e_idx: usize, ignore_prefix_len: usize) -> Vec<SearchRange> {
+        let cfg_search = &CfgEdit::get_search();
+        Log::debug("cfg_search", &cfg_search);
+
         let search_set = self.buf.search(search_str, s_idx, e_idx, cfg_search);
         let mut rtn_vec = vec![];
 
@@ -174,7 +156,7 @@ impl Editor {
 
     pub fn replace(&mut self, proc: &mut Proc, search_str: &str, replace_str: &str, replace_set: &BTreeSet<usize>) {
         let s_idx = replace_set.iter().min().unwrap();
-        let cfg_search = Cfg::get_edit_search();
+        let cfg_search = CfgEdit::get_search();
 
         let (y, x) = if cfg_search.regex { (self.buf.byte_to_line(*s_idx), self.buf.byte_to_line_char_idx(*s_idx)) } else { (self.buf.char_to_row(*s_idx), self.buf.char_to_line_char_idx(*s_idx)) };
         self.set_cur_target_by_x(y, x, false);
@@ -193,7 +175,7 @@ impl Editor {
     pub fn get_idx_set(&mut self, search_str: &str, replace_str: &str, org_set: &BTreeSet<usize>) -> BTreeSet<usize> {
         let mut replace_set: BTreeSet<usize> = BTreeSet::new();
         let mut total = 0;
-        let cfg_search = Cfg::get_edit_search();
+        let cfg_search = CfgEdit::get_search();
 
         for (i, sx) in org_set.iter().enumerate() {
             // let replace_str_len = if is_regex { replace_str.len() } else { replace_str.chars().count() };
@@ -217,10 +199,10 @@ impl Editor {
             Log::debug_key("11111111111111111111111111111");
             //  self.search.clear();
             if sel_str.is_empty() {
-                return ActType::Render(RParts::MsgBar(Lang::get().not_set_search_str.to_string()));
+                return ActType::Draw(DParts::MsgBar(Lang::get().not_set_search_str.to_string()));
             }
-            self.search.str = sel_str.clone();
-            self.search(&sel_str, &Cfg::get_edit_search());
+            self.search.str = sel_str;
+            // self.search(&sel_str);
         }
         Log::debug_key("2222222222222222222222222222");
 

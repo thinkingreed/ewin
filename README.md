@@ -16,6 +16,7 @@ It provides basic features as a minimal text editor:
 - Mocro support at Javascript
 - Context menu support
 - Tab support
+- Grep support(Utilizes the internal implementation of ripgrep)
 - Box select・Inseret support
 - Change detection of another process of file (when saving)
 - When using WSL, it can be linked with the Windows Clipboard.

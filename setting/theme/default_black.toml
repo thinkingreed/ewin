@@ -1,0 +1,77 @@
+
+[editor]
+background = "#000000"
+foreground = "#ffffff"
+
+[editor.line_number]
+active_background = "#000000"
+active_foreground = "#ffffff"
+passive_background = "#505050"
+passive_foreground = "#c0c0c0"
+
+[editor.selection]
+background = "#ff4500"
+foreground = "#000000"
+
+[editor.search]
+background = "#aa6400"
+foreground = "#000000"
+
+[editor.control_char]
+foreground = "#6e6e6e"
+
+[editor.column_char_width_gap_space]
+foreground = "#a9a9a9"
+background = "#d7d7d7"
+
+[editor.scrollbar]
+horizontal_background = "#282828"
+vertical_background = "#282828"
+
+
+[editor.scale]
+foreground = "#444444"
+background = "#212121"
+
+[system.btn]
+foreground = "#000000"
+background = "#c0c0c0"
+
+[system.state]
+foreground = "#000000"
+background = "#c0c0c0"
+
+[menubar]
+active_foreground = "#ffffff"
+active_background = "#5f5f5f"
+passive_foreground = "#ffffff"
+passive_background = "#212121"
+default_background = "#212121"
+
+[filebar]
+active_foreground = "#000000"
+active_background = "#c0c0c0"
+passive_foreground = "#000000"
+passive_background = "#6e6e6e"
+default_background = "#212121"
+
+
+[statusbar]
+foreground = "#c0c0c0"
+
+[ctx_menu]
+non_select_background = "#969696"
+select_background = "#6495ed"
+non_select_foreground = "#000000"
+select_foreground = "#ffffff"
+
+[msg]
+normal_foreground = "#ffffff"
+highlight_foreground = "#00c800"
+warning_foreground = "#aa6400"
+err_foreground = "#ff0000"
+
+[file]
+normal_foreground = "#c0c0c0"
+directory_foreground = "#1e90ff"
+executable_foreground = "#00c800"

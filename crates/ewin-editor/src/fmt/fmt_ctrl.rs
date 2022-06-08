@@ -1,8 +1,13 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, _cfg::lang::lang_cfg::*, def::*, log::*, model::*},
+    ewin_com::{_cfg::key::keycmd::*, model::*},
     model::*,
 };
-use ewin_com::_cfg::model::default::Cfg;
+use ewin_cfg::{
+    lang::lang_cfg::*,
+    log::*,
+    model::{default::*, modal::*},
+};
+use ewin_const::def::*;
 use serde::Serialize;
 use serde_json::Value;
 

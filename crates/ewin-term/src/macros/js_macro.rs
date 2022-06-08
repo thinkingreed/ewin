@@ -1,11 +1,8 @@
-use crate::{
-    ewin_com::{_cfg::lang::lang_cfg::*, log::Log},
-    global_term::*,
-    model::*,
-};
+use crate::{global_term::*, model::*};
+use ewin_cfg::{lang::lang_cfg::*, log::*};
 use ewin_com::{
-    file::File,
-    model::{ActType, RParts},
+    files::file::*,
+    model::{ActType, DParts},
 };
 use rusty_v8::{self as v8, inspector::*, Context, ContextScope, HandleScope, Isolate, Script};
 use std::path::Path;
@@ -47,7 +44,7 @@ impl Macros {
                 script
             } else {
                 Macros::log_exceptions(scope);
-                return ActType::Render(RParts::MsgBar(format!("{} {}", &Lang::get().script_compile_error, &Lang::get().check_log_file)));
+                return ActType::Draw(DParts::MsgBar(format!("{} {}", &Lang::get().script_compile_error, &Lang::get().check_log_file)));
             };
             if let Some(result) = script.run(&mut scope) {
                 Log::debug("script.run result", &result.to_string(&mut scope).unwrap().to_rust_string_lossy(&mut scope));
@@ -58,11 +55,11 @@ impl Macros {
                 }
             } else {
                 Macros::log_exceptions(scope);
-                return ActType::Render(RParts::MsgBar(format!("{} {}", &Lang::get().script_run_error, &Lang::get().check_log_file)));
+                return ActType::Draw(DParts::MsgBar(format!("{} {}", &Lang::get().script_run_error, &Lang::get().check_log_file)));
             };
-            return ActType::Render(RParts::All);
+            return ActType::Draw(DParts::All);
         } else {
-            return ActType::Render(RParts::MsgBar(err_str));
+            return ActType::Draw(DParts::MsgBar(err_str));
         }
     }
 

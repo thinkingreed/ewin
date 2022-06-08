@@ -1,12 +1,16 @@
-use crate::_cfg::model::default::*;
-use crate::{def::*, file::*, global::*, log::Log, model::*};
+use crate::model::TermSize;
+use crate::{files::file::*, global::*, model::CharType};
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use anyhow::Context;
 use crossterm::terminal::size;
+use ewin_cfg::{global::LANG_MAP, log::Log, model::default::Cfg};
+use ewin_const::def::*;
+use ewin_const::model::*;
 use serde_json::Value;
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::io::Read;
 use std::{self, collections::HashMap, fs, path::*, process::*, time::*, *};
+use tokio::sync::Mutex;
 use unicode_width::*;
 
 pub fn get_str_width(msg: &str) -> usize {
@@ -257,7 +261,7 @@ pub fn split_chars(target: &str, is_inclusive: bool, is_new_line_code_ignore: bo
     return vec;
 }
 
-pub fn get_tab_comp_files(target_path: String, is_dir_only: bool, is_full_path_filenm: bool) -> Vec<File> {
+pub fn get_path_comp_files(target_path: String, is_dir_only: bool, is_full_path_filenm: bool) -> Vec<File> {
     Log::debug_key("get_tab_comp_files");
 
     // Search target dir
@@ -312,6 +316,11 @@ pub fn change_nl(string: &mut String, to_nl: &str) {
     }
 }
 
+pub fn del_nl(string: &mut String) {
+    *string = string.replace(NEW_LINE_CRLF, "");
+    *string = string.replace(NEW_LINE_LF, "");
+}
+
 pub fn ordinal_suffix(number: usize) -> &'static str {
     match (number % 10, number % 100) {
         (_, 11..=13) => "th",
@@ -355,15 +364,29 @@ pub fn is_include_path(src: &str, dst: &str) -> bool {
     is_include
 }
 
-pub fn get_term_size() -> (usize, usize) {
-    Log::debug("get_term_size", &size());
-    let (columns, rows) = size().unwrap_or((TERM_MINIMUM_WIDTH as u16, TERM_MINIMUM_HEIGHT as u16));
+pub fn set_term_size() {
+    let (cols, rows) = size().unwrap_or((TERM_MINIMUM_WIDTH as u16, TERM_MINIMUM_HEIGHT as u16));
+    TERM_SIZE.get().unwrap().try_lock().map(|mut term_size| *term_size = TermSize { cols, rows }).unwrap();
+}
 
-    // (1, 1) is judged as test
-    if (columns, rows) == (1, 1) {
+pub fn get_term_size() -> (usize, usize) {
+    let term_size = if let Some(___term_size) = TERM_SIZE.get() {
+        if let Ok(_term_size) = ___term_size.try_lock() {
+            (_term_size.cols, _term_size.rows)
+        } else {
+            (TERM_MINIMUM_WIDTH as u16, TERM_MINIMUM_HEIGHT as u16)
+        }
+    } else {
+        let size = size().unwrap_or((TERM_MINIMUM_WIDTH as u16, TERM_MINIMUM_HEIGHT as u16));
+        let _ = TERM_SIZE.set(Mutex::new(TermSize { cols: size.0, rows: size.1 }));
+        (size.0, size.1)
+    };
+
+    let (cols, rows) = (term_size.0, term_size.1);
+    if (cols, rows) == (1, 1) {
         (TERM_MINIMUM_WIDTH, TERM_MINIMUM_HEIGHT)
     } else {
-        (columns as usize, rows as usize)
+        (cols as usize, rows as usize)
     }
 }
 pub fn get_delim_x(row: &[char], x: usize) -> (usize, usize) {
@@ -445,8 +468,10 @@ pub fn get_cfg_lang_name(name_str: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
+    use ewin_cfg::model::{default::Cfg, modal::AppArgs};
+    use ewin_const::def::*;
+
     use super::*;
-    use crate::model::AppArgs;
 
     #[test]
     fn test_get_str_width() {

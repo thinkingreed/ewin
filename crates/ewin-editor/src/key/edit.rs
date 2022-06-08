@@ -1,9 +1,11 @@
 use std::cmp::min;
 
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, clipboard::*, def::*, log::*, model::*, util::*},
+    ewin_com::{_cfg::key::keycmd::*, clipboard::*, model::*, util::*},
     model::*,
 };
+use ewin_cfg::log::*;
+use ewin_const::def::*;
 
 impl Editor {
     pub fn insert_str(&mut self, proc: &mut Proc) {

@@ -1,15 +1,16 @@
-use ewin_com::_cfg::model::default::Cfg;
+use ewin_cfg::{log::*, model::default::*};
+use ewin_const::def::*;
 
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, def::*, log::*, model::*, util::*},
+    ewin_com::{_cfg::key::keycmd::*, model::*, util::*},
     model::*,
 };
 use std::cmp::min;
 
 impl Editor {
     pub fn cur_move_com(&mut self) {
+        Log::debug_key("cur_move_com");
         Log::debug("self.sel.mode", &self.sel.mode);
-
         match self.e_cmd {
             E_Cmd::CursorUp | E_Cmd::MouseScrollUp => self.cur_up(),
             E_Cmd::CursorDown | E_Cmd::MouseScrollDown => self.cur_down(),
@@ -17,6 +18,10 @@ impl Editor {
             E_Cmd::CursorRight => self.cur_right(),
             E_Cmd::CursorRowHome => self.cur_home(),
             E_Cmd::CursorRowEnd => self.cur_end(),
+            E_Cmd::CursorFileHome => self.ctrl_home(),
+            E_Cmd::CursorFileEnd => self.ctrl_end(),
+            E_Cmd::CursorPageUp => self.page_up(),
+            E_Cmd::CursorPageDown => self.page_down(),
             _ => {}
         }
 
@@ -24,7 +29,21 @@ impl Editor {
         if self.sel.mode == SelMode::BoxSelect {
             self.sel.set_sel_posi(false, self.cur);
             self.box_insert.vec = self.slice_box_sel().1;
+        } else {
+            self.sel.clear();
         }
+        Log::debug("self.sel.mode == SelMode::BoxSelect", &(self.sel.mode == SelMode::BoxSelect));
+        Log::debug("self.e_cmd", &self.e_cmd);
+
+        /*
+        match self.e_cmd {
+            E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorLeft | E_Cmd::CursorRight if self.sel.mode == SelMode::BoxSelect => {}
+            _ => {
+                self.sel.clear();
+                self.sel.mode = SelMode::Normal;
+            }
+        };
+         */
     }
 
     pub fn cur_up(&mut self) {
@@ -38,7 +57,7 @@ impl Editor {
     }
 
     pub fn cur_down(&mut self) {
-        Log::debug_key("c_d start");
+        Log::debug_key("Editor.cur_down");
         Log::debug("self.buf.len_rows() ", &self.buf.len_rows());
 
         if !self.is_move_position_by_scrolling_enable_and_e_cmd() {
@@ -172,12 +191,12 @@ impl Editor {
     }
 
     pub fn page_down(&mut self) {
-        self.cur.y = min(self.cur.y + self.row_disp_len, self.buf.len_rows() - 1);
+        self.cur.y = min(self.cur.y + self.row_len, self.buf.len_rows() - 1);
         self.cur_updown_com();
     }
 
     pub fn page_up(&mut self) {
-        self.cur.y = if self.cur.y > self.row_disp_len { self.cur.y - self.row_disp_len } else { 0 };
+        self.cur.y = if self.cur.y > self.row_len { self.cur.y - self.row_len } else { 0 };
         self.cur_updown_com();
     }
     pub fn shift_move_com(&mut self) {

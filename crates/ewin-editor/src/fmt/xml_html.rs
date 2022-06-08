@@ -1,8 +1,12 @@
-use crate::{ewin_com::def::*, ewin_com::log::*, ewin_com::model::*, model::*};
-use ewin_com::_cfg::model::default::Cfg;
+use crate::model::*;
 use regex::Regex;
 use std::collections::BTreeSet;
 
+use ewin_cfg::{
+    log::*,
+    model::{default::*, modal::*},
+};
+use ewin_const::def::*;
 impl FormatXml {
     pub fn format_xml_html(text: String, fmt_type: FileType, nl: String) -> String {
         Log::debug_key("format_xml_html");

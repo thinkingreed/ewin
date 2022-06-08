@@ -1,15 +1,15 @@
-use ewin_com::_cfg::lang::lang_cfg::Lang;
-
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, log::*, model::*},
+    ewin_com::{_cfg::key::keycmd::*, model::*},
     model::*,
 };
+use ewin_cfg::{lang::lang_cfg::*, log::*};
+
 impl Editor {
     pub fn undo(&mut self) -> ActType {
         Log::debug_key("undo");
 
         if self.history.len_undo() == 0 {
-            return ActType::Render(RParts::MsgBar(Lang::get().no_undo_operation.to_string()));
+            return ActType::Draw(DParts::MsgBar(Lang::get().no_undo_operation.to_string()));
         }
 
         if let Some(evt_proc) = self.history.get_undo_last() {
@@ -32,6 +32,8 @@ impl Editor {
                 self.history.redo_vec.push(undo_ep);
             }
         }
+        Log::debug("self.history.redo_vec", &self.history.redo_vec);
+
         return ActType::Next;
     }
     // initial cursor posi set
@@ -108,7 +110,7 @@ impl Editor {
     pub fn redo(&mut self) -> ActType {
         Log::debug_key("redo");
         if self.history.len_redo() == 0 {
-            return ActType::Render(RParts::MsgBar(Lang::get().no_redo_operation.to_string()));
+            return ActType::Draw(DParts::MsgBar(Lang::get().no_redo_operation.to_string()));
         }
 
         if let Some(evt_proc) = self.history.get_redo_last() {

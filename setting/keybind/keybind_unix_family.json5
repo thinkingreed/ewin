@@ -20,7 +20,7 @@
      // find
          find, findNext, findBack, replace, moveLine, grep
      // file
-         newTab, switchTabRight, switchTabLight, openFile, encoding, closeFile, closeAllFile, saveFile
+         createNewFile, switchTabRight, switchTabLight, openFile, encoding, closeFile, closeAllFile, saveFile
      // key record・mouse
          startEndRecordKey, execRecordKey, mouseOpeSwitch
      // menu
@@ -198,7 +198,7 @@
   },
     {
     key: 'F3',
-    cmd: 'findNext',
+    cmd: 'findNextProm',
     when: 'promptFocus'
   },
   {
@@ -208,7 +208,7 @@
   },
   {
     key: 'shift+F4',
-    cmd: 'findBack',
+    cmd: 'findBackProm',
     when: 'promptFocus'
   },
   {
@@ -236,7 +236,7 @@
   },
   {
     key: 'ctrl+n',
-    cmd: 'newTab',
+    cmd: 'createNewFile',
     when: 'editorFocus'
   },
   {
@@ -340,6 +340,16 @@
   {
     key: 'enter',
     cmd: 'confirmPrompt',
+    when: 'promptFocus'
+  },
+  {
+    key: 'tab',
+    cmd: 'nextContent',
+    when: 'promptFocus'
+  },
+   {
+    key: 'shift+tab',
+    cmd: 'backContent',
     when: 'promptFocus'
   },
   {

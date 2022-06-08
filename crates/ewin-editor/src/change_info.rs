@@ -1,7 +1,7 @@
 use crate::model::*;
-use ewin_com::{_cfg::key::keycmd::*, log::*, model::*, util::*};
+use ewin_cfg::log::*;
+use ewin_com::{_cfg::key::keycmd::*, model::*, util::*};
 use std::{cmp::min, collections::BTreeSet};
-
 impl Editor {
     pub fn set_change_info_edit(&mut self, evt_proc: &EvtProc) {
         Log::debug_key("recalc_scrlbar_h_row");

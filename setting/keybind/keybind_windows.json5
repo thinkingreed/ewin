@@ -20,11 +20,11 @@
      // find
          find, findNext, findBack, replace, moveLine, grep
      // file
-         newTab, switchTabRight, switchTabLight, openFile, encoding, closeFile, closeAllFile, saveFile
+         create_new_file, switchTabRight, switchTabLight, openFile, encoding, closeFile, closeAllFile, saveFile
      // key record・mouse
          startEndRecordKey, execRecordKey, mouseOpeSwitch
      // menu
-         help, openMenu, openMenuFile, openMenuConvert, openMenuEdit, openMenuSelect
+         help, openMenuFile, openMenuConvert, openMenuEdit, openMenuSelect
      // prompt
          escPrompt, confirmPrompt, findCaseSensitive, findRegex                             
      // ContextMenu
@@ -236,7 +236,7 @@
   },
   {
     key: 'ctrl+n',
-    cmd: 'newTab',
+    cmd: 'create_new_file',
     when: 'editorFocus'
   },
   {
@@ -304,11 +304,6 @@
     when: 'editorFocus'
   },
   {
-    key: 'alt+m',
-    cmd: 'openMenu',
-    when: 'editorFocus'
-  },
-  {
     key: 'alt+f',
     cmd: 'openMenuFile',
     when: 'editorFocus'
@@ -340,6 +335,11 @@
   {
     key: 'enter',
     cmd: 'confirmPrompt',
+    when: 'promptFocus'
+  },
+   {
+    key: 'tab',
+    cmd: 'switchContent',
     when: 'promptFocus'
   },
   {

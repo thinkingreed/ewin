@@ -1,23 +1,23 @@
 use crate::{
-    ewin_com::{_cfg::lang::lang_cfg::*, colors::*, def::*, log::*, model::*, util::*},
-    tab::*,
+    ewin_com::{model::*, util::*},
+    model::*,
 };
 use crossterm::{cursor::*, terminal::*};
+use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
+use ewin_const::def::*;
 
 impl StatusBar {
-    pub fn render(str_vec: &mut Vec<String>, tab: &mut Tab, h_file: &HeaderFile) {
+    pub fn draw(str_vec: &mut Vec<String>, tab: &mut Tab, h_file: &HeaderFile) {
         Log::info_key("StatusBar.draw");
-        if tab.sbar.row_num == 0 {
-            return;
-        }
+
         let cur_s = StatusBar::get_cur_str(tab);
         let enc_nl = format!("{}({})", h_file.enc, h_file.nl);
-        let (other_w, search_w, box_sel_mode_w, select_mode_w, cur_w) = StatusBar::get_areas_width(tab, &enc_nl, get_str_width(&cur_s));
+        let (other_w, search_w, box_sel_mode_w, select_mode_w, mouse_w, cur_w) = StatusBar::get_areas_width(tab, &enc_nl, get_str_width(&cur_s));
         tab.sbar.search_area = (other_w + 1, other_w + search_w - 1);
 
-        tab.sbar.select_mode_area = (other_w + search_w + 1, other_w + search_w + select_mode_w - 1);
-        tab.sbar.cur_area = (other_w + search_w + select_mode_w, other_w + search_w + select_mode_w + cur_w - 1);
-        tab.sbar.enc_nl_area = (other_w + select_mode_w + cur_w, other_w + select_mode_w + cur_w + enc_nl.len() - 1);
+        tab.sbar.select_mode_area = (other_w + search_w + 1, other_w + search_w + select_mode_w + mouse_w - 1);
+        tab.sbar.cur_area = (other_w + search_w + select_mode_w + mouse_w, other_w + search_w + select_mode_w + mouse_w + cur_w - 1);
+        tab.sbar.enc_nl_area = (other_w + select_mode_w + mouse_w + cur_w, other_w + select_mode_w + mouse_w + cur_w + enc_nl.len() - 1);
         tab.sbar.other_str = " ".repeat(other_w);
 
         let search_idx = if tab.editor.search.idx == USIZE_UNDEFINED { 1 } else { tab.editor.search.idx + 1 };
@@ -26,37 +26,26 @@ impl StatusBar {
 
         let select_mode_str = tab.editor.sel.mode.to_string();
         let select_mode_disp_str = format!("{select:>w$}", select = select_mode_str, w = select_mode_w - (get_str_width(&select_mode_str) - select_mode_str.chars().count()));
+
         let box_mode_str = tab.editor.box_insert.mode.to_string();
         let box_mode_disp_str = format!("{select:>w$}", select = box_mode_str, w = box_sel_mode_w - (get_str_width(&box_mode_str) - box_mode_str.chars().count()));
+
+        let mouse_str = tab.editor.state.mouse.to_string();
+        let mouse_disp_str = format!("{mouse_str:>w$}", mouse_str = mouse_str, w = mouse_w - (get_str_width(&mouse_str) - mouse_str.chars().count()));
 
         // Adjusted by the difference between the character width and the number of characters
         tab.sbar.cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
 
-        let sbar_ctr = format!(
-            "{}{}{}{}{}{}{}{}{}{}{}{}{}{}",
-            tab.sbar.other_str,
-            Colors::get_sbar_inversion_fg_bg(),
-            &search_disp_str,
-            Colors::get_sbar_fg_bg(),
-            Colors::get_sbar_inversion_fg_bg(),
-            &box_mode_disp_str,
-            Colors::get_sbar_fg_bg(),
-            Colors::get_sbar_inversion_fg_bg(),
-            &select_mode_disp_str,
-            Colors::get_sbar_fg_bg(),
-            tab.sbar.cur_str,
-            Colors::get_sytem_btn_fg_bg(),
-            &enc_nl,
-            Colors::get_sbar_fg_bg()
-        );
-
-        // let clear_str = if draw_parts == &DParts::ScrollUpDown(ScrollUpDownType::Grep) { "".to_string() } else { Clear(ClearType::CurrentLine).to_string() };
-        //      Log::debug("clear_str clear_strclear_strclear_strclear_strclear_strclear_strclear_strclear_strclear_strclear_strclear_str", &clear_str);
+        let sbar_ctr = format!("{}{}{}{}{}{}{}{}", tab.sbar.other_str, StatusBar::get_disp_str(&search_disp_str), StatusBar::get_disp_str(&box_mode_disp_str), StatusBar::get_disp_str(&select_mode_disp_str), StatusBar::get_disp_str(&mouse_disp_str), tab.sbar.cur_str, &enc_nl, Colors::get_sbar_fg_bg());
 
         let sber_all_str = format!("{}{}{}{}{}", MoveTo(0, tab.sbar.row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_sbar_fg_bg(), sbar_ctr, Colors::get_default_fg_bg(),);
 
         str_vec.push(sber_all_str);
-        Colors::set_text_color(str_vec);
+        str_vec.push(Colors::get_default_fg_bg());
+    }
+
+    pub fn get_disp_str(string: &String) -> String {
+        format!("{}{}{}", Colors::get_sbar_inversion_fg_bg(), string, Colors::get_sbar_fg_bg())
     }
 
     pub fn get_cur_str(tab: &mut Tab) -> String {
@@ -78,7 +67,7 @@ impl StatusBar {
         return cur_posi;
     }
 
-    fn get_areas_width(tab: &mut Tab, enc_nl: &str, cur_str_w: usize) -> (usize, usize, usize, usize, usize) {
+    fn get_areas_width(tab: &mut Tab, enc_nl: &str, cur_str_w: usize) -> (usize, usize, usize, usize, usize, usize) {
         let cols_w = tab.sbar.col_num;
 
         let select_mode_w = match tab.editor.sel.mode {
@@ -90,10 +79,14 @@ impl StatusBar {
             BoxInsertMode::Insert => get_str_width(&Lang::get().box_insert),
         };
 
+        let mouse_disable_w = match tab.editor.state.mouse {
+            Mouse::Enable => 0,
+            Mouse::Disable => get_str_width(&Lang::get().mouse_disable),
+        };
         let search_idx = if tab.editor.search.idx == USIZE_UNDEFINED { 1 } else { tab.editor.search.idx + 1 };
         let search_w = if !tab.state.is_nomal() || tab.editor.search.ranges.is_empty() { 0 } else { get_str_width(&format!("{}({}/{})", &Lang::get().search, search_idx, tab.editor.search.ranges.len())) };
 
-        return (cols_w - enc_nl.len() - box_sel_mode_w - select_mode_w - search_w - cur_str_w, search_w, box_sel_mode_w, select_mode_w, cur_str_w);
+        return (cols_w - enc_nl.len() - box_sel_mode_w - select_mode_w - search_w - mouse_disable_w - cur_str_w, search_w, box_sel_mode_w, select_mode_w, mouse_disable_w, cur_str_w);
     }
     pub fn new() -> Self {
         StatusBar { ..StatusBar::default() }

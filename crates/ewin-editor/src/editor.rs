@@ -1,30 +1,28 @@
 use crate::{
-    ewin_com::{
-        _cfg::{key::keycmd::*, lang::lang_cfg::*},
-        log::*,
-        model::*,
-        util::*,
-    },
+    ewin_com::{_cfg::key::keycmd::*, files::file::*, global::*, model::*, util::*},
     model::*,
+    proc::proc_config::*,
 };
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
 };
-use ewin_com::{_cfg::model::default::Cfg, file::File, global::ENV};
+use ewin_cfg::{log::*, model::default::*};
+use ewin_const::{def::*, model::*};
 use ropey::RopeBuilder;
 use std::{
     cmp::min,
     collections::BTreeSet,
     io::{self, stdout},
+    ops::Range,
 };
 
 impl Editor {
-    pub const MOVE_ROW_EXTRA_NUM: usize = 3;
     pub const RNW_MARGIN: usize = 1;
 
     pub fn set_cur_default(&mut self) {
-        self.rnw = self.get_rnw();
+        // self.rnw = self.get_rnw();
+        self.set_rnw();
         self.cur = Cur { y: 0, x: 0, disp_x: 0 };
     }
 
@@ -32,7 +30,8 @@ impl Editor {
         self.cur.y = y;
 
         let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_range(y, ..x), 0, is_ctrlchar_incl);
-        self.rnw = self.get_rnw();
+        // self.rnw = self.get_rnw();
+        self.set_rnw();
         self.cur.disp_x = width;
         self.cur.x = cur_x;
     }
@@ -40,13 +39,17 @@ impl Editor {
         self.cur.y = y;
 
         let (cur_x, width) = get_until_disp_x(&self.buf.char_vec_row(y), x + self.offset_disp_x, false);
-        self.rnw = self.get_rnw();
+        // self.rnw = self.get_rnw();
+        self.set_rnw();
         self.cur.x = cur_x;
         self.cur.disp_x = width;
     }
 
     pub fn get_rnw(&self) -> usize {
-        return if self.state.mouse_mode == MouseMode::Normal { self.buf.len_rows().to_string().len() } else { 0 };
+        return if CfgEdit::get().general.editor.row_no.is_enable { self.buf.len_rows().to_string().len() } else { 0 };
+    }
+    pub fn set_rnw(&mut self) {
+        self.rnw = if CfgEdit::get().general.editor.row_no.is_enable { self.buf.len_rows().to_string().len() } else { 0 };
     }
 
     pub fn get_rnw_and_margin(&self) -> usize {
@@ -57,7 +60,7 @@ impl Editor {
         Log::debug_key("set_org_state");
         // let tab = term.tabs.get_mut(term.idx).unwrap();
 
-        self.row_disp_len_org = self.row_disp_len;
+        self.row_len_org = self.row_len;
         self.col_len_org = self.col_len;
         self.cur_org = self.cur;
         self.offset_y_org = self.offset_y;
@@ -69,7 +72,7 @@ impl Editor {
         self.search_org = self.search.clone();
 
         self.state.is_changed_org = self.state.is_changed;
-        self.len_rows_org = self.buf.len_rows();
+        self.buf_rows_org = self.buf.len_rows();
         self.scrl_v.row_posi_org = self.scrl_v.row_posi;
         self.scrl_h.row_max_width_org = self.scrl_h.row_max_width;
         self.scrl_h.clm_posi_org = self.scrl_h.clm_posi;
@@ -78,23 +81,20 @@ impl Editor {
         self.state.input_comple_mode_org = self.state.input_comple_mode;
     }
 
-    pub fn set_cmd(&mut self, keycmd: KeyCmd) {
+    pub fn set_keycmd(&mut self, keycmd: KeyCmd) {
         self.e_cmd = match keycmd {
             KeyCmd::Edit(e_cmd) => e_cmd,
             _ => E_Cmd::Null,
         };
+        self.cmd_config = E_CmdConfig::new(&self.e_cmd)
     }
 
     pub fn record_key(&mut self) {
-        match &self.e_cmd {
-            // Ctrl
-            E_Cmd::Copy | E_Cmd::Cut | E_Cmd::AllSelect | E_Cmd::InsertStr(_) | E_Cmd::CursorFileHome | E_Cmd::CursorFileEnd|
-            // Shift
-            E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::CursorLeftSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect |
-            // Raw
-            E_Cmd::InsertRow | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::CursorPageUp | E_Cmd::CursorPageDown | E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorLeft | E_Cmd::CursorRight | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd => self.key_vec.push(KeyMacro { e_cmd:self.e_cmd.clone(), ..KeyMacro::default() }),
-            E_Cmd::FindNext | E_Cmd::FindBack => self.key_vec.push(KeyMacro { e_cmd: self.e_cmd.clone(), search: Search { str: self.search.str.clone(), ..Search::default() } }),
-            _ => {}
+        if self.state.key_macro.is_record && self.cmd_config.is_record {
+            match &self.e_cmd {
+                E_Cmd::FindNext | E_Cmd::FindBack => self.key_vec.push(KeyMacro { e_cmd: self.e_cmd.clone(), search: Search { str: self.search.str.clone(), ..Search::default() } }),
+                _ => self.key_vec.push(KeyMacro { e_cmd: self.e_cmd.clone(), ..KeyMacro::default() }),
+            };
         }
     }
     pub fn box_select_mode(&mut self) {
@@ -132,76 +132,39 @@ impl Editor {
         self.change_info = ChangeInfo::default();
     }
 
-    pub fn finalize(&mut self) {
-        Log::debug_key("EvtAct.finalize");
-
-        Log::debug("self.sel 111", &self.sel);
-
-        // set sel draw range, Clear sel range
-        match self.e_cmd {
-            // Select
-            E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorLeftSelect | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect | E_Cmd::AllSelect |
-            // OpenFile, Menu
-            E_Cmd::OpenFile(_) | E_Cmd::OpenMenu | E_Cmd::OpenMenuFile | E_Cmd::OpenMenuConvert | E_Cmd::OpenMenuEdit | E_Cmd::OpenMenuSearch |
-            // Search
-            E_Cmd::FindNext | E_Cmd::FindBack |
-            // mouse
-            E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseUpLeft(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) 
-           // | E_Cmd::MouseDownRight(_, _) | E_Cmd::MouseDragRight(_, _)
-           |E_Cmd::MouseScrollDown   |E_Cmd::MouseScrollUp      |E_Cmd::MouseMove(_, _) | E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) |
-            // other
-            E_Cmd::CtxtMenu(_,_) | E_Cmd::BoxSelectMode => {}
-            _ => {
-                if self.sel.mode == SelMode::BoxSelect {
-                    match self.e_cmd {
-                         E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorLeft | E_Cmd::CursorRight => {}
-                        _ => {
-                            self.sel.clear();
-                            self.sel.mode = SelMode::Normal;
-                        }
-                    }
-                } else {
-                    self.sel.clear();
-                    self.sel.mode = SelMode::Normal;
-                }
-            }
-        }
-        Log::debug("self.sel 222", &self.sel);
-
+    pub fn research(&mut self) {
         // Re-search when searching
-        if Editor::is_edit(&self.e_cmd, true) && !self.search.ranges.is_empty() {
+
+        if self.cmd_config.is_edit && !self.search.ranges.is_empty() {
+            //  if Editor::is_edit(&self.e_cmd, true) {
             let len_chars = self.buf.len_chars();
             let search_str = &self.search.str.clone();
-            let cfg_search = Cfg::get_edit_search();
 
-            // self.search.set_range(self.get_search_ranges(&cfg_search, search_str, 0, len_chars, 0));
-
-            self.search.ranges = self.get_search_ranges(&cfg_search, search_str, 0, len_chars, 0);
+            self.search.ranges = self.get_search_ranges(search_str, 0, len_chars, 0);
         }
     }
 
-    pub fn editor_overall_check_err(&mut self) -> ActType {
-        Log::debug_key("editor_check_err");
+    pub fn check_read_only(&mut self) -> ActType {
+        Log::debug_key("check_read_only");
         // read_only
-        if self.state.is_read_only && Editor::is_edit(&self.e_cmd, true) {
+        if self.state.is_read_only && !self.cmd_config.is_edit {
             return ActType::Cancel;
         }
         return ActType::Next;
     }
 
     pub fn ctrl_mouse_capture(&mut self) {
-        match self.state.mouse_mode {
-            MouseMode::Normal => {
-                self.rnw = 0;
-                self.state.mouse_mode = MouseMode::Mouse;
+        match self.state.mouse {
+            Mouse::Enable => {
+                self.state.mouse = Mouse::Disable;
                 execute!(stdout(), DisableMouseCapture).unwrap();
             }
-            MouseMode::Mouse => {
-                self.rnw = self.buf.len_rows().to_string().len();
-                self.state.mouse_mode = MouseMode::Normal;
+            Mouse::Disable => {
+                self.state.mouse = Mouse::Enable;
                 execute!(stdout(), EnableMouseCapture).unwrap();
             }
         };
+        CfgEdit::switch_editor_row_no_enable();
     }
 
     pub fn adjust_cur_posi(&mut self) {
@@ -228,14 +191,14 @@ impl Editor {
         return self.is_y_in_screen(self.cur.y);
     }
     pub fn is_y_in_screen(&self, y: usize) -> bool {
-        return self.offset_y <= y && y < self.offset_y + self.row_disp_len;
+        return self.offset_y <= y && y < self.offset_y + self.row_len;
     }
     pub fn is_cur_disp_x_in_screen(&self) -> bool {
         return self.offset_disp_x <= self.cur.disp_x && self.cur.disp_x < self.offset_disp_x + self.col_len;
     }
 
     pub fn get_row_in_screen(&self) -> BTreeSet<usize> {
-        return (self.offset_y..min(self.offset_y + self.row_disp_len, self.buf.len_rows())).collect::<BTreeSet<usize>>();
+        return (self.offset_y..min(self.offset_y + self.row_len, self.buf.len_rows())).collect::<BTreeSet<usize>>();
     }
     pub fn get_candidate_new_filenm(&mut self) -> String {
         Log::debug_key("get_candidate_new_filenm");
@@ -260,45 +223,44 @@ impl Editor {
 
         return candidate_new_filenm;
     }
-    pub fn set_encoding(&mut self, h_file: &mut HeaderFile, to_encode: Encode, nl_item_name: &str, apply_item_name: &str, bom_item_name: &str) -> io::Result<()> {
-        if apply_item_name == Lang::get().file_reload {
-            let (vec, bom, modified_time) = File::read_file(&h_file.filenm)?;
-            h_file.bom = bom;
+    pub fn reload_with_specify_encoding(&mut self, h_file: &mut HeaderFile, enc_name: &str) -> io::Result<bool> {
+        let encode = Encode::from_name(&enc_name);
 
-            let (mut decode_str, enc) = File::read_bytes(&vec, to_encode);
-            if decode_str.is_empty() {
-                decode_str = (*String::from_utf8_lossy(&vec)).to_string();
-            }
-
-            h_file.enc = enc;
-            h_file.nl = self.buf.check_nl();
-            h_file.modified_time = modified_time;
-
-            let mut b = RopeBuilder::new();
-            b.append(&decode_str);
-            self.buf.text = b.finish();
-        } else {
-            h_file.enc = to_encode;
-            h_file.bom = TextBuffer::get_select_item_bom(&to_encode, bom_item_name);
-            h_file.nl_org = h_file.nl.clone();
-            h_file.nl = nl_item_name.to_string();
-
-            if h_file.nl != h_file.nl_org {
-                self.change_nl(&h_file.nl_org, &h_file.nl);
-            }
+        let (vec, bom, modified_time) = File::read_file(&h_file.filenm)?;
+        h_file.bom = bom;
+        let (mut decode_str, enc, had_errors) = Encode::read_bytes(&vec, encode);
+        if had_errors {
+            decode_str = (*String::from_utf8_lossy(&vec)).to_string();
         }
+
+        h_file.enc = enc;
+        h_file.nl = self.buf.check_nl();
+        h_file.mod_time = modified_time;
+
+        let mut b = RopeBuilder::new();
+        b.append(&decode_str);
+        self.buf.text = b.finish();
+
         Log::info("File info", &h_file);
 
-        Ok(())
+        Ok(had_errors)
     }
 
     pub fn change_nl(&mut self, from_nl_str: &str, to_nl_str: &str) {
         let from_nl = &NL::get_nl(from_nl_str);
         let to_nl = &NL::get_nl(to_nl_str);
 
-        let cfg_search = Cfg::get_edit_search();
+        let cfg_search = CfgEdit::get_search();
         let search_set = self.buf.search(from_nl, 0, self.buf.text.len_chars(), &cfg_search);
 
         self.edit_proc(E_Cmd::ReplaceExec(from_nl.clone(), to_nl.clone(), search_set));
+    }
+
+    pub fn get_disp_row_num() -> usize {
+        return get_term_size().1 - MENUBAR_ROW_NUM - FILEBAR_ROW_NUM - STATUSBAR_ROW_NUM;
+    }
+
+    pub fn get_disp_range_absolute(&self) -> Range<usize> {
+        return Range { start: if Cfg::get().general.editor.scale.is_enable { self.row_posi - 1 } else { self.row_posi }, end: self.row_posi * self.row_len };
     }
 }

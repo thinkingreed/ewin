@@ -1,9 +1,10 @@
 use crate::{
-    ewin_com::{_cfg::lang::lang_cfg::*, def::*, file::*, log::*, model::*},
+    ewin_com::{files::file::*, model::*},
     model::*,
 };
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
-use ewin_com::_cfg::model::default::Cfg;
+use ewin_cfg::{log::*, model::default::*};
+use ewin_const::def::*;
 use ropey::RopeBuilder;
 use std::{cmp::min, fs::OpenOptions, io::*, option::Option, time::SystemTime, *};
 
@@ -26,7 +27,7 @@ impl TextBuffer {
         let mut new_line = NEW_LINE_CRLF_STR.to_string();
         // 2048 Newline character judgment at a specific size
 
-        let cfg_search = Cfg::get_edit_search();
+        let cfg_search = CfgEdit::get_search();
         let crlf_len = self.search(NEW_LINE_CRLF, 0, min(2048, self.len_chars()), &cfg_search).len();
         if crlf_len == 0 {
             new_line = NEW_LINE_LF_STR.to_string();
@@ -34,30 +35,16 @@ impl TextBuffer {
         return new_line;
     }
 
-    pub fn get_select_item_bom(encode: &Encode, bom_item_name: &str) -> Option<Encode> {
-        let bom = match *encode {
-            Encode::UTF16LE => Some(Encode::UTF16LE),
-            Encode::UTF16BE => Some(Encode::UTF16BE),
-            Encode::UTF8 => {
-                if bom_item_name == format!("BOM{}", &Lang::get().with) {
-                    Some(Encode::UTF8)
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        };
-        bom
-    }
-
     pub fn write_to(&mut self, h_file: &HeaderFile) -> io::Result<bool> {
         Log::debug("Write file info", &h_file);
 
         let (mut u8_vec, enc_errors) = self.encode(h_file)?;
+        Log::debug("enc_errors", &enc_errors);
         if !enc_errors {
             let vec = self.add_bom(&mut u8_vec, h_file);
             BufWriter::new(fs::File::create(&h_file.fullpath)?).write_all(&vec[..])?;
         }
+
         Ok(enc_errors)
     }
     pub fn write_simple_to(&mut self, copy_str: &str) -> io::Result<()> {
@@ -76,7 +63,6 @@ impl TextBuffer {
             None => {}
         };
         bom_vec.append(vec);
-
         bom_vec
     }
 
@@ -99,6 +85,7 @@ impl TextBuffer {
             Encode::UTF8 => u8_vec = Vec::from(self.text.to_string().as_bytes()),
             _ => {
                 let str = self.text.to_string();
+
                 let (cow, _, _had_errors) = Encode::into_encoding(h_file.enc).encode(&str);
 
                 had_errors = _had_errors;

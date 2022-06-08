@@ -1,4 +1,6 @@
-use crate::{def::*, log::Log, model::*};
+use crate::model::*;
+use ewin_cfg::log::*;
+use ewin_const::def::*;
 use std::cmp::{max, min};
 
 impl SelRange {

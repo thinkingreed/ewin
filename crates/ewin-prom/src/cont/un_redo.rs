@@ -1,11 +1,13 @@
-use crate::{
-    ewin_com::{_cfg::key::keycmd::*, log::Log, model::*},
-    model::*,
-};
+use super::parts::input_area::*;
+use crate::ewin_com::{_cfg::key::keycmd::*, model::*};
+use ewin_cfg::{lang::lang_cfg::*, log::*};
 
-impl PromptCont {
-    pub fn undo(&mut self) {
+impl PromContInputArea {
+    pub fn undo(&mut self) -> ActType {
         Log::debug_s("PromptCont.undo");
+        if self.history.len_undo() == 0 {
+            return ActType::Draw(DParts::MsgBar(Lang::get().no_undo_operation.to_string()));
+        }
 
         if let Some(evt_proc) = self.history.get_undo_last() {
             if let Some(ep) = evt_proc.proc {
@@ -22,6 +24,7 @@ impl PromptCont {
                 self.history.redo_vec.push(undo_ep);
             }
         }
+        return ActType::Next;
     }
     // initial cursor posi set
     pub fn undo_init(&mut self, proc: &Proc) {
@@ -74,8 +77,11 @@ impl PromptCont {
         }
     }
 
-    pub fn redo(&mut self) {
+    pub fn redo(&mut self) -> ActType {
         Log::debug_s("PromptCont.redo");
+        if self.history.len_redo() == 0 {
+            return ActType::Draw(DParts::MsgBar(Lang::get().no_redo_operation.to_string()));
+        }
 
         if let Some(evt_proc) = self.history.get_redo_last() {
             if let Some(sp) = evt_proc.sel_proc {
@@ -88,6 +94,7 @@ impl PromptCont {
                 self.history.undo_vec.push(redo_ep);
             }
         }
+        return ActType::Next;
     }
 
     pub fn redo_exec(&mut self, proc: Proc) {
