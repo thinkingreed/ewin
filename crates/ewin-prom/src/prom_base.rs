@@ -5,20 +5,23 @@ use super::{
 };
 use crate::util::*;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_com::{_cfg::key::keycmd::*, model::*, util::get_term_size};
+use ewin_com::{
+    _cfg::key::cmd::{Cmd, *},
+    model::*,
+};
 
-impl PromPluginBase {
+impl PromBase {
     pub fn ctrl_cont(&mut self) -> ActType {
         Log::debug_key("PromPluginBase.ctrl_cont");
 
         // check allow p_cmd
-        if !self.check_all_allow_p_cmd() {
+        if !self.check_all_allow_cmd() {
             return ActType::Draw(DParts::MsgBar(Lang::get().unsupported_operation.to_string()));
         }
         self.set_org_state();
 
         // MouseDownLeft Change target
-        if let P_Cmd::MouseDownLeft(y, x) = self.p_cmd {
+        if let CmdType::MouseDownLeft(y, x) = self.cmd.cmd_type {
             self.set_curt_cont_from_y(y, x);
             if self.curt_cont_idx != self.curt_cont_idx_org {
                 self.clear_sels();
@@ -63,7 +66,7 @@ impl PromPluginBase {
             if let Ok(input) = cont.downcast_mut::<PromContInputArea>() {
                 let evt_act = input.proc_input_area();
                 Log::debug("evt_act", &evt_act);
-                if !is_select_proc(&self.p_cmd) {
+                if !is_select_proc(&self.cmd.cmd_type) {
                     self.clear_sels();
                 }
                 if evt_act != ActType::Next {
@@ -80,11 +83,7 @@ impl PromPluginBase {
         }
         return None;
     }
-    /*
-    pub fn curt<T: PromPluginTrait>(&mut self) -> &mut T {
-        return self.curt.downcast_mut::<T>().unwrap();
-    }
-     */
+
     pub fn get_tgt<T: PromContPluginTrait>(&mut self, i: usize) -> &mut T {
         return self.cont_vec.get_mut(i).unwrap().downcast_mut::<T>().unwrap();
     }
@@ -112,7 +111,13 @@ impl PromPluginBase {
         }
     }
 
-    pub fn get_next_cont(&self, is_next: bool, curt_idx: usize) -> Option<usize> {
+    pub fn get_next_cont(&mut self, is_next: bool, curt_idx: usize) -> Option<&mut Box<dyn PromContPluginTrait>> {
+        if let Some(next_idx) = self.get_next_cont_idx(is_next, curt_idx) {
+            return self.get_tgt_cont(next_idx);
+        }
+        return None;
+    }
+    pub fn get_next_cont_idx(&self, is_next: bool, curt_idx: usize) -> Option<usize> {
         Log::debug_key("PromptPluginBase.get_next_cont");
         Log::debug("curt_idx", &curt_idx);
 
@@ -122,6 +127,9 @@ impl PromPluginBase {
             menu_vec.reverse();
         }
         let (first, second) = if is_next { (menu_vec[curt_idx + 1..].to_vec(), menu_vec[..curt_idx].to_vec()) } else { (menu_vec[menu_vec.len() - curt_idx..].to_vec(), menu_vec[..menu_vec.len() - curt_idx].to_vec()) };
+        Log::debug("first", &first);
+        Log::debug("second", &second);
+
         if let Some(next_idx) = self.get_next_cont_proc(first) {
             Log::debug("next_idx 111", &next_idx);
             return Some(if is_next { curt_idx + next_idx + 1 } else { curt_idx - next_idx - 1 });
@@ -177,15 +185,14 @@ impl PromPluginBase {
         self.proc_for_input_area(|input_area| input_area.sel.clear());
     }
 
-    pub fn set_key_info(&mut self, keycmd: KeyCmd, p_cmd: P_Cmd) {
-        self.p_cmd = p_cmd.clone();
+    pub fn set_key_info(&mut self, cmd: Cmd) {
+        self.cmd = cmd.clone();
         for item in self.cont_vec.iter_mut() {
-            item.as_mut_base().keycmd = keycmd.clone();
-            item.as_mut_base().p_cmd = p_cmd.clone();
+            item.as_mut_base().cmd = cmd.clone();
         }
     }
 
-    pub fn get_disp_all_row_num(&mut self) -> usize {
+    pub fn get_disp_all_row_num(&mut self, row_bottom_posi: usize) -> usize {
         let mut len = 0;
         for cont in self.cont_vec.iter_mut() {
             len += if let Ok(guide) = cont.downcast_ref::<PromContInfo>() {
@@ -201,8 +208,8 @@ impl PromPluginBase {
             } else if let Ok(pulldown) = cont.downcast_ref::<PromContPulldown>() {
                 pulldown.desc_str_vec.len() + 1
             } else if let Ok(file_list) = cont.downcast_mut::<PromContFileList>() {
-                // 5 = ContInfo + ContKey + ContInputArea + StatusBar
-                let row_num = get_term_size().1 - 5;
+                // 5 = MsgBar + ContInfo + ContKey + ContInputArea
+                let row_num = row_bottom_posi - 5;
                 file_list.row_num = row_num;
                 row_num
             } else {
@@ -219,7 +226,7 @@ impl PromPluginBase {
                 guide.base.row_posi_range = posi..posi + guide.desc_str_vec.len();
                 posi += guide.desc_str_vec.len();
             } else if let Ok(key_desc) = item.downcast_mut::<PromContKeyDesc>() {
-                key_desc.base.row_posi_range = posi..posi + key_desc.desc_vecs.len();
+                key_desc.base.row_posi_range = posi..posi + key_desc.desc_vecs.len() - 1;
                 posi += key_desc.desc_vecs.len();
             } else if let Ok(search_opt) = item.downcast_mut::<PromContSearchOpt>() {
                 search_opt.base.row_posi_range = posi..posi;
@@ -235,8 +242,6 @@ impl PromPluginBase {
                 posi += pulldown.desc_str_vec.len();
                 Log::debug("pulldown.base.row_posi_range", &pulldown.base.row_posi_range);
             } else if let Ok(file_list) = item.downcast_mut::<PromContFileList>() {
-                Log::debug("file_list.desc_str_vec.len()", &file_list.desc_str_vec.len());
-                Log::debug("file_list.vec.len()", &file_list.vec.len());
                 file_list.base.row_posi_range = posi..posi + file_list.row_num - 1;
                 posi += file_list.desc_str_vec.len() + file_list.vec.len();
             }
@@ -244,51 +249,61 @@ impl PromPluginBase {
     }
     pub fn updown_cont(&mut self) -> ActType {
         Log::debug_key("updown_cont");
-        Log::debug("self.p_cmd", &self.p_cmd);
+        Log::debug("self.curt_cont_idx", &self.curt_cont_idx);
 
         let mut is_next = false;
         let curt_cont = self.get_curt_cont_mut().unwrap().clone();
+        Log::debug("curt_cont", &curt_cont);
         if let Ok(curt_input_area) = curt_cont.downcast_ref::<PromContInputArea>() {
             if curt_input_area.config.is_path {
-                match self.p_cmd {
-                    P_Cmd::CursorUp | P_Cmd::CursorDown => {}
+                match self.cmd.cmd_type {
+                    CmdType::CursorUp | CmdType::CursorDown => {}
                     _ => return ActType::Next,
                 };
             } else {
-                match self.p_cmd {
-                    P_Cmd::CursorUp | P_Cmd::CursorDown | P_Cmd::NextContent | P_Cmd::BackContent => {}
+                match self.cmd.cmd_type {
+                    CmdType::CursorUp | CmdType::CursorDown | CmdType::NextContent | CmdType::BackContent => {}
                     _ => return ActType::Next,
                 };
             }
-            is_next = self.p_cmd == P_Cmd::CursorDown || self.p_cmd == P_Cmd::NextContent;
+            is_next = self.cmd.cmd_type == CmdType::CursorDown || self.cmd.cmd_type == CmdType::NextContent;
         } else if let Ok(choice) = curt_cont.downcast_ref::<PromContChoice>() {
             if choice.config.is_multi_row {
-                match self.p_cmd {
-                    P_Cmd::NextContent | P_Cmd::BackContent => {}
+                match self.cmd.cmd_type {
+                    CmdType::NextContent | CmdType::BackContent => {}
                     _ => return ActType::Next,
                 };
-                is_next = self.p_cmd == P_Cmd::NextContent
+                is_next = self.cmd.cmd_type == CmdType::NextContent
             } else {
-                match self.p_cmd {
-                    P_Cmd::CursorUp | P_Cmd::CursorDown | P_Cmd::NextContent | P_Cmd::BackContent => {}
+                match self.cmd.cmd_type {
+                    CmdType::CursorUp | CmdType::CursorDown | CmdType::NextContent | CmdType::BackContent => {}
                     _ => return ActType::Next,
                 };
-                is_next = self.p_cmd == P_Cmd::CursorDown || self.p_cmd == P_Cmd::NextContent
+                is_next = self.cmd.cmd_type == CmdType::CursorDown || self.cmd.cmd_type == CmdType::NextContent
             }
         } else if let Ok(_) = curt_cont.downcast_ref::<PromContPulldown>() {
-            match self.p_cmd {
-                P_Cmd::CursorUp | P_Cmd::CursorDown | P_Cmd::NextContent | P_Cmd::BackContent => {}
+            match self.cmd.cmd_type {
+                CmdType::CursorUp | CmdType::CursorDown | CmdType::NextContent | CmdType::BackContent => {}
                 _ => return ActType::Next,
             };
-            is_next = self.p_cmd == P_Cmd::CursorDown || self.p_cmd == P_Cmd::NextContent
+            is_next = self.cmd.cmd_type == CmdType::CursorDown || self.cmd.cmd_type == CmdType::NextContent
         } else if let Ok(_) = curt_cont.downcast_ref::<PromContFileList>() {
             return ActType::Next;
         };
         Log::debug("is_next", &is_next);
-        Log::debug("self.curt_cont_idx", &self.curt_cont_idx);
+        Log::debug("self.curt_cont_idx 111", &self.curt_cont_idx);
 
-        self.curt_cont_idx = self.get_next_cont(is_next, self.curt_cont_idx).unwrap();
+        // PromContFileList is individual processing
+        if let Some(next_cont) = self.get_next_cont(is_next, self.curt_cont_idx) {
+            if next_cont.downcast_ref::<PromContFileList>().is_ok() {
+                return ActType::Next;
+            }
+        }
+
+        self.curt_cont_idx = self.get_next_cont_idx(is_next, self.curt_cont_idx).unwrap();
+        Log::debug("self.curt_cont_idx 222", &self.curt_cont_idx);
         let next_cont = self.get_curt_cont_mut().unwrap();
+        Log::debug("next_cont", &next_cont);
 
         if let Ok(next_input_area) = next_cont.downcast_mut::<PromContInputArea>() {
             if let Ok(curt_input_area) = curt_cont.downcast_ref::<PromContInputArea>() {
@@ -302,7 +317,7 @@ impl PromPluginBase {
         return ActType::Draw(DParts::Prompt);
     }
 
-    pub fn check_all_allow_p_cmd(&self) -> bool {
+    pub fn check_all_allow_cmd(&self) -> bool {
         Log::debug_key("PromPluginBase.check_all_allow_p_cmd");
         for cont in self.cont_vec.iter() {
             if cont.check_allow_p_cmd() {
@@ -312,7 +327,7 @@ impl PromPluginBase {
         return false;
     }
     pub fn set_next_back_cont_idx(&mut self) {
-        self.curt_cont_idx = self.get_next_cont(self.p_cmd == P_Cmd::CursorDown, self.curt_cont_idx).unwrap();
+        self.curt_cont_idx = self.get_next_cont_idx(self.cmd.cmd_type == CmdType::CursorDown, self.curt_cont_idx).unwrap();
     }
 
     pub fn set_org_state(&mut self) {

@@ -8,7 +8,12 @@ use ewin_cfg::{
     log::*,
     model::{default::*, modal::*},
 };
-use ewin_com::{_cfg::key::keycmd::*, global::*, model::*, util::*};
+use ewin_com::{
+    _cfg::key::{keybind::*, keys::Keys},
+    global::*,
+    model::*,
+    util::*,
+};
 use ewin_term::model::*;
 use futures::{future::FutureExt, StreamExt};
 use std::{io::*, panic, time::Duration};
@@ -43,6 +48,9 @@ async fn main() {
         return;
     }
     let _ = LANG.set(Lang::read_lang_cfg());
+
+    Log::debug("LANG_MAP", &LANG_MAP);
+
     // Processing ends when the terminal size is small
     if !Terminal::check_displayable() {
         println!("{}", &Lang::get().terminal_size_small);
@@ -84,7 +92,7 @@ async fn main() {
         if let Ok(job) = rx.recv_timeout(Duration::from_millis(16)) {
             match job.job_type {
                 JobType::Event => {
-                    let keys = Keybind::evt_to_keys(&job.job_evt.unwrap().evt);
+                    let keys = Keys::evt_to_keys(&job.job_evt.unwrap().evt);
                     if EvtAct::match_event(keys, &mut out, &mut term) {
                         break;
                     }

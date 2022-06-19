@@ -1,13 +1,13 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, files::file::*, global::*, model::*, util::*},
+    ewin_com::{files::file::*, global::*, model::*, util::*},
     model::*,
-    proc::proc_config::*,
 };
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
 };
 use ewin_cfg::{log::*, model::default::*};
+use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
 use ewin_const::{def::*, model::*};
 use ropey::RopeBuilder;
 use std::{
@@ -81,19 +81,15 @@ impl Editor {
         self.state.input_comple_mode_org = self.state.input_comple_mode;
     }
 
-    pub fn set_keycmd(&mut self, keycmd: KeyCmd) {
-        self.e_cmd = match keycmd {
-            KeyCmd::Edit(e_cmd) => e_cmd,
-            _ => E_Cmd::Null,
-        };
-        self.cmd_config = E_CmdConfig::new(&self.e_cmd)
+    pub fn set_cmd(&mut self, cmd: Cmd) {
+        self.cmd = cmd;
     }
 
     pub fn record_key(&mut self) {
-        if self.state.key_macro.is_record && self.cmd_config.is_record {
-            match &self.e_cmd {
-                E_Cmd::FindNext | E_Cmd::FindBack => self.key_vec.push(KeyMacro { e_cmd: self.e_cmd.clone(), search: Search { str: self.search.str.clone(), ..Search::default() } }),
-                _ => self.key_vec.push(KeyMacro { e_cmd: self.e_cmd.clone(), ..KeyMacro::default() }),
+        if self.state.key_macro.is_record && self.cmd.config.is_record {
+            match &self.cmd.cmd_type {
+                CmdType::FindNext | CmdType::FindBack => self.key_vec.push(KeyMacro { cmd_type: self.cmd.cmd_type.clone(), search: Search { str: self.search.str.clone(), ..Search::default() } }),
+                _ => self.key_vec.push(KeyMacro { cmd_type: self.cmd.cmd_type.clone(), ..KeyMacro::default() }),
             };
         }
     }
@@ -112,20 +108,20 @@ impl Editor {
     }
     pub fn init(&mut self) {
         Log::debug_key("EvtAct.init");
-        match self.e_cmd {
+        match self.cmd.cmd_type {
             // Up, Down
-            E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::MouseScrollUp | E_Cmd::MouseScrollDown | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) => {}
+            CmdType::CursorUp | CmdType::CursorDown | CmdType::CursorUpSelect | CmdType::CursorDownSelect | CmdType::MouseScrollUp | CmdType::MouseScrollDown | CmdType::MouseDragLeftDown(_, _) | CmdType::MouseDragLeftUp(_, _) => {}
             _ => self.updown_x = 0,
         }
 
         // Box Mode
-        match self.e_cmd {
-            E_Cmd::InsertStr(_) => {
+        match self.cmd.cmd_type {
+            CmdType::InsertStr(_) => {
                 if self.sel.mode == SelMode::BoxSelect {
                     self.box_insert.mode = BoxInsertMode::Insert;
                 }
             }
-            E_Cmd::Undo | E_Cmd::Redo | E_Cmd::DelNextChar | E_Cmd::DelPrevChar => {}
+            CmdType::Undo | CmdType::Redo | CmdType::DelNextChar | CmdType::DelPrevChar => {}
             _ => self.box_insert.mode = BoxInsertMode::Normal,
         }
 
@@ -135,7 +131,7 @@ impl Editor {
     pub fn research(&mut self) {
         // Re-search when searching
 
-        if self.cmd_config.is_edit && !self.search.ranges.is_empty() {
+        if self.cmd.config.is_edit && !self.search.ranges.is_empty() {
             //  if Editor::is_edit(&self.e_cmd, true) {
             let len_chars = self.buf.len_chars();
             let search_str = &self.search.str.clone();
@@ -147,7 +143,7 @@ impl Editor {
     pub fn check_read_only(&mut self) -> ActType {
         Log::debug_key("check_read_only");
         // read_only
-        if self.state.is_read_only && !self.cmd_config.is_edit {
+        if self.state.is_read_only && !self.cmd.config.is_record {
             return ActType::Cancel;
         }
         return ActType::Next;
@@ -180,8 +176,8 @@ impl Editor {
             self.set_cur_target_by_x(self.cur.y, self.cur.x, false);
         };
     }
-    pub fn is_move_position_by_scrolling_enable_and_e_cmd(&self) -> bool {
-        return !self.is_move_cur_posi_scrolling_enable() && ((matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) || (self.scrl_v.is_enable && (matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)))));
+    pub fn is_move_position_by_scrolling_enable_and_cmd(&self) -> bool {
+        return !self.is_move_cur_posi_scrolling_enable() && ((matches!(self.cmd.cmd_type, CmdType::MouseScrollDown) || matches!(self.cmd.cmd_type, CmdType::MouseScrollUp)) || (self.scrl_v.is_enable && (matches!(self.cmd.cmd_type, CmdType::MouseDownLeft(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftUp(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftDown(_, _)))));
     }
 
     pub fn is_move_cur_posi_scrolling_enable(&self) -> bool {
@@ -252,8 +248,7 @@ impl Editor {
 
         let cfg_search = CfgEdit::get_search();
         let search_set = self.buf.search(from_nl, 0, self.buf.text.len_chars(), &cfg_search);
-
-        self.edit_proc(E_Cmd::ReplaceExec(from_nl.clone(), to_nl.clone(), search_set));
+        self.edit_proc(Cmd::to_cmd(CmdType::ReplaceExec(from_nl.clone(), to_nl.clone(), search_set)));
     }
 
     pub fn get_disp_row_num() -> usize {

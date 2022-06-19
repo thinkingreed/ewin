@@ -1,5 +1,5 @@
 use crate::widget::ctx_menu::*;
-use ewin_com::{_cfg::key::keycmd::*, model::*};
+use ewin_com::{_cfg::key::cmd::*, model::*};
 use ewin_const::def::*;
 use std::collections::HashMap;
 
@@ -98,14 +98,14 @@ impl Default for WidgetMenu {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CtxWidget {
-    pub c_cmd: C_Cmd,
+    pub cmd: Cmd,
     pub ctx_menu_place_map: HashMap<TermPlace, WidgetCont>,
     pub widget: Widget,
 }
 
 impl Default for CtxWidget {
     fn default() -> Self {
-        CtxWidget { c_cmd: C_Cmd::Null, ctx_menu_place_map: HashMap::new(), widget: Widget::new(WidgetConfig { widget_type: WidgetType::Widget, disp_type: WidgetDispType::Dynamic }) }
+        CtxWidget { cmd: Cmd::default(), ctx_menu_place_map: HashMap::new(), widget: Widget::new(WidgetConfig { widget_type: WidgetType::Widget, disp_type: WidgetDispType::Dynamic }) }
     }
 }
 

@@ -1,10 +1,7 @@
-use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*},
-    global_term::TAB,
-    model::*,
-};
+use crate::{ewin_com::model::*, global_term::TAB, model::*};
 use ewin_cfg::{log::*, model::modal::*};
 
+use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
 use rusty_v8::{self as v8, FunctionCallbackArguments, HandleScope, ReturnValue};
 use v8::{Context, Local};
 
@@ -26,7 +23,7 @@ impl Macros {
             let input_str = args.get(0).to_string(scope).unwrap();
 
             if let Some(Ok(mut tab)) = TAB.get().map(|tab| tab.try_lock()) {
-                tab.editor.edit_proc(E_Cmd::InsertStr(input_str.to_rust_string_lossy(scope)));
+                tab.editor.edit_proc(Cmd::to_cmd(CmdType::InsertStr(input_str.to_rust_string_lossy(scope))));
                 tab.editor.state.is_changed = true;
                 Log::macros(MacrosFunc::insertString, &input_str.to_rust_string_lossy(scope));
             }

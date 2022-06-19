@@ -1,6 +1,6 @@
 use crate::{
     cont::parts::{info::*, input_area::*, key_desc::*, search_opt::*},
-    ewin_com::_cfg::key::keycmd::*,
+    ewin_com::_cfg::key::cmd::*,
     model::*,
     prom_trait::main_trait::*,
 };
@@ -8,13 +8,13 @@ use ewin_cfg::{colors::Colors, lang::lang_cfg::*, model::default::*};
 
 impl PromReplace {
     pub fn new() -> Self {
-        let mut plugin = PromReplace { base: PromPluginBase { config: PromptPluginConfig { is_updown_valid: true, ..PromptPluginConfig::default() }, ..PromPluginBase::default() } };
+        let mut plugin = PromReplace { base: PromBase { config: PromptConfig { is_updown_valid: true, ..PromptConfig::default() }, ..PromBase::default() } };
 
         plugin.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().set_replace.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 
-        let all_replace = PromContKeyMenu { disp_str: Lang::get().all_replace.to_string(), key: PromContKeyMenuType::PCmd(P_Cmd::Confirm) };
-        let switch_area = PromContKeyMenu { disp_str: Lang::get().move_setting_location.to_string(), key: PromContKeyMenuType::create_cmds(vec![P_Cmd::NextContent, P_Cmd::CursorUp, P_Cmd::CursorDown], &mut vec![P_Cmd::BackContent]) };
-        let cancel = PromContKeyMenu { disp_str: Lang::get().cancel.to_string(), key: PromContKeyMenuType::PCmd(P_Cmd::Cancel) };
+        let all_replace = PromContKeyMenu { disp_str: Lang::get().all_replace.to_string(), key: PromContKeyMenuType::Cmd(CmdType::Confirm) };
+        let switch_area = PromContKeyMenu { disp_str: Lang::get().move_setting_location.to_string(), key: PromContKeyMenuType::create_cmds(vec![CmdType::NextContent, CmdType::CursorUp, CmdType::CursorDown], &mut vec![CmdType::BackContent]) };
+        let cancel = PromContKeyMenu { disp_str: Lang::get().cancel.to_string(), key: PromContKeyMenuType::Cmd(CmdType::CancelProm) };
         plugin.base.cont_vec.push(Box::new(PromContKeyDesc { desc_vecs: vec![vec![all_replace, switch_area, cancel]], ..PromContKeyDesc::default() }));
 
         plugin.base.cont_vec.push(Box::new(PromContSearchOpt::get_searh_opt(&CfgEdit::get_search())));
@@ -31,14 +31,14 @@ impl PromReplace {
 
 #[derive(Default, Debug, Clone)]
 pub struct PromReplace {
-    pub base: PromPluginBase,
+    pub base: PromBase,
 }
 
 impl PromPluginTrait for PromReplace {
-    fn as_base(&self) -> &PromPluginBase {
+    fn as_base(&self) -> &PromBase {
         &self.base
     }
-    fn as_mut_base(&mut self) -> &mut PromPluginBase {
+    fn as_mut_base(&mut self) -> &mut PromBase {
         &mut self.base
     }
 }

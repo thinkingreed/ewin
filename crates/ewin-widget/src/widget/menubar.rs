@@ -1,6 +1,6 @@
 use crate::{core::*, model::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*, model::default::*};
-use ewin_com::{_cfg::key::keycmd::*, util::*};
+use ewin_com::{_cfg::key::cmd::*, util::*};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 
@@ -69,7 +69,7 @@ impl MenubarWidget {
         let mut is_child_setting_exist = false;
         let mut is_exist_grandchild = false;
         for (idx, (child_menu, grandchild_cont_opt)) in child_cont.cont_vec.iter().enumerate() {
-            if let Some(child_str) = Keybind::get_edit_func_str(&child_menu.name) {
+            if let Some(child_str) = get_edit_func_str(&child_menu.name) {
                 if !is_child_setting_exist {
                     is_child_setting_exist = WidgetMenu::is_setting_menu(&child_str);
                 }
@@ -86,7 +86,7 @@ impl MenubarWidget {
                     }
                     for (grandchild_menu, _) in grandchild_cont.cont_vec.iter() {
                         Log::debug("grandchild_menu.name", &grandchild_menu.name);
-                        if let Some(grandchild_str) = Keybind::get_edit_func_str(&grandchild_menu.name) {
+                        if let Some(grandchild_str) = get_edit_func_str(&grandchild_menu.name) {
                             let grandchild_name_len = get_str_width(&grandchild_str);
                             grandchild_max_len = if grandchild_name_len > grandchild_max_len { grandchild_name_len } else { grandchild_max_len };
                         }
@@ -108,7 +108,7 @@ impl MenubarWidget {
         // set name_disp
         let mut is_exist_grandchild = false;
         for (child_menu, grandchild_cont_opt) in child_cont.cont_vec.iter_mut() {
-            if let Some(child_str) = Keybind::get_edit_func_str(&child_menu.name) {
+            if let Some(child_str) = get_edit_func_str(&child_menu.name) {
                 Log::debug("child_str", &child_str);
 
                 let (child_max_len, is_child_setting_exist) = child_max_len_map[parent_menu_str];
@@ -129,7 +129,7 @@ impl MenubarWidget {
                         is_exist_grandchild = true;
                     }
                     for (grandchild_menu, _) in grandchild_cont.cont_vec.iter_mut() {
-                        if let Some(grandchild_str) = Keybind::get_edit_func_str(&grandchild_menu.name) {
+                        if let Some(grandchild_str) = get_edit_func_str(&grandchild_menu.name) {
                             // let grandchild_str = get_cfg_lang_name(&grandchild_menu.name);
                             grandchild_max_len = grandchild_max_len_map[&(parent_menu_str.clone(), child_menu.name.clone())];
                             let diff = grandchild_max_len - get_str_width(&grandchild_str);
@@ -151,11 +151,8 @@ impl MenubarWidget {
         Log::debug("child_cont", &child_cont);
     }
 
-    pub fn set_menubar_cmd(&mut self, keycmd: KeyCmd) {
-        self.m_cmd = match keycmd {
-            KeyCmd::MenuBar(m_cmd) => m_cmd,
-            _ => M_Cmd::Null,
-        };
+    pub fn set_menubar_cmd(&mut self, cmd: Cmd) {
+        self.cmd = cmd;
     }
 }
 
@@ -203,13 +200,13 @@ impl WidgetTrait for MenubarWidget {
 
 #[derive(Debug, Clone)]
 pub struct MenubarWidget {
-    pub m_cmd: M_Cmd,
+    pub cmd: Cmd,
     pub menu_map: IndexMap<String, WidgetCont>,
     pub curt: Widget,
 }
 
 impl Default for MenubarWidget {
     fn default() -> Self {
-        MenubarWidget { m_cmd: M_Cmd::Null, menu_map: IndexMap::new(), curt: Widget::new(WidgetConfig { widget_type: WidgetType::Widget, disp_type: WidgetDispType::Fixed }) }
+        MenubarWidget { cmd: Cmd::to_cmd(CmdType::Null), menu_map: IndexMap::new(), curt: Widget::new(WidgetConfig { widget_type: WidgetType::Widget, disp_type: WidgetDispType::Fixed }) }
     }
 }

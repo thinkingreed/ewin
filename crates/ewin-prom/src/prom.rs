@@ -1,8 +1,10 @@
 use super::{model::*, prom_trait::main_trait::*};
 use crossterm::{cursor::*, terminal::ClearType::*, terminal::*};
 use ewin_cfg::log::*;
-use ewin_com::{_cfg::key::keycmd::*, model::*, util::*};
-use ewin_const::def::*;
+use ewin_com::{
+    _cfg::key::cmd::{Cmd, CmdType},
+    model::*,
+};
 use std::{io::Write, u16};
 
 impl Prom {
@@ -16,8 +18,11 @@ impl Prom {
     }
 
     pub fn set_size(&mut self) {
-        self.row_num = self.curt.as_mut_base().get_disp_all_row_num();
-        self.row_posi = get_term_size().1 - STATUSBAR_ROW_NUM - self.row_num;
+        self.row_num = self.curt.as_mut_base().get_disp_all_row_num(self.row_bottom_posi);
+
+        Log::debug("self.row_num", &self.row_num);
+        Log::debug("self.row_bottom_posi", &self.row_bottom_posi);
+        self.row_posi = self.row_bottom_posi - self.row_num;
         self.curt.as_mut_base().set_cont_item_disp_posi(self.row_posi);
     }
 
@@ -42,8 +47,8 @@ impl Prom {
     }
 
     pub fn resize(&mut self) -> ActType {
-        match self.p_cmd {
-            P_Cmd::Resize(_, _) => self.set_size(),
+        match self.cmd.cmd_type {
+            CmdType::Resize(_, _) => self.set_size(),
             _ => return ActType::Next,
         }
         return ActType::Draw(DParts::All);
@@ -73,14 +78,10 @@ impl Prom {
         return false;
     }
 
-    pub fn set_cmd(&mut self, keycmd: KeyCmd) {
+    pub fn set_cmd(&mut self, cmd: &Cmd) {
         Log::debug_key("Prompt::set_keys");
-        self.keycmd = keycmd.clone();
-        let p_cmd = match &keycmd {
-            KeyCmd::Prom(p_cmd) => p_cmd.clone(),
-            _ => P_Cmd::Null,
-        };
-        self.p_cmd = p_cmd.clone();
-        self.curt.as_mut_base().set_key_info(keycmd, p_cmd);
+
+        self.cmd = cmd.clone();
+        self.curt.as_mut_base().set_key_info(cmd.clone());
     }
 }

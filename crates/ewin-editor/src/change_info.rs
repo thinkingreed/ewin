@@ -1,6 +1,6 @@
 use crate::model::*;
 use ewin_cfg::log::*;
-use ewin_com::{_cfg::key::keycmd::*, model::*, util::*};
+use ewin_com::{_cfg::key::cmd::*, model::*, util::*};
 use std::{cmp::min, collections::BTreeSet};
 impl Editor {
     pub fn set_change_info_edit(&mut self, evt_proc: &EvtProc) {
@@ -19,22 +19,22 @@ impl Editor {
         };
 
         if let Some(proc) = &evt_proc.proc {
-            Log::debug("proc.e_cmd proc", &proc.e_cmd);
+            Log::debug("proc.cmd proc", &proc.cmd);
 
-            match &proc.e_cmd {
-                E_Cmd::DelNextChar | E_Cmd::DelPrevChar => {
+            match &proc.cmd.cmd_type {
+                CmdType::DelNextChar | CmdType::DelPrevChar => {
                     if is_contain_row_end_str(&proc.str) {
-                        let y = if proc.e_cmd == E_Cmd::DelNextChar { proc.cur_s.y + 1 } else { proc.cur_s.y };
+                        let y = if proc.cmd.cmd_type == CmdType::DelNextChar { proc.cur_s.y + 1 } else { proc.cur_s.y };
                         self.del_change_tgt(BTreeSet::from([y]));
                     }
                     self.mod_change_tgt(BTreeSet::from([min(proc.cur_s.y, self.buf.len_rows() - 1)]));
                 }
-                E_Cmd::InsertRow => {
+                CmdType::InsertRow => {
                     self.new_change_tgt(BTreeSet::from([proc.cur_e.y]));
                     self.mod_change_tgt(BTreeSet::from([proc.cur_s.y, proc.cur_e.y]));
                 }
                 // Not Insert box
-                E_Cmd::InsertStr(_) if proc.box_sel_vec.is_empty() => {
+                CmdType::InsertStr(_) if proc.box_sel_vec.is_empty() => {
                     let strings: Vec<&str> = proc.str.split(&NL::get_nl(&self.h_file.nl)).collect();
                     if !strings.is_empty() {
                         for i in 0..strings.len() - 1 {
@@ -48,12 +48,12 @@ impl Editor {
                     }
                 }
                 // Insert box
-                E_Cmd::InsertStr(_) | E_Cmd::InsertBox(_) | E_Cmd::DelBox(_) => {
+                CmdType::InsertStr(_) | CmdType::InsertBox(_) | CmdType::DelBox(_) => {
                     let first_sel = proc.box_sel_vec.first().unwrap().0;
                     let last_sel = proc.box_sel_vec.last().unwrap().0;
                     self.mod_change_tgt((first_sel.sy..=last_sel.sy).collect::<BTreeSet<usize>>());
                 }
-                E_Cmd::ReplaceExec(search_str, replace_str, idx_set) => {
+                CmdType::ReplaceExec(search_str, replace_str, idx_set) => {
                     let tgt_idx_set = self.get_idx_set(search_str, replace_str, idx_set);
                     let set = tgt_idx_set.iter().map(|x| self.buf.char_to_row(*x)).collect::<BTreeSet<usize>>();
                     self.mod_change_tgt(set);

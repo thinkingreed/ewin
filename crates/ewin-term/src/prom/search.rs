@@ -1,33 +1,26 @@
-use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*},
-    model::Tab,
-};
+use crate::{ewin_com::model::*, model::*};
 use ewin_cfg::log::*;
+use ewin_com::_cfg::key::cmd::CmdType;
 
 impl Tab {
     pub fn search(&mut self) -> ActType {
         Log::debug_key("EvtAct.search");
-
         let search_str = self.prom.curt.as_mut_base().get_curt_input_area_str();
 
-        match &self.prom.p_cmd {
-            P_Cmd::InsertStr(_) | P_Cmd::Cut | P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::Undo | P_Cmd::Redo => {
+        match self.prom.cmd.cmd_type {
+            CmdType::InsertStr(_) | CmdType::Cut | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo => {
                 self.editor.exec_search_incremental(search_str);
                 return ActType::Draw(DParts::All);
             }
-            P_Cmd::FindNext | P_Cmd::FindBack => return self.exec_search_confirm(search_str),
+            CmdType::FindNext | CmdType::FindBack => return self.exec_search_confirm(search_str),
             _ => return ActType::Cancel,
-        };
+        }
     }
 
     pub fn exec_search_confirm(&mut self, search_str: String) -> ActType {
         Log::debug_s("Tab.exec_search_confirm");
 
-        self.editor.e_cmd = match self.prom.p_cmd {
-            P_Cmd::FindNext => E_Cmd::FindNext,
-            P_Cmd::FindBack => E_Cmd::FindBack,
-            _ => E_Cmd::Null,
-        };
+        self.editor.cmd = self.prom.cmd.clone();
 
         let act_type = self.editor.exec_search_confirm(search_str);
         if act_type != ActType::Next {

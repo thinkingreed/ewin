@@ -1,6 +1,6 @@
 #![allow(clippy::needless_return, clippy::iter_nth_zero)]
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, global::*, model::*},
+    ewin_com::{_cfg::key::cmd::*, global::*, model::*},
     model::*,
 };
 use ewin_cfg::{lang::lang_cfg::*, log::*, model::default::*};
@@ -14,8 +14,8 @@ use std::{env, ffi::OsStr, io, path::*, str::from_utf8, sync::mpsc::Sender};
 impl EvtAct {
     pub fn grep(term: &mut Terminal) -> ActType {
         Log::debug_s("EvtAct.grep");
-        match term.curt().prom.p_cmd {
-            P_Cmd::Confirm => {
+        match term.curt().prom.cmd.cmd_type {
+            CmdType::Confirm => {
                 let search_str = term.curt().prom.curt.as_mut_base().get_tgt_input_area_str(0);
                 let search_filenm = term.curt().prom.curt.as_mut_base().get_tgt_input_area_str(1);
                 let mut search_dir = term.curt().prom.curt.as_mut_base().get_tgt_input_area_str(2);
@@ -48,18 +48,17 @@ impl EvtAct {
                      */
                     let mut grep_tab = Tab::new();
                     grep_tab.editor.search.set_info(search_str.clone(), path.to_string_lossy().to_string(), search_dir.clone());
-                    grep_tab.editor.e_cmd = E_Cmd::GrepResult;
+                    grep_tab.editor.cmd = Cmd::to_cmd(CmdType::GrepResultProm);
 
-                    grep_tab.msgbar.set_info(&Lang::get().searching);
                     grep_tab.state.grep.search_str = search_str.clone();
 
-                    term.add_tab(grep_tab.clone(), HeaderFile::new(&format!(r#"{} "{}""#, &Lang::get().grep, &search_str)), FileOpenType::Nomal);
+                    term.add_tab(&mut grep_tab.clone(), HeaderFile::new(&format!(r#"{} "{}""#, &Lang::get().grep, &search_str)), FileOpenType::Nomal);
                     GREP_CANCEL_VEC.get().unwrap().try_lock().unwrap().push(GrepCancelType::Greping);
                     if let Some(Ok(tx)) = TX_JOB.get().map(|tx| tx.try_lock()) {
                         EvtAct::watching_grep(tx.clone(), search_str, search_filenm, search_dir);
                     }
 
-                    term.curt().prom_greping();
+                    term.curt().prom_show_com(&CmdType::GrepingProm);
 
                     // Clear(ClearType::CurrentLine) is not performed during grep to prevent flicker. Therefore, clear first
                     Terminal::clear_all();

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::{global::LANG, model::default::Cfg};
+use crate::{global::*, model::default::*};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Lang {
@@ -81,6 +81,7 @@ pub struct Lang {
     pub key_record_exec: String,
     pub key_recording: String,
     pub help: String,
+    pub help_init_display_switch: String,
     pub candidate_change: String,
     pub encoding: String,
     pub new_line_code: String,
@@ -141,7 +142,6 @@ pub struct Lang {
     pub specification_err_keywhen: String,
     // File
     pub no_read_permission: String,
-    pub no_write_permission: String,
     pub file_opening_problem: String,
     pub file_saving_problem: String,
     pub file_not_found: String,

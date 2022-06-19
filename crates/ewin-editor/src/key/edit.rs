@@ -1,10 +1,11 @@
 use std::cmp::min;
 
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, clipboard::*, model::*, util::*},
+    ewin_com::{clipboard::*, model::*, util::*},
     model::*,
 };
 use ewin_cfg::log::*;
+use ewin_com::_cfg::key::cmd::CmdType;
 use ewin_const::def::*;
 
 impl Editor {
@@ -20,8 +21,8 @@ impl Editor {
             self.ins_str(&proc.str);
         } else {
             // Box insert
-            match proc.e_cmd {
-                E_Cmd::InsertStr(ref str) if str.is_empty() => self.insert_box(proc, self.cur.y, self.cur.x, self.cur.disp_x),
+            match proc.cmd.cmd_type {
+                CmdType::InsertStr(ref str) if str.is_empty() => self.insert_box(proc, self.cur.y, self.cur.x, self.cur.disp_x),
                 _ => {
                     let first_sel = proc.box_sel_vec.first().unwrap().0;
                     self.insert_box(proc, first_sel.sy, first_sel.sx, first_sel.s_disp_x)
@@ -175,7 +176,7 @@ impl Editor {
             Log::debug("cur_x", &cur_x);
             let c = self.buf.char(self.cur.y, cur_x);
             ep.str = if c == NEW_LINE_CR { NEW_LINE_CRLF.to_string() } else { NEW_LINE_LF.to_string() };
-            self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelPrevChar), self.cur.y, cur_x);
+            self.buf.remove_del_bs(CmdType::DelPrevChar, self.cur.y, cur_x);
             cur_x = min(cur_x, self.buf.line(self.cur.y).len_chars());
             self.set_cur_target_by_x(self.cur.y, cur_x, false);
             self.scroll();
@@ -186,7 +187,7 @@ impl Editor {
             if self.box_insert.mode == BoxInsertMode::Normal {
                 ep.str = self.buf.char(self.cur.y, self.cur.x).to_string();
                 Log::debug("ep.str", &ep.str);
-                self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelPrevChar), self.cur.y, self.cur.x);
+                self.buf.remove_del_bs(CmdType::DelPrevChar, self.cur.y, self.cur.x);
 
                 //BoxSelMode::Insert
             } else {
@@ -218,7 +219,7 @@ impl Editor {
 
         let c = self.buf.char(self.cur.y, self.cur.x);
         ep.str = if c == NEW_LINE_CR { format!("{}{}", c, NEW_LINE_LF) } else { c.to_string() };
-        self.buf.remove_del_bs(KeyCmd::Edit(E_Cmd::DelNextChar), self.cur.y, self.cur.x);
+        self.buf.remove_del_bs(CmdType::DelNextChar, self.cur.y, self.cur.x);
         if is_nl_char(c) {
             self.set_cur_target_by_x(self.cur.y, self.cur.x, false);
             self.scroll();

@@ -1,8 +1,6 @@
-use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*},
-    model::*,
-};
+use crate::{ewin_com::model::*, model::*};
 use ewin_cfg::{log::*, model::default::*};
+use ewin_com::_cfg::key::cmd::CmdType;
 use ewin_const::def::*;
 use regex::RegexBuilder;
 use ropey::{
@@ -58,18 +56,18 @@ impl TextBuffer {
         self.text.remove(s_idx..e_idx);
     }
 
-    pub fn remove_del_bs(&mut self, keycmd: KeyCmd, y: usize, x: usize) {
+    pub fn remove_del_bs(&mut self, cmd_type: CmdType, y: usize, x: usize) {
         let mut i = self.text.line_to_char(y) + x;
 
         let mut del_num = 1;
         let c = self.char(y, x);
 
         // not select del
-        if keycmd == KeyCmd::Edit(E_Cmd::DelNextChar) {
+        if cmd_type == CmdType::DelNextChar {
             if NEW_LINE_CR == c && NEW_LINE_LF == self.char(y, x + 1) {
                 del_num = 2;
             }
-        } else if keycmd == KeyCmd::Edit(E_Cmd::DelPrevChar) && x > 0 && NEW_LINE_LF == c && NEW_LINE_CR == self.char(y, x - 1) {
+        } else if cmd_type == CmdType::DelPrevChar && x > 0 && NEW_LINE_LF == c && NEW_LINE_CR == self.char(y, x - 1) {
             i -= 1;
             del_num = 2;
         }

@@ -1,8 +1,6 @@
-use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*},
-    model::*,
-};
+use crate::{ewin_com::model::*, model::*};
 use ewin_cfg::{lang::lang_cfg::Lang, log::*};
+use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
 use ewin_const::def::*;
 use kana::*;
 
@@ -27,9 +25,9 @@ impl Editor {
             ConvType::Tab => tgt_str.replace(' ', &TAB_CHAR.to_string()),
         };
 
-        let e_cmd = E_Cmd::InsertStr(convert_str);
-        self.set_keycmd(KeyCmd::Edit(e_cmd.clone()));
-        self.edit_proc(e_cmd);
+        let cmd = Cmd::to_cmd(CmdType::InsertStr(convert_str.clone()));
+        self.set_cmd(cmd.clone());
+        self.edit_proc(cmd);
 
         return ActType::Draw(DParts::All);
     }

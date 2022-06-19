@@ -1,7 +1,7 @@
 use crate::ewin_com::util::*;
 use crate::{
     cont::parts::{file_list::*, info::*, input_area::*, key_desc::*},
-    ewin_com::_cfg::key::keycmd::*,
+    ewin_com::_cfg::key::cmd::*,
     model::*,
     prom_trait::main_trait::*,
 };
@@ -18,10 +18,10 @@ use std::{
 impl PromOpenFile {
     pub const OPEN_FILE_FIXED_PHRASE_ROW_NUM: usize = 5;
 
-    pub fn new(open_file_type: OpenFileType) -> Self {
-        let mut plugin = PromOpenFile { base: PromPluginBase { config: PromptPluginConfig { is_updown_valid: true, ..PromptPluginConfig::default() }, ..PromPluginBase::default() }, ..PromOpenFile::default() };
+    pub fn new(open_file_type: &OpenFileType) -> Self {
+        let mut plugin = PromOpenFile { base: PromBase { config: PromptConfig { is_updown_valid: true, ..PromptConfig::default() }, ..PromBase::default() }, ..PromOpenFile::default() };
 
-        plugin.file_type = open_file_type;
+        plugin.file_type = open_file_type.clone();
 
         plugin.base.cont_vec.push(Box::new(PromContInfo {
             desc_str_vec: vec![match plugin.file_type {
@@ -32,10 +32,10 @@ impl PromOpenFile {
             ..PromContInfo::default()
         }));
 
-        let open_file = PromContKeyMenu { disp_str: Lang::get().open_file.to_string(), key: PromContKeyMenuType::PCmd(P_Cmd::Confirm) };
-        let selct = PromContKeyMenu { disp_str: Lang::get().select.to_string(), key: PromContKeyMenuType::PCmd(P_Cmd::MouseDownLeft(0, 0)) };
-        let switch_area = PromContKeyMenu { disp_str: Lang::get().movement.to_string(), key: PromContKeyMenuType::create_cmds(vec![P_Cmd::NextContent, P_Cmd::CursorUp, P_Cmd::CursorDown, P_Cmd::CursorLeft, P_Cmd::CursorRight], &mut vec![P_Cmd::BackContent]) };
-        let cancel = PromContKeyMenu { disp_str: Lang::get().cancel.to_string(), key: PromContKeyMenuType::PCmd(P_Cmd::Cancel) };
+        let open_file = PromContKeyMenu { disp_str: Lang::get().open_file.to_string(), key: PromContKeyMenuType::Cmd(CmdType::Confirm) };
+        let selct = PromContKeyMenu { disp_str: Lang::get().select.to_string(), key: PromContKeyMenuType::Cmd(CmdType::MouseDownLeft(0, 0)) };
+        let switch_area = PromContKeyMenu { disp_str: Lang::get().movement.to_string(), key: PromContKeyMenuType::create_cmds(vec![CmdType::NextContent, CmdType::CursorUp, CmdType::CursorDown, CmdType::CursorLeft, CmdType::CursorRight], &mut vec![CmdType::BackContent]) };
+        let cancel = PromContKeyMenu { disp_str: Lang::get().cancel.to_string(), key: PromContKeyMenuType::Cmd(CmdType::CancelProm) };
         plugin.base.cont_vec.push(Box::new(PromContKeyDesc { desc_vecs: vec![vec![open_file, selct, switch_area, cancel]], ..PromContKeyDesc::default() }));
 
         let mut input_area = PromContInputArea { desc_str_vec: vec![Lang::get().filenm.to_string()], buf: vec![], config: PromInputAreaConfig { is_edit_proc_later: true, is_path: true, ..PromInputAreaConfig::default() }, ..PromContInputArea::default() };
@@ -196,17 +196,17 @@ impl PromOpenFile {
 }
 
 impl PromPluginTrait for PromOpenFile {
-    fn as_base(&self) -> &PromPluginBase {
+    fn as_base(&self) -> &PromBase {
         &self.base
     }
-    fn as_mut_base(&mut self) -> &mut PromPluginBase {
+    fn as_mut_base(&mut self) -> &mut PromBase {
         &mut self.base
     }
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct PromOpenFile {
-    pub base: PromPluginBase,
+    pub base: PromBase,
     pub base_path: String,
     pub file_type: OpenFileType,
     pub omitted_path_str: String,

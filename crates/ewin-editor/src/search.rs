@@ -1,8 +1,6 @@
-use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*},
-    model::*,
-};
+use crate::{ewin_com::model::*, model::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*, model::default::*};
+use ewin_com::_cfg::key::cmd::CmdType;
 use ewin_const::def::*;
 use std::{cmp::min, collections::BTreeSet};
 
@@ -206,7 +204,7 @@ impl Editor {
         }
         Log::debug_key("2222222222222222222222222222");
 
-        self.search_str(self.e_cmd == E_Cmd::FindNext, false);
+        self.search_str(self.cmd.cmd_type == CmdType::FindNext, false);
         return ActType::Next;
     }
 }

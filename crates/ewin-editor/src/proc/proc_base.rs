@@ -1,61 +1,59 @@
-use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*},
-    model::*,
-};
+use crate::{ewin_com::model::*, model::*};
 use ewin_cfg::{global::*, log::*, model::default::*};
+use ewin_com::_cfg::key::cmd::CmdType;
 
 impl Editor {
     pub fn proc(&mut self) -> ActType {
         Log::debug_key("Editor.proc");
 
-        let e_cmd = self.e_cmd.clone();
-        let act_type = match e_cmd {
+        let cmd = self.cmd.clone();
+        let act_type = match cmd.cmd_type {
             // edit
-            E_Cmd::InsertStr(str) => self.edit_proc(E_Cmd::InsertStr(str)),
-            E_Cmd::InsertRow => self.edit_proc(E_Cmd::InsertRow),
-            E_Cmd::DelPrevChar => self.edit_proc(E_Cmd::DelPrevChar),
-            E_Cmd::DelNextChar => self.edit_proc(E_Cmd::DelNextChar),
-            E_Cmd::Cut => self.edit_proc(E_Cmd::Cut),
-            E_Cmd::Copy => self.copy(),
-            E_Cmd::Undo => self.undo(),
-            E_Cmd::Redo => self.redo(),
+            CmdType::InsertStr(_) => self.edit_proc(cmd.clone()),
+            CmdType::InsertRow => self.edit_proc(cmd),
+            CmdType::DelPrevChar => self.edit_proc(cmd),
+            CmdType::DelNextChar => self.edit_proc(cmd),
+            CmdType::Cut => self.edit_proc(cmd),
+            CmdType::Copy => self.copy(),
+            CmdType::Undo => self.undo(),
+            CmdType::Redo => self.redo(),
             // Search
-            E_Cmd::FindNext | E_Cmd::FindBack => self.find_next_back(),
+            CmdType::FindNext | CmdType::FindBack => self.find_next_back(),
             // If CtxMenu = true and there is no Mouse on CtxMenu
-            E_Cmd::MouseMove(_, _) => return ActType::Cancel,
+            CmdType::MouseMove(_, _) => return ActType::Cancel,
             // InputComple
-            E_Cmd::InputComple => self.init_input_comple(true),
+            CmdType::InputComple => self.init_input_comple(true),
             /*
              * display
              */
-            E_Cmd::SwitchDispScale => {
+            CmdType::SwitchDispScale => {
                 CFG_EDIT.get().unwrap().try_lock().map(|mut cfg| cfg.general.editor.scale.is_enable = !cfg.general.editor.scale.is_enable).unwrap();
                 return ActType::Draw(DParts::All);
             }
-            E_Cmd::SwitchDispRowNo => {
+            CmdType::SwitchDispRowNo => {
                 CfgEdit::switch_editor_row_no_enable();
                 return ActType::Draw(DParts::All);
             }
-            E_Cmd::Null => return ActType::Draw(DParts::All),
+            CmdType::Null => return ActType::Draw(DParts::All),
             _ => ActType::Cancel,
         };
         if act_type != ActType::Cancel {
             return act_type;
         }
-        let e_cmd = self.e_cmd.clone();
-        match e_cmd {
+        let cmd = self.cmd.clone();
+        match cmd.cmd_type {
             // cursor move
-            E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::CursorDown | E_Cmd::MouseScrollDown | E_Cmd::CursorLeft | E_Cmd::CursorRight | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd | E_Cmd::CursorFileHome | E_Cmd::CursorFileEnd | E_Cmd::CursorPageUp | E_Cmd::CursorPageDown => {
+            CmdType::CursorUp | CmdType::MouseScrollUp | CmdType::CursorDown | CmdType::MouseScrollDown | CmdType::CursorLeft | CmdType::CursorRight | CmdType::CursorRowHome | CmdType::CursorRowEnd | CmdType::CursorFileHome | CmdType::CursorFileEnd | CmdType::CursorPageUp | CmdType::CursorPageDown => {
                 self.cur_move_com();
             }
             // select
-            E_Cmd::CursorUpSelect | E_Cmd::CursorDownSelect | E_Cmd::CursorLeftSelect | E_Cmd::CursorRightSelect | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect => self.shift_move_com(),
-            E_Cmd::AllSelect => self.all_select(),
+            CmdType::CursorUpSelect | CmdType::CursorDownSelect | CmdType::CursorLeftSelect | CmdType::CursorRightSelect | CmdType::CursorRowHomeSelect | CmdType::CursorRowEndSelect => self.shift_move_com(),
+            CmdType::AllSelect => self.all_select(),
             // mouse
-            E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseUpLeft(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) | E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) => self.ctrl_mouse(),
-            E_Cmd::MouseModeSwitch => self.ctrl_mouse_capture(),
+            CmdType::MouseDownLeft(_, _) | CmdType::MouseUpLeft(_, _) | CmdType::MouseDragLeftDown(_, _) | CmdType::MouseDragLeftUp(_, _) | CmdType::MouseDragLeftLeft(_, _) | CmdType::MouseDragLeftRight(_, _) | CmdType::MouseDownLeftBox(_, _) | CmdType::MouseDragLeftBox(_, _) => self.ctrl_mouse(),
+            CmdType::MouseModeSwitch => self.ctrl_mouse_capture(),
             // Mode
-            E_Cmd::BoxSelectMode => self.box_select_mode(),
+            CmdType::BoxSelectMode => self.box_select_mode(),
             // empty
             _ => {}
         };
@@ -71,7 +69,7 @@ mod tests {
         default::{Cfg, CfgLog},
         modal::AppArgs,
     };
-    use ewin_com::clipboard::*;
+    use ewin_com::{_cfg::key::cmd::Cmd, clipboard::*};
 
     #[test]
     fn test_editor_proc_base_edit() {
@@ -79,7 +77,7 @@ mod tests {
         let mut e = Editor::new();
 
         // InsertStr
-        e.e_cmd = E_Cmd::InsertStr("a".to_string());
+        e.cmd = Cmd::to_cmd(CmdType::InsertStr("a".to_string()));
         e.proc();
         assert_eq!(e.buf.text.to_string(), "a▚");
         assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
@@ -87,13 +85,13 @@ mod tests {
         // Copy
         e.sel.set_s(0, 0, 0);
         e.sel.set_e(0, 1, 1);
-        e.e_cmd = E_Cmd::Copy;
+        e.cmd = Cmd::to_cmd(CmdType::Copy);
         e.proc();
         let clipboard = get_clipboard().unwrap_or_else(|_| "".to_string());
         assert_eq!(clipboard, "a");
 
         // Paste
-        e.e_cmd = E_Cmd::InsertStr("".to_string());
+        e.cmd = Cmd::to_cmd(CmdType::InsertStr("".to_string()));
         e.proc();
         assert_eq!(e.buf.text.to_string(), "aa▚");
         assert_eq!(e.cur, Cur { y: 0, x: 2, disp_x: 2 });
@@ -101,7 +99,7 @@ mod tests {
         // Cut
         e.sel.set_s(0, 1, 1);
         e.sel.set_e(0, 2, 2);
-        e.e_cmd = E_Cmd::Cut;
+        e.cmd = Cmd::to_cmd(CmdType::Cut);
         e.proc();
         let clipboard = get_clipboard().unwrap_or_else(|_| "".to_string());
         assert_eq!(clipboard, "a");
@@ -110,38 +108,38 @@ mod tests {
         e.sel.clear();
 
         // InsertLine
-        e.e_cmd = E_Cmd::InsertRow;
+        e.cmd = Cmd::to_cmd(CmdType::InsertRow);
         e.proc();
         assert_eq!(e.buf.text.to_string(), "a\n▚");
         assert_eq!(e.cur, Cur { y: 1, x: 0, disp_x: 0 });
 
         // DelPrevChar
-        e.e_cmd = E_Cmd::DelPrevChar;
+        e.cmd = Cmd::to_cmd(CmdType::DelPrevChar);
         e.proc();
         assert_eq!(e.buf.text.to_string(), "a▚");
         assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
 
         // DelNextChar
-        e.e_cmd = E_Cmd::InsertStr("b".to_string());
+        e.cmd = Cmd::to_cmd(CmdType::InsertStr("b".to_string()));
         e.proc();
         assert_eq!(e.buf.text.to_string(), "ab▚");
         assert_eq!(e.cur, Cur { y: 0, x: 2, disp_x: 2 });
-        e.e_cmd = E_Cmd::CursorLeft;
+        e.cmd = Cmd::to_cmd(CmdType::CursorLeft);
         e.proc();
         assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
-        e.e_cmd = E_Cmd::DelNextChar;
+        e.cmd = Cmd::to_cmd(CmdType::DelNextChar);
         e.proc();
         assert_eq!(e.buf.text.to_string(), "a▚");
         assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
 
         // Undo
-        e.e_cmd = E_Cmd::Undo;
+        e.cmd = Cmd::to_cmd(CmdType::Undo);
         e.proc();
         assert_eq!(e.buf.text.to_string(), "ab▚");
         assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
 
         // Redo
-        e.e_cmd = E_Cmd::Redo;
+        e.cmd = Cmd::to_cmd(CmdType::Redo);
         e.proc();
         assert_eq!(e.buf.text.to_string(), "a▚");
         assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
@@ -153,37 +151,37 @@ mod tests {
         let mut e = Editor::new();
 
         // CursorLeft
-        e.e_cmd = E_Cmd::InsertStr("a".to_string());
+        e.cmd = Cmd::to_cmd(CmdType::InsertStr("a".to_string()));
         e.proc();
         assert_eq!(e.buf.text.to_string(), "a▚");
-        e.e_cmd = E_Cmd::CursorLeft;
+        e.cmd = Cmd::to_cmd(CmdType::CursorLeft);
         e.proc();
         assert_eq!(e.cur, Cur { y: 0, x: 0, disp_x: 0 });
         // CursorRight
-        e.e_cmd = E_Cmd::CursorRight;
+        e.cmd = Cmd::to_cmd(CmdType::CursorRight);
         e.proc();
         assert_eq!(e.cur, Cur { y: 0, x: 1, disp_x: 1 });
 
-        // E_Cmd::CursorUp
-        e.e_cmd = E_Cmd::InsertRow;
+        // Cmd::to_cmd(CmdType::CursorUp
+        e.cmd = Cmd::to_cmd(CmdType::InsertRow);
         e.proc();
-        e.e_cmd = E_Cmd::CursorUp;
+        e.cmd = Cmd::to_cmd(CmdType::CursorUp);
         e.proc();
         assert_eq!(e.cur, Cur { y: 0, x: 0, disp_x: 0 });
-        // E_Cmd::CursorDown
-        e.e_cmd = E_Cmd::CursorDown;
+        // Cmd::to_cmd(CmdType::CursorDown
+        e.cmd = Cmd::to_cmd(CmdType::CursorDown);
         e.proc();
         assert_eq!(e.cur, Cur { y: 1, x: 0, disp_x: 0 });
 
         // CursorRowHome
-        e.e_cmd = E_Cmd::InsertStr("abc".to_string());
+        e.cmd = Cmd::to_cmd(CmdType::InsertStr("abc".to_string()));
         e.proc();
         assert_eq!(e.cur, Cur { y: 1, x: 3, disp_x: 3 });
-        e.e_cmd = E_Cmd::CursorRowHome;
+        e.cmd = Cmd::to_cmd(CmdType::CursorRowHome);
         e.proc();
         assert_eq!(e.cur, Cur { y: 1, x: 0, disp_x: 0 });
         // CursorRowEnd
-        e.e_cmd = E_Cmd::CursorRowEnd;
+        e.cmd = Cmd::to_cmd(CmdType::CursorRowEnd);
         e.proc();
         assert_eq!(e.cur, Cur { y: 1, x: 3, disp_x: 3 });
     }
@@ -192,26 +190,26 @@ mod tests {
     fn test_editor_proc_base_select() {
         Log::set_logger(&CfgLog { level: "test".to_string() });
         let mut e = Editor::new();
-        e.e_cmd = E_Cmd::InsertStr("123\nabc\nABC".to_string());
+        e.cmd = Cmd::to_cmd(CmdType::InsertStr("123\nabc\nABC".to_string()));
         e.proc();
 
         // CursorUpSelect
-        e.e_cmd = E_Cmd::CursorUpSelect;
+        e.cmd = Cmd::to_cmd(CmdType::CursorUpSelect);
         e.proc();
         assert_eq!(e.sel.get_range(), SelRange { sy: 1, sx: 3, ey: 2, ex: 3, s_disp_x: 3, e_disp_x: 3, ..SelRange::default() });
 
         // CursorLeftSelect
-        e.e_cmd = E_Cmd::CursorLeftSelect;
+        e.cmd = Cmd::to_cmd(CmdType::CursorLeftSelect);
         e.proc();
         assert_eq!(e.sel.get_range(), SelRange { sy: 1, sx: 2, ey: 2, ex: 3, s_disp_x: 2, e_disp_x: 3, ..SelRange::default() });
 
         // CursorRightSelect
-        e.e_cmd = E_Cmd::CursorRightSelect;
+        e.cmd = Cmd::to_cmd(CmdType::CursorRightSelect);
         e.proc();
         assert_eq!(e.sel.get_range(), SelRange { sy: 1, sx: 3, ey: 2, ex: 3, s_disp_x: 3, e_disp_x: 3, ..SelRange::default() });
 
         // CursorDownSelect
-        e.e_cmd = E_Cmd::CursorDownSelect;
+        e.cmd = Cmd::to_cmd(CmdType::CursorDownSelect);
         e.proc();
         assert_eq!(e.sel.get_range(), SelRange { ..SelRange::default() });
     }
@@ -222,18 +220,18 @@ mod tests {
         Cfg::init(&AppArgs { ..AppArgs::default() });
 
         let mut e = Editor::new();
-        e.e_cmd = E_Cmd::InsertStr("123\nabc\nABC\nabc".to_string());
+        e.cmd = Cmd::to_cmd(CmdType::InsertStr("123\nabc\nABC\nabc".to_string()));
         e.proc();
 
         // FindNext
         e.search.str = "b".to_string();
-        e.e_cmd = E_Cmd::FindNext;
+        e.cmd = Cmd::to_cmd(CmdType::FindNext);
         e.proc();
         assert_eq!(e.cur, Cur { y: 1, x: 1, disp_x: 1 });
         assert_eq!(e.search, Search { idx: 0, ranges: vec![SearchRange { y: 1, sx: 1, ex: 2 }, SearchRange { y: 3, sx: 1, ex: 2 }], str: "b".to_string(), ..Search::default() });
 
         // FindBack
-        e.e_cmd = E_Cmd::FindBack;
+        e.cmd = Cmd::to_cmd(CmdType::FindBack);
         e.proc();
         assert_eq!(e.cur, Cur { y: 3, x: 1, disp_x: 1 });
         assert_eq!(e.search, Search { idx: 1, ranges: vec![SearchRange { y: 1, sx: 1, ex: 2 }, SearchRange { y: 3, sx: 1, ex: 2 }], str: "b".to_string(), ..Search::default() });
@@ -245,63 +243,63 @@ mod tests {
         Cfg::init(&AppArgs { ..AppArgs::default() });
 
         let mut e = Editor::new();
-        e.e_cmd = E_Cmd::InsertStr("123\nabc\nABC\nabc".to_string());
+        e.cmd = Cmd::to_cmd(CmdType::InsertStr("123\nabc\nABC\nabc".to_string()));
         e.proc();
 
         // MouseDownLeft
-        e.e_cmd = E_Cmd::MouseDownLeft(3, 3);
+        e.cmd = Cmd::to_cmd(CmdType::MouseDownLeft(3, 3));
         e.proc();
         assert_eq!(e.cur, Cur { y: 2, x: 1, disp_x: 1 });
 
         // MouseDragLeft
         // TODO MouseDragLeftDown, MouseDragLeftUp
-        e.e_cmd = E_Cmd::MouseDragLeftDown(4, 4);
+        e.cmd = Cmd::to_cmd(CmdType::MouseDragLeftDown(4, 4));
         e.proc();
         assert_eq!(e.cur, Cur { y: 3, x: 2, disp_x: 2 });
         assert_eq!(e.sel.get_range(), SelRange { sy: 2, sx: 1, s_disp_x: 1, ey: 3, ex: 2, e_disp_x: 2, ..SelRange::default() });
         e.sel.clear();
 
         // MouseDownBoxLeft
-        e.e_cmd = E_Cmd::MouseDownLeftBox(2, 3);
+        e.cmd = Cmd::to_cmd(CmdType::MouseDownLeftBox(2, 3));
         e.proc();
         assert_eq!(e.cur, Cur { y: 1, x: 1, disp_x: 1 });
         assert_eq!(e.sel.mode, SelMode::BoxSelect);
 
         // MouseDragBoxLeft
-        e.e_cmd = E_Cmd::MouseDragLeftBox(3, 4);
+        e.cmd = Cmd::to_cmd(CmdType::MouseDragLeftBox(3, 4));
         e.proc();
         assert_eq!(e.cur, Cur { y: 2, x: 2, disp_x: 2 });
         assert_eq!(e.sel.get_range(), SelRange { mode: SelMode::BoxSelect, sy: 1, sx: 1, s_disp_x: 1, ey: 2, ex: 2, e_disp_x: 2 });
 
         // MouseModeSwitch
-        e.e_cmd = E_Cmd::MouseModeSwitch;
+        e.cmd = Cmd::to_cmd(CmdType::MouseModeSwitch);
         e.proc();
         assert_eq!(e.state.mouse, Mouse::Disable);
         assert_eq!(e.rnw, 0);
-        e.e_cmd = E_Cmd::MouseModeSwitch;
+        e.cmd = Cmd::to_cmd(CmdType::MouseModeSwitch);
         e.proc();
         assert_eq!(e.state.mouse, Mouse::Enable);
         assert_eq!(e.rnw, e.buf.len_rows().to_string().len());
 
         // BoxSelectMode
-        e.e_cmd = E_Cmd::BoxSelectMode;
+        e.cmd = Cmd::to_cmd(CmdType::BoxSelectMode);
         e.proc();
         assert_eq!(e.sel.mode, SelMode::Normal);
-        e.e_cmd = E_Cmd::BoxSelectMode;
+        e.cmd = Cmd::to_cmd(CmdType::BoxSelectMode);
         e.proc();
         assert_eq!(e.sel.mode, SelMode::BoxSelect);
         e.box_insert.mode = BoxInsertMode::Insert;
 
         // CancelMode
-        e.e_cmd = E_Cmd::CancelState;
+        e.cmd = Cmd::to_cmd(CmdType::CancelEditorState);
         e.proc();
         assert_eq!(e.sel.mode, SelMode::Normal);
         assert_eq!(e.box_insert.mode, BoxInsertMode::Normal);
         //   select
-        e.e_cmd = E_Cmd::CursorLeftSelect;
+        e.cmd = Cmd::to_cmd(CmdType::CursorLeftSelect);
         e.proc();
         assert_eq!(e.sel, SelRange { sy: 2, sx: 2, s_disp_x: 2, ey: 2, ex: 1, e_disp_x: 1, ..SelRange::default() });
-        e.e_cmd = E_Cmd::CancelState;
+        e.cmd = Cmd::to_cmd(CmdType::CancelEditorState);
         e.proc();
         assert_eq!(e.sel, SelRange { ..SelRange::default() });
     }

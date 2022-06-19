@@ -1,44 +1,42 @@
 use crate::{model::*, prom_trait::cont_trait::*, util::*};
 use crossterm::cursor::MoveTo;
 use ewin_cfg::{colors::*, log::*};
-use ewin_com::{_cfg::key::keycmd::*, model::*, util::*};
+use ewin_com::{_cfg::key::cmd::*, model::*, util::*};
 use std::cmp::min;
 
 use super::path_comp::PathComp;
 
 impl PromContInputArea {
     pub fn proc_input_area(&mut self) -> ActType {
-        Log::debug("self.base.p_cmd", &self.base.p_cmd);
-
-        let act_type = match self.base.p_cmd {
-            P_Cmd::InsertStr(_) => {
+        let act_type = match self.base.cmd.cmd_type {
+            CmdType::InsertStr(_) => {
                 if self.config.is_edit_proc_orig {
                     return ActType::Next;
                 }
-                self.edit_proc(self.base.p_cmd.clone())
+                self.edit_proc(self.base.cmd.clone())
             }
-            P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::Cut => self.edit_proc(self.base.p_cmd.clone()),
-            P_Cmd::Copy => self.copy(),
-            P_Cmd::Undo => self.undo(),
-            P_Cmd::Redo => self.redo(),
-            P_Cmd::NextContent | P_Cmd::BackContent => {
+            CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Cut => self.edit_proc(self.base.cmd.clone()),
+            CmdType::Copy => self.copy(),
+            CmdType::Undo => self.undo(),
+            CmdType::Redo => self.redo(),
+            CmdType::NextContent | CmdType::BackContent => {
                 if self.config.is_path {
-                    self.buf = self.path_comp.get_path_candidate(self.base.p_cmd == P_Cmd::NextContent, self.buf[..self.cur.x].iter().collect::<String>(), self.config.is_path_dir_only);
+                    self.buf = self.path_comp.get_path_candidate(self.base.cmd.cmd_type == CmdType::NextContent, self.buf[..self.cur.x].iter().collect::<String>(), self.config.is_path_dir_only);
                     self.set_cur_target(self.buf.len());
                     return ActType::Draw(DParts::Prompt);
                 }
                 return ActType::Next;
             }
-            P_Cmd::Confirm => return ActType::Next,
+            CmdType::Confirm => return ActType::Next,
             _ => ActType::Next,
         };
         if act_type != ActType::Next {
             return act_type;
         }
-        match self.base.p_cmd {
-            P_Cmd::CursorLeft | P_Cmd::CursorRight | P_Cmd::CursorRowHome | P_Cmd::CursorRowEnd => self.cur_move(),
-            P_Cmd::CursorLeftSelect | P_Cmd::CursorRightSelect | P_Cmd::CursorRowHomeSelect | P_Cmd::CursorRowEndSelect => self.shift_move_com(),
-            P_Cmd::MouseDownLeft(y, x) | P_Cmd::MouseDragLeft(y, x) => {
+        match self.base.cmd.cmd_type {
+            CmdType::CursorLeft | CmdType::CursorRight | CmdType::CursorRowHome | CmdType::CursorRowEnd => self.cur_move(),
+            CmdType::CursorLeftSelect | CmdType::CursorRightSelect | CmdType::CursorRowHomeSelect | CmdType::CursorRowEndSelect => self.shift_move_com(),
+            CmdType::MouseDownLeft(y, x) | CmdType::MouseDragLeftLeft(y, x) | CmdType::MouseDragLeftRight(y, x) => {
                 if y == self.base.row_posi_range.end {
                     self.ctrl_mouse(y, x);
                 } else {
@@ -48,11 +46,11 @@ impl PromContInputArea {
             _ => {}
         }
 
-        if is_edit_proc(&self.base.p_cmd) {
+        if is_edit_proc(&self.base.cmd.cmd_type) {
             self.path_comp.clear_path_comp();
         }
-        match &self.base.p_cmd {
-            P_Cmd::CursorLeft | P_Cmd::CursorRight | P_Cmd::CursorRowHome | P_Cmd::CursorRowEnd | P_Cmd::CursorLeftSelect | P_Cmd::CursorRightSelect | P_Cmd::CursorRowHomeSelect | P_Cmd::CursorRowEndSelect => {
+        match &self.base.cmd.cmd_type {
+            CmdType::CursorLeft | CmdType::CursorRight | CmdType::CursorRowHome | CmdType::CursorRowEnd | CmdType::CursorLeftSelect | CmdType::CursorRightSelect | CmdType::CursorRowHomeSelect | CmdType::CursorRowEndSelect => {
                 self.path_comp.clear_path_comp();
             }
             _ => {}
@@ -112,15 +110,15 @@ impl PromContPluginTrait for PromContInputArea {
     }
 
     fn check_allow_p_cmd(&self) -> bool {
-        return match self.as_base().p_cmd {
-            P_Cmd::InsertStr(_) | P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::Cut | P_Cmd::CursorLeft | P_Cmd::CursorRight | P_Cmd::CursorRowHome | P_Cmd::CursorRowEnd | P_Cmd::CursorLeftSelect | P_Cmd::CursorRightSelect | P_Cmd::CursorRowHomeSelect | P_Cmd::CursorRowEndSelect | P_Cmd::Copy | P_Cmd::Undo | P_Cmd::Redo => true,
-            P_Cmd::MouseDownLeft(y, _) | P_Cmd::MouseDragLeft(y, _) if self.base.row_posi_range.start <= y && y <= self.base.row_posi_range.end => true,
+        return match self.as_base().cmd.cmd_type {
+            CmdType::InsertStr(_) | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Cut | CmdType::CursorLeft | CmdType::CursorRight | CmdType::CursorRowHome | CmdType::CursorRowEnd | CmdType::CursorLeftSelect | CmdType::CursorRightSelect | CmdType::CursorRowHomeSelect | CmdType::CursorRowEndSelect | CmdType::Copy | CmdType::Undo | CmdType::Redo => true,
+            CmdType::MouseDownLeft(y, _) | CmdType::MouseDragLeftLeft(y, _) | CmdType::MouseDragLeftRight(y, _) if self.base.row_posi_range.start <= y && y <= self.base.row_posi_range.end => true,
             _ => false,
         };
     }
 }
 
-impl PromPluginBase {
+impl PromBase {
     pub fn get_curt_input_area(&mut self) -> Option<&mut PromContInputArea> {
         Log::debug_key("PromptPluginBase.get_curt_input_area");
         Log::debug("self.curt_cont_idx", &self.curt_cont_idx);

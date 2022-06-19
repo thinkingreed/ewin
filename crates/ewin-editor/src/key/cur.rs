@@ -1,8 +1,9 @@
 use ewin_cfg::{log::*, model::default::*};
+use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
 use ewin_const::def::*;
 
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*, util::*},
+    ewin_com::{model::*, util::*},
     model::*,
 };
 use std::cmp::min;
@@ -11,17 +12,17 @@ impl Editor {
     pub fn cur_move_com(&mut self) {
         Log::debug_key("cur_move_com");
         Log::debug("self.sel.mode", &self.sel.mode);
-        match self.e_cmd {
-            E_Cmd::CursorUp | E_Cmd::MouseScrollUp => self.cur_up(),
-            E_Cmd::CursorDown | E_Cmd::MouseScrollDown => self.cur_down(),
-            E_Cmd::CursorLeft => self.cur_left(),
-            E_Cmd::CursorRight => self.cur_right(),
-            E_Cmd::CursorRowHome => self.cur_home(),
-            E_Cmd::CursorRowEnd => self.cur_end(),
-            E_Cmd::CursorFileHome => self.ctrl_home(),
-            E_Cmd::CursorFileEnd => self.ctrl_end(),
-            E_Cmd::CursorPageUp => self.page_up(),
-            E_Cmd::CursorPageDown => self.page_down(),
+        match self.cmd.cmd_type {
+            CmdType::CursorUp | CmdType::MouseScrollUp => self.cur_up(),
+            CmdType::CursorDown | CmdType::MouseScrollDown => self.cur_down(),
+            CmdType::CursorLeft => self.cur_left(),
+            CmdType::CursorRight => self.cur_right(),
+            CmdType::CursorRowHome => self.cur_home(),
+            CmdType::CursorRowEnd => self.cur_end(),
+            CmdType::CursorFileHome => self.ctrl_home(),
+            CmdType::CursorFileEnd => self.ctrl_end(),
+            CmdType::CursorPageUp => self.page_up(),
+            CmdType::CursorPageDown => self.page_down(),
             _ => {}
         }
 
@@ -33,21 +34,11 @@ impl Editor {
             self.sel.clear();
         }
         Log::debug("self.sel.mode == SelMode::BoxSelect", &(self.sel.mode == SelMode::BoxSelect));
-        Log::debug("self.e_cmd", &self.e_cmd);
-
-        /*
-        match self.e_cmd {
-            E_Cmd::CursorUp | E_Cmd::CursorDown | E_Cmd::CursorLeft | E_Cmd::CursorRight if self.sel.mode == SelMode::BoxSelect => {}
-            _ => {
-                self.sel.clear();
-                self.sel.mode = SelMode::Normal;
-            }
-        };
-         */
+        Log::debug("self.cmd", &self.cmd);
     }
 
     pub fn cur_up(&mut self) {
-        if !self.is_move_position_by_scrolling_enable_and_e_cmd() {
+        if !self.is_move_position_by_scrolling_enable_and_cmd() {
             if self.cur.y == 0 {
                 return;
             }
@@ -60,7 +51,7 @@ impl Editor {
         Log::debug_key("Editor.cur_down");
         Log::debug("self.buf.len_rows() ", &self.buf.len_rows());
 
-        if !self.is_move_position_by_scrolling_enable_and_e_cmd() {
+        if !self.is_move_position_by_scrolling_enable_and_cmd() {
             if self.cur.y == self.buf.len_rows() - 1 {
                 return;
             }
@@ -105,7 +96,7 @@ impl Editor {
             } else {
                 self.cur.x -= 1;
                 self.cur.disp_x -= get_char_width_not_tab(&c);
-                if c == NEW_LINE_CR && (self.e_cmd == E_Cmd::CursorLeftSelect || self.e_cmd == E_Cmd::CursorLeft) {
+                if c == NEW_LINE_CR && (self.cmd.cmd_type == CmdType::CursorLeftSelect || self.cmd.cmd_type == CmdType::CursorLeft) {
                     self.cur.disp_x -= 1;
                     self.cur.x -= 1;
                 }
@@ -120,8 +111,8 @@ impl Editor {
 
         let char_opt = self.buf.char_opt(self.cur.y, self.cur.x);
 
-        match self.e_cmd {
-            E_Cmd::CursorRight | E_Cmd::CursorRightSelect | E_Cmd::InsertStr(_) if self.sel.mode == SelMode::Normal => {
+        match self.cmd.cmd_type {
+            CmdType::CursorRight | CmdType::CursorRightSelect | CmdType::InsertStr(_) if self.sel.mode == SelMode::Normal => {
                 if let Some(c) = char_opt {
                     if is_nl_char(c) {
                         is_end_of_line = true;
@@ -146,7 +137,7 @@ impl Editor {
             } else {
                 self.cur.disp_x += get_char_width_not_tab(&c);
                 self.cur.x = min(self.cur.x + 1, self.buf.len_row_chars(self.cur.y));
-                if self.e_cmd == E_Cmd::CursorRightSelect && c == NEW_LINE_CR {
+                if self.cmd == Cmd::to_cmd(CmdType::CursorRightSelect) && c == NEW_LINE_CR {
                     self.cur.disp_x += 1;
                     self.cur.x += 1;
                 }
@@ -157,7 +148,7 @@ impl Editor {
         }
 
         if self.sel.mode == SelMode::Normal {
-            self.scroll();
+            // self.scroll();
             self.scroll_horizontal();
         }
     }
@@ -202,13 +193,13 @@ impl Editor {
     pub fn shift_move_com(&mut self) {
         self.sel.set_sel_posi(true, self.cur);
 
-        match self.e_cmd {
-            E_Cmd::CursorUpSelect => self.cur_up(),
-            E_Cmd::CursorDownSelect => self.cur_down(),
-            E_Cmd::CursorLeftSelect => self.cur_left(),
-            E_Cmd::CursorRightSelect => self.cur_right(),
-            E_Cmd::CursorRowHomeSelect => self.cur_home(),
-            E_Cmd::CursorRowEndSelect => self.cur_end(),
+        match self.cmd.cmd_type {
+            CmdType::CursorUpSelect => self.cur_up(),
+            CmdType::CursorDownSelect => self.cur_down(),
+            CmdType::CursorLeftSelect => self.cur_left(),
+            CmdType::CursorRightSelect => self.cur_right(),
+            CmdType::CursorRowHomeSelect => self.cur_home(),
+            CmdType::CursorRowEndSelect => self.cur_end(),
             _ => {}
         }
         self.scroll();

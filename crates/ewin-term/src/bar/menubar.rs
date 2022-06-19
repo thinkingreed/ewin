@@ -17,33 +17,40 @@ impl MenuBar {
     pub fn draw(&self, str_vec: &mut Vec<String>) {
         Log::info_key("MenuBar.draw");
         Log::debug(" self.sel_idx ", &self.sel_idx);
+        Log::debug(" self.row_num ", &self.row_num);
 
-        let close_btn = format!(" {} ", 'x');
-        let left_arrow_btn = "< ".to_string();
-        let right_arrow_btn = " >".to_string();
+        str_vec.push(format!("{}{}", MoveTo(0, self.row_posi as u16), Clear(ClearType::CurrentLine)));
 
-        let mut mber_str = format!("{}{}{}", MoveTo(0, self.row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_mbar_default_bg());
-        if self.is_left_arrow_disp {
-            mber_str.push_str(&format!("{}{}", &Colors::get_mbar_active_fg_bg(), left_arrow_btn));
-        }
-        for (i, menu_cont) in self.menu_vec.iter().enumerate() {
-            Log::debug("menu_cont", &menu_cont);
-            if !menu_cont.is_disp {
-                continue;
+        if self.row_num > 0 {
+            let close_btn = format!(" {} ", 'x');
+            let left_arrow_btn = "< ".to_string();
+            let right_arrow_btn = " >".to_string();
+
+            let mut mber_str = String::new();
+            if self.is_left_arrow_disp {
+                mber_str.push_str(&format!("{}{}", &Colors::get_mbar_active_fg_bg(), left_arrow_btn));
             }
-            Log::debug("self.on_mouse_idx", &self.on_mouse_idx);
-            let state_color = if i == self.sel_idx || i == self.on_mouse_idx { Colors::get_mbar_active_fg_bg() } else { Colors::get_mbar_passive_fg_bg() };
-            mber_str.push_str(&format!("{}{}{}", &state_color, &menu_cont.dispnm, Colors::get_mbar_default_bg()));
-        }
+            mber_str.push_str(&Colors::get_mbar_default_bg());
 
-        Log::debug("self.menu_rest", &self.menu_rest);
+            for (i, menu_cont) in self.menu_vec.iter().enumerate() {
+                Log::debug("menu_cont", &menu_cont);
+                if !menu_cont.is_disp {
+                    continue;
+                }
+                Log::debug("self.on_mouse_idx", &self.on_mouse_idx);
+                let state_color = if i == self.sel_idx || i == self.on_mouse_idx { Colors::get_mbar_active_fg_bg() } else { Colors::get_mbar_passive_fg_bg() };
+                mber_str.push_str(&format!("{}{}{}", &state_color, &menu_cont.dispnm, Colors::get_mbar_default_bg()));
+            }
 
-        mber_str.push_str(&format!("{}{}", &Colors::get_mbar_default_bg(), &" ".repeat(self.menu_rest)));
-        if self.is_right_arrow_disp {
-            mber_str.push_str(&format!("{}{}", &Colors::get_mbar_active_fg_bg(), right_arrow_btn));
+            Log::debug("self.menu_rest", &self.menu_rest);
+
+            mber_str.push_str(&format!("{}{}", &Colors::get_mbar_default_bg(), &" ".repeat(self.menu_rest)));
+            if self.is_right_arrow_disp {
+                mber_str.push_str(&format!("{}{}", &Colors::get_mbar_active_fg_bg(), right_arrow_btn));
+            }
+            mber_str = format!("{}{}{}{}", mber_str, Colors::get_mbar_passive_fg_bg(), close_btn, Colors::get_default_bg());
+            str_vec.push(mber_str);
         }
-        mber_str = format!("{}{}{}{}", mber_str, Colors::get_mbar_passive_fg_bg(), close_btn, Colors::get_default_bg());
-        str_vec.push(mber_str);
     }
 
     pub fn draw_only<T: Write>(&self, out: &mut T) {
@@ -178,7 +185,6 @@ impl MenuBar {
 
     pub fn redraw_menubar_on_mouse(&mut self, keys: &Keys) {
         if self.on_mouse_idx != USIZE_UNDEFINED {
-            Log::debug_s("22222222222222222222222");
             if let Keys::MouseMove(y, _) = keys {
                 if y != &(self.row_posi as u16) {
                     self.on_mouse_idx = USIZE_UNDEFINED;

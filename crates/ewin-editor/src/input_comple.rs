@@ -1,10 +1,11 @@
 use std::{cmp::min, collections::BTreeSet};
 
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*, util::*},
+    ewin_com::{model::*, util::*},
     model::*,
 };
 use ewin_cfg::{lang::lang_cfg::*, log::*};
+use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
 use ewin_widget::widget::input_comple::*;
 
 impl Editor {
@@ -52,12 +53,12 @@ impl Editor {
     }
     pub fn ctrl_input_comple(&mut self) -> ActType {
         Log::debug_key("EvtAct::ctrl_input_comple_before");
-        let e_cmd = self.e_cmd.clone();
-        Log::debug("e_cmd", &e_cmd);
+        let cmd = self.cmd.clone();
+        Log::debug("cmd", &cmd);
 
-        match e_cmd {
-            E_Cmd::InputComple => return self.init_input_comple(false),
-            E_Cmd::MouseDownLeft(y, x) => {
+        match cmd.cmd_type {
+            CmdType::InputComple => return self.init_input_comple(false),
+            CmdType::MouseDownLeft(y, x) => {
                 if self.input_comple.widget.is_mouse_within_area(y, x) {
                     Log::debug_s("is_mouse_within_range");
                     let evt_act = self.select_input_comple(); // EvtAct::select_input_comple(term);
@@ -71,7 +72,7 @@ impl Editor {
                 self.clear_input_comple();
                 return ActType::Draw(DParts::All);
             }
-            E_Cmd::MouseMove(y, x) => {
+            CmdType::MouseMove(y, x) => {
                 if self.input_comple.widget.is_mouse_within_area(y, x) {
                     self.input_comple.widget.set_offset_y(InputComple::MAX_HEIGHT);
                     self.input_comple.widget.ctrl_mouse_move(y, x);
@@ -87,13 +88,13 @@ impl Editor {
                     return ActType::Cancel;
                 }
             }
-            E_Cmd::CursorDown | E_Cmd::CursorUp | E_Cmd::CursorRight | E_Cmd::CursorLeft | E_Cmd::MouseScrollUp | E_Cmd::MouseScrollDown => {
+            CmdType::CursorDown | CmdType::CursorUp | CmdType::CursorRight | CmdType::CursorLeft | CmdType::MouseScrollUp | CmdType::MouseScrollDown => {
                 Log::debug("input_comple.window 111", &&self.input_comple.widget);
-                match e_cmd {
-                    E_Cmd::CursorDown | E_Cmd::MouseScrollDown => self.input_comple.widget.cur_move(Direction::Down),
-                    E_Cmd::CursorUp | E_Cmd::MouseScrollUp => self.input_comple.widget.cur_move(Direction::Up),
-                    E_Cmd::CursorRight => self.input_comple.widget.cur_move(Direction::Right),
-                    E_Cmd::CursorLeft => self.input_comple.widget.cur_move(Direction::Left),
+                match cmd.cmd_type {
+                    CmdType::CursorDown | CmdType::MouseScrollDown => self.input_comple.widget.cur_move(Direction::Down),
+                    CmdType::CursorUp | CmdType::MouseScrollUp => self.input_comple.widget.cur_move(Direction::Up),
+                    CmdType::CursorRight => self.input_comple.widget.cur_move(Direction::Right),
+                    CmdType::CursorLeft => self.input_comple.widget.cur_move(Direction::Left),
                     _ => {}
                 }
                 //  self.draw_range =  self.input_comple.widget.get_draw_range_y();
@@ -101,19 +102,19 @@ impl Editor {
 
                 return ActType::Draw(DParts::InputComple);
             }
-            E_Cmd::InsertRow => {
+            CmdType::InsertRow => {
                 let act_type = self.select_input_comple(); //  EvtAct::select_input_comple(term);
                 self.clear_input_comple();
                 return act_type;
             }
             _ => {}
         };
-        if self.cmd_config.is_edit {
-            self.edit_proc(e_cmd.clone());
+        if self.cmd.config.is_edit {
+            self.edit_proc(self.cmd.clone());
         };
-        match e_cmd {
-            E_Cmd::InsertStr(_) | E_Cmd::DelPrevChar => self.init_input_comple(false),
-            _ if self.cmd_config.is_edit => {
+        match cmd.cmd_type {
+            CmdType::InsertStr(_) | CmdType::DelPrevChar => self.init_input_comple(false),
+            _ if self.cmd.config.is_edit => {
                 self.state.input_comple_mode = InputCompleMode::None;
                 return ActType::Draw(DParts::All);
             }
@@ -125,7 +126,7 @@ impl Editor {
         let (search_str, str_sx) = self.get_until_delim_str();
         let s_idx = self.buf.row_to_char(self.cur.y) + str_sx;
 
-        self.edit_proc(E_Cmd::ReplaceExec(search_str, replace_str, BTreeSet::from([s_idx])));
+        self.edit_proc(Cmd::to_cmd(CmdType::ReplaceExec(search_str, replace_str, BTreeSet::from([s_idx]))));
     }
 
     pub fn clear_input_comple(&mut self) {

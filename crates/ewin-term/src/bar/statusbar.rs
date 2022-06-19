@@ -5,89 +5,116 @@ use crate::{
 use crossterm::{cursor::*, terminal::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
 use ewin_const::def::*;
+use ewin_editor::model::*;
+use std::{io::Write, ops::Range};
 
 impl StatusBar {
     pub fn draw(str_vec: &mut Vec<String>, tab: &mut Tab, h_file: &HeaderFile) {
         Log::info_key("StatusBar.draw");
+        let cols = get_term_size().0;
 
-        let cur_s = StatusBar::get_cur_str(tab);
-        let enc_nl = format!("{}({})", h_file.enc, h_file.nl);
-        let (other_w, search_w, box_sel_mode_w, select_mode_w, mouse_w, cur_w) = StatusBar::get_areas_width(tab, &enc_nl, get_str_width(&cur_s));
-        tab.sbar.search_area = (other_w + 1, other_w + search_w - 1);
+        let mut normal_vec = vec![];
+        let enc_nl = StatusBarCont::new(format!("{}({})", h_file.enc, h_file.nl));
+        normal_vec.push(enc_nl.clone());
+        let cur = StatusBarCont::new(StatusBar::get_cur_str(&tab.editor));
+        normal_vec.push(cur.clone());
+        normal_vec.reverse();
 
-        tab.sbar.select_mode_area = (other_w + search_w + 1, other_w + search_w + select_mode_w + mouse_w - 1);
-        tab.sbar.cur_area = (other_w + search_w + select_mode_w + mouse_w, other_w + search_w + select_mode_w + mouse_w + cur_w - 1);
-        tab.sbar.enc_nl_area = (other_w + select_mode_w + mouse_w + cur_w, other_w + select_mode_w + mouse_w + cur_w + enc_nl.len() - 1);
-        tab.sbar.other_str = " ".repeat(other_w);
+        let mut normal_str = String::new();
+        for normal in &normal_vec {
+            normal_str.push_str(&normal.disp_str);
+        }
+        let mut opt_str = String::new();
+        let mut opt_vec = StatusBar::get_opt_vec(&tab.editor);
+        opt_vec.reverse();
+        for opt in opt_vec {
+            if !opt.disp_str.is_empty() {
+                opt_str.push_str(&format!("[{}]", opt.disp_str));
+            }
+        }
+        let normal_str_w = get_str_width(&normal_str);
+        let opt_str_w = get_str_width(&opt_str);
+        let other_w = cols - normal_str_w - opt_str_w;
+        let normal_w_s = other_w + opt_str_w;
 
-        let search_idx = if tab.editor.search.idx == USIZE_UNDEFINED { 1 } else { tab.editor.search.idx + 1 };
-        let search_str = if search_w == 0 { "".to_string() } else { format!("{}({}/{})", &Lang::get().search, search_idx, tab.editor.search.ranges.len()) };
-        let search_disp_str = format!("{search:>w$}", search = search_str, w = search_w - (get_str_width(&search_str) - search_str.chars().count()));
+        tab.sbar.cur_area = (normal_w_s, normal_w_s + get_str_width(&cur.disp_str) - 1);
+        tab.sbar.enc_nl_area = (tab.sbar.cur_area.1 + 1, tab.sbar.cur_area.1 + 1 + get_str_width(&enc_nl.disp_str));
 
-        let select_mode_str = tab.editor.sel.mode.to_string();
-        let select_mode_disp_str = format!("{select:>w$}", select = select_mode_str, w = select_mode_w - (get_str_width(&select_mode_str) - select_mode_str.chars().count()));
+        let mut msg_str = String::new();
+        msg_str.push_str(&format!("{}{}", Colors::get_default_fg_bg(), " ".repeat(other_w)));
+        msg_str.push_str(&format!("{}{}", Colors::get_sbar_inversion_fg_bg(), opt_str));
+        msg_str.push_str(&format!("{}{}", Colors::get_sbar_fg_bg(), normal_str));
+        msg_str = format!("{}{}{}", MoveTo(0, tab.sbar.row_posi as u16), Clear(ClearType::CurrentLine), msg_str);
 
-        let box_mode_str = tab.editor.box_insert.mode.to_string();
-        let box_mode_disp_str = format!("{select:>w$}", select = box_mode_str, w = box_sel_mode_w - (get_str_width(&box_mode_str) - box_mode_str.chars().count()));
-
-        let mouse_str = tab.editor.state.mouse.to_string();
-        let mouse_disp_str = format!("{mouse_str:>w$}", mouse_str = mouse_str, w = mouse_w - (get_str_width(&mouse_str) - mouse_str.chars().count()));
-
-        // Adjusted by the difference between the character width and the number of characters
-        tab.sbar.cur_str = format!("{cur:>w$}", cur = cur_s, w = cur_w - (get_str_width(&cur_s) - cur_s.chars().count()));
-
-        let sbar_ctr = format!("{}{}{}{}{}{}{}{}", tab.sbar.other_str, StatusBar::get_disp_str(&search_disp_str), StatusBar::get_disp_str(&box_mode_disp_str), StatusBar::get_disp_str(&select_mode_disp_str), StatusBar::get_disp_str(&mouse_disp_str), tab.sbar.cur_str, &enc_nl, Colors::get_sbar_fg_bg());
-
-        let sber_all_str = format!("{}{}{}{}{}", MoveTo(0, tab.sbar.row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_sbar_fg_bg(), sbar_ctr, Colors::get_default_fg_bg(),);
-
-        str_vec.push(sber_all_str);
+        str_vec.push(msg_str);
         str_vec.push(Colors::get_default_fg_bg());
     }
 
-    pub fn get_disp_str(string: &String) -> String {
-        format!("{}{}{}", Colors::get_sbar_inversion_fg_bg(), string, Colors::get_sbar_fg_bg())
+    pub fn draw_only<T: Write>(out: &mut T, tab: &mut Tab, h_file: &HeaderFile) {
+        Log::debug_key("StatusBar.draw_only");
+        let mut v: Vec<String> = vec![];
+        StatusBar::draw(&mut v, tab, h_file);
+        let _ = out.write(v.concat().as_bytes());
+        out.flush().unwrap();
     }
 
-    pub fn get_cur_str(tab: &mut Tab) -> String {
-        let cur = tab.editor.cur;
-        let len_lines = tab.editor.buf.len_rows();
-        let len_line_chars = tab.editor.buf.len_row_chars(tab.editor.cur.y);
+    pub fn get_opt_vec(editor: &Editor) -> Vec<StatusBarCont> {
+        Log::info_key("StatusBar::get_opt_vec");
+
+        let mut opt_vec = vec![];
+        let read_only = StatusBarCont::new(if editor.state.is_read_only { Lang::get().unable_to_edit.to_string() } else { "".to_string() });
+        opt_vec.push(read_only);
+
+        let select_mode = StatusBarCont::new(match editor.sel.mode {
+            SelMode::Normal => "".to_string(),
+            SelMode::BoxSelect => Lang::get().box_select.to_string(),
+        });
+        opt_vec.push(select_mode);
+
+        let box_sel_mode = StatusBarCont::new(match editor.box_insert.mode {
+            BoxInsertMode::Normal => "".to_string(),
+            BoxInsertMode::Insert => Lang::get().box_insert.to_string(),
+        });
+        opt_vec.push(box_sel_mode);
+
+        let mouse_disable = StatusBarCont::new(match editor.state.mouse {
+            Mouse::Enable => "".to_string(),
+            Mouse::Disable => Lang::get().mouse_disable.to_string(),
+        });
+        opt_vec.push(mouse_disable);
+
+        let search_idx = if editor.search.idx == USIZE_UNDEFINED { 1 } else { editor.search.idx + 1 };
+        let search_str = if editor.search.ranges.is_empty() { "".to_string() } else { format!("{}({}/{})", &Lang::get().search, search_idx, editor.search.ranges.len()) };
+        let search = StatusBarCont::new(search_str);
+        opt_vec.push(search);
+
+        let key_record = StatusBarCont::new(if editor.state.key_macro.is_record { Lang::get().key_recording.to_string() } else { "".to_string() });
+        Log::debug("key_record", &key_record);
+        Log::debug("editor.state.key_macro.is_record", &editor.state.key_macro.is_record);
+        opt_vec.push(key_record);
+
+        return opt_vec;
+    }
+
+    pub fn get_cur_str(editor: &Editor) -> String {
+        let cur = editor.cur;
+        let len_lines = editor.buf.len_rows();
+        let len_line_chars = editor.buf.len_row_chars(editor.cur.y);
 
         let row_str = format!("{}({}/{})", &Lang::get().row, (cur.y + 1), len_lines);
         let len_line_chars = if len_line_chars == 0 {
             0
-        } else if tab.editor.cur.y == len_lines - 1 {
+        } else if editor.cur.y == len_lines - 1 {
             len_line_chars
         } else {
             // -1 is new line code
             len_line_chars - 1
         };
         let col_str = format!("{}({}/{})", &Lang::get().col, cur.x + 1, len_line_chars);
-        let cur_posi = format!("{} {}", row_str, col_str,);
+        let cur_posi = format!("{}{}", row_str, col_str,);
         return cur_posi;
     }
 
-    fn get_areas_width(tab: &mut Tab, enc_nl: &str, cur_str_w: usize) -> (usize, usize, usize, usize, usize, usize) {
-        let cols_w = tab.sbar.col_num;
-
-        let select_mode_w = match tab.editor.sel.mode {
-            SelMode::Normal => 0,
-            SelMode::BoxSelect => get_str_width(&Lang::get().box_select),
-        };
-        let box_sel_mode_w = match tab.editor.box_insert.mode {
-            BoxInsertMode::Normal => 0,
-            BoxInsertMode::Insert => get_str_width(&Lang::get().box_insert),
-        };
-
-        let mouse_disable_w = match tab.editor.state.mouse {
-            Mouse::Enable => 0,
-            Mouse::Disable => get_str_width(&Lang::get().mouse_disable),
-        };
-        let search_idx = if tab.editor.search.idx == USIZE_UNDEFINED { 1 } else { tab.editor.search.idx + 1 };
-        let search_w = if !tab.state.is_nomal() || tab.editor.search.ranges.is_empty() { 0 } else { get_str_width(&format!("{}({}/{})", &Lang::get().search, search_idx, tab.editor.search.ranges.len())) };
-
-        return (cols_w - enc_nl.len() - box_sel_mode_w - select_mode_w - search_w - mouse_disable_w - cur_str_w, search_w, box_sel_mode_w, select_mode_w, mouse_disable_w, cur_str_w);
-    }
     pub fn new() -> Self {
         StatusBar { ..StatusBar::default() }
     }
@@ -95,21 +122,29 @@ impl StatusBar {
 
 #[derive(Debug, Clone)]
 pub struct StatusBar {
-    pub cur_str: String,
-    pub other_str: String,
     // Position on the terminal
     pub row_num: usize,
     // 0 index
     pub row_posi: usize,
     pub col_num: usize,
-    pub search_area: (usize, usize),
-    pub select_mode_area: (usize, usize),
     pub cur_area: (usize, usize),
     pub enc_nl_area: (usize, usize),
 }
 
 impl Default for StatusBar {
     fn default() -> Self {
-        StatusBar { cur_str: String::new(), other_str: String::new(), row_num: STATUSBAR_ROW_NUM, row_posi: 0, col_num: 0, search_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), select_mode_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), cur_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), enc_nl_area: (USIZE_UNDEFINED, USIZE_UNDEFINED) }
+        StatusBar { row_num: STATUSBAR_ROW_NUM, row_posi: 0, col_num: 0, cur_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), enc_nl_area: (USIZE_UNDEFINED, USIZE_UNDEFINED) }
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct StatusBarCont {
+    pub area: Range<usize>,
+    pub disp_str: String,
+}
+
+impl StatusBarCont {
+    pub fn new(disp_str: String) -> Self {
+        StatusBarCont { disp_str, ..StatusBarCont::default() }
     }
 }

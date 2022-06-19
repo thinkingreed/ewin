@@ -1,10 +1,14 @@
 use crate::{
     bar::menubar::*,
-    ewin_com::{_cfg::key::keycmd::*, _cfg::key::keys::*, model::*},
+    ewin_com::{_cfg::key::keys::*, model::*},
     model::*,
 };
 use convert_case::{Case, Casing};
 use ewin_cfg::{global::*, lang::lang_cfg::*, log::*, model::modal::*};
+use ewin_com::{
+    _cfg::key::{cmd::*, keybind::*},
+    util::*,
+};
 use ewin_const::def::*;
 use ewin_editor::model::*;
 use ewin_widget::{core::*, widget::menubar::*};
@@ -13,9 +17,9 @@ use std::{cmp::min, io::stdout, ops::Range};
 impl EvtAct {
     pub fn ctrl_menubar(term: &mut Terminal) -> ActType {
         Log::debug_key("EvtAct.ctrl_menubar");
-        Log::debug("term.menubar.widget.m_cmd", &term.menubar.widget.m_cmd);
-        match term.menubar.widget.m_cmd {
-            M_Cmd::MouseDownLeft(y, x) => {
+        Log::debug("term.menubar.widget.cmd", &term.menubar.widget.cmd);
+        match term.menubar.widget.cmd.cmd_type {
+            CmdType::MouseDownLeft(y, x) => {
                 if y == term.menubar.row_posi {
                     let (is_select, i) = term.menubar.is_menubar_displayed_area(y, x);
                     if is_select {
@@ -32,7 +36,7 @@ impl EvtAct {
                 term.menubar.widget.curt.clear_select_menu();
                 return ActType::Draw(DParts::All);
             }
-            M_Cmd::MouseMove(y, x) => {
+            CmdType::MouseMove(y, x) => {
                 if y == term.menubar.row_posi {
                     Log::debug("term.menubar.menu_vec", &term.menubar.menu_vec);
                     let (is_on_mouse, i) = term.menubar.is_menubar_displayed_area(y, x);
@@ -80,24 +84,24 @@ impl EvtAct {
                     return ActType::Cancel;
                 }
             }
-            M_Cmd::CursorDown | M_Cmd::CursorUp | M_Cmd::CursorRight | M_Cmd::CursorLeft => {
-                let direction = match term.menubar.widget.m_cmd {
-                    M_Cmd::CursorDown => Direction::Down,
-                    M_Cmd::CursorUp => Direction::Up,
-                    M_Cmd::CursorRight => Direction::Right,
-                    M_Cmd::CursorLeft => Direction::Left,
+            CmdType::CursorDown | CmdType::CursorUp | CmdType::CursorRight | CmdType::CursorLeft => {
+                let direction = match term.menubar.widget.cmd.cmd_type {
+                    CmdType::CursorDown => Direction::Down,
+                    CmdType::CursorUp => Direction::Up,
+                    CmdType::CursorRight => Direction::Right,
+                    CmdType::CursorLeft => Direction::Left,
                     _ => Direction::Down,
                 };
                 term.menubar.widget.curt.cur_move(direction);
 
                 return ActType::Draw(DParts::Absolute(term.menubar.widget.curt.get_disp_range_y()));
             }
-            M_Cmd::MenuWidget(_, _) => {
+            CmdType::MenuWidget(_, _) => {
                 // TODO
                 return ActType::Draw(DParts::All);
             }
-            M_Cmd::Confirm => return EvtAct::select_menuwidget(term),
-            M_Cmd::Null => return ActType::Cancel,
+            CmdType::Confirm => return EvtAct::select_menuwidget(term),
+            _ => return ActType::Cancel,
         }
     }
 
@@ -120,9 +124,12 @@ impl EvtAct {
         Log::debug_key("check_menubar_func");
         Log::debug("parent_name", &parent_name);
         Log::debug("child_name", &child_name);
-        Log::debug("child_name.to_case(Case::Snake)", &child_name.to_case(Case::Snake));
 
         term.clear_menuwidget();
+
+        // Convert to set language
+        let parent_name = get_cfg_lang_name(parent_name);
+        let child_name = get_cfg_lang_name(child_name);
 
         Log::debug_s(&Lang::get().convert);
         // grandchild_name
@@ -134,29 +141,18 @@ impl EvtAct {
             term.curt().editor.format(FileType::from_str_fmt_type(grandchild_name));
         }
 
-        Log::debug("child_name.to_case(Case::Snake)", &child_name.to_case(Case::Snake));
-        Log::debug("LANG_MAP.contains_key(&child_name.to_case(Case::Snake))", &LANG_MAP.contains_key(&child_name.to_case(Case::Snake)));
-
-        // child_name
-        if LANG_MAP.contains_key(&child_name.to_case(Case::Snake)) {
-            Log::debug_s("LANG_MAP.contains_key");
-            let cmd = KeyCmd::to_edit_cmd(child_name);
-            Log::debug("cmd", &cmd);
-            term.keycmd = KeyCmd::Edit(cmd);
-            return EvtAct::ctrl_editor(term);
-        }
-
-        if parent_name.contains(&Lang::get().file) {
+        // parent_name
+        if get_cfg_lang_name(&parent_name).contains(&Lang::get().file) {
             if child_name.contains(&Lang::get().encode) {
-                term.curt().editor.e_cmd = E_Cmd::Encoding;
+                term.curt().editor.cmd = Cmd::to_cmd(CmdType::EncodingProm);
                 return EvtAct::ctrl_editor(term);
                 // EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::Encoding)), &mut stdout(), term);
             } else if child_name.contains(&Lang::get().create_new_file) {
-                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::CreateNewFile)), &mut stdout(), term);
+                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::CreateNewFile), &mut stdout(), term);
             } else if child_name.contains(&Lang::get().open_file) {
-                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::OpenFile(OpenFileType::Normal))), &mut stdout(), term);
-            } else if child_name.contains(&Lang::get().save_as) {
-                term.curt().prom_save_new_file();
+                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::openFileProm(OpenFileType::Normal)), &mut stdout(), term);
+            } else if child_name.contains(&Lang::get().save_as.to_string()) {
+                term.curt().prom_show_com(&CmdType::SaveNewFile);
             } else if child_name.contains(&Lang::get().end_of_all_save) {
                 let act_type = term.save_all_tab();
                 if let ActType::Draw(_) = act_type {
@@ -182,11 +178,21 @@ impl EvtAct {
             // macros
         } else if parent_name.contains(&Lang::get().macros) {
             if child_name.contains(&Lang::get().specify_file_and_exec_macro) {
-                term.curt().prom_open_file(OpenFileType::JsMacro);
+                term.curt().prom_open_file(&OpenFileType::JsMacro);
             } else {
                 unreachable!();
             }
         }
+
+        // child_name
+        if LANG_MAP.contains_key(&child_name.to_case(Case::Snake)) {
+            Log::debug_s("LANG_MAP.contains_key");
+            let cmd = Cmd::str_to_cmd(child_name);
+            Log::debug("cmd", &cmd);
+            term.cmd = cmd;
+            return EvtAct::ctrl_editor(term);
+        }
+
         return ActType::Draw(DParts::All);
     }
 
@@ -212,32 +218,24 @@ impl EvtAct {
                 term.curt().editor.sel.clear();
             }
             s if s == &Lang::get().cut => {
-                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::Cut)), &mut stdout(), term);
+                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::Cut), &mut stdout(), term);
                 term.curt().editor.sel.clear();
             }
             s if s == &Lang::get().copy => {
-                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::Copy)), &mut stdout(), term);
+                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::Copy), &mut stdout(), term);
                 term.curt().editor.sel.clear();
             }
             s if s == &Lang::get().paste => {
-                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::InsertStr("".to_string()))), &mut stdout(), term);
+                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::InsertStr("".to_string())), &mut stdout(), term);
             }
             s if s == &Lang::get().all_select => {
-                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::AllSelect)), &mut stdout(), term);
+                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::AllSelect), &mut stdout(), term);
             }
             //// headerbar
             // close
-            s if s == &Lang::get().close => {
-                if Tab::prom_save_confirm(term) {
-                    Terminal::exit();
-                }
-                return ActType::Draw(DParts::All);
-            }
+            s if s == &Lang::get().close => return term.curt().prom_show_com(&CmdType::CloseFile),
             // close other than this tab
-            s if s == &Lang::get().close_other_than_this_tab => {
-                let _ = term.close_tabs(term.tab_idx);
-                return ActType::Draw(DParts::All);
-            }
+            s if s == &Lang::get().close_other_than_this_tab => return term.close_tabs(term.tab_idx),
             _ => {}
         };
         return ActType::Draw(DParts::Editor(E_DrawRange::All));
@@ -280,7 +278,6 @@ impl MenuBar {
         }
         term.state.is_menuwidget = true;
         if term.menubar.widget.curt.cont.x_area.0 != menu.area.start {
-            // term.menubar.widget.clear();
             term.menubar.widget.curt.cont = term.menubar.widget.menu_map[&menu.menunm].clone();
 
             Log::debug("term.menubar.widget.curt.cont", &term.menubar.widget.curt.cont);

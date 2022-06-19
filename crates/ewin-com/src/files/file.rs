@@ -1,6 +1,6 @@
 extern crate ropey;
 use crate::model::*;
-use ewin_cfg::{lang::lang_cfg::*, log::*, model::default::*};
+use ewin_cfg::{lang::lang_cfg::*, log::*};
 use faccess::PathExt;
 #[cfg(target_os = "windows")]
 use regex::Regex;

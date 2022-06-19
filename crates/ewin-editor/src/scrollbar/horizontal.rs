@@ -4,7 +4,7 @@ use crossterm::{
     terminal::{Clear, ClearType},
 };
 use ewin_cfg::{colors::*, log::*, model::default::*};
-use ewin_com::{_cfg::key::keycmd::*, util::*};
+use ewin_com::{_cfg::key::cmd::*, util::*};
 use ewin_const::def::*;
 use std::{
     cmp::{max, min},
@@ -16,7 +16,7 @@ impl Editor {
     // Including new line code
     const SCROLL_BAR_H_END_LINE_MARGIN: usize = 4;
 
-    pub fn calc_scrlbar_h(&mut self) {
+    pub fn calc_editor_scrlbar_h(&mut self) {
         Log::debug_key("calc_scrlbar_h_row");
 
         self.scrl_h.row_width_chars_vec = vec![(0, 0); self.buf.len_rows()];
@@ -54,7 +54,7 @@ impl Editor {
         Log::debug_key("set_scrlbar_h_posi");
 
         // MouseDownLeft
-        if matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) {
+        if matches!(self.cmd.cmd_type, CmdType::MouseDownLeft(_, _)) {
             // self.calc_scrlbar_h();
             self.scrl_h.is_enable = true;
             // Except on scrl_h
@@ -77,14 +77,14 @@ impl Editor {
                 return;
             }
             // MouseDragLeftDown・MouseDragLeftUp
-        } else if matches!(self.e_cmd, E_Cmd::MouseDragLeftLeft(_, _)) {
+        } else if matches!(self.cmd.cmd_type, CmdType::MouseDragLeftLeft(_, _)) {
             if 0 < self.scrl_h.clm_posi {
                 self.offset_x = if self.offset_x >= self.scrl_h.move_char_x { self.offset_x - self.scrl_h.move_char_x } else { 0 };
                 self.scrl_h.clm_posi -= 1;
             } else {
                 self.offset_x = 0;
             };
-        } else if matches!(self.e_cmd, E_Cmd::MouseDragLeftRight(_, _)) {
+        } else if matches!(self.cmd.cmd_type, CmdType::MouseDragLeftRight(_, _)) {
             if self.scrl_h.clm_posi < self.scrl_h.scrl_range {
                 // Last move
                 if self.scrl_h.clm_posi + 1 == self.scrl_h.scrl_range {
@@ -99,7 +99,7 @@ impl Editor {
                 }
                 self.scrl_h.clm_posi += 1;
             }
-        } else if (matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _))) {
+        } else if (matches!(self.cmd.cmd_type, CmdType::MouseDragLeftDown(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftUp(_, _))) {
         }
         self.set_offset_disp_x();
     }
@@ -109,35 +109,27 @@ impl Editor {
 
         if self.scrl_h.is_show {
             if self.scrl_h.bar_len == USIZE_UNDEFINED || self.scrl_h.row_max_width_org != self.scrl_h.row_max_width || self.col_len != self.col_len_org {
-                Log::debug("self.col_len", &self.col_len);
-                Log::debug("self.scrl_h.row_max_width", &self.scrl_h.row_max_width);
-
-                // self.scrl_h.bar_len = max(2, (self.col_len as f64 / self.scrl_h.row_max_width as f64 * self.col_len as f64).floor() as usize);
                 self.scrl_h.bar_len = max(2, min(self.col_len - 1, (self.col_len as f64 / self.scrl_h.row_max_width as f64 * self.col_len as f64).floor() as usize));
-                Log::debug("self.scrl_h.bar_len", &self.scrl_h.bar_len);
 
                 if self.scrl_h.row_max_width > self.col_len {
                     self.scrl_h.is_show = true;
                     self.scrl_h.scrl_range = self.col_len - self.scrl_h.bar_len;
                     let rate = self.scrl_h.row_max_width as f64 / self.scrl_h.row_max_chars as f64;
                     let move_cur_x = ((self.scrl_h.row_max_width - self.col_len) as f64 / self.scrl_h.scrl_range as f64 / rate).ceil() as usize;
-                    // let move_cur_x = (self.scrl_h.row_max_width as f64 / self.scrl_h.scrl_range as f64).ceil() as usize;
                     self.scrl_h.move_char_x = if move_cur_x == 0 { 1 } else { move_cur_x };
                 }
             }
 
             if !self.scrl_h.is_enable {
-                // scrl_h_bar is rightmost part
-                // if self.offset_disp_x_org != self.offset_disp_x {
-                Log::debug("self.cur.disp_x", &(self.cur.disp_x as f64));
+                Log::debug("self.cur.disp_x", &(self.cur.disp_x));
+                Log::debug("self.offset_disp_x", &(self.offset_disp_x));
                 Log::debug("self.scrl_h.row_max_width", &self.scrl_h.row_max_width);
                 Log::debug("self.scrl_h.bar_len", &self.scrl_h.bar_len);
                 Log::debug("self.col_len", &self.col_len);
-
-                //self.scrl_h.clm_posi = (self.cur.disp_x as f64 / self.scrl_h.row_max_width as f64 * self.scrl_h.scrl_range as f64).ceil() as usize
-                //  self.scrl_h.clm_posi = if self.offset_disp_x == 0 { 0 } else { ((self.offset_disp_x + self.col_len) as f64 / self.scrl_h.row_max_width as f64 * self.scrl_h.scrl_range as f64).ceil() as usize }
-                self.scrl_h.clm_posi = (self.cur.disp_x as f64 / self.scrl_h.row_max_width as f64 * self.scrl_h.scrl_range as f64).ceil() as usize
-                // }
+                Log::debug("self.scrl_h.scrl_range ", &self.scrl_h.scrl_range);
+                Log::debug("self.scrl_h.clm_posi 111", &self.scrl_h.clm_posi);
+                self.scrl_h.clm_posi = min(self.scrl_h.scrl_range, (self.scrl_h.scrl_range as f64 * self.offset_disp_x as f64 / (self.scrl_h.row_max_width - self.col_len) as f64).ceil() as usize);
+                Log::debug("self.scrl_h.clm_posi 222", &self.scrl_h.clm_posi);
             }
 
             let height = Cfg::get().general.editor.scrollbar.horizontal.height;

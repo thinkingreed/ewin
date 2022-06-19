@@ -1,9 +1,13 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*, util::*},
+    ewin_com::{model::*, util::*},
+    global_term::H_FILE_VEC,
     model::*,
 };
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_com::files::file::*;
+use ewin_com::{
+    _cfg::key::cmd::{Cmd, CmdType},
+    files::file::*,
+};
 use ewin_const::def::*;
 use ewin_prom::each::open_file::*;
 use std::{
@@ -15,23 +19,23 @@ impl EvtAct {
     pub fn open_file(term: &mut Terminal) -> ActType {
         Log::debug_s("EvtAct.open_file");
 
-        match term.curt().prom.curt.as_base().p_cmd {
-            P_Cmd::CursorUp | P_Cmd::MouseScrollUp => return term.curt().prom.curt::<PromOpenFile>().move_file_list(Direction::Up),
-            P_Cmd::CursorDown | P_Cmd::MouseScrollDown => return term.curt().prom.curt::<PromOpenFile>().move_file_list(Direction::Down),
-            P_Cmd::CursorRowHomeSelect | P_Cmd::CursorRowEndSelect => {}
-            P_Cmd::NextContent => term.curt().prom.curt::<PromOpenFile>().set_file_list(),
-            P_Cmd::InsertStr(_) | P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::CursorRowHome | P_Cmd::CursorRowEnd => {
+        match term.curt().prom.curt.as_base().cmd.cmd_type {
+            CmdType::CursorUp | CmdType::MouseScrollUp => return term.curt().prom.curt::<PromOpenFile>().move_file_list(Direction::Up),
+            CmdType::CursorDown | CmdType::MouseScrollDown => return term.curt().prom.curt::<PromOpenFile>().move_file_list(Direction::Down),
+            CmdType::CursorRowHomeSelect | CmdType::CursorRowEndSelect => {}
+            CmdType::NextContent => term.curt().prom.curt::<PromOpenFile>().set_file_list(),
+            CmdType::InsertStr(_) | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::CursorRowHome | CmdType::CursorRowEnd => {
                 term.curt().prom.curt::<PromOpenFile>().set_file_list();
             }
-            P_Cmd::CursorLeft | P_Cmd::CursorRight => {
+            CmdType::CursorLeft | CmdType::CursorRight => {
                 if term.curt().prom.curt::<PromOpenFile>().file_cont().vec_y == USIZE_UNDEFINED {
                     term.curt().prom.curt::<PromOpenFile>().set_file_list();
                 } else {
-                    let cur_direction = if term.curt().prom.curt.as_base().p_cmd == P_Cmd::CursorLeft { Direction::Left } else { Direction::Right };
+                    let cur_direction = if term.curt().prom.curt.as_base().cmd.cmd_type == CmdType::CursorLeft { Direction::Left } else { Direction::Right };
                     term.curt().prom.curt::<PromOpenFile>().move_file_list(cur_direction);
                 }
             }
-            P_Cmd::MouseDownLeft(y, x) => {
+            CmdType::MouseDownLeft(y, x) => {
                 let file_list_cont_range = &term.curt().prom.curt::<PromOpenFile>().file_cont().base.row_posi_range.clone();
                 let input_cont_range = &term.curt().prom.curt.as_mut_base().get_tgt_input_area(0).unwrap().base.row_posi_range.clone();
 
@@ -78,7 +82,7 @@ impl EvtAct {
                     return ActType::Cancel;
                 }
             }
-            P_Cmd::Confirm => {
+            CmdType::Confirm => {
                 let path_str = &term.curt().prom.curt::<PromOpenFile>().base.get_tgt_input_area_str(0);
                 let full_path_str = &term.curt().prom.curt::<PromOpenFile>().select_open_file(path_str);
                 let path = Path::new(full_path_str);
@@ -111,11 +115,11 @@ impl EvtAct {
         return ActType::Draw(DParts::Prompt);
     }
     pub fn prom_file_open(term: &mut Terminal, full_path: &String) -> ActType {
-        for (idx, h_file) in term.fbar.file_vec.iter().enumerate() {
+        for (idx, h_file) in H_FILE_VEC.get().unwrap().try_lock().unwrap().iter().enumerate() {
             if full_path == &h_file.fullpath {
                 term.tab_idx = idx;
                 term.curt().clear_curt_tab(true);
-                term.curt().editor.set_keycmd(KeyCmd::Null);
+                term.curt().editor.set_cmd(Cmd::to_cmd(CmdType::Null));
                 return ActType::Draw(DParts::All);
             }
         }

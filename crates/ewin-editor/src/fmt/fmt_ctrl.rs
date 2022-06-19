@@ -1,12 +1,10 @@
-use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*},
-    model::*,
-};
+use crate::{ewin_com::model::*, model::*};
 use ewin_cfg::{
     lang::lang_cfg::*,
     log::*,
     model::{default::*, modal::*},
 };
+use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
 use ewin_const::def::*;
 use serde::Serialize;
 use serde_json::Value;
@@ -50,8 +48,8 @@ impl Editor {
             _ => todo!(),
         };
 
-        self.e_cmd = E_Cmd::InsertStr(format_str.clone());
-        self.edit_proc(E_Cmd::InsertStr(format_str));
+        self.cmd = Cmd::to_cmd(CmdType::InsertStr(format_str.clone()));
+        self.edit_proc(self.cmd.clone());
 
         Ok(())
     }

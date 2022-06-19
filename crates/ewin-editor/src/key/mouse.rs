@@ -1,30 +1,27 @@
 use crate::{
-    ewin_com::{
-        _cfg::key::{keycmd::*, keys::*},
-        model::*,
-        util::*,
-    },
+    ewin_com::{_cfg::key::keys::*, model::*, util::*},
     model::*,
 };
 use ewin_cfg::{log::*, model::default::*};
+use ewin_com::_cfg::key::cmd::CmdType;
 use std::cmp::min;
 
 impl Editor {
     pub fn ctrl_mouse(&mut self) {
         Log::debug_key("ctrl_mouse");
 
-        let (mut y, mut x, keys) = match self.e_cmd {
-            E_Cmd::MouseDownLeft(y, x) => (y, x, Keys::MouseDownLeft(y as u16, x as u16)),
-            E_Cmd::MouseUpLeft(_, _) => {
+        let (mut y, mut x, keys) = match self.cmd.cmd_type {
+            CmdType::MouseDownLeft(y, x) => (y, x, Keys::MouseDownLeft(y as u16, x as u16)),
+            CmdType::MouseUpLeft(_, _) => {
                 self.state.is_dragging = false;
                 return;
             }
-            E_Cmd::MouseDragLeftUp(y, x) | E_Cmd::MouseDragLeftDown(y, x) | E_Cmd::MouseDragLeftLeft(y, x) | E_Cmd::MouseDragLeftRight(y, x) => {
+            CmdType::MouseDragLeftUp(y, x) | CmdType::MouseDragLeftDown(y, x) | CmdType::MouseDragLeftLeft(y, x) | CmdType::MouseDragLeftRight(y, x) => {
                 self.state.is_dragging = true;
                 (y, x, Keys::MouseDragLeft(y as u16, x as u16))
             }
-            E_Cmd::MouseDownLeftBox(y, x) => (y, x, Keys::MouseDownLeft(y as u16, x as u16)),
-            E_Cmd::MouseDragLeftBox(y, x) => (y, x, Keys::MouseDragLeft(y as u16, x as u16)),
+            CmdType::MouseDownLeftBox(y, x) => (y, x, Keys::MouseDownLeft(y as u16, x as u16)),
+            CmdType::MouseDragLeftBox(y, x) => (y, x, Keys::MouseDragLeft(y as u16, x as u16)),
             _ => return,
         };
         Log::debug("y 111", &y);
@@ -34,19 +31,19 @@ impl Editor {
         Log::debug("self.scrl_v.is_show", &self.scrl_v.is_show);
         Log::debug("self.scrl_v.is_enable", &self.scrl_v.is_enable);
 
-        self.sel.mode = match self.e_cmd {
-            E_Cmd::MouseDownLeftBox(_, _) | E_Cmd::MouseDragLeftBox(_, _) => SelMode::BoxSelect,
+        self.sel.mode = match self.cmd.cmd_type {
+            CmdType::MouseDownLeftBox(_, _) | CmdType::MouseDragLeftBox(_, _) => SelMode::BoxSelect,
             _ => SelMode::Normal,
         };
 
         // scrlbar_v
         if self.scrl_v.is_show && self.row_posi <= y && y <= self.row_posi + self.row_len {
-            match self.e_cmd {
-                E_Cmd::MouseDownLeft(y, x) if self.get_rnw_and_margin() + self.col_len <= x => {
+            match self.cmd.cmd_type {
+                CmdType::MouseDownLeft(y, x) if self.get_rnw_and_margin() + self.col_len <= x => {
                     self.set_scrlbar_v_posi(y);
                 }
-                E_Cmd::MouseDragLeftDown(y, _) | E_Cmd::MouseDragLeftUp(y, _) | E_Cmd::MouseDragLeftLeft(y, _) | E_Cmd::MouseDragLeftRight(y, _) if self.scrl_v.is_enable => {
-                    if matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _)) {
+                CmdType::MouseDragLeftDown(y, _) | CmdType::MouseDragLeftUp(y, _) | CmdType::MouseDragLeftLeft(y, _) | CmdType::MouseDragLeftRight(y, _) if self.scrl_v.is_enable => {
+                    if matches!(self.cmd.cmd_type, CmdType::MouseDragLeftDown(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftUp(_, _)) {
                         self.set_scrlbar_v_posi(y);
                     }
                 }
@@ -58,12 +55,12 @@ impl Editor {
 
         // scrlbar_h
         let height = Cfg::get().general.editor.scrollbar.horizontal.height;
-        match self.e_cmd {
-            E_Cmd::MouseDownLeft(_, x) if self.scrl_h.row_posi <= y && y < self.scrl_h.row_posi + height => {
+        match self.cmd.cmd_type {
+            CmdType::MouseDownLeft(_, x) if self.scrl_h.row_posi <= y && y < self.scrl_h.row_posi + height => {
                 self.set_scrlbar_h_posi(x);
                 return;
             }
-            E_Cmd::MouseDragLeftDown(_, x) | E_Cmd::MouseDragLeftUp(_, x) | E_Cmd::MouseDragLeftLeft(_, x) | E_Cmd::MouseDragLeftRight(_, x) if self.scrl_h.is_enable => {
+            CmdType::MouseDragLeftDown(_, x) | CmdType::MouseDragLeftUp(_, x) | CmdType::MouseDragLeftLeft(_, x) | CmdType::MouseDragLeftRight(_, x) if self.scrl_h.is_enable => {
                 self.set_scrlbar_h_posi(x);
                 return;
             }
@@ -77,7 +74,7 @@ impl Editor {
         Log::debug("self.offset_y", &self.offset_y);
 
         if !self.scrl_v.is_enable && !self.scrl_h.is_enable {
-            if matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) && x < self.get_rnw_and_margin() - 1 {
+            if matches!(self.cmd.cmd_type, CmdType::MouseDownLeft(_, _)) && x < self.get_rnw_and_margin() - 1 {
                 self.sel.set_s(y, 0, 0);
                 let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(y)[..], 0, true);
                 self.sel.set_e(y, cur_x, width);
@@ -112,7 +109,7 @@ impl Editor {
                     self.scroll();
                     self.scroll_horizontal();
 
-                    if matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) {
+                    if matches!(self.cmd.cmd_type, CmdType::MouseDownLeft(_, _)) {
                         self.sel.clear();
                     }
                 }

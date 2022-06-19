@@ -1,35 +1,26 @@
 use crate::{
-    bar::{filebar::FileBar, menubar::MenuBar, statusbar::StatusBar},
+    bar::{filebar::*, menubar::*, statusbar::*},
     help::*,
 };
 use ewin_com::{
-    _cfg::key::{keycmd::*, keys::*},
+    _cfg::key::{cmd::Cmd, keys::*, keywhen::KeyWhen},
     model::*,
 };
 use ewin_editor::model::*;
-use ewin_prom::model::Prom;
-use ewin_widget::model::CtxWidget;
+use ewin_prom::model::*;
+use ewin_widget::model::*;
 
 #[derive(Debug, Clone)]
 pub struct Macros {}
 
 #[derive(Debug, Default, Clone)]
 pub struct MsgBar {
-    pub msg_readonly: String,
-    pub msg_keyrecord: String,
-    pub msg_keyrecord_org: String,
     pub msg: Msg,
     pub msg_org: Msg,
-    pub disp_readonly_row_posi: usize,
-    pub disp_keyrecord_row_posi: usize,
     // 0 indexed
-    pub disp_row_posi: usize,
-    // 0 indexed
-    pub disp_readonly_row_num: usize,
-    // 0 indexed
-    pub disp_keyrecord_row_num: usize,
-    pub disp_row_num: usize,
-    pub disp_col_num: usize,
+    pub row_posi: usize,
+    pub row_num: usize,
+    pub col_num: usize,
 }
 impl MsgBar {
     pub fn new() -> Self {
@@ -60,9 +51,11 @@ pub struct EvtAct {}
 
 #[derive(Debug, Clone)]
 pub struct Terminal {
-    pub keycmd: KeyCmd,
+    // pub keycmd: KeyCmd,
+    pub cmd: Cmd,
     pub keys: Keys,
     pub keys_org: Keys,
+    pub keywhen: KeyWhen,
     pub menubar: MenuBar,
     pub fbar: FileBar,
     pub help: Help,
@@ -115,6 +108,7 @@ pub enum SaveType {
 
 #[derive(Debug, Clone)]
 pub struct Tab {
+    pub idx: usize,
     pub editor: Editor,
     // pub editor_draw: Draw,
     pub msgbar: MsgBar,

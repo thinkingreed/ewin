@@ -1,5 +1,5 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*, util::*},
+    ewin_com::{_cfg::key::cmd::*, model::*, util::*},
     model::*,
 };
 use ewin_cfg::log::*;
@@ -7,13 +7,13 @@ use ewin_const::def::*;
 use std::cmp::{max, min};
 
 impl Editor {
-    pub fn edit_proc(&mut self, e_cmd: E_Cmd) -> ActType {
+    pub fn edit_proc(&mut self, cmd: Cmd) -> ActType {
         Log::debug_s("edit_proc");
-        Log::debug("e_cmd", &e_cmd);
+        Log::debug("cmd", &cmd);
 
         // Editing Editor from other than KeyWhen::EditorFocus
-        if self.e_cmd == E_Cmd::Null {
-            self.e_cmd = e_cmd.clone();
+        if self.cmd.cmd_type == CmdType::Null {
+            self.cmd = cmd.clone();
         }
         let mut evt_proc = EvtProc::default();
         let is_selected_org = self.sel.is_selected_width();
@@ -21,10 +21,10 @@ impl Editor {
 
         // selected range delete
         Log::debug("self.sel.is_selected_width()", &self.sel.is_selected_width());
-        Log::debug("self.cmd_config.is_edit", &self.cmd_config.is_edit);
-        if self.sel.is_selected_width() && self.cmd_config.is_edit {
+        Log::debug("self.cmd_config.is_edit", &self.cmd.config.is_edit);
+        if self.sel.is_selected_width() && self.cmd.config.is_edit {
             Log::debug("is_selected", &true);
-            proc_del = Proc { e_cmd: if e_cmd == E_Cmd::DelNextChar { E_Cmd::DelNextChar } else { E_Cmd::DelPrevChar }, ..Proc::default() };
+            proc_del = Proc { cmd: if cmd.cmd_type == CmdType::DelNextChar { Cmd::to_cmd(CmdType::DelNextChar) } else { Cmd::to_cmd(CmdType::DelPrevChar) }, ..Proc::default() };
             proc_del.cur_s = Cur { y: self.sel.sy, x: self.sel.sx, disp_x: self.sel.s_disp_x };
             proc_del.cur_e = self.cur;
             match self.sel.mode {
@@ -33,7 +33,7 @@ impl Editor {
             }
             proc_del.sel = self.sel;
             self.del_sel_range(&proc_del);
-            if e_cmd != E_Cmd::Cut {
+            if cmd.cmd_type != CmdType::Cut {
                 self.sel.clear();
             }
             // ep_del.draw_type = self.draw_range;
@@ -41,34 +41,34 @@ impl Editor {
         }
 
         // not selected Del, BS, Cut or InsertChar, Paste, Enter
-        match e_cmd {
-            E_Cmd::DelNextChar | E_Cmd::DelPrevChar if is_selected_org => {}
+        match cmd.cmd_type {
+            CmdType::DelNextChar | CmdType::DelPrevChar if is_selected_org => {}
             _ => {
-                let mut proc = Proc { e_cmd: e_cmd.clone(), ..Proc::default() };
+                let mut proc = Proc { cmd: cmd.clone(), ..Proc::default() };
                 proc.cur_s = self.cur;
                 self.set_box_sel_vec(&proc_del, &mut proc);
 
-                let act_type = match &e_cmd {
-                    E_Cmd::DelNextChar => self.delete(&mut proc),
-                    E_Cmd::DelPrevChar => self.backspace(&mut proc),
-                    E_Cmd::InsertRow => self.insert_row(),
-                    E_Cmd::Cut => self.cut(proc_del),
-                    E_Cmd::InsertStr(_) | E_Cmd::InsertBox(_) => {
-                        if let E_Cmd::InsertStr(ref str) = e_cmd {
+                let act_type = match &cmd.cmd_type {
+                    CmdType::DelNextChar => self.delete(&mut proc),
+                    CmdType::DelPrevChar => self.backspace(&mut proc),
+                    CmdType::InsertRow => self.insert_row(),
+                    CmdType::Cut => self.cut(proc_del),
+                    CmdType::InsertStr(_) | CmdType::InsertBox(_) => {
+                        if let CmdType::InsertStr(ref str) = cmd.cmd_type {
                             self.edit_proc_set_insert_str(str, &mut proc);
-                        } else if let E_Cmd::InsertBox(ref box_sel_vec) = e_cmd {
+                        } else if let CmdType::InsertBox(ref box_sel_vec) = cmd.cmd_type {
                             proc.box_sel_vec = box_sel_vec.clone();
                         }
                         self.insert_str(&mut proc);
                         ActType::Next
                     }
-                    E_Cmd::DelBox(box_sel_vec) => {
+                    CmdType::DelBox(box_sel_vec) => {
                         proc.box_sel_vec = box_sel_vec.clone();
                         self.undo_del_box(box_sel_vec);
                         ActType::Next
                     }
                     // In case of replace, only registration of Evt process
-                    E_Cmd::ReplaceExec(search_str, replace_str, idx_set) => {
+                    CmdType::ReplaceExec(search_str, replace_str, idx_set) => {
                         self.replace(&mut proc, search_str, replace_str, idx_set);
                         ActType::Next
                     }
@@ -77,7 +77,7 @@ impl Editor {
                 if act_type != ActType::Next {
                     return act_type;
                 }
-                if e_cmd != E_Cmd::Cut {
+                if cmd.cmd_type != CmdType::Cut {
                     proc.cur_e = self.cur;
                     // ep.draw_type = self.draw_range;
                     evt_proc.proc = Some(proc.clone());
@@ -90,7 +90,7 @@ impl Editor {
         self.set_change_info_edit(&evt_proc);
 
         // Register edit history
-        if self.e_cmd != E_Cmd::Undo && self.e_cmd != E_Cmd::Redo {
+        if self.cmd.cmd_type != CmdType::Undo && self.cmd.cmd_type != CmdType::Redo {
             self.history.clear_redo_vec();
             self.history.undo_vec.push(evt_proc);
         }

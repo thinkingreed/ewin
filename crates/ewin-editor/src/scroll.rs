@@ -1,8 +1,9 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*, util::*},
+    ewin_com::{model::*, util::*},
     model::*,
 };
 use ewin_cfg::log::*;
+use ewin_com::_cfg::key::cmd::CmdType;
 use ewin_const::def::*;
 use std::{cmp::min, usize};
 
@@ -17,35 +18,35 @@ impl Editor {
     pub fn scroll(&mut self) {
         Log::debug_key("scroll");
         Log::debug("self.cur.y", &self.cur.y);
-        Log::debug("self.e_cmd", &self.e_cmd);
+        Log::debug("self.cmd", &self.cmd);
         Log::debug("self.buf.len_rows()", &self.buf.len_rows());
         Log::debug("self.scrl_v.is_enable", &self.scrl_v.is_enable);
         Log::debug("self.offset_y before", &self.offset_y);
 
         if self.cur.y == 0 && self.is_move_cur_posi_scrolling_enable() {
             self.offset_y = 0
-        } else if !self.is_move_cur_posi_scrolling_enable() && (matches!(self.e_cmd, E_Cmd::MouseScrollDown) || matches!(self.e_cmd, E_Cmd::MouseScrollUp)) {
+        } else if !self.is_move_cur_posi_scrolling_enable() && (matches!(self.cmd.cmd_type, CmdType::MouseScrollDown) || matches!(self.cmd.cmd_type, CmdType::MouseScrollUp)) {
             Log::debug_s("1111111111111111111111111111111111111111111");
-            if matches!(self.e_cmd, E_Cmd::MouseScrollDown) {
+            if matches!(self.cmd.cmd_type, CmdType::MouseScrollDown) {
                 if self.get_disp_row_including_extra() > self.row_len {
                     self.offset_y = min(self.offset_y + 1, self.get_disp_row_including_extra() - self.row_len);
                 }
             } else {
                 self.offset_y = if self.offset_y == 0 { 0 } else { self.offset_y - 1 };
             }
-        } else if !self.is_move_cur_posi_scrolling_enable() && self.scrl_v.is_enable && (matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _)) || matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _))) {
+        } else if !self.is_move_cur_posi_scrolling_enable() && self.scrl_v.is_enable && (matches!(self.cmd.cmd_type, CmdType::MouseDownLeft(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftUp(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftDown(_, _))) {
             Log::debug_s("222222222222222222222222222222222222");
             self.offset_y = min(self.scrl_v.row_posi * self.scrl_v.move_len, self.get_disp_row_including_extra() - self.row_len);
             // When cursor is off the screen
-        } else if !self.is_cur_y_in_screen() && !matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _)) && !matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)) && !matches!(self.e_cmd, E_Cmd::MouseDragLeftLeft(_, _)) && !matches!(self.e_cmd, E_Cmd::MouseDragLeftRight(_, _)) {
+        } else if !self.is_cur_y_in_screen() && !matches!(self.cmd.cmd_type, CmdType::MouseDragLeftUp(_, _)) && !matches!(self.cmd.cmd_type, CmdType::MouseDragLeftDown(_, _)) && !matches!(self.cmd.cmd_type, CmdType::MouseDragLeftLeft(_, _)) && !matches!(self.cmd.cmd_type, CmdType::MouseDragLeftRight(_, _)) {
             // && !matches!(self.e_cmd, E_Cmd::MoveRow) {
             Log::debug_s("333333333333333333333333333333333");
             self.set_offset_move_row();
         } else {
-            match &self.e_cmd {
+            match &self.cmd.cmd_type {
                 // When multi rows are deleted
-                E_Cmd::CursorFileHome => self.offset_y = 0,
-                E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::FindNext | E_Cmd::FindBack | E_Cmd::ReOpenFile if self.offset_y > self.cur.y => {
+                CmdType::CursorFileHome => self.offset_y = 0,
+                CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::FindNext | CmdType::FindBack | CmdType::ReOpenFile if self.offset_y > self.cur.y => {
                     self.offset_y = if self.row_len >= self.get_disp_row_including_extra() - 1 {
                         0
                     } else if self.cur.y < Editor::OFFSET_Y_MARGIN + self.offset_y && self.cur.y >= Editor::OFFSET_Y_MARGIN {
@@ -54,13 +55,13 @@ impl Editor {
                         self.offset_y
                     }
                 }
-                E_Cmd::ReplaceExec(_, _, _) | E_Cmd::GrepResult | E_Cmd::CursorDown | E_Cmd::CursorDownSelect | E_Cmd::MouseScrollDown | E_Cmd::CursorFileEnd | E_Cmd::InsertStr(_) | E_Cmd::InsertRow | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::FindNext | E_Cmd::FindBack => {
+                CmdType::ReplaceExec(_, _, _) | CmdType::GrepResultProm | CmdType::CursorDown | CmdType::CursorDownSelect | CmdType::MouseScrollDown | CmdType::CursorFileEnd | CmdType::InsertStr(_) | CmdType::InsertRow | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::FindNext | CmdType::FindBack => {
                     if self.cur.y + Editor::SCROLL_UP_DOWN_MARGIN >= self.row_len + self.offset_y {
                         self.offset_y = min(self.get_disp_row_including_extra() - self.row_len, self.cur.y + 1 + Editor::SCROLL_UP_DOWN_MARGIN - self.row_len);
                     }
                 }
-                E_Cmd::MoveRow => self.set_offset_move_row(),
-                E_Cmd::MouseDragLeftLeft(y, _) | E_Cmd::MouseDragLeftRight(y, _) => {
+                CmdType::MoveRowProm => self.set_offset_move_row(),
+                CmdType::MouseDragLeftLeft(y, _) | CmdType::MouseDragLeftRight(y, _) => {
                     if self.sel.is_selected() {
                         if *y >= self.row_posi + self.row_len && self.get_disp_row_including_extra() - self.offset_y > self.row_len {
                             self.offset_y += Editor::SCROLL_UP_DOWN_MARGIN;
@@ -69,24 +70,24 @@ impl Editor {
                         }
                     }
                 }
-                E_Cmd::MouseDragLeftDown(y, _) => {
+                CmdType::MouseDragLeftDown(y, _) => {
                     if *y == self.row_posi + self.get_disp_row_including_extra() {
                         self.offset_y += Editor::SCROLL_UP_DOWN_MARGIN;
                     }
                 }
-                E_Cmd::MouseDragLeftUp(y, _) => {
+                CmdType::MouseDragLeftUp(y, _) => {
                     if *y == 0 && self.offset_y >= Editor::SCROLL_UP_DOWN_MARGIN {
                         self.offset_y -= Editor::SCROLL_UP_DOWN_MARGIN;
                     }
                 }
-                E_Cmd::CursorUp | E_Cmd::MouseScrollUp | E_Cmd::CursorUpSelect => {
+                CmdType::CursorUp | CmdType::MouseScrollUp | CmdType::CursorUpSelect => {
                     // -1 is to maintain consistency with the 0 standard of cur.y
                     if self.offset_y >= Editor::SCROLL_UP_DOWN_MARGIN && self.cur.y < Editor::SCROLL_UP_DOWN_MARGIN + self.offset_y {
                         self.offset_y -= Editor::SCROLL_UP_DOWN_MARGIN;
                     }
                 }
-                E_Cmd::CursorPageUp => self.offset_y = if self.offset_y >= self.row_len { self.offset_y - self.row_len } else { 0 },
-                E_Cmd::CursorPageDown => self.offset_y = if self.get_disp_row_including_extra() - 1 > self.offset_y + self.row_len * 2 { self.offset_y + self.row_len } else { self.get_disp_row_including_extra() - self.row_len },
+                CmdType::CursorPageUp => self.offset_y = if self.offset_y >= self.row_len { self.offset_y - self.row_len } else { 0 },
+                CmdType::CursorPageDown => self.offset_y = if self.get_disp_row_including_extra() - 1 > self.offset_y + self.row_len * 2 { self.offset_y + self.row_len } else { self.get_disp_row_including_extra() - self.row_len },
                 _ => {}
             }
         }
@@ -121,7 +122,7 @@ impl Editor {
     pub fn scroll_horizontal(&mut self) {
         Log::debug_key("scroll_horizontal");
         Log::debug("self.cur", &self.cur);
-        Log::debug("self.e_cmd", &self.e_cmd);
+        Log::debug("self.cmd", &self.cmd);
         Log::debug("self.offset_x 111", &self.offset_x);
 
         // offset_x Number of characters for switching judgment
@@ -147,12 +148,12 @@ impl Editor {
                 self.offset_x = get_x_offset(&self.buf.char_vec_range(self.cur.y, ..self.cur.x), self.col_len - X_MARGIN);
             }
         } else {
-            match &self.e_cmd {
-                E_Cmd::ReplaceExec(_, _, _) | E_Cmd::CursorFileEnd | E_Cmd::CursorRowHome | E_Cmd::CursorRowEnd | E_Cmd::CursorRowHomeSelect | E_Cmd::CursorRowEndSelect | E_Cmd::InsertStr(_) | E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Undo | E_Cmd::Redo | E_Cmd::FindNext | E_Cmd::FindBack | E_Cmd::ReOpenFile | E_Cmd::Null => {
+            match &self.cmd.cmd_type {
+                CmdType::ReplaceExec(_, _, _) | CmdType::CursorFileEnd | CmdType::CursorRowHome | CmdType::CursorRowEnd | CmdType::CursorRowHomeSelect | CmdType::CursorRowEndSelect | CmdType::InsertStr(_) | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::FindNext | CmdType::FindBack | CmdType::ReOpenFile | CmdType::Null => {
                     self.offset_x = get_x_offset(&self.buf.char_vec_range(self.cur.y, ..self.cur.x), self.col_len - X_MARGIN);
                 }
-                E_Cmd::CursorRight | E_Cmd::CursorRightSelect | E_Cmd::MouseDragLeftRight(_, _) if self.sel.mode != SelMode::BoxSelect => {
-                    let judge_margin = if let E_Cmd::MouseDragLeftRight(_, _) = self.e_cmd { Editor::SCROLL_HORIZONTAL_MOUSE_DRAG_LEFT_JUDGE_MARGIN } else { Editor::SCROLL_HORIZONTAL_LEFT_RIGHT_JUDGE_MARGIN };
+                CmdType::CursorRight | CmdType::CursorRightSelect | CmdType::MouseDragLeftRight(_, _) if self.sel.mode != SelMode::BoxSelect => {
+                    let judge_margin = if let CmdType::MouseDragLeftRight(_, _) = self.cmd.cmd_type { Editor::SCROLL_HORIZONTAL_MOUSE_DRAG_LEFT_JUDGE_MARGIN } else { Editor::SCROLL_HORIZONTAL_LEFT_RIGHT_JUDGE_MARGIN };
 
                     if self.offset_disp_x + self.col_len < self.cur.disp_x + judge_margin {
                         // Judgment whether the end fits in the width
@@ -162,8 +163,8 @@ impl Editor {
                         }
                     }
                 }
-                E_Cmd::CursorLeft | E_Cmd::CursorLeftSelect | E_Cmd::MouseDragLeftLeft(_, _) => {
-                    let judge_margin = if let E_Cmd::MouseDragLeftLeft(_, _) = self.e_cmd { Editor::SCROLL_HORIZONTAL_MOUSE_DRAG_LEFT_JUDGE_MARGIN } else { Editor::SCROLL_HORIZONTAL_LEFT_RIGHT_JUDGE_MARGIN };
+                CmdType::CursorLeft | CmdType::CursorLeftSelect | CmdType::MouseDragLeftLeft(_, _) => {
+                    let judge_margin = if let CmdType::MouseDragLeftLeft(_, _) = self.cmd.cmd_type { Editor::SCROLL_HORIZONTAL_MOUSE_DRAG_LEFT_JUDGE_MARGIN } else { Editor::SCROLL_HORIZONTAL_LEFT_RIGHT_JUDGE_MARGIN };
 
                     if self.cur.disp_x - self.offset_disp_x <= judge_margin {
                         self.offset_x = if self.offset_x >= SCROLL_ADD_MARGIN { self.offset_x - SCROLL_ADD_MARGIN } else { 0 };
@@ -172,7 +173,6 @@ impl Editor {
                 _ => {}
             }
         }
-        Log::debug("self.offset_x 222", &self.offset_x);
 
         if self.offset_x != self.offset_x_org {
             self.set_offset_disp_x();
@@ -186,24 +186,13 @@ impl Editor {
             self.offset_disp_x = get_row_cur_x_disp_x(&vec[..self.offset_x], 0, false).1;
         }
     }
-
-    /*
-    pub fn add_scroll_margin_offset_x(&mut self, vec: &[char]) {
-        const ADD_MARGIN_END_LINE: usize = 5;
-
-        let offset_disp_x = get_row_cur_x_disp_x(&vec[..self.offset_x], 0, false).1;
-
-        if self.cur.disp_x > offset_disp_x + self.col_len - Editor::SCROLL_LEFT_RIGHT_JUDGE_MARGIN {
-            self.offset_x += ADD_MARGIN_END_LINE;
-        }
-    }
-     */
 }
 
 #[cfg(test)]
 mod tests {
 
     use ewin_cfg::model::default::CfgLog;
+    use ewin_com::_cfg::key::cmd::Cmd;
 
     use super::*;
 
@@ -217,7 +206,7 @@ mod tests {
         e.buf.insert_end_multi(&["1\n2\n3\n4\n5\n6\n7\n8\n9\n10"]);
 
         /*** Downward test ***/
-        e.e_cmd = E_Cmd::DelNextChar;
+        e.cmd = Cmd::to_cmd(CmdType::DelNextChar);
 
         // cur.y = 0
         e.scroll();
@@ -247,7 +236,7 @@ mod tests {
 
         /*** Upward test ***/
         // self.cur.y == Editor::UP_DOWN_MARGIN + self.offset_y - 1
-        e.e_cmd = E_Cmd::CursorUp;
+        e.cmd = Cmd::to_cmd(CmdType::CursorUp);
         e.offset_y = 10;
         e.cur.y = 10;
         e.scroll();
@@ -260,7 +249,7 @@ mod tests {
 
         /*** Page change test ***/
 
-        e.e_cmd = E_Cmd::CursorPageUp;
+        e.cmd = Cmd::to_cmd(CmdType::CursorPageUp);
         e.offset_y = 10;
         e.cur.y = 20;
         e.scroll();
@@ -274,7 +263,7 @@ mod tests {
         e.scroll();
         assert_eq!(e.offset_y, 0);
         // 1 page
-        e.e_cmd = E_Cmd::CursorPageDown;
+        e.cmd = Cmd::to_cmd(CmdType::CursorPageDown);
         e.offset_y = 0;
         e.cur.y = 10;
         e.scroll();

@@ -1,9 +1,12 @@
-use crate::model::TermSize;
-use crate::{files::file::*, global::*, model::CharType};
+use crate::_cfg::key::cmd::{Cmd, CmdType};
+use crate::_cfg::key::keybind::Keybind;
+use crate::model::*;
+use crate::{files::file::*, global::*};
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use anyhow::Context;
+use convert_case::{Case, Casing};
 use crossterm::terminal::size;
-use ewin_cfg::{global::LANG_MAP, log::Log, model::default::Cfg};
+use ewin_cfg::{global::*, log::*, model::default::*};
 use ewin_const::def::*;
 use ewin_const::model::*;
 use serde_json::Value;
@@ -112,6 +115,7 @@ pub fn get_char_width(c: &char, width: usize) -> usize {
         get_char_width_not_tab(c)
     };
 }
+
 pub fn get_tab_width(width: usize, cfg_tab_width: usize) -> usize {
     return cfg_tab_width - width % cfg_tab_width;
 }
@@ -207,8 +211,8 @@ pub fn get_char_type(c: char) -> CharType {
     }
 }
 
-pub fn cut_str(str: &str, limit_width: usize, is_from_before: bool, is_add_continue_str: bool) -> String {
-    let mut chars: Vec<char> = if is_from_before { str.chars().rev().collect() } else { str.chars().collect() };
+pub fn cut_str(str: &str, limit_width: usize, is_front: bool, is_add_continue_str: bool) -> String {
+    let mut chars: Vec<char> = if is_front { str.chars().rev().collect() } else { str.chars().collect() };
     let mut width = 0;
 
     let str_width = get_str_width(str);
@@ -220,9 +224,9 @@ pub fn cut_str(str: &str, limit_width: usize, is_from_before: bool, is_add_conti
             if let Some(c) = chars.get(i) {
                 let w = get_char_width_not_tab(c);
                 if width + w > limit_width {
-                    let mut rtn_str: String = if is_from_before { chars.drain(0..i).rev().collect() } else { chars.drain(0..i).collect() };
+                    let mut rtn_str: String = if is_front { chars.drain(0..i).rev().collect() } else { chars.drain(0..i).collect() };
                     if is_add_continue_str {
-                        if is_from_before {
+                        if is_front {
                             rtn_str = format!("{}{}", &CONTINUE_STR, rtn_str);
                         } else {
                             rtn_str.push_str(CONTINUE_STR);
@@ -260,7 +264,6 @@ pub fn split_chars(target: &str, is_inclusive: bool, is_new_line_code_ignore: bo
     }
     return vec;
 }
-
 pub fn get_path_comp_files(target_path: String, is_dir_only: bool, is_full_path_filenm: bool) -> Vec<File> {
     Log::debug_key("get_tab_comp_files");
 
@@ -297,6 +300,7 @@ pub fn get_path_comp_files(target_path: String, is_dir_only: bool, is_full_path_
     rtn_vec.sort_by_key(|file| file.name.clone());
     rtn_vec
 }
+
 pub fn get_dir_path(path_str: &str) -> String {
     let mut vec = split_chars(path_str, true, true, &[MAIN_SEPARATOR]);
     // Deleted when characters were entered
@@ -389,6 +393,7 @@ pub fn get_term_size() -> (usize, usize) {
         (cols as usize, rows as usize)
     }
 }
+
 pub fn get_delim_x(row: &[char], x: usize) -> (usize, usize) {
     Log::debug_key("get_delim_x");
 
@@ -428,6 +433,7 @@ fn get_delim(target: &[char], x: usize, is_forward: bool) -> usize {
     }
     rtn_x
 }
+
 pub fn get_until_delim_sx(rows: &[char]) -> usize {
     let mut rows = rows.to_vec();
     rows.reverse();
@@ -463,6 +469,22 @@ pub fn get_cfg_lang_name(name_str: &str) -> &str {
         return name;
     } else {
         return name_str;
+    }
+}
+pub fn get_edit_func_str(funcnm: &str) -> Option<String> {
+    Log::debug_key("get_edit_func_str");
+    Log::debug("funcnm", &funcnm);
+    if let Some(name) = LANG_MAP.get(&funcnm.to_case(Case::Snake)) {
+        Log::debug("name", &name);
+        let cmd_type = Cmd::str_to_cmd_type(funcnm);
+        Log::debug("cmd_type", &cmd_type);
+        if cmd_type == CmdType::Null {
+            Some(name.clone())
+        } else {
+            Some(Keybind::get_menu_str(name, cmd_type))
+        }
+    } else {
+        None
     }
 }
 

@@ -1,5 +1,8 @@
 use crate::{
-    _cfg::key::{keycmd::*, keys::*},
+    _cfg::key::{
+        cmd::{Cmd, CmdType},
+        keys::*,
+    },
     char_style::*,
     global::*,
 };
@@ -31,8 +34,9 @@ pub struct EvtProc {
 #[derive(Debug, Clone, PartialEq, Eq)]
 // Process
 pub struct Proc {
-    pub e_cmd: E_Cmd,
-    pub p_cmd: P_Cmd,
+    // pub e_cmd: E_Cmd,
+    //  pub p_cmd: P_Cmd,
+    pub cmd: Cmd,
     // not include lnw
     pub cur_s: Cur,
     pub cur_e: Cur,
@@ -45,11 +49,12 @@ pub struct Proc {
 impl Default for Proc {
     fn default() -> Self {
         Proc {
-            p_cmd: P_Cmd::Null,
+            //  p_cmd: P_Cmd::Null,
+            cmd: Cmd::default(),
             cur_s: Cur::default(),
             cur_e: Cur::default(),
             str: String::new(),
-            e_cmd: E_Cmd::Null,
+            // e_cmd: E_Cmd::Null,
             sel: SelRange::default(),
             // draw_type: E_DrawRange::default(),
             box_sel_vec: vec![],
@@ -59,17 +64,7 @@ impl Default for Proc {
 }
 impl fmt::Display for Proc {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "EvtProc cur_s:{}, cur_e:{}, str:{}, e_cmd:{:?}, p_cmd:{:?}, sel:{}, ",
-            self.cur_s,
-            self.cur_e,
-            self.str,
-            self.e_cmd,
-            self.p_cmd,
-            self.sel,
-            // self.draw_type
-        )
+        write!(f, "EvtProc cur_s:{}, cur_e:{}, str:{}, sel:{}, ", self.cur_s, self.cur_e, self.str, self.sel,)
     }
 }
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -158,13 +153,13 @@ impl Default for Search {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeyMacro {
-    pub e_cmd: E_Cmd,
+    pub cmd_type: CmdType,
     pub search: Search,
 }
 
 impl Default for KeyMacro {
     fn default() -> Self {
-        KeyMacro { e_cmd: E_Cmd::Null, search: Search::default() }
+        KeyMacro { cmd_type: CmdType::Null, search: Search::default() }
     }
 }
 
@@ -459,6 +454,7 @@ pub enum Direction {
 }
 
 impl Direction {
+    /*
     pub fn keycmd_to_curdirection(keycmd: &KeyCmd) -> Direction {
         match keycmd {
             KeyCmd::Prom(P_Cmd::CursorLeft) => Direction::Left,
@@ -468,6 +464,7 @@ impl Direction {
             _ => unreachable!(),
         }
     }
+     */
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -669,6 +666,7 @@ pub enum DParts {
     Absolute(Range<usize>),
     Prompt,
     MsgBar(String),
+    StatusBar,
     MenuBar,
     MenuWidget,
     FileBar,
@@ -688,12 +686,7 @@ pub enum ScrollUpDownType {
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct TabState {
     pub prom: PromState,
-    // pub is_save_new_file: bool,
-    // pub is_save_forced: bool,
-    //  pub is_key_record: bool,
-    pub is_open_file: bool,
     pub grep: GrepInfo,
-    // pub is_watch_result: bool,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -717,13 +710,6 @@ impl Default for PromState {
     fn default() -> Self {
         PromState::None
     }
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum MsgType {
-    Info,
-    Err,
-    KeyRecord,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -797,6 +783,16 @@ pub struct TermSize {
     pub cols: u16,
     pub rows: u16,
 }
+
+/*
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// HelpMode
+pub enum HelpMode {
+    Show,
+    // Details,
+    None,
+}
+ */
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UT {}

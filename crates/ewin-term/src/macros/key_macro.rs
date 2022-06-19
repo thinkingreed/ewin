@@ -1,19 +1,16 @@
-use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*},
-    model::*,
-};
+use crate::{ewin_com::model::*, model::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
+use ewin_com::_cfg::key::cmd::Cmd;
 impl Tab {
     pub fn record_key_macro_start(&mut self) -> ActType {
         Log::debug_key("macro_record_start");
         if self.editor.state.key_macro.is_record {
             self.editor.state.key_macro.is_record = false;
-            self.msgbar.clear_key_record();
             return ActType::Draw(DParts::Editor(E_DrawRange::All));
         } else {
             self.editor.state.key_macro.is_record = true;
             self.editor.key_vec = vec![];
-            return ActType::Draw(DParts::MsgBar(Lang::get().key_recording.to_string()));
+            return ActType::Draw(DParts::StatusBar);
         }
     }
 
@@ -27,8 +24,8 @@ impl Tab {
 
         let macro_vec = term.curt().editor.key_vec.clone();
         for (i, mac) in macro_vec.iter().enumerate() {
-            term.keycmd = KeyCmd::Edit(mac.e_cmd.clone());
-            term.curt().editor.e_cmd = mac.e_cmd.clone();
+            // term.keycmd = KeyCmd::Edit(mac.e_cmd.clone());
+            term.curt().editor.cmd = Cmd::to_cmd(mac.cmd_type.clone());
 
             if i == macro_vec.len() - 1 {
                 term.curt().editor.state.key_macro.is_exec_end = true;

@@ -1,7 +1,7 @@
 use crate::{model::*, prom_trait::cont_trait::*};
 use crossterm::cursor::MoveTo;
 use ewin_cfg::{colors::*, log::*};
-use ewin_com::_cfg::key::keycmd::*;
+use ewin_com::_cfg::key::cmd::CmdType;
 use ewin_widget::widget::pulldown::*;
 
 impl PromContPluginTrait for PromContPulldown {
@@ -32,11 +32,11 @@ impl PromContPluginTrait for PromContPulldown {
         Log::debug("self.pulldown.is_disp", &self.pulldown.is_disp);
         // Log::debug("self.is_mouse_within_area(y, x)", &self.is_mouse_within_area(y, x));
 
-        return match self.as_base().p_cmd {
-            P_Cmd::InsertStr(_) | P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::Cut | P_Cmd::CursorLeft | P_Cmd::CursorRight | P_Cmd::CursorRowHome | P_Cmd::CursorRowEnd | P_Cmd::CursorLeftSelect | P_Cmd::CursorRightSelect | P_Cmd::CursorRowHomeSelect | P_Cmd::CursorRowEndSelect | P_Cmd::Copy | P_Cmd::Undo | P_Cmd::Redo => true,
+        return match self.as_base().cmd.cmd_type {
+            CmdType::InsertStr(_) | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Cut | CmdType::CursorLeft | CmdType::CursorRight | CmdType::CursorRowHome | CmdType::CursorRowEnd | CmdType::CursorLeftSelect | CmdType::CursorRightSelect | CmdType::CursorRowHomeSelect | CmdType::CursorRowEndSelect | CmdType::Copy | CmdType::Undo | CmdType::Redo => true,
             //  P_Cmd::MouseDownLeft(y, _) if self.base.row_posi_range.start <= y && y <= self.base.row_posi_range.end || self.pulldown.is_disp => true,
-            P_Cmd::MouseDownLeft(_, _) => true,
-            P_Cmd::MouseMove(_, _) if self.pulldown.is_disp => true,
+            CmdType::MouseDownLeft(_, _) => true,
+            CmdType::MouseMove(_, _) if self.pulldown.is_disp => true,
             _ => false,
         };
     }

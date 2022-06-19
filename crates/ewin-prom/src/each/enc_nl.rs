@@ -4,18 +4,18 @@ use crate::{
     prom_trait::main_trait::*,
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
-use ewin_com::{_cfg::key::keycmd::*, model::*, util::*};
+use ewin_com::{_cfg::key::cmd::*, model::*, util::*};
 use ewin_const::def::*;
 
 impl PromEncNl {
     pub fn new() -> Self {
-        let mut plugin = PromEncNl { base: PromPluginBase { config: PromptPluginConfig { is_updown_valid: true, ..PromptPluginConfig::default() }, ..PromPluginBase::default() } };
+        let mut plugin = PromEncNl { base: PromBase { config: PromptConfig { is_updown_valid: true, ..PromptConfig::default() }, ..PromBase::default() } };
         plugin.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().set_enc_nl.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 
-        let fixed = PromContKeyMenu { disp_str: Lang::get().fixed.to_string(), key: PromContKeyMenuType::PCmd(P_Cmd::Confirm) };
+        let fixed = PromContKeyMenu { disp_str: Lang::get().fixed.to_string(), key: PromContKeyMenuType::Cmd(CmdType::Confirm) };
 
-        let switch_area = PromContKeyMenu { disp_str: Lang::get().move_setting_location.to_string(), key: PromContKeyMenuType::create_cmds(vec![P_Cmd::NextContent, P_Cmd::CursorUp, P_Cmd::CursorDown, P_Cmd::CursorLeft, P_Cmd::CursorRight], &mut vec![P_Cmd::BackContent]) };
-        let cancel = PromContKeyMenu { disp_str: Lang::get().cancel.to_string(), key: PromContKeyMenuType::PCmd(P_Cmd::Cancel) };
+        let switch_area = PromContKeyMenu { disp_str: Lang::get().move_setting_location.to_string(), key: PromContKeyMenuType::create_cmds(vec![CmdType::NextContent, CmdType::CursorUp, CmdType::CursorDown, CmdType::CursorLeft, CmdType::CursorRight], &mut vec![CmdType::BackContent]) };
+        let cancel = PromContKeyMenu { disp_str: Lang::get().cancel.to_string(), key: PromContKeyMenuType::Cmd(CmdType::CancelProm) };
         plugin.base.cont_vec.push(Box::new(PromContKeyDesc { desc_vecs: vec![vec![fixed, switch_area, cancel]], ..PromContKeyDesc::default() }));
 
         let mut cont_choice = PromContChoice { is_disp: true, desc_str_vec: vec![Lang::get().method_of_apply.to_string()], vec: vec![vec![Choice::new(&Lang::get().file_reload), Choice::new(&Lang::get().keep_and_apply_string)]], vec_y: 0, vec_x: 0, ..PromContChoice::default() };
@@ -46,8 +46,6 @@ impl PromEncNl {
     pub fn set_default_choice_enc_nl(&mut self, h_file: &HeaderFile) {
         for prom_cont in self.base.cont_vec.iter_mut() {
             if let Ok(prom) = prom_cont.downcast_mut::<PromContChoice>() {
-                // let prom = prom_cont.downcast_mut::<PromContChoice>().unwrap();
-
                 for (y_idx, v) in prom.vec.iter_mut().enumerate() {
                     let mut row_width = 1;
 
@@ -141,13 +139,13 @@ impl PromEncNl {
 
 #[derive(Default, Debug, Clone)]
 pub struct PromEncNl {
-    pub base: PromPluginBase,
+    pub base: PromBase,
 }
 impl PromPluginTrait for PromEncNl {
-    fn as_base(&self) -> &PromPluginBase {
+    fn as_base(&self) -> &PromBase {
         &self.base
     }
-    fn as_mut_base(&mut self) -> &mut PromPluginBase {
+    fn as_mut_base(&mut self) -> &mut PromBase {
         &mut self.base
     }
 }

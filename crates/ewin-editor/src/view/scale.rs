@@ -4,27 +4,39 @@ use ewin_cfg::{colors::*, log::*, model::default::*};
 
 impl Editor {
     pub fn draw_scale(&mut self, str_vec: &mut Vec<String>) {
-        Log::debug_key("draw_scale");
-        Log::debug("self.row_posi", &self.row_posi);
-        str_vec.push(Colors::get_scale_fg_bg());
-        str_vec.push(format!("{}", MoveTo(0, (self.row_posi - 1) as u16)));
-        if CfgEdit::get().general.editor.row_no.is_enable {
-            if self.get_rnw() > 0 {
-                str_vec.push(" ".repeat(self.get_rnw()));
+        if CfgEdit::get().general.editor.scale.is_enable {
+            Log::debug_key("draw_scale");
+            Log::debug("self.row_posi", &self.row_posi);
+            Log::debug("self.col_len", &self.col_len);
+            str_vec.push(Colors::get_scale_fg_bg());
+            str_vec.push(format!("{}", MoveTo(0, (self.row_posi - 1) as u16)));
+            if CfgEdit::get().general.editor.row_no.is_enable {
+                if self.get_rnw() > 0 {
+                    str_vec.push(" ".repeat(self.get_rnw()));
+                }
+                #[allow(clippy::repeat_once)]
+                str_vec.push(" ".repeat(Editor::RNW_MARGIN));
             }
-            #[allow(clippy::repeat_once)]
-            str_vec.push(" ".repeat(Editor::RNW_MARGIN));
-        }
 
-        Log::debug("self.col_len", &self.col_len);
-        Log::debug("self.offset_disp_x", &self.offset_disp_x);
+            let scale_str = Editor::get_scale_str(self.col_len, self.offset_disp_x);
 
-        str_vec.push(Editor::get_scale_str(self.col_len, self.offset_disp_x));
-        Log::debug(" Cfg::get().general.editor.scrollbar.vertical.width", &Cfg::get().general.editor.scrollbar.vertical.width);
-        if self.scrl_v.is_show {
-            str_vec.push(" ".repeat(Cfg::get().general.editor.scrollbar.vertical.width));
+            Log::debug("self.offset_disp_x", &self.offset_disp_x);
+            Log::debug("self.cur.disp_x", &self.cur.disp_x);
+
+            if self.offset_disp_x <= self.cur.disp_x && self.cur.disp_x <= self.offset_disp_x + self.col_len {
+                let tgt_1 = &scale_str[..scale_str.char_indices().nth(self.cur.disp_x - self.offset_disp_x).unwrap().0];
+                let tgt_2 = &scale_str[scale_str.char_indices().nth(self.cur.disp_x - self.offset_disp_x + 1).unwrap().0..];
+                str_vec.push(format!("{}{}", tgt_1.to_string(), Colors::get_default_fg(),));
+                str_vec.push("|".to_string());
+                str_vec.push(format!("{}{}", Colors::get_scale_fg(), tgt_2.to_string()));
+            } else {
+                str_vec.push(scale_str);
+            }
+            if self.scrl_v.is_show {
+                str_vec.push(" ".repeat(Cfg::get().general.editor.scrollbar.vertical.width));
+            }
         }
-       // str_vec.push(Colors::get_default_fg_bg())
+        str_vec.push(Colors::get_default_fg_bg());
     }
 
     pub fn get_scale_str(col_len: usize, offset_disp_x: usize) -> String {
@@ -57,9 +69,11 @@ impl Editor {
         let delim_10_rest_time = if delim_10_rest > 0 { 1 } else { 0 };
 
         let last_idx = div + delim_10 + delim_10_rest_time;
+
         for i in div + 1..=last_idx {
             let i_str = if is_unexpected_length { "".to_string() } else { i.to_string() };
-            let rest_str = &fixed_str[i_str.chars().count()..];
+            Log::debug("i_str", &i_str);
+            let rest_str = &fixed_str.chars().collect::<Vec<char>>()[i_str.chars().count()..].iter().collect::<String>();
             let mut join_str = format!("{}{}", &i_str, &rest_str);
             if i == last_idx {
                 let r = col_len - break_str.chars().count();
@@ -67,7 +81,6 @@ impl Editor {
             }
             break_str.push_str(&join_str);
         }
-        Log::debug("break_str", &break_str);
 
         return break_str;
     }

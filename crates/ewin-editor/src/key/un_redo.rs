@@ -1,8 +1,6 @@
-use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*},
-    model::*,
-};
+use crate::{ewin_com::model::*, model::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
+use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
 
 impl Editor {
     pub fn undo(&mut self) -> ActType {
@@ -38,16 +36,16 @@ impl Editor {
     }
     // initial cursor posi set
     pub fn undo_init(&mut self, proc: &Proc) {
-        match &proc.e_cmd {
-            E_Cmd::InsertStr(_) | E_Cmd::InsertRow | E_Cmd::Cut | E_Cmd::ReplaceExec(_, _, _) => self.cur = proc.cur_s,
-            E_Cmd::DelNextChar | E_Cmd::DelPrevChar => {
+        match &proc.cmd.cmd_type {
+            CmdType::InsertStr(_) | CmdType::InsertRow | CmdType::Cut | CmdType::ReplaceExec(_, _, _) => self.cur = proc.cur_s,
+            CmdType::DelNextChar | CmdType::DelPrevChar => {
                 self.cur = if proc.sel.is_selected() {
                     if proc.cur_s.x > proc.cur_e.x {
                         proc.cur_e
                     } else {
                         proc.cur_s
                     }
-                } else if proc.e_cmd == E_Cmd::DelNextChar {
+                } else if proc.cmd.cmd_type == CmdType::DelNextChar {
                     proc.cur_s
                 } else {
                     proc.cur_e
@@ -57,30 +55,30 @@ impl Editor {
         }
     }
     pub fn undo_exec(&mut self, proc: &Proc) {
-        let _ = match &proc.e_cmd {
-            E_Cmd::InsertRow => self.edit_proc(E_Cmd::DelNextChar),
-            E_Cmd::InsertStr(_) => {
+        let _ = match &proc.cmd.cmd_type {
+            CmdType::InsertRow => self.edit_proc(proc.cmd.clone()),
+            CmdType::InsertStr(_) => {
                 if proc.box_sel_vec.is_empty() {
                     // Set paste target with sel
                     self.sel = proc.sel;
-                    self.edit_proc(E_Cmd::DelNextChar)
+                    self.edit_proc(proc.cmd.clone())
                 } else {
-                    self.edit_proc(E_Cmd::DelBox(proc.box_sel_vec.clone()))
+                    self.edit_proc(Cmd::to_cmd(CmdType::DelBox(proc.box_sel_vec.clone())))
                 }
             }
-            E_Cmd::DelNextChar | E_Cmd::DelPrevChar => self.edit_proc(if proc.box_sel_vec.is_empty() { E_Cmd::InsertStr(proc.str.clone()) } else { E_Cmd::InsertBox(proc.box_sel_vec.clone()) }),
-            E_Cmd::ReplaceExec(search_str, replace_str, idx_set) => {
+            CmdType::DelNextChar | CmdType::DelPrevChar => self.edit_proc(if proc.box_sel_vec.is_empty() { Cmd::to_cmd(CmdType::InsertStr(proc.str.clone())) } else { Cmd::to_cmd(CmdType::InsertBox(proc.box_sel_vec.clone())) }),
+            CmdType::ReplaceExec(search_str, replace_str, idx_set) => {
                 let idx_set = self.get_idx_set(search_str, replace_str, idx_set);
 
-                self.edit_proc(E_Cmd::ReplaceExec(replace_str.clone(), search_str.clone(), idx_set))
+                self.edit_proc(Cmd::to_cmd(CmdType::ReplaceExec(replace_str.clone(), search_str.clone(), idx_set)))
             }
             _ => todo!(),
         };
     }
     // last cursor posi set
     pub fn undo_finalize(&mut self, proc: &Proc) {
-        match &proc.e_cmd {
-            E_Cmd::DelNextChar => {
+        match &proc.cmd.cmd_type {
+            CmdType::DelNextChar => {
                 self.cur = if proc.sel.is_selected() {
                     if proc.cur_s.x > proc.cur_e.x {
                         proc.cur_s
@@ -91,7 +89,7 @@ impl Editor {
                     proc.cur_s
                 }
             }
-            E_Cmd::DelPrevChar => {
+            CmdType::DelPrevChar => {
                 self.cur = if proc.sel.is_selected() {
                     proc.cur_e
                     // !proc.box_sel_vec.is_empty()
@@ -99,7 +97,7 @@ impl Editor {
                     proc.cur_s
                 }
             }
-            E_Cmd::ReplaceExec(_, _, _) => {
+            CmdType::ReplaceExec(_, _, _) => {
                 // Return cursor position
                 self.cur = proc.cur_s;
             }
@@ -129,23 +127,23 @@ impl Editor {
     }
     pub fn redo_exec(&mut self, proc: Proc) {
         self.cur = proc.cur_s;
-        match &proc.e_cmd {
-            E_Cmd::DelNextChar | E_Cmd::DelPrevChar | E_Cmd::Cut => self.sel = proc.sel,
+        match &proc.cmd.cmd_type {
+            CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Cut => self.sel = proc.sel,
             _ => {}
         }
-        let _ = match &proc.e_cmd {
-            E_Cmd::DelNextChar => self.edit_proc(E_Cmd::DelNextChar),
-            E_Cmd::DelPrevChar => self.edit_proc(E_Cmd::DelPrevChar),
-            E_Cmd::Cut => self.edit_proc(E_Cmd::Cut),
-            E_Cmd::InsertRow => self.edit_proc(E_Cmd::InsertRow),
-            E_Cmd::InsertStr(_) => {
+        let _ = match &proc.cmd.cmd_type {
+            CmdType::DelNextChar => self.edit_proc(proc.cmd),
+            CmdType::DelPrevChar => self.edit_proc(proc.cmd),
+            CmdType::Cut => self.edit_proc(proc.cmd),
+            CmdType::InsertRow => self.edit_proc(proc.cmd),
+            CmdType::InsertStr(_) => {
                 if proc.box_sel_vec.is_empty() {
-                    self.edit_proc(E_Cmd::InsertStr(proc.str.clone()))
+                    self.edit_proc(Cmd::to_cmd(CmdType::InsertStr(proc.str.clone())))
                 } else {
-                    self.edit_proc(E_Cmd::InsertBox(proc.box_sel_redo_vec.clone()))
+                    self.edit_proc(Cmd::to_cmd(CmdType::InsertBox(proc.box_sel_redo_vec.clone())))
                 }
             }
-            E_Cmd::ReplaceExec(search_str, replace_str, idx_set) => self.edit_proc(E_Cmd::ReplaceExec(search_str.clone(), replace_str.clone(), idx_set.clone())),
+            CmdType::ReplaceExec(search_str, replace_str, idx_set) => self.edit_proc(Cmd::to_cmd(CmdType::ReplaceExec(search_str.clone(), replace_str.clone(), idx_set.clone()))),
             _ => todo!(),
         };
     }

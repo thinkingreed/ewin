@@ -1,10 +1,11 @@
 use super::parts::input_area::*;
-use crate::ewin_com::{_cfg::key::keycmd::*, model::*};
+use crate::ewin_com::model::*;
 use ewin_cfg::log::*;
+use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
 
 impl PromContInputArea {
-    pub fn edit_proc(&mut self, p_cmd: P_Cmd) -> ActType {
-        Log::debug("PromptCont.keycmd", &p_cmd);
+    pub fn edit_proc(&mut self, cmd: Cmd) -> ActType {
+        Log::debug("PromptCont.Cmd", &cmd);
 
         let is_selected_org = self.sel.is_selected_width();
         let mut ep_del = Proc::default();
@@ -12,7 +13,7 @@ impl PromContInputArea {
 
         // selected range delete
         if self.sel.is_selected_width() {
-            ep_del = Proc { p_cmd: if p_cmd == P_Cmd::DelNextChar { P_Cmd::DelNextChar } else { P_Cmd::DelPrevChar }, ..Proc::default() };
+            ep_del = Proc { cmd: if cmd.cmd_type == CmdType::DelNextChar { Cmd::to_cmd(CmdType::DelNextChar) } else { Cmd::to_cmd(CmdType::DelPrevChar) }, ..Proc::default() };
             ep_del.cur_s = Cur { y: self.sel.sy, x: self.sel.sx, disp_x: self.sel.s_disp_x };
             ep_del.cur_e = self.cur;
             let sel = self.sel.get_range();
@@ -28,16 +29,16 @@ impl PromContInputArea {
         }
 
         // not selected Del, BS, Cut or InsertChar, Paste, Enter
-        if !(is_selected_org && (p_cmd == P_Cmd::DelNextChar || p_cmd == P_Cmd::DelPrevChar)) {
-            let mut ep = Proc { p_cmd: p_cmd.clone(), ..Proc::default() };
+        if !(is_selected_org && (cmd.cmd_type == CmdType::DelNextChar || cmd.cmd_type == CmdType::DelPrevChar)) {
+            let mut ep = Proc { cmd: cmd.clone(), ..Proc::default() };
 
             ep.cur_s = self.cur;
-            let act_type = match &p_cmd {
-                P_Cmd::DelNextChar => self.delete(&mut ep),
-                P_Cmd::DelPrevChar => self.backspace(&mut ep),
-                P_Cmd::Cut => self.cut(ep_del.str),
-                P_Cmd::InsertStr(str) if str.is_empty() => self.paste(&mut ep),
-                P_Cmd::InsertStr(str) => {
+            let act_type = match &cmd.cmd_type {
+                CmdType::DelNextChar => self.delete(&mut ep),
+                CmdType::DelPrevChar => self.backspace(&mut ep),
+                CmdType::Cut => self.cut(ep_del.str),
+                CmdType::InsertStr(str) if str.is_empty() => self.paste(&mut ep),
+                CmdType::InsertStr(str) => {
                     ep.str = str.clone();
                     self.insert_str(&mut ep);
                     ActType::Next
@@ -49,13 +50,13 @@ impl PromContInputArea {
                 return act_type;
             }
             ep.cur_e = self.cur;
-            if p_cmd != P_Cmd::Cut {
+            if cmd.cmd_type != CmdType::Cut {
                 evt_proc.proc = Some(ep.clone());
             }
         }
 
         // Register edit history
-        if self.base.p_cmd != P_Cmd::Undo && self.base.p_cmd != P_Cmd::Redo {
+        if self.base.cmd.cmd_type != CmdType::Undo && self.base.cmd.cmd_type != CmdType::Redo {
             self.history.undo_vec.push(evt_proc);
         }
         return ActType::Next;

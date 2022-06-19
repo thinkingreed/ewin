@@ -1,6 +1,6 @@
 use crate::{model::*, prom_trait::cont_trait::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::Lang, log::*};
-use ewin_com::_cfg::key::keycmd::*;
+use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
 
 impl PromContPluginTrait for PromContKeyDesc {
     fn as_base(&self) -> &PromptContBase {
@@ -14,20 +14,22 @@ impl PromContPluginTrait for PromContKeyDesc {
             let mut s = "".to_string();
             for cont in vec {
                 match &cont.key {
-                    PromContKeyMenuType::PCmd(p_cmd) => {
-                        s.push_str(&format!("{}{}:{}{} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), PromContKeyMenu::get_str(p_cmd)));
+                    PromContKeyMenuType::Cmd(cmd_type) => {
+                        s.push_str(&format!("{}{}:{}{} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), PromContKeyMenu::get_str(cmd_type)));
                     }
-                    PromContKeyMenuType::ECmd(e_cmd) => {
-                        s.push_str(&format!("{}{}:{}{} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), Keybind::get_key_str(KeyCmd::Edit(e_cmd.clone()))));
+                    /*
+                    PromContKeyMenuType::ECmd(cmd_type) => {
+                        s.push_str(&format!("{}{}:{}{} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), Keybind::get_key_str_cmd(cmd_type)));
                     }
-                    PromContKeyMenuType::PCmdAndStr(p_cmd, string) => {
-                        s.push_str(&format!("{}{}:{}{} {} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), PromContKeyMenu::get_str(p_cmd), string));
+                     */
+                    PromContKeyMenuType::PCmdAndStr(cmd_type, string) => {
+                        s.push_str(&format!("{}{}:{}{} {} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), PromContKeyMenu::get_str(cmd_type), string));
                     }
                     PromContKeyMenuType::PCmds { show_cmd: show_cmd_vec, all_cmd: _ } => {
                         s.push_str(&format!("{}{}:{}", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(),));
 
-                        for p_cmd in show_cmd_vec {
-                            s.push_str(&format!(" {}", PromContKeyMenu::get_str(p_cmd)));
+                        for cmd_type in show_cmd_vec {
+                            s.push_str(&format!(" {}", PromContKeyMenu::get_str(cmd_type)));
                         }
                         s.push_str(" ");
                     }
@@ -46,25 +48,24 @@ impl PromContPluginTrait for PromContKeyDesc {
         for vec in &self.desc_vecs {
             for menu in vec {
                 match &menu.key {
-                    PromContKeyMenuType::PCmd(p_cmd) | PromContKeyMenuType::PCmdAndStr(p_cmd, _) => {
-                        if &self.as_base().p_cmd == p_cmd {
+                    PromContKeyMenuType::Cmd(cmd_type) | PromContKeyMenuType::PCmdAndStr(cmd_type, _) => {
+                        if &self.as_base().cmd.cmd_type == cmd_type {
                             return true;
                         }
                     }
                     PromContKeyMenuType::PCmds { show_cmd: _, all_cmd: all_cmd_vec } => {
-                        for p_cmd in all_cmd_vec {
-                            if &self.as_base().p_cmd == p_cmd {
+                        for cmd_type in all_cmd_vec {
+                            if &self.as_base().cmd.cmd_type == cmd_type {
                                 return true;
                             }
                         }
                     }
                     PromContKeyMenuType::OneChar(c) => {
-                        match &self.as_base().p_cmd {
-                            P_Cmd::InsertStr(s) if s.to_lowercase() == c.to_lowercase() => return true,
+                        match &self.as_base().cmd.cmd_type {
+                            CmdType::InsertStr(s) if s.to_lowercase() == c.to_lowercase() => return true,
                             _ => {}
                         };
-                    }
-                    PromContKeyMenuType::ECmd(_) => {}
+                    } // PromContKeyMenuType::ECmd(_) => {}
                 };
             }
         }
@@ -72,9 +73,9 @@ impl PromContPluginTrait for PromContKeyDesc {
     }
 }
 impl PromContKeyMenu {
-    pub fn get_str(p_cmd: &P_Cmd) -> String {
+    pub fn get_str(cmd_type: &CmdType) -> String {
         // for MouseDownLeft
-        return if matches!(p_cmd, P_Cmd::MouseDownLeft(_, _)) { Lang::get().mouse_down_left.to_string() } else { Keybind::get_key_str(KeyCmd::Prom(p_cmd.clone())) };
+        return if matches!(cmd_type, CmdType::MouseDownLeft(_, _)) { Lang::get().mouse_down_left.to_string() } else { Cmd::get_cmd_str(cmd_type) };
     }
 }
 
@@ -92,14 +93,14 @@ pub struct PromContKeyMenu {
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum PromContKeyMenuType {
-    PCmd(P_Cmd),
-    ECmd(E_Cmd),
+    Cmd(CmdType),
+    // ECmd(CmdType),
     OneChar(String),
-    PCmds { show_cmd: Vec<P_Cmd>, all_cmd: Vec<P_Cmd> },
-    PCmdAndStr(P_Cmd, String),
+    PCmds { show_cmd: Vec<CmdType>, all_cmd: Vec<CmdType> },
+    PCmdAndStr(CmdType, String),
 }
 impl PromContKeyMenuType {
-    pub fn create_cmds(show_cmd: Vec<P_Cmd>, hide_cmd: &mut Vec<P_Cmd>) -> Self {
+    pub fn create_cmds(show_cmd: Vec<CmdType>, hide_cmd: &mut Vec<CmdType>) -> Self {
         let mut all_cmd = show_cmd.clone();
         all_cmd.append(hide_cmd);
         return PromContKeyMenuType::PCmds { show_cmd, all_cmd };

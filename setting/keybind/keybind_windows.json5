@@ -40,330 +40,215 @@
    * cursor move
    */
   {
-    key: 'left',
-    cmd: 'cursorLeft',
-    when: 'inputFocus'
+    key: 'left', cmd: 'cursorLeft'
   },
   {
-    key: 'right',
-    cmd: 'cursorRight',
-    when: 'inputFocus'
+    key: 'right', cmd: 'cursorRight'
   },
   {
-    key: 'down',
-    cmd: 'cursorDown',
-    when: 'inputFocus'
+    key: 'down', cmd: 'cursorDown'
   },
   {
-    key: 'up',
-    cmd: 'cursorUp',
-    when: 'inputFocus'
+    key: 'up', cmd: 'cursorUp'
   },
   {
-    key: 'home',
-    cmd: 'cursorRowHome',
-    when: 'inputFocus'
+    key: 'home', cmd: 'cursorRowHome'
   },
   {
-    key: 'end',
-    cmd: 'cursorRowEnd',
-    when: 'inputFocus'
+    key: 'end', cmd: 'cursorRowEnd'
   },
   {
-    key: 'ctrl+home',
-    cmd: 'cursorFileHome',
-    when: 'editorFocus'
+    key: 'ctrl+home', cmd: 'cursorFileHome'
   },
   {
-    key: 'ctrl+end',
-    cmd: 'cursorFileEnd',
-    when: 'editorFocus'
+    key: 'ctrl+end', cmd: 'cursorFileEnd'
   },
   {
-    key: 'pagedown',
-    cmd: 'cursorPageDown',
-    when: 'editorFocus'
+    key: 'pagedown', cmd: 'cursorPageDown'
   },
   {
-    key: 'pageup',
-    cmd: 'cursorPageUp',
-    when: 'editorFocus'
+    key: 'pageup', cmd: 'cursorPageUp'
   },
   /*
    * select
    */
   {
-    key: 'shift+left',
-    cmd: 'cursorLeftSelect',
-    when: 'inputFocus'
+    key: 'shift+left', cmd: 'cursorLeftSelect'
   },
   {
-    key: 'shift+right',
-    cmd: 'cursorRightSelect',
-    when: 'inputFocus'
+    key: 'shift+right', cmd: 'cursorRightSelect'
   },
   {
-    key: 'shift+down',
-    cmd: 'cursorDownSelect',
-    when: 'inputFocus'
+    key: 'shift+down', cmd: 'cursorDownSelect'
   },
   {
-    key: 'shift+up',
-    cmd: 'cursorUpSelect',
-    when: 'inputFocus'
+    key: 'shift+up', cmd: 'cursorUpSelect'
   },
   {
-    key: 'shift+home',
-    cmd: 'cursorRowHomeSelect',
-    when: 'inputFocus'
+    key: 'shift+home', cmd: 'cursorRowHomeSelect'
   },
   {
-    key: 'shift+end',
-    cmd: 'cursorRowEndSelect',
-    when: 'inputFocus'
+    key: 'shift+end', cmd: 'cursorRowEndSelect'
   },
   {
-    key: 'ctrl+a',
-    cmd: 'allSelect',
-    when: 'inputFocus'
+    key: 'ctrl+a', cmd: 'allSelect'
   },
   {
-    key: 'shift+F6',
-    cmd: 'boxSelectModeStart',
-    when: 'editorFocus'
+    key: 'shift+F6', cmd: 'boxSelectModeStart'
   },
   /*
    * mode
    */
   {
-    key: 'esc',
-    cmd: 'cancelMode',
-    when: 'allFocus'
+    key: 'esc', cmd: 'cancelEditorState'
   },
   /*
    * edit
    */
   {
-    key: 'enter',
-    cmd: 'insertLine',
-    when: 'editorFocus'
+    key: 'enter', cmd: 'insertLine'
   },
   {
-    key: 'backspace',
-    cmd: 'deletePrevChar',
-    when: 'inputFocus'
+    key: 'backspace', cmd: 'deletePrevChar'
   },
   {
-    key: 'delete',
-    cmd: 'deleteNextChar',
-    when: 'inputFocus'
+    key: 'delete', cmd: 'deleteNextChar'
   },
   {
-    key: 'ctrl+x',
-    cmd: 'cutSelect',
-    when: 'inputFocus'
+    key: 'ctrl+x', cmd: 'cutSelect'
   },
   {
-    key: 'ctrl+c',
-    cmd: 'copySelect',
-    when: 'inputFocus'
+    key: 'ctrl+c', cmd: 'copySelect'
   },
   {
-    key: 'ctrl+v',
-    cmd: 'paste',
-    when: 'inputFocus'
+    key: 'ctrl+v', cmd: 'paste'
   },
   {
-    key: 'ctrl+z',
-    cmd: 'undo',
-    when: 'inputFocus'
+    key: 'ctrl+z', cmd: 'undo'
   },
   {
-    key: 'ctrl+y',
-    cmd: 'redo',
-    when: 'inputFocus'
+    key: 'ctrl+y', cmd: 'redo'
   },
   /*
    * find
    */
   {
-    key: 'ctrl+f',
-    cmd: 'find',
-    when: 'editorFocus'
+    key: 'ctrl+f', cmd: 'findPrompt'
   },
   {
-    key: 'F3',
-    cmd: 'findNext',
-    when: 'editorFocus'
+    key: 'F3', cmd: 'findNext'
   },
     {
-    key: 'F3',
-    cmd: 'findNext',
-    when: 'promptFocus'
+    key: 'F3', cmd: 'findNext'
   },
   {
-    key: 'shift+F3',
-    cmd: 'findBack',
-    when: 'editorFocus'
+    key: 'shift+F3', cmd: 'findBack'
   },
   {
-    key: 'shift+F4',
-    cmd: 'findBack',
-    when: 'promptFocus'
+    key: 'shift+F4', cmd: 'findBack'
   },
   {
-    key: 'ctrl+r',
-    cmd: 'replace',
-    when: 'editorFocus'
+    key: 'ctrl+r', cmd: 'replacePrompt'
   },
   {
-    key: 'ctrl+l',
-    cmd: 'moveLine',
-    when: 'editorFocus'
+    key: 'ctrl+l', cmd: 'moveLinePrompt'
   },
   {
-    key: 'ctrl+g',
-    cmd: 'grep',
-    when: 'editorFocus'
+    key: 'ctrl+g', cmd: 'grepPrompt'
   },
   /*
    * filSe
    */
   {
-    key: 'ctrl+w',
-    cmd: 'closeFile',
-    when: 'allFocus'
+    key: 'ctrl+w', cmd: 'closeFile'
   },
   {
-    key: 'ctrl+n',
-    cmd: 'create_new_file',
-    when: 'editorFocus'
+    key: 'ctrl+n', cmd: 'create_new_file'
   },
   {
-    key: 'ctrl+o',
-    cmd: 'openFile',
-    when: 'editorFocus'
+    key: 'ctrl+o', cmd: 'openFilePrompt'
   },
   {
-    key: 'alt+right',
-    cmd: 'switchTabRight',
-    when: 'editorFocus'
+    key: 'alt+right', cmd: 'switchTabRight'
   },
   {
-    key: 'alt+left',
-    cmd: 'switchTabLeft',
-    when: 'editorFocus'
+    key: 'alt+left', cmd: 'switchTabLeft'
   },
   {
-    key: 'ctrl+e',
-    cmd: 'encoding',
-    when: 'editorFocus'
+    key: 'ctrl+e', cmd: 'encodingPrompt'
   },
   {
-    key: 'alt+w',
-    cmd: 'closeAllFile',
-    when: 'editorFocus'
+    key: 'alt+w', cmd: 'closeAllFile'
   },
   {
-    key: 'ctrl+s',
-    cmd: 'saveFile',
-    when: 'editorFocus'
+    key: 'ctrl+s', cmd: 'saveFile'
   },
     {
-    key: 'shift+space',
-    cmd: 'inputComplement',
-    when: 'editorFocus'
+    key: 'shift+space', cmd: 'inputComplement'
   },
   /*
    * key record
    */
   {
-    key: 'shift+F1',
-    cmd: 'startEndRecordKey',
-    when: 'editorFocus'
+    key: 'shift+F1', cmd: 'startEndRecordKey'
   },
   {
-    key: 'shift+F2',
-    cmd: 'execRecordKey',
-    when: 'editorFocus'
+    key: 'shift+F2', cmd: 'execRecordKey'
   },
   /*
    * mouse
    */
   {
-    key: 'F12',
-    cmd: 'mouseOpeSwitch',
-    when: 'editorFocus'
+    key: 'F12', cmd: 'mouseOpeSwitch'
   },
   /*
    * menu
    */
   {
-    key: 'F1',
-    cmd: 'help',
-    when: 'editorFocus'
+    key: 'F1', cmd: 'help'
   },
   {
-    key: 'alt+f',
-    cmd: 'openMenuFile',
-    when: 'editorFocus'
+    key: 'alt+F1', cmd: 'helpInitDisplaySwitch'
   },
   {
-    key: 'alt+c',
-    cmd: 'openMenuConvert',
-    when: 'editorFocus'
+    key: 'alt+f', cmd: 'openMenuFile'
   },
   {
-    key: 'alt+e',
-    cmd: 'openMenuEdit',
-    when: 'editorFocus'
+    key: 'alt+c', cmd: 'openMenuConvert'
   },
   {
-    key: 'alt+s',
-    cmd: 'openMenuSearch',
-    when: 'editorFocus'
+    key: 'alt+e', cmd: 'openMenuEdit'
+  },
+  {
+    key: 'alt+s', cmd: 'openMenuSearch'
   },
 
   /*
    * prompt
    */
   {
-    key: 'esc',
-    cmd: 'escPrompt',
-    when: 'promptFocus'
+    key: 'esc', cmd: 'cancelPrompt'
   },
   {
-    key: 'enter',
-    cmd: 'confirmPrompt',
-    when: 'promptFocus'
+    key: 'enter', cmd: 'confirmPrompt'
   },
    {
-    key: 'tab',
-    cmd: 'switchContent',
-    when: 'promptFocus'
+    key: 'tab', cmd: 'switchContent'
   },
   {
-    key: 'alt+c',
-    cmd: 'findCaseSensitive',
-    when: 'promptFocus'
+    key: 'alt+c', cmd: 'findCaseSensitive'
   },
   {
-    key: 'alt+r',
-    cmd: 'findRegex',
-    when: 'promptFocus'
+    key: 'alt+r', cmd: 'findRegex'
   },
   {
-    key: 'F10',
-    cmd: 'contextMenu',
-    when: 'editorFocus'
+    key: 'F10', cmd: 'contextMenu'
   },
    /*
    * dummy
    */
   {
-    key: 'ctrl+d',
-    cmd: 'formatXML',
-    when: 'editorFocus'
+    key: 'ctrl+d', cmd: 'formatXML'
   }
 ]
 

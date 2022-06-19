@@ -5,9 +5,31 @@ extern crate ewin_editor;
 extern crate ewin_prom;
 
 pub mod global_term {
-    use crate::model::Tab;
+    use crate::{help::*, model::*};
+    use ewin_com::model::*;
     use once_cell::sync::OnceCell;
+    use tokio::sync::Mutex;
     pub static TAB: OnceCell<tokio::sync::Mutex<Tab>> = OnceCell::new();
+
+    pub static HELP_DISP: OnceCell<Mutex<Help>> = OnceCell::new();
+    pub static H_FILE_VEC: OnceCell<Mutex<Vec<HeaderFile>>> = OnceCell::new();
+
+    /*
+    pub fn get_h_file_vec() ->&'static   Vec<HeaderFile> {
+       // let ss =  H_FILE_VEC.get_mut().unwrap().try_lock().unwrap();
+
+      // return   H_FILE_VEC.get().unwrap().try_lock().map(|mut watch_info| watch_info.history_set.remove(&(job_watch.fullpath_str, job_watch.unixtime_str))).unwrap();
+    // let s=   *H_FILE_VEC.get().unwrap();
+    return  H_FILE_VEC.get().unwrap();
+    */
+    pub fn get_help() -> Help {
+        // TODO clone
+        return HELP_DISP.get_or_init(|| Mutex::new(Help::default())).try_lock().unwrap().clone();
+    }
+
+    pub fn toggle_help_disp() {
+        get_help().is_disp = !get_help().is_disp;
+    }
 }
 pub mod evt_act {
     pub mod _com;

@@ -1,8 +1,6 @@
-use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*},
-    proc::proc_config::*,
-};
+use crate::ewin_com::model::*;
 use ewin_cfg::model::default::*;
+use ewin_com::_cfg::key::cmd::Cmd;
 use ewin_const::def::*;
 use ewin_widget::widget::input_comple::*;
 use ropey::Rope;
@@ -34,8 +32,9 @@ pub struct Editor {
     //  pub sel_range: SelRange,
     pub sel: SelRange,
     pub sel_org: SelRange,
-    pub e_cmd: E_Cmd,
-    pub cmd_config: E_CmdConfig,
+    // pub e_cmd: E_Cmd,
+    pub cmd: Cmd,
+    // pub cmd_config: E_CmdConfig,
     // Clipboard on memory
     // pub clipboard: String,
     /// number displayed on the terminal
@@ -81,8 +80,9 @@ impl Editor {
             rnw_org: 0,
             sel: SelRange::default(),
             sel_org: SelRange::default(),
-            e_cmd: E_Cmd::Null,
-            cmd_config: E_CmdConfig::default(),
+            //  e_cmd: E_Cmd::Null,
+            // cmd_config: E_CmdConfig::default(),
+            cmd: Cmd::default(),
             // for UT set
             row_len: TERM_MINIMUM_HEIGHT - FILEBAR_ROW_NUM - STATUSBAR_ROW_NUM,
             row_len_org: 0,

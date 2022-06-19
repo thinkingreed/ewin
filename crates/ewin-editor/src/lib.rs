@@ -10,12 +10,11 @@ pub mod view {
     pub mod draw_range;
     pub mod scale;
 }
-pub mod prompt {
+pub mod prom {
     pub mod grep_result;
 }
 pub mod proc {
     pub mod proc_base;
-    pub mod proc_config;
     pub mod proc_edit;
 }
 pub mod scrollbar {

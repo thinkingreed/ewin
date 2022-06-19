@@ -1,15 +1,13 @@
-use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*},
-    model::*,
-};
+use crate::{ewin_com::model::*, model::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
+use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
 
 impl EvtAct {
     pub fn move_row(term: &mut Terminal) -> ActType {
         Log::debug_key("EvtAct.move_row");
 
-        match &term.curt().prom.p_cmd {
-            P_Cmd::InsertStr(ref str) => {
+        match &term.curt().prom.cmd.cmd_type {
+            CmdType::InsertStr(ref str) => {
                 let str = str.clone();
                 if !str.chars().next().unwrap().is_ascii_digit() {
                     return ActType::Cancel;
@@ -19,11 +17,11 @@ impl EvtAct {
                 if format!("{}{}", entered_str, str).chars().count() > term.curt().editor.get_rnw() {
                     return ActType::Cancel;
                 }
-                let p_cmd = term.curt().prom.p_cmd.clone();
-                term.curt().prom.curt.as_mut_base().get_curt_input_area().unwrap().edit_proc(p_cmd);
+                let cmd = term.curt().prom.cmd.clone();
+                term.curt().prom.curt.as_mut_base().get_curt_input_area().unwrap().edit_proc(cmd);
                 return ActType::Draw(DParts::Prompt);
             }
-            P_Cmd::Confirm => {
+            CmdType::Confirm => {
                 let entered_str = term.curt().prom.curt.as_mut_base().get_tgt_input_area_str(0);
                 if entered_str.is_empty() {
                     return ActType::Draw(DParts::MsgBar(Lang::get().not_entered_row_number_to_move.to_string()));
@@ -36,7 +34,7 @@ impl EvtAct {
 
                 term.curt().clear_curt_tab(true);
                 term.set_disp_size();
-                term.curt().editor.e_cmd = E_Cmd::MoveRow;
+                term.curt().editor.cmd = Cmd::to_cmd(CmdType::MoveRowProm);
                 term.curt().editor.scroll();
                 return ActType::Draw(DParts::All);
             }

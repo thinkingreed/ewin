@@ -1,8 +1,8 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, global::*, model::*, util::*},
+    ewin_com::{_cfg::key::cmd::*, global::*, model::*, util::*},
     model::*,
 };
-use ewin_cfg::{lang::lang_cfg::*, log::*};
+use ewin_cfg::log::*;
 use ewin_const::def::*;
 use std::{ffi::OsStr, io::Write, path::*};
 
@@ -53,27 +53,24 @@ impl EvtAct {
         Log::debug_key("exit_grep_result");
 
         term.curt().prom.clear();
-        term.curt().msgbar.clear();
-        term.curt().msgbar.set_readonly(&Lang::get().unable_to_edit);
 
         let is_empty = term.curt().editor.grep_result_vec.is_empty();
         term.curt().state.grep.is_cancel = is_cancel;
         term.curt().state.grep.is_empty = is_empty;
-        term.curt().prom_grep_result();
+        term.curt().prom_show_com(&CmdType::GrepResultProm);
 
         term.curt().editor.set_cur_default();
         term.curt().editor.scroll();
-        // term.curt().editor.scroll_horizontal();
         term.curt().editor.state.is_read_only = true;
-        term.curt().editor.calc_scrlbar_h();
+        term.curt().editor.calc_editor_scrlbar_h();
         term.draw_all(out, DParts::All);
     }
 
     pub fn grep_result(term: &mut Terminal) -> ActType {
         Log::debug_key("EvtAct::grep_result");
 
-        match term.curt().prom.p_cmd {
-            P_Cmd::Confirm => {
+        match term.curt().prom.cmd.cmd_type {
+            CmdType::Confirm => {
                 let y = term.curt().editor.cur.y;
                 let grep_result = term.curt().editor.grep_result_vec[y].clone();
                 Log::debug("term.tabs[term.idx].state.grep", &term.curt().state.grep);
@@ -82,7 +79,7 @@ impl EvtAct {
                     let mut tab_grep = Tab::new();
                     tab_grep.editor.search.str = term.curt().state.grep.search_str.clone();
                     tab_grep.editor.search.row_num = grep_result.row_num - 1;
-                    tab_grep.editor.set_keycmd(KeyCmd::Edit(E_Cmd::FindNext));
+                    tab_grep.editor.set_cmd(Cmd::to_cmd(CmdType::FindNext));
                     Log::debug("tab.editor.search", &tab_grep.editor.search);
 
                     let folder = if term.curt().editor.search.dir.is_empty() { "".to_string() } else { format!("{}{}", &term.curt().editor.search.dir, MAIN_SEPARATOR) };

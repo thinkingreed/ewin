@@ -1,9 +1,11 @@
-use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*, util::*},
-    model::*,
-};
+use crate::{global_term::*, model::*};
 use crossterm::{cursor::*, terminal::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
+use ewin_com::{
+    _cfg::key::{cmd::*, keybind::*},
+    model::*,
+    util::*,
+};
 use ewin_const::def::*;
 
 impl Help {
@@ -14,14 +16,12 @@ impl Help {
     const KEY_FUNC_WIDTH_WIDE: usize = 14;
 
     pub fn disp_toggle(term: &mut Terminal) {
-        term.help.mode = match term.help.mode {
-            HelpMode::Show => HelpMode::None,
-            HelpMode::None => HelpMode::Show,
-        };
+        toggle_help_disp();
+        // term.help.is_disp = !term.help.is_disp;
         term.set_disp_size();
 
         let tab = term.tabs.get_mut(term.tab_idx).unwrap();
-        if term.help.mode == HelpMode::Show {
+        if get_help().is_disp {
             // Cursor moves out of help display area
             if tab.editor.cur.y - tab.editor.offset_y > tab.editor.row_len - 1 {
                 tab.editor.cur.y = tab.editor.offset_y + tab.editor.row_len - 1;
@@ -35,69 +35,67 @@ impl Help {
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         Log::info_key("Help.draw");
 
-        if self.mode == HelpMode::None {
+        if !get_help().is_disp {
             return;
         }
         if self.key_bind_vec.is_empty() {
             let mut vec: Vec<HelpKeybind> = vec![];
 
             // 1st line
-            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::CloseFile)), &Lang::get().close);
-            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::SaveFile)), &Lang::get().save);
-            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::Copy)), &Lang::get().copy);
-            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::InsertStr("".to_string()))), &Lang::get().paste);
+            self.set_key_bind(&mut vec, &Keybind::get_key_str(CmdType::CloseFile), &Lang::get().close);
+            self.set_key_bind(&mut vec, &Keybind::get_key_str(CmdType::SaveFile), &Lang::get().save);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(CmdType::Copy), &Lang::get().copy);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(CmdType::InsertStr("".to_string())), &Lang::get().paste);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 2nd line
-            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::Undo)), &Lang::get().undo);
-            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::Redo)), &Lang::get().redo);
-            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::Find)), &Lang::get().search);
-            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::ReplacePrompt)), &Lang::get().replace);
+            self.set_key_bind(&mut vec, &Keybind::get_key_str(CmdType::Undo), &Lang::get().undo);
+            self.set_key_bind(&mut vec, &Keybind::get_key_str(CmdType::Redo), &Lang::get().redo);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(CmdType::FindNext), &Lang::get().search);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(CmdType::ReplaceProm), &Lang::get().replace);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 3rd line
-            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::Cut)), &Lang::get().cut);
-            self.set_key_bind(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::Grep)), &Lang::get().grep);
-            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::StartEndRecordKey)), &Lang::get().key_record_start_stop);
-            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::ExecRecordKey)), &Lang::get().key_record_exec);
+            self.set_key_bind(&mut vec, &Keybind::get_key_str(CmdType::Cut), &Lang::get().cut);
+            self.set_key_bind(&mut vec, &Keybind::get_key_str(CmdType::GrepProm), &Lang::get().grep);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(CmdType::RecordKeyStartEnd), &Lang::get().key_record_start_stop);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(CmdType::ExecRecordKey), &Lang::get().key_record_exec);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 4th line
-            let key_select_str = &format!("{}{}", Keybind::get_key_str(KeyCmd::Edit(E_Cmd::CursorLeftSelect)).split('+').collect::<Vec<&str>>()[0], KEY_SELECT_KEY);
+            let key_select_str = &format!("{}{}", Keybind::get_key_str(CmdType::CursorLeftSelect).split('+').collect::<Vec<&str>>()[0], KEY_SELECT_KEY);
             self.set_key_bind_ex(&mut vec, key_select_str, &Lang::get().range_select, key_select_str.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (key_select_str.chars().count() + 1));
-            // self.set_key_bind_ex(&mut vec, KEY_MOUSE_SWITCH, &Lang::get().mouse_switch, KEY_MOUSE_SWITCH.chars().count() + 1, (Help::KEY_WIDTH * 2 + Help::KEY_FUNC_WIDTH * 2) - (KEY_MOUSE_SWITCH.chars().count() + 1));
-            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::MouseModeSwitch)), &Lang::get().mouse_switch);
-            //  self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::OpenMenu)), &Lang::get().menu);
+            self.set_key_bind_wide(&mut vec, &Keybind::get_key_str(CmdType::MouseModeSwitch), &Lang::get().mouse_switch);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
             // 5th line
-            self.set_key_bind_ex(&mut vec, &Keybind::get_key_str(KeyCmd::Edit(E_Cmd::Help)), &format!("{}{}", &Lang::get().help, &Lang::get().end), Help::KEY_FUNC_WIDTH, Help::KEY_WIDTH);
-            self.set_key_bind_ex(&mut vec, HELP_DETAIL, env!("CARGO_PKG_REPOSITORY"), HELP_DETAIL.chars().count() + 1, Help::KEY_FUNC_WIDTH_WIDE - HELP_DETAIL.chars().count() + 1);
+            self.set_key_bind_ex(&mut vec, &Keybind::get_key_str(CmdType::Help), &format!("{}{}", &Lang::get().help, &Lang::get().end), Help::KEY_FUNC_WIDTH, Help::KEY_WIDTH);
+            self.set_key_bind_ex(&mut vec, &Keybind::get_key_str(CmdType::HelpInitDisplaySwitch), &Lang::get().help_init_display_switch, Help::KEY_FUNC_WIDTH, Help::KEY_WIDTH);
             self.key_bind_vec.push(vec.clone());
             vec.clear();
         }
 
-        for (i, sy) in (0_usize..).zip(self.disp_row_posi..self.disp_row_posi + self.disp_row_num) {
+        for (i, sy) in (0_usize..).zip(self.row_posi..self.row_posi + self.row_num) {
             str_vec.push(format!("{}{}", MoveTo(0, sy as u16), Clear(ClearType::CurrentLine)));
 
             if let Some(vec) = self.key_bind_vec.get(i) {
                 let mut row_str = String::new();
                 let mut width = 0;
                 for bind in vec {
-                    if width + get_str_width(&bind.key) <= self.disp_col_num {
+                    if width + get_str_width(&bind.key) <= self.col_num {
                         row_str.push_str(&format!("{}{}", Colors::get_msg_highlight_fg(), bind.key));
                         width += get_str_width(&bind.key);
 
-                        if width + get_str_width(&bind.funcnm) <= self.disp_col_num {
+                        if width + get_str_width(&bind.funcnm) <= self.col_num {
                             row_str.push_str(&format!("{}{}", Colors::get_msg_normal_fg(), bind.funcnm));
                             width += get_str_width(&bind.funcnm);
                         } else {
-                            let funcnm = cut_str(&bind.funcnm, self.disp_col_num - width, false, false);
+                            let funcnm = cut_str(&bind.funcnm, self.col_num - width, false, false);
                             row_str.push_str(&format!("{}{}", Colors::get_msg_normal_fg(), funcnm));
                             break;
                         }
                     } else {
-                        let key = cut_str(&bind.key, self.disp_col_num - width, false, false);
+                        let key = cut_str(&bind.key, self.col_num - width, false, false);
                         row_str.push_str(&format!("{}{}", Colors::get_msg_highlight_fg(), key));
                         break;
                     }
@@ -146,25 +144,18 @@ impl Help {
 
 #[derive(Debug, Clone)]
 pub struct Help {
-    pub mode: HelpMode,
+    pub is_disp: bool,
     // Number displayed on the terminal
-    pub disp_row_num: usize,
-    pub disp_col_num: usize,
+    pub row_num: usize,
+    pub col_num: usize,
     // 0 index
-    pub disp_row_posi: usize,
+    pub row_posi: usize,
     pub key_bind_vec: Vec<Vec<HelpKeybind>>,
 }
 impl Default for Help {
     fn default() -> Self {
-        Help { mode: HelpMode::None, disp_col_num: 0, disp_row_num: 0, disp_row_posi: 0, key_bind_vec: vec![] }
+        Help { is_disp: false, col_num: 0, row_num: 0, row_posi: 0, key_bind_vec: vec![] }
     }
-}
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// HelpMode
-pub enum HelpMode {
-    Show,
-    // Details,
-    None,
 }
 #[derive(Debug, Clone)]
 pub struct HelpKeybind {

@@ -1,5 +1,54 @@
+use crossterm::event::{Event::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind, *};
 use std::{fmt, str::FromStr};
 
+impl Keys {
+    pub fn evt_to_keys(evt: &Event) -> Keys {
+        return match evt {
+            Event::Key(KeyEvent { code: c, modifiers: m }) => {
+                let inner = match c {
+                    KeyCode::Char(c) => Key::Char(*c),
+                    KeyCode::BackTab => Key::BackTab,
+                    KeyCode::Insert => Key::Insert,
+                    KeyCode::Esc => Key::Esc,
+                    KeyCode::Backspace => Key::Backspace,
+                    KeyCode::Tab => Key::Tab,
+                    KeyCode::Enter => Key::Enter,
+                    KeyCode::Delete => Key::Delete,
+                    KeyCode::Null => Key::Null,
+                    KeyCode::PageUp => Key::PageUp,
+                    KeyCode::PageDown => Key::PageDown,
+                    KeyCode::Home => Key::Home,
+                    KeyCode::End => Key::End,
+                    KeyCode::Up => Key::Up,
+                    KeyCode::Down => Key::Down,
+                    KeyCode::Left => Key::Left,
+                    KeyCode::Right => Key::Right,
+                    KeyCode::F(i) => Key::F(*i),
+                };
+                match *m {
+                    KeyModifiers::CONTROL => Keys::Ctrl(inner),
+                    KeyModifiers::ALT => Keys::Alt(inner),
+                    KeyModifiers::SHIFT => Keys::Shift(inner),
+                    KeyModifiers::NONE => Keys::Raw(inner),
+                    _ => Keys::Unsupported,
+                }
+            }
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), modifiers: KeyModifiers::ALT, row: y, column: x, .. }) => Keys::MouseAltDownLeft(*y, *x),
+            Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), modifiers: KeyModifiers::ALT, row: y, column: x, .. }) => Keys::MouseAltDragLeft(*y, *x),
+            // Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), modifiers: KeyModifiers::ALT, .. }) => return Keys::MouseAltUpLeft,
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Left), row: y, column: x, .. }) => Keys::MouseDownLeft(*y, *x),
+            Mouse(M_Event { kind: M_Kind::Up(M_Btn::Left), row: y, column: x, .. }) => Keys::MouseUpLeft(*y, *x),
+            Mouse(M_Event { kind: M_Kind::Down(M_Btn::Right), row: y, column: x, .. }) => Keys::MouseDownRight(*y, *x),
+            Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Left), row: y, column: x, .. }) => Keys::MouseDragLeft(*y, *x),
+            Mouse(M_Event { kind: M_Kind::Drag(M_Btn::Right), row: y, column: x, .. }) => Keys::MouseDragRight(*y, *x),
+            Mouse(M_Event { kind: M_Kind::ScrollUp, .. }) => Keys::MouseScrollUp,
+            Mouse(M_Event { kind: M_Kind::ScrollDown, .. }) => Keys::MouseScrollDown,
+            Mouse(M_Event { kind: M_Kind::Moved, row: y, column: x, .. }) => Keys::MouseMove(*y, *x),
+            Resize(x, y) => Keys::Resize(*x, *y),
+            _ => Keys::Null,
+        };
+    }
+}
 impl fmt::Display for Keys {
     fn fmt(&self, ff: &mut fmt::Formatter) -> fmt::Result {
         match *self {

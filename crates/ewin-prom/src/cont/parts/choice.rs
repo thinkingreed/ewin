@@ -2,7 +2,7 @@ use crate::ewin_com::util::*;
 use crate::{model::*, prom_trait::cont_trait::*};
 use crossterm::cursor::*;
 use ewin_cfg::{colors::*, lang::lang_cfg::Lang, log::*};
-use ewin_com::_cfg::key::keycmd::*;
+use ewin_com::_cfg::key::cmd::CmdType;
 use ewin_const::def::*;
 use std::{cmp::max, collections::HashMap, usize};
 
@@ -11,7 +11,7 @@ impl PromContChoice {
 
     pub fn set_cont_posi_or_is_up_down_cont_posi(&mut self) -> bool {
         let mut is_up_down_cont_posi = false;
-        if matches!(self.base.p_cmd, P_Cmd::CursorUp) {
+        if matches!(self.base.cmd.cmd_type, CmdType::CursorUp) {
             if self.vec_y == 0 {
                 is_up_down_cont_posi = true;
             } else if let Some(vec) = self.vec.get(self.vec_y - 1) {
@@ -24,7 +24,7 @@ impl PromContChoice {
             } else {
                 is_up_down_cont_posi = true;
             }
-        } else if matches!(self.base.p_cmd, P_Cmd::CursorDown) {
+        } else if matches!(self.base.cmd.cmd_type, CmdType::CursorDown) {
             if let Some(vec) = self.vec.get(self.vec_y + 1) {
                 if vec.get(self.vec_x).is_some() {
                     self.vec_y += 1;
@@ -38,15 +38,15 @@ impl PromContChoice {
         is_up_down_cont_posi
     }
 
-    pub fn move_left_right(&mut self, p_cmd: &P_Cmd) {
+    pub fn move_left_right(&mut self, cmd_type: &CmdType) {
         if let Some(vec) = self.vec.get(self.vec_y) {
-            if matches!(p_cmd, P_Cmd::CursorRight) {
+            if matches!(cmd_type, CmdType::CursorRight) {
                 self.vec_x = if vec.get(self.vec_x + 1).is_some() { self.vec_x + 1 } else { 0 };
             } else if self.vec_x == 0 {
                 if vec.get(vec.len() - 1).is_some() {
                     self.vec_x = vec.len() - 1;
                 }
-            } else if matches!(p_cmd, P_Cmd::CursorLeft) {
+            } else if matches!(cmd_type, CmdType::CursorLeft) {
                 self.vec_x = if vec.get(self.vec_x - 1).is_some() { self.vec_x - 1 } else { 0 };
             }
         }
@@ -189,9 +189,9 @@ impl PromContPluginTrait for PromContChoice {
     }
 
     fn check_allow_p_cmd(&self) -> bool {
-        return match self.as_base().p_cmd {
-            P_Cmd::CursorLeft | P_Cmd::CursorRight | P_Cmd::CursorDown | P_Cmd::CursorUp | P_Cmd::NextContent | P_Cmd::BackContent => true,
-            P_Cmd::MouseDownLeft(y, _) if self.base.row_posi_range.start <= y && y <= self.base.row_posi_range.end => true,
+        return match self.as_base().cmd.cmd_type {
+            CmdType::CursorLeft | CmdType::CursorRight | CmdType::CursorDown | CmdType::CursorUp | CmdType::NextContent | CmdType::BackContent => true,
+            CmdType::MouseDownLeft(y, _) if self.base.row_posi_range.start <= y && y <= self.base.row_posi_range.end => true,
             _ => false,
         };
     }

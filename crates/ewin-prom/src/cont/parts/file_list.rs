@@ -1,13 +1,10 @@
+use super::path_comp::*;
 use crate::{each::open_file::*, model::*, prom_trait::cont_trait::*};
 use crossterm::{cursor::MoveTo, terminal::ClearType::*, terminal::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::Lang, log::*};
-use ewin_com::{_cfg::key::keycmd::*, files::file::*, model::*, util::*};
+use ewin_com::{_cfg::key::cmd::CmdType, files::file::*, model::*, util::*};
 use ewin_const::def::*;
 use std::cmp::min;
-
-use super::path_comp::*;
-
-impl PromContFileList {}
 
 impl PromContPluginTrait for PromContFileList {
     fn as_base(&self) -> &PromptContBase {
@@ -23,7 +20,7 @@ impl PromContPluginTrait for PromContFileList {
 
         str_vec.push(MoveTo(0, (self.as_base().row_posi_range.start + self.desc_str_vec.len()) as u16).to_string());
         // cont_2.buf
-        for y in 0..self.row_num {
+        for y in 0..self.row_num - self.desc_str_vec.len() {
             str_vec.push(format!("{}{}", MoveTo(0, (self.base.row_posi_range.start + self.desc_str_vec.len() + y) as u16), Clear(CurrentLine),));
 
             let mut row_str = String::new();
@@ -48,10 +45,10 @@ impl PromContPluginTrait for PromContFileList {
     }
 
     fn check_allow_p_cmd(&self) -> bool {
-        return match self.as_base().p_cmd {
-            P_Cmd::InsertStr(_) | P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::Cut | P_Cmd::CursorLeft | P_Cmd::CursorRight | P_Cmd::CursorRowHome | P_Cmd::CursorRowEnd | P_Cmd::CursorLeftSelect | P_Cmd::CursorRightSelect | P_Cmd::CursorRowHomeSelect | P_Cmd::CursorRowEndSelect | P_Cmd::Copy | P_Cmd::Undo | P_Cmd::Redo => true,
-            P_Cmd::MouseDownLeft(y, _) | P_Cmd::MouseDragLeft(y, _) if self.base.row_posi_range.start <= y && y <= self.base.row_posi_range.end => true,
-            P_Cmd::MouseScrollUp | P_Cmd::MouseScrollDown => true,
+        return match self.as_base().cmd.cmd_type {
+            CmdType::InsertStr(_) | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Cut | CmdType::CursorLeft | CmdType::CursorRight | CmdType::CursorRowHome | CmdType::CursorRowEnd | CmdType::CursorLeftSelect | CmdType::CursorRightSelect | CmdType::CursorRowHomeSelect | CmdType::CursorRowEndSelect | CmdType::Copy | CmdType::Undo | CmdType::Redo => true,
+            CmdType::MouseDownLeft(y, _) | CmdType::MouseDragLeftLeft(y, _) | CmdType::MouseDragLeftRight(y, _) if self.base.row_posi_range.start <= y && y <= self.base.row_posi_range.end => true,
+            CmdType::MouseScrollUp | CmdType::MouseScrollDown => true,
             _ => false,
         };
     }
@@ -259,12 +256,3 @@ pub struct PromContFileList {
     pub vec_y: usize,
     pub vec_x: usize,
 }
-
-/*
-#[derive(PartialEq, Default, Eq, Debug, Clone)]
-pub struct PromInputAreaConfig {
-    pub is_path: bool,
-    pub is_edit_proc_later: bool,
-    pub is_edit_proc_orig: bool,
-}
- */

@@ -1,7 +1,7 @@
 use crate::{
     bar::{filebar::*, menubar::*, statusbar::*},
     ewin_com::{
-        _cfg::key::{keycmd::*, keys::*, keywhen::*},
+        _cfg::key::{keys::*, keywhen::*},
         files::file::*,
         global::*,
         model::*,
@@ -9,6 +9,7 @@ use crate::{
     },
     ewin_editor::model::*,
     global_term,
+    global_term::*,
     help::*,
     model::*,
 };
@@ -27,8 +28,8 @@ use ewin_cfg::{
     log::*,
     model::{default::*, modal::*},
 };
+use ewin_com::_cfg::key::cmd::*;
 use ewin_const::{def::*, model::*};
-use ewin_prom::each::open_file::*;
 use ewin_widget::{core::*, model::*};
 use std::{
     ffi::OsStr,
@@ -62,19 +63,22 @@ impl Terminal {
             _ => {}
         };
 
+        StatusBar::draw(&mut str_vec, &mut self.tabs[self.tab_idx], &H_FILE_VEC.get().unwrap().try_lock().unwrap()[self.tab_idx]);
+        self.curt().msgbar.draw(&mut str_vec);
+
         // Editor
         match self.curt().editor.draw_range {
             E_DrawRange::Not => {}
             _ => {
-                if self.curt().editor.draw_range == E_DrawRange::MoveCur {
-                    StatusBar::draw(&mut str_vec, &mut self.tabs[self.tab_idx], &self.fbar.file_vec[self.tab_idx]);
-                    self.tabs[self.tab_idx].editor.draw(&mut str_vec, &mut self.editor_draw_vec[self.tab_idx]);
-                    self.draw_flush(out, &mut str_vec);
-                    return;
-                } else {
-                    self.editor_draw_vec[self.tab_idx].draw_cache(&mut self.tabs[self.tab_idx].editor);
-                    self.tabs[self.tab_idx].editor.draw(&mut str_vec, &mut self.editor_draw_vec[self.tab_idx]);
-                    StatusBar::draw(&mut str_vec, &mut self.tabs[self.tab_idx], &self.fbar.file_vec[self.tab_idx]);
+                if self.curt().editor.row_len > 0 {
+                    if self.curt().editor.draw_range == E_DrawRange::MoveCur {
+                        self.tabs[self.tab_idx].editor.draw(&mut str_vec, &mut self.editor_draw_vec[self.tab_idx]);
+                        self.draw_flush(out, &mut str_vec);
+                        return;
+                    } else {
+                        self.editor_draw_vec[self.tab_idx].draw_cache(&mut self.tabs[self.tab_idx].editor);
+                        self.tabs[self.tab_idx].editor.draw(&mut str_vec, &mut self.editor_draw_vec[self.tab_idx]);
+                    }
                 }
             }
         };
@@ -83,7 +87,6 @@ impl Terminal {
             self.menubar.draw(&mut str_vec);
             FileBar::draw(self, &mut str_vec);
             self.help.draw(&mut str_vec);
-            self.curt().msgbar.draw(&mut str_vec);
             let state = &self.curt().state.clone();
             self.curt().prom.draw(&mut str_vec, state);
         }
@@ -96,7 +99,6 @@ impl Terminal {
             if self.state.is_menuwidget {
                 self.menubar.widget.draw(&mut str_vec);
             }
-            Log::info("self.curt().editor.state.input_comple_mode", &self.curt().editor.state.input_comple_mode);
             if self.curt().editor.is_input_imple_mode(true) {
                 self.curt().editor.input_comple.draw(&mut str_vec);
             }
@@ -108,15 +110,15 @@ impl Terminal {
         Log::debug("offset_disp_x", &self.curt().editor.offset_disp_x);
         Log::debug("offset_y", &self.curt().editor.offset_y);
         Log::debug("offset_y_org", &self.curt().editor.offset_y_org);
-        Log::debug("history.undo_vec", &self.curt().editor.history.undo_vec);
+        // Log::debug("history.undo_vec", &self.curt().editor.history.undo_vec);
         // Log::debug("self.curt().state.key_record_state", &self.curt().state.key_record_state);
         //  Log::debug("self.curt().state", &self.curt().state);
         // Log::debug("sel_range", &self.curt().editor.sel);
         //  Log::debug("", &self.curt().editor.search);
         // Log::debug("box_sel.mode", &self.curt().editor.box_insert.mode);
-        Log::debug("scrl_v.is_enable", &self.curt().editor.scrl_v.is_enable);
-        Log::debug("scrl_h.is_enable", &self.curt().editor.scrl_h.is_enable);
-        Log::debug("self.curt().editor.state.input_comple_mode", &self.curt().editor.state.input_comple_mode);
+        // Log::debug("scrl_v.is_enable", &self.curt().editor.scrl_v.is_enable);
+        // Log::debug("scrl_h.is_enable", &self.curt().editor.scrl_h.is_enable);
+        // Log::debug("self.curt().editor.state.input_comple_mode", &self.curt().editor.state.input_comple_mode);
 
         self.draw_flush(out, &mut str_vec);
 
@@ -148,10 +150,12 @@ impl Terminal {
         } else if self.curt().state.is_nomal() && self.curt().editor.is_cur_y_in_screen() {
             Log::debug("self.curt().editor.cur", &self.curt().editor.cur);
 
+            /*
             // TODO
             if self.curt().msgbar.is_exsist_msg() && self.fbar.row_num + self.curt().editor.cur.y - self.curt().editor.offset_y == self.curt().msgbar.disp_row_posi {
                 self.curt().editor.cur_up();
             }
+             */
             let rnw_margin = if CfgEdit::get().general.editor.row_no.is_enable { self.curt().editor.get_rnw_and_margin() } else { 0 };
             let editor = &self.curt().editor;
             if editor.offset_disp_x <= editor.cur.disp_x && editor.cur.disp_x <= editor.offset_disp_x + editor.col_len && editor.offset_y <= editor.cur.y && editor.cur.y <= editor.offset_y + editor.row_len {
@@ -214,14 +218,6 @@ impl Terminal {
         true
     }
 
-    /*
-    pub fn clear_display() {
-        let string = format!("{}{}", Clear(ClearType::All), MoveTo(0, 0));
-        let _ = stdout().write(string.as_bytes());
-        stdout().flush().unwrap();
-    }
-     */
-
     pub fn set_disp_size(&mut self) -> bool {
         Log::debug_s("set_disp_size");
         let (cols, rows) = get_term_size();
@@ -234,43 +230,38 @@ impl Terminal {
         self.fbar.set_posi(cols);
         FileBar::set_filenm(self);
 
-        self.help.disp_col_num = cols;
-        self.help.disp_row_num = if self.help.mode == HelpMode::Show { Help::DISP_ROW_NUM } else { 0 };
-        self.help.disp_row_posi = if self.help.mode == HelpMode::Show { rows - self.help.disp_row_num } else { 0 };
+        self.help.col_num = cols;
+        self.help.row_num = if self.help.is_disp { Help::DISP_ROW_NUM } else { 0 };
+        self.help.row_posi = if self.help.is_disp { rows - self.help.row_num } else { 0 };
 
-        // self.curt().sbar.row_num = 1;
-        let help_disp_row_num = if self.help.disp_row_num > 0 { self.help.disp_row_num + 1 } else { 0 };
+        let help_disp_row_num = if self.help.row_num > 0 { self.help.row_num + 1 } else { 0 };
         self.curt().sbar.row_posi = if help_disp_row_num == 0 { rows - 1 } else { rows - help_disp_row_num };
         self.curt().sbar.col_num = cols;
-
         self.curt().prom.col_num = cols;
 
-        if self.curt().state.is_open_file {
-            // -1 is MsgBar
-            self.curt().prom.row_num = rows - self.menubar.row_num - self.fbar.row_num - self.help.disp_row_num - self.curt().sbar.row_num - 1;
-            if self.curt().prom.row_num < PromOpenFile::OPEN_FILE_FIXED_PHRASE_ROW_NUM + 1 {
-                return false;
-            }
-        }
-        if rows < self.menubar.row_num + self.fbar.row_num + self.curt().prom.row_num + self.help.disp_row_num + self.curt().sbar.row_num {
+        Log::debug("self.curt().prom.row_num 111", &self.curt().prom.row_num);
+        /*
+        if rows < self.menubar.row_num + self.fbar.row_num + self.curt().prom.row_num + self.help.row_num + self.curt().sbar.row_num {
             return false;
         }
-        self.curt().prom.row_posi = (rows - self.curt().prom.row_num + 1 - self.help.disp_row_num - self.curt().sbar.row_num) - 1;
+        */
+        self.curt().prom.row_posi = rows - self.curt().prom.row_num - self.help.row_num - self.curt().sbar.row_num;
 
-        self.curt().msgbar.disp_col_num = cols;
-        self.curt().msgbar.disp_readonly_row_num = if self.curt().editor.state.is_read_only { 1 } else { 0 };
-        self.curt().msgbar.disp_keyrecord_row_num = if self.curt().msgbar.msg_keyrecord.is_empty() { 0 } else { 1 };
-        self.curt().msgbar.disp_row_num = if self.curt().msgbar.msg.str.is_empty() { 0 } else { 1 };
+        self.curt().msgbar.col_num = cols;
+        self.curt().msgbar.row_num = MSGBAR_ROW_NUM; //if self.curt().mbar.msg.str.is_empty() { 0 } else { 1 };
 
-        self.curt().msgbar.disp_row_posi = rows - self.curt().prom.row_num - self.help.disp_row_num - self.curt().sbar.row_num - 1;
-        self.curt().msgbar.disp_keyrecord_row_posi = rows - self.curt().msgbar.disp_row_num - self.curt().prom.row_num - self.help.disp_row_num - self.curt().sbar.row_num - 1;
-        self.curt().msgbar.disp_readonly_row_posi = rows - self.curt().msgbar.disp_keyrecord_row_num - self.curt().msgbar.disp_row_num - self.curt().prom.row_num - self.help.disp_row_num - self.curt().sbar.row_num - 1;
+        self.curt().msgbar.row_posi = rows - self.curt().prom.row_num - self.help.row_num - self.curt().sbar.row_num - 1;
+        self.menubar.row_num = if self.curt().state.prom == PromState::OpenFile { 0 } else { MSGBAR_ROW_NUM };
 
         self.curt().editor.row_posi = Editor::get_row_posi();
         self.curt().editor.col_len = if CfgEdit::get().general.editor.row_no.is_enable { cols - self.curt().editor.get_rnw_and_margin() } else { cols };
 
         Log::debug("editor.row_len before", &self.curt().editor.row_len);
-        self.curt().editor.row_len = rows - if CfgEdit::get().general.editor.scale.is_enable { 1 } else { 0 } - self.menubar.row_num - self.fbar.row_num - self.curt().msgbar.disp_readonly_row_num - self.curt().msgbar.disp_keyrecord_row_num - self.curt().msgbar.disp_row_num - self.curt().prom.row_num - self.help.disp_row_num - self.curt().sbar.row_num;
+        self.curt().editor.row_len = if self.curt().state.prom == PromState::OpenFile {
+            0
+        } else {
+            rows - if CfgEdit::get().general.editor.scale.is_enable { 1 } else { 0 } - self.menubar.row_num - self.fbar.row_num - self.curt().msgbar.row_num - self.curt().prom.row_num - self.help.row_num - self.curt().sbar.row_num
+        };
         Log::debug("editor.row_len after", &self.curt().editor.row_len);
 
         if self.curt().editor.scrl_h.row_max_width > self.curt().editor.col_len && self.curt().state.is_nomal() {
@@ -370,7 +361,6 @@ impl Terminal {
 
                         if !is_writable {
                             tab.editor.state.is_read_only = true;
-                            tab.msgbar.set_readonly(&format!("{}({})", &Lang::get().unable_to_edit, &Lang::get().no_write_permission));
                         }
                     }
                     Err(err) => {
@@ -387,12 +377,12 @@ impl Terminal {
 
             match file_open_type {
                 FileOpenType::First | FileOpenType::Nomal => {
-                    self.add_tab(tab.clone(), h_file, file_open_type);
+                    self.add_tab(&mut tab.clone(), h_file, file_open_type);
                     self.curt().editor.set_cur_default();
                 }
                 FileOpenType::Reopen => {
                     self.reopen_tab(tab.clone(), h_file, file_open_type);
-                    self.curt().editor.e_cmd = E_Cmd::ReOpenFile;
+                    self.curt().editor.cmd = Cmd::to_cmd(CmdType::ReOpenFile);
                     self.curt().editor.state.is_changed = false;
                     self.curt().editor.adjust_cur_posi();
                 }
@@ -416,7 +406,7 @@ impl Terminal {
     pub fn reopen_curt_file(&mut self) {
         self.curt().clear_curt_tab(true);
         self.set_disp_size();
-        let h_file = self.curt_h_file().clone();
+        let h_file = H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(self.tab_idx).unwrap().clone();
         self.open_file(&h_file.fullpath, FileOpenType::Reopen, None, Some(&h_file));
     }
 
@@ -444,15 +434,11 @@ impl Terminal {
         Log::info_key("activate");
 
         let _ = GREP_CANCEL_VEC.set(tokio::sync::Mutex::new(vec![GrepCancelType::None]));
-        Log::info_key("1111111111111111111111");
         let _ = global_term::TAB.set(tokio::sync::Mutex::new(Tab::new()));
-        Log::info_key("22222222222222222222");
         let _ = WATCH_INFO.set(tokio::sync::Mutex::new(WatchInfo::default()));
-        Log::info_key("333333333333333333333");
+        let _ = H_FILE_VEC.set(tokio::sync::Mutex::new(vec![]));
         self.open_file(&args.filenm, FileOpenType::First, Some(&mut Tab::new()), None);
-        Log::info_key("4444444444444444");
         self.ctx_widget.init();
-        Log::info_key("55555555555555555555555");
         self.menubar.init();
     }
 
@@ -477,23 +463,25 @@ impl Terminal {
         self.draw_cur(out);
     }
 
-    pub fn add_tab(&mut self, tab: Tab, h_file: HeaderFile, file_open_type: FileOpenType) {
+    pub fn add_tab(&mut self, tab: &mut Tab, h_file: HeaderFile, file_open_type: FileOpenType) {
         self.tab_idx = self.tabs.len();
-        self.tabs.push(tab);
+        tab.idx = self.tabs.len();
+        self.tabs.push(tab.clone());
         self.editor_draw_vec.push(EditorDraw::default());
-        self.fbar.file_vec.push(h_file.clone());
+
+        FileBar::push_h_file_vec(h_file.clone());
         self.fbar.disp_base_idx = USIZE_UNDEFINED;
 
         self.init_tab(&h_file, file_open_type);
     }
     pub fn change_tab(&mut self, idx: usize) {
         self.tab_idx = idx;
-        let h_file = self.fbar.file_vec[self.tab_idx].clone();
+        let h_file = H_FILE_VEC.get().unwrap().try_lock().unwrap()[self.tab_idx].clone();
         self.init_tab(&h_file, FileOpenType::Nomal);
     }
     pub fn swap_tab(&mut self, idx_org: usize, idx_dst: usize) {
-        let h_file = self.fbar.file_vec.remove(idx_org);
-        self.fbar.file_vec.insert(idx_dst, h_file);
+        let h_file = H_FILE_VEC.get().unwrap().try_lock().unwrap().remove(idx_org);
+        H_FILE_VEC.get().unwrap().try_lock().unwrap().insert(idx_dst, h_file);
         let tab = self.tabs.remove(idx_org);
         self.tabs.insert(idx_dst, tab);
         let editor_draw = self.editor_draw_vec.remove(idx_org);
@@ -503,15 +491,16 @@ impl Terminal {
     }
 
     pub fn reopen_tab(&mut self, tab: Tab, h_file: HeaderFile, file_open_type: FileOpenType) {
-        self.tabs[self.tab_idx] = tab;
+        // tab.idx = self.tab_idx;
+        self.tabs[self.tab_idx] = tab.clone();
         self.editor_draw_vec[self.tab_idx].clear();
-        self.fbar.file_vec[self.tab_idx] = h_file.clone();
+        H_FILE_VEC.get().unwrap().try_lock().unwrap()[self.tab_idx] = h_file.clone();
         self.init_tab(&h_file, file_open_type);
     }
 
     pub fn init_tab(&mut self, h_file: &HeaderFile, file_open_type: FileOpenType) {
         self.set_disp_size();
-        self.curt().editor.calc_scrlbar_h();
+        self.curt().editor.calc_editor_scrlbar_h();
         self.curt().editor.calc_editor_scrlbar_v();
         self.curt().editor.h_file = h_file.clone();
         if file_open_type != FileOpenType::Reopen && File::is_exist_file(&h_file.fullpath) {
@@ -526,10 +515,10 @@ impl Terminal {
     pub fn del_tab(&mut self, tab_idx: usize) {
         Log::debug_key("del_tab");
         Log::debug("tab_idx", &tab_idx);
-        self.tab_idx = if tab_idx == self.fbar.file_vec.len() - 1 && tab_idx != 0 { tab_idx - 1 } else { self.tab_idx };
+        self.tab_idx = if tab_idx == H_FILE_VEC.get().unwrap().try_lock().unwrap().len() - 1 && tab_idx != 0 { tab_idx - 1 } else { self.tab_idx };
         self.tabs.remove(tab_idx);
         self.editor_draw_vec.remove(tab_idx);
-        self.fbar.file_vec.remove(tab_idx);
+        H_FILE_VEC.get().unwrap().try_lock().unwrap().remove(tab_idx);
         self.fbar.disp_base_idx = USIZE_UNDEFINED;
         self.change_tab(self.tab_idx);
 
@@ -539,7 +528,7 @@ impl Terminal {
             }
         }
     }
-    pub fn close_tabs(&mut self, leave_tab_idx: usize) -> bool {
+    pub fn close_tabs(&mut self, leave_tab_idx: usize) -> ActType {
         Log::debug_key("close_tabs");
 
         self.state.close_other_than_this_tab_idx = leave_tab_idx;
@@ -556,8 +545,8 @@ impl Terminal {
             }
             self.tab_idx = idx;
             if self.tabs[idx].editor.state.is_changed {
-                if !Tab::prom_save_confirm(self) {
-                    return false;
+                if self.curt().prom_show_com(&CmdType::CloseFile) == ActType::Exit {
+                    return ActType::Exit;
                 }
             } else {
                 self.del_tab(idx);
@@ -584,7 +573,7 @@ impl Terminal {
             }
         }
 
-        self.tabs.is_empty()
+        return if self.tabs.is_empty() { ActType::Exit } else { ActType::Draw(DParts::All) };
     }
 
     pub fn save_all_tab(&mut self) -> ActType {
@@ -607,7 +596,7 @@ impl Terminal {
         self.state.is_all_close_confirm = false;
         for tab in self.tabs.iter_mut() {
             if tab.editor.state.is_changed {
-                tab.editor.set_keycmd(KeyCmd::Null);
+                tab.editor.set_cmd(Cmd::to_cmd(CmdType::Null));
                 tab.state.clear();
             }
         }
@@ -618,17 +607,15 @@ impl Terminal {
 
     pub fn new_tab(&mut self) {
         // Disable the event in case of the next display
-        self.curt().editor.set_keycmd(KeyCmd::Null);
+        self.curt().editor.set_cmd(Cmd::to_cmd(CmdType::Null));
 
         let mut new_tab = Tab::new();
-        new_tab.editor.set_cur_default();
-        // new_tab.editor.draw_range = E_DrawRange::All;
+        //  new_tab.editor.set_cur_default();
 
         let dt: DateTime<Local> = Local::now();
         Log::debug("dt", &dt);
-        // self.add_tab(new_tab, HeaderFile::new(&dt.format("%M:%S").to_string()), FileOpenType::Nomal);
 
-        self.add_tab(new_tab, HeaderFile::new(&Lang::get().new_file), FileOpenType::Nomal);
+        self.add_tab(&mut new_tab, HeaderFile::new(&Lang::get().new_file), FileOpenType::Nomal);
     }
 
     pub fn switch_tab(&mut self, direction: Direction) -> ActType {
@@ -656,7 +643,7 @@ impl Terminal {
         self.curt().editor.draw_range = E_DrawRange::All;
 
         self.curt().editor.calc_editor_scrlbar_v();
-        self.curt().editor.calc_scrlbar_h();
+        self.curt().editor.calc_editor_scrlbar_h();
         // return ActType::Draw(DParts::All);
     }
 
@@ -664,15 +651,19 @@ impl Terminal {
         return self.tabs.get_mut(self.tab_idx).unwrap();
     }
 
-    pub fn curt_h_file(&mut self) -> &mut HeaderFile {
-        return self.fbar.file_vec.get_mut(self.tab_idx).unwrap();
+    /*
+        pub fn curt_h_file(&mut self) -> &mut HeaderFile {
+           // return self.fbar.file_vec.get_mut(self.tab_idx).unwrap();
+           // let mut vec = H_FILE_VEC.get().unwrap().try_lock().unwrap();
+          return   H_FILE_VEC.get_mut().unwrap().try_lock().unwrap().get_mut(self.tab_idx).unwrap();
+
     }
+    */
 
     pub fn clear_pre_tab_status(&mut self) {
         self.tab_idx -= 1;
 
         self.curt().prom.clear();
-        // self.curt().prom.clear();
         self.curt().state.clear();
         self.curt().msgbar.clear();
         self.set_disp_size();
@@ -681,47 +672,40 @@ impl Terminal {
     }
 
     pub fn set_keys(&mut self, keys: &Keys) {
-        let keywhen = self.get_when(keys);
-        Log::debug("Terminal.set_keys.keywhen", &keywhen);
-        self.keycmd = Keybind::keys_to_keycmd_pressed(keys, Some(&self.keys_org), keywhen);
-        Log::debug("Terminal.set_keys.keycmd", &self.keycmd);
+        self.keywhen = self.get_when(keys);
+        Log::debug("keywhen", &self.keywhen);
         self.keys = *keys;
+        self.cmd = Cmd::keys_to_cmd(keys, Some(&self.keys_org), self.keywhen.clone());
+        Log::debug("self.cmd", &self.cmd);
     }
 
     pub fn get_when(&mut self, keys: &Keys) -> KeyWhen {
         Log::debug("keys", &keys);
 
-        Log::debug("self.state.is_ctx_menu", &self.state.is_ctx_menu);
-        Log::debug("self.curt().editor.state.input_comple_mode", &self.curt().editor.state.input_comple_mode);
         let editor_is_dragging = self.curt().editor.state.is_dragging;
 
-        Log::debug("self.is_menuwidget_keys(keys)", &self.is_menuwidget_keys(keys));
-
-        Log::debug_s("1111111111111111111111111");
-
         if self.is_menuwidget_keys(keys) {
-            KeyWhen::MenuBarFocus
+            KeyWhen::MenuBar
         } else if self.state.is_menuwidget {
             self.clear_menuwidget();
-            KeyWhen::EditorFocus
+            KeyWhen::Editor
         } else if self.judge_when_filebar(keys, self.fbar.row_posi, editor_is_dragging) {
-            KeyWhen::FileBarFocus
+            KeyWhen::FileBar
         } else if self.curt().state.judge_when_prompt(keys) {
-            KeyWhen::PromFocus
+            KeyWhen::Prom
         } else if self.state.is_ctx_menu {
             if self.is_ctx_menu_keys(keys) {
-                KeyWhen::CtxMenuFocus
+                KeyWhen::CtxMenu
             } else {
                 self.clear_ctx_menu();
-                KeyWhen::EditorFocus
+                KeyWhen::Editor
             }
         } else {
             let sbar_row_posi = self.curt().sbar.row_posi;
             if self.curt().state.judge_when_statusbar(keys, sbar_row_posi, editor_is_dragging) {
-                KeyWhen::StatusBarFocus
-                // } else if EvtAct::is_input_comple_keys(keys, self) {
+                KeyWhen::StatusBar
             } else {
-                KeyWhen::EditorFocus
+                KeyWhen::Editor
             }
         }
     }
@@ -734,6 +718,20 @@ impl Terminal {
             _ => return false,
         }
     }
+    pub fn close_file(&mut self) -> ActType {
+        let act_type = self.curt().prom_show_com(&CmdType::CloseFile);
+
+        if act_type != ActType::Next {
+            return act_type;
+        }
+        if self.tabs.len() == 1 {
+            return ActType::Exit;
+        } else {
+            self.del_tab(self.tab_idx);
+            // Redraw the previous tab
+            return ActType::Draw(DParts::All);
+        }
+    }
 
     pub fn new() -> Self {
         Terminal { ..Terminal::default() }
@@ -742,7 +740,7 @@ impl Terminal {
 
 impl Default for Terminal {
     fn default() -> Self {
-        Terminal { draw_parts_org: DParts::All, keycmd: KeyCmd::Null, keys: Keys::Null, keys_org: Keys::Null, fbar: FileBar::new(), menubar: MenuBar::new(), tabs: vec![], editor_draw_vec: vec![], tab_idx: 0, help: Help::new(), state: TerminalState::default(), ctx_widget: CtxWidget::default() }
+        Terminal { draw_parts_org: DParts::All, cmd: Cmd::default(), keys: Keys::Null, keys_org: Keys::Null, keywhen: KeyWhen::All, fbar: FileBar::new(), menubar: MenuBar::new(), tabs: vec![], editor_draw_vec: vec![], tab_idx: 0, help: Help::new(), state: TerminalState::default(), ctx_widget: CtxWidget::default() }
     }
 }
 

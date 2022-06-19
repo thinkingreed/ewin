@@ -1,7 +1,7 @@
 use ewin_cfg::log::Log;
 
 use crate::{
-    _cfg::key::{keycmd::*, keys::*},
+    _cfg::key::{cmd::*, keybind::*, keys::*},
     model::*,
 };
 
@@ -9,8 +9,6 @@ impl TabState {
     pub fn clear(&mut self) {
         Log::debug_key("TabState.clear");
         self.prom = PromState::None;
-
-        self.is_open_file = false;
     }
 
     pub fn is_nomal(&self) -> bool {
@@ -32,7 +30,7 @@ impl TabState {
         Log::debug_key("judge_when_prompt");
         Log::debug("self", &self);
 
-        if !self.is_nomal() || (self.prom == PromState::GrepResult && keys == &Keybind::keycmd_to_keys(&KeyCmd::Prom(P_Cmd::Confirm))) {
+        if !self.is_nomal() || (self.prom == PromState::GrepResult && keys == &Keybind::cmd_to_keys(&CmdType::Confirm)) {
             return true;
         }
         return false;

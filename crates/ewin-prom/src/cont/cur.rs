@@ -1,6 +1,7 @@
 use super::parts::input_area::*;
-use crate::ewin_com::{_cfg::key::keycmd::*, util::*};
+use crate::ewin_com::util::*;
 use ewin_cfg::log::*;
+use ewin_com::_cfg::key::cmd::CmdType;
 use std::cmp::{max, min};
 
 impl PromContInputArea {
@@ -28,11 +29,11 @@ impl PromContInputArea {
     }
 
     pub fn cur_move(&mut self) {
-        match self.base.p_cmd {
-            P_Cmd::CursorLeft => self.cur_left(),
-            P_Cmd::CursorRight => self.cur_right(),
-            P_Cmd::CursorRowHome => self.cur_home(),
-            P_Cmd::CursorRowEnd => self.cur_end(),
+        match self.base.cmd.cmd_type {
+            CmdType::CursorLeft => self.cur_left(),
+            CmdType::CursorRight => self.cur_right(),
+            CmdType::CursorRowHome => self.cur_home(),
+            CmdType::CursorRowEnd => self.cur_end(),
             _ => {}
         }
     }
@@ -42,11 +43,11 @@ impl PromContInputArea {
         self.sel.set_sel_posi(true, self.cur);
         Log::debug("self.sel", &self.sel);
 
-        match self.base.p_cmd {
-            P_Cmd::CursorLeftSelect => self.cur_left(),
-            P_Cmd::CursorRightSelect => self.cur_right(),
-            P_Cmd::CursorRowHomeSelect => self.set_cur_target(0),
-            P_Cmd::CursorRowEndSelect => self.set_cur_target(self.buf.len()),
+        match self.base.cmd.cmd_type {
+            CmdType::CursorLeftSelect => self.cur_left(),
+            CmdType::CursorRightSelect => self.cur_right(),
+            CmdType::CursorRowHomeSelect => self.set_cur_target(0),
+            CmdType::CursorRowEndSelect => self.set_cur_target(self.buf.len()),
             _ => {}
         }
 

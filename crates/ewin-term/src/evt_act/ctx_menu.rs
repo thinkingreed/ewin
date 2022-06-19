@@ -1,8 +1,6 @@
 use crate::{
-    ewin_com::{
-        _cfg::key::{keycmd::*, keys::*},
-        model::*,
-    },
+    ewin_com::{_cfg::key::keys::*, model::*},
+    global_term::H_FILE_VEC,
     model::*,
 };
 use directories::BaseDirs;
@@ -12,6 +10,7 @@ use ewin_cfg::{
     log::*,
     model::{default::*, modal::*},
 };
+use ewin_com::_cfg::key::{cmd::CmdType, keybind::Keybind};
 use ewin_const::def::*;
 use ewin_editor::model::*;
 use ewin_widget::{core::*, widget::ctx_menu::*};
@@ -21,14 +20,14 @@ impl EvtAct {
     pub fn ctrl_ctx_menu(term: &mut Terminal) -> ActType {
         Log::debug_key("EvtAct.ctrl_ctx_menu");
 
-        match term.ctx_widget.c_cmd {
-            C_Cmd::MouseDownLeft(y, x) => {
+        match term.ctx_widget.cmd.cmd_type {
+            CmdType::MouseDownLeft(y, x) => {
                 if term.ctx_widget.widget.is_mouse_within_area(y, x) {
                     return EvtAct::select_ctx_menu(term);
                 }
                 return ActType::Cancel;
             }
-            C_Cmd::MouseMove(y, x) => {
+            CmdType::MouseMove(y, x) => {
                 if term.ctx_widget.widget.is_mouse_within_area(y, x) {
                     let child_cont_org = &term.ctx_widget.widget.cont.cont_vec.get(term.ctx_widget.widget.parent_sel_y).and_then(|cont| cont.1.clone());
                     term.ctx_widget.widget.ctrl_mouse_move(y, x);
@@ -55,12 +54,12 @@ impl EvtAct {
                     return ActType::Cancel;
                 }
             }
-            C_Cmd::CursorDown | C_Cmd::CursorUp | C_Cmd::CursorRight | C_Cmd::CursorLeft => {
-                match term.ctx_widget.c_cmd {
-                    C_Cmd::CursorDown => term.ctx_widget.widget.cur_move(Direction::Down),
-                    C_Cmd::CursorUp => term.ctx_widget.widget.cur_move(Direction::Up),
-                    C_Cmd::CursorRight => term.ctx_widget.widget.cur_move(Direction::Right),
-                    C_Cmd::CursorLeft => term.ctx_widget.widget.cur_move(Direction::Left),
+            CmdType::CursorDown | CmdType::CursorUp | CmdType::CursorRight | CmdType::CursorLeft => {
+                match term.ctx_widget.cmd.cmd_type {
+                    CmdType::CursorDown => term.ctx_widget.widget.cur_move(Direction::Down),
+                    CmdType::CursorUp => term.ctx_widget.widget.cur_move(Direction::Up),
+                    CmdType::CursorRight => term.ctx_widget.widget.cur_move(Direction::Right),
+                    CmdType::CursorLeft => term.ctx_widget.widget.cur_move(Direction::Left),
                     _ => {}
                 }
                 if !term.ctx_widget.widget.is_menu_change() {
@@ -68,16 +67,16 @@ impl EvtAct {
                 }
                 return ActType::Draw(DParts::Absolute(term.ctx_widget.widget.get_disp_range_y()));
             }
-            C_Cmd::CtxMenu(y, x) => {
+            CmdType::CtxMenu(y, x) => {
                 // let editor_row_posi = term.curt_mut().editor.row_posi;
                 term.init_ctx_menu(y, x);
                 return ActType::Draw(DParts::All);
             }
-            C_Cmd::Confirm => {
+            CmdType::Confirm => {
                 EvtAct::select_ctx_menu(term);
                 return ActType::Draw(DParts::All);
             }
-            C_Cmd::Null => return ActType::Cancel,
+            _ => return ActType::Cancel,
         }
     }
 
@@ -140,31 +139,26 @@ impl EvtAct {
                 term.curt().editor.sel.clear();
             }
             s if s == &Lang::get().cut => {
-                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::Cut)), &mut stdout(), term);
+                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::Cut), &mut stdout(), term);
                 term.curt().editor.sel.clear();
             }
             s if s == &Lang::get().copy => {
-                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::Copy)), &mut stdout(), term);
+                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::Copy), &mut stdout(), term);
                 term.curt().editor.sel.clear();
             }
             s if s == &Lang::get().paste => {
-                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::InsertStr("".to_string()))), &mut stdout(), term);
+                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::InsertStr("".to_string())), &mut stdout(), term);
             }
             s if s == &Lang::get().all_select => {
-                EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::AllSelect)), &mut stdout(), term);
+                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::AllSelect), &mut stdout(), term);
             }
             //// headerbar
             // close
-            s if s == &Lang::get().close => {
-                if Tab::prom_save_confirm(term) {
-                    Terminal::exit();
-                }
-                return ActType::Draw(DParts::All);
-            }
+            s if s == &Lang::get().close => return term.curt().prom_show_com(&CmdType::CloseAllFile),
+
             // close other than this tab
             s if s == &Lang::get().close_other_than_this_tab => {
-                let _ = term.close_tabs(term.tab_idx);
-                return ActType::Draw(DParts::All);
+                return term.close_tabs(term.tab_idx);
             }
             _ => {}
         };
@@ -182,7 +176,7 @@ impl EvtAct {
 
     pub fn is_ctx_menu_displayed_area(term: &mut Terminal, y: usize, x: usize) -> bool {
         if y == term.fbar.row_posi {
-            for h_file in term.fbar.file_vec.iter() {
+            for h_file in H_FILE_VEC.get().unwrap().try_lock().unwrap().iter() {
                 if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 || h_file.close_area.0 <= x && x <= h_file.close_area.1 {
                     return true;
                 }

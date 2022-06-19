@@ -1,6 +1,7 @@
-use crate::{ewin_com::_cfg::key::keycmd::*, model::*};
+use crate::model::*;
 use crossterm::cursor::MoveTo;
 use ewin_cfg::{colors::*, log::*, model::default::*};
+use ewin_com::_cfg::key::cmd::CmdType;
 use ewin_const::def::*;
 use std::cmp::min;
 
@@ -13,9 +14,9 @@ impl Editor {
                 self.scrl_v.calc_com_scrlbar_v(true, self.row_len, self.buf.len_rows());
             }
             // self.scrl_v.calc_com_scrlbar_v_roe_posi(true, self.row_disp_len, &self.e_cmd, self.offset_y, self.scrl_v.move_len);
-            Log::debug("self.e_cmd", &self.e_cmd);
-            self.scrl_v.row_posi = match self.e_cmd {
-                E_Cmd::MouseDownLeft(_, _) | E_Cmd::MouseDragLeftUp(_, _) | E_Cmd::MouseDragLeftDown(_, _) | E_Cmd::MouseDragLeftLeft(_, _) | E_Cmd::MouseDragLeftRight(_, _) if self.scrl_v.is_enable => self.scrl_v.row_posi,
+            Log::debug("self.cmd", &self.cmd);
+            self.scrl_v.row_posi = match self.cmd.cmd_type {
+                CmdType::MouseDownLeft(_, _) | CmdType::MouseDragLeftUp(_, _) | CmdType::MouseDragLeftDown(_, _) | CmdType::MouseDragLeftLeft(_, _) | CmdType::MouseDragLeftRight(_, _) if self.scrl_v.is_enable => self.scrl_v.row_posi,
                 _ => (self.offset_y as f64 / self.scrl_v.move_len as f64).ceil() as usize,
             };
         }
@@ -28,7 +29,7 @@ impl Editor {
         Log::debug(" self.scrl_v.bar_len 111", &self.scrl_v.bar_len);
 
         // MouseDownLeft
-        if matches!(self.e_cmd, E_Cmd::MouseDownLeft(_, _)) {
+        if matches!(self.cmd.cmd_type, CmdType::MouseDownLeft(_, _)) {
             self.scrl_v.is_enable = true;
             // Except on scrl_v
             if !(self.row_posi + self.scrl_v.row_posi <= y && y < self.row_posi + self.scrl_v.row_posi + self.scrl_v.bar_len) {
@@ -38,9 +39,9 @@ impl Editor {
             }
             // MouseDragLeftDown・MouseDragLeftUp
         } else if self.scrl_v.is_enable {
-            if matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)) && self.row_len >= self.scrl_v.row_posi + self.scrl_v.bar_len {
+            if matches!(self.cmd.cmd_type, CmdType::MouseDragLeftDown(_, _)) && self.row_len >= self.scrl_v.row_posi + self.scrl_v.bar_len {
                 self.scrl_v.row_posi = if self.scrl_v.row_posi + self.scrl_v.bar_len >= self.row_len { self.scrl_v.row_posi } else { self.scrl_v.row_posi + 1 };
-            } else if (matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _))) && self.row_posi <= y && y < self.row_posi + self.row_len {
+            } else if (matches!(self.cmd.cmd_type, CmdType::MouseDragLeftUp(_, _))) && self.row_posi <= y && y < self.row_posi + self.row_len {
                 self.scrl_v.row_posi = if self.scrl_v.row_posi == 0 { self.scrl_v.row_posi } else { self.scrl_v.row_posi - 1 };
             }
         }
@@ -49,9 +50,9 @@ impl Editor {
                 0
             } else if self.scrl_v.row_posi + self.scrl_v.bar_len == self.row_len {
                 self.buf.len_rows() - 1
-            } else if matches!(self.e_cmd, E_Cmd::MouseDragLeftDown(_, _)) {
+            } else if matches!(self.cmd.cmd_type, CmdType::MouseDragLeftDown(_, _)) {
                 min(self.cur.y + self.scrl_v.move_len, self.buf.len_rows() - 1)
-            } else if matches!(self.e_cmd, E_Cmd::MouseDragLeftUp(_, _)) {
+            } else if matches!(self.cmd.cmd_type, CmdType::MouseDragLeftUp(_, _)) {
                 self.cur.y - self.scrl_v.move_len
             } else {
                 self.cur.y

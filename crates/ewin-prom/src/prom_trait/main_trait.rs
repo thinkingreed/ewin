@@ -2,18 +2,16 @@ use crate::model::*;
 use downcast::{downcast, Any};
 use dyn_clone::DynClone;
 use ewin_cfg::log::*;
-use ewin_com::_cfg::key::keycmd::*;
+use ewin_com::_cfg::key::cmd::*;
 
 pub trait PromPluginTrait: Any + DynClone + Send + 'static + std::fmt::Debug {
-    fn as_base(&self) -> &PromPluginBase;
-    fn as_mut_base(&mut self) -> &mut PromPluginBase;
-    fn get_disp_all_row_num(&mut self) -> usize {
-        return self.as_mut_base().get_disp_all_row_num();
-    }
+    fn as_base(&self) -> &PromBase;
+    fn as_mut_base(&mut self) -> &mut PromBase;
+
     fn clear_sels(&mut self) {
-        Log::debug("self.p_cmd", &self.as_base().p_cmd);
-        match self.as_base().p_cmd {
-            P_Cmd::Copy | P_Cmd::CursorLeft | P_Cmd::CursorRight | P_Cmd::CursorUp | P_Cmd::CursorDown | P_Cmd::CursorRowHome | P_Cmd::CursorRowEnd | P_Cmd::NextContent | P_Cmd::BackContent | P_Cmd::MouseDownLeft(_, _) => {
+        Log::debug("self.cmd", &self.as_base().cmd);
+        match self.as_base().cmd.cmd_type {
+            CmdType::Copy | CmdType::CursorLeft | CmdType::CursorRight | CmdType::CursorUp | CmdType::CursorDown | CmdType::CursorRowHome | CmdType::CursorRowEnd | CmdType::NextContent | CmdType::BackContent | CmdType::MouseDownLeft(_, _) => {
                 self.as_mut_base().clear_sels();
             }
             _ => {}

@@ -2,7 +2,7 @@ use std::env;
 
 use crate::{
     cont::parts::{info::*, input_area::*, key_desc::*, search_opt::*},
-    ewin_com::_cfg::key::keycmd::*,
+    ewin_com::_cfg::key::cmd::*,
     model::*,
     prom_trait::main_trait::*,
 };
@@ -10,14 +10,14 @@ use ewin_cfg::{colors::*, lang::lang_cfg::*, model::default::*};
 
 impl PromGrep {
     pub fn new() -> Self {
-        let mut plugin = PromGrep { base: PromPluginBase { config: PromptPluginConfig { is_updown_valid: true, ..PromptPluginConfig::default() }, ..PromPluginBase::default() } };
+        let mut plugin = PromGrep { base: PromBase { config: PromptConfig { is_updown_valid: true, ..PromptConfig::default() }, ..PromBase::default() } };
 
         plugin.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().set_grep.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 
-        let search = PromContKeyMenu { disp_str: Lang::get().search.to_string(), key: PromContKeyMenuType::PCmd(P_Cmd::Confirm) };
-        let switch_input_area = PromContKeyMenu { disp_str: Lang::get().move_setting_location.to_string(), key: PromContKeyMenuType::create_cmds(vec![P_Cmd::NextContent, P_Cmd::CursorUp, P_Cmd::CursorDown], &mut vec![P_Cmd::BackContent]) };
-        let complement = PromContKeyMenu { disp_str: Lang::get().complement.to_string(), key: PromContKeyMenuType::PCmdAndStr(P_Cmd::NextContent, format!("({})", Lang::get().search_folder)) };
-        let cancel = PromContKeyMenu { disp_str: Lang::get().cancel.to_string(), key: PromContKeyMenuType::PCmd(P_Cmd::Cancel) };
+        let search = PromContKeyMenu { disp_str: Lang::get().search.to_string(), key: PromContKeyMenuType::Cmd(CmdType::Confirm) };
+        let switch_input_area = PromContKeyMenu { disp_str: Lang::get().move_setting_location.to_string(), key: PromContKeyMenuType::create_cmds(vec![CmdType::NextContent, CmdType::CursorUp, CmdType::CursorDown], &mut vec![CmdType::BackContent]) };
+        let complement = PromContKeyMenu { disp_str: Lang::get().complement.to_string(), key: PromContKeyMenuType::PCmdAndStr(CmdType::NextContent, format!("({})", Lang::get().search_folder)) };
+        let cancel = PromContKeyMenu { disp_str: Lang::get().cancel.to_string(), key: PromContKeyMenuType::Cmd(CmdType::CancelProm) };
         plugin.base.cont_vec.push(Box::new(PromContKeyDesc { desc_vecs: vec![vec![search, switch_input_area, complement, cancel]], ..PromContKeyDesc::default() }));
 
         plugin.base.cont_vec.push(Box::new(PromContSearchOpt::get_searh_opt(&CfgEdit::get_search())));
@@ -43,13 +43,13 @@ impl PromGrep {
 
 #[derive(Default, Debug, Clone)]
 pub struct PromGrep {
-    pub base: PromPluginBase,
+    pub base: PromBase,
 }
 impl PromPluginTrait for PromGrep {
-    fn as_base(&self) -> &PromPluginBase {
+    fn as_base(&self) -> &PromBase {
         &self.base
     }
-    fn as_mut_base(&mut self) -> &mut PromPluginBase {
+    fn as_mut_base(&mut self) -> &mut PromBase {
         &mut self.base
     }
 }

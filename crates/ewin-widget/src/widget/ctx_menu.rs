@@ -1,6 +1,6 @@
 use crate::{core::WidgetTrait, model::*};
 use ewin_cfg::{colors::Colors, log::Log, model::default::Cfg};
-use ewin_com::{_cfg::key::keycmd::*, util::*};
+use ewin_com::{_cfg::key::cmd::*, util::*};
 use std::{collections::HashMap, hash::Hash, slice::Iter};
 
 impl CtxWidget {
@@ -102,11 +102,8 @@ impl CtxWidget {
         }
     }
 
-    pub fn set_ctx_menu_cmd(&mut self, keycmd: KeyCmd) {
-        self.c_cmd = match keycmd {
-            KeyCmd::CtxMenu(c_cmd) => c_cmd,
-            _ => C_Cmd::Null,
-        };
+    pub fn set_ctx_menu_cmd(&mut self, cmd: Cmd) {
+        self.cmd = cmd;
     }
 }
 

@@ -21,6 +21,7 @@ impl Editor {
                 self.draw_scrlbar_h(str_vec);
                 self.draw_scrlbar_v(str_vec);
                 self.draw_row_num(str_vec);
+                self.draw_scale(str_vec);
                 return;
             }
             E_DrawRange::TargetRange(sy, ey) => {
@@ -88,9 +89,7 @@ impl Editor {
             }
         }
 
-        if CfgEdit::get().general.editor.scale.is_enable {
-            self.draw_scale(str_vec);
-        }
+        self.draw_scale(str_vec);
 
         draw.cells_from = std::mem::take(&mut draw.cells_to);
         //  std::mem::swap(&mut draw.cells_from, &mut draw.cells_to);

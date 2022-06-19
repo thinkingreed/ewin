@@ -2,10 +2,12 @@ use std::io::Write;
 
 use crate::{
     ewin_com::{model::*, util::*},
+    global_term::H_FILE_VEC,
     model::*,
 };
 use crossterm::{cursor::*, terminal::*};
 use ewin_cfg::{colors::*, log::*};
+use ewin_com::global::*;
 use ewin_const::def::*;
 
 impl FileBar {
@@ -26,7 +28,7 @@ impl FileBar {
         if term.fbar.is_left_arrow_disp {
             hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_active_fg_bg(), left_arrow_btn, &Colors::get_default_fg_bg()));
         }
-        for (i, h_file) in term.fbar.file_vec.iter().enumerate() {
+        for (i, h_file) in H_FILE_VEC.get().unwrap().try_lock().unwrap().iter().enumerate() {
             if !h_file.is_disp {
                 continue;
             }
@@ -52,13 +54,11 @@ impl FileBar {
     pub fn set_posi(&mut self, cols_w: usize) {
         self.col_num = cols_w;
         self.all_filenm_space_w = self.col_num - FileBar::MENU_BTN_WITH;
-        // +1 is space between
-        self.plus_btn_area = (self.all_filenm_space_w, self.all_filenm_space_w + FileBar::MENU_BTN_WITH - 1);
     }
 
     pub fn set_filenm(term: &mut Terminal) {
         let mut tmp_all_vec: Vec<(usize, String)> = vec![];
-        if term.fbar.file_vec.is_empty() {
+        if FileBar::h_file_vec_len() == 0 {
             return;
         }
         let disp_base_idx = if term.fbar.disp_base_idx == USIZE_UNDEFINED { 0 } else { term.fbar.disp_base_idx };
@@ -68,9 +68,9 @@ impl FileBar {
         let mut max_len = FileBar::FILENM_LEN_LIMMIT;
         let cols = get_term_size().0;
         Log::debug("cols", &cols);
-        let left_allow_len = if term.fbar.file_vec.len() == 1 { 0 } else { FileBar::ALLOW_BTN_WITH };
+        let left_allow_len = if FileBar::h_file_vec_len() == 1 { 0 } else { FileBar::ALLOW_BTN_WITH };
 
-        Log::debug("hbar.file_vec.len()", &term.fbar.file_vec.len());
+        Log::debug("hbar.file_vec.len()", &FileBar::h_file_vec_len());
 
         let rest_len = cols - FileBar::MENU_BTN_WITH - 1 - left_allow_len - FileBar::FILENM_MARGIN;
         Log::debug("rest_len", &rest_len);
@@ -79,7 +79,7 @@ impl FileBar {
         }
 
         // Temperatures stored in Vec for ascending / descending sorting
-        for (idx, h_file) in term.fbar.file_vec.iter_mut().enumerate() {
+        for (idx, h_file) in H_FILE_VEC.get().unwrap().try_lock().unwrap().iter_mut().enumerate() {
             // cut str
             h_file.filenm_disp = if get_str_width(&h_file.filenm) > max_len { cut_str(&h_file.filenm, max_len, true, true) } else { h_file.filenm.clone() };
 
@@ -114,9 +114,10 @@ impl FileBar {
         // Judgment of tab to display
         let left_arrow_w = if term.fbar.is_left_arrow_disp { FileBar::ALLOW_BTN_WITH } else { 0 };
         let mut idx_old = 0;
-        let file_len = term.fbar.file_vec.len();
+        let file_len = H_FILE_VEC.get().unwrap().try_lock().unwrap().len();
         for (idx, _) in tmp_all_vec[disp_base_idx..].iter() {
-            let h_file = term.fbar.file_vec.get_mut(*idx).unwrap();
+            let mut vec = H_FILE_VEC.get().unwrap().try_lock().unwrap();
+            let h_file = vec.get_mut(*idx).unwrap();
             let right_arrow_w = if term.fbar.disp_base_idx != USIZE_UNDEFINED && *idx != file_len - 1 { FileBar::ALLOW_BTN_WITH } else { 0 };
 
             if term.fbar.all_filenm_space_w - left_arrow_w - right_arrow_w >= width + get_str_width(&h_file.filenm_disp) {
@@ -138,7 +139,7 @@ impl FileBar {
             disp_vec.reverse();
         }
 
-        if disp_vec.last().unwrap().0 != term.fbar.file_vec.len() - 1 {
+        if disp_vec.last().unwrap().0 != FileBar::h_file_vec_len() - 1 {
             term.fbar.is_right_arrow_disp = true;
         }
 
@@ -155,8 +156,8 @@ impl FileBar {
 
             width += get_str_width(filenm);
             let e_w = width - 1;
-            term.fbar.file_vec.get_mut(*idx).unwrap().filenm_area = (s_w, e_w);
-            term.fbar.file_vec.get_mut(*idx).unwrap().close_area = (e_w - 1, e_w);
+            H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(*idx).unwrap().filenm_area = (s_w, e_w);
+            H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(*idx).unwrap().close_area = (e_w - 1, e_w);
         }
 
         // Width calc on left_arrow
@@ -180,12 +181,23 @@ impl FileBar {
         self.left_arrow_area = (USIZE_UNDEFINED, USIZE_UNDEFINED);
         self.right_arrow_area = (USIZE_UNDEFINED, USIZE_UNDEFINED);
 
-        for h_file in self.file_vec.iter_mut() {
+        for h_file in H_FILE_VEC.get().unwrap().try_lock().unwrap().iter_mut() {
             h_file.filenm_area = (USIZE_UNDEFINED, USIZE_UNDEFINED);
             h_file.close_area = (USIZE_UNDEFINED, USIZE_UNDEFINED);
             h_file.is_disp = false;
         }
     }
+
+    pub fn push_h_file_vec(h_file: HeaderFile) {
+        H_FILE_VEC.get().unwrap().try_lock().map(|mut vec| vec.push(h_file)).unwrap();
+    }
+    pub fn get_tgt_h_file(idx: usize) -> HeaderFile {
+        return H_FILE_VEC.get().unwrap().try_lock().unwrap().get(idx).unwrap().clone();
+    }
+    pub fn h_file_vec_len() -> usize {
+        return H_FILE_VEC.get().unwrap().try_lock().unwrap().len();
+    }
+
     pub fn new() -> Self {
         FileBar { ..FileBar::default() }
     }
@@ -197,8 +209,7 @@ pub struct FileBar {
     pub all_filenm_rest_area: (usize, usize),
     pub all_filenm_space_w: usize,
     pub disp_base_idx: usize,
-    pub file_vec: Vec<HeaderFile>,
-    pub plus_btn_area: (usize, usize),
+    // pub file_vec: Vec<HeaderFile>,
     pub menu_btn_area: (usize, usize),
     pub close_btn_area: (usize, usize),
     pub is_left_arrow_disp: bool,
@@ -220,8 +231,7 @@ impl Default for FileBar {
             all_filenm_rest_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
             all_filenm_space_w: 0,
             disp_base_idx: USIZE_UNDEFINED,
-            file_vec: vec![],
-            plus_btn_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
+            //  file_vec: vec![],
             menu_btn_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
             close_btn_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
             is_left_arrow_disp: false,

@@ -1,8 +1,9 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, global::*, model::*},
+    ewin_com::{global::*, model::*},
     model::*,
 };
 use ewin_cfg::log::*;
+use ewin_com::_cfg::key::cmd::CmdType;
 use std::io::Write;
 
 impl EvtAct {
@@ -10,6 +11,8 @@ impl EvtAct {
         Log::debug_key("ctrl_prom");
 
         if !term.curt().state.is_nomal_and_not_result() {
+            let cmd = term.cmd.clone();
+            term.curt().prom.set_cmd(&cmd);
             // Resize
             let evt_act = term.curt().prom.resize();
             if evt_act != ActType::Next {
@@ -50,8 +53,8 @@ impl EvtAct {
     }
 
     pub fn cancel_prom(term: &mut Terminal) -> ActType {
-        match term.curt().prom.p_cmd {
-            P_Cmd::Cancel => {
+        match term.curt().prom.cmd.cmd_type {
+            CmdType::CancelProm => {
                 if term.state.is_all_close_confirm {
                     term.cancel_close_all_tab();
                     term.curt().clear_curt_tab(true);
@@ -80,6 +83,7 @@ impl EvtAct {
         Terminal::hide_cur();
         term.set_disp_size();
         term.curt().msgbar.draw_only(out);
+        // term.curt().sbar.draw_only(out);
         let state = term.curt().state.clone();
         term.curt().prom.draw_only(out, &state);
         if term.curt().prom.curt.as_mut_base().is_draw_cur() {

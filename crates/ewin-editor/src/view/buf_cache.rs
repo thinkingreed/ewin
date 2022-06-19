@@ -1,8 +1,9 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, char_style::*, model::*, util::*},
+    ewin_com::{char_style::*, model::*, util::*},
     model::*,
 };
 use ewin_cfg::{log::*, model::default::*};
+use ewin_com::_cfg::key::cmd::CmdType;
 use ewin_const::def::*;
 use std::cmp::{max, min};
 use syntect::highlighting::{HighlightIterator, HighlightState, Highlighter, Style};
@@ -18,7 +19,7 @@ impl EditorDraw {
             self.style_vecs.resize(editor.buf.len_rows() as usize, Vec::new());
 
             // When there is a change to offset_y in paste for highlight target
-            if editor.is_enable_syntax_highlight && editor.offset_y != editor.offset_y_org && editor.e_cmd == E_Cmd::InsertStr("".to_string()) {
+            if editor.is_enable_syntax_highlight && editor.offset_y != editor.offset_y_org && editor.cmd.cmd_type == CmdType::InsertStr("".to_string()) {
                 self.clear();
             }
         }

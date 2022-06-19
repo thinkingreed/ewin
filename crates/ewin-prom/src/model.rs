@@ -2,7 +2,7 @@ use super::{
     each::search::*,
     prom_trait::{cont_trait::*, main_trait::*},
 };
-use ewin_com::_cfg::key::keycmd::*;
+use ewin_com::_cfg::key::cmd::*;
 use std::ops::Range;
 
 #[derive(Default, Debug, Clone)]
@@ -15,24 +15,25 @@ pub struct PromptContOpt {
 
 #[derive(Debug, Clone)]
 pub struct Prom {
-    pub keycmd: KeyCmd,
-    pub p_cmd: P_Cmd,
+    // pub keycmd: KeyCmd,
+    pub cmd: Cmd,
     pub row_num: usize,
     pub row_posi: usize,
+    pub row_bottom_posi: usize,
     pub col_num: usize,
     pub curt: Box<dyn PromPluginTrait>,
 }
 
 impl Default for Prom {
     fn default() -> Self {
-        Self { row_num: 0, row_posi: 0, col_num: 0, curt: Box::new(PromSearch::new()), keycmd: KeyCmd::Null, p_cmd: P_Cmd::Null }
+        Self { row_num: 0, row_posi: 0, row_bottom_posi: 0, col_num: 0, curt: Box::new(PromSearch::new()), cmd: Cmd::default() }
     }
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct PromPluginBase {
-    pub p_cmd: P_Cmd,
-    pub config: PromptPluginConfig,
+pub struct PromBase {
+    pub cmd: Cmd,
+    pub config: PromptConfig,
     pub curt_cont_idx: usize,
     pub curt_cont_idx_org: usize,
     // Hold PromptCont for each line
@@ -40,14 +41,13 @@ pub struct PromPluginBase {
 }
 
 #[derive(PartialEq, Default, Eq, Debug, Clone)]
-pub struct PromptPluginConfig {
+pub struct PromptConfig {
     pub is_updown_valid: bool,
 }
 
 #[derive(PartialEq, Default, Eq, Debug, Clone)]
 pub struct PromptContBase {
-    pub keycmd: KeyCmd,
-    pub p_cmd: P_Cmd,
+    pub cmd: Cmd,
     pub row_posi_range: Range<usize>,
 }
 

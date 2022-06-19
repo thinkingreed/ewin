@@ -1,6 +1,6 @@
 use crate::{
-    ewin_com::{_cfg::key::keycmd::*, model::*, util::*},
-    model::Tab,
+    ewin_com::{_cfg::key::cmd::*, model::*, util::*},
+    model::*,
 };
 use ewin_cfg::{lang::lang_cfg::*, log::*, model::default::*};
 
@@ -8,8 +8,8 @@ impl Tab {
     pub fn replace(&mut self) -> ActType {
         Log::info_key("EvtAct.replace");
 
-        match &self.prom.p_cmd {
-            P_Cmd::Confirm => {
+        match &self.prom.cmd.cmd_type {
+            CmdType::Confirm => {
                 let mut search_str = self.prom.curt.as_mut_base().get_tgt_input_area_str(0);
                 let mut replace_str = self.prom.curt.as_mut_base().get_tgt_input_area_str(1);
 
@@ -26,7 +26,7 @@ impl Tab {
                     if idx_set.is_empty() {
                         return ActType::Draw(DParts::MsgBar(Lang::get().cannot_find_search_char.to_string()));
                     }
-                    self.editor.edit_proc(E_Cmd::ReplaceExec(search_str, replace_str, idx_set));
+                    self.editor.edit_proc(Cmd::to_cmd(CmdType::ReplaceExec(search_str, replace_str, idx_set)));
 
                     self.clear_curt_tab(true);
                     self.editor.state.is_changed = true;

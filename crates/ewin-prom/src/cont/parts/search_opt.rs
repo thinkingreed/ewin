@@ -1,20 +1,31 @@
 use crate::{model::*, prom_trait::cont_trait::*};
-use ewin_cfg::{colors::*, global::*, lang::lang_cfg::*, model::default::*};
-use ewin_com::{_cfg::key::keycmd::*, model::*, util::*};
+use ewin_cfg::{colors::*, global::*, lang::lang_cfg::*, log::*, model::default::*};
+use ewin_com::{
+    _cfg::key::{cmd::*, keybind::*},
+    model::*,
+    util::*,
+};
 
 impl PromContSearchOpt {
+    const MARGIN: usize = 2;
+
     pub fn proc_search_opt(&mut self) -> ActType {
-        match self.base.p_cmd {
-            P_Cmd::FindCaseSensitive => {
+        match self.base.cmd.cmd_type {
+            CmdType::FindCaseSensitive => {
                 self.change_opt_case_sens();
                 return ActType::Draw(DParts::Prompt);
             }
-            P_Cmd::FindRegex => {
+            CmdType::FindRegex => {
                 self.change_opt_regex();
                 return ActType::Draw(DParts::Prompt);
             }
-            P_Cmd::MouseDownLeft(y, x) => {
+            CmdType::MouseDownLeft(y, x) => {
+                Log::debug_s("PromContSearchOpt.MouseDownLeft");
+                Log::debug("yyy", &y);
+                Log::debug("self.base.row_posi_range.start", &self.base.row_posi_range.start);
                 if self.base.row_posi_range.start == y {
+                    Log::debug("xxx", &x);
+                    Log::debug("self.case_sens.mouse_area", &self.case_sens.mouse_area);
                     if self.case_sens.mouse_area.contains(&x) {
                         self.change_opt_case_sens();
                         return ActType::Draw(DParts::Prompt);
@@ -40,13 +51,13 @@ impl PromContSearchOpt {
     }
 
     pub fn get_searh_opt(cfg_search: &CfgSearch) -> PromContSearchOpt {
-        let case_sens = PromptContOpt::get_opt(P_Cmd::FindCaseSensitive, Lang::get().case_sens.to_string(), cfg_search.case_sensitive, 0);
-        let regex = PromptContOpt::get_opt(P_Cmd::FindRegex, Lang::get().regex.to_string(), cfg_search.regex, case_sens.mouse_area.start);
+        let case_sens = PromptContOpt::get_opt(CmdType::FindCaseSensitive, Lang::get().case_sens.to_string(), cfg_search.case_sensitive, 0);
+        let regex = PromptContOpt::get_opt(CmdType::FindRegex, Lang::get().regex.to_string(), cfg_search.regex, case_sens.mouse_area.end + PromContSearchOpt::MARGIN);
         return PromContSearchOpt { case_sens, regex, ..PromContSearchOpt::default() };
     }
 }
 
-impl PromPluginBase {
+impl PromBase {
     pub fn get_search_opt(&mut self) -> Option<&mut PromContSearchOpt> {
         for item in self.cont_vec.iter_mut() {
             if let Ok(search_opt) = item.downcast_mut::<PromContSearchOpt>() {
@@ -68,11 +79,11 @@ impl PromptContOpt {
             false => self.is_check = true,
         }
     }
-    pub fn get_opt(p_cmd: P_Cmd, key_desc_str: String, is_check: bool, sx: usize) -> PromptContOpt {
-        let key_str = Keybind::get_key_str(KeyCmd::Prom(p_cmd));
-        let x = get_str_width(&format!("{}:{}", &key_str, key_str));
+    pub fn get_opt(cmd_type: CmdType, key_desc_str: String, is_check: bool, sx: usize) -> PromptContOpt {
+        let key_str = Keybind::get_key_str(cmd_type);
+        let x = get_str_width(&format!("{}:{}", &key_desc_str, key_str));
 
-        let opt = PromptContOpt { key_str, key_desc_str, is_check, mouse_area: (sx..sx + x + 2) };
+        let opt = PromptContOpt { key_str, key_desc_str, is_check, mouse_area: (sx + x..sx + x + 3) };
         return opt;
     }
 }
@@ -93,7 +104,7 @@ impl PromContPluginTrait for PromContSearchOpt {
     }
 
     fn check_allow_p_cmd(&self) -> bool {
-        return matches!(self.as_base().p_cmd, P_Cmd::FindCaseSensitive | P_Cmd::FindRegex | P_Cmd::MouseDownLeft(_, _));
+        return matches!(self.as_base().cmd.cmd_type, CmdType::FindCaseSensitive | CmdType::FindRegex | CmdType::MouseDownLeft(_, _));
     }
 }
 

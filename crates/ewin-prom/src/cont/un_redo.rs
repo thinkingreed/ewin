@@ -1,6 +1,7 @@
 use super::parts::input_area::*;
-use crate::ewin_com::{_cfg::key::keycmd::*, model::*};
+use crate::ewin_com::model::*;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
+use ewin_com::_cfg::key::cmd::*;
 
 impl PromContInputArea {
     pub fn undo(&mut self) -> ActType {
@@ -28,14 +29,14 @@ impl PromContInputArea {
     }
     // initial cursor posi set
     pub fn undo_init(&mut self, proc: &Proc) {
-        match proc.p_cmd {
-            P_Cmd::InsertStr(_) | P_Cmd::Cut => {
+        match proc.cmd.cmd_type {
+            CmdType::InsertStr(_) | CmdType::Cut => {
                 self.set_evtproc(&proc.cur_s);
             }
-            P_Cmd::DelNextChar | P_Cmd::DelPrevChar => {
+            CmdType::DelNextChar | CmdType::DelPrevChar => {
                 if proc.sel.is_selected() {
                     self.set_evtproc(if proc.cur_s.x > proc.cur_e.x { &proc.cur_e } else { &proc.cur_s });
-                } else if proc.p_cmd == P_Cmd::DelNextChar {
+                } else if proc.cmd.cmd_type == CmdType::DelNextChar {
                     self.set_evtproc(&proc.cur_s);
                 } else {
                     self.set_evtproc(&proc.cur_e);
@@ -45,14 +46,14 @@ impl PromContInputArea {
         }
     }
     pub fn undo_exec(&mut self, proc: &Proc) {
-        match proc.p_cmd {
-            P_Cmd::InsertStr(_) => {
+        match proc.cmd.cmd_type {
+            CmdType::InsertStr(_) => {
                 // Set paste target with sel
                 self.sel = proc.sel;
-                self.edit_proc(P_Cmd::DelNextChar);
+                self.edit_proc(Cmd::to_cmd(CmdType::DelNextChar));
             }
-            P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::Cut => {
-                self.edit_proc(P_Cmd::InsertStr(proc.str.clone()));
+            CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Cut => {
+                self.edit_proc(Cmd::to_cmd(CmdType::InsertStr(proc.str.clone())));
             }
             _ => {}
         }
@@ -60,15 +61,15 @@ impl PromContInputArea {
 
     // last cursor posi set
     pub fn undo_finalize(&mut self, proc: &Proc) {
-        match proc.p_cmd {
-            P_Cmd::DelNextChar => {
+        match proc.cmd.cmd_type {
+            CmdType::DelNextChar => {
                 if proc.sel.is_selected() {
                     self.set_evtproc(if proc.cur_s.x > proc.cur_e.x { &proc.cur_s } else { &proc.cur_e });
                 } else {
                     self.set_evtproc(&proc.cur_s);
                 }
             }
-            P_Cmd::DelPrevChar => {
+            CmdType::DelPrevChar => {
                 if proc.sel.is_selected() {
                     self.set_evtproc(&proc.cur_e);
                 }
@@ -99,17 +100,17 @@ impl PromContInputArea {
 
     pub fn redo_exec(&mut self, proc: Proc) {
         self.set_evtproc(&proc.cur_s);
-        match proc.p_cmd {
-            P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::Cut => self.sel = proc.sel,
+        match proc.cmd.cmd_type {
+            CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Cut => self.sel = proc.sel,
             _ => {}
         }
-        match proc.p_cmd {
-            P_Cmd::DelNextChar | P_Cmd::DelPrevChar | P_Cmd::Cut => {
-                self.edit_proc(proc.p_cmd);
+        match proc.cmd.cmd_type {
+            CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Cut => {
+                self.edit_proc(proc.cmd);
             }
-            P_Cmd::InsertStr(_) => {
+            CmdType::InsertStr(_) => {
                 self.sel.clear();
-                self.edit_proc(P_Cmd::InsertStr(proc.str));
+                self.edit_proc(Cmd::to_cmd(CmdType::InsertStr(proc.str)));
             }
             _ => {}
         }
