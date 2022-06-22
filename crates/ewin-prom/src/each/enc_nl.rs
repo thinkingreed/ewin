@@ -9,39 +9,39 @@ use ewin_const::def::*;
 
 impl PromEncNl {
     pub fn new() -> Self {
-        let mut plugin = PromEncNl { base: PromBase { config: PromptConfig { is_updown_valid: true, ..PromptConfig::default() }, ..PromBase::default() } };
-        plugin.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().set_enc_nl.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
+        let mut prom = PromEncNl { base: PromBase { config: PromptConfig { is_updown_valid: true,  }, ..PromBase::default() } };
+        prom.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().set_enc_nl.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 
         let fixed = PromContKeyMenu { disp_str: Lang::get().fixed.to_string(), key: PromContKeyMenuType::Cmd(CmdType::Confirm) };
 
         let switch_area = PromContKeyMenu { disp_str: Lang::get().move_setting_location.to_string(), key: PromContKeyMenuType::create_cmds(vec![CmdType::NextContent, CmdType::CursorUp, CmdType::CursorDown, CmdType::CursorLeft, CmdType::CursorRight], &mut vec![CmdType::BackContent]) };
         let cancel = PromContKeyMenu { disp_str: Lang::get().cancel.to_string(), key: PromContKeyMenuType::Cmd(CmdType::CancelProm) };
-        plugin.base.cont_vec.push(Box::new(PromContKeyDesc { desc_vecs: vec![vec![fixed, switch_area, cancel]], ..PromContKeyDesc::default() }));
+        prom.base.cont_vec.push(Box::new(PromContKeyDesc { desc_vecs: vec![vec![fixed, switch_area, cancel]], ..PromContKeyDesc::default() }));
 
         let mut cont_choice = PromContChoice { is_disp: true, desc_str_vec: vec![Lang::get().method_of_apply.to_string()], vec: vec![vec![Choice::new(&Lang::get().file_reload), Choice::new(&Lang::get().keep_and_apply_string)]], vec_y: 0, vec_x: 0, ..PromContChoice::default() };
         cont_choice.set_shaping_choice_list();
-        plugin.base.cont_vec.push(Box::new(cont_choice));
-        plugin.base.curt_cont_idx = plugin.base.cont_vec.len() - 1;
+        prom.base.cont_vec.push(Box::new(cont_choice));
+        prom.base.curt_cont_idx = prom.base.cont_vec.len() - 1;
 
         let utf_vec = vec![Choice::new(&Encode::UTF8.to_string()), Choice::new(&Encode::UTF16LE.to_string()), Choice::new(&Encode::UTF16BE.to_string())];
         let local_vec = vec![Choice::new(&Encode::SJIS.to_string()), Choice::new(&Encode::JIS.to_string()), Choice::new(&Encode::EucJp.to_string()), Choice::new(&Encode::GBK.to_string())];
 
         let mut cont_choice = PromContChoice { is_disp: true, config: PromContChoiceConfig { is_multi_row: true }, desc_str_vec: vec![Lang::get().encoding.to_string()], vec: vec![utf_vec, local_vec], vec_y: 0, vec_x: 0, ..PromContChoice::default() };
         cont_choice.set_shaping_choice_list();
-        plugin.base.cont_vec.push(Box::new(cont_choice));
+        prom.base.cont_vec.push(Box::new(cont_choice));
 
         let nl_vec = vec![Choice::new(NEW_LINE_LF_STR), Choice::new(NEW_LINE_CRLF_STR)];
 
         let mut cont_choice = PromContChoice { desc_str_vec: vec![Lang::get().new_line_code.to_string()], vec: vec![nl_vec], vec_y: 0, vec_x: 0, ..PromContChoice::default() };
         cont_choice.set_shaping_choice_list();
-        plugin.base.cont_vec.push(Box::new(cont_choice));
+        prom.base.cont_vec.push(Box::new(cont_choice));
 
         let bom_vec = vec![Choice::new(&Lang::get().with), Choice::new(&Lang::get().without)];
-        let mut cont_choice = PromContChoice { desc_str_vec: vec![format!("{}{}", "BOM".to_string(), Lang::get().presence_or_absence.to_string())], vec: vec![bom_vec], vec_y: 0, vec_x: 0, ..PromContChoice::default() };
+        let mut cont_choice = PromContChoice { desc_str_vec: vec![format!("{}{}", "BOM", Lang::get().presence_or_absence)], vec: vec![bom_vec], vec_y: 0, vec_x: 0, ..PromContChoice::default() };
         cont_choice.set_shaping_choice_list();
-        plugin.base.cont_vec.push(Box::new(cont_choice));
+        prom.base.cont_vec.push(Box::new(cont_choice));
 
-        return plugin;
+        return prom;
     }
     pub fn set_default_choice_enc_nl(&mut self, h_file: &HeaderFile) {
         for prom_cont in self.base.cont_vec.iter_mut() {
@@ -54,11 +54,11 @@ impl PromEncNl {
                             prom.vec_y = y_idx;
                             prom.vec_x = x_idx;
                         }
-                        if prom.desc_str_vec[0] == Lang::get().new_line_code && h_file.nl.to_string() == choice.name {
+                        if prom.desc_str_vec[0] == Lang::get().new_line_code && h_file.nl == choice.name {
                             prom.vec_y = y_idx;
                             prom.vec_x = x_idx;
                         }
-                        if prom.desc_str_vec[0] == format!("{}{}", "BOM".to_string(), Lang::get().presence_or_absence.to_string()) {
+                        if prom.desc_str_vec[0] == format!("{}{}", "BOM", Lang::get().presence_or_absence) {
                             if None == h_file.bom {
                                 if choice.name == Lang::get().without {
                                     prom.vec_y = y_idx;
@@ -121,7 +121,7 @@ impl PromEncNl {
         let mut is_enable_click = false;
         for (i, cont) in self.as_mut_base().cont_vec.iter_mut().enumerate() {
             if let Ok(choice) = cont.downcast_mut::<PromContChoice>() {
-                if !(choice.desc_str_vec[0] == format!("{}{}", "BOM".to_string(), Lang::get().presence_or_absence.to_string()) && encoding_choice.disp_name != Encode::UTF8.to_string()) {
+                if !(choice.desc_str_vec[0] == format!("{}{}", "BOM", Lang::get().presence_or_absence) && encoding_choice.disp_name != Encode::UTF8.to_string()) {
                     is_enable_click = choice.click_choice(y, x);
                     if is_enable_click {
                         idx = i;

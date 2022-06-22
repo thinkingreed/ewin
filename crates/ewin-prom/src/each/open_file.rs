@@ -19,12 +19,12 @@ impl PromOpenFile {
     pub const OPEN_FILE_FIXED_PHRASE_ROW_NUM: usize = 5;
 
     pub fn new(open_file_type: &OpenFileType) -> Self {
-        let mut plugin = PromOpenFile { base: PromBase { config: PromptConfig { is_updown_valid: true, ..PromptConfig::default() }, ..PromBase::default() }, ..PromOpenFile::default() };
+        let mut prom = PromOpenFile { base: PromBase { config: PromptConfig { is_updown_valid: true,  }, ..PromBase::default() }, ..PromOpenFile::default() };
 
-        plugin.file_type = open_file_type.clone();
+        prom.file_type = *open_file_type;
 
-        plugin.base.cont_vec.push(Box::new(PromContInfo {
-            desc_str_vec: vec![match plugin.file_type {
+        prom.base.cont_vec.push(Box::new(PromContInfo {
+            desc_str_vec: vec![match prom.file_type {
                 OpenFileType::Normal => Lang::get().set_open_filenm.to_string(),
                 OpenFileType::JsMacro => Lang::get().set_exec_mocro_filenm.to_string(),
             }],
@@ -36,7 +36,7 @@ impl PromOpenFile {
         let selct = PromContKeyMenu { disp_str: Lang::get().select.to_string(), key: PromContKeyMenuType::Cmd(CmdType::MouseDownLeft(0, 0)) };
         let switch_area = PromContKeyMenu { disp_str: Lang::get().movement.to_string(), key: PromContKeyMenuType::create_cmds(vec![CmdType::NextContent, CmdType::CursorUp, CmdType::CursorDown, CmdType::CursorLeft, CmdType::CursorRight], &mut vec![CmdType::BackContent]) };
         let cancel = PromContKeyMenu { disp_str: Lang::get().cancel.to_string(), key: PromContKeyMenuType::Cmd(CmdType::CancelProm) };
-        plugin.base.cont_vec.push(Box::new(PromContKeyDesc { desc_vecs: vec![vec![open_file, selct, switch_area, cancel]], ..PromContKeyDesc::default() }));
+        prom.base.cont_vec.push(Box::new(PromContKeyDesc { desc_vecs: vec![vec![open_file, selct, switch_area, cancel]], ..PromContKeyDesc::default() }));
 
         let mut input_area = PromContInputArea { desc_str_vec: vec![Lang::get().filenm.to_string()], buf: vec![], config: PromInputAreaConfig { is_edit_proc_later: true, is_path: true, ..PromInputAreaConfig::default() }, ..PromContInputArea::default() };
 
@@ -61,15 +61,15 @@ impl PromOpenFile {
         input_area.cur.x = input_area.buf.len();
         input_area.cur.disp_x = get_str_width(&input_area.buf.iter().collect::<String>());
 
-        plugin.base.cont_vec.push(Box::new(input_area.clone()));
-        plugin.base.curt_cont_idx = plugin.base.cont_vec.len() - 1;
+        prom.base.cont_vec.push(Box::new(input_area));
+        prom.base.curt_cont_idx = prom.base.cont_vec.len() - 1;
 
-        plugin.base.cont_vec.push(Box::new(PromContFileList { desc_str_vec: vec![Lang::get().file_list.to_string()], ..PromContFileList::default() }));
-        plugin.set_file_list();
+        prom.base.cont_vec.push(Box::new(PromContFileList { desc_str_vec: vec![Lang::get().file_list.to_string()], ..PromContFileList::default() }));
+        prom.set_file_list();
         // let input_path = &plugin.as_mut_base().get_curt_input_area_str();
-        plugin.base_path = get_dir_path(&plugin.as_mut_base().get_tgt_input_area_str(0).replace(CONTINUE_STR, &plugin.omitted_path_str));
+        prom.base_path = get_dir_path(&prom.as_mut_base().get_tgt_input_area_str(0).replace(CONTINUE_STR, &prom.omitted_path_str));
 
-        return plugin;
+        return prom;
     }
 
     pub fn set_file_path(&mut self, path: &str) {

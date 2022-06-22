@@ -25,7 +25,7 @@ impl Editor {
             ConvType::Tab => tgt_str.replace(' ', &TAB_CHAR.to_string()),
         };
 
-        let cmd = Cmd::to_cmd(CmdType::InsertStr(convert_str.clone()));
+        let cmd = Cmd::to_cmd(CmdType::InsertStr(convert_str));
         self.set_cmd(cmd.clone());
         self.edit_proc(cmd);
 

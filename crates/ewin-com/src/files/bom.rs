@@ -2,8 +2,6 @@ extern crate ropey;
 use crate::model::*;
 use encoding_rs::Encoding;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-#[cfg(target_os = "windows")]
-use regex::Regex;
 use std::io::{BufReader, Read};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

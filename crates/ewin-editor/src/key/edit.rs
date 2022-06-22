@@ -42,6 +42,7 @@ impl Editor {
         change_nl(&mut clipboard, &self.h_file.nl);
 
         if self.box_insert.mode == BoxInsertMode::Normal {
+            Log::debug_key("11111111111111111111111111111");
             // Paste of the string copied in box insert mode
             if self.box_insert.get_str(&NL::get_nl(&self.h_file.nl)) == clipboard {
                 ep.box_sel_vec = self.box_insert.vec.clone();
@@ -60,6 +61,7 @@ impl Editor {
         false
     }
     pub fn set_clipboard_and_clear_box_sel(&mut self, ep: &mut Proc, clipboard: String) {
+        Log::debug_key("set_clipboard_and_clear_box_sel");
         self.box_insert.clear_clipboard();
         ep.str = clipboard;
         ep.box_sel_vec.clear();

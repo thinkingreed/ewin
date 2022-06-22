@@ -1,4 +1,4 @@
-use super::keys::{Key, Keys};
+use super::keys::{Key, *};
 use crate::{_cfg::key::keywhen::*, global::*, model::*, util::*};
 use ewin_cfg::model::modal::*;
 use ewin_const::def::*;
@@ -100,7 +100,7 @@ impl Cmd {
             "cursorPageUp" => CmdType::CursorPageUp,
             "cursorPageDown" => CmdType::CursorPageDown,
 
-            "paste" => CmdType::Paste,
+            "paste" => CmdType::InsertStr("".to_string()),
             "cut" => CmdType::Cut,
             "copy" => CmdType::Copy,
             "findNext" => CmdType::FindNext,
@@ -169,7 +169,7 @@ impl Cmd {
     pub fn to_cmd(cmd_type: CmdType) -> Cmd {
         return match cmd_type {
             // edit
-            CmdType::InsertStr(_) | CmdType::Paste | CmdType::Cut | CmdType::InsertRow | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::InsertBox(_) | CmdType::DelBox(_) | CmdType::ReplaceExec(_, _, _) | CmdType::Format(_) => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor, KeyWhen::Prom], config: CmdConfig { is_edit: true, is_record: true } },
+            CmdType::InsertStr(_) | CmdType::Cut | CmdType::InsertRow | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::InsertBox(_) | CmdType::DelBox(_) | CmdType::ReplaceExec(_, _, _) | CmdType::Format(_) => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor, KeyWhen::Prom], config: CmdConfig { is_edit: true, is_record: true } },
             // key macro
             CmdType::RecordKeyStartEnd => Cmd { cmd_type, ..Cmd::default() },
             CmdType::ExecRecordKey => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor], config: CmdConfig { is_edit: true, ..CmdConfig::default() } },
@@ -202,7 +202,6 @@ impl Cmd {
             CmdType::CloseAllFile => Cmd { cmd_type, ..Cmd::default() },
             CmdType::ReOpenFile => Cmd { cmd_type, ..Cmd::default() },
             // menu
-            CmdType::Help => Cmd { cmd_type, ..Cmd::default() },
             CmdType::HelpInitDisplaySwitch => Cmd { cmd_type, ..Cmd::default() },
             CmdType::OpenMenuFile | CmdType::OpenMenuConvert | CmdType::OpenMenuEdit | CmdType::OpenMenuSearch | CmdType::OpenMenuMacro => Cmd { cmd_type, ..Cmd::default() },
             // ContextMenu
@@ -210,7 +209,7 @@ impl Cmd {
             /*
              * Editor
              */
-            CmdType::CreateNewFile | CmdType::InputComple | CmdType::CancelEditorState | CmdType::SaveFile | CmdType::SwitchTabLeft | CmdType::SwitchTabRight => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor], ..Cmd::default() },
+            CmdType::CreateNewFile | CmdType::InputComple | CmdType::CancelEditorState | CmdType::SaveFile | CmdType::SwitchTabLeft | CmdType::SwitchTabRight | CmdType::Help => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor], ..Cmd::default() },
             /*
              * Display
              */
@@ -268,7 +267,6 @@ pub enum CmdType {
     Cut,
     DelNextChar,
     DelPrevChar,
-    Paste,
     Copy,
     Undo,
     Redo,

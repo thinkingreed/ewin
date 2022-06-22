@@ -1,6 +1,5 @@
 #![allow(clippy::needless_return, clippy::iter_nth_zero)]
 use clap::Parser;
-use crossbeam::channel::Sender;
 use crossterm::event::{Event::Mouse, EventStream, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind};
 use ewin_cfg::{
     global::*,
@@ -9,14 +8,18 @@ use ewin_cfg::{
     model::{default::*, modal::*},
 };
 use ewin_com::{
-    _cfg::key::{keybind::*, keys::Keys},
+    _cfg::key::{keybind::*, keys::*},
     global::*,
     model::*,
     util::*,
 };
 use ewin_term::model::*;
 use futures::{future::FutureExt, StreamExt};
-use std::{io::*, panic, time::Duration};
+use std::{
+    io::*,
+    panic,
+    sync::mpsc::{channel, Sender},
+};
 mod watch_file;
 use watch_file::*;
 
@@ -64,12 +67,11 @@ async fn main() {
     term.activate(&args);
     term.init_draw(&mut out);
 
-    let (tx, rx) = crossbeam::channel::unbounded(); // PriorityChannel::<Job, usize>::init(false);
+    let (tx, rx) = channel();
 
     // If it is processed asynchronously, the line number of the matched file in the grep process will shift,
     // so it will be executed synchronously.
-    let (tx_grep, rx_grep) = std::sync::mpsc::channel();
-    let _ = TX_JOB.set(tokio::sync::Mutex::new(std::sync::mpsc::Sender::clone(&tx_grep)));
+    let _ = TX_JOB.set(tokio::sync::Mutex::new(Sender::clone(&tx)));
     let tx_watch = Sender::clone(&tx);
 
     // It also reads a normal Event to support cancellation.
@@ -88,30 +90,23 @@ async fn main() {
 
     watching_file(tx_watch);
 
-    loop {
-        if let Ok(job) = rx.recv_timeout(Duration::from_millis(16)) {
-            match job.job_type {
-                JobType::Event => {
-                    let keys = Keys::evt_to_keys(&job.job_evt.unwrap().evt);
-                    if EvtAct::match_event(keys, &mut out, &mut term) {
-                        break;
-                    }
-                    term.keys_org = keys;
+    for job in rx {
+        match job.job_type {
+            JobType::Event => {
+                let keys = Keys::evt_to_keys(&job.job_evt.unwrap().evt);
+                if EvtAct::match_event(keys, &mut out, &mut term) {
+                    break;
                 }
-                JobType::Watch => {
-                    if let Some(job_watch) = job.job_watch {
-                        if EvtAct::draw_watch_file(&mut out, &mut term) {
-                            WATCH_INFO.get().unwrap().try_lock().map(|mut watch_info| watch_info.history_set.remove(&(job_watch.fullpath_str, job_watch.unixtime_str))).unwrap();
-                        }
+                term.keys_org = keys;
+            }
+            JobType::Watch => {
+                if let Some(job_watch) = job.job_watch {
+                    if EvtAct::draw_watch_file(&mut out, &mut term) {
+                        WATCH_INFO.get().unwrap().try_lock().map(|mut watch_info| watch_info.history_set.remove(&(job_watch.fullpath_str, job_watch.unixtime_str))).unwrap();
                     }
                 }
-                JobType::GrepResult => {}
             }
-        }
-        if let Ok(job) = rx_grep.recv_timeout(Duration::from_millis(16)) {
-            if job.job_type == JobType::GrepResult {
-                EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap());
-            }
+            JobType::GrepResult => EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap()),
         }
     }
     Terminal::exit();

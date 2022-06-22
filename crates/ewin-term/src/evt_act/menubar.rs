@@ -3,7 +3,6 @@ use crate::{
     ewin_com::{_cfg::key::keys::*, model::*},
     model::*,
 };
-use convert_case::{Case, Casing};
 use ewin_cfg::{global::*, lang::lang_cfg::*, log::*, model::modal::*};
 use ewin_com::{
     _cfg::key::{cmd::*, keybind::*},
@@ -24,9 +23,7 @@ impl EvtAct {
                     let (is_select, i) = term.menubar.is_menubar_displayed_area(y, x);
                     if is_select {
                         term.menubar.sel_idx = i;
-
                         MenuBar::init_menubar(term, y);
-                        // return ActType::Draw(DParts::All);
                         return ActType::Draw(DParts::MenuWidget);
                     }
                 } else if term.menubar.widget.curt.is_mouse_within_area(y, x) {
@@ -131,7 +128,6 @@ impl EvtAct {
         let parent_name = get_cfg_lang_name(parent_name);
         let child_name = get_cfg_lang_name(child_name);
 
-        Log::debug_s(&Lang::get().convert);
         // grandchild_name
         // convert
         if child_name.contains(&Lang::get().convert) {
@@ -142,7 +138,7 @@ impl EvtAct {
         }
 
         // parent_name
-        if get_cfg_lang_name(&parent_name).contains(&Lang::get().file) {
+        if get_cfg_lang_name(parent_name).contains(&Lang::get().file) {
             if child_name.contains(&Lang::get().encode) {
                 term.curt().editor.cmd = Cmd::to_cmd(CmdType::EncodingProm);
                 return EvtAct::ctrl_editor(term);
@@ -175,15 +171,21 @@ impl EvtAct {
                 term.curt().clear_curt_tab(true);
                 return ActType::Draw(DParts::AllMsgBar(Lang::get().no_sel_range.to_string()));
             }
-            // macros
-        } else if parent_name.contains(&Lang::get().macros) {
-            if child_name.contains(&Lang::get().specify_file_and_exec_macro) {
-                term.curt().prom_open_file(&OpenFileType::JsMacro);
-            } else {
-                unreachable!();
+            // display
+        } else if parent_name.contains(&Lang::get().display) {
+            Log::debug_key("11111111111111111111111111111111111");
+            if child_name.contains(&Lang::get().scale) {
+                Log::debug_key("222222222222222222222222222222222");
+                let cmd = Cmd::to_cmd(CmdType::SwitchDispScale);
+                term.cmd = cmd;
+                return EvtAct::ctrl_editor(term);
             }
+            // macros
+        } else if parent_name.contains(&Lang::get().macros) && child_name.contains(&Lang::get().specify_file_and_exec_macro) {
+            term.curt().prom_open_file(&OpenFileType::JsMacro);
         }
 
+        /*
         // child_name
         if LANG_MAP.contains_key(&child_name.to_case(Case::Snake)) {
             Log::debug_s("LANG_MAP.contains_key");
@@ -192,6 +194,7 @@ impl EvtAct {
             term.cmd = cmd;
             return EvtAct::ctrl_editor(term);
         }
+         */
 
         return ActType::Draw(DParts::All);
     }

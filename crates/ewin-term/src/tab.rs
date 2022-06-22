@@ -76,7 +76,7 @@ impl Tab {
     pub fn prom_show_com(&mut self, cmd_type: &CmdType) -> ActType {
         Log::debug_key("Tab::prom_show_com");
         Log::debug("cmd_type", &cmd_type);
-        self.prom.row_bottom_posi = get_term_size().1 - STATUSBAR_ROW_NUM - if get_help().is_disp { get_help().row_num } else { 0 };
+        self.prom.row_bottom_posi = get_term_size().1 - STATUSBAR_ROW_NUM - if HELP_DISP.get().unwrap().try_lock().unwrap().is_disp { HELP_DISP.get().unwrap().try_lock().unwrap().row_num } else { 0 };
         match cmd_type {
             CmdType::FindProm => return self.prom_search(),
             CmdType::ReplaceProm => return self.prom_replace(),
@@ -85,7 +85,7 @@ impl Tab {
             CmdType::GrepResultProm => return self.prom_grep_result(),
             CmdType::MoveRowProm => return self.prom_move_row(),
             CmdType::EncodingProm => return self.prom_enc_nl(),
-            CmdType::openFileProm(open_file_type) => return self.prom_open_file(&open_file_type),
+            CmdType::openFileProm(open_file_type) => return self.prom_open_file(open_file_type),
             CmdType::CloseFile => return self.prom_save_confirm(),
             CmdType::SaveNewFile => return self.prom_save_new_file(),
             CmdType::Saveforced => return self.prom_save_forced(),

@@ -5,6 +5,7 @@ use crate::{
         global::*,
         model::*,
     },
+    global_term::*,
     model::*,
 };
 use crossterm::{cursor::MoveTo, execute};
@@ -54,7 +55,7 @@ impl EvtAct {
                     term.draw(out, draw_parts);
                 }
                 DParts::Editor(_) => term.draw(out, draw_parts),
-                DParts::StatusBar => StatusBar::draw_only(out, &mut term.tabs[term.tab_idx], &FileBar::get_tgt_h_file(term.tab_idx)),
+                DParts::StatusBar => StatusBar::draw_only(out, &mut term.tabs[term.tab_idx], H_FILE_VEC.get().unwrap().try_lock().unwrap().get(term.tab_idx).unwrap()),
                 DParts::Absolute(range) => {
                     // FileBar
                     if range.contains(&term.fbar.row_posi) {
@@ -119,7 +120,6 @@ impl EvtAct {
         term.curt().msgbar.set_org_state();
         term.menubar.redraw_menubar_on_mouse(&keys);
 
-        let cmd = term.cmd.clone();
         match term.keywhen {
             KeyWhen::CtxMenu => {
                 term.ctx_widget.set_ctx_menu_cmd(term.cmd.clone());

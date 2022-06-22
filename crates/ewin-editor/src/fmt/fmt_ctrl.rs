@@ -48,7 +48,7 @@ impl Editor {
             _ => todo!(),
         };
 
-        self.cmd = Cmd::to_cmd(CmdType::InsertStr(format_str.clone()));
+        self.cmd = Cmd::to_cmd(CmdType::InsertStr(format_str));
         self.edit_proc(self.cmd.clone());
 
         Ok(())

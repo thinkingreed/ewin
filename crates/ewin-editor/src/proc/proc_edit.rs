@@ -21,7 +21,6 @@ impl Editor {
 
         // selected range delete
         Log::debug("self.sel.is_selected_width()", &self.sel.is_selected_width());
-        Log::debug("self.cmd_config.is_edit", &self.cmd.config.is_edit);
         if self.sel.is_selected_width() && self.cmd.config.is_edit {
             Log::debug("is_selected", &true);
             proc_del = Proc { cmd: if cmd.cmd_type == CmdType::DelNextChar { Cmd::to_cmd(CmdType::DelNextChar) } else { Cmd::to_cmd(CmdType::DelPrevChar) }, ..Proc::default() };
@@ -92,7 +91,9 @@ impl Editor {
         // Register edit history
         if self.cmd.cmd_type != CmdType::Undo && self.cmd.cmd_type != CmdType::Redo {
             self.history.clear_redo_vec();
+            Log::debug("self.history.undo_vec.len() 111", &self.history.undo_vec.len());
             self.history.undo_vec.push(evt_proc);
+            Log::debug("self.history.undo_vec.len() 222", &self.history.undo_vec.len());
         }
 
         self.scroll();
@@ -191,6 +192,7 @@ impl Editor {
     }
 
     pub fn edit_proc_set_insert_str(&mut self, str: &str, proc: &mut Proc) {
+        Log::debug_key("edit_proc_set_insert_str");
         if self.box_insert.mode == BoxInsertMode::Insert {
             // paste
             if str.is_empty() {

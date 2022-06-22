@@ -86,7 +86,7 @@ impl Terminal {
         if &DParts::All == draw_parts || matches!(draw_parts, &DParts::ScrollUpDown(_)) {
             self.menubar.draw(&mut str_vec);
             FileBar::draw(self, &mut str_vec);
-            self.help.draw(&mut str_vec);
+            HELP_DISP.get().unwrap().try_lock().unwrap().draw(&mut str_vec);
             let state = &self.curt().state.clone();
             self.curt().prom.draw(&mut str_vec, state);
         }
@@ -110,7 +110,7 @@ impl Terminal {
         Log::debug("offset_disp_x", &self.curt().editor.offset_disp_x);
         Log::debug("offset_y", &self.curt().editor.offset_y);
         Log::debug("offset_y_org", &self.curt().editor.offset_y_org);
-        // Log::debug("history.undo_vec", &self.curt().editor.history.undo_vec);
+        Log::debug("history.undo_vec", &self.curt().editor.history.undo_vec);
         // Log::debug("self.curt().state.key_record_state", &self.curt().state.key_record_state);
         //  Log::debug("self.curt().state", &self.curt().state);
         // Log::debug("sel_range", &self.curt().editor.sel);
@@ -163,11 +163,9 @@ impl Terminal {
             }
 
             Terminal::show_cur();
-        } else if self.curt().state.prom != PromState::None {
-            if self.curt().prom.curt.as_mut_base().is_draw_cur() {
-                self.curt().prom.draw_cur(&mut str_vec);
-                Terminal::show_cur();
-            }
+        } else if self.curt().state.prom != PromState::None && self.curt().prom.curt.as_mut_base().is_draw_cur() {
+            self.curt().prom.draw_cur(&mut str_vec);
+            Terminal::show_cur();
         }
         if !str_vec.is_empty() {
             let _ = out.write(str_vec.concat().as_bytes());
@@ -230,11 +228,13 @@ impl Terminal {
         self.fbar.set_posi(cols);
         FileBar::set_filenm(self);
 
-        self.help.col_num = cols;
-        self.help.row_num = if self.help.is_disp { Help::DISP_ROW_NUM } else { 0 };
-        self.help.row_posi = if self.help.is_disp { rows - self.help.row_num } else { 0 };
+        let mut hlep = HELP_DISP.get().unwrap().try_lock().unwrap();
 
-        let help_disp_row_num = if self.help.row_num > 0 { self.help.row_num + 1 } else { 0 };
+        hlep.col_num = cols;
+        hlep.row_num = if hlep.is_disp { Help::DISP_ROW_NUM } else { 0 };
+        hlep.row_posi = if hlep.is_disp { rows - hlep.row_num } else { 0 };
+
+        let help_disp_row_num = if hlep.row_num > 0 { hlep.row_num + 1 } else { 0 };
         self.curt().sbar.row_posi = if help_disp_row_num == 0 { rows - 1 } else { rows - help_disp_row_num };
         self.curt().sbar.col_num = cols;
         self.curt().prom.col_num = cols;
@@ -245,12 +245,12 @@ impl Terminal {
             return false;
         }
         */
-        self.curt().prom.row_posi = rows - self.curt().prom.row_num - self.help.row_num - self.curt().sbar.row_num;
+        self.curt().prom.row_posi = rows - self.curt().prom.row_num - hlep.row_num - self.curt().sbar.row_num;
 
         self.curt().msgbar.col_num = cols;
         self.curt().msgbar.row_num = MSGBAR_ROW_NUM; //if self.curt().mbar.msg.str.is_empty() { 0 } else { 1 };
 
-        self.curt().msgbar.row_posi = rows - self.curt().prom.row_num - self.help.row_num - self.curt().sbar.row_num - 1;
+        self.curt().msgbar.row_posi = rows - self.curt().prom.row_num - hlep.row_num - self.curt().sbar.row_num - 1;
         self.menubar.row_num = if self.curt().state.prom == PromState::OpenFile { 0 } else { MSGBAR_ROW_NUM };
 
         self.curt().editor.row_posi = Editor::get_row_posi();
@@ -260,7 +260,7 @@ impl Terminal {
         self.curt().editor.row_len = if self.curt().state.prom == PromState::OpenFile {
             0
         } else {
-            rows - if CfgEdit::get().general.editor.scale.is_enable { 1 } else { 0 } - self.menubar.row_num - self.fbar.row_num - self.curt().msgbar.row_num - self.curt().prom.row_num - self.help.row_num - self.curt().sbar.row_num
+            rows - if CfgEdit::get().general.editor.scale.is_enable { 1 } else { 0 } - self.menubar.row_num - self.fbar.row_num - self.curt().msgbar.row_num - self.curt().prom.row_num - hlep.row_num - self.curt().sbar.row_num
         };
         Log::debug("editor.row_len after", &self.curt().editor.row_len);
 
@@ -437,6 +437,7 @@ impl Terminal {
         let _ = global_term::TAB.set(tokio::sync::Mutex::new(Tab::new()));
         let _ = WATCH_INFO.set(tokio::sync::Mutex::new(WatchInfo::default()));
         let _ = H_FILE_VEC.set(tokio::sync::Mutex::new(vec![]));
+        let _ = HELP_DISP.set(tokio::sync::Mutex::new(Help::default()));
         self.open_file(&args.filenm, FileOpenType::First, Some(&mut Tab::new()), None);
         self.ctx_widget.init();
         self.menubar.init();
@@ -469,7 +470,8 @@ impl Terminal {
         self.tabs.push(tab.clone());
         self.editor_draw_vec.push(EditorDraw::default());
 
-        FileBar::push_h_file_vec(h_file.clone());
+        // FileBar::push_h_file_vec(h_file.clone());
+        H_FILE_VEC.get().unwrap().try_lock().map(|mut vec| vec.push(h_file.clone())).unwrap();
         self.fbar.disp_base_idx = USIZE_UNDEFINED;
 
         self.init_tab(&h_file, file_open_type);
@@ -492,7 +494,7 @@ impl Terminal {
 
     pub fn reopen_tab(&mut self, tab: Tab, h_file: HeaderFile, file_open_type: FileOpenType) {
         // tab.idx = self.tab_idx;
-        self.tabs[self.tab_idx] = tab.clone();
+        self.tabs[self.tab_idx] = tab;
         self.editor_draw_vec[self.tab_idx].clear();
         H_FILE_VEC.get().unwrap().try_lock().unwrap()[self.tab_idx] = h_file.clone();
         self.init_tab(&h_file, file_open_type);
@@ -740,7 +742,7 @@ impl Terminal {
 
 impl Default for Terminal {
     fn default() -> Self {
-        Terminal { draw_parts_org: DParts::All, cmd: Cmd::default(), keys: Keys::Null, keys_org: Keys::Null, keywhen: KeyWhen::All, fbar: FileBar::new(), menubar: MenuBar::new(), tabs: vec![], editor_draw_vec: vec![], tab_idx: 0, help: Help::new(), state: TerminalState::default(), ctx_widget: CtxWidget::default() }
+        Terminal { draw_parts_org: DParts::All, cmd: Cmd::default(), keys: Keys::Null, keys_org: Keys::Null, keywhen: KeyWhen::All, fbar: FileBar::new(), menubar: MenuBar::new(), tabs: vec![], editor_draw_vec: vec![], tab_idx: 0, state: TerminalState::default(), ctx_widget: CtxWidget::default() }
     }
 }
 

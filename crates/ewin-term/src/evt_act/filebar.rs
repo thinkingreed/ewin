@@ -1,4 +1,4 @@
-use crate::{ewin_com::model::*, global_term::H_FILE_VEC, model::*};
+use crate::{ewin_com::model::*, global_term::*, model::*};
 use ewin_cfg::log::*;
 use ewin_com::_cfg::key::{cmd::*, keybind::*};
 use ewin_const::def::*;

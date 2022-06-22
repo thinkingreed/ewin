@@ -1,4 +1,4 @@
-use crate::{bar::filebar::FileBar, ewin_com::model::*, global_term::H_FILE_VEC, model::*};
+use crate::{ewin_com::model::*, global_term::*, model::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
 use ewin_com::{_cfg::key::cmd::CmdType, files::bom::*};
 use ewin_prom::{cont::parts::choice::*, each::enc_nl::*};
@@ -36,7 +36,7 @@ impl EvtAct {
                 let nl = term.curt().prom.curt.as_mut_base().get_tgt_cont(4).unwrap().downcast_mut::<PromContChoice>().unwrap().get_choice();
                 let bom = term.curt().prom.curt.as_mut_base().get_tgt_cont(5).unwrap().downcast_mut::<PromContChoice>().unwrap().get_choice();
 
-                let h_file_org = FileBar::get_tgt_h_file(term.tab_idx).clone();
+                let h_file_org = H_FILE_VEC.get().unwrap().try_lock().unwrap().get(term.tab_idx).unwrap().clone();
 
                 if method_of_apply.name == Lang::get().file_reload {
                     let result = term.tabs[term.tab_idx].editor.reload_with_specify_encoding(&mut H_FILE_VEC.get().unwrap().try_lock().unwrap()[term.tab_idx], &encoding.name);
@@ -68,7 +68,7 @@ impl EvtAct {
                     let encode = Encode::from_name(&encoding.name);
                     H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap().enc = encode;
                     H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap().bom = Bom::get_select_item_bom(&encode, &bom.name);
-                    H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap().nl = nl.name.to_string();
+                    H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap().nl = nl.name;
                     Log::debug("term.curt_h_file()", &H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap());
                 }
                 term.curt().clear_curt_tab(true);

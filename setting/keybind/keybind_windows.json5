@@ -50,13 +50,13 @@
   },
   {
     key: 'up', cmd: 'cursorUp'
-  },
+   },
   {
     key: 'home', cmd: 'cursorRowHome'
-  },
+ },
   {
     key: 'end', cmd: 'cursorRowEnd'
-  },
+   },
   {
     key: 'ctrl+home', cmd: 'cursorFileHome'
   },
@@ -68,7 +68,7 @@
   },
   {
     key: 'pageup', cmd: 'cursorPageUp'
-  },
+   },
   /*
    * select
    */
@@ -115,10 +115,10 @@
     key: 'delete', cmd: 'deleteNextChar'
   },
   {
-    key: 'ctrl+x', cmd: 'cutSelect'
+    key: 'ctrl+x', cmd: 'cut'
   },
   {
-    key: 'ctrl+c', cmd: 'copySelect'
+    key: 'ctrl+c', cmd: 'copy'
   },
   {
     key: 'ctrl+v', cmd: 'paste'
@@ -138,14 +138,8 @@
   {
     key: 'F3', cmd: 'findNext'
   },
-    {
-    key: 'F3', cmd: 'findNext'
-  },
   {
     key: 'shift+F3', cmd: 'findBack'
-  },
-  {
-    key: 'shift+F4', cmd: 'findBack'
   },
   {
     key: 'ctrl+r', cmd: 'replacePrompt'
@@ -163,7 +157,7 @@
     key: 'ctrl+w', cmd: 'closeFile'
   },
   {
-    key: 'ctrl+n', cmd: 'create_new_file'
+    key: 'ctrl+n', cmd: 'createNewFile'
   },
   {
     key: 'ctrl+o', cmd: 'openFilePrompt'
@@ -199,7 +193,7 @@
    * mouse
    */
   {
-    key: 'F12', cmd: 'mouseOpeSwitch'
+    key: 'F12', cmd: 'mouseModeSwitch'
   },
   /*
    * menu
@@ -209,6 +203,9 @@
   },
   {
     key: 'alt+F1', cmd: 'helpInitDisplaySwitch'
+  },
+  {
+    key: 'alt+m', cmd: 'openMenu'
   },
   {
     key: 'alt+f', cmd: 'openMenuFile'
@@ -230,16 +227,19 @@
     key: 'esc', cmd: 'cancelPrompt'
   },
   {
-    key: 'enter', cmd: 'confirmPrompt'
+    key: 'enter', cmd: 'confirm'
+  },
+  {
+    key: 'tab', cmd: 'nextContent'
   },
    {
-    key: 'tab', cmd: 'switchContent'
+    key: 'shift+tab', cmd: 'backContent'
   },
   {
     key: 'alt+c', cmd: 'findCaseSensitive'
   },
   {
-    key: 'alt+r', cmd: 'findRegex'
+    key: 'alt+r',  cmd: 'findRegex'
   },
   {
     key: 'F10', cmd: 'contextMenu'

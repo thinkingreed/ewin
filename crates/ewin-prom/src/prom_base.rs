@@ -281,13 +281,13 @@ impl PromBase {
                 };
                 is_next = self.cmd.cmd_type == CmdType::CursorDown || self.cmd.cmd_type == CmdType::NextContent
             }
-        } else if let Ok(_) = curt_cont.downcast_ref::<PromContPulldown>() {
+        } else if curt_cont.downcast_ref::<PromContPulldown>().is_ok() {
             match self.cmd.cmd_type {
                 CmdType::CursorUp | CmdType::CursorDown | CmdType::NextContent | CmdType::BackContent => {}
                 _ => return ActType::Next,
             };
             is_next = self.cmd.cmd_type == CmdType::CursorDown || self.cmd.cmd_type == CmdType::NextContent
-        } else if let Ok(_) = curt_cont.downcast_ref::<PromContFileList>() {
+        } else if curt_cont.downcast_ref::<PromContFileList>().is_ok() {
             return ActType::Next;
         };
         Log::debug("is_next", &is_next);

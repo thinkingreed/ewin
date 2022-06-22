@@ -7,7 +7,6 @@ use crate::{
 };
 use crossterm::{cursor::*, terminal::*};
 use ewin_cfg::{colors::*, log::*};
-use ewin_com::global::*;
 use ewin_const::def::*;
 
 impl FileBar {
@@ -58,7 +57,7 @@ impl FileBar {
 
     pub fn set_filenm(term: &mut Terminal) {
         let mut tmp_all_vec: Vec<(usize, String)> = vec![];
-        if FileBar::h_file_vec_len() == 0 {
+        if H_FILE_VEC.get().unwrap().try_lock().unwrap().len() == 0 {
             return;
         }
         let disp_base_idx = if term.fbar.disp_base_idx == USIZE_UNDEFINED { 0 } else { term.fbar.disp_base_idx };
@@ -68,9 +67,9 @@ impl FileBar {
         let mut max_len = FileBar::FILENM_LEN_LIMMIT;
         let cols = get_term_size().0;
         Log::debug("cols", &cols);
-        let left_allow_len = if FileBar::h_file_vec_len() == 1 { 0 } else { FileBar::ALLOW_BTN_WITH };
+        let left_allow_len = if H_FILE_VEC.get().unwrap().try_lock().unwrap().len() == 1 { 0 } else { FileBar::ALLOW_BTN_WITH };
 
-        Log::debug("hbar.file_vec.len()", &FileBar::h_file_vec_len());
+        Log::debug("hbar.file_vec.len()", &H_FILE_VEC.get().unwrap().try_lock().unwrap().len());
 
         let rest_len = cols - FileBar::MENU_BTN_WITH - 1 - left_allow_len - FileBar::FILENM_MARGIN;
         Log::debug("rest_len", &rest_len);
@@ -139,7 +138,7 @@ impl FileBar {
             disp_vec.reverse();
         }
 
-        if disp_vec.last().unwrap().0 != FileBar::h_file_vec_len() - 1 {
+        if disp_vec.last().unwrap().0 != H_FILE_VEC.get().unwrap().try_lock().unwrap().len() - 1 {
             term.fbar.is_right_arrow_disp = true;
         }
 
@@ -186,16 +185,6 @@ impl FileBar {
             h_file.close_area = (USIZE_UNDEFINED, USIZE_UNDEFINED);
             h_file.is_disp = false;
         }
-    }
-
-    pub fn push_h_file_vec(h_file: HeaderFile) {
-        H_FILE_VEC.get().unwrap().try_lock().map(|mut vec| vec.push(h_file)).unwrap();
-    }
-    pub fn get_tgt_h_file(idx: usize) -> HeaderFile {
-        return H_FILE_VEC.get().unwrap().try_lock().unwrap().get(idx).unwrap().clone();
-    }
-    pub fn h_file_vec_len() -> usize {
-        return H_FILE_VEC.get().unwrap().try_lock().unwrap().len();
     }
 
     pub fn new() -> Self {

@@ -1,6 +1,6 @@
 use crate::{ewin_com::model::*, model::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
+use ewin_com::_cfg::key::cmd::*;
 
 impl Editor {
     pub fn undo(&mut self) -> ActType {
@@ -55,13 +55,13 @@ impl Editor {
         }
     }
     pub fn undo_exec(&mut self, proc: &Proc) {
-        let _ = match &proc.cmd.cmd_type {
-            CmdType::InsertRow => self.edit_proc(proc.cmd.clone()),
+        match &proc.cmd.cmd_type {
+            CmdType::InsertRow => self.edit_proc(Cmd::to_cmd(CmdType::DelNextChar)),
             CmdType::InsertStr(_) => {
                 if proc.box_sel_vec.is_empty() {
                     // Set paste target with sel
                     self.sel = proc.sel;
-                    self.edit_proc(proc.cmd.clone())
+                    self.edit_proc(Cmd::to_cmd(CmdType::DelNextChar))
                 } else {
                     self.edit_proc(Cmd::to_cmd(CmdType::DelBox(proc.box_sel_vec.clone())))
                 }
@@ -138,7 +138,7 @@ impl Editor {
             CmdType::InsertRow => self.edit_proc(proc.cmd),
             CmdType::InsertStr(_) => {
                 if proc.box_sel_vec.is_empty() {
-                    self.edit_proc(Cmd::to_cmd(CmdType::InsertStr(proc.str.clone())))
+                    self.edit_proc(proc.cmd)
                 } else {
                     self.edit_proc(Cmd::to_cmd(CmdType::InsertBox(proc.box_sel_redo_vec.clone())))
                 }

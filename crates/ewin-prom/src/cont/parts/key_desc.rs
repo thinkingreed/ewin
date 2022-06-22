@@ -17,11 +17,6 @@ impl PromContPluginTrait for PromContKeyDesc {
                     PromContKeyMenuType::Cmd(cmd_type) => {
                         s.push_str(&format!("{}{}:{}{} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), PromContKeyMenu::get_str(cmd_type)));
                     }
-                    /*
-                    PromContKeyMenuType::ECmd(cmd_type) => {
-                        s.push_str(&format!("{}{}:{}{} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), Keybind::get_key_str_cmd(cmd_type)));
-                    }
-                     */
                     PromContKeyMenuType::PCmdAndStr(cmd_type, string) => {
                         s.push_str(&format!("{}{}:{}{} {} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), PromContKeyMenu::get_str(cmd_type), string));
                     }
@@ -31,7 +26,7 @@ impl PromContPluginTrait for PromContKeyDesc {
                         for cmd_type in show_cmd_vec {
                             s.push_str(&format!(" {}", PromContKeyMenu::get_str(cmd_type)));
                         }
-                        s.push_str(" ");
+                        s.push(' ');
                     }
                     PromContKeyMenuType::OneChar(c) => {
                         s.push_str(&format!("{}{}:{}{} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), c));
@@ -65,7 +60,7 @@ impl PromContPluginTrait for PromContKeyDesc {
                             CmdType::InsertStr(s) if s.to_lowercase() == c.to_lowercase() => return true,
                             _ => {}
                         };
-                    } // PromContKeyMenuType::ECmd(_) => {}
+                    }
                 };
             }
         }

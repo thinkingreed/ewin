@@ -26,9 +26,9 @@ impl Editor {
             if self.offset_disp_x <= self.cur.disp_x && self.cur.disp_x <= self.offset_disp_x + self.col_len {
                 let tgt_1 = &scale_str[..scale_str.char_indices().nth(self.cur.disp_x - self.offset_disp_x).unwrap().0];
                 let tgt_2 = &scale_str[scale_str.char_indices().nth(self.cur.disp_x - self.offset_disp_x + 1).unwrap().0..];
-                str_vec.push(format!("{}{}", tgt_1.to_string(), Colors::get_default_fg(),));
+                str_vec.push(format!("{}{}", tgt_1, Colors::get_default_fg(),));
                 str_vec.push("|".to_string());
-                str_vec.push(format!("{}{}", Colors::get_scale_fg(), tgt_2.to_string()));
+                str_vec.push(format!("{}{}", Colors::get_scale_fg(), tgt_2));
             } else {
                 str_vec.push(scale_str);
             }
@@ -72,7 +72,6 @@ impl Editor {
 
         for i in div + 1..=last_idx {
             let i_str = if is_unexpected_length { "".to_string() } else { i.to_string() };
-            Log::debug("i_str", &i_str);
             let rest_str = &fixed_str.chars().collect::<Vec<char>>()[i_str.chars().count()..].iter().collect::<String>();
             let mut join_str = format!("{}{}", &i_str, &rest_str);
             if i == last_idx {

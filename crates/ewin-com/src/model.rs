@@ -34,32 +34,17 @@ pub struct EvtProc {
 #[derive(Debug, Clone, PartialEq, Eq)]
 // Process
 pub struct Proc {
-    // pub e_cmd: E_Cmd,
-    //  pub p_cmd: P_Cmd,
     pub cmd: Cmd,
-    // not include lnw
     pub cur_s: Cur,
     pub cur_e: Cur,
     pub str: String,
     pub box_sel_vec: Vec<(SelRange, String)>,
     pub box_sel_redo_vec: Vec<(SelRange, String)>,
     pub sel: SelRange,
-    // pub draw_type: E_DrawRange,
 }
 impl Default for Proc {
     fn default() -> Self {
-        Proc {
-            //  p_cmd: P_Cmd::Null,
-            cmd: Cmd::default(),
-            cur_s: Cur::default(),
-            cur_e: Cur::default(),
-            str: String::new(),
-            // e_cmd: E_Cmd::Null,
-            sel: SelRange::default(),
-            // draw_type: E_DrawRange::default(),
-            box_sel_vec: vec![],
-            box_sel_redo_vec: vec![],
-        }
+        Proc { cmd: Cmd::default(), cur_s: Cur::default(), cur_e: Cur::default(), str: String::new(), sel: SelRange::default(), box_sel_vec: vec![], box_sel_redo_vec: vec![] }
     }
 }
 impl fmt::Display for Proc {

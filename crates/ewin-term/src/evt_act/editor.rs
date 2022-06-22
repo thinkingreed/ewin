@@ -24,8 +24,6 @@ impl EvtAct {
         term.curt().editor.set_org_state();
         term.curt().editor.init();
 
-        let e_cmd = &term.curt().editor.cmd.clone();
-        Log::debug("e_cmd", &e_cmd);
         let cmd = &term.curt().editor.cmd.clone();
         Log::debug("cmd", &cmd);
 

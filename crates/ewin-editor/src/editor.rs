@@ -220,7 +220,7 @@ impl Editor {
         return candidate_new_filenm;
     }
     pub fn reload_with_specify_encoding(&mut self, h_file: &mut HeaderFile, enc_name: &str) -> io::Result<bool> {
-        let encode = Encode::from_name(&enc_name);
+        let encode = Encode::from_name(enc_name);
 
         let (vec, bom, modified_time) = File::read_file(&h_file.filenm)?;
         h_file.bom = bom;

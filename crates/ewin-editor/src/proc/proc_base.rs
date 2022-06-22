@@ -7,9 +7,11 @@ impl Editor {
         Log::debug_key("Editor.proc");
 
         let cmd = self.cmd.clone();
+        Log::debug("cmd", &cmd);
+
         let act_type = match cmd.cmd_type {
             // edit
-            CmdType::InsertStr(_) => self.edit_proc(cmd.clone()),
+            CmdType::InsertStr(_) => self.edit_proc(cmd),
             CmdType::InsertRow => self.edit_proc(cmd),
             CmdType::DelPrevChar => self.edit_proc(cmd),
             CmdType::DelNextChar => self.edit_proc(cmd),

@@ -1,7 +1,4 @@
-use crate::{
-    bar::{filebar::*, menubar::*, statusbar::*},
-    help::*,
-};
+use crate::bar::{filebar::*, menubar::*, statusbar::*};
 use ewin_com::{
     _cfg::key::{cmd::Cmd, keys::*, keywhen::KeyWhen},
     model::*,
@@ -58,7 +55,7 @@ pub struct Terminal {
     pub keywhen: KeyWhen,
     pub menubar: MenuBar,
     pub fbar: FileBar,
-    pub help: Help,
+    // pub help: Help,
     pub tabs: Vec<Tab>,
     pub editor_draw_vec: Vec<EditorDraw>,
     // tab index

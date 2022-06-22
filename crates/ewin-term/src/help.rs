@@ -21,7 +21,7 @@ impl Help {
         term.set_disp_size();
 
         let tab = term.tabs.get_mut(term.tab_idx).unwrap();
-        if get_help().is_disp {
+        if HELP_DISP.get().unwrap().try_lock().unwrap().is_disp {
             // Cursor moves out of help display area
             if tab.editor.cur.y - tab.editor.offset_y > tab.editor.row_len - 1 {
                 tab.editor.cur.y = tab.editor.offset_y + tab.editor.row_len - 1;
@@ -35,7 +35,7 @@ impl Help {
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         Log::info_key("Help.draw");
 
-        if !get_help().is_disp {
+        if !self.is_disp {
             return;
         }
         if self.key_bind_vec.is_empty() {
@@ -142,7 +142,7 @@ impl Help {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Help {
     pub is_disp: bool,
     // Number displayed on the terminal
@@ -152,11 +152,13 @@ pub struct Help {
     pub row_posi: usize,
     pub key_bind_vec: Vec<Vec<HelpKeybind>>,
 }
+/*
 impl Default for Help {
     fn default() -> Self {
         Help { is_disp: false, col_num: 0, row_num: 0, row_posi: 0, key_bind_vec: vec![] }
     }
 }
+ */
 #[derive(Debug, Clone)]
 pub struct HelpKeybind {
     pub key: String,

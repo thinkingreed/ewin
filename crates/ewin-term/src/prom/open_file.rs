@@ -96,18 +96,16 @@ impl EvtAct {
                 } else if path.metadata().unwrap().is_dir() {
                     term.curt().prom.curt::<PromOpenFile>().set_file_list();
                     return ActType::Draw(DParts::Prompt);
-                } else {
-                    if term.curt().prom.curt::<PromOpenFile>().file_type == OpenFileType::Normal {
-                        return EvtAct::prom_file_open(term, &path.display().to_string());
-                    } else if term.curt().prom.curt::<PromOpenFile>().file_type == OpenFileType::JsMacro {
-                        let act_type = Macros::exec_js_macro(term, &full_path_str);
-                        if let ActType::Draw(DParts::MsgBar(_)) = act_type {
-                            return act_type;
-                        } else {
-                            term.curt().clear_curt_tab(true);
-                            return ActType::Draw(DParts::All);
-                        };
-                    }
+                } else if term.curt().prom.curt::<PromOpenFile>().file_type == OpenFileType::Normal {
+                    return EvtAct::prom_file_open(term, &path.display().to_string());
+                } else if term.curt().prom.curt::<PromOpenFile>().file_type == OpenFileType::JsMacro {
+                    let act_type = Macros::exec_js_macro(term, full_path_str);
+                    if let ActType::Draw(DParts::MsgBar(_)) = act_type {
+                        return act_type;
+                    } else {
+                        term.curt().clear_curt_tab(true);
+                        return ActType::Draw(DParts::All);
+                    };
                 }
             }
             _ => return ActType::Cancel,
@@ -123,7 +121,7 @@ impl EvtAct {
                 return ActType::Draw(DParts::All);
             }
         }
-        let act_type = term.open_file(&full_path, FileOpenType::Nomal, Some(&mut Tab::new()), None);
+        let act_type = term.open_file(full_path, FileOpenType::Nomal, Some(&mut Tab::new()), None);
         Log::debug("act_type", &act_type);
         if act_type == ActType::Next {
             term.clear_pre_tab_status();
