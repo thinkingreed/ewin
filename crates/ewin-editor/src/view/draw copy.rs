@@ -16,30 +16,33 @@ impl Editor {
         self.draw_scale(str_vec, win);
     }
 
-    pub fn clear_init(&mut self, str_vec: &mut Vec<String>, draw: &mut EditorDraw) -> ActType {
+    pub fn clear_init(&mut self, str_vec: &mut Vec<String>, draw: &mut EditorDraw, win: &Window) -> ActType {
         Log::debug_key("clear_init");
         let curt_win = self.get_curt_ref_win();
 
-        // Log::debug("win", &win);
+        Log::debug("win", &win);
         Log::debug("curt_win", &curt_win);
 
         match curt_win.draw_range {
             E_DrawRange::Not | E_DrawRange::MoveCur => return ActType::Cancel,
             E_DrawRange::TargetRange(sy, ey) => {
                 // for e_cmd::AllSelect
-                let start_y = if sy >= curt_win.offset.y { sy - curt_win.offset.y } else { curt_win.offset.y };
-                let end_y = if ey <= curt_win.offset.y + curt_win.area_v.1 { ey - curt_win.offset.y } else { curt_win.offset.y + curt_win.area_v.1 };
+                let start_y = if sy >= win.offset.y { sy - win.offset.y } else { win.offset.y };
+
+                Log::debug("ey", &ey);
+
+                let end_y = if ey <= win.offset.y + win.area_v.1 { ey - win.offset.y } else { win.offset.y + win.area_v.1 };
                 for i in start_y..=end_y {
-                    str_vec.push(format!("{}{}", MoveTo(0, (i + curt_win.area_v.0) as u16), Clear(ClearType::CurrentLine)));
+                    str_vec.push(format!("{}{}", MoveTo(0, (i + win.area_v.0) as u16), Clear(ClearType::CurrentLine)));
                 }
-                str_vec.push(format!("{}", MoveTo(0, (start_y + curt_win.area_v.0) as u16)));
+                str_vec.push(format!("{}", MoveTo(0, (start_y + win.area_v.0) as u16)));
             }
             E_DrawRange::Targetpoint => self.clear_all_diff(str_vec, &draw.change_row_vec),
             E_DrawRange::After(_) => self.clear_all_diff(str_vec, &draw.change_row_vec),
             E_DrawRange::Init | E_DrawRange::All => self.clear_all(str_vec),
             E_DrawRange::ScrollDown(_, _) | E_DrawRange::ScrollUp(_, _) if self.win_mgr.split_type != WindowSplitType::None => self.clear_all(str_vec),
-            E_DrawRange::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (curt_win.area_v.1 - Editor::SCROLL_UP_DOWN_MARGIN) as u16), Clear(ClearType::FromCursorDown))),
-            E_DrawRange::ScrollUp(_, _) => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, curt_win.area_v.0 as u16), Clear(ClearType::CurrentLine))),
+            E_DrawRange::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (win.area_v.1 - Editor::SCROLL_UP_DOWN_MARGIN) as u16), Clear(ClearType::FromCursorDown))),
+            E_DrawRange::ScrollUp(_, _) => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, win.area_v.0 as u16), Clear(ClearType::CurrentLine))),
         }
 
         return ActType::Next;

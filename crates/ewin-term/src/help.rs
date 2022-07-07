@@ -7,6 +7,7 @@ use ewin_com::{
     util::*,
 };
 use ewin_const::def::*;
+use std::fmt::Write as _;
 
 impl Help {
     pub const DISP_ROW_NUM: usize = 5;
@@ -15,7 +16,7 @@ impl Help {
     const KEY_FUNC_WIDTH: usize = 9;
     const KEY_FUNC_WIDTH_WIDE: usize = 14;
 
-    pub fn disp_toggle(term: &mut Terminal) {
+    pub fn disp_toggle(term: &mut Terminal) -> ActType {
         toggle_help_disp();
         // term.help.is_disp = !term.help.is_disp;
         term.set_disp_size();
@@ -23,13 +24,13 @@ impl Help {
         let tab = term.tabs.get_mut(term.tab_idx).unwrap();
         if HELP_DISP.get().unwrap().try_lock().unwrap().is_disp {
             // Cursor moves out of help display area
-            if tab.editor.cur.y - tab.editor.offset_y > tab.editor.row_len - 1 {
-                tab.editor.cur.y = tab.editor.offset_y + tab.editor.row_len - 1;
-                tab.editor.cur.x = 0;
-                tab.editor.cur.disp_x = 0;
+            if tab.editor.win_mgr.curt().cur.y - tab.editor.win_mgr.curt().offset.y > tab.editor.get_curt_row_len() - 1 {
+                tab.editor.win_mgr.curt().cur.y = tab.editor.win_mgr.curt().offset.y + tab.editor.get_curt_row_len() - 1;
+                tab.editor.win_mgr.curt().cur.x = 0;
+                tab.editor.win_mgr.curt().cur.disp_x = 0;
             }
         }
-        tab.editor.draw_range = E_DrawRange::All;
+        return ActType::Draw(DParts::All);
     }
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
@@ -83,20 +84,20 @@ impl Help {
                 let mut width = 0;
                 for bind in vec {
                     if width + get_str_width(&bind.key) <= self.col_num {
-                        row_str.push_str(&format!("{}{}", Colors::get_msg_highlight_fg(), bind.key));
+                        let _ = write!(row_str, "{}{}", Colors::get_msg_highlight_fg(), bind.key);
                         width += get_str_width(&bind.key);
 
                         if width + get_str_width(&bind.funcnm) <= self.col_num {
-                            row_str.push_str(&format!("{}{}", Colors::get_msg_normal_fg(), bind.funcnm));
+                            let _ = write!(row_str, "{}{}", Colors::get_msg_normal_fg(), bind.funcnm);
                             width += get_str_width(&bind.funcnm);
                         } else {
                             let funcnm = cut_str(&bind.funcnm, self.col_num - width, false, false);
-                            row_str.push_str(&format!("{}{}", Colors::get_msg_normal_fg(), funcnm));
+                            let _ = write!(row_str, "{}{}", Colors::get_msg_normal_fg(), funcnm);
                             break;
                         }
                     } else {
                         let key = cut_str(&bind.key, self.col_num - width, false, false);
-                        row_str.push_str(&format!("{}{}", Colors::get_msg_highlight_fg(), key));
+                        let _ = write!(row_str, "{}{}", Colors::get_msg_highlight_fg(), key);
                         break;
                     }
                 }

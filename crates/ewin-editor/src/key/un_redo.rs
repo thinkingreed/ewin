@@ -37,9 +37,9 @@ impl Editor {
     // initial cursor posi set
     pub fn undo_init(&mut self, proc: &Proc) {
         match &proc.cmd.cmd_type {
-            CmdType::InsertStr(_) | CmdType::InsertRow | CmdType::Cut | CmdType::ReplaceExec(_, _, _) => self.cur = proc.cur_s,
+            CmdType::InsertStr(_) | CmdType::InsertRow | CmdType::Cut | CmdType::ReplaceExec(_, _, _) => self.win_mgr.curt().cur = proc.cur_s,
             CmdType::DelNextChar | CmdType::DelPrevChar => {
-                self.cur = if proc.sel.is_selected() {
+                self.win_mgr.curt().cur = if proc.sel.is_selected() {
                     if proc.cur_s.x > proc.cur_e.x {
                         proc.cur_e
                     } else {
@@ -60,7 +60,7 @@ impl Editor {
             CmdType::InsertStr(_) => {
                 if proc.box_sel_vec.is_empty() {
                     // Set paste target with sel
-                    self.sel = proc.sel;
+                    self.win_mgr.curt().sel = proc.sel;
                     self.edit_proc(Cmd::to_cmd(CmdType::DelNextChar))
                 } else {
                     self.edit_proc(Cmd::to_cmd(CmdType::DelBox(proc.box_sel_vec.clone())))
@@ -79,7 +79,7 @@ impl Editor {
     pub fn undo_finalize(&mut self, proc: &Proc) {
         match &proc.cmd.cmd_type {
             CmdType::DelNextChar => {
-                self.cur = if proc.sel.is_selected() {
+                self.win_mgr.curt().cur = if proc.sel.is_selected() {
                     if proc.cur_s.x > proc.cur_e.x {
                         proc.cur_s
                     } else {
@@ -90,7 +90,7 @@ impl Editor {
                 }
             }
             CmdType::DelPrevChar => {
-                self.cur = if proc.sel.is_selected() {
+                self.win_mgr.curt().cur = if proc.sel.is_selected() {
                     proc.cur_e
                     // !proc.box_sel_vec.is_empty()
                 } else {
@@ -99,7 +99,7 @@ impl Editor {
             }
             CmdType::ReplaceExec(_, _, _) => {
                 // Return cursor position
-                self.cur = proc.cur_s;
+                self.win_mgr.curt().cur = proc.cur_s;
             }
             _ => {}
         }
@@ -126,9 +126,9 @@ impl Editor {
         return ActType::Next;
     }
     pub fn redo_exec(&mut self, proc: Proc) {
-        self.cur = proc.cur_s;
+        self.win_mgr.curt().cur = proc.cur_s;
         match &proc.cmd.cmd_type {
-            CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Cut => self.sel = proc.sel,
+            CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Cut => self.win_mgr.curt().sel = proc.sel,
             _ => {}
         }
         let _ = match &proc.cmd.cmd_type {

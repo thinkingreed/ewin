@@ -288,7 +288,6 @@ impl Widget {
             if self.scrl_v.bar_len == USIZE_UNDEFINED {
                 self.scrl_v.calc_com_scrlbar_v(false, self.cont.height, self.cont.cont_vec.len());
             }
-            // self.scrl_v.calc_com_scrlbar_v_roe_posi(false, self.curt_cont.height, &self.e_cmd, self.offset_y, self.scrl_v.move_len);
 
             Log::debug("self.scrl_v.bar_len", &self.scrl_v.bar_len);
             Log::debug("self.offset_y + self.curt_cont.height == self.curt_cont.menu_vec.len()", &(self.offset_y + self.cont.height == self.cont.cont_vec.len()));

@@ -4,12 +4,7 @@ use crate::{
     model::*,
 };
 use directories::BaseDirs;
-use ewin_cfg::{
-    global::*,
-    lang::lang_cfg::*,
-    log::*,
-    model::{default::*, modal::*},
-};
+use ewin_cfg::{global::*, lang::lang_cfg::*, log::*, model::modal::*};
 use ewin_com::_cfg::key::{cmd::CmdType, keybind::Keybind};
 use ewin_const::def::*;
 use ewin_editor::model::*;
@@ -126,7 +121,7 @@ impl EvtAct {
             // convert
             s if s == &Lang::get().to_uppercase || s == &Lang::get().to_lowercase || s == &Lang::get().to_full_width || s == &Lang::get().to_half_width || s == &Lang::get().to_space || s == &Lang::get().to_tab => {
                 term.curt().editor.convert(ConvType::from_str_conv_type(&LANG_MAP[name]));
-                term.curt().editor.sel.clear();
+                term.curt().editor.win_mgr.curt().sel.clear();
             }
             // format
             s if s == &Lang::get().json || s == &Lang::get().xml || s == &Lang::get().html => {
@@ -134,17 +129,17 @@ impl EvtAct {
                     return ActType::Draw(DParts::AllMsgBar(err_str));
                 } else {
                     // highlight data reset
-                    term.editor_draw_vec[term.tab_idx].clear();
+                    term.editor_draw_vec.clear();
                 }
-                term.curt().editor.sel.clear();
+                term.curt().editor.win_mgr.curt().sel.clear();
             }
             s if s == &Lang::get().cut => {
                 EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::Cut), &mut stdout(), term);
-                term.curt().editor.sel.clear();
+                term.curt().editor.win_mgr.curt().sel.clear();
             }
             s if s == &Lang::get().copy => {
                 EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::Copy), &mut stdout(), term);
-                term.curt().editor.sel.clear();
+                term.curt().editor.win_mgr.curt().sel.clear();
             }
             s if s == &Lang::get().paste => {
                 EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::InsertStr("".to_string())), &mut stdout(), term);
@@ -168,8 +163,8 @@ impl EvtAct {
     pub fn set_ctx_menu_curt_term_place(term: &mut Terminal, y: usize) {
         if term.fbar.row_posi == y {
             term.ctx_widget.widget.cont = term.ctx_widget.ctx_menu_place_map[&TermPlace::HeaderBar].clone();
-        } else if term.curt().editor.row_posi <= y && y <= term.curt().editor.row_posi + term.curt().editor.row_len {
-            let place_cond = if term.curt().editor.sel.is_selected() { TermPlace::Editor(TermPlaceCond::EditorRangeSelected) } else { TermPlace::Editor(TermPlaceCond::EditorRangeNonSelected) };
+        } else if term.curt().editor.get_curt_row_posi() <= y && y <= term.curt().editor.get_curt_row_posi() + term.curt().editor.get_curt_row_len() {
+            let place_cond = if term.curt().editor.win_mgr.curt().sel.is_selected() { TermPlace::Editor(TermPlaceCond::EditorRangeSelected) } else { TermPlace::Editor(TermPlaceCond::EditorRangeNonSelected) };
             term.ctx_widget.widget.cont = term.ctx_widget.ctx_menu_place_map[&place_cond].clone();
         }
     }
@@ -195,7 +190,10 @@ impl Terminal {
 
         if EvtAct::is_ctx_menu_displayed_area(self, y, x) {
             let (y, x) = if y == USIZE_UNDEFINED {
-                (self.curt().editor.cur.y - self.curt().editor.offset_y + self.curt().editor.row_posi, if CfgEdit::get().general.editor.row_no.is_enable { self.curt().editor.cur.disp_x + self.curt().editor.get_rnw_and_margin() } else { self.curt().editor.cur.disp_x })
+                (
+                    self.curt().editor.win_mgr.curt().cur.y - self.curt().editor.win_mgr.curt().offset.y + self.curt().editor.get_curt_row_posi(),
+                    self.curt().editor.win_mgr.curt().cur.disp_x + self.curt().editor.get_rnw_and_margin(), //  if CfgEdit::get().general.editor.row_no.is_enable {  } else { self.curt().editor.win_mgr.curt().cur.disp_x },
+                )
             } else {
                 (y, x)
             };

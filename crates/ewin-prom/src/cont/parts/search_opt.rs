@@ -5,6 +5,7 @@ use ewin_com::{
     model::*,
     util::*,
 };
+use std::fmt::Write as _;
 
 impl PromContSearchOpt {
     const MARGIN: usize = 2;
@@ -97,8 +98,8 @@ impl PromContPluginTrait for PromContSearchOpt {
     }
     fn draw(&self, str_vec: &mut Vec<String>, _: bool) {
         let mut s = "".to_string();
-        s.push_str(&format!("{}{}:{}{}{}  ", Colors::get_default_fg(), &self.case_sens.key_desc_str, Colors::get_msg_warning_fg(), &self.case_sens.key_str, self.case_sens.get_check_str()));
-        s.push_str(&format!("{}{}:{}{}{}  ", Colors::get_default_fg(), &self.regex.key_desc_str, Colors::get_msg_warning_fg(), &self.regex.key_str, self.regex.get_check_str()));
+        let _ = write!(s, "{}{}:{}{}{}  ", Colors::get_default_fg(), &self.case_sens.key_desc_str, Colors::get_msg_warning_fg(), &self.case_sens.key_str, self.case_sens.get_check_str());
+        let _ = write!(s, "{}{}:{}{}{}  ", Colors::get_default_fg(), &self.regex.key_desc_str, Colors::get_msg_warning_fg(), &self.regex.key_str, self.regex.get_check_str());
         str_vec.push(s);
         str_vec.push(Colors::get_default_fg());
     }

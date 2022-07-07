@@ -1,7 +1,7 @@
 use crate::{model::*, prom_trait::cont_trait::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::Lang, log::*};
 use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
-
+use std::fmt::Write as _;
 impl PromContPluginTrait for PromContKeyDesc {
     fn as_base(&self) -> &PromptContBase {
         &self.base
@@ -15,21 +15,22 @@ impl PromContPluginTrait for PromContKeyDesc {
             for cont in vec {
                 match &cont.key {
                     PromContKeyMenuType::Cmd(cmd_type) => {
-                        s.push_str(&format!("{}{}:{}{} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), PromContKeyMenu::get_str(cmd_type)));
+                        let _ = write!(s, "{}{}:{}{} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), PromContKeyMenu::get_str(cmd_type));
                     }
                     PromContKeyMenuType::PCmdAndStr(cmd_type, string) => {
-                        s.push_str(&format!("{}{}:{}{} {} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), PromContKeyMenu::get_str(cmd_type), string));
+                        // s.push_str(&format!("{}{}:{}{} {} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), PromContKeyMenu::get_str(cmd_type), string));
+                        let _ = write!(s, "{}{}:{}{} {} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), PromContKeyMenu::get_str(cmd_type), string);
                     }
                     PromContKeyMenuType::PCmds { show_cmd: show_cmd_vec, all_cmd: _ } => {
-                        s.push_str(&format!("{}{}:{}", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(),));
+                        let _ = write!(s, "{}{}:{}", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(),);
 
                         for cmd_type in show_cmd_vec {
-                            s.push_str(&format!(" {}", PromContKeyMenu::get_str(cmd_type)));
+                            let _ = write!(s, " {}", PromContKeyMenu::get_str(cmd_type));
                         }
                         s.push(' ');
                     }
                     PromContKeyMenuType::OneChar(c) => {
-                        s.push_str(&format!("{}{}:{}{} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), c));
+                        let _ = write!(s, "{}{}:{}{} ", Colors::get_default_fg(), cont.disp_str, Colors::get_msg_highlight_fg(), c);
                     }
                 }
             }

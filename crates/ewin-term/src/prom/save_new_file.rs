@@ -55,7 +55,7 @@ impl EvtAct {
                         H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap().filenm = filenm.clone();
                         H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap().fullpath = absolute_path.to_string_lossy().to_string();
                     }
-                    let act_type = Tab::save(term, SaveType::NewName);
+                    let act_type = term.curt().save(SaveType::NewName);
                     Log::debug_s("save act_type");
                     if let ActType::Draw(_) = act_type {
                         return act_type;

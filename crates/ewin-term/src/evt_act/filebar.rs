@@ -12,12 +12,11 @@ impl EvtAct {
                 let (x, _) = (*x as usize, *y as usize);
                 term.fbar.state.clear();
                 if term.fbar.all_filenm_space_w >= x {
-                    for (idx, h_file) in H_FILE_VEC.get().unwrap().try_lock().unwrap().iter().enumerate() {
+                    let h_file_vec = &H_FILE_VEC.get().unwrap().try_lock().unwrap().clone();
+                    for (idx, h_file) in h_file_vec.iter().enumerate() {
                         if !h_file.is_disp {
                             continue;
                         }
-                        Log::debug("h_file.close_area", &h_file.close_area);
-
                         if h_file.close_area.0 <= x && x <= h_file.close_area.1 {
                             if term.curt().editor.state.is_changed {
                                 term.tab_idx = idx;
@@ -82,21 +81,14 @@ impl EvtAct {
                         Log::debug("xxx", &x);
 
                         if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 {
-                            Log::debug("h_file.filenm_area.0", &h_file.filenm_area.0);
-                            Log::debug("h_file.filenm_area.1", &h_file.filenm_area.1);
                             let change_range = ((h_file.filenm_area.1 as f64 - h_file.filenm_area.0 as f64) as f64 / 2_f64).floor() as usize;
                             if matches!(&term.cmd.cmd_type, &CmdType::MouseDragLeftLeft(_, _)) {
-                                Log::debug("MouseDragLeftLeft change_range", &change_range);
                                 if h_file.filenm_area.0 + change_range >= x {
                                     inset_idx = idx;
                                 }
-                            } else if matches!(&term.cmd.cmd_type, &CmdType::MouseDragLeftRight(_, _)) {
-                                Log::debug("MouseDragLeftRight change_range", &change_range);
-                                if h_file.filenm_area.0 + change_range <= x {
-                                    inset_idx = idx;
-                                }
+                            } else if matches!(&term.cmd.cmd_type, &CmdType::MouseDragLeftRight(_, _)) && h_file.filenm_area.0 + change_range <= x {
+                                inset_idx = idx;
                             }
-                            Log::debug("inset_idx", &inset_idx);
                         }
 
                         if is_on_left_arraw(term, x) || is_on_right_arraw(term, x) {
@@ -105,10 +97,6 @@ impl EvtAct {
                         }
                     }
                     if inset_idx != USIZE_UNDEFINED {
-                        Log::debug_s("swap_tabswap_tabswap_tabswap_tabswap_tabswap_tab");
-                        Log::debug("term.idx", &term.tab_idx);
-                        Log::debug("inset_idx", &inset_idx);
-
                         term.swap_tab(term.tab_idx, inset_idx);
                     }
                 }

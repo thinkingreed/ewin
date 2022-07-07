@@ -6,17 +6,17 @@ use ewin_cfg::{log::*, model::default::*};
 use std::path::PathBuf;
 
 impl Editor {
-    pub fn set_grep_result(&mut self, line_str: String) {
+    pub fn set_grep_result(&mut self, row_str: String) {
         Log::debug_key("set_grep_result");
 
         self.set_rnw();
-        self.cur = Cur { y: self.buf.len_rows() - 1, x: 0, disp_x: 0 };
+        self.win_mgr.curt().cur = Cur { y: self.buf.len_rows() - 1, x: 0, disp_x: 0 };
 
         self.scroll();
 
         // For files without read permission,
         // only log output is performed and screen display is not performed.
-        let vec: Vec<&str> = line_str.splitn(3, ':').collect();
+        let vec: Vec<&str> = row_str.splitn(3, ':').collect();
 
         if vec.len() > 2 {
             let ignore_prefix_str = format!("{}:{}:", vec[0], vec[1]);

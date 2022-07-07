@@ -1,17 +1,16 @@
-use ewin_cfg::{log::*, model::default::*};
-use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
-use ewin_const::def::*;
-
 use crate::{
     ewin_com::{model::*, util::*},
     model::*,
 };
+use ewin_cfg::{log::*, model::default::*};
+use ewin_com::_cfg::key::cmd::*;
+use ewin_const::def::*;
 use std::cmp::min;
 
 impl Editor {
     pub fn cur_move_com(&mut self) {
         Log::debug_key("cur_move_com");
-        Log::debug("self.sel.mode", &self.sel.mode);
+        Log::debug("self.sel.mode", &self.win_mgr.curt().sel.mode);
         match self.cmd.cmd_type {
             CmdType::CursorUp | CmdType::MouseScrollUp => self.cur_up(),
             CmdType::CursorDown | CmdType::MouseScrollDown => self.cur_down(),
@@ -27,22 +26,26 @@ impl Editor {
         }
 
         self.scroll();
-        if self.sel.mode == SelMode::BoxSelect {
-            self.sel.set_sel_posi(false, self.cur);
+        if self.win_mgr.curt().sel.mode == SelMode::BoxSelect {
+            let cur = self.win_mgr.curt().cur;
+            self.win_mgr.curt().sel.set_sel_posi(false, cur);
             self.box_insert.vec = self.slice_box_sel().1;
         } else {
-            self.sel.clear();
+            if self.cmd.cmd_type != CmdType::MouseScrollUp && self.cmd.cmd_type != CmdType::MouseScrollDown {
+                self.win_mgr.curt().sel.clear();
+            }
         }
-        Log::debug("self.sel.mode == SelMode::BoxSelect", &(self.sel.mode == SelMode::BoxSelect));
+        Log::debug("self.sel.mode == SelMode::BoxSelect", &(self.win_mgr.curt().sel.mode == SelMode::BoxSelect));
         Log::debug("self.cmd", &self.cmd);
+        Log::debug("self.win.curt_ref()", &self.win_mgr.curt_ref());
     }
 
     pub fn cur_up(&mut self) {
         if !self.is_move_position_by_scrolling_enable_and_cmd() {
-            if self.cur.y == 0 {
+            if self.win_mgr.curt().cur.y == 0 {
                 return;
             }
-            self.cur.y -= 1;
+            self.win_mgr.curt().cur.y -= 1;
             self.cur_updown_com();
         }
     }
@@ -52,10 +55,10 @@ impl Editor {
         Log::debug("self.buf.len_rows() ", &self.buf.len_rows());
 
         if !self.is_move_position_by_scrolling_enable_and_cmd() {
-            if self.cur.y == self.buf.len_rows() - 1 {
+            if self.win_mgr.curt().cur.y == self.buf.len_rows() - 1 {
                 return;
             }
-            self.cur.y += 1;
+            self.win_mgr.curt().cur.y += 1;
             self.cur_updown_com();
         }
     }
@@ -63,16 +66,16 @@ impl Editor {
     pub fn cur_updown_com(&mut self) {
         Log::debug_s("cur_updown_com");
 
-        if self.updown_x == 0 {
-            self.updown_x = self.cur.disp_x;
+        if self.win_mgr.curt().updown_x == 0 {
+            self.win_mgr.curt().updown_x = self.win_mgr.curt().cur.disp_x;
         }
         // Not set for Left and Right
-        if self.sel.mode == SelMode::BoxSelect && get_row_x_opt(&self.buf.char_vec_row(self.cur.y), self.cur.disp_x, true, false).is_none() {
+        if self.win_mgr.curt().sel.mode == SelMode::BoxSelect && get_row_x_opt(&self.buf.char_vec_row(self.win_mgr.curt().cur.y), self.win_mgr.curt().cur.disp_x, true, false).is_none() {
         } else {
-            let (cur_x, disp_x) = get_until_disp_x(&self.buf.char_vec_row(self.cur.y), self.updown_x, false);
-            self.cur.disp_x = disp_x;
-            self.cur.x = cur_x;
-            if self.sel.mode != SelMode::BoxSelect {
+            let (cur_x, disp_x) = get_until_disp_x(&self.buf.char_vec_row(self.win_mgr.curt().cur.y), self.win_mgr.curt().updown_x, false);
+            self.win_mgr.curt().cur.disp_x = disp_x;
+            self.win_mgr.curt().cur.x = cur_x;
+            if self.win_mgr.curt().sel.mode != SelMode::BoxSelect {
                 self.scroll_horizontal();
             }
         }
@@ -80,25 +83,25 @@ impl Editor {
 
     pub fn cur_left(&mut self) {
         // 0, 0の位置の場合
-        if self.cur.y == 0 && self.cur.x == 0 {
+        if self.win_mgr.curt().cur.y == 0 && self.win_mgr.curt().cur.x == 0 {
             return;
         // 行頭の場合
-        } else if self.cur.x == 0 {
+        } else if self.win_mgr.curt().cur.x == 0 {
             self.cur_up();
-            self.set_cur_target_by_x(self.cur.y, self.buf.len_row_chars(self.cur.y), false);
+            self.set_cur_target_by_x(self.win_mgr.curt_ref().cur.y, self.buf.len_row_chars(self.win_mgr.curt_ref().cur.y), false);
         } else {
-            let c = self.buf.char(self.cur.y, self.cur.x - 1);
+            let c = self.buf.char(self.win_mgr.curt().cur.y, self.win_mgr.curt().cur.x - 1);
             if c == TAB_CHAR {
                 let cfg_tab_width = Cfg::get().general.editor.tab.size;
-                let (_, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(self.cur.y)[self.offset_x..self.cur.x - 1], self.offset_disp_x, false);
-                self.cur.disp_x -= cfg_tab_width - ((self.offset_disp_x + width) % cfg_tab_width);
-                self.cur.x -= 1;
+                let (_, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(self.win_mgr.curt().cur.y)[self.win_mgr.curt().offset.x..self.win_mgr.curt().cur.x - 1], self.win_mgr.curt().offset.disp_x, false);
+                self.win_mgr.curt().cur.disp_x -= cfg_tab_width - ((self.win_mgr.curt().offset.disp_x + width) % cfg_tab_width);
+                self.win_mgr.curt().cur.x -= 1;
             } else {
-                self.cur.x -= 1;
-                self.cur.disp_x -= get_char_width_not_tab(&c);
+                self.win_mgr.curt().cur.x -= 1;
+                self.win_mgr.curt().cur.disp_x -= get_char_width_not_tab(&c);
                 if c == NEW_LINE_CR && (self.cmd.cmd_type == CmdType::CursorLeftSelect || self.cmd.cmd_type == CmdType::CursorLeft) {
-                    self.cur.disp_x -= 1;
-                    self.cur.x -= 1;
+                    self.win_mgr.curt().cur.disp_x -= 1;
+                    self.win_mgr.curt().cur.x -= 1;
                 }
             }
         }
@@ -107,12 +110,13 @@ impl Editor {
     }
 
     pub fn cur_right(&mut self) {
-        let mut is_end_of_line = false;
+        Log::debug_key("Editor.cur_right");
 
-        let char_opt = self.buf.char_opt(self.cur.y, self.cur.x);
+        let mut is_end_of_line = false;
+        let char_opt = self.buf.char_opt(self.win_mgr.curt().cur.y, self.win_mgr.curt().cur.x);
 
         match self.cmd.cmd_type {
-            CmdType::CursorRight | CmdType::CursorRightSelect | CmdType::InsertStr(_) if self.sel.mode == SelMode::Normal => {
+            CmdType::CursorRight | CmdType::CursorRightSelect | CmdType::InsertStr(_) if self.win_mgr.curt().sel.mode == SelMode::Normal => {
                 if let Some(c) = char_opt {
                     if is_nl_char(c) {
                         is_end_of_line = true;
@@ -124,47 +128,49 @@ impl Editor {
         // End of line
         Log::debug("is_end_of_line", &is_end_of_line);
         if is_end_of_line {
-            self.updown_x = 0;
-            self.cur.disp_x = 0;
-            self.cur.x = 0;
+            self.win_mgr.curt().updown_x = 0;
+            self.win_mgr.curt().cur.disp_x = 0;
+            self.win_mgr.curt().cur.x = 0;
             self.cur_down();
         } else if let Some(c) = char_opt {
             if c == TAB_CHAR {
                 let cfg_tab_width = Cfg::get().general.editor.tab.size;
-                let tab_width = cfg_tab_width - (self.cur.disp_x % cfg_tab_width);
-                self.cur.disp_x += tab_width;
-                self.cur.x += 1;
+                let tab_width = cfg_tab_width - (self.win_mgr.curt().cur.disp_x % cfg_tab_width);
+                self.win_mgr.curt().cur.disp_x += tab_width;
+                self.win_mgr.curt().cur.x += 1;
             } else {
-                self.cur.disp_x += get_char_width_not_tab(&c);
-                self.cur.x = min(self.cur.x + 1, self.buf.len_row_chars(self.cur.y));
+                self.win_mgr.curt().cur.disp_x += get_char_width_not_tab(&c);
+                self.win_mgr.curt().cur.x = min(self.win_mgr.curt().cur.x + 1, self.buf.len_row_chars(self.win_mgr.curt().cur.y));
                 if self.cmd == Cmd::to_cmd(CmdType::CursorRightSelect) && c == NEW_LINE_CR {
-                    self.cur.disp_x += 1;
-                    self.cur.x += 1;
+                    self.win_mgr.curt().cur.disp_x += 1;
+                    self.win_mgr.curt().cur.x += 1;
                 }
             }
-        } else if self.sel.mode == SelMode::BoxSelect {
-            self.cur.disp_x += 1;
-            self.cur.x += 1;
+        } else if self.win_mgr.curt().sel.mode == SelMode::BoxSelect {
+            self.win_mgr.curt().cur.disp_x += 1;
+            self.win_mgr.curt().cur.x += 1;
         }
 
-        if self.sel.mode == SelMode::Normal {
+        if self.win_mgr.curt().sel.mode == SelMode::Normal {
             // self.scroll();
             self.scroll_horizontal();
         }
+        Log::debug("self.win", &self.win_mgr);
     }
+
     pub fn cur_home(&mut self) {
-        self.cur.x = 0;
-        self.cur.disp_x = 0;
+        self.win_mgr.curt().cur.x = 0;
+        self.win_mgr.curt().cur.disp_x = 0;
         self.scroll_horizontal();
     }
 
     pub fn cur_end(&mut self) {
-        self.set_cur_target_by_x(self.cur.y, self.buf.len_row_chars(self.cur.y), false);
+        self.set_cur_target_by_x(self.win_mgr.curt_ref().cur.y, self.buf.len_row_chars(self.win_mgr.curt_ref().cur.y), false);
         self.scroll();
         self.scroll_horizontal();
     }
     pub fn ctrl_home(&mut self) {
-        self.updown_x = 0;
+        self.win_mgr.curt().updown_x = 0;
         self.set_cur_default();
         self.scroll();
         self.scroll_horizontal();
@@ -176,22 +182,23 @@ impl Editor {
         self.set_cur_target_by_x(y, len_line_chars, false);
         self.scroll();
         self.scroll_horizontal();
-        if self.updown_x == 0 {
-            self.updown_x = self.cur.disp_x;
+        if self.win_mgr.curt().updown_x == 0 {
+            self.win_mgr.curt().updown_x = self.win_mgr.curt().cur.disp_x;
         }
     }
 
     pub fn page_down(&mut self) {
-        self.cur.y = min(self.cur.y + self.row_len, self.buf.len_rows() - 1);
+        self.win_mgr.curt().cur.y = min(self.win_mgr.curt().cur.y + self.get_curt_row_len(), self.buf.len_rows() - 1);
         self.cur_updown_com();
     }
 
     pub fn page_up(&mut self) {
-        self.cur.y = if self.cur.y > self.row_len { self.cur.y - self.row_len } else { 0 };
+        self.win_mgr.curt().cur.y = if self.win_mgr.curt().cur.y > self.get_curt_row_len() { self.win_mgr.curt().cur.y - self.get_curt_row_len() } else { 0 };
         self.cur_updown_com();
     }
     pub fn shift_move_com(&mut self) {
-        self.sel.set_sel_posi(true, self.cur);
+        let cur = self.win_mgr.curt().cur;
+        self.win_mgr.curt().sel.set_sel_posi(true, cur);
 
         match self.cmd.cmd_type {
             CmdType::CursorUpSelect => self.cur_up(),
@@ -203,8 +210,8 @@ impl Editor {
             _ => {}
         }
         self.scroll();
-
-        self.sel.set_sel_posi(false, self.cur);
-        self.sel.check_overlap();
+        let cur = self.win_mgr.curt().cur;
+        self.win_mgr.curt().sel.set_sel_posi(false, cur);
+        self.win_mgr.curt().sel.check_overlap();
     }
 }

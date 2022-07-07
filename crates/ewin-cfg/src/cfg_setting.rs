@@ -256,6 +256,8 @@ impl Cfg {
         self.colors.editor.scale.bg = Colors::hex2rgb(&self.colors.editor.scale.background);
         self.colors.editor.scale.fg = Colors::hex2rgb(&self.colors.editor.scale.foreground);
 
+        self.colors.editor.window.split_line.bg = Colors::hex2rgb(&self.colors.editor.window.split_line.background);
+
         self.colors.msg.normal_fg = Colors::hex2rgb(&self.colors.msg.normal_foreground);
         self.colors.msg.highlight_fg = Colors::hex2rgb(&self.colors.msg.highlight_foreground);
         self.colors.msg.warning_fg = Colors::hex2rgb(&self.colors.msg.warning_foreground);
@@ -419,6 +421,16 @@ impl CfgColors {
         // foreground
         if let Some(s) = cfg_user_colors.editor.scale.foreground {
             self.editor.scale.foreground = s;
+        }
+        /* Window */
+        // split_line
+        // background
+        if let Some(window) = cfg_user_colors.editor.window {
+            if let Some(split_line) = window.split_line {
+                if let Some(s) = split_line.background {
+                    self.editor.window.split_line.background = s;
+                }
+            }
         }
         /*
          * StatusBar

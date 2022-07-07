@@ -59,6 +59,12 @@ impl Colors {
         return format!("{}{}", Colors::fg(Cfg::get().colors.editor.selection.fg), Colors::bg(Cfg::get().colors.editor.selection.bg));
     }
     //
+    // Window
+    //
+    pub fn get_window_split_line_bg() -> String {
+        Colors::bg(Cfg::get().colors.editor.window.split_line.bg)
+    }
+    //
     // Scale
     //
     pub fn get_scale_fg() -> String {

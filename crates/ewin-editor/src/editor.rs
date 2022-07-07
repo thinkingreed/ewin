@@ -3,17 +3,18 @@ use crate::{
     model::*,
 };
 use crossterm::{
+    cursor::MoveTo,
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
 };
 use ewin_cfg::{log::*, model::default::*};
-use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
+use ewin_com::_cfg::key::cmd::*;
 use ewin_const::{def::*, model::*};
 use ropey::RopeBuilder;
 use std::{
     cmp::min,
     collections::BTreeSet,
-    io::{self, stdout},
+    io::{self, stdout, Write},
     ops::Range,
 };
 
@@ -23,26 +24,26 @@ impl Editor {
     pub fn set_cur_default(&mut self) {
         // self.rnw = self.get_rnw();
         self.set_rnw();
-        self.cur = Cur { y: 0, x: 0, disp_x: 0 };
+        self.win_mgr.curt().cur = Cur { y: 0, x: 0, disp_x: 0 };
     }
 
     pub fn set_cur_target_by_x(&mut self, y: usize, x: usize, is_ctrlchar_incl: bool) {
-        self.cur.y = y;
+        self.win_mgr.curt().cur.y = y;
 
         let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_range(y, ..x), 0, is_ctrlchar_incl);
         // self.rnw = self.get_rnw();
         self.set_rnw();
-        self.cur.disp_x = width;
-        self.cur.x = cur_x;
+        self.win_mgr.curt().cur.disp_x = width;
+        self.win_mgr.curt().cur.x = cur_x;
     }
     pub fn set_cur_target_by_disp_x(&mut self, y: usize, x: usize) {
-        self.cur.y = y;
+        self.win_mgr.curt().cur.y = y;
 
-        let (cur_x, width) = get_until_disp_x(&self.buf.char_vec_row(y), x + self.offset_disp_x, false);
+        let (cur_x, width) = get_until_disp_x(&self.buf.char_vec_row(y), x + self.win_mgr.curt().offset.disp_x, false);
         // self.rnw = self.get_rnw();
         self.set_rnw();
-        self.cur.x = cur_x;
-        self.cur.disp_x = width;
+        self.win_mgr.curt().cur.x = cur_x;
+        self.win_mgr.curt().cur.disp_x = width;
     }
 
     pub fn get_rnw(&self) -> usize {
@@ -53,30 +54,34 @@ impl Editor {
     }
 
     pub fn get_rnw_and_margin(&self) -> usize {
-        self.get_rnw() + Editor::RNW_MARGIN
+        if CfgEdit::get().general.editor.row_no.is_enable {
+            return self.get_rnw() + Editor::RNW_MARGIN;
+        } else {
+            return 0;
+        };
     }
 
     pub fn set_org_state(&mut self) {
         Log::debug_key("set_org_state");
         // let tab = term.tabs.get_mut(term.idx).unwrap();
 
-        self.row_len_org = self.row_len;
-        self.col_len_org = self.col_len;
-        self.cur_org = self.cur;
-        self.offset_y_org = self.offset_y;
-        self.offset_x_org = self.offset_x;
-        self.offset_disp_x_org = self.offset_disp_x;
+        self.win_mgr.curt().row_len_org = self.get_curt_row_len();
+        self.win_mgr.curt().area_v = self.win_mgr.curt_ref().area_v;
+        self.win_mgr.curt().area_h = self.win_mgr.curt_ref().area_h;
+        self.win_mgr.curt().cur_org = self.win_mgr.curt().cur;
+        self.win_mgr.curt().offset.y_org = self.win_mgr.curt().offset.y;
+        self.win_mgr.curt().offset.x_org = self.win_mgr.curt().offset.x;
         self.rnw_org = self.get_rnw();
-        self.sel_org = self.sel;
+        self.win_mgr.curt().sel_org = self.win_mgr.curt().sel;
 
         self.search_org = self.search.clone();
 
         self.state.is_changed_org = self.state.is_changed;
-        self.buf_rows_org = self.buf.len_rows();
-        self.scrl_v.row_posi_org = self.scrl_v.row_posi;
-        self.scrl_h.row_max_width_org = self.scrl_h.row_max_width;
-        self.scrl_h.clm_posi_org = self.scrl_h.clm_posi;
-        self.scrl_h.is_show_org = self.scrl_h.is_show;
+        self.buf_len_rows_org = self.buf.len_rows();
+        self.win_mgr.curt().scrl_v.row_posi_org = self.win_mgr.curt().scrl_v.row_posi;
+        self.win_mgr.curt().scrl_h.row_max_width_org = self.win_mgr.curt().scrl_h.row_max_width;
+        self.win_mgr.curt().scrl_h.clm_posi_org = self.win_mgr.curt().scrl_h.clm_posi;
+        self.win_mgr.curt().scrl_h.is_show_org = self.win_mgr.curt().scrl_h.is_show;
 
         self.state.input_comple_mode_org = self.state.input_comple_mode;
     }
@@ -95,15 +100,16 @@ impl Editor {
     }
     pub fn box_select_mode(&mut self) {
         Log::debug_key("box_select_mode");
-        self.sel.clear();
-        self.sel.mode = match self.sel.mode {
+        self.win_mgr.curt().sel.clear();
+        self.win_mgr.curt().sel.mode = match self.win_mgr.curt().sel.mode {
             SelMode::Normal => SelMode::BoxSelect,
             SelMode::BoxSelect => SelMode::Normal,
         };
-        if self.sel.mode == SelMode::BoxSelect {
+        if self.win_mgr.curt().sel.mode == SelMode::BoxSelect {
             // Initial processing for Box Insert without moving the cursor
-            self.sel.set_sel_posi(true, self.cur);
-            self.sel.set_sel_posi(false, self.cur);
+            let cur = self.win_mgr.curt().cur;
+            self.win_mgr.curt().sel.set_sel_posi(true, cur);
+            self.win_mgr.curt().sel.set_sel_posi(false, cur);
         }
     }
     pub fn init(&mut self) {
@@ -111,13 +117,13 @@ impl Editor {
         match self.cmd.cmd_type {
             // Up, Down
             CmdType::CursorUp | CmdType::CursorDown | CmdType::CursorUpSelect | CmdType::CursorDownSelect | CmdType::MouseScrollUp | CmdType::MouseScrollDown | CmdType::MouseDragLeftDown(_, _) | CmdType::MouseDragLeftUp(_, _) => {}
-            _ => self.updown_x = 0,
+            _ => self.win_mgr.curt().updown_x = 0,
         }
 
         // Box Mode
         match self.cmd.cmd_type {
             CmdType::InsertStr(_) => {
-                if self.sel.mode == SelMode::BoxSelect {
+                if self.win_mgr.curt().sel.mode == SelMode::BoxSelect {
                     self.box_insert.mode = BoxInsertMode::Insert;
                 }
             }
@@ -166,58 +172,58 @@ impl Editor {
     pub fn adjust_cur_posi(&mut self) {
         Log::debug_key("Editor.adjust_cur_posi");
 
-        if self.cur.y > self.buf.len_rows() - 1 {
+        if self.win_mgr.curt().cur.y > self.buf.len_rows() - 1 {
             self.set_cur_target_by_x(self.buf.len_rows() - 1, 0, false);
             self.scroll();
-        } else if self.cur.x > self.buf.char_vec_row(self.cur.y).len() {
-            self.set_cur_target_by_x(self.cur.y, self.buf.char_vec_row(self.cur.y).len(), false);
+        } else if self.win_mgr.curt().cur.x > self.buf.char_vec_row(self.win_mgr.curt().cur.y).len() {
+            self.set_cur_target_by_x(self.win_mgr.curt_ref().cur.y, self.buf.char_vec_row(self.win_mgr.curt_ref().cur.y).len(), false);
             self.scroll_horizontal();
         } else {
-            self.set_cur_target_by_x(self.cur.y, self.cur.x, false);
+            self.set_cur_target_by_x(self.win_mgr.curt_ref().cur.y, self.win_mgr.curt_ref().cur.x, false);
         };
     }
     pub fn is_move_position_by_scrolling_enable_and_cmd(&self) -> bool {
-        return !self.is_move_cur_posi_scrolling_enable() && ((matches!(self.cmd.cmd_type, CmdType::MouseScrollDown) || matches!(self.cmd.cmd_type, CmdType::MouseScrollUp)) || (self.scrl_v.is_enable && (matches!(self.cmd.cmd_type, CmdType::MouseDownLeft(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftUp(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftDown(_, _)))));
+        return !self.is_move_cur_posi_scrolling_enable() && ((matches!(self.cmd.cmd_type, CmdType::MouseScrollDown) || matches!(self.cmd.cmd_type, CmdType::MouseScrollUp)) || (self.win_mgr.curt_ref().scrl_v.is_enable && (matches!(self.cmd.cmd_type, CmdType::MouseDownLeft(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftUp(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftDown(_, _)))));
     }
 
     pub fn is_move_cur_posi_scrolling_enable(&self) -> bool {
         return Cfg::get().general.editor.cursor.move_position_by_scrolling_enable;
     }
     pub fn is_cur_y_in_screen(&self) -> bool {
-        return self.is_y_in_screen(self.cur.y);
+        return self.is_y_in_screen(self.win_mgr.curt_ref().cur.y);
     }
     pub fn is_y_in_screen(&self, y: usize) -> bool {
-        return self.offset_y <= y && y < self.offset_y + self.row_len;
+        return self.win_mgr.curt_ref().offset.y <= y && y < self.win_mgr.curt_ref().offset.y + self.get_curt_row_len();
     }
     pub fn is_cur_disp_x_in_screen(&self) -> bool {
-        return self.offset_disp_x <= self.cur.disp_x && self.cur.disp_x < self.offset_disp_x + self.col_len;
+        return self.win_mgr.curt_ref().offset.disp_x <= self.win_mgr.curt_ref().cur.disp_x && self.win_mgr.curt_ref().cur.disp_x < self.win_mgr.curt_ref().offset.disp_x + self.get_curt_col_len();
     }
 
     pub fn get_row_in_screen(&self) -> BTreeSet<usize> {
-        return (self.offset_y..min(self.offset_y + self.row_len, self.buf.len_rows())).collect::<BTreeSet<usize>>();
+        return (self.win_mgr.curt_ref().offset.y..min(self.win_mgr.curt_ref().offset.y + self.get_curt_row_len(), self.buf.len_rows())).collect::<BTreeSet<usize>>();
     }
     pub fn get_candidate_new_filenm(&mut self) -> String {
         Log::debug_key("get_candidate_new_filenm");
 
-        let mut candidate_new_filenm = String::new();
+        let mut new_filenm = String::new();
 
         if Cfg::get().general.editor.save.use_string_first_line_for_file_name_of_new_file {
             let len = self.buf.char_vec_row(0).len();
-            candidate_new_filenm = if len > 20 { self.buf.char_vec_row(0)[..=20].iter().collect() } else { self.buf.char_vec_row(0).iter().collect() };
+            new_filenm = if len > 20 { self.buf.char_vec_row(0)[..=20].iter().collect() } else { self.buf.char_vec_row(0).iter().collect() };
 
-            Log::debug("candidate_new_filenm", &candidate_new_filenm);
+            Log::debug("candidate_new_filenm", &new_filenm);
 
-            if candidate_new_filenm == "." || candidate_new_filenm == ".." {
-                candidate_new_filenm = "".to_string()
+            if new_filenm == "." || new_filenm == ".." {
+                new_filenm = "".to_string()
             } else if cfg!(linux) || cfg!(macos) || *ENV == Env::WSL {
-                candidate_new_filenm = candidate_new_filenm.trim().replace(&['/', '\u{0000}'], "");
+                new_filenm = new_filenm.trim().replace(&['/', '\u{0000}'], "");
             } else if cfg!(windows) {
-                candidate_new_filenm = candidate_new_filenm.trim().replace(&['¥', '/', ':', '*', '?', '"', '<', '>', '|'], "");
+                new_filenm = new_filenm.trim().replace(&['¥', '/', ':', '*', '?', '"', '<', '>', '|'], "");
             };
-            candidate_new_filenm = candidate_new_filenm.to_string();
+            new_filenm = new_filenm.to_string();
         }
 
-        return candidate_new_filenm;
+        return new_filenm;
     }
     pub fn reload_with_specify_encoding(&mut self, h_file: &mut HeaderFile, enc_name: &str) -> io::Result<bool> {
         let encode = Encode::from_name(enc_name);
@@ -256,6 +262,29 @@ impl Editor {
     }
 
     pub fn get_disp_range_absolute(&self) -> Range<usize> {
-        return Range { start: if Cfg::get().general.editor.scale.is_enable { self.row_posi - 1 } else { self.row_posi }, end: self.row_posi * self.row_len };
+        return Range { start: if Cfg::get().general.editor.scale.is_enable { self.get_curt_row_posi() - 1 } else { self.get_curt_row_posi() }, end: self.get_curt_row_posi() * self.get_curt_row_len() };
+    }
+
+    pub fn set_tgt_window(&mut self) {
+        if let CmdType::MouseDownLeft(y, x) = self.cmd.cmd_type {
+            let (mut set_v_idx, mut set_h_idx) = (0, 0);
+            for (v_idx, vec_v) in self.win_mgr.win_list.iter().enumerate() {
+                for (h_idx, win) in vec_v.iter().enumerate() {
+                    if win.area_all_v.0 <= y && y <= win.area_all_v.1 && win.area_all_h.0 <= x && x <= win.area_all_h.1 {
+                        set_v_idx = v_idx;
+                        set_h_idx = h_idx;
+                    }
+                }
+            }
+            self.win_mgr.win_v_idx = set_v_idx;
+            self.win_mgr.win_h_idx = set_h_idx;
+        };
+    }
+
+    pub fn draw_cur(&mut self, str_vec: &mut Vec<String>) {
+        let win = self.win_mgr.curt_ref();
+        if win.offset.disp_x <= win.cur.disp_x && win.cur.disp_x <= win.offset.disp_x + self.get_curt_col_len() && win.offset.y <= win.cur.y && win.cur.y <= win.offset.y + self.get_curt_row_len() {
+            str_vec.push(MoveTo((win.area_h.0 + win.cur.disp_x - win.offset.disp_x) as u16, (win.cur.y - win.offset.y + self.get_curt_row_posi()) as u16).to_string());
+        }
     }
 }

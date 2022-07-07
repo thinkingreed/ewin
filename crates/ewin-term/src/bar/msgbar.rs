@@ -1,4 +1,4 @@
-use crate::{ewin_com::util::*, model::MsgType, model::*};
+use crate::{ewin_com::util::*, model::*};
 use crossterm::{cursor::*, terminal::*};
 use ewin_cfg::{colors::*, log::*};
 use std::io::Write;
@@ -20,16 +20,10 @@ impl MsgBar {
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         Log::info_key("MsgBar.draw");
 
-        // if !self.msg.str.is_empty() {
-        //     if self.is_msg_changed() {
         Log::debug("self.row_posi", &self.row_posi);
-
         str_vec.push(format!("{}{}", MoveTo(0, self.row_posi as u16), Clear(ClearType::CurrentLine),));
         str_vec.push(Colors::get_default_bg());
-
         str_vec.push(self.get_disp_msg());
-        //    }
-        // }
     }
 
     pub fn draw_only<T: Write>(&mut self, out: &mut T) {
@@ -60,10 +54,12 @@ impl MsgBar {
         self.msg.msg_type = MsgType::Error;
     }
 
+    /*
     pub fn is_msg_changed(&mut self) -> bool {
-        //  return !(self.msg_org == self.msg || self.msg.str.is_empty());
         return self.msg_org != self.msg;
     }
+     */
+
     pub fn is_exsist_msg(&mut self) -> bool {
         return !self.msg.str.is_empty();
     }

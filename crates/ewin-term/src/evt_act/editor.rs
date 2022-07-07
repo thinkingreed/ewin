@@ -1,6 +1,6 @@
 use crate::{ewin_com::model::*, help::*, model::*};
 use ewin_cfg::{log::*, model::modal::*};
-use ewin_com::_cfg::key::cmd::CmdType;
+use ewin_com::_cfg::key::cmd::*;
 use ewin_const::def::*;
 
 impl EvtAct {
@@ -8,9 +8,14 @@ impl EvtAct {
         Log::debug_key("EvtAct::ctrl_editor");
 
         let evt_act = EvtAct::exec_editor(term);
+        if term.curt().editor.cmd.config.is_recalc_scrl {
+            term.curt().editor.set_scrlbar_h_info();
+            term.curt().editor.calc_editor_scrlbar_v();
+        }
         if evt_act != ActType::Next {
             return evt_act;
         }
+
         return ActType::Draw(term.curt().editor.get_draw_parts());
     }
 
@@ -23,6 +28,12 @@ impl EvtAct {
         }
         term.curt().editor.set_org_state();
         term.curt().editor.init();
+
+        Log::debug("term.curt().editor.win_mgr.win_h_idx 111", &term.curt().editor.win_mgr.win_h_idx);
+        Log::debug("term.curt().editor.win_mgr.curt_ref() 111", &term.curt().editor.win_mgr.curt_ref());
+        term.curt().editor.set_tgt_window();
+        Log::debug("term.curt().editor.win_mgr.win_h_idx 222", &term.curt().editor.win_mgr.win_h_idx);
+        Log::debug("term.curt().editor.win_mgr.curt_ref() 222", &term.curt().editor.win_mgr.curt_ref());
 
         let cmd = &term.curt().editor.cmd.clone();
         Log::debug("cmd", &cmd);
@@ -39,14 +50,13 @@ impl EvtAct {
             CmdType::CloseAllFile => return term.close_tabs(USIZE_UNDEFINED),
             CmdType::Resize(_, _) => term.resize(),
             CmdType::SaveFile => {
-                let act_type = Tab::save(term, SaveType::Normal);
+                let act_type = term.curt().save(SaveType::Normal);
                 if let ActType::Draw(_) = act_type {
                     return act_type;
                 }
             }
             // file
             CmdType::CreateNewFile => term.new_tab(),
-
             // format
             CmdType::Format(fmt_type) => return EvtAct::evt_editor_format(term, fmt_type),
             // key record
@@ -63,7 +73,7 @@ impl EvtAct {
              */
             CmdType::OpenMenuFile | CmdType::OpenMenuConvert | CmdType::OpenMenuEdit | CmdType::OpenMenuSearch | CmdType::OpenMenuMacro => {}
             // Help
-            CmdType::Help => Help::disp_toggle(term),
+            CmdType::Help => return Help::disp_toggle(term),
             /*
              * ctx_menu
              */
@@ -72,9 +82,13 @@ impl EvtAct {
                 term.init_ctx_menu(y, x);
             }
             // switch_tab
-            CmdType::SwitchTabRight => return term.switch_tab(Direction::Right),
-            CmdType::SwitchTabLeft => return term.switch_tab(Direction::Left),
-
+            CmdType::SwitchTab(direction) => return term.switch_tab(direction),
+            CmdType::WindowSplit(split_type) => {
+                term.editor_draw_vec[term.tab_idx].clear();
+                term.curt().editor.win_mgr.split_window(&split_type);
+                term.set_disp_size();
+                return ActType::Draw(DParts::All);
+            }
             /*
              * editor
              */

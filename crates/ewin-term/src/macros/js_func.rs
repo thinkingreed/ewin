@@ -36,10 +36,10 @@ impl Macros {
     pub fn getSelectedString(scope: &mut HandleScope, _: FunctionCallbackArguments, mut rv: ReturnValue) {
         if let Some(Ok(mut tab)) = TAB.get().map(|tab| tab.try_lock()) {
             let mut sel_str = String::new();
-            Log::debug("tab.editor.sel", &tab.editor.sel);
-            if tab.editor.sel.is_selected() {
-                sel_str = match tab.editor.sel.mode {
-                    SelMode::Normal => tab.editor.buf.slice(tab.editor.sel.get_range()),
+            Log::debug("tab.editor.sel", &tab.editor.win_mgr.curt().sel);
+            if tab.editor.win_mgr.curt().sel.is_selected() {
+                sel_str = match tab.editor.win_mgr.curt().sel.mode {
+                    SelMode::Normal => tab.editor.buf.slice(tab.editor.win_mgr.curt_ref().sel.get_range()),
                     SelMode::BoxSelect => tab.editor.slice_box_sel().0,
                 };
             }

@@ -80,7 +80,7 @@ impl Editor {
         Log::debug_key("2222222222222222222222");
 
         for idx in idxs {
-            self.scrl_h.row_width_chars_vec.insert(idx, (0, 0));
+            self.win_mgr.curt().scrl_h.row_width_chars_vec.insert(idx, (0, 0));
             //  self.change_info.new_row.insert(idx);
             Log::debug_key("333333333333333333333333");
             self.input_comple.analysis_new(idx, &self.buf.char_vec_row(idx));
@@ -96,7 +96,7 @@ impl Editor {
 
         self.change_info.del_row_set.extend(&idxs);
         for (i, idx) in idxs.iter().enumerate() {
-            self.scrl_h.row_width_chars_vec.remove(idx - i);
+            self.win_mgr.curt().scrl_h.row_width_chars_vec.remove(idx - i);
         }
     }
 
@@ -107,6 +107,7 @@ impl Editor {
         for idx in &idxs {
             self.input_comple.analysis_mod(*idx, &self.buf.char_vec_row(*idx));
         }
-        self.recalc_scrlbar_h(idxs);
+        self.calc_editor_scrlbar_h(idxs);
+        self.calc_editor_scrlbar_v();
     }
 }

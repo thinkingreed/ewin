@@ -13,7 +13,7 @@ impl Editor {
         Log::debug_key("Editor.init_input_comple");
 
         let search_str = self.get_until_delim_str().0;
-        if self.cur.x != 0 && search_str.is_empty() {
+        if self.win_mgr.curt().cur.x != 0 && search_str.is_empty() {
             return ActType::Draw(DParts::MsgBar(Lang::get().no_input_comple_candidates.to_string()));
         }
         self.input_comple.search_set = self.input_comple.search(&search_str);
@@ -44,7 +44,7 @@ impl Editor {
             self.input_comple.set_disp_name(&search_str);
             let height = min(self.input_comple.widget.cont.cont_vec.len(), InputComple::MAX_HEIGHT);
 
-            self.input_comple.widget.init_menu(self.cur.y + self.row_posi - self.offset_y, self.cur.disp_x + self.get_rnw_and_margin() - 1, height);
+            self.input_comple.widget.init_menu(self.win_mgr.curt().cur.y + self.get_curt_row_posi() - self.win_mgr.curt().offset.y, self.win_mgr.curt().cur.disp_x + self.get_rnw_and_margin() - 1, height);
             // self.input_comple.widget.set_parent_disp_area(self.cur.y + self.row_posi - self.offset_y, self.cur.disp_x + self.get_rnw_and_margin() - 1, height);
             // self.input_comple.widget.set_init_menu();
         }
@@ -66,7 +66,7 @@ impl Editor {
                     return evt_act;
                 }
                 let x = x - self.get_rnw_and_margin();
-                let y = y - self.row_posi + self.offset_y;
+                let y = y - self.get_curt_row_posi() + self.win_mgr.curt().offset.y;
                 self.set_cur_target_by_disp_x(y, x);
 
                 self.clear_input_comple();
@@ -124,7 +124,7 @@ impl Editor {
 
     pub fn replace_input_comple(&mut self, replace_str: String) {
         let (search_str, str_sx) = self.get_until_delim_str();
-        let s_idx = self.buf.row_to_char(self.cur.y) + str_sx;
+        let s_idx = self.buf.row_to_char(self.win_mgr.curt().cur.y) + str_sx;
 
         self.edit_proc(Cmd::to_cmd(CmdType::ReplaceExec(search_str, replace_str, BTreeSet::from([s_idx]))));
     }
@@ -135,9 +135,9 @@ impl Editor {
     }
 
     pub fn get_until_delim_str(&self) -> (String, usize) {
-        let y = self.cur.y;
-        let sx = get_until_delim_sx(&self.buf.char_vec_row(y)[..self.cur.x]);
-        return (self.buf.char_vec_row(y)[sx..self.cur.x].iter().collect::<String>(), sx);
+        let y = self.win_mgr.curt_ref().cur.y;
+        let sx = get_until_delim_sx(&self.buf.char_vec_row(y)[..self.win_mgr.curt_ref().cur.x]);
+        return (self.buf.char_vec_row(y)[sx..self.win_mgr.curt_ref().cur.x].iter().collect::<String>(), sx);
     }
 
     pub fn is_input_imple_mode(&self, is_curt: bool) -> bool {

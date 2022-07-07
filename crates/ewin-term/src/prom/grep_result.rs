@@ -39,9 +39,9 @@ impl EvtAct {
             term.curt().editor.set_grep_result(row_str);
 
             // let rnw_org = term.curt().editor.rnw_org;
-            if term.curt().editor.buf.len_rows() > term.curt().editor.row_len && term.curt().editor.rnw_org == term.curt().editor.rnw {
-                let y = term.curt().editor.offset_y + term.curt().editor.row_len - 2;
-                term.curt().editor.draw_range = E_DrawRange::ScrollDown(y - 2, y);
+            if term.curt().editor.buf.len_rows() > term.curt().editor.get_curt_row_len() && term.curt().editor.rnw_org == term.curt().editor.rnw {
+                let y = term.curt().editor.win_mgr.curt().offset.y + term.curt().editor.get_curt_row_len() - 2;
+                term.curt().editor.win_mgr.curt().draw_range = E_DrawRange::ScrollDown(y - 2, y);
                 term.draw(out, if cfg!(target_os = "windows") { &DParts::All } else { &DParts::ScrollUpDown(ScrollUpDownType::Grep) });
             } else {
                 term.draw(out, &DParts::All);
@@ -58,11 +58,10 @@ impl EvtAct {
         term.curt().state.grep.is_cancel = is_cancel;
         term.curt().state.grep.is_empty = is_empty;
         term.curt().prom_show_com(&CmdType::GrepResultProm);
-
         term.curt().editor.set_cur_default();
         term.curt().editor.scroll();
         term.curt().editor.state.is_read_only = true;
-        term.curt().editor.calc_editor_scrlbar_h();
+        term.curt().editor.init_editor_scrlbar_h();
         term.draw_all(out, DParts::All);
     }
 
@@ -71,7 +70,7 @@ impl EvtAct {
 
         match term.curt().prom.cmd.cmd_type {
             CmdType::Confirm => {
-                let y = term.curt().editor.cur.y;
+                let y = term.curt().editor.win_mgr.curt().cur.y;
                 let grep_result = term.curt().editor.grep_result_vec[y].clone();
                 Log::debug("term.tabs[term.idx].state.grep", &term.curt().state.grep);
 

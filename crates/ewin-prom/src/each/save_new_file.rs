@@ -11,7 +11,7 @@ use indexmap::*;
 
 impl PromSaveNewFile {
     pub fn new(candidate_new_filenm: String) -> Self {
-        let mut prom = PromSaveNewFile { base: PromBase { config: PromptConfig { is_updown_valid: true }, ..PromBase::default() },  };
+        let mut prom = PromSaveNewFile { base: PromBase { config: PromptConfig { is_updown_valid: true }, ..PromBase::default() } };
         prom.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![format!("{}", &Lang::get().set_new_filenm,)], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 
         let confirm = PromContKeyMenu { disp_str: Lang::get().search_top.to_string(), key: PromContKeyMenuType::Cmd(CmdType::Confirm) };

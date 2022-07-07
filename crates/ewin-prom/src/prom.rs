@@ -1,10 +1,7 @@
 use super::{model::*, prom_trait::main_trait::*};
 use crossterm::{cursor::*, terminal::ClearType::*, terminal::*};
 use ewin_cfg::log::*;
-use ewin_com::{
-    _cfg::key::cmd::{Cmd, CmdType},
-    model::*,
-};
+use ewin_com::{_cfg::key::cmd::*, model::*};
 use std::{io::Write, u16};
 
 impl Prom {

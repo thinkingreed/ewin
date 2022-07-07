@@ -40,10 +40,8 @@ impl StatusBar {
         tab.sbar.cur_area = (normal_w_s, normal_w_s + get_str_width(&cur.disp_str) - 1);
         tab.sbar.enc_nl_area = (tab.sbar.cur_area.1 + 1, tab.sbar.cur_area.1 + 1 + get_str_width(&enc_nl.disp_str));
 
-        let mut msg_str = String::new();
-        msg_str.push_str(&format!("{}{}", Colors::get_default_fg_bg(), " ".repeat(other_w)));
-        msg_str.push_str(&format!("{}{}", Colors::get_sbar_inversion_fg_bg(), opt_str));
-        msg_str.push_str(&format!("{}{}", Colors::get_sbar_fg_bg(), normal_str));
+        let mut msg_str = format!("{}{}{}{}{}{}", Colors::get_default_fg_bg(), " ".repeat(other_w), Colors::get_sbar_inversion_fg_bg(), opt_str, Colors::get_sbar_fg_bg(), normal_str);
+        Log::debug("tab.sbar.row_posi", &tab.sbar.row_posi);
         msg_str = format!("{}{}{}", MoveTo(0, tab.sbar.row_posi as u16), Clear(ClearType::CurrentLine), msg_str);
 
         str_vec.push(msg_str);
@@ -65,7 +63,7 @@ impl StatusBar {
         let read_only = StatusBarCont::new(if editor.state.is_read_only { Lang::get().unable_to_edit.to_string() } else { "".to_string() });
         opt_vec.push(read_only);
 
-        let select_mode = StatusBarCont::new(match editor.sel.mode {
+        let select_mode = StatusBarCont::new(match editor.win_mgr.curt_ref().sel.mode {
             SelMode::Normal => "".to_string(),
             SelMode::BoxSelect => Lang::get().box_select.to_string(),
         });
@@ -97,14 +95,14 @@ impl StatusBar {
     }
 
     pub fn get_cur_str(editor: &Editor) -> String {
-        let cur = editor.cur;
+        let cur = editor.win_mgr.curt_ref().cur;
         let len_lines = editor.buf.len_rows();
-        let len_line_chars = editor.buf.len_row_chars(editor.cur.y);
+        let len_line_chars = editor.buf.len_row_chars(editor.win_mgr.curt_ref().cur.y);
 
         let row_str = format!("{}({}/{})", &Lang::get().row, (cur.y + 1), len_lines);
         let len_line_chars = if len_line_chars == 0 {
             0
-        } else if editor.cur.y == len_lines - 1 {
+        } else if editor.win_mgr.curt_ref().cur.y == len_lines - 1 {
             len_line_chars
         } else {
             // -1 is new line code

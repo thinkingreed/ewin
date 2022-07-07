@@ -57,7 +57,7 @@ pub struct Terminal {
     pub fbar: FileBar,
     // pub help: Help,
     pub tabs: Vec<Tab>,
-    pub editor_draw_vec: Vec<EditorDraw>,
+    pub editor_draw_vec: Vec<Vec<Vec<EditorDraw>>>,
     // tab index
     pub tab_idx: usize,
     pub state: TerminalState,

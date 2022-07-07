@@ -28,10 +28,12 @@ background = "#d7d7d7"
 horizontal_background = "#282828"
 vertical_background = "#282828"
 
-
 [editor.scale]
 foreground = "#444444"
 background = "#212121"
+
+[editor.window.split_line]
+background = "#414141"
 
 [system.btn]
 foreground = "#000000"

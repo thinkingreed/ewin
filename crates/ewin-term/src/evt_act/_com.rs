@@ -25,8 +25,6 @@ impl EvtAct {
                 term.state.is_ctx_menu_hide_draw = false;
                 term.state.is_menuwidget_hide_draw = false;
                 &DParts::All
-            } else if term.curt().msgbar.is_msg_changed() {
-                &DParts::All
             } else {
                 draw_parts
             };
@@ -48,12 +46,7 @@ impl EvtAct {
                 DParts::MenuWidget => term.menubar.widget.draw_only(out),
                 DParts::InputComple => term.curt().editor.input_comple.draw_only(out),
                 DParts::CtxMenu => term.ctx_widget.draw_only(out),
-                DParts::All | DParts::ScrollUpDown(_) => {
-                    if let DParts::MsgBar(_) | DParts::AllMsgBar(_) = &term.draw_parts_org {
-                        term.curt().editor.draw_range = E_DrawRange::All;
-                    }
-                    term.draw(out, draw_parts);
-                }
+                DParts::All | DParts::ScrollUpDown(_) => term.draw(out, draw_parts),
                 DParts::Editor(_) => term.draw(out, draw_parts),
                 DParts::StatusBar => StatusBar::draw_only(out, &mut term.tabs[term.tab_idx], H_FILE_VEC.get().unwrap().try_lock().unwrap().get(term.tab_idx).unwrap()),
                 DParts::Absolute(range) => {
@@ -63,8 +56,8 @@ impl EvtAct {
                     };
                     // Editor
                     if term.curt().editor.get_disp_range_absolute().contains(&range.end) {
-                        let row_posi = term.curt().editor.row_posi;
-                        let offset_y = term.curt().editor.offset_y;
+                        let row_posi = term.curt().editor.get_curt_row_posi();
+                        let offset_y = term.curt().editor.win_mgr.curt().offset.y;
                         let sy = if range.start < row_posi { 0 } else { range.start - row_posi + offset_y };
                         term.draw(out, &DParts::Editor(E_DrawRange::TargetRange(sy, range.end + row_posi + offset_y)));
                     }
@@ -117,7 +110,7 @@ impl EvtAct {
         Terminal::hide_cur();
 
         // msg
-        term.curt().msgbar.set_org_state();
+        term.curt().msgbar.clear_mag();
         term.menubar.redraw_menubar_on_mouse(&keys);
 
         match term.keywhen {
@@ -210,6 +203,7 @@ impl EvtAct {
         }
         return ActType::Next;
     }
+
     pub fn set_keys(keys: Keys, term: &mut Terminal) -> ActType {
         Log::info("Pressed key", &keys);
         term.set_keys(&keys);

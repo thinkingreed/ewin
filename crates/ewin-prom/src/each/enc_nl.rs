@@ -9,7 +9,7 @@ use ewin_const::def::*;
 
 impl PromEncNl {
     pub fn new() -> Self {
-        let mut prom = PromEncNl { base: PromBase { config: PromptConfig { is_updown_valid: true,  }, ..PromBase::default() } };
+        let mut prom = PromEncNl { base: PromBase { config: PromptConfig { is_updown_valid: true }, ..PromBase::default() } };
         prom.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().set_enc_nl.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 
         let fixed = PromContKeyMenu { disp_str: Lang::get().fixed.to_string(), key: PromContKeyMenuType::Cmd(CmdType::Confirm) };

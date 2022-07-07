@@ -166,9 +166,9 @@ impl WidgetMenu {
 
         let mut add_str = String::new();
         if menu_str == Lang::get().scale {
-            add_str.push_str(&format!("{} ", if CfgEdit::get().general.editor.scale.is_enable { "*" } else { " " }));
+            add_str.push_str(if CfgEdit::get().general.editor.scale.is_enable { "*" } else { " " });
         } else if menu_str == Lang::get().row_no {
-            add_str.push_str(&format!("{} ", if CfgEdit::get().general.editor.row_no.is_enable { "*" } else { " " }));
+            add_str.push_str(if CfgEdit::get().general.editor.row_no.is_enable { "*" } else { " " });
         }
         Log::debug("add_str", &add_str);
         return add_str;

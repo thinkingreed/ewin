@@ -5,6 +5,10 @@ pub const TERM_MINIMUM_HEIGHT: usize = 12;
 
 pub const MENUBAR_ROW_NUM: usize = 1;
 pub const FILEBAR_ROW_NUM: usize = 1;
+pub const SCALE_ROW_NUM: usize = 1;
+
+// Winodw split line width
+pub const WINDOW_SPLIT_LINE_WIDTH: usize = 1;
 
 pub const MSGBAR_ROW_NUM: usize = 1;
 pub const STATUSBAR_ROW_NUM: usize = 1;

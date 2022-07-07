@@ -5,6 +5,7 @@ use ewin_cfg::{colors::*, lang::lang_cfg::Lang, log::*};
 use ewin_com::{_cfg::key::cmd::CmdType, files::file::*, model::*, util::*};
 use ewin_const::def::*;
 use std::cmp::min;
+use std::fmt::Write as _;
 
 impl PromContPluginTrait for PromContFileList {
     fn as_base(&self) -> &PromptContBase {
@@ -30,7 +31,7 @@ impl PromContPluginTrait for PromContFileList {
                 for (x, op_file) in vec.iter().enumerate() {
                     let file_disp_str = self.get_file_disp_str(op_file, vec_y, x);
                     if file_disp_str != file_disp_str_org {
-                        row_str.push_str(&format!("{}{}", file_disp_str, op_file.filenm_disp));
+                        let _ = write!(row_str, "{}{}", file_disp_str, op_file.filenm_disp);
                     } else {
                         row_str.push_str(&op_file.filenm_disp);
                     }

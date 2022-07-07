@@ -12,8 +12,8 @@ impl Editor {
 
         let regex = Cfg::get().general.editor.search.regex;
 
-        let s_row_idx = if regex { self.buf.row_to_byte(self.offset_y) } else { self.buf.row_to_char(self.offset_y) };
-        let ey = min(self.offset_y + self.row_len, self.buf.len_rows());
+        let s_row_idx = if regex { self.buf.row_to_byte(self.win_mgr.curt().offset.y) } else { self.buf.row_to_char(self.win_mgr.curt().offset.y) };
+        let ey = min(self.win_mgr.curt().offset.y + self.get_curt_row_len(), self.buf.len_rows());
         let e_row_idx = if regex { self.buf.row_to_byte(ey) } else { self.buf.row_to_char(ey) };
 
         // self.search_org = self.search.clone();
@@ -34,7 +34,7 @@ impl Editor {
             for s in &self.search_org.ranges {
                 self.change_info.restayle_row_set.insert(s.y);
             }
-            self.draw_range = E_DrawRange::Targetpoint;
+            self.win_mgr.curt().draw_range = E_DrawRange::Targetpoint;
         }
     }
     pub fn exec_search_confirm(&mut self, search_str: String) -> ActType {
@@ -76,7 +76,7 @@ impl Editor {
             let range = self.search.ranges[self.search.idx];
             Log::debug("tgt range", &range);
             self.set_cur_target_by_x(range.y, range.sx, false);
-            Log::debug("self.cur", &self.cur);
+            Log::debug("self.cur", &self.win_mgr.curt().cur);
         }
 
         self.scroll();
@@ -113,15 +113,15 @@ impl Editor {
     }
 
     pub fn get_search_str_index(&mut self, is_asc: bool) -> usize {
-        let cur_x = self.cur.x;
+        let cur_x = self.win_mgr.curt().cur.x;
 
         if is_asc {
             for (i, range) in self.search.ranges.iter().enumerate() {
                 // When the cursor position is the target in the first search
-                if self.search.idx == USIZE_UNDEFINED && (self.cur.y < range.y || (self.cur.y == range.y && cur_x <= range.sx)) {
+                if self.search.idx == USIZE_UNDEFINED && (self.win_mgr.curt().cur.y < range.y || (self.win_mgr.curt().cur.y == range.y && cur_x <= range.sx)) {
                     return i;
                 }
-                if self.cur.y < range.y || (self.cur.y == range.y && cur_x < range.sx) {
+                if self.win_mgr.curt().cur.y < range.y || (self.win_mgr.curt().cur.y == range.y && cur_x < range.sx) {
                     return i;
                 }
             }
@@ -134,7 +134,7 @@ impl Editor {
             ranges.reverse();
             for (i, range) in ranges.iter().enumerate() {
                 // Log::ep("iii ", &i);
-                if self.cur.y > range.y || (self.cur.y == range.y && cur_x > range.sx) {
+                if self.win_mgr.curt().cur.y > range.y || (self.win_mgr.curt().cur.y == range.y && cur_x > range.sx) {
                     return max_index - i;
                 }
             }
@@ -167,7 +167,7 @@ impl Editor {
         let y = self.buf.char_to_row(end_char_idx);
         let x = end_char_idx - self.buf.row_to_char(y);
         self.set_cur_target_by_x(y, x, false);
-        proc.cur_e = self.cur;
+        proc.cur_e = self.win_mgr.curt().cur;
     }
 
     pub fn get_idx_set(&mut self, search_str: &str, replace_str: &str, org_set: &BTreeSet<usize>) -> BTreeSet<usize> {
@@ -192,7 +192,7 @@ impl Editor {
         Log::debug("self.search.str", &self.search.str);
         Log::debug("self.search_org.str", &self.search_org.str);
 
-        let sel_str = self.buf.slice_string(self.sel);
+        let sel_str = self.buf.slice_string(self.win_mgr.curt().sel);
         if self.search.ranges.is_empty() || (!sel_str.is_empty() && self.search.str != sel_str) {
             Log::debug_key("11111111111111111111111111111");
             //  self.search.clear();

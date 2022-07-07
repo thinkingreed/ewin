@@ -17,31 +17,31 @@ use ewin_widget::widget::pulldown::*;
 use std::{cmp::min, path::Path};
 
 impl Tab {
-    pub fn save(term: &mut Terminal, save_type: SaveType) -> ActType {
+    pub fn save(&mut self, save_type: SaveType) -> ActType {
         Log::debug_key("save");
         Log::debug("save_type", &save_type);
 
         let mut vec = H_FILE_VEC.get().unwrap().try_lock().unwrap();
-        let path = Path::new(&vec.get(term.tab_idx).unwrap().fullpath);
+        let path = Path::new(&vec.get(self.idx).unwrap().fullpath);
         if save_type != SaveType::NewName && (!path.is_file() || !path.exists()) {
-            return term.curt().prom_save_new_file();
+            return self.prom_show_com(&CmdType::SaveNewFile);
         } else {
             match save_type {
                 SaveType::Normal => {
                     // Check if the file has been updated after opening
-                    if let Some(latest_modified_time) = File::get_modified_time(&vec.get_mut(term.tab_idx).unwrap().fullpath) {
-                        if latest_modified_time > vec.get_mut(term.tab_idx).unwrap().mod_time {
-                            Log::debug("latest_modified_time > h_file.modified_time ", &(latest_modified_time > vec.get_mut(term.tab_idx).unwrap().mod_time));
-                            return term.curt().prom_show_com(&CmdType::Saveforced);
+                    if let Some(latest_modified_time) = File::get_modified_time(&vec.get_mut(self.idx).unwrap().fullpath) {
+                        if latest_modified_time > vec.get_mut(self.idx).unwrap().mod_time {
+                            Log::debug("latest_modified_time > h_file.modified_time ", &(latest_modified_time > vec.get_mut(self.idx).unwrap().mod_time));
+                            return self.prom_show_com(&CmdType::Saveforced);
                         }
                     }
                 }
                 SaveType::NewName | SaveType::Forced => {}
             }
 
-            let h_file = vec.get_mut(term.tab_idx).unwrap().clone();
+            let h_file = vec.get_mut(self.idx).unwrap().clone();
             Log::info_s(&format!("Save {}, file info {:?}", &h_file.filenm, &h_file));
-            let result = term.curt().editor.buf.write_to(&h_file);
+            let result = self.editor.buf.write_to(&h_file);
             match result {
                 Ok(enc_errors) => {
                     if enc_errors {
@@ -49,16 +49,16 @@ impl Tab {
                         return ActType::Draw(DParts::AllMsgBar(Lang::get().writing_cannot_convert_encoding.to_string()));
                     } else {
                         if save_type == SaveType::NewName {
-                            Terminal::set_title(&vec.get_mut(term.tab_idx).unwrap().filenm);
+                            Terminal::set_title(&vec.get_mut(self.idx).unwrap().filenm);
                         }
-                        vec.get_mut(term.tab_idx).unwrap().mod_time = File::get_modified_time(&vec.get_mut(term.tab_idx).unwrap().fullpath).unwrap();
+                        vec.get_mut(self.idx).unwrap().mod_time = File::get_modified_time(&vec.get_mut(self.idx).unwrap().fullpath).unwrap();
 
-                        term.curt().prom.clear();
-                        term.curt().state.clear();
+                        self.prom.clear();
+                        self.state.clear();
 
-                        Log::info("Saved file", &vec.get_mut(term.tab_idx).unwrap());
-                        if term.curt().editor.state.is_changed || save_type == SaveType::NewName || save_type == SaveType::Forced {
-                            term.curt().editor.state.is_changed = false;
+                        Log::info("Saved file", &vec.get_mut(self.idx).unwrap());
+                        if self.editor.state.is_changed || save_type == SaveType::NewName || save_type == SaveType::Forced {
+                            self.editor.state.is_changed = false;
                             return ActType::Draw(DParts::All);
                         } else {
                             return ActType::Draw(DParts::None);
@@ -76,7 +76,10 @@ impl Tab {
     pub fn prom_show_com(&mut self, cmd_type: &CmdType) -> ActType {
         Log::debug_key("Tab::prom_show_com");
         Log::debug("cmd_type", &cmd_type);
+        Log::debug("self.prom.row_bottom_posi 111", &self.prom.row_bottom_posi);
         self.prom.row_bottom_posi = get_term_size().1 - STATUSBAR_ROW_NUM - if HELP_DISP.get().unwrap().try_lock().unwrap().is_disp { HELP_DISP.get().unwrap().try_lock().unwrap().row_num } else { 0 };
+        Log::debug("self.prom.row_bottom_posi 222", &self.prom.row_bottom_posi);
+
         match cmd_type {
             CmdType::FindProm => return self.prom_search(),
             CmdType::ReplaceProm => return self.prom_replace(),

@@ -8,6 +8,7 @@ use crate::{
 use crossterm::{cursor::*, terminal::*};
 use ewin_cfg::{colors::*, log::*};
 use ewin_const::def::*;
+use std::fmt::Write as _;
 
 impl FileBar {
     const ALLOW_BTN_WITH: usize = 2;
@@ -25,7 +26,7 @@ impl FileBar {
 
         let mut hber_str = format!("{}{}{}", MoveTo(0, term.fbar.row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_default_fg_bg());
         if term.fbar.is_left_arrow_disp {
-            hber_str.push_str(&format!("{}{}{}", &Colors::get_hbar_active_fg_bg(), left_arrow_btn, &Colors::get_default_fg_bg()));
+            let _ = write!(hber_str, "{}{}{}", &Colors::get_hbar_active_fg_bg(), left_arrow_btn, &Colors::get_default_fg_bg());
         }
         for (i, h_file) in H_FILE_VEC.get().unwrap().try_lock().unwrap().iter().enumerate() {
             if !h_file.is_disp {

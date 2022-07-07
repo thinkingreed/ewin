@@ -11,7 +11,7 @@ use serde_json::Value;
 
 impl Editor {
     pub fn format(&mut self, fmt_type: FileType) -> Option<String> {
-        if !self.sel.is_selected() {
+        if !self.win_mgr.curt().sel.is_selected() {
             Some(Lang::get().no_sel_range.to_string())
         } else if let Err(err) = self.exec_format(fmt_type) {
             let err_str = format!("{}{}", fmt_type, Lang::get().parsing_failed);
@@ -27,7 +27,7 @@ impl Editor {
 
         let format_str = match fmt_type {
             FileType::JSON => {
-                let value: Value = serde_json::from_str(&self.buf.slice_string(self.sel.get_range()))?;
+                let value: Value = serde_json::from_str(&self.buf.slice_string(self.win_mgr.curt().sel.get_range()))?;
                 let buf = Vec::new();
                 let indent = &Cfg::get().general.editor.format.indent;
                 let formatter = serde_json::ser::PrettyFormatter::with_indent(indent.as_bytes());
@@ -41,7 +41,7 @@ impl Editor {
                 format_str
             }
             FileType::XML | FileType::HTML => {
-                let slice = self.buf.slice(self.sel.get_range());
+                let slice = self.buf.slice(self.win_mgr.curt().sel.get_range());
                 let nl = NL::get_nl(&self.h_file.nl.to_string());
                 FormatXml::format_xml_html(slice, fmt_type, nl)
             }

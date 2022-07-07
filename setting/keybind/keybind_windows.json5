@@ -244,11 +244,14 @@
   {
     key: 'F10', cmd: 'contextMenu'
   },
-   /*
-   * dummy
+ /*
+   * window
    */
   {
-    key: 'ctrl+d', cmd: 'formatXML'
+    key: 'ctrl+d', cmd: 'windowSplitVertical'
+  },
+    {
+    key: 'ctrl+i', cmd: 'windowSplitHorizontal'
   }
 ]
 

@@ -19,7 +19,7 @@ impl PromOpenFile {
     pub const OPEN_FILE_FIXED_PHRASE_ROW_NUM: usize = 5;
 
     pub fn new(open_file_type: &OpenFileType) -> Self {
-        let mut prom = PromOpenFile { base: PromBase { config: PromptConfig { is_updown_valid: true,  }, ..PromBase::default() }, ..PromOpenFile::default() };
+        let mut prom = PromOpenFile { base: PromBase { config: PromptConfig { is_updown_valid: true }, ..PromBase::default() }, ..PromOpenFile::default() };
 
         prom.file_type = *open_file_type;
 

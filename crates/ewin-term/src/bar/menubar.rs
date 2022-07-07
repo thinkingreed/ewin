@@ -5,6 +5,7 @@ use ewin_cfg::{colors::*, global::*, lang::lang_cfg::*, log::*};
 use ewin_com::_cfg::key::keys::*;
 use ewin_const::def::*;
 use ewin_widget::widget::menubar::*;
+use std::fmt::Write as _;
 use std::{
     io::{stdout, Write},
     ops::Range,
@@ -28,7 +29,7 @@ impl MenuBar {
 
             let mut mber_str = String::new();
             if self.is_left_arrow_disp {
-                mber_str.push_str(&format!("{}{}", &Colors::get_mbar_active_fg_bg(), left_arrow_btn));
+                let _ = write!(mber_str, "{}{}", &Colors::get_mbar_active_fg_bg(), left_arrow_btn);
             }
             mber_str.push_str(&Colors::get_mbar_default_bg());
 
@@ -45,8 +46,9 @@ impl MenuBar {
             Log::debug("self.menu_rest", &self.menu_rest);
 
             mber_str.push_str(&format!("{}{}", &Colors::get_mbar_default_bg(), &" ".repeat(self.menu_rest)));
+
             if self.is_right_arrow_disp {
-                mber_str.push_str(&format!("{}{}", &Colors::get_mbar_active_fg_bg(), right_arrow_btn));
+                mber_str.push_str(&format!("{}{}", Colors::get_mbar_active_fg_bg(), right_arrow_btn));
             }
             mber_str = format!("{}{}{}{}", mber_str, Colors::get_mbar_passive_fg_bg(), close_btn, Colors::get_default_bg());
             str_vec.push(mber_str);

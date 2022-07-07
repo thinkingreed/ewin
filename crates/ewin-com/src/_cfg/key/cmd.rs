@@ -97,6 +97,8 @@ impl Cmd {
             "cursorDownSelect" => CmdType::CursorDownSelect,
             "cursorRowHomeSelect" => CmdType::CursorRowHomeSelect,
             "cursorRowEndSelect" => CmdType::CursorRowEndSelect,
+            "cursorFileHome" => CmdType::CursorFileHome,
+            "cursorFileEnd" => CmdType::CursorFileEnd,
             "cursorPageUp" => CmdType::CursorPageUp,
             "cursorPageDown" => CmdType::CursorPageDown,
 
@@ -139,9 +141,8 @@ impl Cmd {
             "openMenuSearch" => CmdType::OpenMenuSearch,
             "openMenuMacro" => CmdType::OpenMenuSearch,
             // switchTab
-            "switchTabLeft" => CmdType::SwitchTabLeft,
-            "switchTabRight" => CmdType::SwitchTabRight,
-
+            "switchTabLeft" => CmdType::SwitchTab(Direction::Left),
+            "switchTabRight" => CmdType::SwitchTab(Direction::Right),
             // mode
             "cancelEditorState" => CmdType::CancelEditorState,
             // ContextMenu
@@ -160,6 +161,9 @@ impl Cmd {
             "grepPrompt" => CmdType::GrepProm,
             "encodingPrompt" => CmdType::EncodingProm,
             "openFilePrompt" => CmdType::openFileProm(OpenFileType::Normal),
+            // window
+            "windowSplitVertical" => CmdType::WindowSplit(WindowSplitType::Vertical),
+            "windowSplitHorizontal" => CmdType::WindowSplit(WindowSplitType::Horizontal),
             _ => CmdType::Unsupported,
         };
 
@@ -169,30 +173,18 @@ impl Cmd {
     pub fn to_cmd(cmd_type: CmdType) -> Cmd {
         return match cmd_type {
             // edit
-            CmdType::InsertStr(_) | CmdType::Cut | CmdType::InsertRow | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::InsertBox(_) | CmdType::DelBox(_) | CmdType::ReplaceExec(_, _, _) | CmdType::Format(_) => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor, KeyWhen::Prom], config: CmdConfig { is_edit: true, is_record: true } },
+            CmdType::InsertStr(_) | CmdType::Cut | CmdType::InsertRow | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::InsertBox(_) | CmdType::DelBox(_) | CmdType::ReplaceExec(_, _, _) | CmdType::Format(_) => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor, KeyWhen::Prom], config: CmdConfig { is_edit: true, is_record: true, is_recalc_scrl: true } },
             // key macro
             CmdType::RecordKeyStartEnd => Cmd { cmd_type, ..Cmd::default() },
-            CmdType::ExecRecordKey => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor], config: CmdConfig { is_edit: true, ..CmdConfig::default() } },
+            CmdType::ExecRecordKey => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor], config: CmdConfig { is_edit: true, is_recalc_scrl: true, ..CmdConfig::default() } },
             // Cursor move Editor and Prom
-            CmdType::CursorLeft | CmdType::CursorRight | CmdType::CursorUp | CmdType::CursorDown | CmdType::CursorRowHome | CmdType::CursorRowEnd | CmdType::CursorLeftSelect | CmdType::CursorRightSelect | CmdType::CursorRowHomeSelect | CmdType::CursorRowEndSelect => Cmd { cmd_type, when_vec: vec![KeyWhen::All], config: CmdConfig { is_record: true, ..CmdConfig::default() } },
+            CmdType::CursorLeft | CmdType::CursorRight | CmdType::CursorUp | CmdType::CursorDown | CmdType::CursorRowHome | CmdType::CursorRowEnd | CmdType::CursorLeftSelect | CmdType::CursorRightSelect | CmdType::CursorRowHomeSelect | CmdType::CursorRowEndSelect => Cmd { cmd_type, when_vec: vec![KeyWhen::All], config: CmdConfig { is_record: true, is_recalc_scrl: true, ..CmdConfig::default() } },
             // Cursor move Editor only
-            CmdType::CursorUpSelect | CmdType::CursorDownSelect | CmdType::CursorFileHome | CmdType::CursorFileEnd | CmdType::CursorPageUp | CmdType::CursorPageDown => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor], config: CmdConfig { is_record: true, ..CmdConfig::default() } },
+            CmdType::CursorUpSelect | CmdType::CursorDownSelect | CmdType::CursorFileHome | CmdType::CursorFileEnd | CmdType::CursorPageUp | CmdType::CursorPageDown => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor], config: CmdConfig { is_record: true, is_recalc_scrl: true, ..CmdConfig::default() } },
             // select
             CmdType::Copy | CmdType::AllSelect => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor, KeyWhen::Prom], config: CmdConfig { is_record: true, ..CmdConfig::default() } },
             // mouse
-            CmdType::MouseDownLeft(_, _) => Cmd { cmd_type, ..Cmd::default() },
-            CmdType::MouseUpLeft(_, _) => Cmd { cmd_type, ..Cmd::default() },
-            CmdType::MouseDragLeftUp(_, _) => Cmd { cmd_type, ..Cmd::default() },
-            CmdType::MouseDragLeftDown(_, _) => Cmd { cmd_type, ..Cmd::default() },
-            CmdType::MouseDragLeftLeft(_, _) => Cmd { cmd_type, ..Cmd::default() },
-            CmdType::MouseDragLeftRight(_, _) => Cmd { cmd_type, ..Cmd::default() },
-            CmdType::MouseDownLeftBox(_, _) => Cmd { cmd_type, ..Cmd::default() },
-            CmdType::MouseDragLeftBox(_, _) => Cmd { cmd_type, ..Cmd::default() },
-
-            //  CmdType::MouseDragLeft(_, _) => Cmd { cmd_type, ..Cmd::default() },
-            CmdType::MouseMove(_, _) => Cmd { cmd_type, ..Cmd::default() },
-            CmdType::MouseScrollUp => Cmd { cmd_type, ..Cmd::default() },
-            CmdType::MouseScrollDown => Cmd { cmd_type, ..Cmd::default() },
+            CmdType::MouseDownLeft(_, _) | CmdType::MouseUpLeft(_, _) | CmdType::MouseMove(_, _) | CmdType::MouseDragLeftUp(_, _) | CmdType::MouseDragLeftDown(_, _) | CmdType::MouseDragLeftLeft(_, _) | CmdType::MouseDragLeftRight(_, _) | CmdType::MouseDownLeftBox(_, _) | CmdType::MouseDragLeftBox(_, _) | CmdType::MouseScrollUp | CmdType::MouseScrollDown => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, ..Cmd::default() },
             CmdType::MouseModeSwitch => Cmd { cmd_type, ..Cmd::default() },
 
             CmdType::BoxSelectMode => Cmd { cmd_type, ..Cmd::default() },
@@ -209,19 +201,19 @@ impl Cmd {
             /*
              * Editor
              */
-            CmdType::CreateNewFile | CmdType::InputComple | CmdType::CancelEditorState | CmdType::SaveFile | CmdType::SwitchTabLeft | CmdType::SwitchTabRight | CmdType::Help => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor], ..Cmd::default() },
+            CmdType::CreateNewFile | CmdType::InputComple | CmdType::CancelEditorState | CmdType::SaveFile | CmdType::SwitchTab(_) | CmdType::Help => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor], ..Cmd::default() },
+            CmdType::WindowSplit(_) => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, when_vec: vec![KeyWhen::Editor] },
             /*
              * Display
              */
-            CmdType::SwitchDispScale => Cmd { cmd_type, ..Cmd::default() },
-            CmdType::SwitchDispRowNo => Cmd { cmd_type, ..Cmd::default() },
+            CmdType::SwitchDispScale | CmdType::SwitchDispRowNo => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, ..Cmd::default() },
             // Prom
             CmdType::FindProm | CmdType::ReplaceProm | CmdType::MoveRowProm | CmdType::GrepProm | CmdType::GrepingProm | CmdType::GrepResultProm | CmdType::EncodingProm | CmdType::openFileProm(_) | CmdType::Saveforced | CmdType::WatchFileResult => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor], ..Cmd::default() },
             CmdType::SaveNewFile => Cmd { cmd_type, when_vec: vec![KeyWhen::MenuBar], ..Cmd::default() },
-            CmdType::FindNext | CmdType::FindBack => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor, KeyWhen::Prom], ..Cmd::default() },
+            CmdType::FindNext | CmdType::FindBack => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, when_vec: vec![KeyWhen::Editor, KeyWhen::Prom] },
             CmdType::FindCaseSensitive | CmdType::FindRegex => Cmd { cmd_type, when_vec: vec![KeyWhen::Prom], ..Cmd::default() },
 
-            CmdType::Confirm => Cmd { cmd_type, when_vec: vec![KeyWhen::MenuBar, KeyWhen::Prom, KeyWhen::CtxMenu], ..Cmd::default() },
+            CmdType::Confirm => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, when_vec: vec![KeyWhen::MenuBar, KeyWhen::Prom, KeyWhen::CtxMenu] },
             CmdType::CancelProm => Cmd { cmd_type, when_vec: vec![KeyWhen::Prom], ..Cmd::default() },
             CmdType::NextContent | CmdType::BackContent => Cmd { cmd_type, when_vec: vec![KeyWhen::Prom], ..Cmd::default() },
             // MenuBar
@@ -229,7 +221,7 @@ impl Cmd {
             // CtxMenu
             CmdType::CtxMenu(_, _) => Cmd { cmd_type, ..Cmd::default() },
             // Other
-            CmdType::Resize(_, _) => Cmd { cmd_type, ..Cmd::default() },
+            CmdType::Resize(_, _) => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, ..Cmd::default() },
             CmdType::Null => Cmd { cmd_type, ..Cmd::default() },
             CmdType::Unsupported => Cmd { cmd_type, ..Cmd::default() },
         };
@@ -244,20 +236,14 @@ impl Cmd {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct Cmd {
     pub cmd_type: CmdType,
     pub config: CmdConfig,
     pub when_vec: Vec<KeyWhen>,
 }
 
-impl Default for Cmd {
-    fn default() -> Self {
-        Cmd { when_vec: vec![], cmd_type: CmdType::default(), config: CmdConfig::default() }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 #[allow(non_camel_case_types)]
 pub enum CmdType {
     /*
@@ -312,7 +298,6 @@ pub enum CmdType {
     FindRegex,
     ReOpenFile,
     CloseFile,
-    Null,
     Unsupported,
     // Editor
     BoxSelectModeStart,
@@ -332,8 +317,7 @@ pub enum CmdType {
     OpenMenuEdit,
     OpenMenuSearch,
     OpenMenuMacro,
-    SwitchTabLeft,
-    SwitchTabRight,
+    SwitchTab(Direction),
     CancelEditorState,
     CtxtMenu(usize, usize),
     InputComple,
@@ -357,16 +341,15 @@ pub enum CmdType {
     MenuWidget(usize, usize),
     // CtxMenu
     CtxMenu(usize, usize),
-}
-
-impl Default for CmdType {
-    fn default() -> Self {
-        CmdType::Null
-    }
+    // Window
+    WindowSplit(WindowSplitType),
+    #[default]
+    Null,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub struct CmdConfig {
     pub is_edit: bool,
     pub is_record: bool,
+    pub is_recalc_scrl: bool,
 }

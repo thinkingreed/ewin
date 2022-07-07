@@ -14,24 +14,24 @@ impl Editor {
         Log::debug("ep", &proc);
         Log::debug("self.box_insert.mode", &self.box_insert.mode);
         Log::debug("proc.box_sel_vec", &proc.box_sel_vec);
-        Log::debug("self.cur 111", &self.cur);
+        Log::debug("self.cur 111", &self.win_mgr.curt().cur);
 
-        proc.sel.set_s(self.cur.y, self.cur.x, self.cur.disp_x);
+        proc.sel.set_s(self.win_mgr.curt().cur.y, self.win_mgr.curt().cur.x, self.win_mgr.curt().cur.disp_x);
         if proc.box_sel_vec.is_empty() {
             self.ins_str(&proc.str);
         } else {
             // Box insert
             match proc.cmd.cmd_type {
-                CmdType::InsertStr(ref str) if str.is_empty() => self.insert_box(proc, self.cur.y, self.cur.x, self.cur.disp_x),
+                CmdType::InsertStr(ref str) if str.is_empty() => self.insert_box(proc, self.win_mgr.curt_ref().cur.y, self.win_mgr.curt_ref().cur.x, self.win_mgr.curt_ref().cur.disp_x),
                 _ => {
                     let first_sel = proc.box_sel_vec.first().unwrap().0;
                     self.insert_box(proc, first_sel.sy, first_sel.sx, first_sel.s_disp_x)
                 }
             }
         }
-        proc.sel.set_e(self.cur.y, self.cur.x, self.cur.disp_x);
-        proc.cur_e = self.cur;
-        Log::debug("self.cur 222", &self.cur);
+        proc.sel.set_e(self.win_mgr.curt().cur.y, self.win_mgr.curt().cur.x, self.win_mgr.curt().cur.disp_x);
+        proc.cur_e = self.win_mgr.curt().cur;
+        Log::debug("self.cur 222", &self.win_mgr.curt().cur);
     }
 
     pub fn get_clipboard(&mut self, ep: &mut Proc) -> bool {
@@ -142,19 +142,19 @@ impl Editor {
     pub fn ins_str(&mut self, str: &str) {
         Log::debug_key("ins_str");
 
-        self.buf.insert(self.cur.y, self.cur.x, str);
+        self.buf.insert(self.win_mgr.curt().cur.y, self.win_mgr.curt().cur.x, str);
         let insert_strs: Vec<&str> = str.split(&NL::get_nl(&self.h_file.nl)).collect();
 
-        self.cur.y += insert_strs.len() - 1;
+        self.win_mgr.curt().cur.y += insert_strs.len() - 1;
 
         let last_str_len = insert_strs.last().unwrap().chars().count();
-        let x = if insert_strs.len() == 1 { self.cur.x + last_str_len } else { last_str_len };
-        self.set_cur_target_by_x(self.cur.y, x, false);
+        let x = if insert_strs.len() == 1 { self.win_mgr.curt().cur.x + last_str_len } else { last_str_len };
+        self.set_cur_target_by_x(self.win_mgr.curt_ref().cur.y, x, false);
     }
 
     pub fn insert_row(&mut self) -> ActType {
-        self.buf.insert(self.cur.y, self.cur.x, &NL::get_nl(&self.h_file.nl));
-        self.set_cur_target_by_x(self.cur.y + 1, 0, false);
+        self.buf.insert(self.win_mgr.curt().cur.y, self.win_mgr.curt().cur.x, &NL::get_nl(&self.h_file.nl));
+        self.set_cur_target_by_x(self.win_mgr.curt_ref().cur.y + 1, 0, false);
 
         self.scroll();
         self.scroll_horizontal();
@@ -166,47 +166,47 @@ impl Editor {
         Log::debug_key("back_space");
         // beginning of the line
 
-        if !self.sel.is_selected() && self.cur.y == 0 && self.cur.x == 0 {
+        if !self.win_mgr.curt().sel.is_selected() && self.win_mgr.curt().cur.y == 0 && self.win_mgr.curt().cur.x == 0 {
             return ActType::Cancel;
         }
-        if self.cur.x == 0 {
-            if self.cur.y == 0 {
+        if self.win_mgr.curt().cur.x == 0 {
+            if self.win_mgr.curt().cur.y == 0 {
                 return ActType::Cancel;
             }
-            self.cur.y -= 1;
-            let mut cur_x = self.buf.line(self.cur.y).len_chars() - 1;
+            self.win_mgr.curt().cur.y -= 1;
+            let mut cur_x = self.buf.line(self.win_mgr.curt().cur.y).len_chars() - 1;
             Log::debug("cur_x", &cur_x);
-            let c = self.buf.char(self.cur.y, cur_x);
+            let c = self.buf.char(self.win_mgr.curt().cur.y, cur_x);
             ep.str = if c == NEW_LINE_CR { NEW_LINE_CRLF.to_string() } else { NEW_LINE_LF.to_string() };
-            self.buf.remove_del_bs(CmdType::DelPrevChar, self.cur.y, cur_x);
-            cur_x = min(cur_x, self.buf.line(self.cur.y).len_chars());
-            self.set_cur_target_by_x(self.cur.y, cur_x, false);
+            self.buf.remove_del_bs(CmdType::DelPrevChar, self.win_mgr.curt().cur.y, cur_x);
+            cur_x = min(cur_x, self.buf.line(self.win_mgr.curt().cur.y).len_chars());
+            self.set_cur_target_by_x(self.win_mgr.curt_ref().cur.y, cur_x, false);
             self.scroll();
             self.scroll_horizontal();
         } else {
             self.cur_left();
 
             if self.box_insert.mode == BoxInsertMode::Normal {
-                ep.str = self.buf.char(self.cur.y, self.cur.x).to_string();
+                ep.str = self.buf.char(self.win_mgr.curt().cur.y, self.win_mgr.curt().cur.x).to_string();
                 Log::debug("ep.str", &ep.str);
-                self.buf.remove_del_bs(CmdType::DelPrevChar, self.cur.y, self.cur.x);
+                self.buf.remove_del_bs(CmdType::DelPrevChar, self.win_mgr.curt().cur.y, self.win_mgr.curt().cur.x);
 
                 //BoxSelMode::Insert
             } else {
                 Log::debug("ep.box_sel_vec", &ep.box_sel_vec);
                 for i in 0..=ep.box_sel_vec.len() - 1 {
-                    let s = self.buf.row_to_char(ep.box_sel_vec[i].0.sy) + self.cur.x;
-                    let e = self.buf.row_to_char(ep.box_sel_vec[i].0.sy) + self.cur.x + 1;
+                    let s = self.buf.row_to_char(ep.box_sel_vec[i].0.sy) + self.win_mgr.curt().cur.x;
+                    let e = self.buf.row_to_char(ep.box_sel_vec[i].0.sy) + self.win_mgr.curt().cur.x + 1;
                     let c = self.buf.char_idx(s);
                     ep.box_sel_vec[i].1 = c.to_string().clone();
                     self.buf.remove(s, e);
-                    let (_, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(ep.box_sel_vec[i].0.sy)[..self.cur.x], 0, false);
-                    ep.box_sel_vec[i].0.sx = self.cur.x;
+                    let (_, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(ep.box_sel_vec[i].0.sy)[..self.win_mgr.curt().cur.x], 0, false);
+                    ep.box_sel_vec[i].0.sx = self.win_mgr.curt().cur.x;
                     ep.box_sel_vec[i].0.s_disp_x = width;
-                    ep.box_sel_vec[i].0.ex = self.cur.x + 1;
+                    ep.box_sel_vec[i].0.ex = self.win_mgr.curt().cur.x + 1;
                     ep.box_sel_vec[i].0.e_disp_x = width + get_char_width(&c, width);
                 }
-                ep.cur_e = self.cur;
+                ep.cur_e = self.win_mgr.curt().cur;
             }
         }
         return ActType::Next;
@@ -215,15 +215,15 @@ impl Editor {
     pub fn delete(&mut self, ep: &mut Proc) -> ActType {
         Log::debug_key("delete");
 
-        if self.sel.mode != SelMode::BoxSelect && !self.sel.is_selected() && (self.cur.y == self.buf.len_rows() - 1 && self.cur.x == self.buf.len_row_chars(self.cur.y)) {
+        if self.win_mgr.curt().sel.mode != SelMode::BoxSelect && !self.win_mgr.curt().sel.is_selected() && (self.win_mgr.curt().cur.y == self.buf.len_rows() - 1 && self.win_mgr.curt().cur.x == self.buf.len_row_chars(self.win_mgr.curt().cur.y)) {
             return ActType::Cancel;
         }
 
-        let c = self.buf.char(self.cur.y, self.cur.x);
+        let c = self.buf.char(self.win_mgr.curt().cur.y, self.win_mgr.curt().cur.x);
         ep.str = if c == NEW_LINE_CR { format!("{}{}", c, NEW_LINE_LF) } else { c.to_string() };
-        self.buf.remove_del_bs(CmdType::DelNextChar, self.cur.y, self.cur.x);
+        self.buf.remove_del_bs(CmdType::DelNextChar, self.win_mgr.curt().cur.y, self.win_mgr.curt().cur.x);
         if is_nl_char(c) {
-            self.set_cur_target_by_x(self.cur.y, self.cur.x, false);
+            self.set_cur_target_by_x(self.win_mgr.curt_ref().cur.y, self.win_mgr.curt_ref().cur.x, false);
             self.scroll();
             self.scroll_horizontal();
         }
@@ -233,8 +233,8 @@ impl Editor {
 
     pub fn cancel_state(&mut self) {
         Log::debug_key("cancel_state");
-        self.sel.clear();
-        self.sel.mode = SelMode::Normal;
+        self.win_mgr.curt().sel.clear();
+        self.win_mgr.curt().sel.mode = SelMode::Normal;
         self.box_insert.mode = BoxInsertMode::Normal;
         // self.search_org = self.search.clone();
         self.search.clear();

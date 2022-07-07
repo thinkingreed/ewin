@@ -8,7 +8,7 @@ use ewin_cfg::{colors::Colors, lang::lang_cfg::*, model::default::*};
 
 impl PromReplace {
     pub fn new() -> Self {
-        let mut prom = PromReplace { base: PromBase { config: PromptConfig { is_updown_valid: true, }, ..PromBase::default() } };
+        let mut prom = PromReplace { base: PromBase { config: PromptConfig { is_updown_valid: true }, ..PromBase::default() } };
 
         prom.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().set_replace.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 

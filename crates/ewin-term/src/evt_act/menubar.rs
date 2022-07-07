@@ -161,7 +161,7 @@ impl EvtAct {
         } else if parent_name.contains(&Lang::get().edit) {
             if child_name.contains(&Lang::get().box_select) {
                 term.curt().editor.box_select_mode();
-            } else if term.curt().editor.sel.is_selected() {
+            } else if term.curt().editor.win_mgr.curt().sel.is_selected() {
                 if child_name.contains(&Lang::get().convert) {
                     term.curt().editor.convert(ConvType::from_str_conv_type(grandchild_name));
                 } else if child_name.contains(&Lang::get().format) {
@@ -173,9 +173,7 @@ impl EvtAct {
             }
             // display
         } else if parent_name.contains(&Lang::get().display) {
-            Log::debug_key("11111111111111111111111111111111111");
             if child_name.contains(&Lang::get().scale) {
-                Log::debug_key("222222222222222222222222222222222");
                 let cmd = Cmd::to_cmd(CmdType::SwitchDispScale);
                 term.cmd = cmd;
                 return EvtAct::ctrl_editor(term);
@@ -208,7 +206,7 @@ impl EvtAct {
             // convert
             s if s == &Lang::get().to_uppercase || s == &Lang::get().to_lowercase || s == &Lang::get().to_full_width || s == &Lang::get().to_half_width || s == &Lang::get().to_space || s == &Lang::get().to_tab => {
                 term.curt().editor.convert(ConvType::from_str_conv_type(&LANG_MAP[name]));
-                term.curt().editor.sel.clear();
+                term.curt().editor.win_mgr.curt().sel.clear();
             }
             // format
             s if s == &Lang::get().json || s == &Lang::get().xml || s == &Lang::get().html => {
@@ -218,15 +216,15 @@ impl EvtAct {
                     // highlight data reset
                     term.editor_draw_vec[term.tab_idx].clear();
                 }
-                term.curt().editor.sel.clear();
+                term.curt().editor.win_mgr.curt().sel.clear();
             }
             s if s == &Lang::get().cut => {
                 EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::Cut), &mut stdout(), term);
-                term.curt().editor.sel.clear();
+                term.curt().editor.win_mgr.curt().sel.clear();
             }
             s if s == &Lang::get().copy => {
                 EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::Copy), &mut stdout(), term);
-                term.curt().editor.sel.clear();
+                term.curt().editor.win_mgr.curt().sel.clear();
             }
             s if s == &Lang::get().paste => {
                 EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::InsertStr("".to_string())), &mut stdout(), term);

@@ -9,7 +9,7 @@ impl EvtAct {
         match &term.curt().prom.cmd.cmd_type {
             CmdType::InsertStr(ref string) => match string.to_uppercase().as_str() {
                 CHAR_Y => {
-                    let act_type = Tab::save(term, SaveType::Normal);
+                    let act_type = term.curt().save(SaveType::Normal);
                     return if let ActType::Draw(_) = act_type { act_type } else { EvtAct::check_exit_close(term) };
                 }
                 CHAR_N => return EvtAct::check_exit_close(term),

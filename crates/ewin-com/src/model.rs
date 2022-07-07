@@ -31,7 +31,7 @@ pub struct EvtProc {
     pub proc: Option<Proc>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 // Process
 pub struct Proc {
     pub cmd: Cmd,
@@ -42,11 +42,7 @@ pub struct Proc {
     pub box_sel_redo_vec: Vec<(SelRange, String)>,
     pub sel: SelRange,
 }
-impl Default for Proc {
-    fn default() -> Self {
-        Proc { cmd: Cmd::default(), cur_s: Cur::default(), cur_e: Cur::default(), str: String::new(), sel: SelRange::default(), box_sel_vec: vec![], box_sel_redo_vec: vec![] }
-    }
-}
+
 impl fmt::Display for Proc {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "EvtProc cur_s:{}, cur_e:{}, str:{}, sel:{}, ", self.cur_s, self.cur_e, self.str, self.sel,)
@@ -273,25 +269,20 @@ pub struct SyntaxState {
     pub parse_state: ParseState,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Copy, PartialEq, Eq)]
 /// DrawType
 #[allow(non_camel_case_types)]
 pub enum E_DrawRange {
+    #[default]
+    Init,
     TargetRange(usize, usize), // Target row only redraw
     After(usize),              // Redraw after the specified line
     All,
     Targetpoint,
-    Init,
     ScrollDown(usize, usize),
     ScrollUp(usize, usize),
     MoveCur,
     Not,
-}
-
-impl Default for E_DrawRange {
-    fn default() -> Self {
-        E_DrawRange::Init
-    }
 }
 
 impl fmt::Display for E_DrawRange {
@@ -430,7 +421,7 @@ impl NL {
     }
 }
 // Cursor direction
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Direction {
     Right,
     Left,
@@ -438,18 +429,12 @@ pub enum Direction {
     Down,
 }
 
-impl Direction {
-    /*
-    pub fn keycmd_to_curdirection(keycmd: &KeyCmd) -> Direction {
-        match keycmd {
-            KeyCmd::Prom(P_Cmd::CursorLeft) => Direction::Left,
-            KeyCmd::Prom(P_Cmd::CursorRight) => Direction::Right,
-            KeyCmd::Prom(P_Cmd::CursorUp) => Direction::Up,
-            KeyCmd::Prom(P_Cmd::CursorDown) => Direction::Down,
-            _ => unreachable!(),
-        }
-    }
-     */
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum WindowSplitType {
+    #[default]
+    None,
+    Vertical,
+    Horizontal,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -505,16 +490,13 @@ impl fmt::Display for SelRange {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash, Copy)]
 pub enum SelMode {
+    #[default]
     Normal,
     BoxSelect,
 }
-impl Default for SelMode {
-    fn default() -> Self {
-        SelMode::Normal
-    }
-}
+
 impl fmt::Display for SelMode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -525,16 +507,11 @@ impl fmt::Display for SelMode {
 }
 
 // Keys without modifiers
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Copy, Default, Clone, Hash, Eq, PartialEq)]
 pub enum OpenFileType {
+    #[default]
     Normal,
     JsMacro,
-}
-
-impl Default for OpenFileType {
-    fn default() -> Self {
-        OpenFileType::Normal
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -592,18 +569,13 @@ impl HeaderFile {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Copy, PartialEq, Eq)]
 pub enum WatchMode {
     // Warning every time it is changed by another app
+    #[default]
     Normal,
     NotMonitor,
     NotEditedWillReloadedAuto,
-}
-
-impl Default for WatchMode {
-    fn default() -> Self {
-        WatchMode::Normal
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -674,8 +646,9 @@ pub struct TabState {
     pub grep: GrepInfo,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub enum PromState {
+    #[default]
     None,
     Search,
     SaveConfirm,
@@ -689,12 +662,6 @@ pub enum PromState {
     GrepResult,
     EncNl,
     WatchFile,
-}
-
-impl Default for PromState {
-    fn default() -> Self {
-        PromState::None
-    }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -745,13 +712,14 @@ pub struct ScrollbarV {
     // Not include　editor.row_posi
     pub row_posi: usize,
     pub row_posi_org: usize,
+    pub bar_width: usize,
     pub bar_len: usize,
     pub move_len: usize,
 }
 
 impl Default for ScrollbarV {
     fn default() -> Self {
-        ScrollbarV { is_show: false, is_enable: false, row_posi: USIZE_UNDEFINED, row_posi_org: USIZE_UNDEFINED, bar_len: USIZE_UNDEFINED, move_len: USIZE_UNDEFINED }
+        ScrollbarV { is_show: false, is_enable: false, row_posi: USIZE_UNDEFINED, row_posi_org: 0, bar_len: 0, bar_width: 0, move_len: 0 }
     }
 }
 
@@ -768,16 +736,6 @@ pub struct TermSize {
     pub cols: u16,
     pub rows: u16,
 }
-
-/*
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-/// HelpMode
-pub enum HelpMode {
-    Show,
-    // Details,
-    None,
-}
- */
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UT {}

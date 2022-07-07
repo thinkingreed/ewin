@@ -45,43 +45,79 @@ impl Terminal {
     pub fn draw<T: Write>(&mut self, out: &mut T, draw_parts: &DParts) {
         Log::info_key("Terminal.render start");
         Log::debug("draw_parts", &draw_parts);
-        Log::debug("self.curt().editor.draw_range", &self.curt().editor.draw_range);
-        Log::debug("self.curt().editor.col_len 111", &self.curt().editor.col_len);
+        Log::debug("self.curt().editor.draw_range", &self.curt().editor.win_mgr.curt().draw_range);
         self.set_disp_size();
-        Log::debug("self.curt().editor.col_len 222", &self.curt().editor.col_len);
 
         let mut str_vec: Vec<String> = vec![];
-        match draw_parts {
-            DParts::All | DParts::AllMsgBar(_) => {
-                if self.curt().editor.draw_range != E_DrawRange::Init {
-                    self.curt().editor.draw_range = E_DrawRange::All;
+
+        if (matches!(draw_parts, DParts::All) || matches!(draw_parts, DParts::AllMsgBar(_))) && self.curt().editor.win_mgr.curt().draw_range != E_DrawRange::Init {
+            self.curt().editor.win_mgr.curt().draw_range = E_DrawRange::All;
+        }
+        let d_raneg = self.curt().editor.win_mgr.curt().draw_range;
+
+        if self.curt().editor.win_mgr.curt().draw_range == E_DrawRange::All {
+            for vec_v in self.curt().editor.win_mgr.win_list.iter_mut() {
+                for win in vec_v.iter_mut() {
+                    win.draw_range = d_raneg;
                 }
             }
-            DParts::Editor(draw_range) => {
-                self.curt().editor.draw_range = *draw_range;
-            }
-            _ => {}
-        };
-
-        StatusBar::draw(&mut str_vec, &mut self.tabs[self.tab_idx], &H_FILE_VEC.get().unwrap().try_lock().unwrap()[self.tab_idx]);
-        self.curt().msgbar.draw(&mut str_vec);
+        }
 
         // Editor
-        match self.curt().editor.draw_range {
+        match self.curt().editor.win_mgr.curt().draw_range {
             E_DrawRange::Not => {}
             _ => {
-                if self.curt().editor.row_len > 0 {
-                    if self.curt().editor.draw_range == E_DrawRange::MoveCur {
-                        self.tabs[self.tab_idx].editor.draw(&mut str_vec, &mut self.editor_draw_vec[self.tab_idx]);
+                if self.curt().editor.get_curt_row_len() > 0 {
+                    let vec = self.curt().editor.win_mgr.win_list.clone();
+                    Log::debug("vec", &vec);
+                    Log::debug("vec.len()", &vec.len());
+
+                    // editor_draw_vec window support
+                    self.editor_draw_vec[self.tab_idx].resize_with(vec.len(), Vec::new);
+                    for (i, v) in vec.iter().enumerate() {
+                        let mut add_vec = vec![];
+                        for _ in v {
+                            add_vec.push(EditorDraw::default());
+                        }
+                        self.editor_draw_vec[self.tab_idx][i].resize_with(v.len(), EditorDraw::default);
+                    }
+                    let curt_win = self.tabs[self.tab_idx].editor.get_curt_ref_win().clone();
+                    if curt_win.draw_range == E_DrawRange::MoveCur {
+                        self.tabs[self.tab_idx].editor.draw_move_cur(&mut str_vec, &curt_win);
                         self.draw_flush(out, &mut str_vec);
                         return;
-                    } else {
-                        self.editor_draw_vec[self.tab_idx].draw_cache(&mut self.tabs[self.tab_idx].editor);
-                        self.tabs[self.tab_idx].editor.draw(&mut str_vec, &mut self.editor_draw_vec[self.tab_idx]);
+                    }
+
+                    for (v_idx, vec_v) in vec.iter().enumerate() {
+                        Log::debug("vec_v.len()", &vec_v.len());
+                        for (h_idx, win) in vec_v.iter().enumerate() {
+                            Log::debug("win", &win);
+                            Log::debug("h_idx xxx", &h_idx);
+
+                            self.editor_draw_vec[self.tab_idx][v_idx][h_idx].draw_cache(&mut self.tabs[self.tab_idx].editor, win);
+                            let draw = &mut self.editor_draw_vec[self.tab_idx][v_idx][h_idx];
+                            
+                            // Clear init
+                            if v_idx == 0 && h_idx == 0 {
+                                let act_type = self.tabs[self.tab_idx].editor.clear_init(&mut str_vec, draw);
+                                if act_type != ActType::Next {
+                                    return;
+                                }
+                            }
+
+                            self.tabs[self.tab_idx].editor.draw(&mut str_vec, draw, win);
+                            self.tabs[self.tab_idx].editor.draw_scale(&mut str_vec, win);
+                            self.tabs[self.tab_idx].editor.draw_scrlbar_v(&mut str_vec, win);
+                            self.tabs[self.tab_idx].editor.draw_scrlbar_h(&mut str_vec, win);
+                        }
                     }
                 }
+                str_vec.push(Colors::get_default_fg_bg());
             }
         };
+        self.tabs[self.tab_idx].editor.draw_window_split_line(&mut str_vec);
+        StatusBar::draw(&mut str_vec, &mut self.tabs[self.tab_idx], &H_FILE_VEC.get().unwrap().try_lock().unwrap()[self.tab_idx]);
+        self.curt().msgbar.draw(&mut str_vec);
 
         if &DParts::All == draw_parts || matches!(draw_parts, &DParts::ScrollUpDown(_)) {
             self.menubar.draw(&mut str_vec);
@@ -105,11 +141,11 @@ impl Terminal {
         }
         self.draw_init_info(&mut str_vec);
 
-        Log::debug("cur", &self.curt().editor.cur);
-        Log::debug("offset_x", &self.curt().editor.offset_x);
-        Log::debug("offset_disp_x", &self.curt().editor.offset_disp_x);
-        Log::debug("offset_y", &self.curt().editor.offset_y);
-        Log::debug("offset_y_org", &self.curt().editor.offset_y_org);
+        Log::debug("cur", &self.curt().editor.win_mgr.curt().cur);
+        Log::debug("offset_x", &self.curt().editor.win_mgr.curt().offset.x);
+        Log::debug("offset_disp_x", &self.curt().editor.win_mgr.curt().offset.disp_x);
+        Log::debug("offset.y", &self.curt().editor.win_mgr.curt().offset.y);
+        Log::debug("offset_y_org", &self.curt().editor.win_mgr.curt().offset.y_org);
         Log::debug("history.undo_vec", &self.curt().editor.history.undo_vec);
         // Log::debug("self.curt().state.key_record_state", &self.curt().state.key_record_state);
         //  Log::debug("self.curt().state", &self.curt().state);
@@ -119,6 +155,7 @@ impl Terminal {
         // Log::debug("scrl_v.is_enable", &self.curt().editor.scrl_v.is_enable);
         // Log::debug("scrl_h.is_enable", &self.curt().editor.scrl_h.is_enable);
         // Log::debug("self.curt().editor.state.input_comple_mode", &self.curt().editor.state.input_comple_mode);
+        Log::debug("self.curt().editor.win", &self.curt().editor.win_mgr);
 
         self.draw_flush(out, &mut str_vec);
 
@@ -142,26 +179,14 @@ impl Terminal {
 
     pub fn draw_cur<T: Write>(&mut self, out: &mut T) {
         Log::debug_key("draw_cur");
+        Log::debug("self.curt().state.is_nomal()", &self.curt().state.is_nomal());
+        Log::debug("self.curt().editor.is_cur_y_in_screen()", &self.curt().editor.is_cur_y_in_screen());
+        Log::debug("self.curt().editor.win_mgr.curt()", &self.curt().editor.win_mgr.curt());
 
         let mut str_vec: Vec<String> = vec![];
-
         if !self.state.is_displayable || self.state.is_ctx_menu || self.state.is_menuwidget {
-            //  Terminal::hide_cur();
         } else if self.curt().state.is_nomal() && self.curt().editor.is_cur_y_in_screen() {
-            Log::debug("self.curt().editor.cur", &self.curt().editor.cur);
-
-            /*
-            // TODO
-            if self.curt().msgbar.is_exsist_msg() && self.fbar.row_num + self.curt().editor.cur.y - self.curt().editor.offset_y == self.curt().msgbar.disp_row_posi {
-                self.curt().editor.cur_up();
-            }
-             */
-            let rnw_margin = if CfgEdit::get().general.editor.row_no.is_enable { self.curt().editor.get_rnw_and_margin() } else { 0 };
-            let editor = &self.curt().editor;
-            if editor.offset_disp_x <= editor.cur.disp_x && editor.cur.disp_x <= editor.offset_disp_x + editor.col_len && editor.offset_y <= editor.cur.y && editor.cur.y <= editor.offset_y + editor.row_len {
-                str_vec.push(MoveTo((editor.cur.disp_x - editor.offset_disp_x + rnw_margin) as u16, (editor.cur.y - editor.offset_y + editor.row_posi) as u16).to_string());
-            }
-
+            self.curt().editor.draw_cur(&mut str_vec);
             Terminal::show_cur();
         } else if self.curt().state.prom != PromState::None && self.curt().prom.curt.as_mut_base().is_draw_cur() {
             self.curt().prom.draw_cur(&mut str_vec);
@@ -192,18 +217,18 @@ impl Terminal {
             str_vec.push(Colors::get_default_fg_bg());
 
             let pkg_name = format!("{name:^w$}", name = pkg_name, w = cols - (get_str_width(pkg_name) - pkg_name.chars().count()));
-            str_vec.push(format!("{}{}{}", MoveTo(0, (self.curt().editor.row_posi + 4) as u16), Clear(ClearType::CurrentLine), pkg_name));
+            str_vec.push(format!("{}{}{}", MoveTo(0, (self.curt().editor.get_curt_row_posi() + 4) as u16), Clear(ClearType::CurrentLine), pkg_name));
 
             let ver_name = &format!("{}: {}", "Version", &(*APP_VERSION.get().unwrap().to_string()));
             let ver_name = format!("{ver:^w$}", ver = ver_name, w = cols - (get_str_width(ver_name) - ver_name.chars().count()));
-            str_vec.push(format!("{}{}{}", MoveTo(0, (self.curt().editor.row_posi + 5) as u16), Clear(ClearType::CurrentLine), ver_name));
+            str_vec.push(format!("{}{}{}", MoveTo(0, (self.curt().editor.get_curt_row_posi() + 5) as u16), Clear(ClearType::CurrentLine), ver_name));
 
             let simple_help = Lang::get().simple_help_desc.clone();
             let simple_help = format!("{s_help:^w$}", s_help = simple_help, w = cols - (get_str_width(&simple_help) - simple_help.chars().count()));
-            str_vec.push(format!("{}{}{}", MoveTo(0, (self.curt().editor.row_posi + 7) as u16), Clear(ClearType::CurrentLine), simple_help));
+            str_vec.push(format!("{}{}{}", MoveTo(0, (self.curt().editor.get_curt_row_posi() + 7) as u16), Clear(ClearType::CurrentLine), simple_help));
             let detailed_help = Lang::get().detailed_help_desc.clone();
             let detailed_help = format!("{d_help:^w$}", d_help = detailed_help, w = cols - (get_str_width(&detailed_help) - detailed_help.chars().count()));
-            str_vec.push(format!("{}{}{}", MoveTo(0, (self.curt().editor.row_posi + 8) as u16), Clear(ClearType::CurrentLine), detailed_help));
+            str_vec.push(format!("{}{}{}", MoveTo(0, (self.curt().editor.get_curt_row_posi() + 8) as u16), Clear(ClearType::CurrentLine), detailed_help));
         }
     }
 
@@ -240,46 +265,107 @@ impl Terminal {
         self.curt().prom.col_num = cols;
 
         Log::debug("self.curt().prom.row_num 111", &self.curt().prom.row_num);
-        /*
-        if rows < self.menubar.row_num + self.fbar.row_num + self.curt().prom.row_num + self.help.row_num + self.curt().sbar.row_num {
-            return false;
-        }
-        */
-        self.curt().prom.row_posi = rows - self.curt().prom.row_num - hlep.row_num - self.curt().sbar.row_num;
 
+        self.curt().prom.row_posi = rows - self.curt().prom.row_num - hlep.row_num - self.curt().sbar.row_num;
         self.curt().msgbar.col_num = cols;
         self.curt().msgbar.row_num = MSGBAR_ROW_NUM; //if self.curt().mbar.msg.str.is_empty() { 0 } else { 1 };
 
         self.curt().msgbar.row_posi = rows - self.curt().prom.row_num - hlep.row_num - self.curt().sbar.row_num - 1;
         self.menubar.row_num = if self.curt().state.prom == PromState::OpenFile { 0 } else { MSGBAR_ROW_NUM };
 
-        self.curt().editor.row_posi = Editor::get_row_posi();
-        self.curt().editor.col_len = if CfgEdit::get().general.editor.row_no.is_enable { cols - self.curt().editor.get_rnw_and_margin() } else { cols };
+        let rnw_and_margin = self.curt().editor.get_rnw_and_margin();
+        let scale_row_num = if CfgEdit::get().general.editor.scale.is_enable { SCALE_ROW_NUM } else { 0 };
+        let editor_row = rows - scale_row_num - self.menubar.row_num - self.fbar.row_num - self.curt().msgbar.row_num - self.curt().prom.row_num - hlep.row_num - self.curt().sbar.row_num;
+        let is_prom_open_file = self.curt().state.prom == PromState::OpenFile;
+        let row_posi = MENUBAR_ROW_NUM + FILEBAR_ROW_NUM + if CfgEdit::get().general.editor.scale.is_enable { 1 } else { 0 };
 
-        Log::debug("editor.row_len before", &self.curt().editor.row_len);
-        self.curt().editor.row_len = if self.curt().state.prom == PromState::OpenFile {
-            0
-        } else {
-            rows - if CfgEdit::get().general.editor.scale.is_enable { 1 } else { 0 } - self.menubar.row_num - self.fbar.row_num - self.curt().msgbar.row_num - self.curt().prom.row_num - hlep.row_num - self.curt().sbar.row_num
-        };
-        Log::debug("editor.row_len after", &self.curt().editor.row_len);
-
-        if self.curt().editor.scrl_h.row_max_width > self.curt().editor.col_len && self.curt().state.is_nomal() {
-            self.curt().editor.scrl_h.is_show = true;
-            {
-                self.curt().editor.row_len -= Cfg::get().general.editor.scrollbar.horizontal.height;
-                self.curt().editor.scrl_h.row_posi = self.curt().editor.row_posi + self.curt().editor.row_len;
-            }
-        } else {
-            self.curt().editor.scrl_h.is_show = false;
+        self.curt().editor.row_posi = row_posi;
+        self.curt().editor.row_num = editor_row;
+        if self.curt().editor.win_mgr.win_list.is_empty() {
+            self.curt().editor.win_mgr.win_list = vec![vec![Window::new()]];
         }
-        if self.curt().editor.row_len < self.curt().editor.buf.len_rows() {
-            {
-                self.curt().editor.scrl_v.is_show = true;
-                self.curt().editor.col_len -= Cfg::get().general.editor.scrollbar.vertical.width;
+
+        let mut height = row_posi;
+        let mut width = 0;
+        let editor_buf_len_rows = self.curt().editor.buf.len_rows();
+        let is_tab_state_normal = self.curt().state.is_nomal();
+
+        let window_height_base = editor_row / self.curt().editor.win_mgr.win_list.len();
+        let window_height_rest = editor_row % self.curt().editor.win_mgr.win_list.len();
+
+        let win_v_list_len = self.curt().editor.win_mgr.win_list.get(0).unwrap().len();
+
+        let tgt_h_len = cols - win_v_list_len * rnw_and_margin - (win_v_list_len - 1) * WindowMgr::SPLIT_LINE_V_WIDTH;
+        Log::debug("tgt_h_len", &tgt_h_len);
+        let window_width_base = tgt_h_len / win_v_list_len;
+        let window_width_rest = tgt_h_len % win_v_list_len;
+
+        Log::debug("window_width_base", &window_width_base);
+        Log::debug("window_width_rest", &window_width_rest);
+        let mut split_line_v = 0;
+        for (v_idx, vec_v) in self.curt().editor.win_mgr.win_list.iter_mut().enumerate() {
+            for (h_idx, window) in vec_v.iter_mut().enumerate() {
+                window.v_idx = v_idx;
+                window.h_idx = h_idx;
+                let mut window_width = window_width_base;
+                let mut window_height = window_height_base;
+                if h_idx == 0 {
+                    window_width += window_width_rest;
+                    window_height += window_height_rest;
+                } else {
+                    split_line_v = width;
+                    width += WindowMgr::SPLIT_LINE_V_WIDTH;
+                }
+                width += rnw_and_margin;
+
+                Log::debug("window_width", &window_width);
+                // scrl_h
+                if window.scrl_h.row_max_width > window_width && is_tab_state_normal {
+                    window.scrl_h.is_show = true;
+                    window.scrl_h.bar_height = Cfg::get().general.editor.scrollbar.horizontal.height;
+                    window_height -= window.scrl_h.bar_height;
+                } else {
+                    window.scrl_h.is_show = false;
+                }
+                // scrl_v
+                if window_height < editor_buf_len_rows {
+                    window.scrl_v.is_show = true;
+                    window.scrl_v.bar_width = Cfg::get().general.editor.scrollbar.vertical.width;
+                    //  window.scrl_v.row_posi = window.area_v.0;
+                    window_width -= window.scrl_v.bar_width;
+                } else {
+                    window.scrl_v.is_show = false;
+                }
+                window.area_v = if is_prom_open_file { (0, 0) } else { (height, height + window_height) };
+                window.area_all_v = if is_prom_open_file { (0, 0) } else { (height - scale_row_num, height + window_height + window.scrl_h.bar_height) };
+                window.area_h = (width, width + window_width);
+                if window.scrl_h.row_max_width > window_width && is_tab_state_normal {
+                    window.scrl_h.row_posi = window.area_v.1;
+                }
+                Log::debug("width", &width);
+                Log::debug("rnw_and_margin", &rnw_and_margin);
+
+                Log::debug_s("1111111111111111111111111111");
+
+                Log::debug("width - rnw_and_margin", &(width - rnw_and_margin));
+                Log::debug("window_width", &window_width);
+                Log::debug("window.scrl_v.bar_width", &window.scrl_v.bar_width);
+
+                window.area_all_h = (width - rnw_and_margin, width + window_width + window.scrl_v.bar_width);
+
+                Log::debug("window.area_h", &window.area_h);
+                Log::debug("window.area_all_h", &window.area_all_h);
+                Log::debug("window.area_v", &window.area_v);
+                Log::debug("window.area_all_v", &window.area_all_v);
+
+                width += window_width + window.scrl_v.bar_width;
+                if v_idx > 0 {
+                    height += window_height + window.scrl_h.bar_height;
+                }
             }
-        } else {
-            self.curt().editor.scrl_v.is_show = false;
+        }
+        if split_line_v > 0 {
+            self.curt().editor.win_mgr.split_line_v = split_line_v;
         }
         return true;
     }
@@ -393,7 +479,6 @@ impl Terminal {
             }
 
             // for input complement
-
             for i in 0..tab.editor.buf.len_rows() {
                 self.curt().editor.input_comple.analysis_new(i, &tab.editor.buf.char_vec_row(i));
             }
@@ -414,12 +499,14 @@ impl Terminal {
         let file_meta = metadata(path).unwrap();
         let ext = path.extension().unwrap_or_else(|| OsStr::new("txt")).to_string_lossy().to_string();
         //  self.editor_draw_vec[self.idx].syntax_reference = if let Some(sr) = CFG.get().unwrap().try_lock().unwrap().syntax.syntax_set.find_syntax_by_extension(&ext) { Some(sr.clone()) } else { None };
-        self.editor_draw_vec[self.tab_idx].syntax_reference = CfgSyntax::get().syntax.syntax_set.find_syntax_by_extension(&ext).cloned();
+        self.editor_draw_vec[self.tab_idx][self.tabs[self.tab_idx].editor.win_mgr.win_v_idx][self.tabs[self.tab_idx].editor.win_mgr.win_h_idx].syntax_reference = CfgSyntax::get().syntax.syntax_set.find_syntax_by_extension(&ext).cloned();
 
         Log::debug("file_meta.len()", &file_meta.len());
         Log::debug("Cfg::get().general.colors.theme.disable_syntax_highlight_file_size as u64 * 1024.0 as u64", &(Cfg::get().general.colors.theme.disable_syntax_highlight_file_size as u64 * 1024.0 as u64));
 
-        if self.editor_draw_vec[self.tab_idx].syntax_reference.is_some() && file_meta.len() < Cfg::get().general.colors.theme.disable_syntax_highlight_file_size as u64 * 10240000.0 as u64 && is_enable_syntax_highlight(&ext) {
+        let win_v_idx = self.curt().editor.win_mgr.win_v_idx;
+        let win_h_idx = self.curt().editor.win_mgr.win_h_idx;
+        if self.editor_draw_vec[self.tab_idx][win_v_idx][win_h_idx].syntax_reference.is_some() && file_meta.len() < Cfg::get().general.colors.theme.disable_syntax_highlight_file_size as u64 * 10240000.0 as u64 && is_enable_syntax_highlight(&ext) {
             self.curt().editor.is_enable_syntax_highlight = true;
         }
     }
@@ -468,7 +555,7 @@ impl Terminal {
         self.tab_idx = self.tabs.len();
         tab.idx = self.tabs.len();
         self.tabs.push(tab.clone());
-        self.editor_draw_vec.push(EditorDraw::default());
+        self.editor_draw_vec.push(vec![vec![EditorDraw::default()]]);
 
         // FileBar::push_h_file_vec(h_file.clone());
         H_FILE_VEC.get().unwrap().try_lock().map(|mut vec| vec.push(h_file.clone())).unwrap();
@@ -502,7 +589,7 @@ impl Terminal {
 
     pub fn init_tab(&mut self, h_file: &HeaderFile, file_open_type: FileOpenType) {
         self.set_disp_size();
-        self.curt().editor.calc_editor_scrlbar_h();
+        self.curt().editor.init_editor_scrlbar_h();
         self.curt().editor.calc_editor_scrlbar_v();
         self.curt().editor.h_file = h_file.clone();
         if file_open_type != FileOpenType::Reopen && File::is_exist_file(&h_file.fullpath) {
@@ -584,7 +671,7 @@ impl Terminal {
         let len = self.tabs.len() - 1;
         for idx in (0..=len).rev() {
             self.tab_idx = idx;
-            let act_type = Tab::save(self, SaveType::Normal);
+            let act_type = self.curt().save(SaveType::Normal);
             if let ActType::Draw(_) = act_type {
                 return act_type;
             } else {
@@ -642,10 +729,10 @@ impl Terminal {
 
     pub fn resize(&mut self) {
         self.set_disp_size();
-        self.curt().editor.draw_range = E_DrawRange::All;
+        self.curt().editor.win_mgr.curt().draw_range = E_DrawRange::All;
 
-        self.curt().editor.calc_editor_scrlbar_v();
-        self.curt().editor.calc_editor_scrlbar_h();
+        // self.curt().editor.calc_editor_scrlbar_v();
+        // self.curt().editor.init_editor_scrlbar_h();
         // return ActType::Draw(DParts::All);
     }
 
@@ -669,7 +756,7 @@ impl Terminal {
         self.curt().state.clear();
         self.curt().msgbar.clear();
         self.set_disp_size();
-        self.curt().editor.draw_range = E_DrawRange::All;
+        self.curt().editor.win_mgr.curt().draw_range = E_DrawRange::All;
         self.tab_idx += 1;
     }
 

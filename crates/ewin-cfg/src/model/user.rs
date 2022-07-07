@@ -249,6 +249,7 @@ pub struct CfgUserColorEditor {
     pub column_char_width_gap_space: CfgUserColorEditorColumnCharWidthGap,
     pub scrollbar: CfgUserColorScrollbar,
     pub scale: CfgUserColorEditorScale,
+    pub window: Option<CfgUserColorEditorWindow>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -291,6 +292,16 @@ pub struct CfgUserColorScrollbar {
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct CfgUserColorEditorScale {
     pub foreground: Option<String>,
+    pub background: Option<String>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgUserColorEditorWindow {
+    pub split_line: Option<CfgUserColorEditorWindowSplitLine>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgUserColorEditorWindowSplitLine {
     pub background: Option<String>,
 }
 

@@ -32,6 +32,9 @@ vertical_background = "#dedede"
 foreground = "#C4C4C4"
 background = "#dedede"
 
+[editor.window.split_line]
+background = "#bebebe"
+
 [system.btn]
 foreground = "#000000"
 background = "#c0c0c0"

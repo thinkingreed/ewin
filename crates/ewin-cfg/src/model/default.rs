@@ -307,6 +307,7 @@ pub struct CfgColorEditor {
     pub column_char_width_gap_space: CfgColorEditorColumnCharWidthGapSpace,
     pub scrollbar: CfgColorEditorScrollbar,
     pub scale: CfgColorEditorScale,
+    pub window: CfgColorEditorWindow,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -379,6 +380,18 @@ pub struct CfgColorEditorScale {
     pub bg: Color,
     #[serde(skip_deserializing, skip_serializing)]
     pub fg: Color,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgColorEditorWindow {
+    pub split_line: CfgColorEditorWindowSplitLine,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgColorEditorWindowSplitLine {
+    pub background: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub bg: Color,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]

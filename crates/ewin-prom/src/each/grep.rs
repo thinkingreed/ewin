@@ -10,7 +10,7 @@ use ewin_cfg::{colors::*, lang::lang_cfg::*, model::default::*};
 
 impl PromGrep {
     pub fn new() -> Self {
-        let mut prom = PromGrep { base: PromBase { config: PromptConfig { is_updown_valid: true,  }, ..PromBase::default() } };
+        let mut prom = PromGrep { base: PromBase { config: PromptConfig { is_updown_valid: true }, ..PromBase::default() } };
 
         prom.base.cont_vec.push(Box::new(PromContInfo { desc_str_vec: vec![Lang::get().set_grep.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() }));
 
