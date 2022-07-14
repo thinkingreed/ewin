@@ -1,14 +1,13 @@
-use std::io::Write;
-
 use crate::{
     ewin_com::{model::*, util::*},
-    global_term::H_FILE_VEC,
-    model::*,
+    global_term::*,
+    terms::term::*,
 };
 use crossterm::{cursor::*, terminal::*};
 use ewin_cfg::{colors::*, log::*};
 use ewin_const::def::*;
 use std::fmt::Write as _;
+use std::io::Write;
 
 impl FileBar {
     const ALLOW_BTN_WITH: usize = 2;
@@ -33,9 +32,11 @@ impl FileBar {
                 continue;
             }
             let state_color = if i == term.tab_idx { Colors::get_hbar_active_fg_bg() } else { Colors::get_hbar_passive_fg_bg() };
-            hber_str.push_str(&format!("{}{}{}", &state_color, &h_file.filenm_disp.clone(), &Colors::get_default_fg_bg()));
+            let _ = write!(hber_str, "{}{}{}", &state_color, &h_file.filenm_disp.clone(), &Colors::get_default_fg_bg());
         }
-        hber_str.push_str(&format!("{}{}", &Colors::get_hbar_default_bg(), &" ".repeat(term.fbar.all_filenm_rest)));
+
+        let _ = write!(hber_str, "{}{}", &Colors::get_hbar_default_bg(), &" ".repeat(term.fbar.all_filenm_rest));
+
         if term.fbar.is_right_arrow_disp {
             hber_str.push_str(&right_arrow_btn);
         }
@@ -234,5 +235,16 @@ impl Default for FileBar {
             history: History::default(),
             state: HeaderBarState::default(),
         }
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct HeaderBarState {
+    pub is_dragging: bool,
+}
+
+impl HeaderBarState {
+    pub fn clear(&mut self) {
+        self.is_dragging = false;
     }
 }

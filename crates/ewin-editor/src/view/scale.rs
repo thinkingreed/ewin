@@ -1,4 +1,4 @@
-use crate::{ewin_com::util::*, model::*};
+use crate::{ewin_com::util::*, model::*, window::*};
 use crossterm::cursor::*;
 use ewin_cfg::{colors::*, log::*, model::default::*};
 use ewin_const::def::*;
@@ -17,7 +17,7 @@ impl Editor {
                 str_vec.push(" ".repeat(if rnw > 0 { rnw_and_margin } else { Editor::RNW_MARGIN }));
             }
 
-            let scale_str = Editor::get_scale_str(win.area_h.1 - win.area_h.0, win.offset.disp_x);
+            let scale_str = Editor::get_scale_str(win.width(), win.offset.disp_x);
 
             if win.offset.disp_x <= win.cur.disp_x && win.cur.disp_x <= win.offset.disp_x + self.get_curt_col_len() {
                 let tgt_1 = &scale_str[..scale_str.char_indices().nth(win.cur.disp_x - win.offset.disp_x).unwrap().0];

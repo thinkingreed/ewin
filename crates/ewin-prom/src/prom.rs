@@ -28,7 +28,7 @@ impl Prom {
         Log::debug("tab_state", &tab_state);
         Log::debug("self.curt.as_base().curt_cont_idx", &self.curt.as_base().curt_cont_idx);
 
-        if !tab_state.is_nomal_and_not_result() {
+        if !tab_state.is_nomal_and_not_grep_result() {
             for (i, cont) in self.curt.as_base().cont_vec.iter().enumerate() {
                 Log::debug("iiiii", &i);
                 Log::debug("cont.as_base().row_posi_range", &cont.as_base().row_posi_range);

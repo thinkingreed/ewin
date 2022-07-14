@@ -1,6 +1,7 @@
 use crate::{
     ewin_com::{model::*, util::*},
     model::*,
+    tab::*,
 };
 use crossterm::{cursor::*, terminal::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};

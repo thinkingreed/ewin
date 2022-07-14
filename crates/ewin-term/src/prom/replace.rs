@@ -1,6 +1,6 @@
 use crate::{
     ewin_com::{_cfg::key::cmd::*, model::*, util::*},
-    model::*,
+    tab::Tab,
 };
 use ewin_cfg::{lang::lang_cfg::*, log::*, model::default::*};
 

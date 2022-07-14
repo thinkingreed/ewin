@@ -17,7 +17,7 @@ ropey="1.2.0"
 encoding_rs= "0.8.31"
 faccess = "0.2.3"
 chrono="0.4.19"
-crossterm  = {version ="0.23.2", features = ["event-stream"]} 
+crossterm  = {version ="0.24.0", features = ["event-stream"]} 
 crossbeam-channel = "0.5.2"
 clap = { version = "3.1.6", features = ["derive", "env"]}
 anyhow = "1"

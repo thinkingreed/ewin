@@ -4,7 +4,11 @@ use crossterm::cursor::*;
 use ewin_cfg::{colors::*, lang::lang_cfg::Lang, log::*};
 use ewin_com::_cfg::key::cmd::CmdType;
 use ewin_const::def::*;
-use std::{cmp::max, collections::HashMap, usize};
+use std::{
+    cmp::max,
+    collections::{hash_map::Entry::*, *},
+    usize,
+};
 
 impl PromContChoice {
     pub const ITEM_MARGIN: usize = 1;
@@ -72,10 +76,13 @@ impl PromContChoice {
         let mut map: HashMap<usize, usize> = HashMap::new();
         for vecs in self.vec.iter() {
             for (column, choice) in vecs.iter().enumerate() {
-                if map.contains_key(&column) {
-                    map.insert(column, max(*map.get(&column).unwrap(), get_str_width(&choice.name)));
-                } else {
-                    map.insert(column, get_str_width(&choice.name));
+                match map.entry(column) {
+                    Occupied(mut e) => {
+                        e.insert(max(*e.get(), get_str_width(&choice.name)));
+                    }
+                    Vacant(e) => {
+                        e.insert(get_str_width(&choice.name));
+                    }
                 }
             }
         }

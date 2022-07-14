@@ -1,7 +1,8 @@
-use crate::model::*;
+use crate::{model::*, terms::term::*};
 use ewin_cfg::log::*;
 use ewin_com::{_cfg::key::cmd::*, model::*};
 use ewin_const::def::*;
+
 impl EvtAct {
     pub fn save_confirm(term: &mut Terminal) -> ActType {
         Log::debug_key("EvtAct::save_confirm");

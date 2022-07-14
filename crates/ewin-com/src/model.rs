@@ -15,6 +15,7 @@ use ewin_const::def::*;
 use std::usize;
 use std::{
     collections::{BTreeSet, VecDeque},
+    ffi::OsStr,
     fmt,
     ops::Range,
     path::Path,
@@ -157,7 +158,7 @@ impl KeyMacroState {
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Ord, PartialOrd, Clone, Copy, PartialEq, Eq)]
 /// 検索範囲
 pub struct SearchRange {
     pub y: usize,
@@ -519,6 +520,7 @@ pub struct HeaderFile {
     pub filenm: String,
     pub filenm_disp: String,
     pub fullpath: String,
+    pub ext: String,
     pub is_disp: bool,
     // pub is_changed: bool,
     pub filenm_area: (usize, usize),
@@ -537,7 +539,7 @@ impl Default for HeaderFile {
             filenm: String::new(),
             filenm_disp: String::new(),
             fullpath: String::new(),
-            //  ext: String::new(),
+            ext: String::new(),
             is_disp: false,
             // is_changed: false,
             filenm_area: (0, 0),
@@ -556,6 +558,7 @@ impl HeaderFile {
         let path = Path::new(&filenm);
         let setting_filenm;
         let file_fullpath;
+        let ext = path.extension().unwrap_or_else(|| OsStr::new("txt")).to_string_lossy().to_string();
 
         if path.is_absolute() {
             setting_filenm = Path::new(&filenm).file_name().unwrap().to_string_lossy().to_string();
@@ -565,7 +568,7 @@ impl HeaderFile {
             file_fullpath = Path::new(&*CURT_DIR).join(filenm).to_string_lossy().to_string();
         }
 
-        HeaderFile { filenm: if filenm.is_empty() { Lang::get().new_file.clone() } else { Path::new(&setting_filenm).file_name().unwrap().to_string_lossy().to_string() }, fullpath: file_fullpath, ..HeaderFile::default() }
+        HeaderFile { filenm: if filenm.is_empty() { Lang::get().new_file.clone() } else { Path::new(&setting_filenm).file_name().unwrap().to_string_lossy().to_string() }, ext, fullpath: file_fullpath, ..HeaderFile::default() }
     }
 }
 
@@ -720,6 +723,13 @@ pub struct ScrollbarV {
 impl Default for ScrollbarV {
     fn default() -> Self {
         ScrollbarV { is_show: false, is_enable: false, row_posi: USIZE_UNDEFINED, row_posi_org: 0, bar_len: 0, bar_width: 0, move_len: 0 }
+    }
+}
+
+impl ScrollbarV {
+    pub fn clear(&mut self) {
+        self.is_show = false;
+        self.bar_width = 0;
     }
 }
 

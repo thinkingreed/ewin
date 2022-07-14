@@ -13,7 +13,7 @@ use ewin_com::{
     model::*,
     util::*,
 };
-use ewin_term::model::*;
+use ewin_term::{model::*, terms::term::*};
 use futures::{future::FutureExt, StreamExt};
 use std::{
     io::*,
@@ -39,11 +39,11 @@ async fn main() {
     let err_str = Cfg::init(&args);
     if !err_str.is_empty() {
         //   Log::info_s(&err_str);
-        Terminal::exit_file_open(&err_str);
+        Terminal::exit_show_msg(&err_str);
     }
     let err_str = Keybind::init(&args);
     if !err_str.is_empty() {
-        Terminal::exit_file_open(&err_str);
+        Terminal::exit_show_msg(&err_str);
     }
     let _ = APP_VERSION.set(get_app_version());
 
@@ -109,5 +109,5 @@ async fn main() {
             JobType::GrepResult => EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap()),
         }
     }
-    Terminal::exit();
+    Terminal::exit_proc();
 }

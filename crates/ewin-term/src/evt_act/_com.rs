@@ -7,6 +7,7 @@ use crate::{
     },
     global_term::*,
     model::*,
+    terms::term::*,
 };
 use crossterm::{cursor::MoveTo, execute};
 use ewin_cfg::{lang::lang_cfg::*, log::*};

@@ -1,20 +1,26 @@
 use crate::{
-    bar::statusbar::*,
+    bar::{msgbar::*, statusbar::*},
     ewin_com::{files::file::*, model::*},
     ewin_editor::model::*,
     global_term::*,
     model::*,
+    terms::term::*,
 };
-use ewin_cfg::{lang::lang_cfg::*, log::*};
+use ewin_cfg::{
+    lang::lang_cfg::*,
+    log::*,
+    model::default::{Cfg, CfgSyntax},
+};
 use ewin_com::{_cfg::key::cmd::*, util::*};
 use ewin_const::def::*;
+use ewin_editor::window::*;
 use ewin_prom::{
     cont::parts::pulldown::*,
     each::{enc_nl::*, grep::*, grep_result::*, greping::*, move_row::*, open_file::*, replace::*, save_confirm::*, save_forced::*, save_new_file::*, search::*, watch_file::*},
     model::*,
 };
 use ewin_widget::widget::pulldown::*;
-use std::{cmp::min, path::Path};
+use std::{cmp::min, ffi::OsStr, fs::metadata, path::Path};
 
 impl Tab {
     pub fn save(&mut self, save_type: SaveType) -> ActType {
@@ -216,7 +222,61 @@ impl Tab {
         }
         return false;
     }
+    pub fn draw_cache(&mut self, win: &Window) {
+        self.editor_draw_vec[win.v_idx][win.h_idx].draw_cache(&self.editor, win);
+    }
+
+    pub fn enable_syntax_highlight(&mut self, path: &Path) {
+        let file_meta = metadata(path).unwrap();
+        let ext = path.extension().unwrap_or_else(|| OsStr::new("txt")).to_string_lossy().to_string();
+        //  self.editor_draw_vec[self.idx].syntax_reference = if let Some(sr) = CFG.get().unwrap().try_lock().unwrap().syntax.syntax_set.find_syntax_by_extension(&ext) { Some(sr.clone()) } else { None };
+        let win_v_idx = self.editor.win_mgr.win_v_idx;
+        let win_h_idx = self.editor.win_mgr.win_h_idx;
+        self.editor_draw_vec[win_v_idx][win_h_idx].syntax_reference = CfgSyntax::get().syntax.syntax_set.find_syntax_by_extension(&ext).cloned();
+
+        Log::debug("file_meta.len()", &file_meta.len());
+        Log::debug("Cfg::get().general.colors.theme.disable_syntax_highlight_file_size as u64 * 1024.0 as u64", &(Cfg::get().general.colors.theme.disable_syntax_highlight_file_size as u64 * 1024.0 as u64));
+
+        if self.editor_draw_vec[win_v_idx][win_h_idx].syntax_reference.is_some() && file_meta.len() < Cfg::get().general.colors.theme.disable_syntax_highlight_file_size as u64 * 10240000.0 as u64 && is_enable_syntax_highlight(&ext) {
+            self.editor.is_enable_syntax_highlight = true;
+        }
+    }
+
+    pub fn resize_editor_draw_vec(&mut self) {
+        let vec = self.editor.win_mgr.win_list.clone();
+        self.editor_draw_vec.resize_with(vec.len(), Vec::new);
+        let editor_draw = self.editor_draw_vec[0].get_mut(0).unwrap().clone();
+        for (i, v) in vec.iter().enumerate() {
+            self.editor_draw_vec[i].resize(v.len(), editor_draw.clone());
+        }
+    }
+
+    pub fn set_syntax_highlight(&mut self) {
+        for (v_idx, vec_v) in self.editor.win_mgr.win_list.iter().enumerate() {
+            for (h_idx, _) in vec_v.iter().enumerate() {
+                self.editor_draw_vec[v_idx][h_idx].syntax_reference = CfgSyntax::get().syntax.syntax_set.find_syntax_by_extension(&H_FILE_VEC.get().unwrap().try_lock().unwrap().get(self.idx).unwrap().ext).cloned();
+            }
+        }
+    }
+
     pub fn new() -> Self {
-        Tab { idx: 0, editor: Editor::new(), msgbar: MsgBar::new(), prom: Prom::default(), sbar: StatusBar::new(), state: TabState::default() }
+        Tab { idx: 0, editor: Editor::new(), editor_draw_vec: vec![], msgbar: MsgBar::new(), prom: Prom::default(), sbar: StatusBar::new(), state: TabState::default() }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Tab {
+    pub idx: usize,
+    pub editor: Editor,
+    pub editor_draw_vec: Vec<Vec<EditorDraw>>,
+    pub msgbar: MsgBar,
+    pub prom: Prom,
+    pub sbar: StatusBar,
+    pub state: TabState,
+}
+
+impl Default for Tab {
+    fn default() -> Self {
+        Self::new()
     }
 }

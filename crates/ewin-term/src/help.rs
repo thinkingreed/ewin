@@ -1,4 +1,4 @@
-use crate::{global_term::*, model::*};
+use crate::{global_term::*, terms::term::*};
 use crossterm::{cursor::*, terminal::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
 use ewin_com::{
@@ -19,7 +19,7 @@ impl Help {
     pub fn disp_toggle(term: &mut Terminal) -> ActType {
         toggle_help_disp();
         // term.help.is_disp = !term.help.is_disp;
-        term.set_disp_size();
+        term.set_size();
 
         let tab = term.tabs.get_mut(term.tab_idx).unwrap();
         if HELP_DISP.get().unwrap().try_lock().unwrap().is_disp {

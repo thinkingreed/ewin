@@ -16,7 +16,7 @@ ropey="1.2.0"
 syntect = "5.0.0"
 unicode-width = "0.1.8"
 unicode-jp= "0.4.0"
-crossterm  = {version ="0.23.2", features = ["event-stream"]} 
+crossterm  = {version ="0.24.0", features = ["event-stream"]} 
 serde = { version = "1.0.123", features = ["derive"] }
 regex = "1.4.3"
 byteorder = "1.4.3"

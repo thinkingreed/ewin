@@ -1,12 +1,11 @@
-use crate::{global_term::*, model::*};
+use crate::{global_term::*, model::*, terms::term::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
 use ewin_com::{
     files::file::*,
     model::{ActType, DParts},
 };
-use rusty_v8::{self as v8, inspector::*, Context, ContextScope, HandleScope, Isolate, Script};
 use std::path::Path;
-use v8::{Function, FunctionCallback, Local, MapFnTo, Object, TryCatch, V8};
+use v8::{inspector::*, Context, ContextScope, Function, FunctionCallback, HandleScope, Isolate, Local, MapFnTo, Object, Script, TryCatch, V8, V8::*};
 
 impl Macros {
     pub fn exec_js_macro(term: &mut Terminal, js_filenm: &str) -> ActType {
@@ -26,7 +25,7 @@ impl Macros {
         inspector.context_created(context, 1, StringView::empty());
 
         // Store tab information in global variable
-        let _ = TAB.get().unwrap().try_lock().map(|mut tab| *tab = term.tabs[term.tab_idx].clone());
+        let _ = EDITOR.get().unwrap().try_lock().map(|mut editor| *editor = term.tabs[term.tab_idx].editor.clone());
 
         Macros::regist_js_func(scope, context);
         let (script_str, err_str) = File::read_external_file(js_filenm);
@@ -49,9 +48,9 @@ impl Macros {
             if let Some(result) = script.run(&mut scope) {
                 Log::debug("script.run result", &result.to_string(&mut scope).unwrap().to_rust_string_lossy(&mut scope));
 
-                if let Some(Ok(tab)) = TAB.get().map(|tab| tab.try_lock()) {
-                    Log::debug("tab.editor", &tab.editor);
-                    term.tabs[term.tab_idx] = tab.clone();
+                if let Some(Ok(editor)) = EDITOR.get().map(|tab| tab.try_lock()) {
+                    Log::debug("editor", &editor);
+                    term.tabs[term.tab_idx].editor = editor.clone();
                 }
             } else {
                 Macros::log_exceptions(scope);
@@ -111,7 +110,7 @@ impl Macros {
         unsafe {
             v8::V8::dispose();
         }
-        v8::V8::shutdown_platform();
+        v8::V8::dispose_platform();
     }
     pub fn set_data_property(scope: &mut v8::ContextScope<v8::HandleScope>, context: Local<Context>, key: String, func: impl MapFnTo<FunctionCallback>) {
         let global: Local<Object> = context.global(scope);

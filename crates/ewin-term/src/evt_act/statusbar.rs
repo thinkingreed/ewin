@@ -1,4 +1,4 @@
-use crate::{ewin_com::model::*, model::*};
+use crate::{ewin_com::model::*, model::*, terms::term::*};
 use ewin_cfg::log::*;
 use ewin_com::_cfg::key::cmd::*;
 

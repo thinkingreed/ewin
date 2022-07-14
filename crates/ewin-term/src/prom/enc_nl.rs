@@ -1,4 +1,4 @@
-use crate::{ewin_com::model::*, global_term::*, model::*};
+use crate::{ewin_com::model::*, global_term::*, model::*, terms::term::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
 use ewin_com::{_cfg::key::cmd::CmdType, files::bom::*};
 use ewin_prom::{cont::parts::choice::*, each::enc_nl::*};

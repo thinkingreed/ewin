@@ -42,9 +42,9 @@ assets = [
 ]
 
 [dependencies]
-crossterm  = {version ="0.23.2", features = ["event-stream"]} 
+crossterm  = {version ="0.24.0", features = ["event-stream"]} 
 tokio = { version = "1.4.0", features = [ "macros", "rt-multi-thread"] }
-tokio-util = { version = "0.7.0", features = ["codec"] }
+tokio-util = { version = "0.7.3", features = ["codec"] }
 futures = "0.3"
 futures-util = "0.3.12"
 clap = { version = "3.1.6", features = ["derive", "env"]}

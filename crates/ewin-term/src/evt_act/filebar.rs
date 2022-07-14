@@ -1,4 +1,4 @@
-use crate::{ewin_com::model::*, global_term::*, model::*};
+use crate::{ewin_com::model::*, global_term::*, model::*, terms::term::*};
 use ewin_cfg::log::*;
 use ewin_com::_cfg::key::{cmd::*, keybind::*};
 use ewin_const::def::*;
@@ -79,6 +79,7 @@ impl EvtAct {
                             continue;
                         }
                         Log::debug("xxx", &x);
+                        Log::debug("term.tabs.len()", &term.tabs.len());
 
                         if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 {
                             let change_range = ((h_file.filenm_area.1 as f64 - h_file.filenm_area.0 as f64) as f64 / 2_f64).floor() as usize;
@@ -97,6 +98,8 @@ impl EvtAct {
                         }
                     }
                     if inset_idx != USIZE_UNDEFINED {
+                        Log::debug("term.tabs.len()", &term.tabs.len());
+
                         term.swap_tab(term.tab_idx, inset_idx);
                     }
                 }

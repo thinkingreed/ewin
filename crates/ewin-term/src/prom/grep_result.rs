@@ -1,6 +1,8 @@
 use crate::{
     ewin_com::{_cfg::key::cmd::*, global::*, model::*, util::*},
     model::*,
+    tab::Tab,
+    terms::term::*,
 };
 use ewin_cfg::log::*;
 use ewin_const::def::*;

@@ -32,6 +32,7 @@ pub mod input_comple;
 pub mod model;
 pub mod scroll;
 pub mod search;
+pub mod window;
 pub mod window_mgr;
 pub mod key {
     pub mod cur;

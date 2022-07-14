@@ -108,7 +108,7 @@ impl Cmd {
             "findNext" => CmdType::FindNext,
             "findBack" => CmdType::FindBack,
             "cancelPrompt" => CmdType::CancelProm,
-            "confirm" => CmdType::Confirm,
+            "confirmPrompt" => CmdType::Confirm,
             "nextContent" => CmdType::NextContent,
             "backContent" => CmdType::BackContent,
             "findCaseSensitive" => CmdType::FindCaseSensitive,

@@ -1,7 +1,8 @@
 use crate::{
     ewin_com::{_cfg::key::keys::*, model::*},
-    global_term::H_FILE_VEC,
+    global_term::*,
     model::*,
+    terms::term::*,
 };
 use directories::BaseDirs;
 use ewin_cfg::{global::*, lang::lang_cfg::*, log::*, model::modal::*};
@@ -13,7 +14,7 @@ use std::{cmp::min, io::stdout};
 
 impl EvtAct {
     pub fn ctrl_ctx_menu(term: &mut Terminal) -> ActType {
-        Log::debug_key("EvtAct.ctrl_ctx_menu");
+        Log::debug_key("ctrl_ctx_menu");
 
         match term.ctx_widget.cmd.cmd_type {
             CmdType::MouseDownLeft(y, x) => {
@@ -26,6 +27,7 @@ impl EvtAct {
                 if term.ctx_widget.widget.is_mouse_within_area(y, x) {
                     let child_cont_org = &term.ctx_widget.widget.cont.cont_vec.get(term.ctx_widget.widget.parent_sel_y).and_then(|cont| cont.1.clone());
                     term.ctx_widget.widget.ctrl_mouse_move(y, x);
+                    Log::debug_key("000000000000000000000000000");
 
                     if !term.ctx_widget.widget.is_menu_change() {
                         return ActType::Cancel;
@@ -34,10 +36,16 @@ impl EvtAct {
 
                     // Only parent meun move || Only child meun move
                     if child_cont_org.is_none() && child_cont.is_none() || term.ctx_widget.widget.parent_sel_y == term.ctx_widget.widget.parent_sel_y_org && term.ctx_widget.widget.child_sel_y != USIZE_UNDEFINED {
+                        Log::debug_key("11111111111111111111111111111111");
                         return ActType::Draw(DParts::CtxMenu);
                     } else {
+                        Log::debug_key("22222222222222222222222222222222");
+
+                        Log::debug("term.ctx_widget.widget.get_disp_range_y()", &term.ctx_widget.widget.get_disp_range_y());
+
                         // term.set_render_range_ctx_menu();
                         // return ActType::Draw(DParts::Editor);
+
                         return ActType::Draw(DParts::Absolute(term.ctx_widget.widget.get_disp_range_y()));
                     }
                 } else if term.ctx_widget.widget.is_mouse_area_around(y, x) {
@@ -129,7 +137,7 @@ impl EvtAct {
                     return ActType::Draw(DParts::AllMsgBar(err_str));
                 } else {
                     // highlight data reset
-                    term.editor_draw_vec.clear();
+                    term.curt().editor_draw_vec.clear();
                 }
                 term.curt().editor.win_mgr.curt().sel.clear();
             }

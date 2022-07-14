@@ -1,4 +1,4 @@
-use crate::{ewin_com::model::*, help::*, model::*};
+use crate::{ewin_com::model::*, help::*, model::*, tab::Tab, terms::term::*};
 use ewin_cfg::{log::*, model::modal::*};
 use ewin_com::_cfg::key::cmd::*;
 use ewin_const::def::*;
@@ -8,10 +8,13 @@ impl EvtAct {
         Log::debug_key("EvtAct::ctrl_editor");
 
         let evt_act = EvtAct::exec_editor(term);
-        if term.curt().editor.cmd.config.is_recalc_scrl {
-            term.curt().editor.set_scrlbar_h_info();
+        if
+        // term.curt().editor.win_mgr.curt().draw_range == E_DrawRange::Init ||
+        term.curt().editor.cmd.config.is_recalc_scrl {
+            term.curt().editor.calc_editor_scrlbar_h();
             term.curt().editor.calc_editor_scrlbar_v();
         }
+
         if evt_act != ActType::Next {
             return evt_act;
         }
@@ -74,9 +77,7 @@ impl EvtAct {
             CmdType::OpenMenuFile | CmdType::OpenMenuConvert | CmdType::OpenMenuEdit | CmdType::OpenMenuSearch | CmdType::OpenMenuMacro => {}
             // Help
             CmdType::Help => return Help::disp_toggle(term),
-            /*
-             * ctx_menu
-             */
+            // ctx_menu
             CmdType::CtxtMenu(y, x) => {
                 // let editor_row_posi = term.curt_mut().editor.row_posi;
                 term.init_ctx_menu(y, x);
@@ -84,9 +85,12 @@ impl EvtAct {
             // switch_tab
             CmdType::SwitchTab(direction) => return term.switch_tab(direction),
             CmdType::WindowSplit(split_type) => {
-                term.editor_draw_vec[term.tab_idx].clear();
+                //  let tab_idx = term.tab_idx;
+                // term.curt().editor_draw_vec[tab_idx].clear();
                 term.curt().editor.win_mgr.split_window(&split_type);
-                term.set_disp_size();
+                term.curt().resize_editor_draw_vec();
+                term.curt().set_syntax_highlight();
+                term.set_size();
                 return ActType::Draw(DParts::All);
             }
             /*
@@ -110,7 +114,8 @@ impl EvtAct {
             return ActType::Draw(DParts::MsgBar(err_str));
         } else {
             // highlight data reset
-            term.editor_draw_vec[term.tab_idx].clear();
+            let tab_idx = term.tab_idx;
+            term.curt().editor_draw_vec[tab_idx].clear();
             return ActType::Draw(DParts::All);
         }
     }

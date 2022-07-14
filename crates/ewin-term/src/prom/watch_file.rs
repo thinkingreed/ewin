@@ -1,7 +1,8 @@
 use crate::{
     ewin_com::{_cfg::key::cmd::*, files::file::*, global::*, model::*},
-    global_term::H_FILE_VEC,
+    global_term::*,
     model::*,
+    terms::term::*,
 };
 use ewin_cfg::log::*;
 use ewin_const::def::*;

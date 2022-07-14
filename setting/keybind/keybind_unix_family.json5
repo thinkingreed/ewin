@@ -37,218 +37,278 @@
    * cursor move
    */
   {
-    key: 'left', cmd: 'cursorLeft'
+    key: 'left',
+    cmd: 'cursorLeft'
   },
   {
-    key: 'right', cmd: 'cursorRight'
+    key: 'right',
+    cmd: 'cursorRight'
   },
   {
-    key: 'down', cmd: 'cursorDown'
+    key: 'down',
+    cmd: 'cursorDown'
   },
   {
-    key: 'up', cmd: 'cursorUp'
-   },
-  {
-    key: 'home', cmd: 'cursorRowHome'
- },
-  {
-    key: 'end', cmd: 'cursorRowEnd'
-   },
-  {
-    key: 'ctrl+home', cmd: 'cursorFileHome'
+    key: 'up',
+    cmd: 'cursorUp'
   },
   {
-    key: 'ctrl+end', cmd: 'cursorFileEnd'
+    key: 'home',
+    cmd: 'cursorRowHome'
   },
   {
-    key: 'pagedown', cmd: 'cursorPageDown'
+    key: 'end',
+    cmd: 'cursorRowEnd'
   },
   {
-    key: 'pageup', cmd: 'cursorPageUp'
-   },
+    key: 'ctrl+home',
+    cmd: 'cursorFileHome'
+  },
+  {
+    key: 'ctrl+end',
+    cmd: 'cursorFileEnd'
+  },
+  {
+    key: 'pagedown',
+    cmd: 'cursorPageDown'
+  },
+  {
+    key: 'pageup',
+    cmd: 'cursorPageUp'
+  },
   /*
    * select
    */
   {
-    key: 'shift+left', cmd: 'cursorLeftSelect'
+    key: 'shift+left',
+    cmd: 'cursorLeftSelect'
   },
   {
-    key: 'shift+right', cmd: 'cursorRightSelect'
+    key: 'shift+right',
+    cmd: 'cursorRightSelect'
   },
   {
-    key: 'shift+down', cmd: 'cursorDownSelect'
+    key: 'shift+down',
+    cmd: 'cursorDownSelect'
   },
   {
-    key: 'shift+up', cmd: 'cursorUpSelect'
+    key: 'shift+up',
+    cmd: 'cursorUpSelect'
   },
   {
-    key: 'shift+home', cmd: 'cursorRowHomeSelect'
+    key: 'shift+home',
+    cmd: 'cursorRowHomeSelect'
   },
   {
-    key: 'shift+end', cmd: 'cursorRowEndSelect'
+    key: 'shift+end',
+    cmd: 'cursorRowEndSelect'
   },
   {
-    key: 'ctrl+a', cmd: 'allSelect'
+    key: 'ctrl+a',
+    cmd: 'allSelect'
   },
   {
-    key: 'shift+F6', cmd: 'boxSelectModeStart'
+    key: 'shift+F6',
+    cmd: 'boxSelectModeStart'
   },
   /*
    * mode
    */
   {
-    key: 'esc', cmd: 'cancelEditorState'
+    key: 'esc',
+    cmd: 'cancelEditorState'
   },
   /*
    * edit
    */
   {
-    key: 'enter', cmd: 'insertLine'
+    key: 'enter',
+    cmd: 'insertLine'
   },
   {
-    key: 'backspace', cmd: 'deletePrevChar'
+    key: 'backspace',
+    cmd: 'deletePrevChar'
   },
   {
-    key: 'delete', cmd: 'deleteNextChar'
+    key: 'delete',
+    cmd: 'deleteNextChar'
   },
   {
-    key: 'ctrl+x', cmd: 'cut'
+    key: 'ctrl+x',
+    cmd: 'cut'
   },
   {
-    key: 'ctrl+c', cmd: 'copy'
+    key: 'ctrl+c',
+    cmd: 'copy'
   },
   {
-    key: 'ctrl+v', cmd: 'paste'
+    key: 'ctrl+v',
+    cmd: 'paste'
   },
   {
-    key: 'ctrl+z', cmd: 'undo'
+    key: 'ctrl+z',
+    cmd: 'undo'
   },
   {
-    key: 'ctrl+y', cmd: 'redo'
+    key: 'ctrl+y',
+    cmd: 'redo'
   },
   /*
    * find
    */
   {
-    key: 'ctrl+f', cmd: 'findPrompt'
+    key: 'ctrl+f',
+    cmd: 'findPrompt'
   },
   {
-    key: 'F3', cmd: 'findNext'
+    key: 'F3',
+    cmd: 'findNext'
   },
   {
-    key: 'shift+F4', cmd: 'findBack'
+    key: 'shift+F4',
+    cmd: 'findBack'
   },
   {
-    key: 'ctrl+r', cmd: 'replacePrompt'
+    key: 'ctrl+r',
+    cmd: 'replacePrompt'
   },
   {
-    key: 'ctrl+l', cmd: 'moveLinePrompt'
+    key: 'ctrl+l',
+    cmd: 'moveLinePrompt'
   },
   {
-    key: 'ctrl+g', cmd: 'grepPrompt'
+    key: 'ctrl+g',
+    cmd: 'grepPrompt'
   },
   /*
    * filSe
    */
   {
-    key: 'ctrl+w', cmd: 'closeFile'
+    key: 'ctrl+w',
+    cmd: 'closeFile'
   },
   {
-    key: 'ctrl+n', cmd: 'createNewFile'
+    key: 'ctrl+n',
+    cmd: 'createNewFile'
   },
   {
-    key: 'ctrl+o', cmd: 'openFilePrompt'
+    key: 'ctrl+o',
+    cmd: 'openFilePrompt'
   },
   {
-    key: 'alt+right', cmd: 'switchTabRight'
+    key: 'alt+right',
+    cmd: 'switchTabRight'
   },
   {
-    key: 'alt+left', cmd: 'switchTabLeft'
+    key: 'alt+left',
+    cmd: 'switchTabLeft'
   },
   {
-    key: 'ctrl+e', cmd: 'encodingPrompt'
+    key: 'ctrl+e',
+    cmd: 'encodingPrompt'
   },
   {
-    key: 'alt+w', cmd: 'closeAllFile'
+    key: 'alt+w',
+    cmd: 'closeAllFile'
   },
   {
-    key: 'ctrl+s', cmd: 'saveFile'
+    key: 'ctrl+s',
+    cmd: 'saveFile'
   },
-    {
-    key: 'ctrl+space', cmd: 'inputComplement'
+  {
+    key: 'ctrl+space',
+    cmd: 'inputComplement'
   },
   /*
    * key record
    */
   {
-    key: 'shift+F1', cmd: 'startEndRecordKey'
+    key: 'shift+F1',
+    cmd: 'startEndRecordKey'
   },
   {
-    key: 'shift+F2', cmd: 'execRecordKey'
+    key: 'shift+F2',
+    cmd: 'execRecordKey'
   },
   /*
    * mouse
    */
   {
-    key: 'F12', cmd: 'mouseModeSwitch'
+    key: 'F12',
+    cmd: 'mouseModeSwitch'
   },
   /*
    * menu
    */
   {
-    key: 'F1', cmd: 'help'
+    key: 'F1',
+    cmd: 'help'
   },
   {
-    key: 'alt+F1', cmd: 'helpInitDisplaySwitch'
+    key: 'alt+F1',
+    cmd: 'helpInitDisplaySwitch'
   },
   {
-    key: 'alt+m', cmd: 'openMenu'
+    key: 'alt+m',
+    cmd: 'openMenu'
   },
   {
-    key: 'alt+f', cmd: 'openMenuFile'
+    key: 'alt+f',
+    cmd: 'openMenuFile'
   },
   {
-    key: 'alt+c', cmd: 'openMenuConvert'
+    key: 'alt+c',
+    cmd: 'openMenuConvert'
   },
   {
-    key: 'alt+e', cmd: 'openMenuEdit'
+    key: 'alt+e',
+    cmd: 'openMenuEdit'
   },
   {
-    key: 'alt+s', cmd: 'openMenuSearch'
+    key: 'alt+s',
+    cmd: 'openMenuSearch'
   },
 
   /*
    * prompt
    */
   {
-    key: 'esc', cmd: 'cancelPrompt'
+    key: 'esc',
+    cmd: 'cancelPrompt'
   },
   {
-    key: 'enter', cmd: 'confirm'
+    key: 'enter',
+    cmd: 'confirmPrompt'
   },
   {
-    key: 'tab', cmd: 'nextContent'
-  },
-   {
-    key: 'shift+tab', cmd: 'backContent'
+    key: 'tab',
+    cmd: 'nextContent'
   },
   {
-    key: 'alt+c', cmd: 'findCaseSensitive'
+    key: 'shift+tab',
+    cmd: 'backContent'
   },
   {
-    key: 'alt+r',  cmd: 'findRegex'
+    key: 'alt+c',
+    cmd: 'findCaseSensitive'
   },
   {
-    key: 'F10', cmd: 'contextMenu'
+    key: 'alt+r',
+    cmd: 'findRegex'
   },
-   /*
+  {
+    key: 'F10',
+    cmd: 'contextMenu'
+  },
+  /*
    * window
    */
   {
-    key: 'ctrl+d', cmd: 'windowSplitVertical'
+    key: 'ctrl+d',
+    cmd: 'windowSplitVertical'
   },
-    {
-    key: 'ctrl+i', cmd: 'windowSplitHorizontal'
-  },
+  {
+    key: 'ctrl+i',
+    cmd: 'windowSplitHorizontal'
+  }
 ]
-

@@ -1,4 +1,4 @@
-use crate::ewin_com::model::*;
+use crate::{ewin_com::model::*, window_mgr::*};
 use ewin_cfg::model::default::*;
 use ewin_com::_cfg::key::cmd::*;
 use ewin_const::def::*;
@@ -67,81 +67,6 @@ impl Editor {
     }
 }
 
-#[derive(Debug, Default, Clone)]
-pub struct WindowMgr {
-    // Vertical, horizontal
-    pub win_list: Vec<Vec<Window>>,
-    pub win_v_idx: usize,
-    pub win_h_idx: usize,
-    pub split_type: WindowSplitType,
-    pub split_line_v: usize,
-    //  pub split_line_v_width: usize,
-    pub split_line_h: usize,
-}
-
-impl WindowMgr {
-    pub const SPLIT_LINE_V_WIDTH: usize = 1;
-    pub fn curt(&mut self) -> &mut Window {
-        return self.win_list.get_mut(self.win_v_idx).unwrap().get_mut(self.win_h_idx).unwrap();
-    }
-    pub fn curt_ref(&self) -> &Window {
-        return self.win_list.get(self.win_v_idx).unwrap().get(self.win_h_idx).unwrap();
-    }
-}
-
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct Window {
-    pub v_idx: usize,
-    pub h_idx: usize,
-    pub area_h: (usize, usize),
-    // area_h + rnw + scrollbar
-    pub area_all_h: (usize, usize),
-    pub area_h_org: (usize, usize),
-    pub area_v: (usize, usize),
-    // area_v + scrollbar
-    pub area_all_v: (usize, usize),
-    pub area_v_org: (usize, usize),
-    /// current cursor position
-    pub cur: Cur,
-    pub cur_org: Cur,
-    // Basic x position when moving the cursor up and down
-    pub updown_x: usize,
-    pub row_posi: usize,
-    pub row_len_org: usize,
-    pub offset: Offset,
-    pub draw_range: E_DrawRange,
-    pub scrl_h: ScrollbarH,
-    pub scrl_v: ScrollbarV,
-    pub sel: SelRange,
-    pub sel_org: SelRange,
-}
-
-impl Window {
-    pub fn new() -> Self {
-        Window {
-            v_idx: 0,
-            h_idx: 0,
-            area_v: (0, 0),
-            area_all_v: (0, 0),
-            area_h: (0, 0),
-            area_all_h: (0, 0),
-            area_v_org: (0, 0),
-            area_h_org: (0, 0),
-            cur: Cur::default(),
-            cur_org: Cur::default(),
-            updown_x: 0,
-            row_posi: 0,
-            row_len_org: 0,
-            offset: Offset::default(),
-            draw_range: E_DrawRange::default(),
-            scrl_v: ScrollbarV::default(),
-            scrl_h: ScrollbarH::default(),
-            sel: SelRange::default(),
-            sel_org: SelRange::default(),
-        }
-    }
-}
-
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Offset {
     pub y: usize,
@@ -182,24 +107,14 @@ pub struct TextBuffer {
 pub struct EditorDraw {
     pub sy: usize,
     pub ey: usize,
-    // pub win: Window,
     // Caching the drawing string because ropey takes a long time to access char
     pub cells_to: HashMap<usize, Vec<Cell>>,
     pub cells_from: HashMap<usize, Vec<Cell>>,
-    pub cells_to_all: Vec<Vec<Cell>>,
+    pub cells_all: Vec<Vec<Cell>>,
     pub syntax_state_vec: Vec<SyntaxState>,
     pub style_vecs: Vec<Vec<(Style, String)>>,
     pub syntax_reference: Option<SyntaxReference>,
     pub change_row_vec: Vec<usize>,
-    // pub highlighter_opt: Option<Highlighter>,
-}
-
-impl EditorDraw {
-    pub fn clear(&mut self) {
-        self.syntax_state_vec.clear();
-        self.style_vecs.clear();
-        self.cells_to_all.clear();
-    }
 }
 
 impl fmt::Display for EditorDraw {
@@ -214,24 +129,18 @@ pub struct ScrollbarH {
     pub is_show: bool,
     pub is_show_org: bool,
     pub is_enable: bool,
-    pub row_max_width_idx: usize,
-    pub row_max_width: usize,
-    pub row_max_chars: usize,
-    // pub row_chars_vec: Vec<usize>,
-    pub row_width_chars_vec: Vec<(usize, usize)>,
     pub row_posi: usize,
     pub clm_posi: usize,
     pub clm_posi_org: usize,
     pub bar_len: usize,
     pub bar_height: usize,
-    pub row_max_width_org: usize,
     pub move_char_x: usize,
     pub scrl_range: usize,
 }
 
 impl Default for ScrollbarH {
     fn default() -> Self {
-        ScrollbarH { is_show: false, is_show_org: false, is_enable: false, row_width_chars_vec: vec![], row_posi: USIZE_UNDEFINED, row_max_width_idx: 0, clm_posi: 0, clm_posi_org: 0, bar_len: 0, bar_height: 0, row_max_width: 0, row_max_width_org: 0, row_max_chars: 0, move_char_x: 0, scrl_range: 0 }
+        ScrollbarH { is_show: false, is_show_org: false, is_enable: false, row_posi: USIZE_UNDEFINED, clm_posi: 0, clm_posi_org: 0, bar_len: 0, bar_height: 0, move_char_x: 0, scrl_range: 0 }
     }
 }
 

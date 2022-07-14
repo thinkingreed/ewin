@@ -1,20 +1,21 @@
 use crate::{
     ewin_com::{files::file::*, global::*, model::*, util::*},
     model::*,
+    window::*,
 };
 use crossterm::{
     cursor::MoveTo,
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
 };
-use ewin_cfg::{log::*, model::default::*};
+use ewin_cfg::{colors::Colors, log::*, model::default::*};
 use ewin_com::_cfg::key::cmd::*;
 use ewin_const::{def::*, model::*};
 use ropey::RopeBuilder;
 use std::{
     cmp::min,
     collections::BTreeSet,
-    io::{self, stdout, Write},
+    io::{self, stdout},
     ops::Range,
 };
 
@@ -79,7 +80,7 @@ impl Editor {
         self.state.is_changed_org = self.state.is_changed;
         self.buf_len_rows_org = self.buf.len_rows();
         self.win_mgr.curt().scrl_v.row_posi_org = self.win_mgr.curt().scrl_v.row_posi;
-        self.win_mgr.curt().scrl_h.row_max_width_org = self.win_mgr.curt().scrl_h.row_max_width;
+        self.win_mgr.row_max_width_org = self.win_mgr.row_max_width;
         self.win_mgr.curt().scrl_h.clm_posi_org = self.win_mgr.curt().scrl_h.clm_posi;
         self.win_mgr.curt().scrl_h.is_show_org = self.win_mgr.curt().scrl_h.is_show;
 
@@ -286,5 +287,36 @@ impl Editor {
         if win.offset.disp_x <= win.cur.disp_x && win.cur.disp_x <= win.offset.disp_x + self.get_curt_col_len() && win.offset.y <= win.cur.y && win.cur.y <= win.offset.y + self.get_curt_row_len() {
             str_vec.push(MoveTo((win.area_h.0 + win.cur.disp_x - win.offset.disp_x) as u16, (win.cur.y - win.offset.y + self.get_curt_row_posi()) as u16).to_string());
         }
+    }
+
+    pub fn draw_window_split_line(&mut self, str_vec: &mut Vec<String>) {
+        Log::debug_key("draw_window_split_line");
+        if self.win_mgr.split_line_v > 0 {
+            Log::debug("self.row_posi", &self.row_posi);
+            for i in self.row_posi..self.row_posi + self.row_num {
+                #[allow(clippy::repeat_once)]
+                str_vec.push(format!("{}{}{}", MoveTo(self.win_mgr.split_line_v as u16, i as u16), Colors::get_window_split_line_bg(), " ".repeat(WINDOW_SPLIT_LINE_WIDTH)));
+            }
+        }
+    }
+
+    pub fn get_editor_row_posi(&self) -> usize {
+        return self.row_posi;
+    }
+
+    pub fn get_curt_ref_win(&self) -> &Window {
+        return self.win_mgr.curt_ref();
+    }
+
+    pub fn get_curt_col_len(&self) -> usize {
+        return self.win_mgr.curt_ref().width();
+    }
+
+    pub fn get_curt_row_posi(&self) -> usize {
+        return self.win_mgr.curt_ref().area_v.0;
+    }
+
+    pub fn get_curt_row_len(&self) -> usize {
+        return self.win_mgr.curt_ref().height();
     }
 }

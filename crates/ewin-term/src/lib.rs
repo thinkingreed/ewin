@@ -5,11 +5,12 @@ extern crate ewin_editor;
 extern crate ewin_prom;
 
 pub mod global_term {
-    use crate::{help::*, model::*};
+    use crate::help::*;
     use ewin_com::model::*;
+    use ewin_editor::model::Editor;
     use once_cell::sync::OnceCell;
     use tokio::sync::Mutex;
-    pub static TAB: OnceCell<tokio::sync::Mutex<Tab>> = OnceCell::new();
+    pub static EDITOR: OnceCell<tokio::sync::Mutex<Editor>> = OnceCell::new();
 
     pub static HELP_DISP: OnceCell<Mutex<Help>> = OnceCell::new();
     pub static H_FILE_VEC: OnceCell<Mutex<Vec<HeaderFile>>> = OnceCell::new();
@@ -34,6 +35,14 @@ pub mod evt_act {
     pub mod prom;
     pub mod statusbar;
 }
+pub mod terms {
+    pub mod draw;
+    pub mod file;
+    pub mod life_cycle;
+    pub mod size;
+    pub mod tabs;
+    pub mod term;
+}
 pub mod bar {
     pub mod filebar;
     pub mod menubar;
@@ -45,7 +54,6 @@ pub mod macros {
     pub mod js_macro;
     pub mod key_macro;
 }
-pub mod term;
 pub mod prom {
     pub mod enc_nl;
     pub mod grep;

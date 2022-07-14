@@ -1,6 +1,6 @@
 use crate::{ewin_com::model::*, model::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*, model::default::*};
-use ewin_com::_cfg::key::cmd::CmdType;
+use ewin_com::_cfg::key::cmd::*;
 use ewin_const::def::*;
 use std::{cmp::min, collections::BTreeSet};
 
@@ -8,25 +8,28 @@ impl Editor {
     pub fn exec_search_incremental(&mut self, search_str: String) {
         Log::debug_s("Editor.exec_search_incremental");
         Log::debug("search_str", &search_str);
-        self.search.str = search_str;
 
+        self.search.str = search_str;
         let regex = Cfg::get().general.editor.search.regex;
 
-        let s_row_idx = if regex { self.buf.row_to_byte(self.win_mgr.curt().offset.y) } else { self.buf.row_to_char(self.win_mgr.curt().offset.y) };
-        let ey = min(self.win_mgr.curt().offset.y + self.get_curt_row_len(), self.buf.len_rows());
-        let e_row_idx = if regex { self.buf.row_to_byte(ey) } else { self.buf.row_to_char(ey) };
+        for (_, vec_v) in self.win_mgr.win_list.iter().enumerate() {
+            for (_, win) in vec_v.iter().enumerate() {
+                let s_row_idx = if regex { self.buf.row_to_byte(win.offset.y) } else { self.buf.row_to_char(win.offset.y) };
+                let ey = min(win.offset.y + win.height(), self.buf.len_rows());
+                let e_row_idx = if regex { self.buf.row_to_byte(ey) } else { self.buf.row_to_char(ey) };
 
-        // self.search_org = self.search.clone();
-        self.search.ranges = if self.search.str.is_empty() { vec![] } else { self.get_search_ranges(&self.search.str, s_row_idx, e_row_idx, 0) };
-
-        // self.set_search_org_and_raneg();
-
+                self.search.ranges.extend(if self.search.str.is_empty() { vec![] } else { self.get_search_ranges(&self.search.str, s_row_idx, e_row_idx, 0) });
+            }
+        }
+        // Sorting because the order is irregular in the search for each window
+        self.search.ranges.sort();
         Log::debug("self.search.ranges", &self.search.ranges);
 
         if !self.search_org.ranges.is_empty() || !self.search.ranges.is_empty() {
             // Search in advance for drawing
             if !self.search.ranges.is_empty() {
                 self.search_str(true, true);
+                self.calc_editor_scrlbar();
             }
             for s in &self.search.ranges {
                 self.change_info.restayle_row_set.insert(s.y);
@@ -37,6 +40,7 @@ impl Editor {
             self.win_mgr.curt().draw_range = E_DrawRange::Targetpoint;
         }
     }
+
     pub fn exec_search_confirm(&mut self, search_str: String) -> ActType {
         Log::debug_s("exec_search_confirm");
         if search_str.is_empty() {
@@ -56,17 +60,13 @@ impl Editor {
         Log::debug_key("search_str");
 
         if self.search.ranges.is_empty() {
-            // self.set_search_org_and_raneg()
             self.search.ranges = self.get_search_ranges(&self.search.str, 0, self.buf.len_chars(), 0);
         }
         if self.search.ranges.is_empty() {
             return;
         }
         if self.search.row_num == USIZE_UNDEFINED {
-            Log::debug("self.search.idx 111", &self.search.idx);
-
             self.search.idx = self.get_search_str_index(is_asc);
-            Log::debug("self.search.idx 222", &self.search.idx);
         } else {
             self.search.idx = self.get_search_row_no_index(self.search.row_num);
             self.search.row_num = USIZE_UNDEFINED;
@@ -74,9 +74,7 @@ impl Editor {
 
         if !is_incremental {
             let range = self.search.ranges[self.search.idx];
-            Log::debug("tgt range", &range);
             self.set_cur_target_by_x(range.y, range.sx, false);
-            Log::debug("self.cur", &self.win_mgr.curt().cur);
         }
 
         self.scroll();
@@ -194,15 +192,11 @@ impl Editor {
 
         let sel_str = self.buf.slice_string(self.win_mgr.curt().sel);
         if self.search.ranges.is_empty() || (!sel_str.is_empty() && self.search.str != sel_str) {
-            Log::debug_key("11111111111111111111111111111");
-            //  self.search.clear();
             if sel_str.is_empty() {
                 return ActType::Draw(DParts::MsgBar(Lang::get().not_set_search_str.to_string()));
             }
             self.search.str = sel_str;
-            // self.search(&sel_str);
         }
-        Log::debug_key("2222222222222222222222222222");
 
         self.search_str(self.cmd.cmd_type == CmdType::FindNext, false);
         return ActType::Next;

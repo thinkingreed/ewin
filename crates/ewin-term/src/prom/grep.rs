@@ -2,6 +2,8 @@
 use crate::{
     ewin_com::{_cfg::key::cmd::*, global::*, model::*},
     model::*,
+    tab::Tab,
+    terms::term::*,
 };
 use ewin_cfg::{lang::lang_cfg::*, log::*, model::default::*};
 use globset::Glob;

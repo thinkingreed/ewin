@@ -30,10 +30,8 @@ impl Editor {
             let cur = self.win_mgr.curt().cur;
             self.win_mgr.curt().sel.set_sel_posi(false, cur);
             self.box_insert.vec = self.slice_box_sel().1;
-        } else {
-            if self.cmd.cmd_type != CmdType::MouseScrollUp && self.cmd.cmd_type != CmdType::MouseScrollDown {
-                self.win_mgr.curt().sel.clear();
-            }
+        } else if self.cmd.cmd_type != CmdType::MouseScrollUp && self.cmd.cmd_type != CmdType::MouseScrollDown {
+            self.win_mgr.curt().sel.clear();
         }
         Log::debug("self.sel.mode == SelMode::BoxSelect", &(self.win_mgr.curt().sel.mode == SelMode::BoxSelect));
         Log::debug("self.cmd", &self.cmd);

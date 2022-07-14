@@ -91,9 +91,7 @@ impl Editor {
         // Register edit history
         if self.cmd.cmd_type != CmdType::Undo && self.cmd.cmd_type != CmdType::Redo {
             self.history.clear_redo_vec();
-            Log::debug("self.history.undo_vec.len() 111", &self.history.undo_vec.len());
             self.history.undo_vec.push(evt_proc);
-            Log::debug("self.history.undo_vec.len() 222", &self.history.undo_vec.len());
         }
 
         self.scroll();

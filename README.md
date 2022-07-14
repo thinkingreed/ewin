@@ -24,6 +24,7 @@ It provides basic features as a minimal text editor:
 - Color theme(Cursor color is out of scope)
 - Input completion(word completion)
 - Symbol display of specific characters (tab, Full-width space, ..)
+- Window split
 
 [![Rust](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml/badge.svg)](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml)
 [![crate-name at crates.io](https://img.shields.io/crates/v/ewin.svg)](https://crates.io/crates/ewin)
@@ -124,8 +125,7 @@ And several keys with Ctrl or Alt modifiers are mapped to various features.
 | `F12`            | Mouse capture changes.Used for clipboard access via terminal app                                                    | ―             |
 |                  | when connecting to a remote terminal                                                                                | ―             |
 | `F10`            | Display Context menu.                                                                                               | ―             |
-| `Ctrl` + `space` | Input completion on Unix family.| ―             |
-| `Shift` + `space`| Input completion on Windows.(※Ctrl+space cannot be read at Crossterm on Windows)| ―             |
+| `Ctrl` + `space` | Input completion| ―             |
 
 - **Moving cursor**
 

@@ -19,7 +19,7 @@ impl TabState {
         return true;
     }
 
-    pub fn is_nomal_and_not_result(&self) -> bool {
+    pub fn is_nomal_and_not_grep_result(&self) -> bool {
         if !self.is_nomal() || self.prom == PromState::GrepResult {
             return false;
         }

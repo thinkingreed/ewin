@@ -1,7 +1,9 @@
 use crate::{
     ewin_com::{model::*, util::*},
-    global_term::H_FILE_VEC,
+    global_term::*,
     model::*,
+    tab::Tab,
+    terms::term::*,
 };
 use ewin_cfg::{lang::lang_cfg::*, log::*};
 use ewin_com::{

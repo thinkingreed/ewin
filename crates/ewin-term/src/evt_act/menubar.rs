@@ -2,6 +2,7 @@ use crate::{
     bar::menubar::*,
     ewin_com::{_cfg::key::keys::*, model::*},
     model::*,
+    terms::term::*,
 };
 use ewin_cfg::{global::*, lang::lang_cfg::*, log::*, model::modal::*};
 use ewin_com::{
@@ -214,7 +215,8 @@ impl EvtAct {
                     return ActType::Draw(DParts::AllMsgBar(err_str));
                 } else {
                     // highlight data reset
-                    term.editor_draw_vec[term.tab_idx].clear();
+                    let tab_idx = term.tab_idx;
+                    term.curt().editor_draw_vec[tab_idx].clear();
                 }
                 term.curt().editor.win_mgr.curt().sel.clear();
             }

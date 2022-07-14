@@ -18,12 +18,12 @@ impl MsgBar {
     }
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
-        Log::info_key("MsgBar.draw");
-
-        Log::debug("self.row_posi", &self.row_posi);
-        str_vec.push(format!("{}{}", MoveTo(0, self.row_posi as u16), Clear(ClearType::CurrentLine),));
-        str_vec.push(Colors::get_default_bg());
-        str_vec.push(self.get_disp_msg());
+        if self.is_msg_changed() {
+            Log::debug_key("MsgBar.draw");
+            str_vec.push(format!("{}{}", MoveTo(0, self.row_posi as u16), Clear(ClearType::CurrentLine),));
+            str_vec.push(Colors::get_default_bg());
+            str_vec.push(self.get_disp_msg());
+        }
     }
 
     pub fn draw_only<T: Write>(&mut self, out: &mut T) {
@@ -54,11 +54,9 @@ impl MsgBar {
         self.msg.msg_type = MsgType::Error;
     }
 
-    /*
     pub fn is_msg_changed(&mut self) -> bool {
         return self.msg_org != self.msg;
     }
-     */
 
     pub fn is_exsist_msg(&mut self) -> bool {
         return !self.msg.str.is_empty();
@@ -66,5 +64,20 @@ impl MsgBar {
 
     pub fn set_org_state(&mut self) {
         self.msg_org = self.msg.clone();
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct MsgBar {
+    pub msg: Msg,
+    pub msg_org: Msg,
+    // 0 indexed
+    pub row_posi: usize,
+    pub row_num: usize,
+    pub col_num: usize,
+}
+impl MsgBar {
+    pub fn new() -> Self {
+        MsgBar { ..MsgBar::default() }
     }
 }

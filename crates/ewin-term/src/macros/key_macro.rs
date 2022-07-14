@@ -1,6 +1,7 @@
-use crate::{ewin_com::model::*, model::*};
+use crate::{ewin_com::model::*, model::*, tab::*, terms::term::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
 use ewin_com::_cfg::key::cmd::Cmd;
+
 impl Tab {
     pub fn record_key_macro_start(&mut self) -> ActType {
         Log::debug_key("macro_record_start");
