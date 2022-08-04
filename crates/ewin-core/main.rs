@@ -7,9 +7,9 @@ use ewin_cfg::{
     log::*,
     model::{default::*, modal::*},
 };
-use ewin_com::{
-    _cfg::key::{keybind::*, keys::*},
+use ewin_key::{
     global::*,
+    key::{keybind::*, keys::*},
     model::*,
     util::*,
 };
@@ -30,7 +30,7 @@ async fn main() {
         eprintln!("{}", panic_info);
         Log::error("Unexpected panic", panic_info);
 
-        Terminal::finalize();
+        Term::finalize();
         // Set hook to log crash reason
         default_hook(panic_info);
     }));
@@ -39,11 +39,11 @@ async fn main() {
     let err_str = Cfg::init(&args);
     if !err_str.is_empty() {
         //   Log::info_s(&err_str);
-        Terminal::exit_show_msg(&err_str);
+        Term::exit_show_msg(&err_str);
     }
     let err_str = Keybind::init(&args);
     if !err_str.is_empty() {
-        Terminal::exit_show_msg(&err_str);
+        Term::exit_show_msg(&err_str);
     }
     let _ = APP_VERSION.set(get_app_version());
 
@@ -53,17 +53,18 @@ async fn main() {
     let _ = LANG.set(Lang::read_lang_cfg());
 
     Log::debug("LANG_MAP", &LANG_MAP);
+    Log::debug("Lang::get_lang_map", &Lang::get_lang_map());
 
     // Processing ends when the terminal size is small
-    if !Terminal::check_displayable() {
+    if !Term::check_displayable() {
         println!("{}", &Lang::get().terminal_size_small);
         return;
     }
     // let out = stdout();
     let mut out = BufWriter::new(stdout().lock());
 
-    Terminal::init();
-    let mut term = Terminal::new();
+    Term::init();
+    let mut term = Term::new();
     term.activate(&args);
     term.init_draw(&mut out);
 
@@ -109,5 +110,5 @@ async fn main() {
             JobType::GrepResult => EvtAct::draw_grep_result(&mut out, &mut term, job.job_grep.unwrap()),
         }
     }
-    Terminal::exit_proc();
+    Term::exit_proc();
 }

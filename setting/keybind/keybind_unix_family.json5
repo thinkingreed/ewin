@@ -31,6 +31,9 @@
          contextMenu
      // format
          formatJSON, formatHTML, formatXML
+     // Window
+         windowSplitHorizontal, windowSplitVertical, 
+
   */
 
   /*
@@ -300,15 +303,9 @@
     key: 'F10',
     cmd: 'contextMenu'
   },
-  /*
-   * window
-   */
+ 
   {
     key: 'ctrl+d',
-    cmd: 'windowSplitVertical'
-  },
-  {
-    key: 'ctrl+i',
-    cmd: 'windowSplitHorizontal'
+    cmd: 'test'
   }
 ]

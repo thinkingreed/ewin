@@ -1,95 +1,47 @@
 use super::term::*;
-use crate::{
-    bar::{filebar::*, statusbar::*},
-    ewin_com::{global::*, model::*, util::*},
-    ewin_editor::model::*,
-    global_term::*,
-};
+use crate::{bar::filebar::*, global_term::*};
 use crossterm::{cursor::*, execute, terminal::*};
-use ewin_cfg::{
-    colors::*,
-    lang::lang_cfg::*,
-    log::*,
-    model::default::{Cfg, CfgSyntax},
-};
-use ewin_const::def::*;
-use ewin_widget::core::*;
+use ewin_cfg::{colors::*, log::*, model::default::*};
+use ewin_const::{def::*, model::*, term::*};
+use ewin_dialog::dialog::*;
+use ewin_key::model::*;
+use ewin_menulist::core::*;
 use std::{
     fmt,
     io::{stdout, Write},
 };
 
-impl Terminal {
+impl Term {
     pub fn draw<T: Write>(&mut self, out: &mut T, draw_parts: &DParts) {
         Log::info_key("Terminal.draw start");
         Log::debug("draw_parts", &draw_parts);
-        Log::debug("self.curt().editor.draw_range", &self.curt().editor.win_mgr.curt().draw_range);
+        Log::debug("self.curt().editor.draw_range 111", &self.curt().editor.draw_range);
         self.set_size();
 
         let mut str_vec: Vec<String> = vec![];
 
-        if (matches!(draw_parts, DParts::All) || matches!(draw_parts, DParts::AllMsgBar(_))) && self.curt().editor.win_mgr.curt().draw_range != E_DrawRange::Init {
-            self.curt().editor.win_mgr.curt().draw_range = E_DrawRange::All;
+        if (matches!(draw_parts, DParts::All) || matches!(draw_parts, DParts::AllMsgBar(_))) && self.curt().editor.draw_range != E_DrawRange::Init {
+            self.curt().editor.draw_range = E_DrawRange::All;
         }
-
         if let DParts::Editor(e_draw_range) = draw_parts {
-            for vec_v in self.curt().editor.win_mgr.win_list.iter_mut() {
-                for win in vec_v.iter_mut() {
-                    win.draw_range = *e_draw_range;
-                }
-            }
+            self.curt().editor.draw_range = *e_draw_range;
         }
 
-        if self.curt().editor.win_mgr.curt().draw_range == E_DrawRange::All {
-            for vec_v in self.curt().editor.win_mgr.win_list.iter_mut() {
-                for win in vec_v.iter_mut() {
-                    win.draw_range = E_DrawRange::All;
-                }
-            }
+        Log::debug("self.curt().editor.draw_range 222", &self.curt().editor.draw_range);
+
+        self.curt().draw_editor(&mut str_vec);
+        if self.curt().editor.draw_range == E_DrawRange::MoveCur {
+            self.curt().msgbar.draw(&mut str_vec, false);
+            self.draw_flush(out, &mut str_vec);
+            return;
         }
 
-        // Editor
-        match self.curt().editor.win_mgr.curt().draw_range {
-            E_DrawRange::Not => {}
-            _ => {
-                if self.curt().editor.get_curt_row_len() > 0 {
-                    let curt_win = self.tabs[self.tab_idx].editor.get_curt_ref_win().clone();
-                    if curt_win.draw_range == E_DrawRange::MoveCur {
-                        self.tabs[self.tab_idx].editor.draw_move_cur(&mut str_vec, &curt_win);
-                        self.curt().msgbar.draw(&mut str_vec);
-                        self.draw_flush(out, &mut str_vec);
-                        return;
-                    }
-
-                    let vec = self.curt().editor.win_mgr.win_list.clone();
-                    for (v_idx, vec_v) in vec.iter().enumerate() {
-                        for (h_idx, win) in vec_v.iter().enumerate() {
-                            self.tabs[self.tab_idx].draw_cache(win);
-
-                            // Clear init
-                            let act_type = Editor::clear_init(&mut str_vec, &self.tabs[self.tab_idx].editor, &self.tabs[self.tab_idx].editor_draw_vec[v_idx][h_idx], win);
-                            if act_type != ActType::Next {
-                                return;
-                            }
-
-                            self.tabs[self.tab_idx].editor.draw(&mut str_vec, &self.tabs[self.tab_idx].editor_draw_vec[v_idx][h_idx], win);
-                            self.tabs[self.tab_idx].editor_draw_vec[v_idx][h_idx].cells_from = std::mem::take(&mut self.tabs[self.tab_idx].editor_draw_vec[v_idx][h_idx].cells_to);
-                            self.tabs[self.tab_idx].editor.draw_scale(&mut str_vec, win);
-                            self.tabs[self.tab_idx].editor.draw_scrlbar_v(&mut str_vec, win);
-                            self.tabs[self.tab_idx].editor.draw_scrlbar_h(&mut str_vec, win);
-                        }
-                    }
-                }
-                str_vec.push(Colors::get_default_fg_bg());
-            }
-        };
-        self.tabs[self.tab_idx].editor.draw_window_split_line(&mut str_vec);
-        StatusBar::draw(&mut str_vec, &mut self.tabs[self.tab_idx], &H_FILE_VEC.get().unwrap().try_lock().unwrap()[self.tab_idx]);
-        self.curt().msgbar.draw(&mut str_vec);
+        self.curt().msgbar.draw(&mut str_vec, false);
+        self.curt().draw_sbar(&mut str_vec);
 
         if &DParts::All == draw_parts || matches!(draw_parts, &DParts::ScrollUpDown(_)) {
-            self.menubar.draw(&mut str_vec);
             FileBar::draw(self, &mut str_vec);
+            self.menubar.draw(&mut str_vec);
             HELP_DISP.get().unwrap().try_lock().unwrap().draw(&mut str_vec);
             let state = &self.curt().state.clone();
             self.curt().prom.draw(&mut str_vec, state);
@@ -98,16 +50,16 @@ impl Terminal {
         if draw_parts == &DParts::All || matches!(draw_parts, DParts::Editor(_)) {
             Log::info("self.state.is_ctx_menu", &self.state.is_ctx_menu);
             if self.state.is_ctx_menu {
-                self.ctx_widget.draw(&mut str_vec);
+                self.ctx_menu.draw(&mut str_vec);
             }
-            if self.state.is_menuwidget {
-                self.menubar.widget.draw(&mut str_vec);
+            if self.state.is_menubar_menulist {
+                self.menubar.menulist.draw(&mut str_vec);
             }
             if self.curt().editor.is_input_imple_mode(true) {
                 self.curt().editor.input_comple.draw(&mut str_vec);
             }
+            Dialog::get().draw(&mut str_vec);
         }
-        self.draw_init_info(&mut str_vec);
 
         Log::debug("cur", &self.curt().editor.win_mgr.curt().cur);
         Log::debug("offset_x", &self.curt().editor.win_mgr.curt().offset.x);
@@ -123,10 +75,9 @@ impl Terminal {
         // Log::debug("scrl_v.is_enable", &self.curt().editor.scrl_v.is_enable);
         // Log::debug("scrl_h.is_enable", &self.curt().editor.scrl_h.is_enable);
         // Log::debug("self.curt().editor.state.input_comple_mode", &self.curt().editor.state.input_comple_mode);
-        Log::debug("self.curt().editor.win", &self.curt().editor.win_mgr);
+        // Log::debug("self.curt().editor.win", &self.curt().editor.win_mgr);
 
         self.draw_flush(out, &mut str_vec);
-
         Log::info_key("Terminal.draw end");
     }
 
@@ -152,13 +103,16 @@ impl Terminal {
         Log::debug("self.curt().editor.win_mgr.curt()", &self.curt().editor.win_mgr.curt());
 
         let mut str_vec: Vec<String> = vec![];
-        if !self.state.is_displayable || self.state.is_ctx_menu || self.state.is_menuwidget {
+        if !self.state.is_displayable || self.state.is_ctx_menu || self.state.is_menubar_menulist {
+        } else if Dialog::get().is_show {
+            Term::hide_cur();
         } else if self.curt().state.is_nomal() && self.curt().editor.is_cur_y_in_screen() {
             self.curt().editor.draw_cur(&mut str_vec);
-            Terminal::show_cur();
+            Term::show_cur();
         } else if self.curt().state.prom != PromState::None && self.curt().prom.curt.as_mut_base().is_draw_cur() {
             self.curt().prom.draw_cur(&mut str_vec);
-            Terminal::show_cur();
+            Term::show_cur();
+        } else if self.curt().state.prom != PromState::None && self.curt().prom.curt.as_mut_base().is_draw_cur() {
         }
         if !str_vec.is_empty() {
             let _ = out.write(str_vec.concat().as_bytes());
@@ -169,35 +123,6 @@ impl Terminal {
     pub fn draw_all<T: Write>(&mut self, out: &mut T, draw_parts: DParts) {
         self.draw(out, &draw_parts);
         self.draw_cur(out);
-    }
-
-    pub fn draw_init_info(&mut self, str_vec: &mut Vec<String>) {
-        Log::debug_key("Terminal.draw_init_info");
-        // Information display in the center when a new file is created
-
-        Log::debug("self.curt().state.is_nomal()", &self.curt().state.is_nomal());
-
-        if self.state.is_show_init_info && self.curt().editor.h_file.filenm == Lang::get().new_file && self.tab_idx == 0 && self.curt().editor.buf.len_chars() == 0 && self.curt().state.is_nomal() && !self.curt().editor.state.is_changed {
-            self.state.is_show_init_info = false;
-
-            let cols = get_term_size().0;
-            let pkg_name = APP_NAME;
-            str_vec.push(Colors::get_default_fg_bg());
-
-            let pkg_name = format!("{name:^w$}", name = pkg_name, w = cols - (get_str_width(pkg_name) - pkg_name.chars().count()));
-            str_vec.push(format!("{}{}{}", MoveTo(0, (self.curt().editor.get_curt_row_posi() + 4) as u16), Clear(ClearType::CurrentLine), pkg_name));
-
-            let ver_name = &format!("{}: {}", "Version", &(*APP_VERSION.get().unwrap().to_string()));
-            let ver_name = format!("{ver:^w$}", ver = ver_name, w = cols - (get_str_width(ver_name) - ver_name.chars().count()));
-            str_vec.push(format!("{}{}{}", MoveTo(0, (self.curt().editor.get_curt_row_posi() + 5) as u16), Clear(ClearType::CurrentLine), ver_name));
-
-            let simple_help = Lang::get().simple_help_desc.clone();
-            let simple_help = format!("{s_help:^w$}", s_help = simple_help, w = cols - (get_str_width(&simple_help) - simple_help.chars().count()));
-            str_vec.push(format!("{}{}{}", MoveTo(0, (self.curt().editor.get_curt_row_posi() + 7) as u16), Clear(ClearType::CurrentLine), simple_help));
-            let detailed_help = Lang::get().detailed_help_desc.clone();
-            let detailed_help = format!("{d_help:^w$}", d_help = detailed_help, w = cols - (get_str_width(&detailed_help) - detailed_help.chars().count()));
-            str_vec.push(format!("{}{}{}", MoveTo(0, (self.curt().editor.get_curt_row_posi() + 8) as u16), Clear(ClearType::CurrentLine), detailed_help));
-        }
     }
 
     pub fn check_displayable() -> bool {
@@ -223,7 +148,6 @@ impl Terminal {
     }
     pub fn init_draw<T: Write>(&mut self, out: &mut T) {
         Log::info_key("init_draw");
-        self.state.is_show_init_info = true;
         self.set_bg_color();
         self.draw(out, &DParts::All);
         self.draw_cur(out);

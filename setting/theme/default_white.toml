@@ -66,6 +66,13 @@ select_background = "#6495ed"
 non_select_foreground = "#000000"
 select_foreground = "#ffffff"
 
+[dialog]
+default_foreground = "#000000"
+default_background = "#dedede"
+header_foreground = "#ffffff"
+header_background = "#787878"
+select_background = "#6495ed"
+
 [msg]
 normal_foreground = "#000000"
 highlight_foreground = "#00c800"

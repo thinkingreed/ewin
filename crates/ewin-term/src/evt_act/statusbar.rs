@@ -1,9 +1,10 @@
-use crate::{ewin_com::model::*, model::*, terms::term::*};
+use crate::{model::*, terms::term::*};
 use ewin_cfg::log::*;
-use ewin_com::_cfg::key::cmd::*;
+use ewin_const::model::*;
+use ewin_key::{key::cmd::*, model::*};
 
 impl EvtAct {
-    pub fn ctrl_statusbar(term: &mut Terminal) -> ActType {
+    pub fn ctrl_statusbar(term: &mut Term) -> ActType {
         Log::debug_key("ctrl_statusbar");
 
         match &term.cmd.cmd_type {

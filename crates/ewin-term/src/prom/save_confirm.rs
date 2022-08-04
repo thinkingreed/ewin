@@ -1,10 +1,10 @@
 use crate::{model::*, terms::term::*};
 use ewin_cfg::log::*;
-use ewin_com::{_cfg::key::cmd::*, model::*};
-use ewin_const::def::*;
+use ewin_const::{def::*, model::*};
+use ewin_key::key::cmd::*;
 
 impl EvtAct {
-    pub fn save_confirm(term: &mut Terminal) -> ActType {
+    pub fn save_confirm(term: &mut Term) -> ActType {
         Log::debug_key("EvtAct::save_confirm");
         Log::debug("term.curt().prom_plugin.p_cmd", &term.curt().prom.cmd);
         match &term.curt().prom.cmd.cmd_type {
@@ -20,7 +20,7 @@ impl EvtAct {
         }
     }
 
-    pub fn check_exit_close(term: &mut Terminal) -> ActType {
+    pub fn check_exit_close(term: &mut Term) -> ActType {
         Log::debug_key("EvtAct::check_exit_close");
 
         if term.tabs.len() == 1 {

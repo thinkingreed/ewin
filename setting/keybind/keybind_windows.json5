@@ -30,6 +30,8 @@
          contextMenu
      // format
          formatJSON, formatHTML, formatXML
+     // Window
+         windowSplitHorizontal, windowSplitVertical, 
   */
   /* when
      allFocus, inputFocus, editorFocus, promptFocus         
@@ -302,15 +304,10 @@
     key: 'F10',
     cmd: 'contextMenu'
   },
-  /*
-   * window
-   */
+
   {
     key: 'ctrl+d',
-    cmd: 'windowSplitVertical'
+    cmd: 'test'
   },
-  {
-    key: 'ctrl+i',
-    cmd: 'windowSplitHorizontal'
-  }
+
 ]

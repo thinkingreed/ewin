@@ -1,6 +1,7 @@
-use crate::{ewin_com::model::*, model::*, tab::*, terms::term::*};
+use crate::{model::*, tab::*, terms::term::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_com::_cfg::key::cmd::Cmd;
+use ewin_const::model::*;
+use ewin_key::key::cmd::Cmd;
 
 impl Tab {
     pub fn record_key_macro_start(&mut self) -> ActType {
@@ -15,7 +16,7 @@ impl Tab {
         }
     }
 
-    pub fn exec_key_macro(term: &mut Terminal) -> ActType {
+    pub fn exec_key_macro(term: &mut Term) -> ActType {
         if term.curt().editor.key_vec.is_empty() {
             return ActType::Draw(DParts::MsgBar(Lang::get().no_key_record_exec.to_string()));
         }

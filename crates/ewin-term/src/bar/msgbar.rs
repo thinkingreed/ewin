@@ -1,6 +1,7 @@
-use crate::{ewin_com::util::*, model::*};
+use crate::model::*;
 use crossterm::{cursor::*, terminal::*};
 use ewin_cfg::{colors::*, log::*};
+use ewin_key::util::*;
 use std::io::Write;
 
 impl MsgBar {
@@ -17,8 +18,8 @@ impl MsgBar {
         self.col_num = 0;
     }
 
-    pub fn draw(&mut self, str_vec: &mut Vec<String>) {
-        if self.is_msg_changed() {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>, is_forced: bool) {
+        if self.is_msg_changed() || is_forced {
             Log::debug_key("MsgBar.draw");
             str_vec.push(format!("{}{}", MoveTo(0, self.row_posi as u16), Clear(ClearType::CurrentLine),));
             str_vec.push(Colors::get_default_bg());
@@ -30,7 +31,7 @@ impl MsgBar {
         Log::debug_key("MsgBar.draw_only");
 
         let mut v: Vec<String> = vec![];
-        self.draw(&mut v);
+        self.draw(&mut v, true);
         let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();
     }

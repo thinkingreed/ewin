@@ -1,19 +1,18 @@
-use crate::{
-    ewin_com::{global::*, model::*},
-    model::*,
-    terms::term::*,
-};
+use crate::{model::*, terms::term::*};
 use ewin_cfg::log::*;
-use ewin_com::_cfg::key::cmd::CmdType;
+use ewin_const::model::*;
+use ewin_key::{global::*, key::cmd::*, model::*};
+use ewin_view::view_trait::view_evt_trait::*;
 use std::io::Write;
 
 impl EvtAct {
-    pub fn ctrl_prom(term: &mut Terminal) -> ActType {
+    pub fn ctrl_prom(term: &mut Term) -> ActType {
         Log::debug_key("ctrl_prom");
 
         if !term.curt().state.is_nomal_and_not_grep_result() {
             let cmd = term.cmd.clone();
             term.curt().prom.set_cmd(&cmd);
+
             // Resize
             let evt_act = term.curt().prom.resize();
             if evt_act != ActType::Next {
@@ -53,7 +52,7 @@ impl EvtAct {
         }
     }
 
-    pub fn cancel_prom(term: &mut Terminal) -> ActType {
+    pub fn cancel_prom(term: &mut Term) -> ActType {
         match term.curt().prom.cmd.cmd_type {
             CmdType::CancelProm => {
                 if term.state.is_all_close_confirm {
@@ -78,17 +77,17 @@ impl EvtAct {
         }
     }
 
-    pub fn draw_prompt<T: Write>(term: &mut Terminal, out: &mut T) {
+    pub fn draw_prompt<T: Write>(term: &mut Term, out: &mut T) {
         Log::debug_key("draw_prompt");
         // Hide the cursor at this position to target anything other than mouse move
-        Terminal::hide_cur();
+        Term::hide_cur();
         term.set_size();
         term.curt().msgbar.draw_only(out);
         // term.curt().sbar.draw_only(out);
         let state = term.curt().state.clone();
         term.curt().prom.draw_only(out, &state);
         if term.curt().prom.curt.as_mut_base().is_draw_cur() {
-            Terminal::show_cur();
+            Term::show_cur();
         }
     }
 }

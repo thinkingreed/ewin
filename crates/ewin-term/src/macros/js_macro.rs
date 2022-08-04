@@ -1,14 +1,12 @@
 use crate::{global_term::*, model::*, terms::term::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_com::{
-    files::file::*,
-    model::{ActType, DParts},
-};
+use ewin_const::model::*;
+use ewin_key::files::file::*;
 use std::path::Path;
-use v8::{inspector::*, Context, ContextScope, Function, FunctionCallback, HandleScope, Isolate, Local, MapFnTo, Object, Script, TryCatch, V8, V8::*};
+use v8::{inspector::*, Context, ContextScope, Function, FunctionCallback, HandleScope, Isolate, Local, MapFnTo, Object, Script, TryCatch, V8};
 
 impl Macros {
-    pub fn exec_js_macro(term: &mut Terminal, js_filenm: &str) -> ActType {
+    pub fn exec_js_macro(term: &mut Term, js_filenm: &str) -> ActType {
         Log::info_key("exec_js_macro");
         Log::info("exec js file", &js_filenm);
 

@@ -1,23 +1,25 @@
-use crate::{
-    ewin_com::{model::*, util::*},
-    model::*,
-    tab::*,
-};
+use crate::tab::*;
 use crossterm::{cursor::*, terminal::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
-use ewin_const::def::*;
+use ewin_const::{def::*, term::*};
 use ewin_editor::model::*;
+use ewin_key::{model::*, util::*};
+use ewin_state::tabs::*;
+use ewin_view::sel_range::*;
+use std::fmt::Write as _;
 use std::{io::Write, ops::Range};
 
-impl StatusBar {
-    pub fn draw(str_vec: &mut Vec<String>, tab: &mut Tab, h_file: &HeaderFile) {
+impl Tab {
+    pub fn draw_sbar(&mut self, str_vec: &mut Vec<String>) {
         Log::info_key("StatusBar.draw");
         let cols = get_term_size().0;
 
+        let h_file = &Tabs::get().curt_h_file().clone();
+
         let mut normal_vec = vec![];
-        let enc_nl = StatusBarCont::new(format!("{}({})", h_file.enc, h_file.nl));
+        let enc_nl = StatusBarCont::new(format!("{}({})", h_file.file.enc, h_file.file.nl));
         normal_vec.push(enc_nl.clone());
-        let cur = StatusBarCont::new(StatusBar::get_cur_str(&tab.editor));
+        let cur = StatusBarCont::new(StatusBar::get_cur_str(&self.editor));
         normal_vec.push(cur.clone());
         normal_vec.reverse();
 
@@ -26,11 +28,11 @@ impl StatusBar {
             normal_str.push_str(&normal.disp_str);
         }
         let mut opt_str = String::new();
-        let mut opt_vec = StatusBar::get_opt_vec(&tab.editor);
+        let mut opt_vec = StatusBar::get_opt_vec(&self.editor);
         opt_vec.reverse();
         for opt in opt_vec {
             if !opt.disp_str.is_empty() {
-                opt_str.push_str(&format!("[{}]", opt.disp_str));
+                let _ = write!(opt_str, "[{}]", opt.disp_str);
             }
         }
         let normal_str_w = get_str_width(&normal_str);
@@ -38,25 +40,27 @@ impl StatusBar {
         let other_w = cols - normal_str_w - opt_str_w;
         let normal_w_s = other_w + opt_str_w;
 
-        tab.sbar.cur_area = (normal_w_s, normal_w_s + get_str_width(&cur.disp_str) - 1);
-        tab.sbar.enc_nl_area = (tab.sbar.cur_area.1 + 1, tab.sbar.cur_area.1 + 1 + get_str_width(&enc_nl.disp_str));
+        self.sbar.cur_area = (normal_w_s, normal_w_s + get_str_width(&cur.disp_str) - 1);
+        self.sbar.enc_nl_area = (self.sbar.cur_area.1 + 1, self.sbar.cur_area.1 + 1 + get_str_width(&enc_nl.disp_str));
 
         let mut msg_str = format!("{}{}{}{}{}{}", Colors::get_default_fg_bg(), " ".repeat(other_w), Colors::get_sbar_inversion_fg_bg(), opt_str, Colors::get_sbar_fg_bg(), normal_str);
-        Log::debug("tab.sbar.row_posi", &tab.sbar.row_posi);
-        msg_str = format!("{}{}{}", MoveTo(0, tab.sbar.row_posi as u16), Clear(ClearType::CurrentLine), msg_str);
+        Log::debug("tab.sbar.row_posi", &self.sbar.row_posi);
+        msg_str = format!("{}{}{}", MoveTo(0, self.sbar.row_posi as u16), Clear(ClearType::CurrentLine), msg_str);
 
         str_vec.push(msg_str);
         str_vec.push(Colors::get_default_fg_bg());
     }
 
-    pub fn draw_only<T: Write>(out: &mut T, tab: &mut Tab, h_file: &HeaderFile) {
-        Log::debug_key("StatusBar.draw_only");
+    pub fn draw_sbar_only<T: Write>(&mut self, out: &mut T) {
+        Log::debug_key("Tab.draw_sbar_only");
         let mut v: Vec<String> = vec![];
-        StatusBar::draw(&mut v, tab, h_file);
+        self.draw_sbar(&mut v);
         let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();
     }
+}
 
+impl StatusBar {
     pub fn get_opt_vec(editor: &Editor) -> Vec<StatusBarCont> {
         Log::info_key("StatusBar::get_opt_vec");
 

@@ -1,12 +1,15 @@
 [workspace]
 members = [
-  "crates/ewin-cfg",
-  "crates/ewin-com",
-  "crates/ewin-const",
+  "crates/base/ewin-cfg",
+  "crates/base/ewin-const",
+  "crates/base/ewin-key",
   "crates/ewin-term",
-  "crates/ewin-editor",
-  "crates/ewin-prom",
-  "crates/ewin-widget",
+  "crates/ewin-state",
+  "crates/ewin-view",
+  "crates/parts/ewin-editor",
+  "crates/parts/ewin-prom",
+  "crates/parts/ewin-menulist",
+  "crates/parts/ewin-dialog",
 ]
 
 [package]
@@ -47,7 +50,7 @@ tokio = { version = "1.4.0", features = [ "macros", "rt-multi-thread"] }
 tokio-util = { version = "0.7.3", features = ["codec"] }
 futures = "0.3"
 futures-util = "0.3.12"
-clap = { version = "3.1.6", features = ["derive", "env"]}
+clap = { version = "3.2.16", features = ["derive", "env"]}
 notify="5.0.0-pre.13"
 # grep
 regex = "1.5.5"
@@ -59,10 +62,10 @@ ignore = "0.4.18"
 globset = "0.4.8"
 crossbeam= "0.8.1"
 
-ewin-com = {version = "0.0.2", path = "crates/ewin-com" }
-ewin-cfg = {version = "0.0.2", path = "crates/ewin-cfg" }
+ewin-key = {version = "0.0.2", path = "crates/base/ewin-key" }
+ewin-cfg = {version = "0.0.2", path = "crates/base/ewin-cfg" }
+ewin-const = {version = "0.0.2", path = "crates/base/ewin-const" }
 ewin-term = {version = "0.0.2", path = "crates/ewin-term" }
-ewin-const = {version = "0.0.2", path = "crates/ewin-const" }
 
 [dev-dependencies]
 cargo-husky = "1.5.0"

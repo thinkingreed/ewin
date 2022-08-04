@@ -1,15 +1,11 @@
-use crate::{
-    ewin_com::{_cfg::key::cmd::*, global::*, model::*, util::*},
-    model::*,
-    tab::Tab,
-    terms::term::*,
-};
+use crate::{model::*, tab::Tab, terms::term::*};
 use ewin_cfg::log::*;
-use ewin_const::def::*;
+use ewin_const::{def::*, model::*};
+use ewin_key::{global::*, key::cmd::*, model::*, util::*};
 use std::{ffi::OsStr, io::Write, path::*};
 
 impl EvtAct {
-    pub fn draw_grep_result<T: Write>(out: &mut T, term: &mut Terminal, job_grep: JobGrep) {
+    pub fn draw_grep_result<T: Write>(out: &mut T, term: &mut Term, job_grep: JobGrep) {
         Log::debug_key("draw_grep_result");
 
         if EvtAct::is_grep_canceling() {
@@ -43,7 +39,7 @@ impl EvtAct {
             // let rnw_org = term.curt().editor.rnw_org;
             if term.curt().editor.buf.len_rows() > term.curt().editor.get_curt_row_len() && term.curt().editor.rnw_org == term.curt().editor.rnw {
                 let y = term.curt().editor.win_mgr.curt().offset.y + term.curt().editor.get_curt_row_len() - 2;
-                term.curt().editor.win_mgr.curt().draw_range = E_DrawRange::ScrollDown(y - 2, y);
+                term.curt().editor.draw_range = E_DrawRange::ScrollDown(y - 2, y);
                 term.draw(out, if cfg!(target_os = "windows") { &DParts::All } else { &DParts::ScrollUpDown(ScrollUpDownType::Grep) });
             } else {
                 term.draw(out, &DParts::All);
@@ -51,7 +47,7 @@ impl EvtAct {
         }
     }
 
-    pub fn exit_grep_result<T: Write>(out: &mut T, term: &mut Terminal, is_cancel: bool) {
+    pub fn exit_grep_result<T: Write>(out: &mut T, term: &mut Term, is_cancel: bool) {
         Log::debug_key("exit_grep_result");
 
         term.curt().prom.clear();
@@ -67,7 +63,7 @@ impl EvtAct {
         term.draw_all(out, DParts::All);
     }
 
-    pub fn grep_result(term: &mut Terminal) -> ActType {
+    pub fn grep_result(term: &mut Term) -> ActType {
         Log::debug_key("EvtAct::grep_result");
 
         match term.curt().prom.cmd.cmd_type {

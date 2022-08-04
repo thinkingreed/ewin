@@ -1,16 +1,13 @@
-use crate::{
-    ewin_com::{_cfg::key::cmd::*, files::file::*, model::*},
-    ewin_editor::model::*,
-    global_term::*,
-    model::*,
-    tab::Tab,
-};
+use super::term::*;
+use crate::{ewin_editor::model::*, model::*, tab::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
+use ewin_const::model::*;
+use ewin_key::{files::file::*, key::cmd::*};
 use std::{io::ErrorKind, path::Path};
 
-use super::term::*;
+use ewin_state::{header_file::*, tabs::*};
 
-impl Terminal {
+impl Term {
     pub fn open_file(&mut self, filenm: &str, file_open_type: FileOpenType, tab_opt: Option<&mut Tab>, h_file_opt: Option<&HeaderFile>) -> ActType {
         Log::info("File open start", &filenm);
 
@@ -21,7 +18,7 @@ impl Terminal {
 
         if !filenm.is_empty() && !path.exists() {
             if file_open_type == FileOpenType::First {
-                Terminal::exit_show_msg(&Lang::get().file_not_found);
+                Term::exit_show_msg(&Lang::get().file_not_found);
                 return ActType::Exit;
             } else {
                 return ActType::Draw(DParts::MsgBar(Lang::get().file_not_found.to_string()));
@@ -35,14 +32,11 @@ impl Terminal {
 
             if !filenm.is_empty() {
                 // read
-                let result = TextBuffer::read_file(filenm);
+                let result = TextBuffer::read_file(&mut h_file);
                 match result {
-                    Ok((text_buf, _enc, _new_line, _bom_exsist, _modified_time)) => {
-                        h_file.enc = _enc;
-                        h_file.nl = _new_line;
-                        h_file.bom = _bom_exsist;
+                    Ok((text_buf, _bom_exsist)) => {
+                        h_file.file.bom = _bom_exsist;
                         tab.editor.buf = text_buf;
-                        h_file.mod_time = _modified_time;
 
                         if !is_writable {
                             tab.editor.state.is_read_only = true;
@@ -51,7 +45,7 @@ impl Terminal {
                     Err(err) => {
                         let err_str = if err.kind() == ErrorKind::PermissionDenied && !is_readable { Lang::get().no_read_permission.clone() } else { format!("{} {:?}", &Lang::get().file_opening_problem, err) };
                         if self.tabs.is_empty() {
-                            Terminal::exit_show_msg(&err_str);
+                            Term::exit_show_msg(&err_str);
                         } else {
                             return ActType::Draw(DParts::MsgBar(err_str));
                         }
@@ -74,7 +68,7 @@ impl Terminal {
             };
 
             if !filenm.is_empty() {
-                self.curt().enable_syntax_highlight(path);
+                self.curt().enable_syntax_highlight();
             }
 
             // for input complement
@@ -90,8 +84,8 @@ impl Terminal {
     pub fn reopen_curt_file(&mut self) {
         self.curt().clear_curt_tab(true);
         self.set_size();
-        let h_file = H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(self.tab_idx).unwrap().clone();
-        self.open_file(&h_file.fullpath, FileOpenType::Reopen, None, Some(&h_file));
+        let h_file = Tabs::get().curt_h_file().clone();
+        self.open_file(&h_file.file.fullpath, FileOpenType::Reopen, None, Some(&h_file));
     }
 
     pub fn close_file(&mut self) -> ActType {

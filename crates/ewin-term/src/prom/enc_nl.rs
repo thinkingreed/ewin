@@ -1,11 +1,16 @@
-use crate::{ewin_com::model::*, global_term::*, model::*, terms::term::*};
+use crate::{model::*, terms::term::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_com::{_cfg::key::cmd::CmdType, files::bom::*};
+use ewin_const::model::*;
+use ewin_key::{
+    files::{bom::*, encode::*},
+    key::cmd::*,
+};
 use ewin_prom::{cont::parts::choice::*, each::enc_nl::*};
+use ewin_state::tabs::*;
 use std::io::*;
 
 impl EvtAct {
-    pub fn enc_nl(term: &mut Terminal) -> ActType {
+    pub fn enc_nl(term: &mut Term) -> ActType {
         Log::debug_key("EvtAct::enc_nl");
 
         match term.curt().prom.cmd.cmd_type {
@@ -36,24 +41,28 @@ impl EvtAct {
                 let nl = term.curt().prom.curt.as_mut_base().get_tgt_cont(4).unwrap().downcast_mut::<PromContChoice>().unwrap().get_choice();
                 let bom = term.curt().prom.curt.as_mut_base().get_tgt_cont(5).unwrap().downcast_mut::<PromContChoice>().unwrap().get_choice();
 
-                let h_file_org = H_FILE_VEC.get().unwrap().try_lock().unwrap().get(term.tab_idx).unwrap().clone();
+                let h_file_org = Tabs::get().curt_h_file().clone();
 
                 if method_of_apply.name == Lang::get().file_reload {
-                    let result = term.tabs[term.tab_idx].editor.reload_with_specify_encoding(&mut H_FILE_VEC.get().unwrap().try_lock().unwrap()[term.tab_idx], &encoding.name);
+                    let result = term.tabs[term.tab_idx].editor.reload_with_specify_encoding(
+                        Tabs::get().curt_mut_h_file(),
+                        //h_file_vec[term.tab_idx],
+                        &encoding.name,
+                    );
 
                     match result {
                         Ok(had_errors) => {
                             if had_errors {
                                 return ActType::Draw(DParts::MsgBar(Lang::get().reading_cannot_convert_encoding.to_string()));
                             }
-                            let h_file = H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap().clone();
-                            if H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap().nl != h_file_org.nl {
-                                term.curt().editor.change_nl(&h_file_org.nl, &h_file.nl);
+                            let h_file = Tabs::get().curt_h_file().clone();
+                            if Tabs::get().curt_h_file().file.nl != h_file_org.file.nl {
+                                term.curt().editor.change_nl(&h_file_org.file.nl, &h_file.file.nl);
                             }
-                            if h_file_org.enc != H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap().enc || h_file_org.nl != H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap().nl {
+                            if h_file_org.file.enc != h_file.file.enc || h_file_org.file.nl != h_file.file.nl {
                                 term.curt().editor.state.is_changed = true;
                             }
-                            term.curt().editor.h_file = H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap().clone();
+                            term.curt().editor.h_file = Tabs::get().curt_h_file().clone();
                         }
                         Err(err) => {
                             let err_str = match err.kind() {
@@ -66,10 +75,9 @@ impl EvtAct {
                     }
                 } else {
                     let encode = Encode::from_name(&encoding.name);
-                    H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap().enc = encode;
-                    H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap().bom = Bom::get_select_item_bom(&encode, &bom.name);
-                    H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap().nl = nl.name;
-                    Log::debug("term.curt_h_file()", &H_FILE_VEC.get().unwrap().try_lock().unwrap().get_mut(term.tab_idx).unwrap());
+                    Tabs::get().curt_mut_h_file().file.enc = encode;
+                    Tabs::get().curt_mut_h_file().file.bom = Bom::get_select_item_bom(&encode, &bom.name);
+                    Tabs::get().curt_mut_h_file().file.nl = nl.name;
                 }
                 term.curt().clear_curt_tab(true);
                 return ActType::Draw(DParts::All);

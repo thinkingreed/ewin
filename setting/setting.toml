@@ -78,19 +78,27 @@ directory_init_value = ""
 content = """
 [
   {"file": [
-      {"createNewFile": []},
-      {"openFile": []},
+      {"create_new_file": []},
+      {"open_file": []},
       {"encoding": []},
       {"save_as": []},
-      {"end_of_all_save": []}
+      {"end_of_all_save": []},
+      {"file_property": []}
   ]},
   {"edit": [
       {"convert": ["to_uppercase", "to_lowercase", "to_full_width", "to_half_width", "to_space", "to_tab"]},
       {"format": ["JSON", "XML", "HTML"]}
   ]},
   {"display": [
-      {"rowNo": []},
+      {"row_no": []},
       {"scale": []}
+  ]},
+  {"window": [
+      {"left_and_right_split": []},
+      {"top_and_bottom_split": []}
+  ]},
+  {"other": [
+      {"about_app": []}
   ]}
 ]
 """

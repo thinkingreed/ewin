@@ -1,6 +1,7 @@
-use crate::{ewin_com::model::*, tab::*};
+use crate::tab::*;
 use ewin_cfg::log::*;
-use ewin_com::_cfg::key::cmd::*;
+use ewin_const::model::*;
+use ewin_key::key::cmd::*;
 
 impl Tab {
     pub fn search(&mut self) -> ActType {

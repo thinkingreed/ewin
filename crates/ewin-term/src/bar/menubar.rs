@@ -1,10 +1,10 @@
-use crate::ewin_com::util::*;
-use convert_case::{Case, Casing};
 use crossterm::{cursor::*, terminal::*};
 use ewin_cfg::{colors::*, global::*, lang::lang_cfg::*, log::*};
-use ewin_com::_cfg::key::keys::*;
 use ewin_const::def::*;
-use ewin_widget::widget::menubar::*;
+use ewin_const::term::*;
+use ewin_key::key::keys::*;
+use ewin_key::util::*;
+use ewin_menulist::parts::menubar::*;
 use std::fmt::Write as _;
 use std::{
     io::{stdout, Write},
@@ -40,17 +40,17 @@ impl MenuBar {
                 }
                 Log::debug("self.on_mouse_idx", &self.on_mouse_idx);
                 let state_color = if i == self.sel_idx || i == self.on_mouse_idx { Colors::get_mbar_active_fg_bg() } else { Colors::get_mbar_passive_fg_bg() };
-                mber_str.push_str(&format!("{}{}{}", &state_color, &menu_cont.dispnm, Colors::get_mbar_default_bg()));
+                let _ = write!(mber_str, "{}{}{}", &state_color, &menu_cont.dispnm, Colors::get_mbar_default_bg());
             }
 
             Log::debug("self.menu_rest", &self.menu_rest);
 
-            mber_str.push_str(&format!("{}{}", &Colors::get_mbar_default_bg(), &" ".repeat(self.menu_rest)));
+            let _ = write!(mber_str, "{}{}", &Colors::get_mbar_default_bg(), &" ".repeat(self.menu_rest));
 
             if self.is_right_arrow_disp {
-                mber_str.push_str(&format!("{}{}", Colors::get_mbar_active_fg_bg(), right_arrow_btn));
+                let _ = write!(mber_str, "{}{}", Colors::get_mbar_active_fg_bg(), right_arrow_btn);
             }
-            mber_str = format!("{}{}{}{}", mber_str, Colors::get_mbar_passive_fg_bg(), close_btn, Colors::get_default_bg());
+            let _ = write!(mber_str, "{}{}{}", Colors::get_mbar_passive_fg_bg(), close_btn, Colors::get_default_bg());
             str_vec.push(mber_str);
         }
     }
@@ -69,6 +69,7 @@ impl MenuBar {
         // +1 is space between
         self.close_btn_area = (self.menu_space_w, self.menu_space_w + MenuBar::CLOSE_BTN_WITH - 1);
     }
+
     pub fn set_menunm(&mut self) {
         let mut tmp_all_vec: Vec<(usize, String)> = vec![];
         if self.menu_vec.is_empty() {
@@ -168,15 +169,15 @@ impl MenuBar {
         self.left_arrow_area = (USIZE_UNDEFINED, USIZE_UNDEFINED);
         self.right_arrow_area = (USIZE_UNDEFINED, USIZE_UNDEFINED);
 
-        self.widget.init();
+        self.menulist.init();
         let mut tmp_len = 0;
 
-        self.widget.menu_map.iter().for_each(|(menunm_str, _)| {
+        self.menulist.menu_map.iter().for_each(|(menunm_str, _)| {
             let dispnm = format!(" {}", get_cfg_lang_name(menunm_str));
             let name_len = get_str_width(&dispnm);
             let range = Range { start: tmp_len, end: tmp_len + name_len };
 
-            let is_always_reset_name = LANG_MAP[&menunm_str.to_case(Case::Snake)] == Lang::get().display;
+            let is_always_reset_name = LANG_MAP[menunm_str] == Lang::get().display || LANG_MAP[menunm_str] == Lang::get().window;
             self.menu_vec.push(MenubarCont::new(menunm_str, &dispnm, range, is_always_reset_name));
             tmp_len += name_len;
         });
@@ -221,7 +222,7 @@ pub struct MenuBar {
     pub row_num: usize,
     pub row_posi: usize,
     pub col_num: usize,
-    pub widget: MenubarWidget,
+    pub menulist: MenubarMenuList,
 }
 
 impl Default for MenuBar {
@@ -243,7 +244,7 @@ impl Default for MenuBar {
             row_num: MENUBAR_ROW_NUM,
             row_posi: 0,
             col_num: 0,
-            widget: MenubarWidget::default(),
+            menulist: MenubarMenuList::default(),
         }
     }
 }
@@ -251,6 +252,8 @@ impl Default for MenuBar {
 #[derive(Debug, Clone)]
 pub struct MenubarCont {
     pub is_disp: bool,
+    // Since the display content changes depending on the setting,
+    // reset the value every time.
     pub is_always_reset_name: bool,
     pub menunm: String,
     pub dispnm: String,

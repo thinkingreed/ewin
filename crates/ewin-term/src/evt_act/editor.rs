@@ -1,10 +1,18 @@
-use crate::{ewin_com::model::*, help::*, model::*, tab::Tab, terms::term::*};
+use crate::{help::*, model::*, tab::Tab, terms::term::*};
 use ewin_cfg::{log::*, model::modal::*};
-use ewin_com::_cfg::key::cmd::*;
-use ewin_const::def::*;
+use ewin_const::{def::*, model::*};
+use ewin_dialog::{cont::cont::*, dialog::*};
+use ewin_key::key::cmd::*;
 
 impl EvtAct {
-    pub fn ctrl_editor(term: &mut Terminal) -> ActType {
+    pub fn ctrl_editor_cmd_type(cmd_type: CmdType, term: &mut Term) -> ActType {
+        Log::debug_key("EvtAct::call_editor");
+
+        term.cmd = Cmd::to_cmd(cmd_type);
+        return EvtAct::ctrl_editor(term);
+    }
+
+    pub fn ctrl_editor(term: &mut Term) -> ActType {
         Log::debug_key("EvtAct::ctrl_editor");
 
         let evt_act = EvtAct::exec_editor(term);
@@ -22,7 +30,7 @@ impl EvtAct {
         return ActType::Draw(term.curt().editor.get_draw_parts());
     }
 
-    pub fn exec_editor(term: &mut Terminal) -> ActType {
+    pub fn exec_editor(term: &mut Term) -> ActType {
         Log::debug_key("EvtAct::exec_editor");
         let cmd = term.cmd.clone();
         term.curt().editor.set_cmd(cmd);
@@ -31,27 +39,16 @@ impl EvtAct {
         }
         term.curt().editor.set_org_state();
         term.curt().editor.init();
-
-        Log::debug("term.curt().editor.win_mgr.win_h_idx 111", &term.curt().editor.win_mgr.win_h_idx);
-        Log::debug("term.curt().editor.win_mgr.curt_ref() 111", &term.curt().editor.win_mgr.curt_ref());
         term.curt().editor.set_tgt_window();
-        Log::debug("term.curt().editor.win_mgr.win_h_idx 222", &term.curt().editor.win_mgr.win_h_idx);
-        Log::debug("term.curt().editor.win_mgr.curt_ref() 222", &term.curt().editor.win_mgr.curt_ref());
 
         let cmd = &term.curt().editor.cmd.clone();
         Log::debug("cmd", &cmd);
 
         match cmd.cmd_type {
             CmdType::CancelEditorState => term.curt().editor.cancel_state(),
-            _ if term.curt().editor.is_input_imple_mode(true) => {
-                let act_type = term.curt().editor.ctrl_input_comple();
-                if act_type != ActType::Next {
-                    return act_type;
-                }
-            }
+
             CmdType::CloseFile => return term.close_file(),
             CmdType::CloseAllFile => return term.close_tabs(USIZE_UNDEFINED),
-            CmdType::Resize(_, _) => term.resize(),
             CmdType::SaveFile => {
                 let act_type = term.curt().save(SaveType::Normal);
                 if let ActType::Draw(_) = act_type {
@@ -78,21 +75,16 @@ impl EvtAct {
             // Help
             CmdType::Help => return Help::disp_toggle(term),
             // ctx_menu
-            CmdType::CtxtMenu(y, x) => {
-                // let editor_row_posi = term.curt_mut().editor.row_posi;
-                term.init_ctx_menu(y, x);
-            }
+            CmdType::CtxtMenu(y, x) => term.init_ctx_menu(y, x),
             // switch_tab
             CmdType::SwitchTab(direction) => return term.switch_tab(direction),
+            // WindowSplit
             CmdType::WindowSplit(split_type) => {
-                //  let tab_idx = term.tab_idx;
-                // term.curt().editor_draw_vec[tab_idx].clear();
-                term.curt().editor.win_mgr.split_window(&split_type);
+                term.curt().editor.win_mgr.split_window(split_type);
                 term.curt().resize_editor_draw_vec();
-                term.curt().set_syntax_highlight();
                 term.set_size();
-                return ActType::Draw(DParts::All);
             }
+            CmdType::Test => Dialog::init(DialogContType::AboutApp),
             /*
              * editor
              */
@@ -109,7 +101,7 @@ impl EvtAct {
         return ActType::Next;
     }
 
-    fn evt_editor_format(term: &mut Terminal, fmt_type: FileType) -> ActType {
+    fn evt_editor_format(term: &mut Term, fmt_type: FileType) -> ActType {
         if let Some(err_str) = term.curt().editor.format(fmt_type) {
             return ActType::Draw(DParts::MsgBar(err_str));
         } else {

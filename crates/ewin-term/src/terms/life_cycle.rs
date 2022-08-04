@@ -1,13 +1,5 @@
 use super::term::*;
-use crate::{
-    ewin_com::{global::*, model::*, util::*},
-    ewin_editor::model::*,
-    global_term,
-    global_term::*,
-    help::*,
-    model::*,
-    tab::Tab,
-};
+use crate::{ewin_editor::model::*, global_term, global_term::*, help::*, model::*, tab::Tab};
 use crossterm::{
     cursor::*,
     event::{DisableMouseCapture, EnableMouseCapture},
@@ -20,9 +12,12 @@ use ewin_cfg::{
     model::{default::*, modal::*},
 };
 use ewin_const::model::*;
+use ewin_dialog::{dialog::*, global::*};
+use ewin_key::{global::*, model::*, util::*};
+use ewin_state::{global::*, tabs::*};
 use std::{io::stdout, process::exit};
 
-impl Terminal {
+impl Term {
     pub fn init() {
         Macros::init_js_engine();
         enable_raw_mode().unwrap();
@@ -51,14 +46,14 @@ impl Terminal {
     }
 
     pub fn exit_show_msg(msg: &str) {
-        Terminal::finalize();
+        Term::finalize();
         println!("{}", msg);
-        Terminal::exit();
+        Term::exit();
     }
 
     pub fn exit_proc() {
-        Terminal::finalize();
-        Terminal::exit();
+        Term::finalize();
+        Term::exit();
     }
 
     pub fn activate(&mut self, args: &AppArgs) {
@@ -67,10 +62,14 @@ impl Terminal {
         let _ = GREP_CANCEL_VEC.set(tokio::sync::Mutex::new(vec![GrepCancelType::None]));
         let _ = global_term::EDITOR.set(tokio::sync::Mutex::new(Editor::new()));
         let _ = WATCH_INFO.set(tokio::sync::Mutex::new(WatchInfo::default()));
-        let _ = H_FILE_VEC.set(tokio::sync::Mutex::new(vec![]));
+
+        let _ = TABS.set(tokio::sync::Mutex::new(Tabs::get_init_file_info()));
+
         let _ = HELP_DISP.set(tokio::sync::Mutex::new(Help::default()));
         self.open_file(&args.filenm, FileOpenType::First, Some(&mut Tab::new()), None);
-        self.ctx_widget.init();
+        self.ctx_menu.init();
         self.menubar.init();
+
+        let _ = DIALOG.set(tokio::sync::Mutex::new(Dialog::default()));
     }
 }

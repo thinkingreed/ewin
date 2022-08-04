@@ -1,18 +1,15 @@
 use crate::{
     bar::{filebar::*, menubar::*},
-    ewin_com::{
-        _cfg::key::cmd::*,
-        _cfg::key::{keys::*, keywhen::*},
-        model::*,
-    },
     tab::Tab,
 };
 use ewin_cfg::log::*;
-use ewin_const::def::*;
-use ewin_widget::model::*;
+use ewin_const::{def::*, model::*};
+use ewin_dialog::{dialog::*, global::*};
+use ewin_key::key::{cmd::*, keys::*, keywhen::*};
+use ewin_menulist::parts::ctx_menu::*;
 use std::usize;
 
-impl Terminal {
+impl Term {
     pub fn curt(&mut self) -> &mut Tab {
         return self.tabs.get_mut(self.tab_idx).unwrap();
     }
@@ -29,11 +26,15 @@ impl Terminal {
         Log::debug("keys", &keys);
 
         let editor_is_dragging = self.curt().editor.state.is_dragging;
-
+        if let Ok(dialog) = DIALOG.get().unwrap().try_lock() {
+            if dialog.is_show {
+                return KeyWhen::Dialog;
+            }
+        }
         if self.is_menuwidget_keys(keys) {
             KeyWhen::MenuBar
-        } else if self.state.is_menuwidget {
-            self.clear_menuwidget();
+        } else if self.state.is_menubar_menulist {
+            self.clear_menulist_all();
             KeyWhen::Editor
         } else if self.judge_when_filebar(keys, self.fbar.row_posi, editor_is_dragging) {
             KeyWhen::FileBar
@@ -48,7 +49,7 @@ impl Terminal {
             }
         } else {
             let sbar_row_posi = self.curt().sbar.row_posi;
-            if self.curt().state.judge_when_statusbar(keys, sbar_row_posi, editor_is_dragging) {
+            if self.judge_when_statusbar(keys, sbar_row_posi, editor_is_dragging) {
                 KeyWhen::StatusBar
             } else {
                 KeyWhen::Editor
@@ -64,26 +65,39 @@ impl Terminal {
             _ => return false,
         }
     }
+    pub fn judge_when_statusbar(&self, keys: &Keys, sbar_row_posi: usize, editor_is_dragging: bool) -> bool {
+        match &keys {
+            Keys::MouseDownLeft(y, _) if y == &(sbar_row_posi as u16) => return true,
+            Keys::MouseDragLeft(y, _) if y == &(sbar_row_posi as u16) => return !editor_is_dragging,
+            _ => return false,
+        }
+    }
 
     pub fn new() -> Self {
-        Terminal { ..Terminal::default() }
+        Term { ..Term::default() }
+    }
+
+    pub fn clear_widget_other_than_menulist(&mut self) {
+        self.curt().editor.input_comple.clear();
+        self.clear_ctx_menu();
     }
 }
 
-impl Default for Terminal {
+impl Default for Term {
     fn default() -> Self {
-        Terminal { draw_parts_org: DParts::All, cmd: Cmd::default(), keys: Keys::Null, keys_org: Keys::Null, keywhen: KeyWhen::All, fbar: FileBar::new(), menubar: MenuBar::new(), tabs: vec![], tab_idx: 0, state: TerminalState::default(), ctx_widget: CtxWidget::default() }
+        Term { draw_parts_org: DParts::All, cmd: Cmd::default(), keys: Keys::Null, keys_org: Keys::Null, keywhen: KeyWhen::All, fbar: FileBar::new(), menubar: MenuBar::new(), tabs: vec![], tab_idx: 0, state: TerminalState::default(), ctx_menu: CtxMenu::default(), dialog: Dialog::default() }
     }
 }
 
 impl Default for TerminalState {
     fn default() -> Self {
-        TerminalState { is_show_init_info: false, is_all_close_confirm: false, is_all_save: false, close_other_than_this_tab_idx: USIZE_UNDEFINED, is_displayable: true, is_ctx_menu: false, is_ctx_menu_hide_draw: false, is_menuwidget: false, is_menuwidget_hide_draw: false }
+        TerminalState { is_all_close_confirm: false, is_all_save: false, close_other_than_this_tab_idx: USIZE_UNDEFINED, is_displayable: true, is_ctx_menu: false, is_ctx_menu_hide_draw: false, is_menubar_menulist: false, is_menuwidget_hide_draw: false }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct Terminal {
+// Terminal
+pub struct Term {
     // pub keycmd: KeyCmd,
     pub cmd: Cmd,
     pub keys: Keys,
@@ -96,20 +110,20 @@ pub struct Terminal {
     // tab index
     pub tab_idx: usize,
     pub state: TerminalState,
-    pub ctx_widget: CtxWidget,
+    pub ctx_menu: CtxMenu,
     pub draw_parts_org: DParts,
+    pub dialog: Dialog,
 }
 
 #[derive(Debug, Clone)]
 pub struct TerminalState {
-    pub is_show_init_info: bool,
     pub is_all_close_confirm: bool,
     pub is_all_save: bool,
     pub close_other_than_this_tab_idx: usize,
     pub is_displayable: bool,
     pub is_ctx_menu: bool,
     pub is_ctx_menu_hide_draw: bool,
-    pub is_menuwidget: bool,
+    pub is_menubar_menulist: bool,
     pub is_menuwidget_hide_draw: bool,
 }
 

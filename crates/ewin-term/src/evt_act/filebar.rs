@@ -1,32 +1,35 @@
-use crate::{ewin_com::model::*, global_term::*, model::*, terms::term::*};
+use crate::{model::*, terms::term::*};
 use ewin_cfg::log::*;
-use ewin_com::_cfg::key::{cmd::*, keybind::*};
-use ewin_const::def::*;
+use ewin_const::{def::*, model::*};
+use ewin_key::key::cmd::*;
+use ewin_state::tabs::*;
 
 impl EvtAct {
-    pub fn ctrl_filebar(term: &mut Terminal) -> ActType {
-        Log::debug_key("ctrl_headerbar");
+    pub fn ctrl_filebar(term: &mut Term) -> ActType {
+        Log::debug_key("ctrl_filebar");
 
         match &term.cmd.cmd_type {
             CmdType::MouseDownLeft(y, x) => {
                 let (x, _) = (*x as usize, *y as usize);
                 term.fbar.state.clear();
                 if term.fbar.all_filenm_space_w >= x {
-                    let h_file_vec = &H_FILE_VEC.get().unwrap().try_lock().unwrap().clone();
-                    for (idx, h_file) in h_file_vec.iter().enumerate() {
+                    let file_vec = &Tabs::get().h_file_vec.clone();
+                    Log::debug("file_vec", &file_vec);
+
+                    for (idx, h_file) in file_vec.iter().enumerate() {
                         if !h_file.is_disp {
                             continue;
                         }
                         if h_file.close_area.0 <= x && x <= h_file.close_area.1 {
                             if term.curt().editor.state.is_changed {
                                 term.tab_idx = idx;
-                                term.set_keys(&Keybind::cmd_to_keys(&CmdType::CloseFile));
+                                term.set_keys(&Cmd::cmd_to_keys(CmdType::CloseFile));
 
                                 return ActType::Next;
                             } else if term.tabs.len() == 1 {
                                 return ActType::Exit;
                             } else {
-                                term.tab_idx = if idx == H_FILE_VEC.get().unwrap().try_lock().unwrap().len() - 1 { idx - 1 } else { idx };
+                                term.tab_idx = if idx == Tabs::get().h_file_vec.len() - 1 { idx - 1 } else { idx };
                                 term.del_tab(idx);
                                 return ActType::Draw(DParts::All);
                             }
@@ -74,7 +77,7 @@ impl EvtAct {
                 if term.fbar.all_filenm_space_w >= x {
                     term.fbar.state.is_dragging = true;
                     let mut inset_idx = USIZE_UNDEFINED;
-                    for (idx, h_file) in H_FILE_VEC.get().unwrap().try_lock().unwrap().iter().enumerate() {
+                    for (idx, h_file) in Tabs::get().h_file_vec.iter().enumerate() {
                         if !h_file.is_disp {
                             continue;
                         }
@@ -116,9 +119,9 @@ impl EvtAct {
     }
 }
 
-pub fn is_on_left_arraw(term: &Terminal, x: usize) -> bool {
+pub fn is_on_left_arraw(term: &Term, x: usize) -> bool {
     return term.fbar.is_left_arrow_disp && term.fbar.left_arrow_area.0 <= x && x <= term.fbar.left_arrow_area.1 && term.fbar.disp_base_idx > 0;
 }
-pub fn is_on_right_arraw(term: &Terminal, x: usize) -> bool {
+pub fn is_on_right_arraw(term: &Term, x: usize) -> bool {
     return term.fbar.is_right_arrow_disp && term.fbar.right_arrow_area.0 <= x && x <= term.fbar.right_arrow_area.1;
 }

@@ -1,9 +1,10 @@
-use crate::{ewin_com::model::*, model::*, terms::term::*};
+use crate::{model::*, terms::term::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
+use ewin_const::model::*;
+use ewin_key::key::cmd::{Cmd, CmdType};
 
 impl EvtAct {
-    pub fn move_row(term: &mut Terminal) -> ActType {
+    pub fn move_row(term: &mut Term) -> ActType {
         Log::debug_key("EvtAct.move_row");
 
         match &term.curt().prom.cmd.cmd_type {

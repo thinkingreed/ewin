@@ -1,11 +1,10 @@
 #![allow(clippy::needless_return, clippy::iter_nth_zero)]
-use crate::{
-    ewin_com::{_cfg::key::cmd::*, global::*, model::*},
-    model::*,
-    tab::Tab,
-    terms::term::*,
-};
+use crate::{model::*, tab::Tab, terms::term::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*, model::default::*};
+
+use ewin_const::model::*;
+use ewin_key::{global::*, key::cmd::*, model::*};
+use ewin_state::header_file::*;
 use globset::Glob;
 use grep::cli;
 use grep_regex::RegexMatcherBuilder;
@@ -14,7 +13,7 @@ use ignore::{WalkBuilder, WalkState};
 use std::{env, ffi::OsStr, io, path::*, str::from_utf8, sync::mpsc::Sender};
 
 impl EvtAct {
-    pub fn grep(term: &mut Terminal) -> ActType {
+    pub fn grep(term: &mut Term) -> ActType {
         Log::debug_s("EvtAct.grep");
         match term.curt().prom.cmd.cmd_type {
             CmdType::Confirm => {
@@ -63,7 +62,7 @@ impl EvtAct {
                     term.curt().prom_show_com(&CmdType::GrepingProm);
 
                     // Clear(ClearType::CurrentLine) is not performed during grep to prevent flicker. Therefore, clear first
-                    Terminal::clear_all();
+                    Term::clear_all();
                 }
                 return ActType::Draw(DParts::All);
             }

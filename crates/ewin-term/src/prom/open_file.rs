@@ -1,24 +1,16 @@
-use crate::{
-    ewin_com::{model::*, util::*},
-    global_term::*,
-    model::*,
-    tab::Tab,
-    terms::term::*,
-};
+use crate::{model::*, tab::Tab, terms::term::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_com::{
-    _cfg::key::cmd::{Cmd, CmdType},
-    files::file::*,
-};
-use ewin_const::def::*;
+use ewin_const::{def::*, model::*};
+use ewin_key::{files::file::*, key::cmd::*, model::*, util::*};
 use ewin_prom::each::open_file::*;
+use ewin_state::tabs::*;
 use std::{
     cmp::min,
     path::{self, Path, MAIN_SEPARATOR},
 };
 
 impl EvtAct {
-    pub fn open_file(term: &mut Terminal) -> ActType {
+    pub fn open_file(term: &mut Term) -> ActType {
         Log::debug_s("EvtAct.open_file");
 
         match term.curt().prom.curt.as_base().cmd.cmd_type {
@@ -43,9 +35,7 @@ impl EvtAct {
 
                 if y == input_cont_range.end {
                     let input_cont = &term.curt().prom.curt.as_mut_base().get_tgt_input_area(0).unwrap();
-                    Log::debug_s("33333333333333333333333333333333333333333333333");
                     let disp_vec = split_chars(&input_cont.buf.iter().collect::<String>(), true, true, &[MAIN_SEPARATOR]);
-                    Log::debug("disp_vec", &disp_vec);
 
                     // Identifying the path of the clicked position
                     let (mut all_width, mut path_str) = (0, String::new());
@@ -114,9 +104,9 @@ impl EvtAct {
         };
         return ActType::Draw(DParts::Prompt);
     }
-    pub fn prom_file_open(term: &mut Terminal, full_path: &String) -> ActType {
-        for (idx, h_file) in H_FILE_VEC.get().unwrap().try_lock().unwrap().iter().enumerate() {
-            if full_path == &h_file.fullpath {
+    pub fn prom_file_open(term: &mut Term, full_path: &String) -> ActType {
+        for (idx, h_file) in Tabs::get().h_file_vec.iter().enumerate() {
+            if full_path == &h_file.file.fullpath {
                 term.tab_idx = idx;
                 term.curt().clear_curt_tab(true);
                 term.curt().editor.set_cmd(Cmd::to_cmd(CmdType::Null));
@@ -132,7 +122,7 @@ impl EvtAct {
             return act_type;
         }
     }
-    pub fn prom_open_file_confirm(term: &mut Terminal, op_file: &OpenFile) -> ActType {
+    pub fn prom_open_file_confirm(term: &mut Term, op_file: &OpenFile) -> ActType {
         Log::debug_key("prom_open_file_confirm");
         if op_file.file.is_dir {
             let mut path = term.curt().prom.curt::<PromOpenFile>().base_path.clone();

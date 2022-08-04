@@ -1,0 +1,31 @@
+[package]
+name = "ewin-editor"
+version = "0.0.2"
+rust-version = "1.56.0"
+description = "Simple editor for Window(GUI) users.No need to remember commands."
+authors = ["thinkingreed"]
+edition = "2021"
+repository = "https://github.com/thinkingreed/ewin"
+license = "MIT"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+ropey="1.2.0"
+syntect = "5.0.0"
+unicode-width = "0.1.8"
+unicode-jp= "0.4.0"
+crossterm  = {version ="0.24.0", features = ["event-stream"]} 
+serde = { version = "1.0.123", features = ["derive"] }
+regex = "1.4.3"
+byteorder = "1.4.3"
+serde_json = "1.0"
+anyhow = "1.0.57"
+
+ewin-cfg = {version = "0.0.2", path = "../../base/ewin-cfg" }
+ewin-const = {version = "0.0.2", path = "../../base/ewin-const" }
+ewin-key = {version = "0.0.2", path = "../../base/ewin-key" }
+ewin-state = {version = "0.0.2", path = "../../ewin-state" }
+ewin-view = {version = "0.0.2", path = "../../ewin-view" }
+ewin-menulist = {version = "0.0.2", path = "../ewin-menulist" }

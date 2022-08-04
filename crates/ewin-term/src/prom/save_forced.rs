@@ -1,10 +1,10 @@
 use crate::{model::*, terms::term::*};
 use ewin_cfg::log::*;
-use ewin_com::{_cfg::key::cmd::*, model::*};
-use ewin_const::def::*;
+use ewin_const::{def::*, model::*};
+use ewin_key::key::cmd::*;
 
 impl EvtAct {
-    pub fn save_forced(term: &mut Terminal) -> ActType {
+    pub fn save_forced(term: &mut Term) -> ActType {
         Log::debug_key("EvtAct.save_forced");
 
         match &term.curt().prom.cmd.cmd_type {

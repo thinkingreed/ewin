@@ -1,7 +1,8 @@
-use crate::{ewin_com::model::*, global_term::EDITOR, model::*};
+use crate::{global_term::*, model::*};
 use ewin_cfg::{log::*, model::modal::*};
 
-use ewin_com::_cfg::key::cmd::{Cmd, CmdType};
+use ewin_key::key::cmd::CmdType;
+use ewin_view::sel_range::SelMode;
 use v8::{Context, FunctionCallbackArguments, HandleScope, Local, ReturnValue};
 
 impl Macros {
@@ -22,7 +23,7 @@ impl Macros {
             let input_str = args.get(0).to_string(scope).unwrap();
 
             if let Some(Ok(mut editor)) = EDITOR.get().map(|editor| editor.try_lock()) {
-                editor.edit_proc(Cmd::to_cmd(CmdType::InsertStr(input_str.to_rust_string_lossy(scope))));
+                editor.edit_proc_cmd_type(CmdType::InsertStr(input_str.to_rust_string_lossy(scope)));
                 editor.state.is_changed = true;
                 Log::macros(MacrosFunc::insertString, &input_str.to_rust_string_lossy(scope));
             }

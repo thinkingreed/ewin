@@ -1,19 +1,17 @@
 #![allow(clippy::needless_return, clippy::iter_nth_zero, clippy::type_complexity)]
 
-extern crate ewin_com;
 extern crate ewin_editor;
+extern crate ewin_key;
 extern crate ewin_prom;
 
 pub mod global_term {
     use crate::help::*;
-    use ewin_com::model::*;
-    use ewin_editor::model::Editor;
+    use ewin_editor::model::*;
     use once_cell::sync::OnceCell;
     use tokio::sync::Mutex;
-    pub static EDITOR: OnceCell<tokio::sync::Mutex<Editor>> = OnceCell::new();
 
+    pub static EDITOR: OnceCell<tokio::sync::Mutex<Editor>> = OnceCell::new();
     pub static HELP_DISP: OnceCell<Mutex<Help>> = OnceCell::new();
-    pub static H_FILE_VEC: OnceCell<Mutex<Vec<HeaderFile>>> = OnceCell::new();
 
     pub fn get_help() -> Help {
         // TODO clone
@@ -22,8 +20,6 @@ pub mod global_term {
 
     pub fn toggle_help_disp() {
         let _ = HELP_DISP.get().unwrap().try_lock().map(|mut help| help.is_disp = !help.is_disp);
-        // HELP_DISP.get().unwrap().try_lock().unwrap().ma;
-        // get_help().is_disp = !get_help().is_disp;
     }
 }
 pub mod evt_act {

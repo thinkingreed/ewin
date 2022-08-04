@@ -1,37 +1,42 @@
-use crate::{
-    bar::menubar::*,
-    ewin_com::{_cfg::key::keys::*, model::*},
-    model::*,
-    terms::term::*,
-};
+use crate::{bar::menubar::*, model::*, terms::term::*};
 use ewin_cfg::{global::*, lang::lang_cfg::*, log::*, model::modal::*};
-use ewin_com::{
-    _cfg::key::{cmd::*, keybind::*},
+use ewin_const::{def::*, model::*};
+use ewin_dialog::{cont::cont::*, dialog::*};
+use ewin_editor::model::*;
+use ewin_key::{
+    key::{cmd::*, keys::*},
+    model::*,
     util::*,
 };
-use ewin_const::def::*;
-use ewin_editor::model::*;
-use ewin_widget::{core::*, widget::menubar::*};
+use ewin_menulist::{core::*, parts::menubar::*};
 use std::{cmp::min, io::stdout, ops::Range};
 
 impl EvtAct {
-    pub fn ctrl_menubar(term: &mut Terminal) -> ActType {
+    pub fn ctrl_menubar(term: &mut Term) -> ActType {
         Log::debug_key("EvtAct.ctrl_menubar");
-        Log::debug("term.menubar.widget.cmd", &term.menubar.widget.cmd);
-        match term.menubar.widget.cmd.cmd_type {
+        Log::debug("term.menubar.widget.cmd", &term.menubar.menulist.cmd);
+        match term.menubar.menulist.cmd.cmd_type {
             CmdType::MouseDownLeft(y, x) => {
                 if y == term.menubar.row_posi {
                     let (is_select, i) = term.menubar.is_menubar_displayed_area(y, x);
                     if is_select {
-                        term.menubar.sel_idx = i;
-                        MenuBar::init_menubar(term, y);
+                        term.clear_widget_other_than_menulist();
+
+                        // When the same menu is pressed
+                        if term.menubar.sel_idx == i && term.state.is_menubar_menulist {
+                            term.clear_menulist_other_than_on_monuse();
+                            return ActType::Draw(DParts::Absolute(term.menubar.menulist.curt.get_disp_range_y()));
+                        } else {
+                            term.menubar.sel_idx = i;
+                            MenuBar::init_menubar(term, y);
+                        }
                         return ActType::Draw(DParts::MenuWidget);
                     }
-                } else if term.menubar.widget.curt.is_mouse_within_area(y, x) {
+                } else if term.menubar.menulist.curt.is_mouse_within_area(y, x) {
                     return EvtAct::select_menuwidget(term);
                 }
-                term.state.is_menuwidget = false;
-                term.menubar.widget.curt.clear_select_menu();
+                term.state.is_menubar_menulist = false;
+                term.menubar.menulist.curt.clear_select_menu();
                 return ActType::Draw(DParts::All);
             }
             CmdType::MouseMove(y, x) => {
@@ -39,19 +44,16 @@ impl EvtAct {
                     Log::debug("term.menubar.menu_vec", &term.menubar.menu_vec);
                     let (is_on_mouse, i) = term.menubar.is_menubar_displayed_area(y, x);
                     if is_on_mouse {
-                        Log::debug(" term.menubar.on_mouse_idx 111", &term.menubar.on_mouse_idx);
                         term.menubar.on_mouse_idx_org = term.menubar.on_mouse_idx;
                         term.menubar.on_mouse_idx = i;
-                        Log::debug(" term.menubar.on_mouse_idx 222", &term.menubar.on_mouse_idx);
                         if term.menubar.sel_idx != USIZE_UNDEFINED {
                             term.menubar.sel_idx = i;
                         }
-                        Log::debug("term.menubar.on_mouse_idx", &term.menubar.on_mouse_idx);
-                        Log::debug("term.menubar.on_mouse_idx_org", &term.menubar.on_mouse_idx_org);
+
                         if term.menubar.sel_idx != USIZE_UNDEFINED && term.menubar.is_menu_changed() {
-                            Log::debug_s("menu_changed");
                             MenuBar::init_menubar(term, y);
-                            let range = term.menubar.widget.curt.get_disp_range_y();
+                            let range = term.menubar.menulist.curt.get_disp_range_y();
+                            term.menubar.menulist.curt.clear_select_menu();
                             return ActType::Draw(DParts::Absolute(Range { start: term.menubar.row_posi, end: range.end }));
                         }
 
@@ -60,39 +62,39 @@ impl EvtAct {
                         }
                     }
                     return ActType::Cancel;
-                } else if term.menubar.widget.curt.is_mouse_within_area(y, x) {
-                    let child_cont_org = &term.menubar.widget.curt.cont.cont_vec.get(term.menubar.widget.curt.parent_sel_y).and_then(|cont| cont.1.clone());
-                    term.menubar.widget.curt.ctrl_mouse_move(y, x);
+                } else if term.menubar.menulist.curt.is_mouse_within_area(y, x) {
+                    let child_cont_org = &term.menubar.menulist.curt.cont.cont_vec.get(term.menubar.menulist.curt.parent_sel_y).and_then(|cont| cont.1.clone());
+                    term.menubar.menulist.curt.ctrl_mouse_move(y, x);
 
-                    if !term.menubar.widget.curt.is_menu_change() {
+                    if !term.menubar.menulist.curt.is_menu_change() {
                         return ActType::Cancel;
                     }
-                    let child_cont = &term.menubar.widget.curt.cont.cont_vec.get(term.menubar.widget.curt.parent_sel_y).and_then(|cont| cont.1.clone());
+                    let child_cont = &term.menubar.menulist.curt.cont.cont_vec.get(term.menubar.menulist.curt.parent_sel_y).and_then(|cont| cont.1.clone());
 
                     // Only parent meun move || Only child meun move
-                    if child_cont_org.is_none() && child_cont.is_none() || term.menubar.widget.curt.parent_sel_y == term.menubar.widget.curt.parent_sel_y_org && term.menubar.widget.curt.child_sel_y != USIZE_UNDEFINED {
+                    if child_cont_org.is_none() && child_cont.is_none() || term.menubar.menulist.curt.parent_sel_y == term.menubar.menulist.curt.parent_sel_y_org && term.menubar.menulist.curt.child_sel_y != USIZE_UNDEFINED {
                         return ActType::Draw(DParts::MenuWidget);
                     } else {
-                        return ActType::Draw(DParts::Absolute(term.menubar.widget.curt.get_disp_range_y()));
+                        return ActType::Draw(DParts::Absolute(term.menubar.menulist.curt.get_disp_range_y()));
                     }
-                } else if term.menubar.widget.curt.is_mouse_area_around(y, x) {
-                    term.menubar.widget.curt.clear_select_menu();
-                    return ActType::Draw(DParts::Absolute(term.menubar.widget.curt.get_disp_range_y()));
+                } else if term.menubar.menulist.curt.is_mouse_area_around(y, x) {
+                    term.menubar.menulist.curt.clear_select_menu();
+                    return ActType::Draw(DParts::Absolute(term.menubar.menulist.curt.get_disp_range_y()));
                 } else {
                     return ActType::Cancel;
                 }
             }
             CmdType::CursorDown | CmdType::CursorUp | CmdType::CursorRight | CmdType::CursorLeft => {
-                let direction = match term.menubar.widget.cmd.cmd_type {
+                let direction = match term.menubar.menulist.cmd.cmd_type {
                     CmdType::CursorDown => Direction::Down,
                     CmdType::CursorUp => Direction::Up,
                     CmdType::CursorRight => Direction::Right,
                     CmdType::CursorLeft => Direction::Left,
                     _ => Direction::Down,
                 };
-                term.menubar.widget.curt.cur_move(direction);
+                term.menubar.menulist.curt.cur_move(direction);
 
-                return ActType::Draw(DParts::Absolute(term.menubar.widget.curt.get_disp_range_y()));
+                return ActType::Draw(DParts::Absolute(term.menubar.menulist.curt.get_disp_range_y()));
             }
             CmdType::MenuWidget(_, _) => {
                 // TODO
@@ -103,33 +105,34 @@ impl EvtAct {
         }
     }
 
-    pub fn select_menuwidget(term: &mut Terminal) -> ActType {
+    pub fn select_menuwidget(term: &mut Term) -> ActType {
         Log::debug_key("select_menubar");
         let menubar_cont = &term.menubar.menu_vec[term.menubar.sel_idx].clone();
         Log::debug("menubar_cont", &menubar_cont);
-        if let Some((child, _)) = term.menubar.widget.curt.get_curt_child() {
+        if let Some((child, _)) = term.menubar.menulist.curt.get_curt_child() {
             Log::debug("child", &child);
-            return EvtAct::check_menubar_func(term, &menubar_cont.menunm, &term.menubar.widget.curt.get_curt_parent().unwrap().0.name, &child.name);
-        } else if !term.menubar.widget.curt.is_exist_child_curt_parent() {
-            if let Some((parent, _)) = term.menubar.widget.curt.get_curt_parent() {
+            return EvtAct::check_menubar_func(term, &menubar_cont.menunm, &term.menubar.menulist.curt.get_curt_parent().unwrap().0.name, &child.name);
+        } else if !term.menubar.menulist.curt.is_exist_child_curt_parent() {
+            if let Some((parent, _)) = term.menubar.menulist.curt.get_curt_parent() {
                 Log::debug("parent", &parent);
                 return EvtAct::check_menubar_func(term, &menubar_cont.menunm, &parent.name, "");
             }
         }
         return ActType::Cancel;
     }
-    pub fn check_menubar_func(term: &mut Terminal, parent_name: &str, child_name: &str, grandchild_name: &str) -> ActType {
+    pub fn check_menubar_func(term: &mut Term, parent_name: &str, child_name: &str, grandchild_name: &str) -> ActType {
         Log::debug_key("check_menubar_func");
         Log::debug("parent_name", &parent_name);
         Log::debug("child_name", &child_name);
+        Log::debug("grandchild_name", &grandchild_name);
 
-        term.clear_menuwidget();
+        term.clear_menulist_all();
 
         // Convert to set language
         let parent_name = get_cfg_lang_name(parent_name);
         let child_name = get_cfg_lang_name(child_name);
+        let grandchild_name = get_cfg_lang_name(grandchild_name);
 
-        // grandchild_name
         // convert
         if child_name.contains(&Lang::get().convert) {
             return term.curt().editor.convert(ConvType::from_str_conv_type(grandchild_name));
@@ -138,16 +141,23 @@ impl EvtAct {
             term.curt().editor.format(FileType::from_str_fmt_type(grandchild_name));
         }
 
+        Log::debug("get_cfg_lang_name(parent_name).contains(&Lang::get().file)", &get_cfg_lang_name(parent_name).contains(&Lang::get().file));
+        Log::debug("child_name.contains(&Lang::get().create_new_file)", &child_name.contains(&Lang::get().create_new_file));
+        Log::debug("Lang::get().create_new_file", &Lang::get().create_new_file);
+        Log::debug("get_cfg_lang_name(child_name)", &get_cfg_lang_name(child_name));
+
+        // Other
+        if EvtAct::contain_exec_menu(&Lang::get().about_app, child_name, grandchild_name) {
+            Dialog::init(DialogContType::AboutApp)
+        } else
         // parent_name
-        if get_cfg_lang_name(parent_name).contains(&Lang::get().file) {
+        if parent_name.contains(&Lang::get().file) {
             if child_name.contains(&Lang::get().encode) {
-                term.curt().editor.cmd = Cmd::to_cmd(CmdType::EncodingProm);
-                return EvtAct::ctrl_editor(term);
-                // EvtAct::match_event(Keybind::keycmd_to_keys(&KeyCmd::Edit(E_Cmd::Encoding)), &mut stdout(), term);
+                EvtAct::ctrl_editor_cmd_type(CmdType::EncodingProm, term);
             } else if child_name.contains(&Lang::get().create_new_file) {
-                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::CreateNewFile), &mut stdout(), term);
+                EvtAct::ctrl_editor_cmd_type(CmdType::CreateNewFile, term);
             } else if child_name.contains(&Lang::get().open_file) {
-                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::openFileProm(OpenFileType::Normal)), &mut stdout(), term);
+                EvtAct::ctrl_editor_cmd_type(CmdType::openFileProm(OpenFileType::Normal), term);
             } else if child_name.contains(&Lang::get().save_as.to_string()) {
                 term.curt().prom_show_com(&CmdType::SaveNewFile);
             } else if child_name.contains(&Lang::get().end_of_all_save) {
@@ -157,6 +167,8 @@ impl EvtAct {
                 } else {
                     return ActType::Exit;
                 }
+            } else if child_name.contains(&Lang::get().file_property.to_string()) {
+                Dialog::init(DialogContType::FileProp)
             }
             // edit
         } else if parent_name.contains(&Lang::get().edit) {
@@ -175,30 +187,26 @@ impl EvtAct {
             // display
         } else if parent_name.contains(&Lang::get().display) {
             if child_name.contains(&Lang::get().scale) {
-                let cmd = Cmd::to_cmd(CmdType::SwitchDispScale);
-                term.cmd = cmd;
-                return EvtAct::ctrl_editor(term);
+                return EvtAct::ctrl_editor_cmd_type(CmdType::SwitchDispScale, term);
+            } else if child_name.contains(&Lang::get().row_no) {
+                return EvtAct::ctrl_editor_cmd_type(CmdType::SwitchDispRowNo, term);
             }
             // macros
         } else if parent_name.contains(&Lang::get().macros) && child_name.contains(&Lang::get().specify_file_and_exec_macro) {
             term.curt().prom_open_file(&OpenFileType::JsMacro);
+            // window
+        } else if parent_name.contains(&Lang::get().window) {
+            EvtAct::ctrl_editor_cmd_type(CmdType::WindowSplit(if child_name.contains(&Lang::get().left_and_right_split) { WindowSplitType::Vertical } else { WindowSplitType::Horizontal }), term);
         }
-
-        /*
-        // child_name
-        if LANG_MAP.contains_key(&child_name.to_case(Case::Snake)) {
-            Log::debug_s("LANG_MAP.contains_key");
-            let cmd = Cmd::str_to_cmd(child_name);
-            Log::debug("cmd", &cmd);
-            term.cmd = cmd;
-            return EvtAct::ctrl_editor(term);
-        }
-         */
 
         return ActType::Draw(DParts::All);
     }
 
-    pub fn exec_menubar_func(term: &mut Terminal, name: &str) -> ActType {
+    pub fn contain_exec_menu(tgt_name: &str, child_name: &str, grandchild_name: &str) -> bool {
+        return child_name.contains(tgt_name) || grandchild_name.contains(tgt_name);
+    }
+
+    pub fn exec_menubar_func(term: &mut Term, name: &str) -> ActType {
         Log::debug_key("exec_func");
         Log::debug("select name", &name);
 
@@ -221,18 +229,18 @@ impl EvtAct {
                 term.curt().editor.win_mgr.curt().sel.clear();
             }
             s if s == &Lang::get().cut => {
-                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::Cut), &mut stdout(), term);
+                EvtAct::match_event(Cmd::cmd_to_keys(CmdType::Cut), &mut stdout(), term);
                 term.curt().editor.win_mgr.curt().sel.clear();
             }
             s if s == &Lang::get().copy => {
-                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::Copy), &mut stdout(), term);
+                EvtAct::match_event(Cmd::cmd_to_keys(CmdType::Copy), &mut stdout(), term);
                 term.curt().editor.win_mgr.curt().sel.clear();
             }
             s if s == &Lang::get().paste => {
-                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::InsertStr("".to_string())), &mut stdout(), term);
+                EvtAct::match_event(Cmd::cmd_to_keys(CmdType::InsertStr("".to_string())), &mut stdout(), term);
             }
             s if s == &Lang::get().all_select => {
-                EvtAct::match_event(Keybind::cmd_to_keys(&CmdType::AllSelect), &mut stdout(), term);
+                EvtAct::match_event(Cmd::cmd_to_keys(CmdType::AllSelect), &mut stdout(), term);
             }
             //// headerbar
             // close
@@ -245,26 +253,33 @@ impl EvtAct {
     }
 }
 
-impl Terminal {
-    pub fn clear_menuwidget(&mut self) {
-        Log::debug_key("clear_menuwidget");
-        self.state.is_menuwidget = false;
+impl Term {
+    pub fn clear_menulist_all(&mut self) {
+        Log::debug_key("Term.clear_menulist_all");
+        self.state.is_menubar_menulist = false;
         self.state.is_menuwidget_hide_draw = true;
         self.menubar.sel_idx = USIZE_UNDEFINED;
         self.menubar.on_mouse_idx = USIZE_UNDEFINED;
         self.menubar.on_mouse_idx_org = USIZE_UNDEFINED;
-        self.menubar.widget.clear();
+        self.menubar.menulist.clear();
+    }
+    pub fn clear_menulist_other_than_on_monuse(&mut self) {
+        Log::debug_key("Term.clear_menulist_other_than_on_monuse");
+        self.state.is_menubar_menulist = false;
+        self.state.is_menuwidget_hide_draw = true;
+        self.menubar.sel_idx = USIZE_UNDEFINED;
+        self.menubar.menulist.clear();
     }
 
     pub fn is_menuwidget_keys(&mut self, keys: &Keys) -> bool {
         let rtn = match keys {
-            Keys::Raw(Key::Left) | Keys::Raw(Key::Right) | Keys::Raw(Key::Up) | Keys::Raw(Key::Down) if self.state.is_menuwidget => true,
-            Keys::MouseMove(y, _) if y == &(self.menubar.row_posi as u16) || self.state.is_menuwidget => true,
+            Keys::Raw(Key::Left) | Keys::Raw(Key::Right) | Keys::Raw(Key::Up) | Keys::Raw(Key::Down) if self.state.is_menubar_menulist => true,
+            Keys::MouseMove(y, _) if y == &(self.menubar.row_posi as u16) || self.state.is_menubar_menulist => true,
             Keys::MouseDownLeft(y, x) => {
                 if y == &(self.menubar.row_posi as u16) && self.menubar.is_menubar_displayed_area(*y as usize, *x as usize).0 {
                     true
                 } else {
-                    self.menubar.widget.curt.is_mouse_within_area(*y as usize, *x as usize)
+                    self.menubar.menulist.curt.is_mouse_within_area(*y as usize, *x as usize)
                 }
             }
             _ => false,
@@ -273,26 +288,27 @@ impl Terminal {
     }
 }
 impl MenuBar {
-    pub fn init_menubar(term: &mut Terminal, y: usize) {
+    pub fn init_menubar(term: &mut Term, y: usize) {
         Log::debug_key("Terminal.init_menubar");
         let menu = &term.menubar.menu_vec[term.menubar.sel_idx].clone();
         if menu.is_always_reset_name {
-            MenubarWidget::set_disp_name(&menu.menunm, &mut term.menubar.widget.menu_map[&menu.menunm]);
+            Log::debug_key("is_always_reset_name");
+            MenubarMenuList::set_disp_name(&menu.menunm, &mut term.menubar.menulist.menu_map[&menu.menunm]);
         }
-        term.state.is_menuwidget = true;
-        if term.menubar.widget.curt.cont.x_area.0 != menu.area.start {
-            term.menubar.widget.curt.cont = term.menubar.widget.menu_map[&menu.menunm].clone();
+        term.state.is_menubar_menulist = true;
+        if term.menubar.menulist.curt.cont.x_area.0 != menu.area.start {
+            term.menubar.menulist.curt.cont = term.menubar.menulist.menu_map[&menu.menunm].clone();
 
-            Log::debug("term.menubar.widget.curt.cont", &term.menubar.widget.curt.cont);
+            Log::debug("term.menubar.widget.curt.cont", &term.menubar.menulist.curt.cont);
 
-            let height = min(term.menubar.widget.curt.cont.cont_vec.len(), Editor::get_disp_row_num());
-            term.menubar.widget.curt.set_parent_disp_area(y, menu.area.start, height);
+            let height = min(term.menubar.menulist.curt.cont.cont_vec.len(), Editor::get_disp_row_num());
+            term.menubar.menulist.curt.set_parent_disp_area(y, menu.area.start, height);
             MenuBar::set_disable_menu(term);
         }
     }
 
     // TODO
-    pub fn set_disable_menu(term: &mut Terminal) {}
+    pub fn set_disable_menu(term: &mut Term) {}
 
     pub fn is_menubar_displayed_area(&mut self, y: usize, x: usize) -> (bool, usize) {
         if y == self.row_posi {
