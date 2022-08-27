@@ -93,12 +93,11 @@ pub struct Lang {
     pub menu: String,
     pub contents: String,
     // file
-    pub create_new_file: String,
+    pub open_new_file: String,
     pub save_as: String,
     pub macros: String,
 
-    pub encode: String,
-    pub end_of_all_save: String,
+    pub all_save_finish: String,
 
     pub to_uppercase: String,
     pub to_lowercase: String,
@@ -111,8 +110,9 @@ pub struct Lang {
     pub json: String,
     pub json5: String,
     pub toml: String,
-    pub display: String,
+    pub tool: String,
 
+    pub display: String,
     pub box_select: String,
     pub box_insert: String,
     pub box_select_mode: String,

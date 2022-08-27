@@ -5,7 +5,7 @@ use super::{
 };
 use crate::util::*;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_const::model::*;
+use ewin_const::models::{draw::*, evt::*};
 use ewin_key::key::cmd::{Cmd, *};
 
 impl PromBase {
@@ -87,9 +87,9 @@ impl PromBase {
     }
     pub fn set_curt_cont_from_y(&mut self, y: usize, x: usize) {
         if let Ok(p_cont) = self.get_curt_cont_mut().unwrap().downcast_mut::<PromContPulldown>() {
-            if p_cont.pulldown.is_disp {
+            if p_cont.pulldown.is_show {
                 if !p_cont.pulldown.menulist.is_mouse_within_area(y, x) {
-                    p_cont.pulldown.is_disp = false;
+                    p_cont.pulldown.is_show = false;
                     self.set_curt_cont_from_y_detail(y);
                 }
             } else {

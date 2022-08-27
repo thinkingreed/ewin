@@ -24,7 +24,7 @@ impl AppArgs {
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CFgFilePath {}
+pub struct CfgFilePath {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 // FormatType

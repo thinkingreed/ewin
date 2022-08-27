@@ -167,7 +167,7 @@ pub struct CfgEditorRowNo {
     pub is_enable: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Default, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Default, Deserialize)]
 pub struct CfgPromptOpenFile {
     pub directory_init_value: String,
 }

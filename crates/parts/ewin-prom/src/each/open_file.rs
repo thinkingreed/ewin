@@ -1,4 +1,3 @@
-use crate::ewin_key::util::*;
 use crate::{
     cont::parts::{file_list::*, info::*, input_area::*, key_desc::*},
     ewin_key::key::cmd::*,
@@ -7,10 +6,12 @@ use crate::{
 };
 use directories::BaseDirs;
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
-use ewin_const::def::*;
-use ewin_const::model::*;
 use ewin_const::term::*;
-use ewin_key::{files::file::*, model::*};
+use ewin_const::{
+    def::*,
+    models::{draw::*, evt::*, model::*},
+};
+use ewin_utils::{files::file::*, path::*, str_edit::*};
 use std::{
     env,
     path::{self, Path, *},
@@ -139,7 +140,7 @@ impl PromOpenFile {
 
         let mut vec = get_path_comp_files(path, false, false);
         Log::debug("vec", &vec);
-        vec.insert(0, File::new(&PARENT_FOLDER.to_string())); // { name: PARENT_FOLDER.to_string(), is_dir: true });
+        vec.insert(0, File::new(PARENT_FOLDER));
 
         let (op_file_row_vec, file_count) = get_shaping_file_list(&mut vec, get_term_size().0);
         self.file_cont().vec = op_file_row_vec;

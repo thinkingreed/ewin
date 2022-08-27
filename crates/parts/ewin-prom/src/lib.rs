@@ -11,7 +11,7 @@ pub mod prom_trait {
     pub mod cont_trait;
     pub mod main_trait;
 }
-pub mod view {
+pub mod views {
     pub mod view;
 }
 

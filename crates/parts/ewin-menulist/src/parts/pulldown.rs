@@ -1,5 +1,5 @@
-use crate::{core::*, menulist::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::Lang, log::*};
+use ewin_view::menulists::{core::*, menulist::*};
 use indexmap::*;
 use std::ops::*;
 
@@ -12,7 +12,7 @@ impl Pulldown {
         Log::debug_key("set_disp_name");
 
         //
-        self.menulist.set_disp_name_single_widget(menu_set.into_iter(), Some(2));
+        self.menulist.set_disp_name_single_menulist(menu_set.into_iter(), Some(2));
         self.set_sel_name();
     }
 
@@ -43,7 +43,7 @@ impl MenuListTrait for Pulldown {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Pulldown {
-    pub is_disp: bool,
+    pub is_show: bool,
     pub sel_idx: usize,
     pub sel_str: String,
     pub x_range: Range<usize>,
@@ -57,6 +57,6 @@ impl Pulldown {
 }
 impl Default for Pulldown {
     fn default() -> Self {
-        Pulldown { is_disp: false, sel_idx: 0, sel_str: String::new(), x_range: Range::default(), menulist: MenuList::new(MenuListConfig { ..MenuListConfig::default() }) }
+        Pulldown { is_show: false, sel_idx: 0, sel_str: String::new(), x_range: Range::default(), menulist: MenuList::new(MenuListConfig { ..MenuListConfig::default() }) }
     }
 }

@@ -1,8 +1,12 @@
 use crate::global::*;
 use anyhow::Context;
 use clipboard::{ClipboardContext, ClipboardProvider};
-use ewin_cfg::{lang::lang_cfg::Lang, log::Log, model::modal::CFgFilePath};
-use ewin_const::{def::NEW_LINE_LF, model::*};
+use ewin_cfg::{lang::lang_cfg::*, log::*, model::modal::*};
+use ewin_const::{
+    def::*,
+    models::{draw::*, env::*, evt::*},
+};
+use ewin_utils::global::*;
 use std::{fs::OpenOptions, io::Read, io::Write, process, process::Command};
 use subprocess::Exec;
 
@@ -32,7 +36,7 @@ pub fn set_clipboard(copy_string: &str) {
 }
 
 fn set_wsl_clipboard(copy_str: &str) -> anyhow::Result<()> {
-    let clipboard_file = CFgFilePath::get_app_clipboard_file_path();
+    let clipboard_file = CfgFilePath::get_app_clipboard_file_path();
     // In the case of wsl, there is a length limit when passing a character string as a command argument, so file is used as an argument.
     let mut file = OpenOptions::new().create(true).write(true).truncate(true).open(&clipboard_file)?;
     file.write_all(copy_str.as_bytes())?;

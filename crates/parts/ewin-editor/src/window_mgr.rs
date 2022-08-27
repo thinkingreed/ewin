@@ -1,9 +1,8 @@
 use crate::{model::*, window::*};
 use crossterm::cursor::MoveTo;
 use ewin_cfg::{colors::Colors, log::Log};
-use ewin_const::{def::*, term::*};
-use ewin_key::model::*;
-use ewin_state::tabs::*;
+use ewin_const::{def::*, models::model::*, term::*};
+use ewin_state::term::*;
 
 impl WindowMgr {
     pub const SPLIT_LINE_V_WIDTH: usize = 1;
@@ -12,7 +11,7 @@ impl WindowMgr {
     pub fn split_window(&mut self, split_type: WindowSplitType) {
         if self.split_type != WindowSplitType::None {
             self.clear();
-            Tabs::get().curt_mut_state().editor.window_split_type = WindowSplitType::None
+            State::get().curt_mut_state().editor.window_split_type = WindowSplitType::None
         } else {
             match split_type {
                 WindowSplitType::Vertical => self.win_list.get_mut(0).unwrap().push(Window::default()),
@@ -20,7 +19,7 @@ impl WindowMgr {
                 WindowSplitType::None => {}
             };
             self.split_type = split_type;
-            Tabs::get().curt_mut_state().editor.window_split_type = split_type;
+            State::get().curt_mut_state().editor.window_split_type = split_type;
         }
     }
 
@@ -72,15 +71,12 @@ impl Editor {
     pub fn draw_window_split_line(&mut self, str_vec: &mut Vec<String>) {
         Log::debug_key("draw_window_split_line");
         if self.win_mgr.split_line_v > 0 {
-            Log::debug("self.row_posi", &self.row_posi);
-            Log::debug("self.row_num", &self.row_num);
-            for i in self.row_posi..self.row_posi + self.row_num {
+            for i in self.view.y..self.view.y + self.view.height {
                 #[allow(clippy::repeat_once)]
                 str_vec.push(format!("{}{}{}", MoveTo(self.win_mgr.split_line_v as u16, i as u16), Colors::get_window_split_line_bg(), " ".repeat(WINDOW_SPLIT_LINE_WIDTH)));
             }
         }
         if self.win_mgr.split_line_h > 0 {
-            Log::debug("self.row_posi", &self.row_posi);
             str_vec.push(format!("{}{}{}", MoveTo(0, self.win_mgr.split_line_h as u16), Colors::get_window_split_line_bg(), " ".repeat(get_term_size().0)));
         }
     }

@@ -4,10 +4,12 @@ use crate::{
     prom_trait::main_trait::*,
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
-use ewin_key::{files::encode::*, key::cmd::*, util::*};
-
 use ewin_const::def::*;
-use ewin_state::header_file::*;
+use ewin_key::key::cmd::*;
+use ewin_utils::{
+    files::{encode::*, file::*},
+    str_edit::*,
+};
 
 impl PromEncNl {
     pub fn new() -> Self {
@@ -45,23 +47,23 @@ impl PromEncNl {
 
         return prom;
     }
-    pub fn set_default_choice_enc_nl(&mut self, h_file: &HeaderFile) {
+    pub fn set_default_choice_enc_nl(&mut self, file: &File) {
         for prom_cont in self.base.cont_vec.iter_mut() {
             if let Ok(prom) = prom_cont.downcast_mut::<PromContChoice>() {
                 for (y_idx, v) in prom.vec.iter_mut().enumerate() {
                     let mut row_width = 1;
 
                     for (x_idx, choice) in v.iter_mut().enumerate() {
-                        if prom.desc_str_vec[0] == Lang::get().encoding && h_file.file.enc.to_string() == choice.name {
+                        if prom.desc_str_vec[0] == Lang::get().encoding && file.enc.to_string() == choice.name {
                             prom.vec_y = y_idx;
                             prom.vec_x = x_idx;
                         }
-                        if prom.desc_str_vec[0] == Lang::get().new_line_code && h_file.file.nl == choice.name {
+                        if prom.desc_str_vec[0] == Lang::get().new_line_code && file.nl == choice.name {
                             prom.vec_y = y_idx;
                             prom.vec_x = x_idx;
                         }
                         if prom.desc_str_vec[0] == format!("{}{}", "BOM", Lang::get().presence_or_absence) {
-                            if None == h_file.file.bom {
+                            if None == file.bom {
                                 if choice.name == Lang::get().without {
                                     prom.vec_y = y_idx;
                                     prom.vec_x = x_idx;

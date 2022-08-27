@@ -4,12 +4,21 @@ use crossterm::{
     execute,
 };
 use ewin_cfg::{log::*, model::default::*};
-use ewin_key::{files::encode::*, key::cmd::*};
-use ewin_key::{files::file::*, global::*, model::*, util::*};
-use ewin_state::{editor_state::*, header_file::*, tabs::*};
+use ewin_const::{
+    def::*,
+    models::file::NL,
+    models::{env::*, evt::*},
+    term::*,
+};
 
-use ewin_const::{def::*, model::*, term::*};
-use ewin_view::{cur::*, sel_range::*};
+use ewin_key::{cur::*, sel_range::*};
+use ewin_key::{key::cmd::*, model::*};
+use ewin_state::{editor::*, term::*};
+use ewin_utils::{
+    char_edit::*,
+    files::{encode::*, file::*},
+    global::*,
+};
 use ropey::RopeBuilder;
 use std::{
     cmp::min,
@@ -49,14 +58,14 @@ impl Editor {
     }
 
     pub fn get_rnw(&self) -> usize {
-        return if Tabs::get().curt_state().editor.row_no.is_enable { self.buf.len_rows().to_string().len() } else { 0 };
+        return if State::get().curt_state().editor.row_no.is_enable { self.buf.len_rows().to_string().len() } else { 0 };
     }
     pub fn set_rnw(&mut self) {
-        self.rnw = if Tabs::get().curt_state().editor.row_no.is_enable { self.buf.len_rows().to_string().len() } else { 0 };
+        self.rnw = if State::get().curt_state().editor.row_no.is_enable { self.buf.len_rows().to_string().len() } else { 0 };
     }
 
     pub fn get_rnw_and_margin(&self) -> usize {
-        if Tabs::get().curt_state().editor.row_no.is_enable {
+        if State::get().curt_state().editor.row_no.is_enable {
             return self.get_rnw() + Editor::RNW_MARGIN;
         } else {
             return 0;
@@ -78,7 +87,6 @@ impl Editor {
 
         self.search_org = self.search.clone();
 
-        self.state.is_changed_org = self.state.is_changed;
         self.buf_len_rows_org = self.buf.len_rows();
         self.win_mgr.curt().scrl_v.row_posi_org = self.win_mgr.curt().scrl_v.row_posi;
         self.win_mgr.row_max_width_org = self.win_mgr.row_max_width;
@@ -86,7 +94,7 @@ impl Editor {
         self.win_mgr.curt().scrl_h.is_show_org = self.win_mgr.curt().scrl_h.is_show;
         self.win_mgr.split_type_org = self.win_mgr.split_type;
 
-        self.state.input_comple_mode_org = self.state.input_comple_mode;
+        self.input_comple.mode_org = self.input_comple.mode;
     }
 
     pub fn set_cmd(&mut self, cmd: Cmd) {
@@ -94,7 +102,7 @@ impl Editor {
     }
 
     pub fn record_key(&mut self) {
-        if self.state.key_macro.is_record && self.cmd.config.is_record {
+        if State::get().curt_state().editor.key_macro.is_record && self.cmd.config.is_record {
             match &self.cmd.cmd_type {
                 CmdType::FindNext | CmdType::FindBack => self.key_vec.push(KeyMacro { cmd_type: self.cmd.cmd_type.clone(), search: Search { str: self.search.str.clone(), ..Search::default() } }),
                 _ => self.key_vec.push(KeyMacro { cmd_type: self.cmd.cmd_type.clone(), ..KeyMacro::default() }),
@@ -152,24 +160,29 @@ impl Editor {
     pub fn check_read_only(&mut self) -> ActType {
         Log::debug_key("check_read_only");
         // read_only
-        if self.state.is_read_only && !self.cmd.config.is_record {
+        //  if self.state.is_read_only && !self.cmd.config.is_record {
+        if State::get().curt_state().editor.is_read_only && !self.cmd.config.is_record {
             return ActType::Cancel;
         }
         return ActType::Next;
     }
 
     pub fn ctrl_mouse_capture(&mut self) {
-        match self.state.mouse {
-            Mouse::Enable => {
-                self.state.mouse = Mouse::Disable;
-                execute!(stdout(), DisableMouseCapture).unwrap();
-            }
-            Mouse::Disable => {
-                self.state.mouse = Mouse::Enable;
-                execute!(stdout(), EnableMouseCapture).unwrap();
-            }
-        };
-        Tabs::get().curt_mut_state().editor.toggle_state(TabsEditerStateType::RowNo);
+        Log::debug_key("ctrl_mouse_capture");
+
+        if let Ok(mut tab_state) = State::get_result() {
+            match tab_state.curt_state().editor.mouse {
+                Mouse::Enable => {
+                    tab_state.curt_mut_state().editor.mouse = Mouse::Disable;
+                    execute!(stdout(), DisableMouseCapture).unwrap();
+                }
+                Mouse::Disable => {
+                    tab_state.curt_mut_state().editor.mouse = Mouse::Enable;
+                    execute!(stdout(), EnableMouseCapture).unwrap();
+                }
+            };
+            tab_state.curt_mut_state().editor.toggle_state(TabsEditerStateType::RowNo);
+        }
     }
 
     pub fn adjust_cur_posi(&mut self) {
@@ -228,25 +241,25 @@ impl Editor {
 
         return new_filenm;
     }
-    pub fn reload_with_specify_encoding(&mut self, h_file: &mut HeaderFile, enc_name: &str) -> io::Result<bool> {
+    pub fn reload_with_specify_encoding(&mut self, file: &mut File, enc_name: &str) -> io::Result<bool> {
         let encode = Encode::from_name(enc_name);
 
-        let (vec, bom, modified_time) = File::read_file(&mut h_file.file.name)?;
-        h_file.file.bom = bom;
+        let (vec, bom, modified_time) = File::read_file(&file.name)?;
+        file.bom = bom;
         let (mut decode_str, enc, had_errors) = Encode::read_bytes(&vec, encode);
         if had_errors {
             decode_str = (*String::from_utf8_lossy(&vec)).to_string();
         }
 
-        h_file.file.enc = enc;
-        h_file.file.nl = self.buf.check_nl();
-        h_file.file.mod_time = modified_time;
+        file.enc = enc;
+        file.nl = self.buf.check_nl();
+        file.mod_time = modified_time;
 
         let mut b = RopeBuilder::new();
         b.append(&decode_str);
         self.buf.text = b.finish();
 
-        Log::info("File info", &h_file);
+        Log::info("File info", &file);
 
         Ok(had_errors)
     }
@@ -265,7 +278,7 @@ impl Editor {
     }
 
     pub fn is_disp_range_absolute(&self, range: &Range<usize>) -> bool {
-        let sy = if Tabs::get().curt_state().editor.scale.is_enable { self.get_curt_row_posi() - 1 } else { self.get_curt_row_posi() };
+        let sy = if State::get().curt_state().editor.scale.is_enable { self.get_curt_row_posi() - 1 } else { self.get_curt_row_posi() };
         let ey = self.get_curt_row_posi() + self.get_curt_row_len();
         return range.end > sy && (sy <= range.start || range.end - 1 <= ey);
     }
@@ -294,7 +307,7 @@ impl Editor {
     }
 
     pub fn get_editor_row_posi(&self) -> usize {
-        return self.row_posi;
+        return self.view.y;
     }
 
     pub fn get_curt_ref_win(&self) -> &Window {

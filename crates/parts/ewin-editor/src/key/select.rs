@@ -1,7 +1,8 @@
-use crate::{ewin_key::clipboard::*, ewin_key::model::*, ewin_key::util::*, model::*};
+use crate::{ewin_key::clipboard::*, ewin_key::model::*, model::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_const::model::*;
-use ewin_view::sel_range::*;
+use ewin_const::models::{draw::*, evt::*};
+use ewin_key::sel_range::*;
+use ewin_utils::char_edit::*;
 
 impl Editor {
     pub fn all_select(&mut self) {
@@ -32,10 +33,6 @@ impl Editor {
             //
             SelMode::BoxSelect => {
                 let (str, box_sel_vec) = self.slice_box_sel();
-
-                Log::debug("str", &str);
-                Log::debug("box_sel_vec", &box_sel_vec);
-
                 self.box_insert.vec = box_sel_vec;
                 str
             }

@@ -1,9 +1,10 @@
 use crate::{model::*, prom_trait::cont_trait::*, util::*};
 use crossterm::cursor::MoveTo;
 use ewin_cfg::{colors::*, log::*};
-use ewin_const::model::*;
-use ewin_key::{key::cmd::*, model::*, util::*};
-use ewin_view::{cur::*, sel_range::*};
+use ewin_const::models::{draw::*, evt::*};
+use ewin_key::{cur::*, key::cmd::*, model::*, sel_range::*};
+use ewin_utils::char_edit::*;
+
 use std::cmp::min;
 
 use super::path_comp::PathComp;

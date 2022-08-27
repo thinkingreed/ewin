@@ -1,6 +1,8 @@
-use crate::{core::*, menulist::*};
-use ewin_cfg::{colors::Colors, log::*, model::default::*};
-use ewin_key::util::*;
+use ewin_cfg::{colors::*, log::*, model::default::*};
+
+use ewin_const::models::model::*;
+use ewin_utils::char_edit::*;
+use ewin_view::menulists::{core::*, menulist::*};
 use std::collections::{BTreeMap, BTreeSet};
 
 impl InputComple {
@@ -11,7 +13,7 @@ impl InputComple {
 
         let menu_set = self.search(search_str);
         self.menulist.scrl_v.is_show = menu_set.len() > InputComple::MAX_HEIGHT;
-        self.menulist.set_disp_name_single_widget(menu_set, None);
+        self.menulist.set_disp_name_single_menulist(menu_set, None);
     }
 
     pub fn analysis_new(&mut self, idx: usize, row_char: &[char]) {
@@ -116,6 +118,8 @@ impl MenuListTrait for InputComple {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InputComple {
+    pub mode: InputCompleMode,
+    pub mode_org: InputCompleMode,
     pub menulist: MenuList,
     pub all_words_map: BTreeMap<String, BTreeSet<usize>>,
     pub row_words_vec: Vec<RowWords>,
@@ -125,7 +129,7 @@ pub struct InputComple {
 impl Default for InputComple {
     fn default() -> Self {
         // row_words_vec: vec![RowWords::default()] is Correspondence of initial state
-        InputComple { menulist: MenuList::new(MenuListConfig { menulist_type: MenuListType::MenuList, disp_type: MenuListDispType::Dynamic }), all_words_map: BTreeMap::default(), row_words_vec: vec![RowWords::default()], search_set: BTreeSet::default() }
+        InputComple { mode: InputCompleMode::None, mode_org: InputCompleMode::None, menulist: MenuList::new(MenuListConfig { menulist_type: MenuListType::MenuList, disp_type: MenuListDispType::Dynamic }), all_words_map: BTreeMap::default(), row_words_vec: vec![RowWords::default()], search_set: BTreeSet::default() }
     }
 }
 

@@ -1,7 +1,10 @@
-use crate::{btn_grourp::*, cont::cont::*, dialog::*, global::*};
+use crate::{btn_grourp::*, dialog::*, global::*};
 use ewin_cfg::log::*;
-use ewin_const::term::*;
-use ewin_key::util::*;
+use ewin_const::{
+    models::{dialog::*, draw::*, evt::*},
+    term::*,
+};
+use ewin_utils::str_edit::*;
 use ewin_view::view::*;
 use std::ops::Range;
 use tokio::sync::MutexGuard;
@@ -15,11 +18,7 @@ impl Dialog {
 
     pub fn contain_absolute_range(range: &Range<usize>) -> bool {
         let dialog = Dialog::get();
-        if range.contains(&dialog.view.y) || range.contains(&(dialog.view.y + dialog.cont.as_base().view.height)) {
-            return true;
-        } else {
-            return false;
-        }
+        return range.contains(&dialog.view.y) || range.contains(&(dialog.view.y + dialog.cont.as_base().view.height));
     }
 
     pub fn clear(&mut self) {
@@ -31,11 +30,12 @@ impl Dialog {
         return DIALOG.get().unwrap().try_lock().unwrap();
     }
 
-    pub fn init(dialog_cont_type: DialogContType) {
+    pub fn init(dialog_cont_type: DialogContType) -> ActType {
         if let Ok(mut dialog) = DIALOG.get().unwrap().try_lock() {
             *dialog = Dialog::to_dialog(dialog_cont_type);
             dialog.set_size();
         };
+        return ActType::Draw(DParts::All);
     }
 
     pub fn set_size(&mut self) {
@@ -54,7 +54,14 @@ impl Dialog {
         self.view.x = cols / 2 - self.view.width / 2;
 
         // close_btn
-        self.close_btn = View { x: self.view.x + self.view.width - Dialog::CLOSE_BTN_WIDTH, y: self.view.y, y_org: self.view.y_org, width: Dialog::CLOSE_BTN_WIDTH, height: 1, ..View::default() };
+        self.close_btn = View {
+            x: self.view.x + self.view.width - Dialog::CLOSE_BTN_WIDTH,
+            y: self.view.y,
+            // y_org: self.view.y_org,
+            width: Dialog::CLOSE_BTN_WIDTH,
+            height: 1,
+            ..View::default()
+        };
 
         // btn grourp
         match self.btn_group.btn_type {

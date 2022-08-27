@@ -7,6 +7,7 @@ authors = ["thinkingreed"]
 edition = "2021"
 repository = "https://github.com/thinkingreed/ewin"
 license = "MIT"
+publish = false
 
 [lib]
 path = "src/lib.rs"
@@ -18,7 +19,8 @@ tokio-util = { version = "0.7.0", features = ["codec"] }
 once_cell = "1.5.2"
 unicode-width = "0.1.9"
 directories = "4.0.1"
-v8= "0.45.0"
+v8= "0.48.0"
+#rusty_v8= "0.28.0"
 serde = { version = "1.0.137", features = ["derive"] }
 serde_json = "1.0"
 futures = "0.3"
@@ -40,9 +42,16 @@ downcast = "0.11.0"
 ewin-cfg = {version = "0.0.2", path = "../base/ewin-cfg" }
 ewin-const = {version = "0.0.2", path = "../base/ewin-const" }
 ewin-key = {version = "0.0.2", path = "../base/ewin-key" }
+ewin-view = {version = "0.0.2", path = "../base/ewin-view" }
+ewin-job = {version = "0.0.2", path = "../base/ewin-job" }
+ewin-utils = {version = "0.0.2", path = "../base/ewin-utils" }
 ewin-state = {version = "0.0.2", path = "../ewin-state" }
-ewin-view = {version = "0.0.2", path = "../ewin-view" }
+ewin-plugin = {version = "0.0.2", path = "../ewin-plugin" }
+ewin-tabs = {version = "0.0.2", path = "../ewin-tabs" }
 ewin-editor = {version = "0.0.2", path = "../parts/ewin-editor" }
 ewin-prom = {version = "0.0.2", path = "../parts/ewin-prom" }
 ewin-menulist = {version = "0.0.2", path = "../parts/ewin-menulist" }
 ewin-dialog = {version = "0.0.2", path = "../parts/ewin-dialog" }
+ewin-ctx_menu = {version = "0.0.2", path = "../parts/ewin-ctx_menu" }
+ewin-file_bar = {version = "0.0.2", path = "../parts/ewin-file_bar" }
+ewin-help = {version = "0.0.2", path = "../parts/ewin-help" }

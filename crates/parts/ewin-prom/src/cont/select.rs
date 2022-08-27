@@ -1,8 +1,8 @@
 use super::parts::input_area::*;
 use crate::ewin_key::clipboard::*;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_const::model::*;
-use ewin_view::cur::Cur;
+use ewin_const::models::{draw::*, evt::*};
+use ewin_key::cur::*;
 
 impl PromContInputArea {
     pub fn copy(&mut self) -> ActType {

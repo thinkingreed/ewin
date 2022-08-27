@@ -1,11 +1,14 @@
 use crate::model::*;
 use ewin_cfg::{lang::lang_cfg::*, log::*, model::default::*};
-use ewin_const::{def::*, model::*};
+use ewin_const::{
+    def::*,
+    models::{draw::*, evt::*},
+};
 use ewin_key::{key::cmd::*, model::*};
 use std::{cmp::min, collections::BTreeSet};
 
 impl Editor {
-    pub fn exec_search_incremental(&mut self, search_str: String) {
+    pub fn search_incremental(&mut self, search_str: String) -> ActType {
         Log::debug_s("Editor.exec_search_incremental");
         Log::debug("search_str", &search_str);
 
@@ -18,7 +21,7 @@ impl Editor {
                 let ey = min(win.offset.y + win.height(), self.buf.len_rows());
                 let e_row_idx = if regex { self.buf.row_to_byte(ey) } else { self.buf.row_to_char(ey) };
 
-                self.search.ranges.extend(if self.search.str.is_empty() { vec![] } else { self.get_search_ranges(&self.search.str, s_row_idx, e_row_idx, 0) });
+                self.search.ranges = if self.search.str.is_empty() { vec![] } else { self.get_search_ranges(&self.search.str, s_row_idx, e_row_idx, 0) };
             }
         }
         // Sorting because the order is irregular in the search for each window
@@ -37,11 +40,12 @@ impl Editor {
             for s in &self.search_org.ranges {
                 self.change_info.restayle_row_set.insert(s.y);
             }
-            self.draw_range = E_DrawRange::Targetpoint;
+            // self.draw_range = E_DrawRange::Targetpoint;
         }
+        return ActType::Draw(DParts::All);
     }
 
-    pub fn exec_search_confirm(&mut self, search_str: String) -> ActType {
+    pub fn search_confirm(&mut self, search_str: String) -> ActType {
         Log::debug_s("exec_search_confirm");
         if search_str.is_empty() {
             return ActType::Draw(DParts::MsgBar(Lang::get().not_set_search_str.clone()));
@@ -107,7 +111,7 @@ impl Editor {
             rtn_vec.push(SearchRange { y, sx, ex });
         }
 
-        rtn_vec
+        return rtn_vec;
     }
 
     pub fn get_search_str_index(&mut self, is_asc: bool) -> usize {

@@ -1,16 +1,13 @@
 use super::cmd::*;
-use crate::{
-    global::*,
-    key::{keys::*, keywhen::*},
-    util::*,
-};
+use crate::{global::*, key::keys::*};
 use ewin_cfg::{
     lang::lang_cfg::*,
     log::*,
     model::{default::*, modal::*},
     setting_file_loader::*,
 };
-use ewin_const::def::*;
+use ewin_const::{def::*, models::term::*};
+use ewin_utils::util::*;
 use json5;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, str::FromStr};
@@ -22,7 +19,7 @@ impl Keybind {
         #[cfg(target_family = "windows")]
         let mut keybind_vec: Vec<Keybind> = json5::from_str(include_str!("../../../../../setting/keybind/keybind_windows.json5")).unwrap();
 
-        let (mut keybind_vec_user, err_str) = SettingFileLoader::new(FileType::JSON5, args, CFgFilePath::get_app_config_dir(), KEYBINDING_FILE).load::<Vec<Keybind>>();
+        let (mut keybind_vec_user, err_str) = SettingFileLoader::new(FileType::JSON5, args, CfgFilePath::get_app_config_dir(), KEYBINDING_FILE).load::<Vec<Keybind>>();
 
         if !err_str.is_empty() {
             return err_str;
@@ -37,7 +34,7 @@ impl Keybind {
         }
         keybind_vec.append(&mut keybind_vec_user);
 
-        let mut key_when_cmd_map: HashMap<(Keys, KeyWhen), Cmd> = HashMap::new();
+        let mut key_when_cmd_map: HashMap<(Keys, Place), Cmd> = HashMap::new();
         let mut cmd_type_key_map: HashMap<CmdType, Keys> = HashMap::new();
 
         for keybind in keybind_vec {
@@ -47,7 +44,7 @@ impl Keybind {
             cmd_type_key_map.insert(Cmd::str_to_cmd_type(&keybind.cmd), Keys::from_str(&keybind.key).unwrap());
             let cmd = Cmd::str_to_cmd(&keybind.cmd);
 
-            for when in cmd.when_vec {
+            for when in cmd.place_vec {
                 key_when_cmd_map.insert((Keys::from_str(&keybind.key).unwrap(), when), Cmd::str_to_cmd(&keybind.cmd));
             }
         }

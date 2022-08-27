@@ -78,16 +78,15 @@ directory_init_value = ""
 content = """
 [
   {"file": [
-      {"create_new_file": []},
+      {"open_new_file": []},
       {"open_file": []},
       {"encoding": []},
       {"save_as": []},
-      {"end_of_all_save": []},
-      {"file_property": []}
+      {"all_save_finish": []}
   ]},
   {"edit": [
       {"convert": ["to_uppercase", "to_lowercase", "to_full_width", "to_half_width", "to_space", "to_tab"]},
-      {"format": ["JSON", "XML", "HTML"]}
+      {"format": ["json", "xml", "html"]}
   ]},
   {"display": [
       {"row_no": []},
@@ -123,10 +122,11 @@ content = """
       {"macros": ["insertString.js"]}
     ]
   },
-  "header_bar": {
+  "file_bar": {
     "": [
       {"close": []},
-      {"close_other_than_this_tab": []}
+      {"close_other_than_this_tab": []},
+      {"file_property": []}
     ]
   }
 }

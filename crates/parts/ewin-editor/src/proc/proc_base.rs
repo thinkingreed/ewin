@@ -1,9 +1,11 @@
 use crate::model::Editor;
 use ewin_cfg::log::*;
-use ewin_const::model::*;
+use ewin_const::models::{draw::*, evt::*, types::*};
+use ewin_ctx_menu::view_traits::view_trait::*;
+use ewin_job::job::*;
 use ewin_key::key::cmd::*;
-use ewin_state::{editor_state::*, tabs::*};
-use ewin_view::view_trait::view_evt_trait::*;
+use ewin_state::{editor::*, term::*};
+use ewin_view::view_traits::view_trait::*;
 
 impl Editor {
     pub fn proc(&mut self) -> ActType {
@@ -13,6 +15,7 @@ impl Editor {
         Log::debug("cmd", &cmd);
 
         let act_type = match cmd.cmd_type {
+            CmdType::CancelEditorState => return self.cancel_state(),
             // Resize
             CmdType::Resize(_, _) => return self.resize(),
             // _input_imple
@@ -30,20 +33,49 @@ impl Editor {
             CmdType::FindNext | CmdType::FindBack => self.find_next_back(),
             // If CtxMenu = true and there is no Mouse on CtxMenu
             CmdType::MouseMove(_, _) => return ActType::Cancel,
+            // ctx_menu
+            CmdType::CtxMenu(y, x) => self.init_ctx_menu(y, x),
             // InputComple
             CmdType::InputComple => self.init_input_comple(true),
+            // format
+            CmdType::Format(fmt_type) => return self.format(fmt_type),
+            // convert
+            CmdType::Convert(conv_type) => return self.convert(conv_type),
+            // key record
+            CmdType::RecordKeyStartEnd => return self.record_key_macro_start(),
+            CmdType::ExecRecordKey => return self.exec_key_macro(),
+            // key record
+            CmdType::Search(search_type, search_str) => match search_type {
+                SearchType::Incremental => return self.search_incremental(search_str),
+                SearchType::Confirm => {
+                    let act_type = self.search_confirm(search_str);
+                    if act_type != ActType::Next {
+                        return act_type;
+                    }
+                    Job::send_cmd(CmdType::ClearTabState(false));
+                    return ActType::None;
+                }
+            },
             /*
              * display
              */
             CmdType::SwitchDispScale => {
-                Tabs::get().curt_mut_state().editor.toggle_state(TabsEditerStateType::Scale);
+                State::get().curt_mut_state().editor.toggle_state(TabsEditerStateType::Scale);
                 return ActType::Draw(DParts::All);
             }
             CmdType::SwitchDispRowNo => {
-                Tabs::get().curt_mut_state().editor.toggle_state(TabsEditerStateType::RowNo);
+                State::get().curt_mut_state().editor.toggle_state(TabsEditerStateType::RowNo);
+                return ActType::Draw(DParts::All);
+            }
+            CmdType::WindowSplit(split_type) => {
+                self.win_mgr.split_window(split_type);
+                self.resize_draw_vec();
+                self.set_size_adjust_editor();
                 return ActType::Draw(DParts::All);
             }
             CmdType::Null => return ActType::Draw(DParts::All),
+            CmdType::Test => return ActType::None,
+
             _ => ActType::Next,
         };
         if act_type != ActType::Next {
@@ -82,11 +114,9 @@ mod tests {
     };
     use ewin_key::{
         clipboard::*,
-        key::cmd::Cmd,
-        model::{Mouse, Search, SearchRange},
-    };
-    use ewin_view::{
         cur::Cur,
+        key::cmd::Cmd,
+        model::{Search, SearchRange},
         sel_range::{SelMode, SelRange},
     };
 
@@ -291,6 +321,7 @@ mod tests {
         assert_eq!(e.win_mgr.curt().sel.get_range(), SelRange { mode: SelMode::BoxSelect, sy: 1, sx: 1, s_disp_x: 1, ey: 2, ex: 2, e_disp_x: 2 });
 
         // MouseModeSwitch
+        /*
         e.cmd = Cmd::to_cmd(CmdType::MouseModeSwitch);
         e.proc();
         assert_eq!(e.state.mouse, Mouse::Disable);
@@ -299,7 +330,7 @@ mod tests {
         e.proc();
         assert_eq!(e.state.mouse, Mouse::Enable);
         assert_eq!(e.rnw, e.buf.len_rows().to_string().len());
-
+         */
         // BoxSelectMode
         e.cmd = Cmd::to_cmd(CmdType::BoxSelectMode);
         e.proc();

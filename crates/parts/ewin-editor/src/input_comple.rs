@@ -1,12 +1,11 @@
 use std::{cmp::min, collections::BTreeSet};
 
-use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_const::model::*;
-use ewin_key::key::cmd::*;
-use ewin_key::{model::*, util::*};
-use ewin_menulist::parts::input_comple::*;
-
 use crate::model::*;
+use ewin_cfg::{lang::lang_cfg::*, log::*};
+use ewin_const::models::{draw::*, evt::*, model::*};
+use ewin_key::key::cmd::*;
+use ewin_menulist::parts::input_comple::*;
+use ewin_utils::char_edit::*;
 
 impl Editor {
     pub fn init_input_comple(&mut self, is_first: bool) -> ActType {
@@ -27,11 +26,11 @@ impl Editor {
         let set = if is_first { self.input_comple.search_set.clone() } else { self.input_comple.search(&search_str) };
 
         if !is_first && search_str.is_empty() {
-            self.state.input_comple_mode = InputCompleMode::None;
+            self.input_comple.mode = InputCompleMode::None;
             return ActType::Cancel;
         }
         if set.is_empty() {
-            self.state.input_comple_mode = InputCompleMode::None;
+            self.input_comple.mode = InputCompleMode::None;
             return ActType::Draw(DParts::MsgBar(Lang::get().no_input_comple_candidates.to_string()));
         } else if set.len() == 1 {
             for s in set {
@@ -39,7 +38,7 @@ impl Editor {
                 self.clear_input_comple();
             }
         } else {
-            self.state.input_comple_mode = InputCompleMode::WordComple;
+            self.input_comple.mode = InputCompleMode::WordComple;
 
             self.input_comple.set_disp_name(&search_str);
             let height = min(self.input_comple.menulist.cont.cont_vec.len(), InputComple::MAX_HEIGHT);
@@ -115,7 +114,7 @@ impl Editor {
         match cmd.cmd_type {
             CmdType::InsertStr(_) | CmdType::DelPrevChar => self.init_input_comple(false),
             _ if self.cmd.config.is_edit => {
-                self.state.input_comple_mode = InputCompleMode::None;
+                self.input_comple.mode = InputCompleMode::None;
                 return ActType::Draw(DParts::All);
             }
             _ => return ActType::Next,
@@ -131,7 +130,7 @@ impl Editor {
 
     pub fn clear_input_comple(&mut self) {
         self.input_comple.clear();
-        self.state.input_comple_mode = InputCompleMode::None;
+        self.input_comple.mode = InputCompleMode::None;
     }
 
     pub fn get_until_delim_str(&self) -> (String, usize) {
@@ -142,10 +141,10 @@ impl Editor {
 
     pub fn is_input_imple_mode(&self, is_curt: bool) -> bool {
         if is_curt {
-            self.state.input_comple_mode == InputCompleMode::WordComple
+            self.input_comple.mode == InputCompleMode::WordComple
         // org
         } else {
-            self.state.input_comple_mode_org == InputCompleMode::WordComple
+            self.input_comple.mode_org == InputCompleMode::WordComple
         }
     }
     pub fn select_input_comple(&mut self) -> ActType {

@@ -1,13 +1,16 @@
 use super::keys::{Key, *};
-use crate::{global::*, key::keywhen::*, model::*};
+use crate::{global::*, model::*, sel_range::*};
 use ewin_cfg::model::modal::*;
-use ewin_const::{def::*, model::*, term::*};
-use ewin_view::sel_range::SelRange;
+use ewin_const::{
+    def::*,
+    models::{dialog::*, file::*, model::*, term::*, types::*},
+    term::*,
+};
 use std::{cmp::Ordering, collections::BTreeSet};
 
 impl Cmd {
-    pub fn keys_to_cmd(keys: &Keys, keys_org_opt: Option<&Keys>, keywhen: KeyWhen) -> Cmd {
-        let result = CMD_MAP.get().unwrap().get(&(*keys, KeyWhen::All)).or_else(|| CMD_MAP.get().unwrap().get(&(*keys, keywhen.clone())));
+    pub fn keys_to_cmd(keys: &Keys, keys_org_opt: Option<&Keys>, keywhen: Place) -> Cmd {
+        let result = CMD_MAP.get().unwrap().get(&(*keys, Place::Tabs)).or_else(|| CMD_MAP.get().unwrap().get(&(*keys, keywhen)));
 
         let cmd = match result {
             Some(cmd) => cmd.clone(),
@@ -46,7 +49,7 @@ impl Cmd {
                     _ => CmdType::MouseDragLeftDown(*y as usize, *x as usize),
                 }
             }
-            Keys::MouseDownRight(y, x) | Keys::MouseDragRight(y, x) => CmdType::CtxtMenu(*y as usize, *x as usize),
+            Keys::MouseDownRight(y, x) | Keys::MouseDragRight(y, x) => CmdType::CtxMenu(*y as usize, *x as usize),
 
             _ => CmdType::Null,
         };
@@ -56,7 +59,7 @@ impl Cmd {
         }
 
         let cmd_type = match keywhen {
-            KeyWhen::Editor => match &keys {
+            Place::Editor => match &keys {
                 Keys::Raw(Key::Tab) => CmdType::InsertStr(TAB_CHAR.to_string()),
                 _ => CmdType::Unsupported,
             },
@@ -83,88 +86,103 @@ impl Cmd {
              */
             "undo" => CmdType::Undo,
             "redo" => CmdType::Redo,
-            "deleteNextChar" => CmdType::DelNextChar,
-            "deletePrevChar" => CmdType::DelPrevChar,
+            "delete_next_char" => CmdType::DelNextChar,
+            "delete_prev_char" => CmdType::DelPrevChar,
 
-            "cursorLeft" => CmdType::CursorLeft,
-            "cursorRight" => CmdType::CursorRight,
-            "cursorUp" => CmdType::CursorUp,
-            "cursorDown" => CmdType::CursorDown,
-            "cursorRowHome" => CmdType::CursorRowHome,
-            "cursorRowEnd" => CmdType::CursorRowEnd,
-            "cursorLeftSelect" => CmdType::CursorLeftSelect,
-            "cursorRightSelect" => CmdType::CursorRightSelect,
-            "cursorUpSelect" => CmdType::CursorUpSelect,
-            "cursorDownSelect" => CmdType::CursorDownSelect,
-            "cursorRowHomeSelect" => CmdType::CursorRowHomeSelect,
-            "cursorRowEndSelect" => CmdType::CursorRowEndSelect,
-            "cursorFileHome" => CmdType::CursorFileHome,
-            "cursorFileEnd" => CmdType::CursorFileEnd,
-            "cursorPageUp" => CmdType::CursorPageUp,
-            "cursorPageDown" => CmdType::CursorPageDown,
+            "cursor_left" => CmdType::CursorLeft,
+            "cursor_right" => CmdType::CursorRight,
+            "cursor_up" => CmdType::CursorUp,
+            "cursor_down" => CmdType::CursorDown,
+            "cursor_row_home" => CmdType::CursorRowHome,
+            "cursor_row_end" => CmdType::CursorRowEnd,
+            "cursor_left_select" => CmdType::CursorLeftSelect,
+            "cursor_right_select" => CmdType::CursorRightSelect,
+            "cursor_up_select" => CmdType::CursorUpSelect,
+            "cursor_down_select" => CmdType::CursorDownSelect,
+            "cursor_row_home_select" => CmdType::CursorRowHomeSelect,
+            "cursor_row_end_select" => CmdType::CursorRowEndSelect,
+            "cursor_file_home" => CmdType::CursorFileHome,
+            "cursor_file_end" => CmdType::CursorFileEnd,
+            "cursor_page_up" => CmdType::CursorPageUp,
+            "cursor_page_down" => CmdType::CursorPageDown,
 
             "paste" => CmdType::InsertStr("".to_string()),
             "cut" => CmdType::Cut,
             "copy" => CmdType::Copy,
-            "findNext" => CmdType::FindNext,
-            "findBack" => CmdType::FindBack,
-            "cancelPrompt" => CmdType::CancelProm,
-            "confirmPrompt" => CmdType::Confirm,
-            "nextContent" => CmdType::NextContent,
-            "backContent" => CmdType::BackContent,
-            "findCaseSensitive" => CmdType::FindCaseSensitive,
-            "findRegex" => CmdType::FindRegex,
-            "closeFile" => CmdType::CloseFile,
+            "find_next" => CmdType::FindNext,
+            "find_back" => CmdType::FindBack,
+            "cancel_prompt" => CmdType::CancelProm,
+            "confirm_prompt" => CmdType::Confirm,
+            "next_content" => CmdType::NextContent,
+            "back_content" => CmdType::BackContent,
+            "find_case_sensitive" => CmdType::FindCaseSensitive,
+            "find_regex" => CmdType::FindRegex,
+            // file
+            "close_file" => CmdType::CloseFileCurt(CloseFileType::Normal),
+            "open_new_file" => CmdType::OpenNewFile,
+            "close_all_file" => CmdType::CloseAllFile,
+            "save_file" => CmdType::SaveFile(SaveFileType::Normal),
+            "save_as" => CmdType::SaveFile(SaveFileType::NewFile),
+            "all_save_finish" => CmdType::SaveAllFinish,
+            "switch_file_left" => CmdType::SwitchFile(Direction::Left),
+            "switch_file_right" => CmdType::SwitchFile(Direction::Right),
 
-            // editor
-            "allSelect" => CmdType::AllSelect,
-            "boxSelectModeStart" => CmdType::BoxSelectModeStart,
-            "insertLine" => CmdType::InsertRow,
-            "createNewFile" => CmdType::CreateNewFile,
-            "closeAllFile" => CmdType::CloseAllFile,
-            "saveFile" => CmdType::SaveFile,
-            "save_as" => CmdType::SaveNewFile,
-            "formatJSON" => CmdType::Format(FileType::JSON),
-            "formatXML" => CmdType::Format(FileType::XML),
-            "formatHTML" => CmdType::Format(FileType::HTML),
+            /*
+             * editor
+             */
+            "all_select" => CmdType::AllSelect,
+            "box_select_mode_start" => CmdType::BoxSelectModeStart,
+            "insert_line" => CmdType::InsertRow,
+            "format_json" | "json" => CmdType::Format(FileType::JSON),
+            "format_xml" | "xml" => CmdType::Format(FileType::XML),
+            "format_html" | "html" => CmdType::Format(FileType::HTML),
+
+            // convert
+            "to_full_width" => CmdType::Convert(ConvType::FullWidth),
+            "to_half_width" => CmdType::Convert(ConvType::HalfWidth),
+            "to_uppercase" => CmdType::Convert(ConvType::Uppercase),
+            "to_lowercase" => CmdType::Convert(ConvType::Lowercase),
+            "to_space" => CmdType::Convert(ConvType::Space),
+            "to_tab" => CmdType::Convert(ConvType::Tab),
 
             // key macro
-            "startEndRecordKey" => CmdType::RecordKeyStartEnd,
-            "execRecordKey" => CmdType::ExecRecordKey,
+            "start_end_record_key" => CmdType::RecordKeyStartEnd,
+            "exec_record_key" => CmdType::ExecRecordKey,
             // mouse
-            "mouseModeSwitch" => CmdType::MouseModeSwitch,
+            "mouse_mode_switch" => CmdType::MouseModeSwitch,
             // menu
             "help" => CmdType::Help,
-            "helpInitDisplaySwitch" => CmdType::HelpInitDisplaySwitch,
-            "openMenuFile" => CmdType::OpenMenuFile,
-            "openMenuConvert" => CmdType::OpenMenuConvert,
-            "openMenuEdit" => CmdType::OpenMenuEdit,
-            "openMenuSearch" => CmdType::OpenMenuSearch,
-            "openMenuMacro" => CmdType::OpenMenuSearch,
-            // switchTab
-            "switchTabLeft" => CmdType::SwitchTab(Direction::Left),
-            "switchTabRight" => CmdType::SwitchTab(Direction::Right),
+            "help_init_display_switch" => CmdType::HelpInitDisplaySwitch,
+            "open_menu_file" => CmdType::OpenMenuFile,
+            "open_menu_convert" => CmdType::OpenMenuConvert,
+            "open_menu_edit" => CmdType::OpenMenuEdit,
+            "open_menu_search" => CmdType::OpenMenuSearch,
+            "open_menu_macro" => CmdType::OpenMenuMacro,
             // mode
-            "cancelEditorState" => CmdType::CancelEditorState,
-            // ContextMenu
-            "contextMenu" => CmdType::CtxtMenu(USIZE_UNDEFINED, USIZE_UNDEFINED),
-            // Input Complement
-            "inputComplement" => CmdType::InputComple,
+            "cancel_editor_state" => CmdType::CancelEditorState,
+            // context_menu
+            "context_menu" => CmdType::CtxMenu(USIZE_UNDEFINED, USIZE_UNDEFINED),
+            // input complement
+            "input_complement" => CmdType::InputComple,
             /*
-             * Display
+             * display
              */
             "scale" => CmdType::SwitchDispScale,
-            "rowNo" => CmdType::SwitchDispRowNo,
+            "row_no" => CmdType::SwitchDispRowNo,
             // prom
-            "findPrompt" => CmdType::FindProm,
-            "replacePrompt" => CmdType::ReplaceProm,
-            "moveLinePrompt" => CmdType::MoveRowProm,
-            "grepPrompt" => CmdType::GrepProm,
-            "encodingPrompt" => CmdType::EncodingProm,
-            "openFilePrompt" => CmdType::openFileProm(OpenFileType::Normal),
+            "find_prompt" => CmdType::FindProm,
+            "replace_prompt" => CmdType::ReplaceProm,
+            "move_line_prompt" => CmdType::MoveRowProm,
+            "grep_prompt" => CmdType::GrepProm,
+            "encoding" | "encoding_prompt" => CmdType::EncodingProm,
+            "open_file" | "open_file_prompt" => CmdType::openFileProm(OpenFileType::Normal),
             // window
-            "windowSplitVertical" => CmdType::WindowSplit(WindowSplitType::Vertical),
-            "windowSplitHorizontal" => CmdType::WindowSplit(WindowSplitType::Horizontal),
+            "window_split_vertical" | "left_and_right_split" => CmdType::WindowSplit(WindowSplitType::Vertical),
+            "window_split_horizontal" | "top_and_bottom_split" => CmdType::WindowSplit(WindowSplitType::Horizontal),
+            /*
+             * Dialog
+             */
+            "about_app" => CmdType::DialogShow(DialogContType::AboutApp),
             // test
             "test" => CmdType::Test,
             _ => CmdType::Unsupported,
@@ -176,59 +194,61 @@ impl Cmd {
     pub fn to_cmd(cmd_type: CmdType) -> Cmd {
         return match cmd_type {
             // edit
-            CmdType::InsertStr(_) | CmdType::Cut | CmdType::InsertRow | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::InsertBox(_) | CmdType::DelBox(_) | CmdType::ReplaceExec(_, _, _) | CmdType::Format(_) => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor, KeyWhen::Prom], config: CmdConfig { is_edit: true, is_record: true, is_recalc_scrl: true } },
+            CmdType::InsertStr(_) | CmdType::Cut | CmdType::InsertRow | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::InsertBox(_) | CmdType::DelBox(_) | CmdType::ReplaceExec(_, _, _) | CmdType::Format(_) | CmdType::Convert(_) => Cmd { cmd_type, place_vec: vec![Place::Editor, Place::Prom], config: CmdConfig { is_edit: true, is_record: true, is_recalc_scrl: true } },
             // key macro
-            CmdType::RecordKeyStartEnd => Cmd { cmd_type, ..Cmd::default() },
-            CmdType::ExecRecordKey => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor], config: CmdConfig { is_edit: true, is_recalc_scrl: true, ..CmdConfig::default() } },
+            CmdType::RecordKeyStartEnd => Cmd { cmd_type, place_vec: vec![Place::Editor], ..Cmd::default() },
+            CmdType::ExecRecordKey => Cmd { cmd_type, place_vec: vec![Place::Editor], config: CmdConfig { is_edit: true, is_recalc_scrl: true, ..CmdConfig::default() } },
             // Cursor move Editor and Prom
-            CmdType::CursorLeft | CmdType::CursorRight | CmdType::CursorUp | CmdType::CursorDown | CmdType::CursorRowHome | CmdType::CursorRowEnd | CmdType::CursorLeftSelect | CmdType::CursorRightSelect | CmdType::CursorRowHomeSelect | CmdType::CursorRowEndSelect => Cmd { cmd_type, when_vec: vec![KeyWhen::All], config: CmdConfig { is_record: true, is_recalc_scrl: true, ..CmdConfig::default() } },
+            CmdType::CursorLeft | CmdType::CursorRight | CmdType::CursorUp | CmdType::CursorDown | CmdType::CursorRowHome | CmdType::CursorRowEnd | CmdType::CursorLeftSelect | CmdType::CursorRightSelect | CmdType::CursorRowHomeSelect | CmdType::CursorRowEndSelect => Cmd { cmd_type, place_vec: vec![Place::Editor, Place::Prom], config: CmdConfig { is_record: true, is_recalc_scrl: true, ..CmdConfig::default() } },
             // Cursor move Editor only
-            CmdType::CursorUpSelect | CmdType::CursorDownSelect | CmdType::CursorFileHome | CmdType::CursorFileEnd | CmdType::CursorPageUp | CmdType::CursorPageDown => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor], config: CmdConfig { is_record: true, is_recalc_scrl: true, ..CmdConfig::default() } },
+            CmdType::CursorUpSelect | CmdType::CursorDownSelect | CmdType::CursorFileHome | CmdType::CursorFileEnd | CmdType::CursorPageUp | CmdType::CursorPageDown => Cmd { cmd_type, place_vec: vec![Place::Editor], config: CmdConfig { is_record: true, is_recalc_scrl: true, ..CmdConfig::default() } },
             // select
-            CmdType::Copy | CmdType::AllSelect => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor, KeyWhen::Prom], config: CmdConfig { is_record: true, ..CmdConfig::default() } },
+            CmdType::Copy | CmdType::AllSelect => Cmd { cmd_type, place_vec: vec![Place::Editor, Place::Prom], config: CmdConfig { is_record: true, ..CmdConfig::default() } },
             // mouse
             CmdType::MouseDownLeft(_, _) | CmdType::MouseUpLeft(_, _) | CmdType::MouseMove(_, _) | CmdType::MouseDragLeftUp(_, _) | CmdType::MouseDragLeftDown(_, _) | CmdType::MouseDragLeftLeft(_, _) | CmdType::MouseDragLeftRight(_, _) | CmdType::MouseDownLeftBox(_, _) | CmdType::MouseDragLeftBox(_, _) | CmdType::MouseScrollUp | CmdType::MouseScrollDown => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, ..Cmd::default() },
-            CmdType::MouseModeSwitch => Cmd { cmd_type, ..Cmd::default() },
+            CmdType::MouseModeSwitch => Cmd { cmd_type, place_vec: vec![Place::Editor], ..Cmd::default() },
 
             CmdType::BoxSelectMode => Cmd { cmd_type, ..Cmd::default() },
             CmdType::BoxSelectModeStart => Cmd { cmd_type, ..Cmd::default() },
-            // File
-            CmdType::CloseFile => Cmd { cmd_type, when_vec: vec![KeyWhen::All], ..Cmd::default() },
-            CmdType::CloseAllFile => Cmd { cmd_type, ..Cmd::default() },
+            /*
+             * Tabs
+             */
+            CmdType::OpenNewFile | CmdType::CloseFileCurt(_) | CmdType::CloseFileTgt(_) | CmdType::CloseAllFile | CmdType::CloseOtherThanThisTab(_) | CmdType::SaveFile(_) | CmdType::SwitchFile(_) | CmdType::SwapFile(_, _) | CmdType::ChangeFile(_) | CmdType::Help | CmdType::SaveAllFinish | CmdType::ClearTabState(_) => Cmd { cmd_type, place_vec: vec![Place::Tabs], ..Cmd::default() },
             CmdType::ReOpenFile => Cmd { cmd_type, ..Cmd::default() },
             // menu
             CmdType::HelpInitDisplaySwitch => Cmd { cmd_type, ..Cmd::default() },
             CmdType::OpenMenuFile | CmdType::OpenMenuConvert | CmdType::OpenMenuEdit | CmdType::OpenMenuSearch | CmdType::OpenMenuMacro => Cmd { cmd_type, ..Cmd::default() },
-            // ContextMenu
-            CmdType::CtxtMenu(_, _) => Cmd { cmd_type, when_vec: vec![KeyWhen::All], ..Cmd::default() },
             /*
              * Editor
              */
-            CmdType::CreateNewFile | CmdType::InputComple | CmdType::CancelEditorState | CmdType::SaveFile | CmdType::SwitchTab(_) | CmdType::Help => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor], ..Cmd::default() },
-            CmdType::WindowSplit(_) => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, when_vec: vec![KeyWhen::Editor] },
+            CmdType::Search(_, _) | CmdType::InputComple | CmdType::CancelEditorState => Cmd { cmd_type, place_vec: vec![Place::Editor], ..Cmd::default() },
+            CmdType::WindowSplit(_) => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, place_vec: vec![Place::Editor] },
+
+            // ContextMenu
+            CmdType::CtxMenu(_, _) => Cmd { cmd_type, place_vec: vec![Place::Editor, Place::FileBar], ..Cmd::default() },
             /*
              * Display
              */
-            CmdType::SwitchDispScale | CmdType::SwitchDispRowNo => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, ..Cmd::default() },
+            CmdType::SwitchDispScale | CmdType::SwitchDispRowNo => Cmd { cmd_type, place_vec: vec![Place::Editor], config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() } },
             // Prom
-            CmdType::FindProm | CmdType::ReplaceProm | CmdType::MoveRowProm | CmdType::GrepProm | CmdType::GrepingProm | CmdType::GrepResultProm | CmdType::EncodingProm | CmdType::openFileProm(_) | CmdType::Saveforced | CmdType::WatchFileResult => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor], ..Cmd::default() },
-            CmdType::SaveNewFile => Cmd { cmd_type, when_vec: vec![KeyWhen::MenuBar], ..Cmd::default() },
-            CmdType::FindNext | CmdType::FindBack => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, when_vec: vec![KeyWhen::Editor, KeyWhen::Prom] },
-            CmdType::FindCaseSensitive | CmdType::FindRegex => Cmd { cmd_type, when_vec: vec![KeyWhen::Prom], ..Cmd::default() },
+            CmdType::FindProm | CmdType::ReplaceProm | CmdType::MoveRowProm | CmdType::GrepProm | CmdType::GrepingProm(_) | CmdType::GrepResultProm | CmdType::EncodingProm | CmdType::openFileProm(_) | CmdType::WatchFileResult => Cmd { cmd_type, place_vec: vec![Place::Tabs], ..Cmd::default() },
+            // CmdType::SaveAsFile => Cmd { cmd_type, place_vec: vec![Place::MenuBar], ..Cmd::default() },
+            CmdType::FindNext | CmdType::FindBack => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, place_vec: vec![Place::Editor, Place::Prom] },
+            CmdType::FindCaseSensitive | CmdType::FindRegex => Cmd { cmd_type, place_vec: vec![Place::Prom], ..Cmd::default() },
 
-            CmdType::Confirm => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, when_vec: vec![KeyWhen::MenuBar, KeyWhen::Prom, KeyWhen::CtxMenu] },
-            CmdType::CancelProm => Cmd { cmd_type, when_vec: vec![KeyWhen::Prom], ..Cmd::default() },
-            CmdType::NextContent | CmdType::BackContent => Cmd { cmd_type, when_vec: vec![KeyWhen::Prom], ..Cmd::default() },
+            CmdType::Confirm => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, place_vec: vec![Place::MenuBar, Place::Prom, Place::CtxMenu] },
+            CmdType::CancelProm => Cmd { cmd_type, place_vec: vec![Place::Prom], ..Cmd::default() },
+            CmdType::NextContent | CmdType::BackContent => Cmd { cmd_type, place_vec: vec![Place::Prom], ..Cmd::default() },
             // MenuBar
-            CmdType::MenuWidget(_, _) => Cmd { cmd_type, ..Cmd::default() },
-            // CtxMenu
-            CmdType::CtxMenu(_, _) => Cmd { cmd_type, ..Cmd::default() },
-            //  // Dialog
-            CmdType::Test => Cmd { cmd_type, when_vec: vec![KeyWhen::Editor], ..Cmd::default() },
+            CmdType::MenuBarMenulist(_, _) => Cmd { cmd_type, ..Cmd::default() },
+            // Dialog
+            CmdType::DialogShow(_) => Cmd { cmd_type, place_vec: vec![Place::Dialog], ..Cmd::default() },
             // Other
             CmdType::Resize(_, _) => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, ..Cmd::default() },
             CmdType::Null => Cmd { cmd_type, ..Cmd::default() },
             CmdType::Unsupported => Cmd { cmd_type, ..Cmd::default() },
+            // Test
+            CmdType::Test => Cmd { cmd_type, place_vec: vec![Place::Editor], ..Cmd::default() },
         };
     }
 
@@ -248,7 +268,7 @@ impl Cmd {
 pub struct Cmd {
     pub cmd_type: CmdType,
     pub config: CmdConfig,
-    pub when_vec: Vec<KeyWhen>,
+    pub place_vec: Vec<Place>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
@@ -305,16 +325,14 @@ pub enum CmdType {
     FindCaseSensitive,
     FindRegex,
     ReOpenFile,
-    CloseFile,
     Unsupported,
     // Editor
     BoxSelectModeStart,
     BoxSelectMode,
     InsertRow,
-    CreateNewFile,
-    CloseAllFile,
-    SaveFile,
+    SaveFile(SaveFileType),
     Format(FileType),
+    Convert(ConvType),
     RecordKeyStartEnd,
     ExecRecordKey,
     MouseModeSwitch,
@@ -325,12 +343,25 @@ pub enum CmdType {
     OpenMenuEdit,
     OpenMenuSearch,
     OpenMenuMacro,
-    SwitchTab(Direction),
     CancelEditorState,
-    CtxtMenu(usize, usize),
     InputComple,
     SwitchDispScale,
     SwitchDispRowNo,
+    Search(SearchType, String),
+    // Window
+    WindowSplit(WindowSplitType),
+    // File
+    CloseFileCurt(CloseFileType),
+    CloseFileTgt(usize),
+    ChangeFile(usize),
+    OpenNewFile,
+    CloseAllFile,
+    CloseOtherThanThisTab(usize),
+    SwitchFile(Direction),
+    SwapFile(usize, usize),
+    SaveAllFinish,
+    // Tabs
+    ClearTabState(bool),
 
     // Prom
     FindProm,
@@ -338,19 +369,18 @@ pub enum CmdType {
     ReplaceExec(String, String, BTreeSet<usize>),
     MoveRowProm,
     GrepProm,
-    GrepingProm,
+    GrepingProm(GrepInfo),
     GrepResultProm,
     EncodingProm,
     openFileProm(OpenFileType),
-    SaveNewFile,
-    Saveforced,
     WatchFileResult,
     // MenuBar
-    MenuWidget(usize, usize),
+    MenuBarMenulist(usize, usize),
     // CtxMenu
     CtxMenu(usize, usize),
-    // Window
-    WindowSplit(WindowSplitType),
+    // Dialog
+    DialogShow(DialogContType),
+
     Test,
     #[default]
     Null,

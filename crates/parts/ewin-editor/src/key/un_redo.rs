@@ -1,6 +1,6 @@
 use crate::{ewin_key::model::*, model::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_const::model::*;
+use ewin_const::models::{draw::*, evt::*};
 use ewin_key::key::cmd::*;
 
 impl Editor {

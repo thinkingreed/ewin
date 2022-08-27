@@ -1,7 +1,9 @@
 use crate::model::*;
 use ewin_cfg::log::*;
-use ewin_const::model::NL;
-use ewin_key::{key::cmd::*, model::*, util::*};
+use ewin_const::models::file::*;
+use ewin_key::{key::cmd::*, model::*};
+use ewin_state::term::*;
+use ewin_utils::str_edit::*;
 use std::{cmp::min, collections::BTreeSet};
 impl Editor {
     pub fn set_change_info_edit(&mut self, evt_proc: &EvtProc) {
@@ -36,7 +38,7 @@ impl Editor {
                 }
                 // Not Insert box
                 CmdType::InsertStr(_) if proc.box_sel_vec.is_empty() => {
-                    let strings: Vec<&str> = proc.str.split(&NL::get_nl(&self.h_file.file.nl)).collect();
+                    let strings: Vec<&str> = proc.str.split(&NL::get_nl(&State::get().curt_state().file.nl)).collect();
                     if !strings.is_empty() {
                         for i in 0..strings.len() - 1 {
                             self.new_change_tgt(BTreeSet::from([proc.cur_s.y + i]));

@@ -1,10 +1,10 @@
 use crate::dialog::*;
-use ewin_key::util::*;
+use ewin_utils::str_edit::*;
 
 impl DialogBtnGrourp {
     pub fn create_grourp(btn_group_type: DialogBtnGrourpType) -> DialogBtnGrourp {
         return match btn_group_type {
-            DialogBtnGrourpType::Ok => DialogBtnGrourp { btn_type: DialogBtnGrourpType::Ok, vec: vec![DialogBtn { name: Dialog::OK_BTN_STR.to_string(), name_width: get_str_width(&Dialog::OK_BTN_STR), btn_type: DialogBtnType::Ok, cfg: DialogBtnCfg { is_close: true }, ..DialogBtn::default() }] },
+            DialogBtnGrourpType::Ok => DialogBtnGrourp { btn_type: DialogBtnGrourpType::Ok, vec: vec![DialogBtn { name: Dialog::OK_BTN_STR.to_string(), name_width: get_str_width(Dialog::OK_BTN_STR), btn_type: DialogBtnType::Ok, cfg: DialogBtnCfg { is_close: true }, ..DialogBtn::default() }] },
             DialogBtnGrourpType::OkCancel => DialogBtnGrourp::default(),
         };
     }

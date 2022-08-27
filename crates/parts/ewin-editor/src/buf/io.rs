@@ -1,15 +1,14 @@
-use crate::{ewin_key::files::file::*, model::*};
+use crate::model::*;
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 use ewin_cfg::{log::*, model::default::*};
 use ewin_const::def::*;
-use ewin_key::files::encode::*;
-use ewin_state::header_file::*;
+use ewin_utils::files::{encode::*, file::*};
 use ropey::RopeBuilder;
 use std::{cmp::min, fs::OpenOptions, io::*, option::Option, *};
 
 impl TextBuffer {
-    pub fn read_file(h_file: &mut HeaderFile) -> io::Result<(TextBuffer, Option<Encode>)> {
-        let (read_str, mut enc, bom, mod_time) = File::read(&h_file.file.name)?;
+    pub fn read_file(file: &mut File) -> io::Result<(TextBuffer, Option<Encode>)> {
+        let (read_str, mut enc, bom, mod_time) = File::read(&file.name)?;
 
         if read_str.is_empty() {
             enc = Encode::UTF8;
@@ -19,9 +18,9 @@ impl TextBuffer {
         let text_buf = TextBuffer { text: b.finish() };
 
         let nl = text_buf.check_nl();
-        h_file.file.enc = enc;
-        h_file.file.nl = nl;
-        h_file.file.mod_time = mod_time;
+        file.enc = enc;
+        file.nl = nl;
+        file.mod_time = mod_time;
         Ok((text_buf, bom))
     }
 
@@ -37,14 +36,14 @@ impl TextBuffer {
         return new_line;
     }
 
-    pub fn write_to(&mut self, h_file: &HeaderFile) -> io::Result<bool> {
-        Log::debug("Write file info", &h_file);
+    pub fn write_to(&mut self, file: &mut File) -> io::Result<bool> {
+        Log::debug("Write file info", &file);
 
-        let (mut u8_vec, enc_errors) = self.encode(h_file)?;
+        let (mut u8_vec, enc_errors) = self.encode(file)?;
         Log::debug("enc_errors", &enc_errors);
         if !enc_errors {
-            let vec = self.add_bom(&mut u8_vec, h_file);
-            BufWriter::new(fs::File::create(&h_file.file.fullpath)?).write_all(&vec[..])?;
+            let vec = self.add_bom(&mut u8_vec, file);
+            BufWriter::new(fs::File::create(&file.fullpath)?).write_all(&vec[..])?;
         }
 
         Ok(enc_errors)
@@ -55,9 +54,9 @@ impl TextBuffer {
         Ok(())
     }
 
-    fn add_bom(&mut self, vec: &mut Vec<u8>, h_file: &HeaderFile) -> Vec<u8> {
+    fn add_bom(&mut self, vec: &mut Vec<u8>, file: &File) -> Vec<u8> {
         let mut bom_vec: Vec<u8> = vec![];
-        match h_file.file.bom {
+        match file.bom {
             Some(Encode::UTF16LE) => bom_vec = vec![0xFF, 0xFE],
             Some(Encode::UTF16BE) => bom_vec = vec![0xFE, 0xFF],
             Some(Encode::UTF8) => bom_vec = vec![0xEF, 0xBB, 0xBF],
@@ -68,16 +67,16 @@ impl TextBuffer {
         bom_vec
     }
 
-    fn encode(&mut self, h_file: &HeaderFile) -> io::Result<(Vec<u8>, bool)> {
+    fn encode(&mut self, file: &mut File) -> io::Result<(Vec<u8>, bool)> {
         let mut u8_vec: Vec<u8> = vec![];
         let mut had_errors = false;
 
-        match h_file.file.enc {
+        match file.enc {
             Encode::UTF16LE | Encode::UTF16BE => {
                 let u16_vec: Vec<u16> = self.text.to_string().encode_utf16().collect();
 
                 for u16 in u16_vec {
-                    if h_file.file.bom == Some(Encode::UTF16LE) {
+                    if file.bom == Some(Encode::UTF16LE) {
                         u8_vec.write_u16::<LittleEndian>(u16)?;
                     } else {
                         u8_vec.write_u16::<BigEndian>(u16)?;
@@ -88,7 +87,7 @@ impl TextBuffer {
             _ => {
                 let str = self.text.to_string();
 
-                let (cow, _, _had_errors) = Encode::into_encoding(h_file.file.enc).encode(&str);
+                let (cow, _, _had_errors) = Encode::into_encoding(file.enc).encode(&str);
 
                 had_errors = _had_errors;
                 u8_vec = Vec::from(&*cow);

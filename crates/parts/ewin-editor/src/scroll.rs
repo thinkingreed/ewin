@@ -1,8 +1,8 @@
 use crate::model::*;
 use ewin_cfg::log::*;
-use ewin_const::def::*;
-use ewin_key::{key::cmd::*, util::*};
-use ewin_view::sel_range::SelMode;
+use ewin_key::key::cmd::*;
+use ewin_key::sel_range::*;
+use ewin_utils::char_edit::*;
 use std::{cmp::min, usize};
 
 impl Editor {
@@ -49,7 +49,7 @@ impl Editor {
                         self.win_mgr.curt().offset.y
                     }
                 }
-                CmdType::InsertRow | CmdType::ReplaceExec(_, _, _) | CmdType::GrepResultProm | CmdType::CursorDown | CmdType::CursorDownSelect | CmdType::MouseScrollDown | CmdType::CursorFileEnd | CmdType::InsertStr(_) | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::FindNext | CmdType::FindBack => {
+                CmdType::InsertRow | CmdType::ReplaceExec(_, _, _) | CmdType::GrepingProm(_) | CmdType::GrepResultProm | CmdType::CursorDown | CmdType::CursorDownSelect | CmdType::MouseScrollDown | CmdType::CursorFileEnd | CmdType::InsertStr(_) | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::FindNext | CmdType::FindBack => {
                     if matches!(self.cmd.cmd_type, CmdType::InsertRow) && self.win_mgr.curt().cur.y == self.buf.len_rows() - 1 && self.win_mgr.curt().cur.y - self.win_mgr.curt().offset.y + Editor::OFFSET_Y_MARGIN > self.get_curt_row_len() {
                         self.win_mgr.curt().offset.y += 1;
                     } else if self.win_mgr.curt().cur.y + Editor::SCROLL_UP_DOWN_MARGIN >= self.get_curt_row_len() + self.win_mgr.curt().offset.y {
@@ -91,7 +91,7 @@ impl Editor {
     }
 
     pub fn get_disp_row_including_extra(&self) -> usize {
-        if self.win_mgr.curt_ref().scrl_v.bar_len != USIZE_UNDEFINED && self.win_mgr.curt_ref().scrl_v.bar_len > 0 {
+        if self.win_mgr.curt_ref().scrl_v.bar_len != 0 && self.win_mgr.curt_ref().scrl_v.bar_len > 0 {
             self.get_curt_row_len() + (self.get_curt_row_len() - self.win_mgr.curt_ref().scrl_v.bar_len) * self.win_mgr.curt_ref().scrl_v.move_len
         } else {
             return self.buf.len_rows() + Editor::DISP_ROWS_MARGIN;

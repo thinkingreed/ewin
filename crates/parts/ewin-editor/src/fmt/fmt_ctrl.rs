@@ -4,21 +4,32 @@ use ewin_cfg::{
     log::*,
     model::{default::*, modal::*},
 };
-use ewin_const::{def::*, model::*};
+use ewin_const::{
+    def::*,
+    models::{draw::*, evt::*, file::*},
+};
 use ewin_key::key::cmd::*;
+use ewin_state::term::State;
 use serde::Serialize;
 use serde_json::Value;
 
 impl Editor {
-    pub fn format(&mut self, fmt_type: FileType) -> Option<String> {
+    pub fn format(&mut self, fmt_type: FileType) -> ActType {
+        Log::debug_key("Editor.format");
+
         if !self.win_mgr.curt().sel.is_selected() {
-            Some(Lang::get().no_sel_range.to_string())
+            return ActType::Draw(DParts::MsgBar(Lang::get().no_sel_range.to_string()));
         } else if let Err(err) = self.exec_format(fmt_type) {
             let err_str = format!("{}{}", fmt_type, Lang::get().parsing_failed);
             Log::error(&err_str, &err);
-            Some(err_str)
+            return ActType::Draw(DParts::MsgBar(err_str));
         } else {
-            None
+            for vec in self.draw_cache.iter_mut() {
+                for draw in vec {
+                    draw.clear();
+                }
+            }
+            return ActType::Draw(DParts::All);
         }
     }
 
@@ -35,14 +46,14 @@ impl Editor {
                 value.serialize(&mut ser).unwrap();
                 let mut format_str = String::from_utf8(ser.into_inner()).unwrap();
                 // New line code conversion
-                if self.h_file.file.nl == NEW_LINE_CRLF_STR {
+                if State::get().curt_state().file.nl == NEW_LINE_CRLF_STR {
                     format_str = format_str.replace(NEW_LINE_LF, NEW_LINE_CRLF)
                 }
                 format_str
             }
             FileType::XML | FileType::HTML => {
                 let slice = self.buf.slice(self.win_mgr.curt().sel.get_range());
-                let nl = NL::get_nl(&self.h_file.file.nl.to_string());
+                let nl = NL::get_nl(&State::get().curt_state().file.nl.to_string());
                 FormatXml::format_xml_html(slice, fmt_type, nl)
             }
             _ => todo!(),

@@ -1,8 +1,9 @@
-use crate::{ewin_key::util::*, model::*};
+use crate::model::*;
 use ewin_cfg::{log::*, model::default::*};
 use ewin_const::def::*;
-use ewin_key::key::cmd::*;
-use ewin_view::sel_range::*;
+use ewin_key::{key::cmd::*, sel_range::*};
+
+use ewin_utils::char_edit::*;
 use std::cmp::min;
 
 impl Editor {

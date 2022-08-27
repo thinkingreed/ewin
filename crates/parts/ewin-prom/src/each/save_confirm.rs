@@ -1,8 +1,31 @@
 use crate::{cont::parts::info::*, cont::parts::key_desc::*, ewin_key::key::cmd::*, model::*, prom_trait::main_trait::*};
-use ewin_cfg::{colors::*, lang::lang_cfg::*};
-use ewin_const::def::*;
+use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
+use ewin_const::{
+    def::*,
+    models::{evt::*, file::*},
+};
+use ewin_job::job::*;
 
 impl PromSaveConfirm {
+    pub fn save_confirm(&mut self) -> ActType {
+        Log::debug_key("PromSaveConfirm.save_confirm");
+
+        match &self.base.cmd.cmd_type {
+            CmdType::InsertStr(ref string) => match string.to_uppercase().as_str() {
+                CHAR_Y => {
+                    Job::send_cmd(CmdType::SaveFile(SaveFileType::Confirm));
+                    return ActType::None;
+                }
+                CHAR_N => {
+                    Job::send_cmd(CmdType::CloseFileCurt(CloseFileType::Forced));
+                    return ActType::None;
+                }
+                _ => return ActType::Cancel,
+            },
+            _ => return ActType::Cancel,
+        }
+    }
+
     pub fn new() -> Self {
         let mut prom = PromSaveConfirm { ..PromSaveConfirm::default() };
         let guide = PromContInfo { desc_str_vec: vec![Lang::get().save_confirm_to_close.to_string()], fg_color: Colors::get_msg_highlight_fg(), ..PromContInfo::default() };

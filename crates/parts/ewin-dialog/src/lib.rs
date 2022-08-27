@@ -8,20 +8,20 @@ pub mod global {
 
 extern crate ewin_key;
 
-pub mod dialog_trait {
+pub mod dialog_traits {
     pub mod dialog_trait;
 }
 
-pub mod view {
+pub mod views {
     pub mod view;
 }
 
-pub mod cont {
+pub mod conts {
     pub mod parts {
         pub mod kvs {
             pub mod about_app;
+            pub mod core;
             pub mod file_prop;
-            pub mod kvs;
         }
     }
     pub mod cont;

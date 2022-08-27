@@ -3,6 +3,7 @@ use super::{
     prom_trait::{cont_trait::*, main_trait::*},
 };
 use ewin_key::key::cmd::*;
+use ewin_view::view::View;
 use std::ops::Range;
 
 #[derive(Default, Debug, Clone)]
@@ -17,10 +18,10 @@ pub struct PromptContOpt {
 pub struct Prom {
     // pub keycmd: KeyCmd,
     pub cmd: Cmd,
+    pub col_num: usize,
     pub row_num: usize,
     pub row_posi: usize,
     pub row_bottom_posi: usize,
-    pub col_num: usize,
     pub curt: Box<dyn PromTrait>,
 }
 

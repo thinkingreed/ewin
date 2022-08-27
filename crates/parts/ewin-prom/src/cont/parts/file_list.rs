@@ -3,9 +3,10 @@ use crate::{each::open_file::*, model::*, prom_trait::cont_trait::*};
 use crossterm::{cursor::MoveTo, terminal::ClearType::*, terminal::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::Lang, log::*};
 use ewin_const::def::*;
-use ewin_const::model::*;
+use ewin_const::models::model::*;
 use ewin_const::term::*;
-use ewin_key::{files::file::*, key::cmd::*, util::*};
+use ewin_key::key::cmd::*;
+use ewin_utils::{files::file::*, str_edit::*};
 use std::cmp::min;
 use std::fmt::Write as _;
 

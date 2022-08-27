@@ -4,9 +4,28 @@ use crate::{
     model::*,
     prom_trait::main_trait::*,
 };
-use ewin_cfg::{colors::*, lang::lang_cfg::*, model::default::*};
+use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*, model::default::*};
+use ewin_const::models::{evt::*, types::*};
+use ewin_job::job::*;
 
 impl PromSearch {
+    pub fn search(&mut self) -> ActType {
+        Log::debug_key("EvtAct.search");
+        let search_str = self.as_mut_base().get_curt_input_area_str();
+
+        match self.base.cmd.cmd_type {
+            CmdType::InsertStr(_) | CmdType::Cut | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo => {
+                Job::send_cmd(CmdType::Search(SearchType::Incremental, search_str));
+                return ActType::None;
+            }
+            CmdType::FindNext | CmdType::FindBack => {
+                Job::send_cmd(CmdType::Search(SearchType::Confirm, search_str));
+                return ActType::None;
+            }
+            _ => return ActType::Cancel,
+        }
+    }
+
     pub fn new() -> Self {
         let mut prom = PromSearch { ..PromSearch::default() };
 

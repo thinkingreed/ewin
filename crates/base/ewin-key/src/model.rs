@@ -1,12 +1,11 @@
-use crate::key::{
-    cmd::{Cmd, CmdType},
-    keys::*,
+use crate::{
+    cur::*,
+    key::{cmd::*, keys::*},
+    sel_range::*,
 };
 use chrono::NaiveDateTime;
-use crossterm::event::{Event, KeyCode::Null};
 use ewin_cfg::{lang::lang_cfg::Lang, log::Log};
-use ewin_const::def::*;
-use ewin_view::{cur::Cur, sel_range::SelRange};
+use ewin_const::{def::*, models::model::*};
 #[cfg(any(target_os = "linux", target_os = "macos"))]
 use std::usize;
 use std::{
@@ -95,11 +94,6 @@ pub struct Search {
 }
 
 impl Search {
-    pub fn set_info(&mut self, search_str: String, search_filenm: String, search_dir: String) {
-        self.str = search_str;
-        self.fullpath = search_filenm;
-        self.dir = search_dir;
-    }
     pub fn clear(&mut self) {
         Log::debug_key("Search.clear");
 
@@ -137,17 +131,9 @@ impl Default for KeyMacro {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub struct KeyMacroState {
     pub is_record: bool,
-    pub is_exec: bool,
-    pub is_exec_end: bool,
-}
-
-impl KeyMacroState {
-    pub fn is_running(&self) -> bool {
-        self.is_exec && !self.is_exec_end
-    }
 }
 
 #[derive(Debug, Default, Ord, PartialOrd, Clone, Copy, PartialEq, Eq)]
@@ -163,50 +149,6 @@ impl fmt::Display for SearchRange {
         write!(f, "SearchRange y:{}, sx:{}, ex:{},", self.y, self.sx, self.ex,)
     }
 }
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct Job {
-    pub job_type: JobType,
-    pub job_evt: Option<JobEvent>,
-    pub job_grep: Option<JobGrep>,
-    pub job_watch: Option<JobWatch>,
-}
-
-impl Default for Job {
-    fn default() -> Self {
-        Job { job_type: JobType::Event, job_evt: None, job_grep: None, job_watch: None }
-    }
-}
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct JobEvent {
-    pub evt: Event,
-}
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-pub struct JobWatch {
-    pub fullpath_str: String,
-    pub unixtime_str: String,
-}
-
-impl Default for JobEvent {
-    fn default() -> Self {
-        JobEvent { evt: Event::Key(Null.into()) }
-    }
-}
-
-#[derive(Debug, Hash, Default, Eq, PartialEq, Clone)]
-pub struct JobGrep {
-    pub grep_str: String,
-    pub is_end: bool,
-}
-
-#[derive(Debug, Clone, Hash, Copy, PartialEq, Eq)]
-pub enum JobType {
-    Event,
-    GrepResult,
-    Watch,
-}
-
 #[derive(Debug, Clone)]
 pub struct SyntaxState {
     pub highlight_state: HighlightState,
@@ -214,9 +156,11 @@ pub struct SyntaxState {
     pub parse_state: ParseState,
 }
 
-#[derive(Debug, Default, PartialEq, Eq, Clone)]
+#[derive(Debug, Default, PartialEq, Hash, Eq, Clone)]
 pub struct GrepInfo {
     pub search_str: String,
+    pub search_filenm: String,
+    pub search_dir: String,
     pub is_empty: bool,
     pub is_cancel: bool,
 }
@@ -226,87 +170,8 @@ impl GrepInfo {
         self.search_str = String::new();
     }
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Mouse {
-    Enable,
-    Disable,
-}
 
-impl fmt::Display for Mouse {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Mouse::Enable => write!(f, ""),
-            Mouse::Disable => write!(f, "{}", Lang::get().mouse_disable),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-
-pub enum InputCompleMode {
-    None,
-    WordComple,
-}
-
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum WindowSplitType {
-    #[default]
-    None,
-    Vertical,
-    Horizontal,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-// ConvertType
-pub enum ConvType {
-    Lowercase,
-    Uppercase,
-    HalfWidth,
-    FullWidth,
-    Space,
-    Tab,
-}
-impl ConvType {
-    pub fn from_str_conv_type(s: &str) -> ConvType {
-        return if s == Lang::get().to_lowercase {
-            ConvType::Lowercase
-        } else if s == Lang::get().to_uppercase {
-            ConvType::Uppercase
-        } else if s == Lang::get().to_half_width {
-            ConvType::HalfWidth
-        } else if s == Lang::get().to_full_width {
-            ConvType::FullWidth
-        } else if s == Lang::get().to_space {
-            ConvType::Space
-        } else {
-            ConvType::Tab
-        };
-    }
-}
-// Keys without modifiers
-#[derive(Debug, Copy, Default, Clone, Hash, Eq, PartialEq)]
-pub enum OpenFileType {
-    #[default]
-    Normal,
-    JsMacro,
-}
-
-#[derive(Debug, Clone, Default, Copy, PartialEq, Eq)]
-pub enum WatchMode {
-    // Warning every time it is changed by another app
-    #[default]
-    Normal,
-    NotMonitor,
-    NotEditedWillReloadedAuto,
-}
-
-#[derive(Debug, Default, PartialEq, Eq, Clone)]
-pub struct TabState {
-    pub prom: PromState,
-    pub grep: GrepInfo,
-}
-
-#[derive(Debug, Default, PartialEq, Eq, Clone)]
+#[derive(Debug, Default, Copy, PartialEq, Eq, Clone)]
 pub enum PromState {
     #[default]
     None,
@@ -324,7 +189,7 @@ pub enum PromState {
     WatchFile,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum DrawRangX {
     Range(usize, bool),
 }
@@ -365,12 +230,57 @@ pub struct WatchInfo {
     pub history_set: WatchHistory,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum GrepCancelType {
     None,
     Greping,
     Canceling,
     Canceled,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum Mouse {
+    #[default]
+    Enable,
+
+    Disable,
+}
+
+impl fmt::Display for Mouse {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Mouse::Enable => write!(f, ""),
+            Mouse::Disable => write!(f, "{}", Lang::get().mouse_disable),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+// ConvertType
+pub enum ConvType {
+    Lowercase,
+    Uppercase,
+    HalfWidth,
+    FullWidth,
+    Space,
+    Tab,
+}
+impl ConvType {
+    pub fn from_str_conv_type(s: &str) -> ConvType {
+        return if s == Lang::get().to_lowercase {
+            ConvType::Lowercase
+        } else if s == Lang::get().to_uppercase {
+            ConvType::Uppercase
+        } else if s == Lang::get().to_half_width {
+            ConvType::HalfWidth
+        } else if s == Lang::get().to_full_width {
+            ConvType::FullWidth
+        } else if s == Lang::get().to_space {
+            ConvType::Space
+        } else {
+            ConvType::Tab
+        };
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

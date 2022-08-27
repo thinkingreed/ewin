@@ -1,8 +1,7 @@
 use crate::{ewin_key::model::*, model::*};
 use ewin_cfg::{log::*, model::default::*};
 use ewin_const::def::*;
-use ewin_key::key::cmd::*;
-use ewin_view::sel_range::*;
+use ewin_key::{key::cmd::*, sel_range::*};
 use regex::RegexBuilder;
 use ropey::{
     iter::{Chars, Lines},

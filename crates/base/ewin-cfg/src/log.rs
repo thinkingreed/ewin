@@ -28,7 +28,7 @@ impl Log {
     }
     pub fn set_logger(cfg_log: &CfgLog) {
         let dt: DateTime<Local> = Local::now();
-        let mut tmp_path = CFgFilePath::get_app_tmp_path();
+        let mut tmp_path = CfgFilePath::get_app_tmp_path();
 
         // Ignore the error
         let _ = fs::create_dir(&tmp_path);

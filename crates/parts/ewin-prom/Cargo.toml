@@ -7,6 +7,7 @@ authors = ["thinkingreed"]
 edition = "2021"
 repository = "https://github.com/thinkingreed/ewin"
 license = "MIT"
+publish = false
 
 [lib]
 path = "src/lib.rs"
@@ -20,11 +21,21 @@ chrono= "0.4.19"
 dyn-clone = "1.0.5"
 downcast = "0.11.0"
 indexmap = "1.8.1"
+grep = "0.2.8"
+grep-matcher = "0.1.5"
+grep-regex = "0.1.9"
+grep-searcher = "0.1.8"
+ignore = "0.4.18"
+globset = "0.4.8"
+regex = "1.6.0"
+
 
 ewin-cfg = {version = "0.0.2", path = "../../base/ewin-cfg" }
 ewin-const = {version = "0.0.2", path = "../../base/ewin-const" }
 ewin-key = {version = "0.0.2", path = "../../base/ewin-key" }
+ewin-view = {version = "0.0.2", path = "../../base/ewin-view" }
+ewin-utils = {version = "0.0.2", path = "../../base/ewin-utils" }
+ewin-job = {version = "0.0.2", path = "../../base/ewin-job" }
 ewin-state = {version = "0.0.2", path = "../../ewin-state" }
-ewin-view = {version = "0.0.2", path = "../../ewin-view" }
 ewin-editor = {version = "0.0.2", path = "../ewin-editor" }
 ewin-menulist = {version = "0.0.2", path = "../ewin-menulist" }

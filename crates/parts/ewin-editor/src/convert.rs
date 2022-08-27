@@ -1,6 +1,9 @@
 use crate::model::*;
 use ewin_cfg::{lang::lang_cfg::Lang, log::*};
-use ewin_const::{def::*, model::*};
+use ewin_const::{
+    def::*,
+    models::{draw::*, evt::*},
+};
 use ewin_key::{key::cmd::*, model::*};
 use kana::*;
 
@@ -27,8 +30,6 @@ impl Editor {
             ConvType::Tab => tgt_str.replace(' ', &TAB_CHAR.to_string()),
         };
 
-        Log::debug("convert_str", &convert_str);
-
         self.edit_proc_cmd_type(CmdType::InsertStr(convert_str));
 
         return ActType::Draw(DParts::All);
@@ -40,6 +41,7 @@ fn to_half_width(str: &str) -> String {
     let str = nowidespace(&str);
     return nowideyen(&str);
 }
+
 fn to_full_width(str: &str) -> String {
     let str = ascii2wide(str);
     let str = space2wide(&str);

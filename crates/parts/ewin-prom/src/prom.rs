@@ -2,6 +2,7 @@ use super::{model::*, prom_trait::main_trait::*};
 use crossterm::{cursor::*, terminal::ClearType::*, terminal::*};
 use ewin_cfg::log::*;
 use ewin_key::{key::cmd::*, model::*};
+use ewin_state::term::*;
 use std::{io::Write, u16};
 
 impl Prom {
@@ -23,12 +24,11 @@ impl Prom {
         self.curt.as_mut_base().set_cont_item_disp_posi(self.row_posi);
     }
 
-    pub fn draw(&mut self, str_vec: &mut Vec<String>, tab_state: &TabState) {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         Log::info_key("Prompt.draw");
-        Log::debug("tab_state", &tab_state);
         Log::debug("self.curt.as_base().curt_cont_idx", &self.curt.as_base().curt_cont_idx);
 
-        if !tab_state.is_nomal_and_not_grep_result() {
+        if !State::get().curt_state().is_nomal_and_not_grep_result() {
             for (i, cont) in self.curt.as_base().cont_vec.iter().enumerate() {
                 Log::debug("iiiii", &i);
                 Log::debug("cont.as_base().row_posi_range", &cont.as_base().row_posi_range);
@@ -50,10 +50,10 @@ impl Prom {
         self.col_num = 0;
     }
 
-    pub fn draw_only<T: Write>(&mut self, out: &mut T, tab_state: &TabState) {
+    pub fn draw_only<T: Write>(&mut self, out: &mut T) {
         Log::debug_key("Prompt.draw_only");
         let mut v: Vec<String> = vec![];
-        self.draw(&mut v, tab_state);
+        self.draw(&mut v);
         self.draw_cur(&mut v);
         let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();

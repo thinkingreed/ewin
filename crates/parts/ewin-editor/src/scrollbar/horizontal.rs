@@ -1,7 +1,9 @@
 use crate::{model::*, window::*};
 use crossterm::cursor::MoveTo;
 use ewin_cfg::{colors::*, log::*};
-use ewin_key::{key::cmd::*, util::*};
+use ewin_key::key::cmd::*;
+
+use ewin_utils::char_edit::*;
 use std::{
     cmp::{max, min},
     collections::BTreeSet,

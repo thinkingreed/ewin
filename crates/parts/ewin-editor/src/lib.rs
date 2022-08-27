@@ -4,13 +4,21 @@ pub mod buf {
     pub mod edit;
     pub mod io;
 }
-pub mod view {
-    pub mod buf_cache;
+pub mod key_macro;
+pub mod state;
+pub mod draws {
+    pub mod cache;
     pub mod draw;
     pub mod draw_range;
     pub mod scale;
+}
+pub mod views {
+
+    pub mod ctx_menu;
     pub mod view;
 }
+pub mod evt_act;
+
 pub mod prom {
     pub mod grep_result;
 }
@@ -18,6 +26,7 @@ pub mod proc {
     pub mod proc_base;
     pub mod proc_edit;
 }
+pub mod size;
 pub mod scrollbar {
     pub mod horizontal;
     pub mod vertical;
@@ -35,6 +44,7 @@ pub mod scroll;
 pub mod search;
 pub mod window;
 pub mod window_mgr;
+
 pub mod key {
     pub mod cur;
     pub mod edit;

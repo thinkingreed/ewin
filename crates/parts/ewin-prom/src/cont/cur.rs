@@ -1,7 +1,7 @@
 use super::parts::input_area::*;
-use crate::ewin_key::util::*;
 use ewin_cfg::log::*;
-use ewin_key::key::cmd::CmdType;
+use ewin_key::key::cmd::*;
+use ewin_utils::char_edit::*;
 use std::cmp::{max, min};
 
 impl PromContInputArea {

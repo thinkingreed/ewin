@@ -1,10 +1,13 @@
 use ewin_cfg::log::*;
-use ewin_const::{def::*, model::*};
-use ewin_key::{key::cmd::*, model::*, util::*};
-use ewin_view::{
-    cur::Cur,
-    sel_range::{SelMode, SelRange},
-};
+use ewin_const::def::*;
+use ewin_const::models::draw::DParts;
+use ewin_const::models::evt::*;
+use ewin_const::models::file::*;
+use ewin_key::{cur::*, sel_range::*};
+use ewin_key::{key::cmd::*, model::*};
+use ewin_state::term::*;
+use ewin_utils::util::*;
+use ewin_utils::{char_edit::*, str_edit::*};
 use std::cmp::{max, min};
 
 use crate::model::*;
@@ -12,7 +15,6 @@ use crate::model::*;
 impl Editor {
     pub fn edit_proc_cmd_type(&mut self, cmd_type: CmdType) -> ActType {
         Log::debug_key("Editor.call_edit_proc");
-
         return self.edit_proc(Cmd::to_cmd(cmd_type));
     }
 
@@ -83,14 +85,12 @@ impl Editor {
                 }
                 if cmd.cmd_type != CmdType::Cut {
                     proc.cur_e = self.win_mgr.curt().cur;
-                    // ep.draw_type = self.draw_range;
                     evt_proc.proc = Some(proc.clone());
                 }
             }
         }
         self.research();
 
-        self.state.is_changed = true;
         self.set_change_info_edit(&evt_proc);
 
         // Register edit history
@@ -101,6 +101,12 @@ impl Editor {
 
         self.scroll();
         self.scroll_horizontal();
+
+        let is_changed_org = State::get().curt_state().editor.is_changed;
+        State::get().curt_mut_state().editor.is_changed = true;
+        if is_changed_org != State::get().curt_state().editor.is_changed {
+            return ActType::Draw(DParts::All);
+        }
 
         return ActType::Next;
     }
@@ -139,7 +145,7 @@ impl Editor {
             vec.push((row_sel, slice_str.clone()));
 
             string.push_str(&slice_str);
-            string.push_str(&NL::get_nl(&self.h_file.file.nl));
+            string.push_str(&NL::get_nl(&State::get().curt_state().file.nl));
         }
 
         Log::debug("string", &string);
@@ -180,7 +186,7 @@ impl Editor {
             if ep_del.box_sel_vec.is_empty() {
                 if self.box_insert.mode == BoxInsertMode::Insert && !self.box_insert.vec.is_empty() {
                     ep.box_sel_vec = self.box_insert.vec.clone();
-                    ep.str = self.box_insert.get_str(&NL::get_nl(&self.h_file.file.nl));
+                    ep.str = self.box_insert.get_str(&NL::get_nl(&State::get().curt_state().file.nl));
                 }
             } else {
                 ep.box_sel_vec = ep_del.box_sel_vec.clone();

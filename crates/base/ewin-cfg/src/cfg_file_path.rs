@@ -1,10 +1,10 @@
-use crate::{log::Log, model::modal::CFgFilePath};
+use crate::{log::Log, model::modal::CfgFilePath};
 use directories::BaseDirs;
 use ewin_const::def::*;
 use std::{env, fs, path::PathBuf};
 use whoami::username;
 
-impl CFgFilePath {
+impl CfgFilePath {
     pub fn get_app_tmp_path() -> PathBuf {
         let mut path = env::temp_dir();
         path.push(format!("{}_{}", &APP_NAME, &username()));
@@ -12,13 +12,13 @@ impl CFgFilePath {
         return path;
     }
     pub fn get_app_clipboard_file_path() -> PathBuf {
-        let tmp_path = CFgFilePath::get_app_tmp_path();
+        let tmp_path = CfgFilePath::get_app_tmp_path();
         let clipboard_file = &tmp_path.join(CLIPBOARD_FILE);
         return clipboard_file.clone();
     }
 
     pub fn get_app_config_file_path(filenm: &str) -> Option<PathBuf> {
-        if let Some(app_dir) = CFgFilePath::get_app_config_dir() {
+        if let Some(app_dir) = CfgFilePath::get_app_config_dir() {
             let config_file = &app_dir.join(filenm);
             return Some(config_file.clone());
         } else {

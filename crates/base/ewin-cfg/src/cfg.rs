@@ -13,7 +13,7 @@ impl Cfg {
     pub fn init(args: &AppArgs) -> String {
         let mut cfg: Cfg = toml::from_str(include_str!("../../../../setting/setting.toml")).unwrap();
 
-        let (cfg_user, err_str) = SettingFileLoader::new(FileType::TOML, args, CFgFilePath::get_app_config_dir(), SETTING_FILE).load::<CfgUser>();
+        let (cfg_user, err_str) = SettingFileLoader::new(FileType::TOML, args, CfgFilePath::get_app_config_dir(), SETTING_FILE).load::<CfgUser>();
         if !err_str.is_empty() {
             return err_str;
         }
@@ -53,7 +53,7 @@ impl Cfg {
         Log::debug("default_theme_str", &default_theme_str);
 
         let default_color_theme_file_path = &format!("theme/default_{}.toml", default_color_theme);
-        let (user_colors, err_str) = SettingFileLoader::new(FileType::TOML, args, CFgFilePath::get_app_config_dir(), default_color_theme_file_path).load::<CfgUserColors>();
+        let (user_colors, err_str) = SettingFileLoader::new(FileType::TOML, args, CfgFilePath::get_app_config_dir(), default_color_theme_file_path).load::<CfgUserColors>();
         if !err_str.is_empty() {
             Log::error("err_str", &err_str);
             return err_str;
@@ -81,8 +81,8 @@ impl Cfg {
     pub fn write_setting_file(args: &AppArgs, filenm: &str, write_str: &str) -> String {
         let mut err_str = String::new();
         if args.out_config_flg {
-            if CFgFilePath::get_app_config_dir().is_some() {
-                let setting_file_fullpath = &CFgFilePath::get_app_config_file_path(filenm).unwrap();
+            if CfgFilePath::get_app_config_dir().is_some() {
+                let setting_file_fullpath = &CfgFilePath::get_app_config_file_path(filenm).unwrap();
                 Log::debug("write_setting_file_path", &setting_file_fullpath);
                 if !Path::new(&setting_file_fullpath).exists() {
                     Cfg::create_write_file(setting_file_fullpath, write_str).unwrap_or_else(|why| {

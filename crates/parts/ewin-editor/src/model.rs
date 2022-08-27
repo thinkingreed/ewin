@@ -1,10 +1,13 @@
+use crate::window_mgr::*;
 use ewin_cfg::{lang::lang_cfg::Lang, model::default::*};
-use ewin_const::{def::*, model::*};
+use ewin_const::def::*;
+use ewin_const::models::draw::*;
 use ewin_key::key::cmd::*;
 use ewin_key::model::*;
+use ewin_key::sel_range::*;
 use ewin_menulist::parts::input_comple::*;
-use ewin_state::{header_file::*, tabs::*};
-use ewin_view::{model::Cell, sel_range::*};
+use ewin_state::term::*;
+use ewin_view::{model::Cell, view::*};
 use ropey::Rope;
 use std::{
     collections::{BTreeSet, HashMap},
@@ -12,21 +15,18 @@ use std::{
 };
 use syntect::highlighting::Style;
 
-use crate::window_mgr::*;
-
 #[derive(Debug, Clone)]
 pub struct Editor {
     pub buf: TextBuffer,
     pub win_mgr: WindowMgr,
-    pub state: EditorState,
     pub draw_range: E_DrawRange,
     // row_number_width
     pub rnw: usize,
     pub rnw_org: usize,
     pub cmd: Cmd,
-    /// number displayed on the terminal
-    pub row_posi: usize,
-    pub row_num: usize,
+    /// overall size
+    pub view: View,
+
     pub buf_len_rows_org: usize,
     pub search: Search,
     pub search_org: Search,
@@ -34,11 +34,12 @@ pub struct Editor {
     pub grep_result_vec: Vec<GrepResult>,
     pub key_vec: Vec<KeyMacro>,
     pub is_enable_syntax_highlight: bool,
-    pub h_file: HeaderFile,
+    // pub h_file: FilebarFile,
     // Have sy・ey, or Copy vec
     pub box_insert: BoxInsert,
     pub change_info: ChangeInfo,
     pub input_comple: InputComple,
+    pub draw_cache: Vec<Vec<EditorDraw>>,
 }
 
 impl Editor {
@@ -47,29 +48,27 @@ impl Editor {
         Editor {
             buf: TextBuffer::default(),
             win_mgr: WindowMgr::default(),
-            state: EditorState::default(),
             draw_range: E_DrawRange::default(),
-
+            view: View { y: MENUBAR_ROW_NUM + FILEBAR_ROW_NUM + if CfgEdit::get().general.editor.scale.is_enable { 1 } else { 0 }, height: TERM_MINIMUM_HEIGHT - FILEBAR_ROW_NUM - STATUSBAR_ROW_NUM, ..View::default() },
             rnw: 0,
             rnw_org: 0,
             cmd: Cmd::default(),
-            row_num: TERM_MINIMUM_HEIGHT - FILEBAR_ROW_NUM - STATUSBAR_ROW_NUM,
-            row_posi: MENUBAR_ROW_NUM + FILEBAR_ROW_NUM + if CfgEdit::get().general.editor.scale.is_enable { 1 } else { 0 },
             search: Search::default(),
             search_org: Search::default(),
             history: History::default(),
             grep_result_vec: vec![],
             key_vec: vec![],
             is_enable_syntax_highlight: false,
-            h_file: HeaderFile::default(),
+            //  h_file: FilebarFile::default(),
             box_insert: BoxInsert::default(),
             buf_len_rows_org: 0,
             change_info: ChangeInfo::default(),
             input_comple: InputComple::default(),
+            draw_cache: vec![],
         }
     }
     pub fn get_row_posi(&self) -> usize {
-        return MENUBAR_ROW_NUM + FILEBAR_ROW_NUM + if Tabs::get().curt_state().editor.scale.is_enable { 1 } else { 0 };
+        return MENUBAR_ROW_NUM + FILEBAR_ROW_NUM + if State::get().curt_state().editor.scale.is_enable { 1 } else { 0 };
     }
 }
 
@@ -81,29 +80,6 @@ pub struct Offset {
     pub x_org: usize,
     pub disp_x: usize,
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EditorState {
-    pub is_changed: bool,
-    pub is_changed_org: bool,
-    pub is_read_only: bool,
-    pub is_dragging: bool,
-    pub key_macro: KeyMacroState,
-    pub mouse: Mouse,
-    pub input_comple_mode: InputCompleMode,
-    pub input_comple_mode_org: InputCompleMode,
-}
-
-impl Default for EditorState {
-    fn default() -> Self {
-        EditorState { is_changed: false, is_changed_org: false, is_read_only: false, is_dragging: false, key_macro: KeyMacroState::default(), mouse: Mouse::Enable, input_comple_mode: InputCompleMode::None, input_comple_mode_org: InputCompleMode::None }
-    }
-}
-impl EditorState {
-    pub fn is_change_changed(&self) -> bool {
-        self.is_changed != self.is_changed_org
-    }
-}
-
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct TextBuffer {
     pub text: Rope,

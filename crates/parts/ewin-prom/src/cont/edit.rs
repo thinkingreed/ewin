@@ -1,7 +1,8 @@
 use super::parts::input_area::*;
 use ewin_cfg::log::*;
-use ewin_const::model::*;
-use ewin_key::{clipboard::*, model::*, util::*};
+use ewin_const::models::evt::*;
+use ewin_key::{clipboard::*, model::*};
+use ewin_utils::char_edit::*;
 
 impl PromContInputArea {
     pub fn insert_str(&mut self, ep: &mut Proc) {

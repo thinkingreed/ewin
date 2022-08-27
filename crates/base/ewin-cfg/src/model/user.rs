@@ -147,23 +147,23 @@ pub struct CfgUserEditorWord {
     pub word_delimiter: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Default, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Default, Deserialize)]
 pub struct CfgUserEditorInputComple {
     pub word_delimiter: Option<String>,
     pub case_sensitive: Option<bool>,
 }
 
-#[derive(Debug, Clone, Serialize, Default, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Default, Deserialize)]
 pub struct CfgUserEditorRowNo {
     pub is_enable: Option<bool>,
 }
 
-#[derive(Debug, Clone, Serialize, Default, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Default, Deserialize)]
 pub struct CfgUserEditorScale {
     pub is_enable: Option<bool>,
 }
 
-#[derive(Debug, Clone, Serialize, Default, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Default, Deserialize)]
 pub struct CfgUserPromptOpenFile {
     pub directory_init_value: Option<String>,
 }

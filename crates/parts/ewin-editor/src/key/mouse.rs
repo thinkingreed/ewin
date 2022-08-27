@@ -1,13 +1,12 @@
 use crate::{
-    ewin_key::{
-        key::{cmd::*, keys::*},
-        util::*,
-    },
+    ewin_key::key::{cmd::*, keys::*},
     model::*,
 };
 use ewin_cfg::{log::*, model::default::*};
 use ewin_const::term::*;
-use ewin_view::sel_range::*;
+use ewin_key::sel_range::*;
+use ewin_state::term::*;
+use ewin_utils::char_edit::*;
 use std::cmp::min;
 
 impl Editor {
@@ -17,11 +16,11 @@ impl Editor {
         let (mut y, mut x, keys) = match self.cmd.cmd_type {
             CmdType::MouseDownLeft(y, x) => (y, x, Keys::MouseDownLeft(y as u16, x as u16)),
             CmdType::MouseUpLeft(_, _) => {
-                self.state.is_dragging = false;
+                State::get().curt_mut_state().editor.is_dragging = false;
                 return;
             }
             CmdType::MouseDragLeftUp(y, x) | CmdType::MouseDragLeftDown(y, x) | CmdType::MouseDragLeftLeft(y, x) | CmdType::MouseDragLeftRight(y, x) => {
-                self.state.is_dragging = true;
+                State::get().curt_mut_state().editor.is_dragging = true;
                 (y, x, Keys::MouseDragLeft(y as u16, x as u16))
             }
             CmdType::MouseDownLeftBox(y, x) => (y, x, Keys::MouseDownLeft(y as u16, x as u16)),

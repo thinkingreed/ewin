@@ -8,6 +8,7 @@ authors = ["thinkingreed"]
 edition = "2021"
 repository = "https://github.com/thinkingreed/ewin"
 license = "MIT"
+publish = false
 
 [lib]
 path = "src/lib.rs"

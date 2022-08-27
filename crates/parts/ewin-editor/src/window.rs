@@ -1,7 +1,8 @@
 use crate::model::*;
 use crossterm::cursor::MoveTo;
 use ewin_cfg::log::*;
-use ewin_view::{cur::*, scrollbar_v::*, sel_range::*};
+use ewin_key::{cur::*, sel_range::*};
+use ewin_view::scrollbar_v::*;
 
 impl Window {
     pub fn clear_draw(&self, str_vec: &mut Vec<String>) {

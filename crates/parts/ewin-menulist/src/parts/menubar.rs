@@ -1,15 +1,15 @@
-use crate::{core::*, menulist::*};
-use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*, model::default::*};
-use ewin_key::{key::cmd::*, model::WindowSplitType, util::*};
-use ewin_state::tabs::Tabs;
+use ewin_cfg::{colors::*, log::*, model::default::*};
+use ewin_job::job::*;
+use ewin_utils::str_edit::*;
+use ewin_view::menulists::{core::*, menulist::*};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 
 impl MenubarMenuList {
     pub fn init(&mut self) {
-        Log::debug_key("MenuWidget.init");
+        Log::debug_key("MenubarMenuList.init");
         let mut map: Vec<HashMap<String, Vec<HashMap<String, Vec<String>>>>> = serde_json::from_str(&Cfg::get().general.menubar.content.to_string()).unwrap();
-        Log::debug("self.menu_map", &self.menu_map.clone());
+        Log::debug("map", &map);
         self.set_internal_struct(&mut map);
         self.set_all_disp_name();
     }
@@ -122,7 +122,6 @@ impl MenubarMenuList {
                             grandchild_menu.disp_name = format!(" {}{}", grandchild_str, " ".repeat(diff));
                         }
                     }
-                    // child_cont.height = child_cont.menu_vec.len();
                     // +4 is extra
                     grandchild_cont.width = grandchild_max_len + 4;
                     child_menu.disp_name = format!("{}{}{}", child_str_edit, " ".repeat(space - exist_child_mark.len()), exist_child_mark);
@@ -131,48 +130,16 @@ impl MenubarMenuList {
                 }
             }
         }
-        // +1 is Extra
-        child_cont.width = child_max_len_map[parent_menu_str];
+        // +4 is Extra
+        child_cont.width = child_max_len_map[parent_menu_str] + 3;
 
         Log::debug("child_cont", &child_cont);
-    }
-
-    pub fn set_menubar_cmd(&mut self, cmd: Cmd) {
-        self.cmd = cmd;
-    }
-}
-
-impl MenuListMenu {
-    pub fn new(menu_str: &str, menunm_max_len: usize) -> Self {
-        Self { name: cut_str(menu_str, menunm_max_len, false, true), ..MenuListMenu::default() }
-    }
-
-    pub fn get_add_setting_str(menu_str: &str) -> String {
-        Log::debug_key("get_add_setting_str");
-
-        let mut add_str = String::new();
-
-        let state = Tabs::get().curt_state().editor;
-        if Lang::get().scale == menu_str {
-            add_str.push_str(if state.scale.is_enable { "*" } else { " " });
-        } else if Lang::get().row_no == menu_str {
-            add_str.push_str(if state.row_no.is_enable { "*" } else { " " });
-        } else if Lang::get().left_and_right_split == menu_str {
-            add_str.push_str(if state.window_split_type == WindowSplitType::Vertical { "*" } else { " " });
-        } else if Lang::get().top_and_bottom_split == menu_str {
-            add_str.push_str(if state.window_split_type == WindowSplitType::Horizontal { "*" } else { " " });
-        } else {
-            add_str.push(' ');
-        }
-        add_str.push(' ');
-
-        Log::debug("add_str", &add_str);
-        return add_str;
     }
 }
 
 impl MenuListTrait for MenubarMenuList {
     fn clear(&mut self) {
+        self.is_show = false;
         self.curt.clear();
         for (_, parent_cont) in self.menu_map.iter_mut() {
             parent_cont.clear();
@@ -192,13 +159,13 @@ impl MenuListTrait for MenubarMenuList {
 
 #[derive(Debug, Clone)]
 pub struct MenubarMenuList {
-    pub cmd: Cmd,
+    pub is_show: bool,
     pub menu_map: IndexMap<String, MenuListCont>,
     pub curt: MenuList,
 }
 
 impl Default for MenubarMenuList {
     fn default() -> Self {
-        MenubarMenuList { cmd: Cmd::to_cmd(CmdType::Null), menu_map: IndexMap::new(), curt: MenuList::new(MenuListConfig { menulist_type: MenuListType::MenuList, disp_type: MenuListDispType::Fixed }) }
+        MenubarMenuList { is_show: false, menu_map: IndexMap::new(), curt: MenuList::new(MenuListConfig { menulist_type: MenuListType::MenuList, disp_type: MenuListDispType::Fixed }) }
     }
 }

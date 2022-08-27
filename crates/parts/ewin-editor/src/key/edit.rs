@@ -1,13 +1,17 @@
-use std::cmp::min;
-
 use crate::{
-    ewin_key::{clipboard::*, model::*, util::*},
+    ewin_key::{clipboard::*, model::*},
     model::*,
 };
 use ewin_cfg::log::*;
-use ewin_const::{def::*, model::*};
+use ewin_const::{
+    def::*,
+    models::{draw::*, evt::*, file::*, model::*},
+};
 use ewin_key::key::cmd::*;
-use ewin_view::sel_range::*;
+use ewin_key::sel_range::*;
+use ewin_state::term::*;
+use ewin_utils::{char_edit::*, files::file::*, str_edit::*};
+use std::cmp::min;
 
 impl Editor {
     pub fn insert_str(&mut self, proc: &mut Proc) {
@@ -40,18 +44,18 @@ impl Editor {
         // for Paste
         let mut clipboard = get_clipboard().unwrap_or_else(|_| "".to_string());
 
-        change_nl(&mut clipboard, &self.h_file.file.nl);
+        change_nl(&mut clipboard, &State::get().curt_state().file.nl);
 
         if self.box_insert.mode == BoxInsertMode::Normal {
             Log::debug_key("11111111111111111111111111111");
             // Paste of the string copied in box insert mode
-            if self.box_insert.get_str(&NL::get_nl(&self.h_file.file.nl)) == clipboard {
+            if self.box_insert.get_str(&NL::get_nl(&State::get().curt_state().file.nl)) == clipboard {
                 ep.box_sel_vec = self.box_insert.vec.clone();
-                ep.str = self.box_insert.get_str(&NL::get_nl(&self.h_file.file.nl));
+                ep.str = self.box_insert.get_str(&NL::get_nl(&State::get().curt_state().file.nl));
             } else {
                 self.set_clipboard_and_clear_box_sel(ep, clipboard);
             }
-        } else if clipboard.split(&NL::get_nl(&self.h_file.file.nl)).count() == 1 {
+        } else if clipboard.split(&NL::get_nl(&State::get().curt_state().file.nl)).count() == 1 {
             for i in 0..ep.box_sel_vec.len() {
                 ep.box_sel_vec[i].1 = clipboard.clone();
             }
@@ -99,7 +103,7 @@ impl Editor {
                 self.buf.remove(len_chars - 1, len_chars);
 
                 // Insert a new line at the end of the current last line
-                let nl_code = &NL::get_nl(&self.h_file.file.nl);
+                let nl_code = &NL::get_nl(&State::get().curt_state().file.nl);
                 let end_idx = self.buf.len_row_chars(self.buf.len_rows() - 1);
                 let (_, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(self.buf.len_rows() - 1)[..], 0, false);
 
@@ -144,7 +148,7 @@ impl Editor {
         Log::debug_key("ins_str");
 
         self.buf.insert(self.win_mgr.curt().cur.y, self.win_mgr.curt().cur.x, str);
-        let insert_strs: Vec<&str> = str.split(&NL::get_nl(&self.h_file.file.nl)).collect();
+        let insert_strs: Vec<&str> = str.split(&NL::get_nl(&State::get().curt_state().file.nl)).collect();
 
         self.win_mgr.curt().cur.y += insert_strs.len() - 1;
 
@@ -154,7 +158,7 @@ impl Editor {
     }
 
     pub fn insert_row(&mut self) -> ActType {
-        self.buf.insert(self.win_mgr.curt().cur.y, self.win_mgr.curt().cur.x, &NL::get_nl(&self.h_file.file.nl));
+        self.buf.insert(self.win_mgr.curt().cur.y, self.win_mgr.curt().cur.x, &NL::get_nl(&State::get().curt_state().file.nl));
         self.set_cur_target_by_x(self.win_mgr.curt_ref().cur.y + 1, 0, false);
 
         self.scroll();
@@ -232,15 +236,16 @@ impl Editor {
         return ActType::Next;
     }
 
-    pub fn cancel_state(&mut self) {
+    pub fn cancel_state(&mut self) -> ActType {
         Log::debug_key("cancel_state");
         self.win_mgr.curt().sel.clear();
         self.win_mgr.curt().sel.mode = SelMode::Normal;
         self.box_insert.mode = BoxInsertMode::Normal;
         // self.search_org = self.search.clone();
         self.search.clear();
-        self.state.input_comple_mode = InputCompleMode::None;
+        self.input_comple.mode = InputCompleMode::None;
         self.input_comple.clear();
+        return ActType::Draw(DParts::All);
     }
 }
 

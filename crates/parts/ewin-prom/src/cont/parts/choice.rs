@@ -1,9 +1,9 @@
-use crate::ewin_key::util::*;
 use crate::{model::*, prom_trait::cont_trait::*};
 use crossterm::cursor::*;
 use ewin_cfg::{colors::*, lang::lang_cfg::Lang, log::*};
 use ewin_const::def::*;
 use ewin_key::key::cmd::CmdType;
+use ewin_utils::str_edit::*;
 use std::{
     cmp::max,
     collections::{hash_map::Entry::*, *},
@@ -47,7 +47,7 @@ impl PromContChoice {
             if matches!(cmd_type, CmdType::CursorRight) {
                 self.vec_x = if vec.get(self.vec_x + 1).is_some() { self.vec_x + 1 } else { 0 };
             } else if self.vec_x == 0 {
-                if vec.get(vec.len() - 1).is_some() {
+                if vec.last().is_some() {
                     self.vec_x = vec.len() - 1;
                 }
             } else if matches!(cmd_type, CmdType::CursorLeft) {

@@ -1,10 +1,9 @@
 use crate::{model::*, prom_trait::cont_trait::*};
 use ewin_cfg::{colors::*, global::*, lang::lang_cfg::*, log::*, model::default::*};
-use ewin_const::model::*;
-use ewin_key::{
-    key::{cmd::*, keys::*},
-    util::*,
-};
+use ewin_const::models::{draw::*, evt::*};
+use ewin_key::key::{cmd::*, keys::*};
+use ewin_utils::str_edit::*;
+
 use std::fmt::Write as _;
 
 impl PromContSearchOpt {

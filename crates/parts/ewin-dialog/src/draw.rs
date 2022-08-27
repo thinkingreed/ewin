@@ -1,7 +1,7 @@
 use crate::{btn_grourp::*, dialog::*};
 use crossterm::cursor::MoveTo;
 use ewin_cfg::{colors::*, log::*};
-use ewin_key::util::*;
+use ewin_utils::str_edit::*;
 use std::{
     cmp::{max, min},
     io::Write,
@@ -29,7 +29,7 @@ impl Dialog {
                     // dividing line
                 } else if i == ey - 2 {
                     let margin = " ";
-                    str_vec.push(format!("{}{}{}", margin.to_string(), "─".repeat(self.view.width - margin.len() * 2), margin.to_string()));
+                    str_vec.push(format!("{}{}{}", margin, "─".repeat(self.view.width - margin.len() * 2), margin));
                     // btn area
                 } else if i == ey - 1 {
                     match self.btn_group.btn_type {
@@ -39,10 +39,8 @@ impl Dialog {
                         }
                         DialogBtnGrourpType::OkCancel => {}
                     };
-                } else {
-                    if self.cont.as_base().cont_vec.len() > i - self.view.y - Dialog::HEADER_HEIGHT {
-                        str_vec.push(self.cont.as_base().cont_vec[i - self.view.y - Dialog::HEADER_HEIGHT].clone());
-                    }
+                } else if self.cont.as_base().cont_vec.len() > i - self.view.y - Dialog::HEADER_HEIGHT {
+                    str_vec.push(self.cont.as_base().cont_vec[i - self.view.y - Dialog::HEADER_HEIGHT].clone());
                 }
             }
             str_vec.push(Colors::get_default_fg_bg());

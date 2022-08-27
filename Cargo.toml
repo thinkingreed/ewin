@@ -2,14 +2,21 @@
 members = [
   "crates/base/ewin-cfg",
   "crates/base/ewin-const",
+  "crates/base/ewin-utils",
   "crates/base/ewin-key",
+  "crates/base/ewin-view",
+  "crates/base/ewin-job",
   "crates/ewin-term",
+  "crates/ewin-tabs",
   "crates/ewin-state",
-  "crates/ewin-view",
+  "crates/ewin-plugin",
   "crates/parts/ewin-editor",
   "crates/parts/ewin-prom",
   "crates/parts/ewin-menulist",
   "crates/parts/ewin-dialog",
+  "crates/parts/ewin-ctx_menu",
+  "crates/parts/ewin-file_bar",
+  "crates/parts/ewin-help"
 ]
 
 [package]
@@ -29,7 +36,7 @@ build = "build.rs"
 
 [[bin]]
 name = "ew"
-path = "crates/ewin-core/main.rs"
+path = "crates/ewin-main/main.rs"
 
 [package.metadata.deb]
 extended-description = """\
@@ -65,7 +72,12 @@ crossbeam= "0.8.1"
 ewin-key = {version = "0.0.2", path = "crates/base/ewin-key" }
 ewin-cfg = {version = "0.0.2", path = "crates/base/ewin-cfg" }
 ewin-const = {version = "0.0.2", path = "crates/base/ewin-const" }
+ewin-job = {version = "0.0.2", path = "crates/base/ewin-job" }
+ewin-utils = {version = "0.0.2", path = "crates/base/ewin-utils" }
+ewin-view = {version = "0.0.2", path = "crates/base/ewin-view" }
 ewin-term = {version = "0.0.2", path = "crates/ewin-term" }
+ewin-tabs = {version = "0.0.2", path = "crates/ewin-tabs" }
+ewin-prom = {version = "0.0.2", path = "crates/parts/ewin-prom" }
 
 [dev-dependencies]
 cargo-husky = "1.5.0"

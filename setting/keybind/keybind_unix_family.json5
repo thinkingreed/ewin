@@ -1,38 +1,38 @@
 [
   /* key
-     // Raw
+     // raw
          left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, esc, F1～F12
-     // Ctrl
+     // ctrl
          ctrl+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12, space)
-     // Shit
+     // shit
          shit+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12)
-         ※Shift + F3 cannot be read at Crossterm on Unix family
-     // Alt
+         ※_shift + F3 cannot be read at crossterm on unix family
+     // alt
          alt+(left, right, up, down, home, end, enter, backspace, delete, pageup, pagedown, tab, esc, a～z, F1～F12)
   */
   /* cmd
      // cursor move
-         cursorLeft, cursorRight, cursorUp, cursorDown, cursorRowHome, cursorRowEnd, cursorFileHome, cursorFileEnd, cursorPageUp, cursorPageDown
+         cursor_left, cursor_right, cursor_up, cursor_down, cursor_row_home, cursor_row_end, cursor_file_home, cursor_file_end, cursor_page_up, cursor_page_down
      // select
-         cursorLeftSelect, cursorRightSelect, cursorUpSelect, cursorDownSelect, cursorRowHomeSelect, cursorRowEndSelect, allSelect
+         cursor_left_select, cursor_right_select, cursor_up_select, cursor_down_select, cursor_row_home_select, cursor_row_end_select, all_select
      // edit
-         insertLine, deletePrevChar, deleteNextChar, cutSelect, copySelect, paste, undo, redo
+         insert_line, delete_prev_char, delete_next_char, cut_select, copy_select, paste, undo, redo
      // find
-         find, findNext, findBack, replace, moveLine, grep
+         find, find_next, find_back, replace, move_line, grep
      // file
-         createNewFile, switchTabRight, switchTabLight, openFile, encoding, closeFile, closeAllFile, saveFile
+         open_new_file, switch_file_right, switch_file_light, open_file, encoding, close_file, close_all_file, save_file
      // key record・mouse
-         startEndRecordKey, execRecordKey, mouseOpeSwitch
+         start_end_record_key, exec_record_key, mouse_ope_switch
      // menu
-         help, openMenu, openMenuFile, openMenuConvert, openMenuEdit, openMenuSelect
+         help, open_menu, open_menu_file, open_menu_convert, open_menu_edit, open_menu_select
      // prompt
-         escPrompt, confirmPrompt, findCaseSensitive, findRegex                             
-     // ContextMenu
-         contextMenu
+         esc_prompt, confirm_prompt, find_case_sensitive, find_regex                             
+     // context_menu
+         context_menu
      // format
-         formatJSON, formatHTML, formatXML
-     // Window
-         windowSplitHorizontal, windowSplitVertical, 
+         format_json, format_html, format_xml
+     // window
+         window_split_horizontal, window_split_vertical, 
 
   */
 
@@ -41,100 +41,100 @@
    */
   {
     key: 'left',
-    cmd: 'cursorLeft'
+    cmd: 'cursor_left'
   },
   {
     key: 'right',
-    cmd: 'cursorRight'
+    cmd: 'cursor_right'
   },
   {
     key: 'down',
-    cmd: 'cursorDown'
+    cmd: 'cursor_down'
   },
   {
     key: 'up',
-    cmd: 'cursorUp'
+    cmd: 'cursor_up'
   },
   {
     key: 'home',
-    cmd: 'cursorRowHome'
+    cmd: 'cursor_row_home'
   },
   {
     key: 'end',
-    cmd: 'cursorRowEnd'
+    cmd: 'cursor_row_end'
   },
   {
     key: 'ctrl+home',
-    cmd: 'cursorFileHome'
+    cmd: 'cursor_file_home'
   },
   {
     key: 'ctrl+end',
-    cmd: 'cursorFileEnd'
+    cmd: 'cursor_file_end'
   },
   {
     key: 'pagedown',
-    cmd: 'cursorPageDown'
+    cmd: 'cursor_page_down'
   },
   {
     key: 'pageup',
-    cmd: 'cursorPageUp'
+    cmd: 'cursor_page_up'
   },
   /*
    * select
    */
   {
     key: 'shift+left',
-    cmd: 'cursorLeftSelect'
+    cmd: 'cursor_left_select'
   },
   {
     key: 'shift+right',
-    cmd: 'cursorRightSelect'
+    cmd: 'cursor_right_select'
   },
   {
     key: 'shift+down',
-    cmd: 'cursorDownSelect'
+    cmd: 'cursor_down_select'
   },
   {
     key: 'shift+up',
-    cmd: 'cursorUpSelect'
+    cmd: 'cursor_up_select'
   },
   {
     key: 'shift+home',
-    cmd: 'cursorRowHomeSelect'
+    cmd: 'cursor_row_home_select'
   },
   {
     key: 'shift+end',
-    cmd: 'cursorRowEndSelect'
+    cmd: 'cursor_row_end_select'
   },
   {
     key: 'ctrl+a',
-    cmd: 'allSelect'
+    cmd: 'all_select'
   },
   {
     key: 'shift+F6',
-    cmd: 'boxSelectModeStart'
+    cmd: 'box_select_mode_start'
   },
   /*
    * mode
    */
   {
     key: 'esc',
-    cmd: 'cancelEditorState'
+    cmd: 'cancel_editor_state'
   },
   /*
    * edit
    */
   {
     key: 'enter',
-    cmd: 'insertLine'
+    cmd: 'insert_line'
   },
   {
     key: 'backspace',
-    cmd: 'deletePrevChar'
+    cmd: 'delete_prev_char'
   },
   {
     key: 'delete',
-    cmd: 'deleteNextChar'
+    cmd: 'delete_next_char'
   },
   {
     key: 'ctrl+x',
@@ -161,84 +161,84 @@
    */
   {
     key: 'ctrl+f',
-    cmd: 'findPrompt'
+    cmd: 'find_prompt'
   },
   {
     key: 'F3',
-    cmd: 'findNext'
+    cmd: 'find_next'
   },
   {
     key: 'shift+F4',
-    cmd: 'findBack'
+    cmd: 'find_back'
   },
   {
     key: 'ctrl+r',
-    cmd: 'replacePrompt'
+    cmd: 'replace_prompt'
   },
   {
     key: 'ctrl+l',
-    cmd: 'moveLinePrompt'
+    cmd: 'move_line_prompt'
   },
   {
     key: 'ctrl+g',
-    cmd: 'grepPrompt'
+    cmd: 'grep_prompt'
   },
   /*
-   * filSe
+   * file
    */
   {
     key: 'ctrl+w',
-    cmd: 'closeFile'
+    cmd: 'close_file'
   },
   {
     key: 'ctrl+n',
-    cmd: 'createNewFile'
+    cmd: 'open_new_file'
   },
   {
     key: 'ctrl+o',
-    cmd: 'openFilePrompt'
+    cmd: 'open_file_prompt'
   },
   {
     key: 'alt+right',
-    cmd: 'switchTabRight'
+    cmd: 'switch_file_right'
   },
   {
     key: 'alt+left',
-    cmd: 'switchTabLeft'
+    cmd: 'switch_file_left'
   },
   {
     key: 'ctrl+e',
-    cmd: 'encodingPrompt'
+    cmd: 'encoding_prompt'
   },
   {
     key: 'alt+w',
-    cmd: 'closeAllFile'
+    cmd: 'close_all_file'
   },
   {
     key: 'ctrl+s',
-    cmd: 'saveFile'
+    cmd: 'save_file'
   },
   {
     key: 'ctrl+space',
-    cmd: 'inputComplement'
+    cmd: 'input_complement'
   },
   /*
    * key record
    */
   {
     key: 'shift+F1',
-    cmd: 'startEndRecordKey'
+    cmd: 'start_end_record_key'
   },
   {
     key: 'shift+F2',
-    cmd: 'execRecordKey'
+    cmd: 'exec_record_key'
   },
   /*
    * mouse
    */
   {
     key: 'F12',
-    cmd: 'mouseModeSwitch'
+    cmd: 'mouse_mode_switch'
   },
   /*
    * menu
@@ -249,27 +249,27 @@
   },
   {
     key: 'alt+F1',
-    cmd: 'helpInitDisplaySwitch'
+    cmd: 'help_init_display_switch'
   },
   {
     key: 'alt+m',
-    cmd: 'openMenu'
+    cmd: 'open_menu'
   },
   {
     key: 'alt+f',
-    cmd: 'openMenuFile'
+    cmd: 'open_menu_file'
   },
   {
     key: 'alt+c',
-    cmd: 'openMenuConvert'
+    cmd: 'open_menu_convert'
   },
   {
     key: 'alt+e',
-    cmd: 'openMenuEdit'
+    cmd: 'open_menu_edit'
   },
   {
     key: 'alt+s',
-    cmd: 'openMenuSearch'
+    cmd: 'open_menu_search'
   },
 
   /*
@@ -277,31 +277,31 @@
    */
   {
     key: 'esc',
-    cmd: 'cancelPrompt'
+    cmd: 'cancel_prompt'
   },
   {
     key: 'enter',
-    cmd: 'confirmPrompt'
+    cmd: 'confirm_prompt'
   },
   {
     key: 'tab',
-    cmd: 'nextContent'
+    cmd: 'next_content'
   },
   {
     key: 'shift+tab',
-    cmd: 'backContent'
+    cmd: 'back_content'
   },
   {
     key: 'alt+c',
-    cmd: 'findCaseSensitive'
+    cmd: 'find_case_sensitive'
   },
   {
     key: 'alt+r',
-    cmd: 'findRegex'
+    cmd: 'find_regex'
   },
   {
     key: 'F10',
-    cmd: 'contextMenu'
+    cmd: 'context_menu'
   },
  
   {

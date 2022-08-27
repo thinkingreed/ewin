@@ -269,9 +269,9 @@ impl Cfg {
         self.colors.ctx_menu.bg_sel = Colors::hex2rgb(&self.colors.ctx_menu.select_background);
         self.colors.ctx_menu.bg_non_sel = Colors::hex2rgb(&self.colors.ctx_menu.non_select_background);
         // dialog
-        self.colors.dialog.fg_default = Colors::hex2rgb(&&self.colors.dialog.default_foreground);
+        self.colors.dialog.fg_default = Colors::hex2rgb(&self.colors.dialog.default_foreground);
         self.colors.dialog.bg_default = Colors::hex2rgb(&self.colors.dialog.default_background);
-        self.colors.dialog.fg_header = Colors::hex2rgb(&&self.colors.dialog.header_foreground);
+        self.colors.dialog.fg_header = Colors::hex2rgb(&self.colors.dialog.header_foreground);
         self.colors.dialog.bg_header = Colors::hex2rgb(&self.colors.dialog.header_background);
         self.colors.dialog.bg_sel = Colors::hex2rgb(&self.colors.dialog.select_background);
 

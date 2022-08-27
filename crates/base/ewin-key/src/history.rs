@@ -1,8 +1,8 @@
-use crate::{key::keys::*, model::*, util::*};
+use crate::{cur::*, key::keys::*, model::*, sel_range::*};
 use chrono::prelude::Local;
-use ewin_cfg::log::Log;
-use ewin_const::def::MULTI_CLICK_MILLISECONDS;
-use ewin_view::{cur::Cur, sel_range::SelRange};
+use ewin_cfg::log::*;
+use ewin_const::def::*;
+use ewin_utils::char_edit::*;
 
 impl History {
     pub fn pop_redo(&mut self) -> Option<EvtProc> {
@@ -59,7 +59,7 @@ impl History {
         let now = Local::now().naive_local();
 
         if !self.mouse_click_vec.is_empty() {
-            if let Some((one_before, one_before_keys)) = self.mouse_click_vec.get(self.mouse_click_vec.len() - 1) {
+            if let Some((one_before, one_before_keys)) = self.mouse_click_vec.iter().last() {
                 if keys != one_before_keys || (now - *one_before).num_milliseconds() > MULTI_CLICK_MILLISECONDS {
                     self.mouse_click_vec.clear();
                 }
@@ -67,7 +67,7 @@ impl History {
         }
 
         if self.mouse_click_vec.len() == 1 {
-            if let Some((one_before, _)) = self.mouse_click_vec.get(self.mouse_click_vec.len() - 1) {
+            if let Some((one_before, _)) = self.mouse_click_vec.iter().last() {
                 if (now - *one_before).num_milliseconds() <= MULTI_CLICK_MILLISECONDS {
                     Log::debug_s("double_click");
                     click_count = 2;
