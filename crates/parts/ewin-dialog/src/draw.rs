@@ -1,6 +1,7 @@
 use crate::{btn_grourp::*, dialog::*};
 use crossterm::cursor::MoveTo;
 use ewin_cfg::{colors::*, log::*};
+use ewin_const::models::view::*;
 use ewin_utils::str_edit::*;
 use std::{
     cmp::{max, min},
@@ -23,7 +24,7 @@ impl Dialog {
                     let rest = self.view.width - get_str_width(&self.cont.as_base().title) - 1;
                     let (pre_color, post_color) = if self.close_btn.is_on_mouse { (Colors::get_dialog_bg_sel(), Colors::get_dialog_bg_default()) } else { ("".to_string(), "".to_string()) };
 
-                    str_vec.push(format!(" {}{}{}{}{}", self.cont.as_base().title, " ".repeat(rest - Dialog::CLOSE_BTN_WIDTH), pre_color, " x ", post_color));
+                    str_vec.push(format!(" {}{}{}{}{}", self.cont.as_base().title, get_space(rest - Dialog::CLOSE_BTN_WIDTH), pre_color, " x ", post_color));
                     str_vec.push(Colors::get_dialog_fg_bg_default());
 
                     // dividing line
@@ -35,7 +36,7 @@ impl Dialog {
                     match self.btn_group.btn_type {
                         DialogBtnGrourpType::Ok => {
                             let (pre_color, post_color) = if self.btn_group.vec[0].view.is_on_mouse { (Colors::get_dialog_bg_sel(), Colors::get_dialog_bg_default()) } else { ("".to_string(), "".to_string()) };
-                            str_vec.push(format!("{}[{}{}{}]{}", " ".repeat(self.btn_group.vec[0].view.x - 1 - self.view.x), pre_color, self.btn_group.vec[0].name, post_color, " ".repeat(self.view.x + self.view.width - (self.btn_group.vec[0].view.x + self.btn_group.vec[0].view.width + 1))));
+                            str_vec.push(format!("{}[{}{}{}]{}", get_space(self.btn_group.vec[0].view.x - 1 - self.view.x), pre_color, self.btn_group.vec[0].name, post_color, get_space(self.view.x + self.view.width - (self.btn_group.vec[0].view.x + self.btn_group.vec[0].view.width + 1))));
                         }
                         DialogBtnGrourpType::OkCancel => {}
                     };

@@ -1,7 +1,7 @@
 use crate::{model::*, prom_trait::cont_trait::*};
 use crossterm::cursor::*;
 use ewin_cfg::{colors::*, lang::lang_cfg::Lang, log::*};
-use ewin_const::def::*;
+use ewin_const::{def::*, models::view::*};
 use ewin_key::key::cmd::CmdType;
 use ewin_utils::str_edit::*;
 use std::{
@@ -90,7 +90,7 @@ impl PromContChoice {
             for vecs in self.vec.iter_mut() {
                 if let Some(choice) = vecs.get_mut(*column) {
                     let rest = max_width - get_str_width(&choice.name);
-                    choice.disp_name = format!("{}{}", choice.name, " ".repeat(rest))
+                    choice.disp_name = format!("{}{}", choice.name, get_space(rest))
                 }
             }
         }

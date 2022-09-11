@@ -2,42 +2,62 @@ use crate::tab::*;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
 use ewin_const::{
     def::*,
-    models::{draw::*, evt::*, file::*, model::*},
+    models::{draw::*, event::*, file::*, model::*},
 };
 use ewin_editor::model::*;
 use ewin_file_bar::filebar::*;
 use ewin_job::job::*;
-use ewin_key::{global::*, key::cmd::*};
+use ewin_key::{global::*, key::cmd::*, model::*};
 use ewin_state::term::*;
 use ewin_utils::files::file::*;
 use ewin_view::view::*;
 use std::usize;
 
 impl Tabs {
-    pub fn new_tab(&mut self) -> ActType {
-        // Disable the event in case of the next display
-        let mut new_tab = Tab::new();
+    pub fn new_grep_tgt_tab(&mut self, search: &Search) -> ActType {
+        let act_type = self.new_tab(&search.fullpath);
+        if let ActType::Draw(DrawParts::MsgBar(_)) = act_type {
+            return act_type;
+        };
+        self.curt().editor.search = search.clone();
+        self.curt().editor.set_cmd(Cmd::to_cmd(CmdType::FindNext));
+        self.curt().editor.search_str(true, false);
+        return ActType::Draw(DrawParts::TabsAll);
+    }
 
-        self.add_tab(&mut new_tab, File::new(""), FileOpenType::Nomal);
-        return ActType::Draw(DParts::All);
+    pub fn new_tab(&mut self, fullpath: &str) -> ActType {
+        Log::debug_key("Tabs.new_tab");
+        if fullpath.is_empty() {
+            self.add_tab(&mut Tab::new(), File::new(fullpath), FileOpenType::Nomal);
+        } else {
+            let idx_opt = State::get().is_opened_file_idx(fullpath);
+            // If there is already an open file
+            if let Some(idx) = idx_opt {
+                self.change_file(idx);
+            } else {
+                let act_type = self.open_file(fullpath, FileOpenType::Nomal, Tab::new(), None);
+                if let ActType::Draw(DrawParts::MsgBar(_)) = act_type {
+                    return act_type;
+                };
+            }
+        }
+        return ActType::Draw(DrawParts::TabsAll);
     }
 
     pub fn init_tab(&mut self, file: &File, file_open_type: FileOpenType) {
         Log::debug_key("init_tab");
-        self.curt().editor.init_editor_scrlbar_h();
-        // self.set_size();
-
         self.set_size();
-        self.curt().editor.calc_editor_scrlbar_v();
-        self.curt().editor.calc_editor_scrlbar_h();
+
+        self.curt().editor.set_init_scrlbar();
 
         if file_open_type != FileOpenType::Reopen && File::is_exist_file(&file.fullpath) {
-            if let Some(Ok(mut watch_info)) = WATCH_INFO.get().map(|watch_info| watch_info.try_lock()) {
+            if let Some(Some(mut watch_info)) = WATCH_INFO.get().map(|watch_info| watch_info.try_lock()) {
                 watch_info.fullpath = file.fullpath.clone();
                 watch_info.mode = file.watch_mode;
             }
         }
         View::set_title(&file.name);
+        Job::send_cmd(CmdType::ChangeFileSideBar(file.fullpath.clone()));
     }
 
     pub fn reopen_tab(&mut self, tab: Tab, file: File, file_open_type: FileOpenType) {
@@ -49,12 +69,12 @@ impl Tabs {
                 editor_draw.clear();
             }
         }
-        // FileBar::get().file_vec[self.idx] = h_file.clone();
 
         State::get().tabs.vec[self.idx].file = file;
-
-        self.init_tab(&State::get().tabs.vec[self.idx].file, file_open_type);
+        let file = State::get().tabs.vec[self.idx].file.clone();
+        self.init_tab(&file, file_open_type);
     }
+
     pub fn add_tab(&mut self, tab: &mut Tab, file: File, file_open_type: FileOpenType) {
         Log::debug_key("add_tab");
         self.idx = self.vec.len();
@@ -89,7 +109,7 @@ impl Tabs {
 
         self.init_tab(file, FileOpenType::Nomal);
 
-        return ActType::Draw(DParts::All);
+        return ActType::Draw(DrawParts::TabsAll);
     }
 
     pub fn switch_file(&mut self, direction: Direction) -> ActType {
@@ -107,9 +127,9 @@ impl Tabs {
             };
             self.change_file(idx);
 
-            return ActType::Draw(DParts::All);
+            return ActType::Draw(DrawParts::TabsAll);
         } else {
-            return ActType::Draw(DParts::MsgBar(Lang::get().no_tab_can_be_switched.to_string()));
+            return ActType::Draw(DrawParts::MsgBar(Lang::get().no_tab_can_be_switched.to_string()));
         }
     }
 
@@ -124,7 +144,7 @@ impl Tabs {
         self.vec.swap(idx_org, idx_dst);
         self.change_file(idx_dst);
 
-        ActType::Draw(DParts::FileBar)
+        ActType::Draw(DrawParts::FileBar)
     }
 
     pub fn del_tab(&mut self, del_idx: usize) {
@@ -149,7 +169,7 @@ impl Tabs {
 
         self.change_file(self.idx);
 
-        if let Some(Ok(mut grep_cancel_vec)) = GREP_CANCEL_VEC.get().map(|vec| vec.try_lock()) {
+        if let Some(Some(mut grep_cancel_vec)) = GREP_CANCEL_VEC.get().map(|vec| vec.try_lock()) {
             if grep_cancel_vec.len() > del_idx {
                 grep_cancel_vec.remove(del_idx);
             }
@@ -198,18 +218,18 @@ impl Tabs {
             ActType::Exit
         } else {
             State::get().tabs.idx = self.idx;
-            ActType::Draw(DParts::All)
+            ActType::Draw(DrawParts::TabsAll)
         };
     }
 
     pub fn save_all_tab(&mut self) -> ActType {
         Log::debug_key("save_all_tab");
-        self.state.is_all_save = true;
+        State::get().tabs_mut_all().is_all_save = true;
         let len = self.vec.len() - 1;
         for idx in (0..=len).rev() {
             self.idx = idx;
             if State::get().tabs.vec[idx].editor.is_changed {
-                let act_type = self.curt().save(&SaveFileType::Normal);
+                let act_type = self.curt().editor.save(&SaveFileType::Normal);
                 if let ActType::Draw(_) = act_type {
                     return act_type;
                 }
@@ -233,8 +253,11 @@ impl Tabs {
         self.idx += 1;
     }
 
+    /*
+
     pub fn cancel_close_all_tab(&mut self) {
         self.state.is_all_close_confirm = false;
+
         for tab in self.vec.iter_mut() {
             if State::get().curt_state().editor.is_changed {
                 tab.editor.set_cmd(Cmd::to_cmd(CmdType::Null));
@@ -242,9 +265,7 @@ impl Tabs {
             }
         }
     }
-    pub fn cancel_save_all_tab(&mut self) {
-        self.state.is_all_save = false;
-    }
+     */
 
     #[track_caller]
     pub fn curt(&mut self) -> &mut Tab {
@@ -258,12 +279,4 @@ pub struct Tabs {
     pub vec: Vec<Tab>,
     // tab index
     pub idx: usize,
-    pub state: TabsState,
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct TabsState {
-    pub is_all_close_confirm: bool,
-    pub is_all_save: bool,
-    // pub close_other_than_this_tab_idx: usize,
 }

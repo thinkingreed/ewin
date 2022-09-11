@@ -1,15 +1,14 @@
 use crate::{filebar::*, filebar_file::*, global::*};
 use ewin_const::def::*;
-use ewin_state::term::*;
-use tokio::sync::{MutexGuard, TryLockError};
+use parking_lot::MutexGuard;
 
 impl FileBar {
     #[track_caller]
     pub fn get() -> MutexGuard<'static, FileBar> {
-        return FILE_BAR.get().unwrap().try_lock().unwrap();
+        return FILE_BAR.get().unwrap().lock();
     }
     #[track_caller]
-    pub fn get_result() -> Result<MutexGuard<'static, FileBar>, TryLockError> {
+    pub fn get_result() -> Option<MutexGuard<'static, FileBar>> {
         return FILE_BAR.get().unwrap().try_lock();
     }
 

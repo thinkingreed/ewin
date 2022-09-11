@@ -1,6 +1,7 @@
 use crate::{model::*, window::*};
 use crossterm::cursor::MoveTo;
 use ewin_cfg::{colors::*, log::*};
+use ewin_const::models::view::*;
 use ewin_key::key::cmd::*;
 
 use ewin_utils::char_edit::*;
@@ -11,11 +12,6 @@ use std::{
 use unicode_width::UnicodeWidthStr;
 
 impl Editor {
-    pub fn calc_editor_scrlbar(&mut self) {
-        self.calc_editor_scrlbar_h();
-        self.calc_editor_scrlbar_v();
-    }
-
     // Including new line code
     const SCROLL_BAR_H_END_LINE_MARGIN: usize = 4;
 
@@ -139,8 +135,8 @@ impl Editor {
         Log::debug_key("draw_scrlbar_h");
 
         if win.scrl_h.is_show {
-            for i in win.scrl_h.row_posi..win.scrl_h.row_posi + win.scrl_h.bar_height {
-                str_vec.push(format!("{}{}", MoveTo(win.area_h.0 as u16, win.scrl_h.row_posi as u16), " ".repeat(win.width())));
+            for i in win.scrl_h.view.y..win.scrl_h.view.y + win.scrl_h.bar_height {
+                str_vec.push(format!("{}{}", MoveTo(win.area_h.0 as u16, win.scrl_h.view.y as u16), get_space(win.width())));
                 str_vec.push(Colors::get_default_bg());
                 str_vec.push(MoveTo((win.area_h.0 + win.scrl_h.clm_posi) as u16, i as u16).to_string());
                 str_vec.push(Colors::get_scrollbar_h_bg());

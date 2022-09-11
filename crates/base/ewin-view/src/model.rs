@@ -22,3 +22,12 @@ pub enum CharStyleType {
     CtrlChar,
     ColumnCharAlignmentSpace,
 }
+
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
+pub struct Offset {
+    pub y: usize,
+    pub y_org: usize,
+    pub x: usize,
+    pub x_org: usize,
+    pub disp_x: usize,
+}

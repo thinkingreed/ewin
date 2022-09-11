@@ -1,14 +1,14 @@
 use super::parts::input_area::*;
 use crate::ewin_key::model::*;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_const::models::{draw::*, evt::*};
+use ewin_const::models::{draw::*, event::*};
 use ewin_key::key::cmd::*;
 
 impl PromContInputArea {
     pub fn undo(&mut self) -> ActType {
         Log::debug_s("PromptCont.undo");
         if self.history.len_undo() == 0 {
-            return ActType::Draw(DParts::MsgBar(Lang::get().no_undo_operation.to_string()));
+            return ActType::Draw(DrawParts::MsgBar(Lang::get().no_undo_operation.to_string()));
         }
 
         if let Some(evt_proc) = self.history.get_undo_last() {
@@ -82,7 +82,7 @@ impl PromContInputArea {
     pub fn redo(&mut self) -> ActType {
         Log::debug_s("PromptCont.redo");
         if self.history.len_redo() == 0 {
-            return ActType::Draw(DParts::MsgBar(Lang::get().no_redo_operation.to_string()));
+            return ActType::Draw(DrawParts::MsgBar(Lang::get().no_redo_operation.to_string()));
         }
 
         if let Some(evt_proc) = self.history.get_redo_last() {

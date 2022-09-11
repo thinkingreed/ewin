@@ -1,4 +1,4 @@
-use ewin_cfg::{log::*, model::default::*};
+use ewin_cfg::{log::*, model::general::default::*};
 use ewin_const::{def::*, models::model::CharType};
 use unicode_width::UnicodeWidthChar;
 
@@ -217,7 +217,7 @@ pub fn get_until_delim_sx(rows: &[char]) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use ewin_cfg::model::{default::Cfg, modal::AppArgs};
+    use ewin_cfg::model::{general::default::*, modal::AppArgs};
     use ewin_const::def::*;
 
     use super::*;

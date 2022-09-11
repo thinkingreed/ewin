@@ -2,8 +2,8 @@ use ewin_cfg::{colors::*, log::*};
 use ewin_const::{def::USIZE_UNDEFINED, models::term::*};
 use ewin_key::{key::keys::*, key_traits::key_trait::*};
 use ewin_view::menulists::{core::*, menulist::*};
+use parking_lot::MutexGuard;
 use std::collections::HashMap;
-use tokio::sync::MutexGuard;
 
 use crate::global::*;
 

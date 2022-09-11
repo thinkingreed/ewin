@@ -1,14 +1,13 @@
 use crate::model::*;
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
-use ewin_cfg::{log::*, model::default::*};
-use ewin_const::def::*;
+use ewin_cfg::log::*;
 use ewin_utils::files::{encode::*, file::*};
 use ropey::RopeBuilder;
-use std::{cmp::min, fs::OpenOptions, io::*, option::Option, *};
+use std::{fs::OpenOptions, io::*, option::Option, *};
 
 impl TextBuffer {
-    pub fn read_file(file: &mut File) -> io::Result<(TextBuffer, Option<Encode>)> {
-        let (read_str, mut enc, bom, mod_time) = File::read(&file.name)?;
+    pub fn read_file(file: &mut File, specify_encoe_opt: Option<Encode>) -> io::Result<(TextBuffer, Option<Encode>)> {
+        let (read_str, mut enc, nl, bom, mod_time) = File::read(&file.fullpath, specify_encoe_opt)?;
 
         if read_str.is_empty() {
             enc = Encode::UTF8;
@@ -17,23 +16,10 @@ impl TextBuffer {
         b.append(&read_str);
         let text_buf = TextBuffer { text: b.finish() };
 
-        let nl = text_buf.check_nl();
         file.enc = enc;
         file.nl = nl;
         file.mod_time = mod_time;
         Ok((text_buf, bom))
-    }
-
-    pub fn check_nl(&self) -> String {
-        let mut new_line = NEW_LINE_CRLF_STR.to_string();
-        // 2048 Newline character judgment at a specific size
-
-        let cfg_search = CfgEdit::get_search();
-        let crlf_len = self.search(NEW_LINE_CRLF, 0, min(2048, self.len_chars()), &cfg_search).len();
-        if crlf_len == 0 {
-            new_line = NEW_LINE_LF_STR.to_string();
-        };
-        return new_line;
     }
 
     pub fn write_to(&mut self, file: &mut File) -> io::Result<bool> {

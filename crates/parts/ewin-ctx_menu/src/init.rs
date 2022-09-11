@@ -1,18 +1,16 @@
 use std::collections::HashMap;
 
-use crate::{ctx_menu::*, global::*};
-use ewin_cfg::{log::*, model::default::*};
-use ewin_const::models::term::*;
+use crate::ctx_menu::*;
+use ewin_cfg::{log::*, model::general::default::*};
+use ewin_const::models::{term::*, view::*};
 use ewin_utils::{str_edit::*, util::*};
 use ewin_view::menulists::menulist::*;
 
 impl CtxMenu {
-    pub fn init() {
-        if let Ok(mut ctx_menu) = CTX_MENU.get().unwrap().try_lock() {
-            let mut map: HashMap<String, HashMap<String, Vec<HashMap<String, Vec<String>>>>> = serde_json::from_str(&Cfg::get().general.context_menu.content.to_string()).unwrap();
-            ctx_menu.set_internal_struct(&mut map);
-            ctx_menu.set_disp_name();
-        };
+    pub fn init(&mut self) {
+        let mut map: HashMap<String, HashMap<String, Vec<HashMap<String, Vec<String>>>>> = serde_json::from_str(&Cfg::get().general.context_menu.content.to_string()).unwrap();
+        self.set_internal_struct(&mut map);
+        self.set_disp_name();
     }
 
     pub fn set_internal_struct(&mut self, map: &mut HashMap<String, HashMap<String, Vec<HashMap<String, Vec<String>>>>>) {
@@ -88,18 +86,18 @@ impl CtxMenu {
                 let perent_str = get_cfg_lang_name(&parent_menu.name);
                 let space = parent_max_len - get_str_width(perent_str);
                 if let Some(child_cont) = child_menu_cont_option {
-                    parent_menu.disp_name = format!("  {}{}{}", perent_str, " ".repeat(space - exist_child_mark.len()), exist_child_mark);
+                    parent_menu.disp_name = format!("  {}{}{}", perent_str, get_space(space - exist_child_mark.len()), exist_child_mark);
                     for (child_menu, _) in child_cont.cont_vec.iter_mut() {
                         let child_str = get_cfg_lang_name(&child_menu.name);
                         let diff = child_max_len_vec[idx] - get_str_width(child_str);
-                        child_menu.disp_name = format!("  {}{}  ", child_str, " ".repeat(diff));
+                        child_menu.disp_name = format!("  {}{}  ", child_str, get_space(diff));
                     }
                     // child_cont.height = child_cont.menu_vec.len();
                     // +4 is extra
                     child_cont.width = child_max_len_vec[idx] + 4;
                 } else {
                     let exist_child_mark_space = if is_exist_child_mark_flg { "" } else { "  " };
-                    parent_menu.disp_name = format!("  {}{}{}", perent_str, " ".repeat(space), exist_child_mark_space);
+                    parent_menu.disp_name = format!("  {}{}{}", perent_str, get_space(space), exist_child_mark_space);
                 }
             }
             //  self.ctx_menu_place_map.get_mut(term_place).unwrap().height = self.ctx_menu_place_map[term_place].menu_vec.len();

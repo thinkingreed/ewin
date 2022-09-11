@@ -1,7 +1,13 @@
 use crate::char_edit::*;
 use ewin_cfg::log::*;
-use ewin_const::def::*;
+use ewin_const::{def::*, models::view::*};
 use std::mem;
+use unicode_width::UnicodeWidthStr;
+
+pub fn adjust_str_len(str: &str, limit_width: usize, is_front: bool, is_add_continue_str: bool) -> String {
+    let diff: isize = limit_width as isize - str.width() as isize;
+    return if diff < 0 { cut_str(str, limit_width, is_front, is_add_continue_str) } else { format!("{}{}", str, get_space(diff as usize)) };
+}
 
 pub fn cut_str(str: &str, limit_width: usize, is_front: bool, is_add_continue_str: bool) -> String {
     let mut chars: Vec<char> = if is_front { str.chars().rev().collect() } else { str.chars().collect() };
@@ -89,7 +95,7 @@ pub fn adjust_width_str(vec: &mut [String], max_width: usize) {
     for s in vec.iter_mut() {
         let len = get_str_width(s);
         if len != max_width {
-            let _ = mem::replace(s, format!("{}{}", &s, " ".repeat(max_width - len)));
+            let _ = mem::replace(s, format!("{}{}", &s, get_space(max_width - len)));
         }
     }
 }

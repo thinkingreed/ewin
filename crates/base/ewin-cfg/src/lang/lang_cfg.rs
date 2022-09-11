@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::{global::*, model::default::*};
+use crate::{global::*, model::general::default::*};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Lang {
@@ -112,13 +112,15 @@ pub struct Lang {
     pub toml: String,
     pub tool: String,
 
-    pub display: String,
     pub box_select: String,
     pub box_insert: String,
     pub box_select_mode: String,
-    //
+    // display
+    pub display: String,
     pub row_no: String,
     pub scale: String,
+    pub appearance: String,
+    pub sidebar: String,
     // Window
     pub window: String,
     pub left_and_right_split: String,
@@ -148,8 +150,7 @@ pub struct Lang {
     pub no_undo_operation: String,
     pub no_redo_operation: String,
     pub number_within_current_number_of_rows: String,
-    pub writing_cannot_convert_encoding: String,
-    pub reading_cannot_convert_encoding: String,
+    pub cannot_convert_encoding: String,
     pub select_menu: String,
     pub processing_canceled: String,
     pub parsing_failed: String,

@@ -1,7 +1,7 @@
 use crate::{model::*, window::*};
 use crossterm::cursor::*;
 use ewin_cfg::{colors::*, log::*};
-use ewin_const::def::*;
+use ewin_const::{def::*, models::view::*};
 use ewin_state::term::*;
 
 impl Editor {
@@ -16,7 +16,7 @@ impl Editor {
                 let rnw = self.get_rnw();
                 let rnw_and_margin = self.get_rnw_and_margin();
 
-                str_vec.push(" ".repeat(if rnw > 0 { rnw_and_margin } else { Editor::RNW_MARGIN }));
+                str_vec.push(get_space(if rnw > 0 { rnw_and_margin } else { Editor::RNW_MARGIN }));
             }
 
             Log::debug("win.width()", &win.width());
@@ -35,13 +35,13 @@ impl Editor {
             }
 
             if win.scrl_v.is_show {
-                str_vec.push(" ".repeat(win.scrl_v.bar_width));
+                str_vec.push(get_space(win.scrl_v.bar_width));
             }
 
             // for split line width
             if self.win_mgr.split_line_v > 0 && win.h_idx == 0 {
                 #[allow(clippy::repeat_once)]
-                str_vec.push(" ".repeat(WINDOW_SPLIT_LINE_WIDTH));
+                str_vec.push(get_space(WINDOW_SPLIT_LINE_WIDTH));
             }
         }
 

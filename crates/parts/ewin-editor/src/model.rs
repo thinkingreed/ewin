@@ -1,11 +1,11 @@
+use crate::input_comple::core::*;
 use crate::window_mgr::*;
-use ewin_cfg::{lang::lang_cfg::Lang, model::default::*};
+use ewin_cfg::{lang::lang_cfg::Lang, model::general::default::*};
 use ewin_const::def::*;
 use ewin_const::models::draw::*;
 use ewin_key::key::cmd::*;
 use ewin_key::model::*;
 use ewin_key::sel_range::*;
-use ewin_menulist::parts::input_comple::*;
 use ewin_state::term::*;
 use ewin_view::{model::Cell, view::*};
 use ropey::Rope;
@@ -49,7 +49,7 @@ impl Editor {
             buf: TextBuffer::default(),
             win_mgr: WindowMgr::default(),
             draw_range: E_DrawRange::default(),
-            view: View { y: MENUBAR_ROW_NUM + FILEBAR_ROW_NUM + if CfgEdit::get().general.editor.scale.is_enable { 1 } else { 0 }, height: TERM_MINIMUM_HEIGHT - FILEBAR_ROW_NUM - STATUSBAR_ROW_NUM, ..View::default() },
+            view: View { y: MENUBAR_HEIGHT + FILEBAR_HEIGHT + if CfgEdit::get().general.editor.scale.is_enable { 1 } else { 0 }, height: TERM_MINIMUM_HEIGHT - FILEBAR_HEIGHT - STATUSBAR_ROW_NUM, ..View::default() },
             rnw: 0,
             rnw_org: 0,
             cmd: Cmd::default(),
@@ -68,17 +68,8 @@ impl Editor {
         }
     }
     pub fn get_row_posi(&self) -> usize {
-        return MENUBAR_ROW_NUM + FILEBAR_ROW_NUM + if State::get().curt_state().editor.scale.is_enable { 1 } else { 0 };
+        return MENUBAR_HEIGHT + FILEBAR_HEIGHT + if State::get().curt_state().editor.scale.is_enable { 1 } else { 0 };
     }
-}
-
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct Offset {
-    pub y: usize,
-    pub y_org: usize,
-    pub x: usize,
-    pub x_org: usize,
-    pub disp_x: usize,
 }
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct TextBuffer {
@@ -111,7 +102,7 @@ pub struct ScrollbarH {
     pub is_show: bool,
     pub is_show_org: bool,
     pub is_enable: bool,
-    pub row_posi: usize,
+    pub view: View,
     pub clm_posi: usize,
     pub clm_posi_org: usize,
     pub bar_len: usize,
@@ -122,7 +113,7 @@ pub struct ScrollbarH {
 
 impl Default for ScrollbarH {
     fn default() -> Self {
-        ScrollbarH { is_show: false, is_show_org: false, is_enable: false, row_posi: USIZE_UNDEFINED, clm_posi: 0, clm_posi_org: 0, bar_len: 0, bar_height: 0, move_char_x: 0, scrl_range: 0 }
+        ScrollbarH { is_show: false, is_show_org: false, is_enable: false, view: View::default(), clm_posi: 0, clm_posi_org: 0, bar_len: 0, bar_height: 0, move_char_x: 0, scrl_range: 0 }
     }
 }
 
@@ -132,6 +123,14 @@ pub struct ChangeInfo {
     pub new_row: BTreeSet<usize>,
     pub restayle_row_set: BTreeSet<usize>,
     pub del_row_set: BTreeSet<usize>,
+}
+impl ChangeInfo {
+    pub fn clear(&mut self) {
+        self.change_type = EditerChangeType::None;
+        self.new_row = BTreeSet::new();
+        self.restayle_row_set = BTreeSet::new();
+        self.del_row_set = BTreeSet::new();
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]

@@ -1,6 +1,6 @@
 use super::parts::input_area::*;
 use ewin_cfg::log::*;
-use ewin_const::models::evt::*;
+use ewin_const::models::event::*;
 use ewin_key::{clipboard::*, model::*};
 use ewin_utils::char_edit::*;
 

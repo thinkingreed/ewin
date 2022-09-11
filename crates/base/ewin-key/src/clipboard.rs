@@ -4,7 +4,7 @@ use clipboard::{ClipboardContext, ClipboardProvider};
 use ewin_cfg::{lang::lang_cfg::*, log::*, model::modal::*};
 use ewin_const::{
     def::*,
-    models::{draw::*, env::*, evt::*},
+    models::{draw::*, env::*, event::*},
 };
 use ewin_utils::global::*;
 use std::{fs::OpenOptions, io::Read, io::Write, process, process::Command};
@@ -85,13 +85,13 @@ pub fn check_clipboard(is_prompt: bool) -> ActType {
     let clipboard = get_clipboard().unwrap_or_else(|_| "".to_string());
 
     if clipboard.is_empty() {
-        return ActType::Draw(DParts::MsgBar(Lang::get().no_value_in_clipboard.to_string()));
+        return ActType::Draw(DrawParts::MsgBar(Lang::get().no_value_in_clipboard.to_string()));
     }
     // Do not paste multiple lines for Prompt
     if is_prompt {
         // Check multiple lines
         if clipboard.match_indices(&NEW_LINE_LF.to_string()).count() > 0 {
-            return ActType::Draw(DParts::MsgBar(Lang::get().cannot_paste_multi_rows.to_string()));
+            return ActType::Draw(DrawParts::MsgBar(Lang::get().cannot_paste_multi_rows.to_string()));
         };
     }
     return ActType::Next;

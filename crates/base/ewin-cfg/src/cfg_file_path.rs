@@ -11,6 +11,7 @@ impl CfgFilePath {
 
         return path;
     }
+
     pub fn get_app_clipboard_file_path() -> PathBuf {
         let tmp_path = CfgFilePath::get_app_tmp_path();
         let clipboard_file = &tmp_path.join(CLIPBOARD_FILE);

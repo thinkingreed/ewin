@@ -12,3 +12,7 @@ pub mod menulists {
     pub mod menulist;
 }
 pub mod terminal;
+
+pub mod parts {
+    pub mod pulldown;
+}

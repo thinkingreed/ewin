@@ -1,11 +1,14 @@
 use crate::{model::*, window_mgr::*};
-use ewin_cfg::{log::*, model::default::*};
+use ewin_cfg::{log::*, model::general::default::*};
 use ewin_const::{def::*, term::*};
+use ewin_side_bar::sidebar::*;
 use ewin_state::term::*;
 
 impl Editor {
     pub fn set_size_adjust_editor(&mut self) {
-        self.set_size_editor(self.view.height, if State::get().curt_state().editor.scale.is_enable { SCALE_ROW_NUM } else { 0 });
+        Log::debug_key("Editor.set_size_adjust_editor");
+        Log::debug("self.view.height", &self.view.height);
+        self.set_size_editor(self.view.height, if State::get().curt_state().editor.scale.is_enable { SCALE_HEIGHT } else { 0 });
     }
 
     pub fn set_size_editor(&mut self, editor_row: usize, scale_row_num: usize) {
@@ -14,14 +17,17 @@ impl Editor {
         Log::debug("Tabs::get().idx", &State::get().tabs.idx);
         Log::debug("Tabs::get().curt_state().editor", &State::get().curt_state().editor);
         let (cols, _) = get_term_size();
+        let cols = cols - SideBar::get().get_width_all();
 
         let rnw_and_margin = self.get_rnw_and_margin();
-        let row_posi = MENUBAR_ROW_NUM + FILEBAR_ROW_NUM + scale_row_num;
+        let row_posi = MENUBAR_HEIGHT + FILEBAR_HEIGHT + scale_row_num;
         self.view.y = row_posi;
-        self.view.x = 0;
+
+        let side_bar_width = SideBar::get().get_width_all();
+        self.view.x = side_bar_width;
         Log::debug(" self.view.y", &self.view.y);
 
-        self.view.height = editor_row - 1;
+        self.view.height = editor_row;
         self.view.width = cols;
 
         let editor_tgt_row = editor_row - ((self.win_mgr.win_list.len() - 1) * WindowMgr::SPLIT_LINE_H_HEIGHT) - self.win_mgr.win_list.len() * scale_row_num;
@@ -58,10 +64,10 @@ impl Editor {
             } else {
                 v_posi += WindowMgr::SPLIT_LINE_H_HEIGHT;
                 split_line_h = v_posi;
-                v_posi += SCALE_ROW_NUM + 1;
+                v_posi += SCALE_HEIGHT + 1;
             }
 
-            let mut h_posi = 0;
+            let mut h_posi = SideBar::get().get_width_all();
 
             for (h_idx, win) in vec_v.iter_mut().enumerate() {
                 win.v_idx = v_idx;
@@ -105,7 +111,7 @@ impl Editor {
                 win.area_h = (h_posi, h_posi + win_width);
                 //  if row_max_width > win_width && is_tab_state_normal {
                 if row_max_width > win_width {
-                    win.scrl_h.row_posi = win.area_v.1;
+                    win.scrl_h.view.y = win.area_v.1;
                 }
                 win.area_h_all = (h_posi - rnw_and_margin, h_posi + win_width + win.scrl_v.bar_width);
 

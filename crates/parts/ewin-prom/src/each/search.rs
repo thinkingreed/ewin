@@ -4,9 +4,11 @@ use crate::{
     model::*,
     prom_trait::main_trait::*,
 };
-use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*, model::default::*};
-use ewin_const::models::{evt::*, types::*};
+use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*, model::general::default::*};
+use ewin_const::models::{draw::*, event::*, types::*};
 use ewin_job::job::*;
+use ewin_key::model::*;
+use ewin_state::term::*;
 
 impl PromSearch {
     pub fn search(&mut self) -> ActType {
@@ -43,6 +45,12 @@ impl PromSearch {
         prom.base.curt_cont_idx = prom.base.cont_vec.len() - 1;
 
         return prom;
+    }
+
+    pub fn init() -> ActType {
+        State::get().curt_mut_state().prom = PromState::Search;
+        Prom::get().init(Box::new(PromSearch::new()));
+        return ActType::Draw(DrawParts::TabsAll);
     }
 }
 

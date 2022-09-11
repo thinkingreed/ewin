@@ -2,7 +2,11 @@ use crate::{
     colors::*,
     global::*,
     log::*,
-    model::{default::*, modal::*, user::*},
+    model::{
+        color::{default::*, user::*},
+        general::{default::*, user::*},
+        modal::*,
+    },
     setting_file_loader::*,
     theme_loader::*,
 };
@@ -26,7 +30,7 @@ impl Cfg {
 
         let mut cfg_syntax = CfgSyntax::default();
 
-        if let Ok((theme, err_string)) = ThemeLoader::new(cfg.general.colors.theme.default_color_theme.clone(), &cfg.general.colors.theme.highlight_theme_path, &cfg_syntax.syntax.theme_set.themes).load() {
+        if let Ok((theme, err_string)) = ThemeLoader::new(cfg.colors.theme.default_color_theme.clone(), &cfg.colors.theme.highlight_theme_path, &cfg_syntax.syntax.theme_set.themes).load() {
             Log::debug("err_string", &err_string);
 
             if !err_string.is_empty() {
@@ -34,16 +38,16 @@ impl Cfg {
             }
             cfg_syntax.syntax.theme = theme;
             if let Some(c) = cfg_syntax.syntax.theme.settings.background {
-                if let Some(theme_bg_enable) = cfg.general.colors.theme.highlight_theme_background_enable {
+                if let Some(theme_bg_enable) = cfg.colors.theme.highlight_theme_background_enable {
                     cfg.colors.editor.bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
                     cfg.colors.editor.line_number.passive_bg = Color { rgb: Rgb { r: c.r, g: c.g, b: c.b } };
-                    cfg.general.colors.theme.theme_bg_enable = theme_bg_enable;
+                    cfg.colors.theme.theme_bg_enable = theme_bg_enable;
                 } else {
-                    cfg.general.colors.theme.theme_bg_enable = false;
+                    cfg.colors.theme.theme_bg_enable = false;
                 }
             }
         }
-        let default_color_theme = &cfg.general.colors.theme.default_color_theme;
+        let default_color_theme = &cfg.colors.theme.default_color_theme;
         Log::debug("theme.default_color_theme", &default_color_theme);
 
         let default_theme_str = match ThemeSystemColorType::from_str_color_type(&default_color_theme.to_lowercase()) {
@@ -108,4 +112,10 @@ impl Cfg {
     pub fn get() -> &'static Cfg {
         return CFG.get().unwrap();
     }
+
+    /*
+    pub fn get_mut() -> &mut Cfg {
+        return CFG.get_mut().unwrap();
+    }
+    */
 }

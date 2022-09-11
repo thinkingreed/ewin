@@ -4,10 +4,10 @@ use crate::{
     model::*,
     prom_trait::main_trait::*,
 };
-use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*, model::default::*};
-use ewin_const::models::{draw::*, evt::*};
+use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*, model::general::default::*};
+use ewin_const::models::{draw::*, event::*};
 use ewin_job::{global::*, job::*};
-use ewin_key::{global::*, model::*};
+use ewin_key::{grep_cancel::*, model::*};
 use ewin_state::term::*;
 use globset::Glob;
 use grep::cli;
@@ -30,18 +30,18 @@ impl PromGrep {
                 Log::debug("search_folder", &search_dir);
 
                 if search_str.is_empty() {
-                    return ActType::Draw(DParts::MsgBar(Lang::get().not_set_search_str.to_string()));
+                    return ActType::Draw(DrawParts::MsgBar(Lang::get().not_set_search_str.to_string()));
                 } else if search_filenm.is_empty() {
-                    return ActType::Draw(DParts::MsgBar(Lang::get().not_entered_search_file.to_string()));
+                    return ActType::Draw(DrawParts::MsgBar(Lang::get().not_entered_search_file.to_string()));
                 } else if search_dir.is_empty() {
-                    return ActType::Draw(DParts::MsgBar(Lang::get().not_entered_search_folder.to_string()));
+                    return ActType::Draw(DrawParts::MsgBar(Lang::get().not_entered_search_folder.to_string()));
                 } else {
                     if Path::new(&search_dir).is_relative() {
                         let current_dir = env::current_dir().unwrap().display().to_string();
                         search_dir = format!("{}/{}", current_dir, search_dir);
                     }
                     State::get().curt_mut_state().clear();
-                    Job::send_cmd(CmdType::GrepingProm(GrepInfo { search_str, search_filenm, search_dir, ..GrepInfo::default() }));
+                    Job::send_cmd(CmdType::GrepingProm(GrepInfo { search: Search { str: search_str, filenm: search_filenm, dir: search_dir, ..Search::default() }, ..GrepInfo::default() }));
                 }
                 return ActType::None;
             }
@@ -79,6 +79,12 @@ impl PromGrep {
 
         return prom;
     }
+
+    pub fn init() -> ActType {
+        State::get().curt_mut_state().prom = PromState::Grep;
+        Prom::get().init(Box::new(PromGrep::new()));
+        return ActType::Draw(DrawParts::TabsAll);
+    }
 }
 impl Grep {
     pub fn exe_grep(grep_info: GrepInfo) {
@@ -88,7 +94,7 @@ impl Grep {
                 let cfg_search = CfgEdit::get_search();
                 Log::debug("cfg_search", &cfg_search);
 
-                let matcher = RegexMatcherBuilder::new().dot_matches_new_line(false).case_insensitive(!cfg_search.case_sensitive).build(cli::pattern_from_os(OsStr::new(&if cfg_search.regex { grep_info.search_str } else { regex::escape(&grep_info.search_str) })).unwrap_or("")).unwrap();
+                let matcher = RegexMatcherBuilder::new().dot_matches_new_line(false).case_insensitive(!cfg_search.case_sensitive).build(cli::pattern_from_os(OsStr::new(&if cfg_search.regex { grep_info.search.str } else { regex::escape(&grep_info.search.str) })).unwrap_or("")).unwrap();
                 let searcher = SearcherBuilder::new()
                     .binary_detection(BinaryDetection::quit(0)) // Binary not applicable
                     .line_number(true)
@@ -96,8 +102,8 @@ impl Grep {
                     .bom_sniffing(false)
                     .build();
 
-                let glob = Glob::new(&grep_info.search_filenm).unwrap().compile_matcher();
-                let walker = WalkBuilder::new(&grep_info.search_dir)
+                let glob = Glob::new(&grep_info.search.filenm).unwrap().compile_matcher();
+                let walker = WalkBuilder::new(&grep_info.search.dir)
                     .hidden(true) // Search for hidden files
                     .ignore(false) // Also target files that have been ignored
                     .parents(false) // Don't go through the parent directory to find .gitignore
@@ -121,7 +127,7 @@ impl Grep {
                             Log::debug("entry.path()", &entry.path());
 
                             // Check cancel
-                            if Grep::is_cancel() {
+                            if GrepCancel::is_cancel() {
                                 Log::debug_s("is_grep_cancel");
                                 return WalkState::Quit;
                             } else if let Err(err) = searcher.search_path(&matcher, entry.path(), SearchSink { tx: tx_job.clone(), path: entry.path() }) {
@@ -140,23 +146,6 @@ impl Grep {
                 Job::send_grep(&tx_job, "".to_string(), true);
             });
         }
-    }
-
-    pub fn is_canceled() -> bool {
-        let state = if let Some(Ok(grep_cancel_vec)) = GREP_CANCEL_VEC.get().map(|grep_cancel_vec| grep_cancel_vec.try_lock()) { grep_cancel_vec[grep_cancel_vec.len() - 1] } else { GrepCancelType::None };
-        GrepCancelType::Canceled == state || GrepCancelType::None == state
-    }
-    pub fn is_canceling() -> bool {
-        let state = if let Some(Ok(grep_cancel_vec)) = GREP_CANCEL_VEC.get().map(|grep_cancel_vec| grep_cancel_vec.try_lock()) { grep_cancel_vec[grep_cancel_vec.len() - 1] } else { GrepCancelType::None };
-        GrepCancelType::Canceling == state
-    }
-    pub fn is_cancel() -> bool {
-        {
-            let state = if let Some(Ok(grep_cancel_vec)) = GREP_CANCEL_VEC.get().map(|grep_cancel_vec| grep_cancel_vec.try_lock()) { grep_cancel_vec[grep_cancel_vec.len() - 1] } else { GrepCancelType::None };
-            Log::debug("state", &state);
-        }
-
-        return Grep::is_canceling() || Grep::is_canceled();
     }
 }
 
@@ -186,7 +175,7 @@ impl<'a> Sink for SearchSink<'a> {
     // `SinkMatch` contains match information
     fn matched(&mut self, _searcher: &Searcher, mat: &SinkMatch<'_>) -> std::result::Result<bool, Self::Error> {
         Log::debug_s("Sink.matched");
-        if Grep::is_cancel() {
+        if GrepCancel::is_cancel() {
             Log::debug_s("EvtAct::is_grep_cancel()");
             return Ok(false);
         }

@@ -1,8 +1,9 @@
 use super::{model::*, prom_trait::main_trait::*};
 use crossterm::{cursor::*, terminal::ClearType::*, terminal::*};
 use ewin_cfg::log::*;
-use ewin_key::{key::cmd::*, model::*};
+use ewin_key::key::cmd::*;
 use ewin_state::term::*;
+use ewin_view::view::*;
 use std::{io::Write, u16};
 
 impl Prom {
@@ -16,19 +17,19 @@ impl Prom {
     }
 
     pub fn set_size(&mut self) {
-        self.row_num = self.curt.as_mut_base().get_disp_all_row_num(self.row_bottom_posi);
+        self.view.height = self.curt.as_mut_base().get_disp_all_row_num(self.row_bottom_posi);
 
-        Log::debug("self.row_num", &self.row_num);
+        Log::debug(" self.view.height ", &self.view.height);
         Log::debug("self.row_bottom_posi", &self.row_bottom_posi);
-        self.row_posi = self.row_bottom_posi - self.row_num;
-        self.curt.as_mut_base().set_cont_item_disp_posi(self.row_posi);
+        self.view.y = self.row_bottom_posi - self.view.height;
+        self.curt.as_mut_base().set_cont_item_disp_posi(self.view.y);
     }
 
     pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         Log::info_key("Prompt.draw");
         Log::debug("self.curt.as_base().curt_cont_idx", &self.curt.as_base().curt_cont_idx);
 
-        if !State::get().curt_state().is_nomal_and_not_grep_result() {
+        if !State::get().curt_state().is_nomal() {
             for (i, cont) in self.curt.as_base().cont_vec.iter().enumerate() {
                 Log::debug("iiiii", &i);
                 Log::debug("cont.as_base().row_posi_range", &cont.as_base().row_posi_range);
@@ -45,9 +46,7 @@ impl Prom {
 
     pub fn clear(&mut self) {
         Log::debug_key("Prompt.clear");
-        self.row_num = 0;
-        self.row_posi = 0;
-        self.col_num = 0;
+        self.view = View::default();
     }
 
     pub fn draw_only<T: Write>(&mut self, out: &mut T) {

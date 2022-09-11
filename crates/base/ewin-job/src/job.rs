@@ -1,7 +1,7 @@
 use crate::global::*;
 use crossterm::event::{Event, KeyCode::Null};
 use ewin_cfg::{global::*, log::Log};
-use ewin_const::models::{evt::*, term::*};
+use ewin_const::models::{event::*, term::*};
 use ewin_key::key::{cmd::*, keybind::*};
 use std::sync::mpsc::Sender;
 

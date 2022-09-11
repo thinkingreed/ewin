@@ -31,15 +31,8 @@ indent_type = "half_width_blank"
 # Valid only for half_width_blank
 indent_size = 2
 
-[general.editor.scrollbar.vertical]
-# 0 is hide
-width = 2
-[general.editor.scrollbar.horizontal]
-# 0 is hide
-height = 1
-
 [general.editor.cursor]
-move_position_by_scrolling_enable = false
+move_position_by_scrolling_enable = true
 
 [general.editor.column_char_width_gap_space]
 character = " "
@@ -67,6 +60,13 @@ is_enable = true
 [general.editor.scale]
 is_enable = true
 
+[general.editor.scrollbar.vertical]
+# 0 is hide
+width = 2
+[general.editor.scrollbar.horizontal]
+# 0 is hide
+height = 1
+
 [general.prompt.open_file]
 # Valid only for Windows
 # "" is Not set or "current_directory"
@@ -90,7 +90,8 @@ content = """
   ]},
   {"display": [
       {"row_no": []},
-      {"scale": []}
+      {"scale": []},
+      {"appearance": ["sidebar"]}
   ]},
   {"window": [
       {"left_and_right_split": []},
@@ -134,17 +135,21 @@ content = """
 [general.mouse]
 mouse_enable = true
 
-# If theme is set, theme color has the highest priority
-[general.colors.theme] # option
-# highlight_theme_path = "tmTheme.tmTheme"
-# highlight_theme_background_enable = true
-disable_highlight_ext = ["txt", "log"]
 
-# Only files below this value will be highlighted(positive number:MByte)
-disable_syntax_highlight_file_size = 3
-# "black" or "white"
-default_color_theme = "white"
+[general.sidebar] # option
+# 0 is invalid
+width = 25
+
+[general.sidebar.scrollbar.vertical]
+# 0 is hide
+width = 1
+
+[general.sidebar.scrollbar.horizontal]
+# 0 is hide
+height = 1
+
+[general.sidebar.treefile] # option
+indent = 1
 
 [system.os.windows]
 change_output_encoding_utf8 = false
-

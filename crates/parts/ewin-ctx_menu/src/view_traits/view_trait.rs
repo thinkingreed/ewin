@@ -3,7 +3,7 @@ use downcast::{downcast, Any};
 use dyn_clone::DynClone;
 use ewin_cfg::log::*;
 use ewin_const::{
-    models::{draw::*, evt::*, term::*},
+    models::{draw::*, event::*, term::*},
     term::*,
 };
 use ewin_view::menulists::core::*;
@@ -13,7 +13,7 @@ pub trait ViewCtxMenuTrait: DynClone + Any + 'static + std::fmt::Debug {
     fn init_ctx_menu(&mut self, y: usize, x: usize) -> ActType {
         Log::debug_key("Editor.init_ctx_menu");
 
-        if let Ok(mut ctx_menu) = CTX_MENU.get().unwrap().try_lock() {
+        if let Some(mut ctx_menu) = CTX_MENU.get().unwrap().try_lock() {
             ctx_menu.clear();
 
             if self.is_tgt_ctx_menu(y, x) {
@@ -40,7 +40,7 @@ pub trait ViewCtxMenuTrait: DynClone + Any + 'static + std::fmt::Debug {
             } else if ctx_menu.is_show {
                 ctx_menu.is_show = false;
             }
-            return ActType::Draw(DParts::All);
+            return ActType::Draw(DrawParts::TabsAll);
         }
 
         return ActType::None;

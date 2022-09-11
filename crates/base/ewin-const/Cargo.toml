@@ -16,4 +16,4 @@ path = "src/lib.rs"
 [dependencies]
 encoding_rs="0.8.31"
 once_cell = "1.5.2"
-crossterm  = {version ="0.24.0", features = ["event-stream"]} 
+crossterm  = {version ="0.25.0", features = ["event-stream"]} 

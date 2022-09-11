@@ -1,8 +1,8 @@
 use crate::model::*;
-use ewin_cfg::{lang::lang_cfg::*, log::*, model::default::*};
+use ewin_cfg::{lang::lang_cfg::*, log::*, model::general::default::*};
 use ewin_const::{
     def::*,
-    models::{draw::*, evt::*},
+    models::{draw::*, event::*},
 };
 use ewin_key::{key::cmd::*, model::*};
 use std::{cmp::min, collections::BTreeSet};
@@ -42,17 +42,17 @@ impl Editor {
             }
             // self.draw_range = E_DrawRange::Targetpoint;
         }
-        return ActType::Draw(DParts::All);
+        return ActType::Draw(DrawParts::TabsAll);
     }
 
     pub fn search_confirm(&mut self, search_str: String) -> ActType {
         Log::debug_s("exec_search_confirm");
         if search_str.is_empty() {
-            return ActType::Draw(DParts::MsgBar(Lang::get().not_set_search_str.clone()));
+            return ActType::Draw(DrawParts::MsgBar(Lang::get().not_set_search_str.clone()));
         }
         let ranges = self.get_search_ranges(&search_str, 0, self.buf.len_chars(), 0);
         if ranges.is_empty() {
-            return ActType::Draw(DParts::MsgBar(Lang::get().cannot_find_search_char.clone()));
+            return ActType::Draw(DrawParts::MsgBar(Lang::get().cannot_find_search_char.clone()));
         } else {
             self.search.ranges = ranges;
             self.search_str(true, false);
@@ -197,7 +197,7 @@ impl Editor {
         let sel_str = self.buf.slice_string(self.win_mgr.curt().sel);
         if self.search.ranges.is_empty() || (!sel_str.is_empty() && self.search.str != sel_str) {
             if sel_str.is_empty() {
-                return ActType::Draw(DParts::MsgBar(Lang::get().not_set_search_str.to_string()));
+                return ActType::Draw(DrawParts::MsgBar(Lang::get().not_set_search_str.to_string()));
             }
             self.search.str = sel_str;
         }

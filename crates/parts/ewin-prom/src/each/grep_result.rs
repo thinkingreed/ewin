@@ -4,8 +4,9 @@ use crate::{
     prom_trait::main_trait::*,
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*};
-use ewin_const::models::file::*;
-use ewin_key::key::cmd::*;
+use ewin_const::models::{draw::*, event::*, file::*};
+use ewin_key::{key::cmd::*, model::*};
+use ewin_state::term::*;
 
 impl PromGrepResult {
     pub fn new(is_grep_empty: bool, is_cancel: bool) -> Self {
@@ -24,6 +25,13 @@ impl PromGrepResult {
             prom.base.cont_vec.push(Box::new(PromContKeyDesc { desc_vecs: vec![vec![open_target_file, search, close]], ..PromContKeyDesc::default() }));
         }
         return prom;
+    }
+
+    pub fn init() -> ActType {
+        State::get().curt_mut_state().prom = PromState::GrepResult;
+        let grep = State::get().curt_state().grep.clone();
+        Prom::get().init(Box::new(PromGrepResult::new(grep.is_empty, grep.is_cancel)));
+        return ActType::Draw(DrawParts::TabsAll);
     }
 }
 

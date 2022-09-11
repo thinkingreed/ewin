@@ -3,7 +3,7 @@ use crate::{global::*, key::keys::*};
 use ewin_cfg::{
     lang::lang_cfg::*,
     log::*,
-    model::{default::*, modal::*},
+    model::{general::default::*, modal::*},
     setting_file_loader::*,
 };
 use ewin_const::{def::*, models::term::*};

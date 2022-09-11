@@ -1,6 +1,6 @@
 use crate::{model::*, prom_trait::cont_trait::*};
-use ewin_cfg::{colors::*, global::*, lang::lang_cfg::*, log::*, model::default::*};
-use ewin_const::models::{draw::*, evt::*};
+use ewin_cfg::{colors::*, global::*, lang::lang_cfg::*, log::*, model::general::default::*};
+use ewin_const::models::{draw::*, event::*};
 use ewin_key::key::{cmd::*, keys::*};
 use ewin_utils::str_edit::*;
 
@@ -13,11 +13,11 @@ impl PromContSearchOpt {
         match self.base.cmd.cmd_type {
             CmdType::FindCaseSensitive => {
                 self.change_opt_case_sens();
-                return ActType::Draw(DParts::Prompt);
+                return ActType::Draw(DrawParts::Prompt);
             }
             CmdType::FindRegex => {
                 self.change_opt_regex();
-                return ActType::Draw(DParts::Prompt);
+                return ActType::Draw(DrawParts::Prompt);
             }
             CmdType::MouseDownLeft(y, x) => {
                 Log::debug_s("PromContSearchOpt.MouseDownLeft");
@@ -28,10 +28,10 @@ impl PromContSearchOpt {
                     Log::debug("self.case_sens.mouse_area", &self.case_sens.mouse_area);
                     if self.case_sens.mouse_area.contains(&x) {
                         self.change_opt_case_sens();
-                        return ActType::Draw(DParts::Prompt);
+                        return ActType::Draw(DrawParts::Prompt);
                     } else if self.regex.mouse_area.contains(&x) {
                         self.change_opt_regex();
-                        return ActType::Draw(DParts::Prompt);
+                        return ActType::Draw(DrawParts::Prompt);
                     }
                 }
             }

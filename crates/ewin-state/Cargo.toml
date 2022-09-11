@@ -14,8 +14,7 @@ path = "src/lib.rs"
 
 [dependencies]
 once_cell = "1.5.2"
-tokio = { version = "1.4.0", features = ["process", "macros", "rt-multi-thread"] }
-tokio-util = { version = "0.7.3", features = ["codec"] }
+parking_lot = "0.12.1"
 
 ewin-cfg = {version = "0.0.2", path = "../base/ewin-cfg" }
 ewin-const = {version = "0.0.2", path = "../base/ewin-const" }

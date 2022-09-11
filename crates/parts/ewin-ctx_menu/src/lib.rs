@@ -1,7 +1,7 @@
 #![allow(clippy::needless_return, clippy::iter_nth_zero, clippy::type_complexity)]
 pub mod global {
     use once_cell::sync::*;
-    use tokio::sync::Mutex;
+    use parking_lot::Mutex;
 
     use crate::ctx_menu::*;
     pub static CTX_MENU: OnceCell<Mutex<CtxMenu>> = OnceCell::new();
@@ -19,4 +19,4 @@ pub mod keys {
 pub mod ctx_menu;
 pub mod init;
 
-pub mod evt_act;
+pub mod event;

@@ -10,6 +10,7 @@ pub enum Place {
     Prom,
     CtxMenu,
     Dialog,
+    SideBar,
 }
 
 #[derive(Debug, Clone, Default, Copy, PartialEq, Eq, Hash)]

@@ -5,7 +5,7 @@ use super::{
 };
 use crate::util::*;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_const::models::{draw::*, evt::*};
+use ewin_const::models::{draw::*, event::*};
 use ewin_key::key::cmd::{Cmd, *};
 
 impl PromBase {
@@ -14,7 +14,7 @@ impl PromBase {
 
         // check allow p_cmd
         if !self.check_all_allow_cmd() {
-            return ActType::Draw(DParts::MsgBar(Lang::get().unsupported_operation.to_string()));
+            return ActType::Draw(DrawParts::MsgBar(Lang::get().unsupported_operation.to_string()));
         }
         self.set_org_state();
 
@@ -312,7 +312,7 @@ impl PromBase {
             return ActType::Next;
         }
 
-        return ActType::Draw(DParts::Prompt);
+        return ActType::Draw(DrawParts::Prompt);
     }
 
     pub fn check_all_allow_cmd(&self) -> bool {

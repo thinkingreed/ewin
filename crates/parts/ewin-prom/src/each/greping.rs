@@ -5,6 +5,9 @@ use crate::{
     prom_trait::main_trait::*,
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*};
+use ewin_const::models::{draw::*, event::*};
+use ewin_key::model::*;
+use ewin_state::term::*;
 
 impl PromGreping {
     pub fn new() -> Self {
@@ -14,6 +17,12 @@ impl PromGreping {
         prom.base.cont_vec.push(Box::new(PromContKeyDesc { desc_vecs: vec![vec![cancel]], ..PromContKeyDesc::default() }));
 
         return prom;
+    }
+
+    pub fn init() -> ActType {
+        State::get().curt_mut_state().prom = PromState::Greping;
+        Prom::get().init(Box::new(PromGreping::new()));
+        return ActType::Draw(DrawParts::TabsAll);
     }
 }
 

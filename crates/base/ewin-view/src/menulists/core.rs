@@ -3,7 +3,11 @@ use crossterm::{
     execute,
 };
 use ewin_cfg::{colors::*, log::*};
-use ewin_const::{def::*, models::model::*, term::*};
+use ewin_const::{
+    def::*,
+    models::{model::*, view::*},
+    term::*,
+};
 use ewin_utils::{str_edit::*, util::*};
 use std::{
     cmp::{max, min},
@@ -90,6 +94,8 @@ impl MenuList {
     }
 
     pub fn set_child_disp_area(&mut self) {
+        Log::debug("self.contttttttttttttt", &self.cont.clone());
+
         if let Some((_, Some(child_cont))) = self.cont.cont_vec.get_mut(self.parent_sel_y) {
             let (cols, rows) = get_term_size();
             //  child_cont.height = min(child_cont.cont_vec.len(), self.max_vertical_range);
@@ -113,11 +119,14 @@ impl MenuList {
                     (self.cont.x_area.0 - child_cont.width, self.cont.x_area.0 - 1)
                 }
             } else {
+                Log::debug("child_cont", &child_cont.clone());
                 (self.cont.x_area.1, self.cont.x_area.1 + child_cont.width)
             };
 
             child_cont.y_area = (min(sy, ey), max(sy, ey));
             child_cont.x_area = (min(sx, ex), max(sx, ex));
+
+            Log::debug("child_cont.x_area", &child_cont.x_area);
 
             self.disp_sy_org = self.disp_sy;
             self.disp_ey_org = self.disp_ey;
@@ -243,7 +252,6 @@ impl MenuList {
         Log::debug("self.curt_cont.menu_vec.len()", &self.cont.cont_vec.len());
         Log::debug(" self.parent_sel_y", &self.parent_sel_y);
         Log::debug("self.offset_y", &self.offset_y);
-
         for (parent_idx, (parent_menu, child_cont_option)) in (0..self.cont.height).zip(self.cont.cont_vec[self.offset_y..].iter()) {
             let color = if parent_idx == self.parent_sel_y - self.offset_y { sel_color } else { not_sel_color };
             let name = format!("{}{}", color, parent_menu.disp_name,);
@@ -254,7 +262,7 @@ impl MenuList {
             // Parent scrl_v
             // for Inputcomple ..
             if self.scrl_v.is_show {
-                let color = if self.scrl_v.row_posi <= parent_idx && parent_idx < self.scrl_v.row_posi + self.scrl_v.bar_len { Colors::get_scrollbar_v_bg() } else { Colors::get_default_bg() };
+                let color = if self.scrl_v.view.y <= parent_idx && parent_idx < self.scrl_v.view.y + self.scrl_v.bar_len { Colors::get_scrollbar_v_bg() } else { Colors::get_default_bg() };
                 str_vec.push(format!("{}{}{}", color, MoveTo((self.cont.x_area.1) as u16 + 1, (self.cont.y_area.0 + parent_idx) as u16), "  ",));
             };
 
@@ -291,7 +299,7 @@ impl MenuList {
                 self.scrl_v.calc_com_scrlbar_v(false, self.cont.height, self.cont.cont_vec.len());
             }
 
-            self.scrl_v.row_posi = if self.offset_y + self.cont.height == self.cont.cont_vec.len() {
+            self.scrl_v.view.y = if self.offset_y + self.cont.height == self.cont.cont_vec.len() {
                 self.cont.height - self.scrl_v.bar_len
             } else {
                 let mut row_posi = (self.offset_y as f64 / self.scrl_v.move_len as f64).ceil() as usize;
@@ -345,7 +353,7 @@ impl MenuList {
         for (parent_menu, _) in self.cont.cont_vec.iter_mut() {
             let perent_str = get_cfg_lang_name(&parent_menu.disp_name);
             let space = parent_max_len - get_str_width(perent_str);
-            parent_menu.disp_name = format!(" {}{} ", perent_str, " ".repeat(space),);
+            parent_menu.disp_name = format!(" {}{} ", perent_str, get_space(space),);
         }
         // +1 is Extra
         self.cont.width = parent_max_len + 1;

@@ -13,10 +13,11 @@ pub mod models {
     pub mod dialog;
     pub mod draw;
     pub mod env;
-    pub mod evt;
+    pub mod event;
     pub mod key;
     pub mod term;
     pub mod types;
+    pub mod view;
 
     pub mod file;
     pub mod model;

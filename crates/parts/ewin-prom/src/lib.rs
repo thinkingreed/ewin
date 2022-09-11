@@ -2,7 +2,15 @@
 #[macro_use]
 extern crate downcast;
 extern crate ewin_key;
+pub mod global {
+    use crate::model::Prom;
+    use once_cell::sync::*;
+    use parking_lot::Mutex;
 
+    pub static PROM: OnceCell<Mutex<Prom>> = OnceCell::new();
+}
+pub mod core;
+pub mod event;
 pub mod model;
 pub mod prom;
 pub mod prom_base;

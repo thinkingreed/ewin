@@ -2,7 +2,8 @@
 pub mod global {
     use crate::dialog::*;
     use once_cell::sync::*;
-    use tokio::sync::Mutex;
+    use parking_lot::Mutex;
+
     pub static DIALOG: OnceCell<Mutex<Dialog>> = OnceCell::new();
 }
 
@@ -30,5 +31,5 @@ pub mod btn_grourp;
 pub mod core;
 pub mod dialog;
 pub mod draw;
-pub mod evt_act;
+pub mod event;
 pub mod factory;

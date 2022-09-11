@@ -2,9 +2,11 @@ use crate::{cont::parts::info::*, cont::parts::key_desc::*, ewin_key::key::cmd::
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
 use ewin_const::{
     def::*,
-    models::{evt::*, file::*},
+    models::{draw::DrawParts, event::*, file::*},
 };
 use ewin_job::job::*;
+use ewin_key::model::*;
+use ewin_state::term::*;
 
 impl PromSaveConfirm {
     pub fn save_confirm(&mut self) -> ActType {
@@ -38,6 +40,19 @@ impl PromSaveConfirm {
         prom.base.cont_vec.push(Box::new(key_desc));
 
         return prom;
+    }
+
+    pub fn init() -> ActType {
+        Log::debug_key("Tab::prom_save_confirm");
+        if State::get().curt_state().editor.is_changed {
+            if !State::get().curt_state().is_nomal() {
+                State::get().curt_mut_state().clear();
+            }
+            Prom::get().init(Box::new(PromSaveConfirm::new()));
+            State::get().curt_mut_state().prom = PromState::SaveConfirm;
+            return ActType::Draw(DrawParts::TabsAll);
+        };
+        return ActType::Next;
     }
 }
 

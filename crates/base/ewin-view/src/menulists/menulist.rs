@@ -101,29 +101,6 @@ impl MenuListMenu {
     pub fn new(menu_str: &str, menunm_max_len: usize) -> Self {
         Self { name: cut_str(menu_str, menunm_max_len, false, true), ..MenuListMenu::default() }
     }
-
-    pub fn get_add_setting_str(menu_str: &str) -> String {
-        Log::debug_key("get_add_setting_str");
-
-        let mut add_str = String::new();
-
-        let state = State::get().curt_state().editor;
-        if Lang::get().scale == menu_str {
-            add_str.push_str(if state.scale.is_enable { "*" } else { " " });
-        } else if Lang::get().row_no == menu_str {
-            add_str.push_str(if state.row_no.is_enable { "*" } else { " " });
-        } else if Lang::get().left_and_right_split == menu_str {
-            add_str.push_str(if state.window_split_type == WindowSplitType::Vertical { "*" } else { " " });
-        } else if Lang::get().top_and_bottom_split == menu_str {
-            add_str.push_str(if state.window_split_type == WindowSplitType::Horizontal { "*" } else { " " });
-        } else {
-            add_str.push(' ');
-        }
-        add_str.push(' ');
-
-        Log::debug("add_str", &add_str);
-        return add_str;
-    }
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Clone)]

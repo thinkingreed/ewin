@@ -4,10 +4,10 @@ use super::key::*;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 // DrawParts
-pub enum DParts {
+pub enum DrawParts {
+    All,
     Editor(E_DrawRange), // and StatuusBar
     InputComple,
-    Absolute(Range<usize>),
     Prompt,
     MsgBar(String),
     StatusBar,
@@ -16,9 +16,11 @@ pub enum DParts {
     FileBar,
     CtxMenu,
     Dialog,
-    All,
+    TabsAbsolute(Range<usize>),
+    TabsAll,
+    TabsAllMsgBar(String),
     ScrollUpDown(ScrollUpDownType),
-    AllMsgBar(String),
+    SideBar,
     None,
 }
 

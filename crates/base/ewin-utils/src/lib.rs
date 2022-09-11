@@ -12,12 +12,13 @@ pub mod global {
 
 pub mod char_edit;
 pub mod os;
+pub mod path;
 pub mod str_edit;
 pub mod util;
-
-pub mod path;
 pub mod files {
     pub mod bom;
+    pub mod dir;
     pub mod encode;
     pub mod file;
+    pub mod nl;
 }

@@ -12,11 +12,14 @@ members = [
   "crates/ewin-plugin",
   "crates/parts/ewin-editor",
   "crates/parts/ewin-prom",
-  "crates/parts/ewin-menulist",
+  "crates/parts/ewin-menu_bar",
   "crates/parts/ewin-dialog",
   "crates/parts/ewin-ctx_menu",
   "crates/parts/ewin-file_bar",
-  "crates/parts/ewin-help"
+  "crates/parts/ewin-help",
+  "crates/parts/ewin-status_bar",
+  "crates/parts/ewin-msg_bar",
+  "crates/parts/ewin-side_bar"
 ]
 
 [package]
@@ -52,7 +55,7 @@ assets = [
 ]
 
 [dependencies]
-crossterm  = {version ="0.24.0", features = ["event-stream"]} 
+crossterm  = {version ="0.25.0", features = ["event-stream"]} 
 tokio = { version = "1.4.0", features = [ "macros", "rt-multi-thread"] }
 tokio-util = { version = "0.7.3", features = ["codec"] }
 futures = "0.3"
@@ -60,7 +63,7 @@ futures-util = "0.3.12"
 clap = { version = "3.2.16", features = ["derive", "env"]}
 notify="5.0.0-pre.13"
 # grep
-regex = "1.5.5"
+regex = "1.6.0"
 grep = "0.2.8"
 grep-matcher = "0.1.5"
 grep-regex = "0.1.9"
@@ -68,6 +71,7 @@ grep-searcher = "0.1.8"
 ignore = "0.4.18"
 globset = "0.4.8"
 crossbeam= "0.8.1"
+parking_lot = "0.12.1"
 
 ewin-key = {version = "0.0.2", path = "crates/base/ewin-key" }
 ewin-cfg = {version = "0.0.2", path = "crates/base/ewin-cfg" }

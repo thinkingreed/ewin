@@ -2,7 +2,7 @@
 pub mod global {
     use crate::filebar::*;
     use once_cell::sync::*;
-    use tokio::sync::Mutex;
+    use parking_lot::Mutex;
     pub static FILE_BAR: OnceCell<Mutex<FileBar>> = OnceCell::new();
 }
 
@@ -11,7 +11,7 @@ pub mod views {
     pub mod view;
 }
 pub mod draw;
-pub mod evt_act;
+pub mod event;
 
 pub mod core;
 pub mod filebar;

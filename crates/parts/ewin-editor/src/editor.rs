@@ -3,29 +3,18 @@ use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
 };
-use ewin_cfg::{log::*, model::default::*};
+use ewin_cfg::{log::*, model::general::default::*};
 use ewin_const::{
     def::*,
-    models::file::NL,
-    models::{env::*, evt::*},
+    models::{env::*, event::*},
     term::*,
 };
 
 use ewin_key::{cur::*, sel_range::*};
 use ewin_key::{key::cmd::*, model::*};
 use ewin_state::{editor::*, term::*};
-use ewin_utils::{
-    char_edit::*,
-    files::{encode::*, file::*},
-    global::*,
-};
-use ropey::RopeBuilder;
-use std::{
-    cmp::min,
-    collections::BTreeSet,
-    io::{self, stdout},
-    ops::Range,
-};
+use ewin_utils::{char_edit::*, files::nl::*, global::*, util::*};
+use std::{cmp::min, collections::BTreeSet, io::stdout, ops::Range};
 
 use crate::{model::*, window::*};
 
@@ -88,7 +77,7 @@ impl Editor {
         self.search_org = self.search.clone();
 
         self.buf_len_rows_org = self.buf.len_rows();
-        self.win_mgr.curt().scrl_v.row_posi_org = self.win_mgr.curt().scrl_v.row_posi;
+        self.win_mgr.curt().scrl_v.view.y_org = self.win_mgr.curt().scrl_v.view.y;
         self.win_mgr.row_max_width_org = self.win_mgr.row_max_width;
         self.win_mgr.curt().scrl_h.clm_posi_org = self.win_mgr.curt().scrl_h.clm_posi;
         self.win_mgr.curt().scrl_h.is_show_org = self.win_mgr.curt().scrl_h.is_show;
@@ -141,8 +130,6 @@ impl Editor {
             CmdType::Undo | CmdType::Redo | CmdType::DelNextChar | CmdType::DelPrevChar => {}
             _ => self.box_insert.mode = BoxInsertMode::Normal,
         }
-
-        self.change_info = ChangeInfo::default();
     }
 
     pub fn research(&mut self) {
@@ -170,7 +157,7 @@ impl Editor {
     pub fn ctrl_mouse_capture(&mut self) {
         Log::debug_key("ctrl_mouse_capture");
 
-        if let Ok(mut tab_state) = State::get_result() {
+        if let Some(mut tab_state) = State::get_result() {
             match tab_state.curt_state().editor.mouse {
                 Mouse::Enable => {
                     tab_state.curt_mut_state().editor.mouse = Mouse::Disable;
@@ -241,28 +228,6 @@ impl Editor {
 
         return new_filenm;
     }
-    pub fn reload_with_specify_encoding(&mut self, file: &mut File, enc_name: &str) -> io::Result<bool> {
-        let encode = Encode::from_name(enc_name);
-
-        let (vec, bom, modified_time) = File::read_file(&file.name)?;
-        file.bom = bom;
-        let (mut decode_str, enc, had_errors) = Encode::read_bytes(&vec, encode);
-        if had_errors {
-            decode_str = (*String::from_utf8_lossy(&vec)).to_string();
-        }
-
-        file.enc = enc;
-        file.nl = self.buf.check_nl();
-        file.mod_time = modified_time;
-
-        let mut b = RopeBuilder::new();
-        b.append(&decode_str);
-        self.buf.text = b.finish();
-
-        Log::info("File info", &file);
-
-        Ok(had_errors)
-    }
 
     pub fn change_nl(&mut self, from_nl_str: &str, to_nl_str: &str) {
         let from_nl = &NL::get_nl(from_nl_str);
@@ -274,7 +239,7 @@ impl Editor {
     }
 
     pub fn get_disp_row_num() -> usize {
-        return get_term_size().1 - MENUBAR_ROW_NUM - FILEBAR_ROW_NUM - STATUSBAR_ROW_NUM;
+        return get_term_size().1 - MENUBAR_HEIGHT - FILEBAR_HEIGHT - STATUSBAR_ROW_NUM;
     }
 
     pub fn is_disp_range_absolute(&self, range: &Range<usize>) -> bool {
@@ -324,5 +289,12 @@ impl Editor {
 
     pub fn get_curt_row_len(&self) -> usize {
         return self.win_mgr.curt_ref().height();
+    }
+
+    pub fn enable_syntax_highlight(&mut self) {
+        let file = State::get().curt_state().file.clone();
+        if CfgSyntax::get().syntax.syntax_set.find_syntax_by_extension(&file.ext).cloned().is_some() && file.len < Cfg::get().colors.theme.disable_syntax_highlight_file_size as u64 * 10240000.0 as u64 && is_enable_syntax_highlight(&file.ext) {
+            self.is_enable_syntax_highlight = true;
+        }
     }
 }

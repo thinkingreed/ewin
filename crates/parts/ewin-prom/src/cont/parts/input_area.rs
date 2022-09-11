@@ -1,7 +1,7 @@
 use crate::{model::*, prom_trait::cont_trait::*, util::*};
 use crossterm::cursor::MoveTo;
 use ewin_cfg::{colors::*, log::*};
-use ewin_const::models::{draw::*, evt::*};
+use ewin_const::models::{draw::*, event::*};
 use ewin_key::{cur::*, key::cmd::*, model::*, sel_range::*};
 use ewin_utils::char_edit::*;
 
@@ -26,7 +26,7 @@ impl PromContInputArea {
                 if self.config.is_path {
                     self.buf = self.path_comp.get_path_candidate(self.base.cmd.cmd_type == CmdType::NextContent, self.buf[..self.cur.x].iter().collect::<String>(), self.config.is_path_dir_only);
                     self.set_cur_target(self.buf.len());
-                    return ActType::Draw(DParts::Prompt);
+                    return ActType::Draw(DrawParts::Prompt);
                 }
                 return ActType::Next;
             }
@@ -62,7 +62,7 @@ impl PromContInputArea {
         if self.config.is_edit_proc_later {
             return ActType::Next;
         }
-        return ActType::Draw(DParts::Prompt);
+        return ActType::Draw(DrawParts::Prompt);
     }
 
     pub fn set_cur_target(&mut self, x: usize) {

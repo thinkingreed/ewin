@@ -2,7 +2,7 @@ use crate::{
     ewin_key::key::{cmd::*, keys::*},
     model::*,
 };
-use ewin_cfg::{log::*, model::default::*};
+use ewin_cfg::{log::*, model::general::default::*};
 use ewin_const::term::*;
 use ewin_key::sel_range::*;
 use ewin_state::term::*;
@@ -40,26 +40,18 @@ impl Editor {
         };
 
         // scrlbar_v
-        if self.win_mgr.curt().scrl_v.is_show && self.get_curt_row_posi() <= y && y <= self.get_curt_row_posi() + self.get_curt_row_len() {
-            match self.cmd.cmd_type {
-                CmdType::MouseDownLeft(y, x) if self.win_mgr.curt().area_h.1 <= x => {
-                    self.set_scrlbar_v_posi(y);
-                }
-                CmdType::MouseDragLeftDown(y, _) | CmdType::MouseDragLeftUp(y, _) | CmdType::MouseDragLeftLeft(y, _) | CmdType::MouseDragLeftRight(y, _) if self.win_mgr.curt().scrl_v.is_enable => {
-                    if matches!(self.cmd.cmd_type, CmdType::MouseDragLeftDown(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftUp(_, _)) {
-                        self.set_scrlbar_v_posi(y);
-                    }
-                }
-                _ => self.win_mgr.curt().scrl_v.is_enable = false,
-            };
-        }
+        let scrl_v_bar_x = self.win_mgr.curt().area_h.1;
+        let view_y = self.get_curt_row_posi();
+        let view_height = self.get_curt_row_len();
+        self.win_mgr.curt().scrl_v.ctrl_scrollbar_v(y, &self.cmd.cmd_type, scrl_v_bar_x, view_y, view_height);
+        self.set_cur_at_scrlbar_v_posi();
 
         Log::debug("self.sel 111", &self.win_mgr.curt().sel);
 
         // scrlbar_h
-        let height = Cfg::get().general.editor.scrollbar.horizontal.height;
+        let height = Cfg::get().general.editor.scrollbar. horizontal.height;
         match self.cmd.cmd_type {
-            CmdType::MouseDownLeft(_, x) if self.win_mgr.curt().scrl_h.row_posi <= y && y < self.win_mgr.curt().scrl_h.row_posi + height => {
+            CmdType::MouseDownLeft(_, x) if self.win_mgr.curt().scrl_h.view.y <= y && y < self.win_mgr.curt().scrl_h.view.y + height => {
                 self.set_scrlbar_h_posi(x);
                 return;
             }

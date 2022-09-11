@@ -3,53 +3,59 @@ use ewin_cfg::{lang::lang_cfg::*, log::*};
 
 use ewin_const::{
     def::*,
-    models::{draw::*, evt::*, file::*},
+    models::{draw::*, event::*, file::*},
 };
 use ewin_job::job::*;
 use ewin_key::key::cmd::*;
 use ewin_state::term::*;
 use ewin_utils::files::file::*;
-use std::{io::ErrorKind, path::Path};
+use std::path::Path;
 
 impl Tabs {
-    pub fn open_file(&mut self, filenm: &str, file_open_type: FileOpenType, tab_opt: Option<&mut Tab>, file_org_opt: Option<&File>) -> ActType {
+    pub fn open_file(&mut self, filenm: &str, file_open_type: FileOpenType, tab: Tab, file_org_opt: Option<&File>) -> ActType {
         Log::info("File open start", &filenm);
+        let mut tab = tab;
 
-        let path = Path::new(&filenm);
-        let (is_readable, is_writable) = File::is_readable_writable(filenm);
+        let absolute_path = if filenm.is_empty() { "".to_string() } else { File::get_absolute_path(filenm) };
+        let path = Path::new(&absolute_path);
+        let (_, is_writable) = File::is_readable_writable(filenm);
         Log::info("path", &path);
 
         if !filenm.is_empty() && !path.exists() {
-            if file_open_type == FileOpenType::First {
+            if self.vec.is_empty() {
                 return ActType::ExitMsg(Lang::get().file_not_found.clone());
             } else {
-                return ActType::Draw(DParts::MsgBar(Lang::get().file_not_found.to_string()));
+                return ActType::Draw(DrawParts::MsgBar(Lang::get().file_not_found.to_string()));
             };
         } else {
-            let mut file = File::new(filenm);
+            let mut file = File::new(&absolute_path);
+            Log::info("file", &file);
+
             if let Some(h_file_org) = file_org_opt {
                 file.watch_mode = h_file_org.watch_mode;
             }
-            let mut tab = if let Some(tab) = tab_opt { tab.clone() } else { self.curt().clone() };
             let mut is_read_only = false;
             if !filenm.is_empty() {
-                // read
-                let result = TextBuffer::read_file(&mut file);
+                let specify_encode_opt = match file_open_type {
+                    FileOpenType::ReopenEncode(encode) => Some(encode),
+                    _ => None,
+                };
+
+                let result = TextBuffer::read_file(&mut file, specify_encode_opt);
                 match result {
                     Ok((text_buf, _bom_exsist)) => {
                         file.bom = _bom_exsist;
                         tab.editor.buf = text_buf;
-
                         if !is_writable {
                             is_read_only = true;
                         }
                     }
                     Err(err) => {
-                        let err_str = if err.kind() == ErrorKind::PermissionDenied && !is_readable { Lang::get().no_read_permission.clone() } else { format!("{} {:?}", &Lang::get().file_opening_problem, err) };
+                        let err_str = File::get_io_err_str(err);
                         if self.vec.is_empty() {
                             return ActType::ExitMsg(err_str);
                         } else {
-                            return ActType::Draw(DParts::MsgBar(err_str));
+                            return ActType::Draw(DrawParts::MsgBar(err_str));
                         }
                     }
                 }
@@ -57,23 +63,24 @@ impl Tabs {
             Log::info("File info", &file);
 
             match file_open_type {
-                FileOpenType::First | FileOpenType::Nomal => {
-                    self.add_tab(&mut tab.clone(), file, file_open_type);
+                FileOpenType::Nomal => {
+                    self.add_tab(&mut tab, file, file_open_type);
                     self.curt().editor.set_cur_default();
                 }
-                FileOpenType::Reopen => {
+                FileOpenType::Reopen | FileOpenType::ReopenEncode(_) => {
                     self.reopen_tab(tab.clone(), file, file_open_type);
-                    self.curt().editor.cmd = Cmd::to_cmd(CmdType::ReOpenFile);
+                    self.curt().editor.cmd = Cmd::to_cmd(CmdType::ReOpenFile(file_open_type));
                     State::get().curt_mut_state().editor.is_changed = false;
                     self.curt().editor.adjust_cur_posi();
                 }
             };
+
             if is_read_only {
                 State::get().curt_mut_state().editor.is_read_only = true;
             }
 
             if !filenm.is_empty() {
-                self.curt().enable_syntax_highlight();
+                self.curt().editor.enable_syntax_highlight();
             }
 
             // for input complement
@@ -86,11 +93,15 @@ impl Tabs {
         }
     }
 
-    pub fn reopen_curt_file(&mut self) {
+    pub fn reopen_curt_file(&mut self, file_open_type: FileOpenType) -> ActType {
         self.curt().clear_curt_tab(true);
         self.set_size();
         let file = State::get().curt_state().file.clone();
-        self.open_file(&file.fullpath, FileOpenType::Reopen, None, Some(&file));
+
+        let tab = self.curt().clone();
+        self.open_file(&file.fullpath, file_open_type, tab, Some(&file));
+
+        return ActType::Draw(DrawParts::TabsAll);
     }
 
     pub fn close_file(&mut self, tab_idx: usize, close_type: CloseFileType) -> ActType {
@@ -108,7 +119,7 @@ impl Tabs {
         } else {
             self.del_tab(tab_idx);
 
-            if self.state.is_all_close_confirm {
+            if State::get().tabs_all().is_all_close_confirm {
                 // TODO TEST
                 // TODO TEST
                 // TODO TEST
@@ -118,7 +129,7 @@ impl Tabs {
                 Job::send_cmd(CmdType::CloseOtherThanThisTab(State::get().tabs.all.close_other_than_this_tab_idx));
                 return ActType::None;
             }
-            return ActType::Draw(DParts::All);
+            return ActType::Draw(DrawParts::TabsAll);
         }
     }
 }

@@ -5,7 +5,7 @@ use ewin_ctx_menu::{ctx_menu::*, view_traits::view_trait::*};
 
 impl ViewCtxMenuTrait for FileBar {
     fn is_tgt_ctx_menu(&mut self, y: usize, x: usize) -> bool {
-        if y == self.row_posi {
+        if y == self.view.y {
             for h_file in self.file_vec.iter() {
                 if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 || h_file.close_area.0 <= x && x <= h_file.close_area.1 {
                     return true;

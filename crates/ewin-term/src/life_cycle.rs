@@ -8,20 +8,25 @@ use crossterm::{
 };
 use ewin_cfg::{
     log::*,
-    model::{default::*, modal::*},
+    model::{general::default::*, modal::*},
 };
-use ewin_const::models::{env::*, file::*};
-use ewin_ctx_menu::{ctx_menu::CtxMenu, global::*};
+use ewin_const::models::{env::*, event::*};
+use ewin_ctx_menu::{ctx_menu::*, global::*};
 use ewin_dialog::{dialog::*, global::*};
 use ewin_file_bar::{filebar::*, global::*};
 use ewin_help::{global::*, help::*};
 use ewin_key::{global::*, model::*};
-use ewin_menulist::{global::*, menubar::*};
+use ewin_menu_bar::{global::*, menubar::*};
+use ewin_msg_bar::{global::*, msgbar::*};
+use ewin_prom::{global::*, model::*};
+use ewin_side_bar::{global::*, sidebar::*};
+use ewin_status_bar::{global::*, statusbar::*};
 use ewin_tabs::tab::*;
-use ewin_utils::{global::*, os::*};
+use ewin_utils::{files::file::*, global::*, os::*};
 
 use ewin_plugin::plugin::*;
 use ewin_state::{global::*, term::*};
+use parking_lot::Mutex;
 use std::{io::stdout, process::exit};
 
 impl Term {
@@ -43,7 +48,6 @@ impl Term {
 
     pub fn finalize() {
         Macros::exit_js_engine();
-
         disable_raw_mode().unwrap();
         execute!(stdout(), LeaveAlternateScreen, DisableMouseCapture, ResetColor, Show).unwrap();
     }
@@ -66,23 +70,28 @@ impl Term {
     pub fn activate(&mut self, args: &AppArgs) {
         Log::info_key("activate");
 
-        let _ = GREP_CANCEL_VEC.set(tokio::sync::Mutex::new(vec![GrepCancelType::None]));
-        let _ = WATCH_INFO.set(tokio::sync::Mutex::new(WatchInfo::default()));
+        let _ = GREP_CANCEL_VEC.set(Mutex::new(vec![GrepCancelType::None]));
+        let _ = WATCH_INFO.set(Mutex::new(WatchInfo::default()));
+        let _ = TABS.set(Mutex::new(State::default()));
+        let _ = PROM.set(Mutex::new(Prom::default()));
+        let _ = DIALOG.set(Mutex::new(Dialog::default()));
+        let _ = CTX_MENU.set(Mutex::new(CtxMenu::default()));
+        let _ = FILE_BAR.set(Mutex::new(FileBar::default()));
+        let _ = STATUS_BAR.set(Mutex::new(StatusBar::default()));
+        let _ = MSG_BAR.set(Mutex::new(MsgBar::default()));
+        let _ = HELP.set(Mutex::new(Help::default()));
+        let _ = MENU_BAR.set(Mutex::new(MenuBar::default()));
+        let _ = SIDE_BAR.set(Mutex::new(SideBar::default()));
 
-        let _ = TABS.set(tokio::sync::Mutex::new(State::get_init_file_info()));
-
-        let _ = DIALOG.set(tokio::sync::Mutex::new(Dialog::default()));
-        let _ = CTX_MENU.set(tokio::sync::Mutex::new(CtxMenu::default()));
-        let _ = FILE_BAR.set(tokio::sync::Mutex::new(FileBar::default()));
-        let _ = HELP.set(tokio::sync::Mutex::new(Help::default()));
-        let _ = MENU_BAR.set(tokio::sync::Mutex::new(MenuBar::default()));
+        let act_typ = self.tabs.open_file(&args.filenm, FileOpenType::Nomal, Tab::new(), None);
+        if let ActType::ExitMsg(msg) = act_typ {
+            Term::exit_show_msg(&msg)
+        };
 
         self.set_size_init();
-        self.tabs.open_file(&args.filenm, FileOpenType::First, Some(&mut Tab::new()), None);
 
-        CtxMenu::init();
+        CtxMenu::get().init();
         MenuBar::get().init();
-
-        Log::info("FileBar::get()", &FileBar::get());
+        SideBar::get().init(&File::get_absolute_path(&args.filenm), false);
     }
 }

@@ -1,5 +1,5 @@
 extern crate ropey;
-use super::{bom::Bom, encode::*};
+use super::{bom::*, encode::*, nl::*};
 use crate::global::*;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
 use ewin_const::{def::*, models::model::*};
@@ -59,34 +59,32 @@ impl File {
     }
 
     pub fn read_external_file(filepath: &str) -> (String, String) {
-        let is_readable = File::is_readable(filepath);
-
-        match File::read(filepath) {
-            Ok((string, _, _, _)) => (string, "".to_string()),
+        match File::read(filepath, None) {
+            Ok((string, _, _, _, _)) => (string, "".to_string()),
             Err(err) => {
                 let filenm = Path::new(&filepath).file_name().unwrap().to_string_lossy().to_string();
-                Log::error_s(&err.to_string());
-                match err.kind() {
-                    ErrorKind::PermissionDenied => {
-                        if !is_readable {
-                            return ("".to_string(), format!("{} {}", &filenm, &Lang::get().no_read_permission.clone()));
-                        }
-                    }
-                    ErrorKind::NotFound => return ("".to_string(), format!("{} {}", &filenm, &Lang::get().file_not_found.clone())),
-                    _ => return ("".to_string(), format!("{} {}", &filenm, &Lang::get().file_opening_problem.clone())),
-                }
-                ("".to_string(), err.to_string())
+
+                let err_str = File::get_io_err_str(err);
+                Log::error_s(&err_str);
+                ("".to_string(), format!("{} {}", &filenm, err_str))
             }
         }
     }
 
-    pub fn read(path: &str) -> io::Result<(String, Encode, Option<Encode>, SystemTime)> {
-        let (vec, bom, modified_time) = File::read_file(path)?;
-        let (str, enc) = Encode::try_read_bytes(&vec);
-        return Ok((str, enc, bom, modified_time));
+    pub fn read(path: &str, specify_encoe_opt: Option<Encode>) -> io::Result<(String, Encode, String, Option<Encode>, SystemTime)> {
+        let (vec, nl, bom, modified_time) = File::read_file(path)?;
+
+        let (str, enc) = if let Some(specify_encoe) = specify_encoe_opt {
+            let (str, enc, had_errors) = File::read_bytes(&vec, specify_encoe);
+            Log::debug("specify encoe had_errors", &had_errors);
+            (str, enc)
+        } else {
+            File::try_read_bytes(&vec)
+        };
+        return Ok((str, enc, nl, bom, modified_time));
     }
 
-    pub fn read_file(path: &str) -> io::Result<(Vec<u8>, Option<Encode>, SystemTime)> {
+    pub fn read_file(path: &str) -> io::Result<(Vec<u8>, String, Option<Encode>, SystemTime)> {
         let mut file = std::fs::File::open(path)?;
 
         Log::debug("file metadata", &file.metadata()?.modified());
@@ -97,8 +95,9 @@ impl File {
         BufReader::new(&file).read_to_end(&mut vec)?;
         file.seek(SeekFrom::Start(0))?;
         let bom = Bom::check_file_bom(&file);
+        let nl = NL::check_nl(&file);
 
-        Ok((vec, bom, modified_time))
+        Ok((vec, nl, bom, modified_time))
     }
 
     pub fn get_modified_time(path: &str) -> Option<SystemTime> {
@@ -132,30 +131,107 @@ impl File {
         std::fs::create_dir_all(prefix)?;
         Ok(())
     }
+
+    /*
+    pub fn reload_with_specify_encoding(file: &mut File, enc_name: &str) -> io::Result<(String, bool)> {
+        let encode = Encode::from_name(enc_name);
+
+        let (vec, nl, bom, modified_time) = File::read_file(&file.name)?;
+        let (mut decode_str, enc, had_errors) = File::read_bytes(&vec, encode);
+        if had_errors {
+            decode_str = (*String::from_utf8_lossy(&vec)).to_string();
+        } else {
+            file.bom = bom;
+            file.enc = enc;
+            file.nl = nl;
+            file.mod_time = modified_time;
+        }
+
+        Log::info("File info", &file);
+
+        Ok((decode_str, had_errors))
+    }
+     */
+
+    pub fn get_io_err_str(err: io::Error) -> String {
+        return match err.kind() {
+            ErrorKind::PermissionDenied => Lang::get().no_read_permission.to_string(),
+            ErrorKind::NotFound => Lang::get().file_not_found.to_string(),
+            _ => Lang::get().file_opening_problem.to_string(),
+        };
+    }
+
+    pub fn try_read_bytes(vec: &[u8]) -> (String, Encode) {
+        // UTF8
+        let (str, enc, had_errors) = File::read_bytes(vec, Encode::UTF8);
+        Log::debug("UTF8 had_errors", &had_errors);
+        if !had_errors {
+            return (str, enc);
+        }
+        // SJIS
+        let (str, enc, had_errors) = File::read_bytes(vec, Encode::SJIS);
+        Log::debug("SJIS had_errors", &had_errors);
+        if !had_errors {
+            return (str, enc);
+        }
+        // EUC_JP
+        let (str, enc, had_errors) = File::read_bytes(vec, Encode::EucJp);
+        if !had_errors {
+            return (str, enc);
+        }
+        // GBK
+        let (str, enc, had_errors) = File::read_bytes(vec, Encode::GBK);
+        if !had_errors {
+            return (str, enc);
+        }
+        // UTF16LE・UTF16BE
+        // Read once with UTF16LE / UTF16BE to be judged by bom
+        let (str, enc, had_errors) = File::read_bytes(vec, Encode::UTF16LE);
+        if !had_errors {
+            return (str, enc);
+        }
+
+        // Encoding::Unknown
+        return ((*String::from_utf8_lossy(vec)).to_string(), Encode::Unknown);
+    }
+
+    pub fn read_bytes(bytes: &[u8], encode: Encode) -> (String, Encode, bool) {
+        Log::debug_key("Encode::read_bytes");
+
+        Log::debug("encode", &encode);
+        let (cow, enc, had_errors) = Encode::into_encoding(encode).decode(bytes);
+        Log::debug("had_errors", &had_errors);
+        return ((*cow).to_string(), Encode::from_encoding(enc), had_errors);
+    }
+
+    pub fn get_absolute_path(path_str: &str) -> String {
+        let path = Path::new(path_str);
+        return if path.is_absolute() { path_str.to_string() } else { Path::new(&*CURT_DIR).join(path_str).to_string_lossy().to_string() };
+    }
+
+    pub fn get_filenm(path_str: &str) -> String {
+        let path = Path::new(path_str);
+        return if path.is_absolute() { path.file_name().unwrap().to_string_lossy().to_string() } else { path_str.to_string() };
+    }
+
     #[allow(unused_assignments)]
     pub fn new(path_str: &str) -> Self {
         Log::debug("path_str", &path_str);
-        let mut filename = String::new();
-        let mut fullpath = String::new();
+        let mut filenm = String::new();
+        let fullpath = File::get_absolute_path(path_str);
         let mut is_dir = false;
         let mut ext = String::new();
         let mut len = 0;
         let mut create_time = SystemTime::UNIX_EPOCH;
         let mut mod_time = SystemTime::UNIX_EPOCH;
 
-        let path = Path::new(&path_str);
+        let path = Path::new(&fullpath);
         if path_str.is_empty() {
-            filename = Lang::get().new_file.clone()
+            filenm = Lang::get().new_file.clone()
         } else {
-            if path.is_absolute() {
-                filename = path.file_name().unwrap().to_string_lossy().to_string();
-                fullpath = path_str.to_string();
-            } else {
-                filename = path_str.to_string();
-                fullpath = Path::new(&*CURT_DIR).join(path_str).to_string_lossy().to_string();
-            }
+            filenm = File::get_filenm(&fullpath);
 
-            let metadata = fs::metadata(path_str).unwrap();
+            let metadata = fs::metadata(&fullpath).unwrap();
             is_dir = metadata.is_dir();
 
             create_time = metadata.created().unwrap_or(SystemTime::UNIX_EPOCH);
@@ -163,22 +239,15 @@ impl File {
             ext = path.extension().unwrap_or_else(|| OsStr::new("txt")).to_string_lossy().to_string();
             len = metadata.len();
         };
-        File { name: filename, fullpath, is_dir, ext, len, create_time, mod_time, ..File::default() }
+        File { name: filenm, fullpath, is_dir, ext, len, create_time, mod_time, ..File::default() }
     }
 }
 
-pub fn change_nl(string: &mut String, to_nl: &str) {
-    // Since it is not possible to replace only LF from a character string containing CRLF,
-    // convert it to LF and then convert it to CRLF.
-    *string = string.replace(NEW_LINE_CRLF, &NEW_LINE_LF.to_string());
-    if to_nl == NEW_LINE_CRLF_STR {
-        *string = string.replace(&NEW_LINE_LF.to_string(), NEW_LINE_CRLF);
-    }
-}
-
-pub fn del_nl(string: &mut String) {
-    *string = string.replace(NEW_LINE_CRLF, "");
-    *string = string.replace(NEW_LINE_LF, "");
+#[derive(Debug, Clone, Hash, Copy, PartialEq, Eq)]
+pub enum FileOpenType {
+    Nomal,
+    Reopen,
+    ReopenEncode(Encode),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

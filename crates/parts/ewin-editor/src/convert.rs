@@ -2,7 +2,7 @@ use crate::model::*;
 use ewin_cfg::{lang::lang_cfg::Lang, log::*};
 use ewin_const::{
     def::*,
-    models::{draw::*, evt::*},
+    models::{draw::*, event::*},
 };
 use ewin_key::{key::cmd::*, model::*};
 use kana::*;
@@ -12,7 +12,7 @@ impl Editor {
         Log::debug_key("Editor.convert");
 
         if !self.win_mgr.curt().sel.is_selected() {
-            return ActType::Draw(DParts::AllMsgBar(Lang::get().no_sel_range.to_string()));
+            return ActType::Draw(DrawParts::TabsAllMsgBar(Lang::get().no_sel_range.to_string()));
         }
         let sel = self.win_mgr.curt().sel.get_range();
         Log::debug("sel", &sel);
@@ -32,7 +32,7 @@ impl Editor {
 
         self.edit_proc_cmd_type(CmdType::InsertStr(convert_str));
 
-        return ActType::Draw(DParts::All);
+        return ActType::Draw(DrawParts::TabsAll);
     }
 }
 

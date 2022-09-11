@@ -3,6 +3,7 @@ use ewin_const::models::model::*;
 use ewin_job::{global::*, job::*};
 use ewin_key::{global::*, model::*, watcher::*};
 use ewin_utils::{files::file::*, util::*};
+use parking_lot::MutexGuard;
 use std::{
     path::PathBuf,
     str::FromStr,
@@ -20,7 +21,7 @@ pub fn watching_file() {
             let (tx, _) = std::sync::mpsc::channel();
             let mut watcher = FileWatcher::new(tx);
             loop {
-                if let Some(Ok(mut watch_info)) = WATCH_INFO.get().map(|watch_info| watch_info.try_lock()) {
+                if let Some(Some(mut watch_info)) = WATCH_INFO.get().map(|watch_info| watch_info.try_lock()) {
                     // Log::debug("watch_info", &watch_info);
 
                     if watch_info.mode == WatchMode::NotMonitor {
@@ -51,7 +52,7 @@ pub fn watching_file() {
     }
 }
 
-pub fn set_watch_history(path_str: String, watch_info: &mut tokio::sync::MutexGuard<WatchInfo>, watcher: &mut FileWatcher, is_forced: bool) {
+pub fn set_watch_history(path_str: String, watch_info: &mut MutexGuard<WatchInfo>, watcher: &mut FileWatcher, is_forced: bool) {
     if is_forced {
         if let Some(modified_time) = File::get_modified_time(&path_str) {
             let unixtime_str = to_unixtime_str(modified_time);

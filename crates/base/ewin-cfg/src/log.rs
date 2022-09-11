@@ -4,7 +4,7 @@ use ewin_const::def::APP_NAME;
 use crate::{
     global::*,
     lang::lang_cfg::*,
-    model::{default::*, modal::*},
+    model::{general::default::*, modal::*},
 };
 use std::{
     fmt::{self, Debug},
@@ -48,6 +48,11 @@ impl Log {
         Log::write(s, log_level);
     }
     #[track_caller]
+    pub fn pre_processing_d<T: Debug>(m: &str, v: &T, log_level: LogLevel) {
+        let s = &format!("{}: {:#?}", m, v);
+        Log::write(s, log_level);
+    }
+    #[track_caller]
     pub fn write(s: &str, log_level: LogLevel) {
         if let Some(log) = LOG.get() {
             if log.level > log_level {
@@ -81,6 +86,10 @@ impl Log {
     #[track_caller]
     pub fn debug<T: Debug>(m: &str, v: &T) {
         Log::pre_processing(m, v, LogLevel::Debug);
+    }
+    #[track_caller]
+    pub fn debug_d<T: Debug>(m: &str, v: &T) {
+        Log::pre_processing_d(m, v, LogLevel::Debug);
     }
     #[track_caller]
     pub fn debug_s(m: &str) {

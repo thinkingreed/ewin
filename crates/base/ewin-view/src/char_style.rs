@@ -1,4 +1,4 @@
-use ewin_cfg::{colors::*, model::default::*};
+use ewin_cfg::{colors::*, model::general::default::*};
 
 use crossterm::style::{Color as CrosstermColor, SetBackgroundColor, SetForegroundColor};
 use std::fmt;
@@ -19,7 +19,7 @@ impl fmt::Display for CharStyle {
 
 impl CharStyle {
     pub fn from_syntect_style(cfg: &Cfg, style: &syntect::highlighting::Style) -> CharStyle {
-        if cfg.general.colors.theme.theme_bg_enable {
+        if cfg.colors.theme.theme_bg_enable {
             CharStyle { bg: style.background.into(), fg: style.foreground.into() }
         } else {
             CharStyle { bg: cfg.colors.editor.bg, fg: style.foreground.into() }

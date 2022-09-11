@@ -1,14 +1,8 @@
 use crate::dialog::*;
 use ewin_cfg::log::*;
-use ewin_const::models::{draw::*, evt::*};
-use ewin_view::view_traits::view_trait::*;
+use ewin_view::{view::*, view_traits::view_trait::*};
 
 impl ViewEvtTrait for Dialog {
-    fn resize(&mut self) -> ActType {
-        Log::debug_key("Editor.resize");
-        self.clear();
-        return ActType::Draw(DParts::All);
-    }
     fn is_tgt_mouse_move(&mut self, y: usize, x: usize) -> bool {
         if self.is_show {
             Log::debug_key("Dialog.is_tgt_mouse_move");
@@ -33,5 +27,9 @@ impl ViewEvtTrait for Dialog {
             }
         }
         return false;
+    }
+
+    fn view(&self) -> View {
+        return self.view;
     }
 }

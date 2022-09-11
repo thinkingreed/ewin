@@ -17,9 +17,9 @@ ropey="1.2.0"
 syntect = "5.0.0"
 unicode-width = "0.1.8"
 unicode-jp= "0.4.0"
-crossterm  = {version ="0.24.0", features = ["event-stream"]} 
+crossterm  = {version ="0.25.0", features = ["event-stream"]} 
 serde = { version = "1.0.123", features = ["derive"] }
-regex = "1.4.3"
+regex = "1.6.0"
 byteorder = "1.4.3"
 serde_json = "1.0"
 anyhow = "1.0.57"
@@ -31,5 +31,8 @@ ewin-view = {version = "0.0.2", path = "../../base/ewin-view" }
 ewin-utils = {version = "0.0.2", path = "../../base/ewin-utils" }
 ewin-job = {version = "0.0.2", path = "../../base/ewin-job" }
 ewin-state = {version = "0.0.2", path = "../../ewin-state" }
-ewin-menulist = {version = "0.0.2", path = "../ewin-menulist" }
+ewin-menu_bar = {version = "0.0.2", path = "../ewin-menu_bar" }
 ewin-ctx_menu = {version = "0.0.2", path = "../ewin-ctx_menu" }
+ewin-prom = {version = "0.0.2", path = "../ewin-prom" }
+ewin-file_bar = {version = "0.0.2", path = "../ewin-file_bar" }
+ewin-side_bar = {version = "0.0.2", path = "../ewin-side_bar" }

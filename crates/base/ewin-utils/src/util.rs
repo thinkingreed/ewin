@@ -1,12 +1,12 @@
 use chrono::{DateTime, Local};
-use ewin_cfg::{global::*, model::default::*};
+use ewin_cfg::{global::*, model::general::default::*};
 use ewin_const::def::*;
 use number_prefix::NumberPrefix;
 use serde_json::Value;
 use std::{self, collections::HashMap, time::*, *};
 
 pub fn is_enable_syntax_highlight(ext: &str) -> bool {
-    !(ext.is_empty() || Cfg::get().general.colors.theme.disable_highlight_ext.contains(&ext.to_string()))
+    !(ext.is_empty() || Cfg::get().colors.theme.disable_highlight_ext.contains(&ext.to_string()))
 }
 
 pub fn ordinal_suffix(number: usize) -> &'static str {
@@ -84,7 +84,7 @@ pub fn fmt_bytes(amount: u64) -> String {
 
 #[cfg(test)]
 mod tests {
-    use ewin_cfg::model::{default::Cfg, modal::AppArgs};
+    use ewin_cfg::model::{general::default::*, modal::AppArgs};
     use ewin_const::models::env::Env;
 
     use crate::{global::*, os::*};

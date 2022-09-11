@@ -4,6 +4,7 @@ use crossterm::{
     terminal::{Clear, ClearType},
 };
 use ewin_cfg::{colors::*, log::*};
+use ewin_const::models::view::*;
 use ewin_state::term::*;
 use std::fmt::Write;
 
@@ -11,12 +12,12 @@ impl FileBar {
     pub fn draw(str_vec: &mut Vec<String>) {
         Log::info_key("FileBar.draw");
 
-        if let Ok(fbar) = FileBar::get_result() {
+        if let Some(fbar) = FileBar::get_result() {
             let menu_btn = format!(" {} ", "⠇");
             let left_arrow_btn = "< ".to_string();
             let right_arrow_btn = " >".to_string();
 
-            let mut hber_str = format!("{}{}{}", MoveTo(0, fbar.row_posi as u16), Clear(ClearType::CurrentLine), Colors::get_default_fg_bg());
+            let mut hber_str = format!("{}{}{}", MoveTo(fbar.view.x as u16, fbar.view.y as u16), Clear(ClearType::UntilNewLine), Colors::get_default_fg_bg());
             if fbar.is_left_arrow_disp {
                 let _ = write!(hber_str, "{}{}{}", &Colors::get_filebar_active_fg_bg(), left_arrow_btn, &Colors::get_default_fg_bg());
             }
@@ -30,12 +31,13 @@ impl FileBar {
                 let _ = write!(hber_str, "{}{}{}", &state_color, &h_file.filenm_disp.clone(), &Colors::get_default_fg_bg());
             }
 
-            let _ = write!(hber_str, "{}{}", &Colors::get_filebar_default_bg(), &" ".repeat(fbar.all_filenm_rest));
+            let _ = write!(hber_str, "{}{}", &Colors::get_filebar_default_bg(), &get_space(fbar.all_filenm_rest));
 
             if fbar.is_right_arrow_disp {
                 hber_str.push_str(&right_arrow_btn);
             }
             hber_str = format!("{}{}{}", hber_str, menu_btn, Colors::get_default_bg(),);
+
             str_vec.push(hber_str);
         }
     }

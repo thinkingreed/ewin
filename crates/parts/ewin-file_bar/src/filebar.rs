@@ -2,8 +2,10 @@ use crate::filebar_file::*;
 use ewin_cfg::log::*;
 use ewin_const::{def::*, term::*};
 use ewin_key::model::*;
+use ewin_side_bar::sidebar::*;
 use ewin_state::term::*;
 use ewin_utils::str_edit::*;
+use ewin_view::view::*;
 
 impl FileBar {
     const ALLOW_BTN_WITH: usize = 2;
@@ -12,10 +14,13 @@ impl FileBar {
     // Front and back margins of the file
     const FILENM_MARGIN: usize = 3;
 
-    pub fn set_posi(cols_w: usize) {
-        if let Ok(mut fbar) = FileBar::get_result() {
-            fbar.col_num = cols_w;
-            fbar.all_filenm_space_w = fbar.col_num - FileBar::MENU_BTN_WITH;
+    pub fn set_posi() {
+        if let Some(mut fbar) = FileBar::get_result() {
+            let side_bar_width = SideBar::get().get_width_all();
+            let cols = get_term_size().0;
+            fbar.view.x = side_bar_width;
+            fbar.view.width = cols - side_bar_width;
+            fbar.all_filenm_space_w = fbar.view.x + fbar.view.width - FileBar::MENU_BTN_WITH;
         }
     }
 
@@ -27,17 +32,15 @@ impl FileBar {
             return;
         }
          */
-        if let Ok(mut fbar) = FileBar::get_result() {
+        if let Some(mut fbar) = FileBar::get_result() {
             let disp_base_idx = if fbar.disp_base_idx == USIZE_UNDEFINED { 0 } else { fbar.disp_base_idx };
 
             fbar.init();
 
             let mut max_len = FileBar::FILENM_LEN_LIMMIT;
-            let cols = get_term_size().0;
-            Log::debug("cols", &cols);
             let left_allow_len = if fbar.file_vec.len() == 1 { 0 } else { FileBar::ALLOW_BTN_WITH };
 
-            let rest_len = cols - FileBar::MENU_BTN_WITH - 1 - left_allow_len - FileBar::FILENM_MARGIN;
+            let rest_len = fbar.view.width - FileBar::MENU_BTN_WITH - 1 - left_allow_len - FileBar::FILENM_MARGIN;
             Log::debug("rest_len", &rest_len);
             if max_len > rest_len {
                 max_len = rest_len;
@@ -115,7 +118,7 @@ impl FileBar {
             fbar.all_filenm_rest = fbar.all_filenm_space_w - width;
 
             // Width calc on tab area
-            let mut width = if fbar.is_left_arrow_disp { 2 } else { 0 };
+            let mut width = if fbar.is_left_arrow_disp { fbar.view.x + 2 } else { fbar.view.x };
             for (idx, filenm) in disp_vec.iter() {
                 let s_w = width;
 
@@ -162,6 +165,7 @@ impl FileBar {
 
 #[derive(Debug, Clone)]
 pub struct FileBar {
+    pub view: View,
     pub all_filenm_rest: usize,
     pub all_filenm_rest_area: (usize, usize),
     pub all_filenm_space_w: usize,
@@ -171,10 +175,6 @@ pub struct FileBar {
     pub is_right_arrow_disp: bool,
     pub right_arrow_area: (usize, usize),
     pub left_arrow_area: (usize, usize),
-    // Position on the terminal
-    pub row_num: usize,
-    pub row_posi: usize,
-    pub col_num: usize,
     pub file_vec: Vec<FilebarFile>,
     pub history: History,
     pub state: FileBarState,
@@ -192,9 +192,7 @@ impl Default for FileBar {
             is_right_arrow_disp: false,
             right_arrow_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
             left_arrow_area: (USIZE_UNDEFINED, USIZE_UNDEFINED),
-            row_num: FILEBAR_ROW_NUM,
-            row_posi: 1,
-            col_num: 0,
+            view: View { y: 1, height: FILEBAR_HEIGHT, ..View::default() },
             file_vec: vec![],
             history: History::default(),
             state: FileBarState::default(),

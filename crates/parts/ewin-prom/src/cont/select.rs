@@ -1,14 +1,14 @@
 use super::parts::input_area::*;
 use crate::ewin_key::clipboard::*;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_const::models::{draw::*, evt::*};
+use ewin_const::models::{draw::*, event::*};
 use ewin_key::cur::*;
 
 impl PromContInputArea {
     pub fn copy(&mut self) -> ActType {
         Log::debug_key("PromContInputArea.copy");
         if !self.sel.is_selected() {
-            return ActType::Draw(DParts::MsgBar(Lang::get().no_sel_range.to_string()));
+            return ActType::Draw(DrawParts::MsgBar(Lang::get().no_sel_range.to_string()));
         }
         let sel = self.sel.get_range();
         let str = self.buf[sel.sx..sel.ex].iter().collect::<String>();
@@ -18,7 +18,7 @@ impl PromContInputArea {
     pub fn cut(&mut self, cut_str: String) -> ActType {
         Log::debug_key("copy");
         if self.sel.is_selected() {
-            return ActType::Draw(DParts::MsgBar(Lang::get().no_sel_range.to_string()));
+            return ActType::Draw(DrawParts::MsgBar(Lang::get().no_sel_range.to_string()));
         }
         Log::debug_key("cut");
         set_clipboard(&cut_str);

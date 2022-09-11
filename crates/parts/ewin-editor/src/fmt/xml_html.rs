@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 
 use ewin_cfg::{
     log::*,
-    model::{default::*, modal::*},
+    model::{general::default::*, modal::*},
 };
 use ewin_const::def::*;
 impl FormatXml {

@@ -4,9 +4,36 @@ use crate::{
     model::*,
     prom_trait::main_trait::*,
 };
-use ewin_cfg::{colors::Colors, lang::lang_cfg::*, model::default::*};
+use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*, model::general::default::*};
+use ewin_const::models::{draw::*, event::*};
+use ewin_job::job::*;
+use ewin_key::model::*;
+use ewin_state::term::*;
+use ewin_utils::util::*;
 
 impl PromReplace {
+    pub fn replace(&mut self) -> ActType {
+        Log::info_key("EvtAct.replace");
+
+        match &self.base.cmd.cmd_type {
+            CmdType::Confirm => {
+                let mut search_str = self.as_mut_base().get_tgt_input_area_str(0);
+                let mut replace_str = self.as_mut_base().get_tgt_input_area_str(1);
+
+                search_str = change_regex(search_str);
+                replace_str = change_regex(replace_str);
+
+                if search_str.is_empty() {
+                    return ActType::Draw(DrawParts::MsgBar(Lang::get().not_set_search_str.to_string()));
+                } else {
+                    Job::send_cmd(CmdType::ReplaceTryExec(search_str, replace_str));
+                    return ActType::None;
+                }
+            }
+            _ => return ActType::Cancel,
+        }
+    }
+
     pub fn new() -> Self {
         let mut prom = PromReplace { base: PromBase { cfg: PromptConfig { is_updown_valid: true }, ..PromBase::default() } };
 
@@ -26,6 +53,12 @@ impl PromReplace {
         prom.base.cont_vec.push(Box::new(input_area));
 
         return prom;
+    }
+
+    pub fn init() -> ActType {
+        State::get().curt_mut_state().prom = PromState::Replase;
+        Prom::get().init(Box::new(PromReplace::new()));
+        return ActType::Draw(DrawParts::TabsAll);
     }
 }
 

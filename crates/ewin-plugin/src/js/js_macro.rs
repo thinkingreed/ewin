@@ -1,6 +1,6 @@
 use crate::plugin::Macros;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_const::models::{draw::*, evt::*};
+use ewin_const::models::{draw::*, event::*, view::*};
 use ewin_utils::files::file::*;
 use std::path::Path;
 use v8::{inspector::*, Context, ContextScope, Function, FunctionCallback, HandleScope, Isolate, Local, MapFnTo, Object, Script, TryCatch, V8};
@@ -41,17 +41,17 @@ impl Macros {
                 script
             } else {
                 Macros::log_exceptions(scope);
-                return ActType::Draw(DParts::MsgBar(format!("{} {}", &Lang::get().script_compile_error, &Lang::get().check_log_file)));
+                return ActType::Draw(DrawParts::MsgBar(format!("{} {}", &Lang::get().script_compile_error, &Lang::get().check_log_file)));
             };
             if let Some(result) = script.run(&mut scope) {
                 Log::debug("script.run result", &result.to_string(&mut scope).unwrap().to_rust_string_lossy(&mut scope));
             } else {
                 Macros::log_exceptions(scope);
-                return ActType::Draw(DParts::MsgBar(format!("{} {}", &Lang::get().script_run_error, &Lang::get().check_log_file)));
+                return ActType::Draw(DrawParts::MsgBar(format!("{} {}", &Lang::get().script_run_error, &Lang::get().check_log_file)));
             };
-            return ActType::Draw(DParts::All);
+            return ActType::Draw(DrawParts::TabsAll);
         } else {
-            return ActType::Draw(DParts::MsgBar(err_str));
+            return ActType::Draw(DrawParts::MsgBar(err_str));
         }
     }
 
@@ -80,7 +80,7 @@ impl Macros {
         let start_column = message.get_start_column();
         let end_column = message.get_end_column();
 
-        Log::error_s(&format!("{}{}", &" ".repeat(if start_column == 0 { 0 } else { start_column }), &"^".repeat(end_column - start_column)));
+        Log::error_s(&format!("{}{}", &get_space(if start_column == 0 { 0 } else { start_column }), &"^".repeat(end_column - start_column)));
 
         // Output stack trace
         let stack_trace = if let Some(stack_trace) = try_catch.stack_trace() {

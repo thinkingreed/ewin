@@ -1,4 +1,4 @@
-use crate::{lang::lang_cfg::*, model::default::*};
+use crate::{lang::lang_cfg::*, model::color::default::*};
 use anyhow::Result;
 use std::{collections::BTreeMap, fs::File, io::BufReader, path::Path};
 use syntect::highlighting::{Theme, ThemeSet};

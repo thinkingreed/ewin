@@ -4,6 +4,7 @@ use crossterm::{cursor::MoveTo, terminal::ClearType::*, terminal::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::Lang, log::*};
 use ewin_const::def::*;
 use ewin_const::models::model::*;
+use ewin_const::models::view::*;
 use ewin_const::term::*;
 use ewin_key::key::cmd::*;
 use ewin_utils::{files::file::*, str_edit::*};
@@ -232,7 +233,7 @@ pub fn get_shaping_file_list(file_vec: &mut [File], cols: usize) -> (Vec<Vec<Ope
                 if let Some((max_len, vec)) = column_len_file_vec.get_mut(x) {
                     if let Some(op_file) = vec.get_mut(y) {
                         let rest = *max_len - get_str_width(&op_file.filenm_disp);
-                        op_file.filenm_disp = format!("{}{}", op_file.filenm_disp, " ".repeat(rest));
+                        op_file.filenm_disp = format!("{}{}", op_file.filenm_disp, get_space(rest));
                         op_file.filenm_area = (row_width, row_width + *max_len - 1);
                         row_width += *max_len;
                         row_vec.push(op_file.clone());

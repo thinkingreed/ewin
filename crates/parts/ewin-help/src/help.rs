@@ -1,4 +1,3 @@
-use crate::global::*;
 use crossterm::{cursor::*, terminal::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
 use ewin_const::{
@@ -8,8 +7,8 @@ use ewin_const::{
 };
 use ewin_key::key::{cmd::*, keys::*};
 use ewin_utils::{char_edit::*, str_edit::*};
+use ewin_view::view::View;
 use std::fmt::Write as _;
-use tokio::sync::MutexGuard;
 
 impl Help {
     pub const DISP_ROW_NUM: usize = 5;
@@ -61,27 +60,27 @@ impl Help {
             vec.clear();
         }
 
-        for (i, sy) in (0_usize..).zip(self.row_posi..self.row_posi + self.row_num) {
+        for (i, sy) in (0_usize..).zip(self.view.y..self.view.y + self.view.height) {
             str_vec.push(format!("{}{}", MoveTo(0, sy as u16), Clear(ClearType::CurrentLine)));
 
             if let Some(vec) = self.key_bind_vec.get(i) {
                 let mut row_str = String::new();
                 let mut width = 0;
                 for bind in vec {
-                    if width + get_str_width(&bind.key) <= self.col_num {
+                    if width + get_str_width(&bind.key) <= self.view.width {
                         let _ = write!(row_str, "{}{}", Colors::get_msg_highlight_fg(), bind.key);
                         width += get_str_width(&bind.key);
 
-                        if width + get_str_width(&bind.funcnm) <= self.col_num {
+                        if width + get_str_width(&bind.funcnm) <= self.view.width {
                             let _ = write!(row_str, "{}{}", Colors::get_msg_normal_fg(), bind.funcnm);
                             width += get_str_width(&bind.funcnm);
                         } else {
-                            let funcnm = cut_str(&bind.funcnm, self.col_num - width, false, false);
+                            let funcnm = cut_str(&bind.funcnm, self.view.width - width, false, false);
                             let _ = write!(row_str, "{}{}", Colors::get_msg_normal_fg(), funcnm);
                             break;
                         }
                     } else {
-                        let key = cut_str(&bind.key, self.col_num - width, false, false);
+                        let key = cut_str(&bind.key, self.view.width - width, false, false);
                         let _ = write!(row_str, "{}{}", Colors::get_msg_highlight_fg(), key);
                         break;
                     }
@@ -126,18 +125,13 @@ impl Help {
 
     pub fn set_size(&mut self) {
         let (cols, rows) = get_term_size();
-        self.col_num = cols;
-        self.row_num = if self.is_show { Help::DISP_ROW_NUM } else { 0 };
-        self.row_posi = if self.is_show { rows - self.row_num } else { 0 };
+        self.view.width = cols;
+        self.view.height = if self.is_show { Help::DISP_ROW_NUM } else { 0 };
+        self.view.y = if self.is_show { rows - self.view.height } else { 0 };
     }
 
     pub fn toggle_show(&mut self) {
         self.is_show = !self.is_show;
-    }
-
-    #[track_caller]
-    pub fn get() -> MutexGuard<'static, Help> {
-        return HELP.get().unwrap().try_lock().unwrap();
     }
 
     pub fn new() -> Self {
@@ -149,19 +143,10 @@ impl Help {
 pub struct Help {
     pub is_show: bool,
     // Number displayed on the terminal
-    pub row_num: usize,
-    pub col_num: usize,
-    // 0 index
-    pub row_posi: usize,
+    pub view: View,
     pub key_bind_vec: Vec<Vec<HelpKeybind>>,
 }
-/*
-impl Default for Help {
-    fn default() -> Self {
-        Help { is_disp: false, col_num: 0, row_num: 0, row_posi: 0, key_bind_vec: vec![] }
-    }
-}
- */
+
 #[derive(Debug, Clone)]
 pub struct HelpKeybind {
     pub key: String,

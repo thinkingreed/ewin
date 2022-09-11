@@ -2,10 +2,13 @@ use crate::view::*;
 use crossterm::{
     cursor::{Hide, Show},
     execute,
-    terminal::{Clear, ClearType, SetTitle},
+    terminal::SetTitle,
 };
-use ewin_const::{def::*, term::*};
-use std::{fmt, io::stdout};
+use ewin_const::{def::*, models::view::get_space, term::*};
+use std::{
+    fmt,
+    io::{stdout, *},
+};
 
 impl View {
     pub fn set_title<T: fmt::Display>(_f: T) {
@@ -19,9 +22,6 @@ impl View {
         execute!(stdout(), Hide).unwrap();
     }
 
-    pub fn clear_all() {
-        execute!(stdout(), Clear(ClearType::All)).unwrap();
-    }
     pub fn check_displayable() -> bool {
         let (cols, rows) = get_term_size();
         // rows 12 is prompt.open_file

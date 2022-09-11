@@ -1,7 +1,7 @@
 use std::cmp::{max, min};
 
 use crate::{model::*, window::*};
-use ewin_cfg::{log::*, model::default::*};
+use ewin_cfg::{log::*, model::general::default::*};
 use ewin_const::{def::*, models::draw::*};
 use ewin_key::{model::*, sel_range::*};
 use ewin_state::term::*;
@@ -74,7 +74,7 @@ impl Editor {
         Log::debug("editor.change_info.new_row", &self.change_info.new_row);
         Log::debug("editor.change_info.restayle_row_set", &self.change_info.restayle_row_set);
 
-        if !self.tgt_editor_draw(win).cells_all.is_empty() {
+        if !self.draw_cache[win.v_idx][win.h_idx].cells_all.is_empty() {
             for (i, del_i) in self.change_info.del_row_set.iter().enumerate() {
                 self.draw_cache[win.v_idx][win.h_idx].cells_all.remove(*del_i - i);
 
@@ -89,7 +89,11 @@ impl Editor {
                 }
             }
             for i in self.change_info.restayle_row_set.iter() {
-                self.draw_cache[win.v_idx][win.h_idx].cells_all[*i] = Vec::new();
+                if self.draw_cache[win.v_idx][win.h_idx].cells_all.get(*i).is_some() {
+                    self.draw_cache[win.v_idx][win.h_idx].cells_all[*i] = Vec::new();
+                } else {
+                    self.draw_cache[win.v_idx][win.h_idx].cells_all.insert(*i, Vec::new());
+                }
                 if self.is_enable_syntax_highlight && self.change_info.change_type == EditerChangeType::Edit {
                     self.draw_cache[win.v_idx][win.h_idx].style_vecs[*i] = Vec::new();
                 }

@@ -1,3 +1,13 @@
+# If theme is set, theme color has the highest priority
+[theme] # option
+# highlight_theme_path = "tmTheme.tmTheme"
+# highlight_theme_background_enable = true
+disable_highlight_ext = ["txt", "log"]
+
+# Only files below this value will be highlighted(positive number:MByte)
+disable_syntax_highlight_file_size = 3
+# "black" or "white"
+default_color_theme = "white"
 
 [editor]
 background = "#000000"
@@ -24,10 +34,6 @@ foreground = "#6e6e6e"
 foreground = "#a9a9a9"
 background = "#d7d7d7"
 
-[editor.scrollbar]
-horizontal_background = "#282828"
-vertical_background = "#282828"
-
 [editor.scale]
 foreground = "#444444"
 background = "#212121"
@@ -42,6 +48,10 @@ background = "#c0c0c0"
 [system.state]
 foreground = "#000000"
 background = "#c0c0c0"
+
+[system.scrollbar]
+horizontal_background = "#212121"
+vertical_background = "#212121"
 
 [menubar]
 active_foreground = "#ffffff"
@@ -60,6 +70,7 @@ default_background = "#212121"
 
 [statusbar]
 foreground = "#c0c0c0"
+background = "#282828"
 
 [ctx_menu]
 non_select_background = "#969696"
@@ -78,8 +89,14 @@ normal_foreground = "#ffffff"
 highlight_foreground = "#00c800"
 warning_foreground = "#aa6400"
 err_foreground = "#ff0000"
+background = "#282828"
 
 [file]
 normal_foreground = "#c0c0c0"
 directory_foreground = "#1e90ff"
 executable_foreground = "#00c800"
+
+[sidebar]
+background = "#000000"
+foreground = "#ffffff"
+header_background = "#212121"

@@ -15,9 +15,9 @@ impl Editor {
         // judgment redraw
         Log::debug("self.draw_range Before setting", &self.draw_range);
 
-        self.draw_range = if matches!(self.cmd.cmd_type, CmdType::Resize(_, _))
+        self.draw_range = if
         // enable_syntax_highlight edit
-      ||  (self.cmd.config.is_edit && self.is_enable_syntax_highlight)
+        (self.cmd.config.is_edit && self.is_enable_syntax_highlight)
         || self.rnw_org != self.get_rnw() ||  self.win_mgr.curt().offset.x_org != self.win_mgr.curt().offset.x 
              // All draw at the end of key record
            //  || self.state.key_macro.is_exec_end
@@ -27,7 +27,7 @@ impl Editor {
         {
             E_DrawRange::All
         } else if (matches!(self.cmd.cmd_type, CmdType::MouseDownLeft(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftLeft(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftRight(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftDown(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftUp(_, _))) && self.win_mgr.curt().scrl_v.is_enable {
-            if self.win_mgr.curt().offset.y_org == self.win_mgr.curt().offset.y && self.win_mgr.curt().scrl_v.row_posi_org == self.win_mgr.curt().scrl_v.row_posi {
+            if self.win_mgr.curt().offset.y_org == self.win_mgr.curt().offset.y && self.win_mgr.curt().scrl_v.view.y_org == self.win_mgr.curt().scrl_v.view.y {
                 E_DrawRange::Not
             } else {
                 E_DrawRange::WinOnlyAll
@@ -157,7 +157,7 @@ impl Editor {
         Log::debug("self.draw_range After setting", &self.draw_range);
     }
 
-    pub fn get_draw_parts(&mut self) -> DParts {
+    pub fn get_draw_parts(&mut self) -> DrawParts {
         Log::debug_s("editor.set_draw_parts");
         self.set_draw_range();
         // set change_info
@@ -179,15 +179,15 @@ impl Editor {
 
         let parts = match self.cmd.cmd_type {
           //  KeyCmd::Unsupported => DParts::MsgBar(Lang::get().unsupported_operation.to_string()),
-          CmdType::OpenMenuFile | CmdType::OpenMenuConvert | CmdType::OpenMenuEdit | CmdType::OpenMenuSearch | CmdType::OpenMenuMacro => DParts::All,
+          CmdType::OpenMenuFile | CmdType::OpenMenuConvert | CmdType::OpenMenuEdit | CmdType::OpenMenuSearch | CmdType::OpenMenuMacro => DrawParts::TabsAll,
           CmdType::CloseFileCurt(_) |   CmdType::OpenNewFile 
                 // | E_Cmd::SaveFile 
-                | CmdType::Resize(_,_) | CmdType::MouseModeSwitch | CmdType::Help | CmdType::Null => DParts::All,
+                | CmdType::MouseModeSwitch | CmdType::Help | CmdType::Null => DrawParts::TabsAll,
                  _ => {
                         match self.draw_range {
-                            E_DrawRange::ScrollDown(_, _) | E_DrawRange::ScrollUp(_, _) => DParts::ScrollUpDown(ScrollUpDownType::Normal),
+                            E_DrawRange::ScrollDown(_, _) | E_DrawRange::ScrollUp(_, _) => DrawParts::ScrollUpDown(ScrollUpDownType::Normal),
                             _ =>
-                                DParts::Editor(self.draw_range),
+                                DrawParts::Editor(self.draw_range),
                         }
                 }
          };

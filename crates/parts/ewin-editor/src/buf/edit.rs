@@ -1,5 +1,5 @@
 use crate::{ewin_key::model::*, model::*};
-use ewin_cfg::{log::*, model::default::*};
+use ewin_cfg::{log::*, model::general::default::*};
 use ewin_const::def::*;
 use ewin_key::{key::cmd::*, sel_range::*};
 use regex::RegexBuilder;

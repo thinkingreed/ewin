@@ -17,17 +17,19 @@ pub mod views {
     pub mod ctx_menu;
     pub mod view;
 }
-pub mod evt_act;
+pub mod event;
 
-pub mod prom {
-    pub mod grep_result;
+pub mod grep_result {
+    pub mod event;
+    pub mod grep;
 }
 pub mod proc {
-    pub mod proc_base;
-    pub mod proc_edit;
+    pub mod base;
+    pub mod edit;
 }
 pub mod size;
 pub mod scrollbar {
+    pub mod com;
     pub mod horizontal;
     pub mod vertical;
 }
@@ -38,7 +40,11 @@ pub mod fmt {
 pub mod change_info;
 pub mod convert;
 pub mod editor;
-pub mod input_comple;
+pub mod input_comple {
+
+    pub mod core;
+    pub mod input_comple;
+}
 pub mod model;
 pub mod scroll;
 pub mod search;
@@ -49,6 +55,7 @@ pub mod key {
     pub mod cur;
     pub mod edit;
     pub mod mouse;
+    pub mod save;
     pub mod select;
     pub mod un_redo;
 }

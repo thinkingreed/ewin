@@ -1,6 +1,6 @@
 use crate::{ewin_key::clipboard::*, ewin_key::model::*, model::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_const::models::{draw::*, evt::*};
+use ewin_const::models::{draw::*, event::*};
 use ewin_key::sel_range::*;
 use ewin_utils::char_edit::*;
 
@@ -16,7 +16,7 @@ impl Editor {
         Log::debug_key("cut");
         Log::debug("self.sel.is_selected()", &self.win_mgr.curt().sel.is_selected());
         if !self.win_mgr.curt().sel.is_selected() {
-            return ActType::Draw(DParts::MsgBar(Lang::get().no_sel_range.to_string()));
+            return ActType::Draw(DrawParts::MsgBar(Lang::get().no_sel_range.to_string()));
         }
         set_clipboard(&ep.str);
         self.win_mgr.curt().sel.clear();
@@ -26,7 +26,7 @@ impl Editor {
     pub fn copy(&mut self) -> ActType {
         Log::debug_key("copy");
         if !self.win_mgr.curt().sel.is_selected() {
-            return ActType::Draw(DParts::MsgBar(Lang::get().no_sel_range.to_string()));
+            return ActType::Draw(DrawParts::MsgBar(Lang::get().no_sel_range.to_string()));
         }
         let copy_str = match self.win_mgr.curt().sel.mode {
             SelMode::Normal => self.buf.slice(self.win_mgr.curt().sel.get_range()),

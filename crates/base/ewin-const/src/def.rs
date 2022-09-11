@@ -3,9 +3,11 @@ pub const APP_NAME: &str = "ewin";
 pub const TERM_MINIMUM_WIDTH: usize = 40;
 pub const TERM_MINIMUM_HEIGHT: usize = 12;
 
-pub const MENUBAR_ROW_NUM: usize = 1;
-pub const FILEBAR_ROW_NUM: usize = 1;
-pub const SCALE_ROW_NUM: usize = 1;
+pub const MENUBAR_HEIGHT: usize = 1;
+pub const FILEBAR_HEIGHT: usize = 1;
+pub const SCALE_HEIGHT: usize = 1;
+
+pub const SIDEBAR_SPLIT_LINE_WIDTH: usize = 1;
 
 // Winodw split line width
 pub const WINDOW_SPLIT_LINE_WIDTH: usize = 1;

@@ -1,15 +1,62 @@
+use std::io::Write;
+
 use crate::{model::*, window::*};
 use crossterm::{cursor::*, terminal::*};
-use ewin_cfg::{colors::*, log::*, model::default::*};
+use ewin_cfg::{colors::*, log::*, model::general::default::*};
 use ewin_const::{
     def::*,
-    models::{draw::*, evt::*},
+    models::{draw::*, event::*, view::*},
 };
 use ewin_key::model::*;
 use ewin_state::term::*;
 use ewin_utils::char_edit::*;
 
 impl Editor {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>) {
+        // Editor
+        match self.draw_range {
+            E_DrawRange::Not => {}
+            _ => {
+                if self.get_curt_row_len() > 0 {
+                    let curt_win = self.get_curt_ref_win().clone();
+                    if self.draw_range == E_DrawRange::MoveCur {
+                        self.draw_move_cur(str_vec, &curt_win);
+                        return;
+                    }
+
+                    let vec = self.win_mgr.win_list.clone();
+                    for (v_idx, vec_v) in vec.iter().enumerate() {
+                        for (h_idx, win) in vec_v.iter().enumerate() {
+                            if self.draw_range == E_DrawRange::WinOnlyAll && &curt_win != win {
+                                continue;
+                            }
+                            self.draw_cache(win);
+                            self.draw_main(str_vec, &self.draw_cache[v_idx][h_idx], win);
+                            self.draw_cache[v_idx][h_idx].cells_from = std::mem::take(&mut self.draw_cache[v_idx][h_idx].cells_to);
+                            self.draw_scale(str_vec, win);
+                            self.draw_scrlbar_v(str_vec, win);
+                            self.draw_scrlbar_h(str_vec, win);
+                        }
+                    }
+                }
+                self.draw_window_split_line(str_vec);
+
+                self.change_info.clear();
+
+                str_vec.push(Colors::get_default_fg_bg());
+            }
+        };
+    }
+
+    pub fn draw_only<T: Write>(&mut self, out: &mut T) {
+        Log::debug_key("MsgBar.draw_only");
+
+        let mut v: Vec<String> = vec![];
+        self.draw(&mut v);
+        let _ = out.write(v.concat().as_bytes());
+        out.flush().unwrap();
+    }
+
     #[allow(clippy::nonminimal_bool)]
     pub fn clear_init(&self, str_vec: &mut Vec<String>, draw: &EditorDraw, win: &Window) -> ActType {
         Log::debug_key("clear_init");
@@ -76,14 +123,14 @@ impl Editor {
                     match cell.c {
                         NEW_LINE_LF => str_vec.push(if c_org == NEW_LINE_CR { NEW_LINE_CRLF_MARK.to_string() } else { NEW_LINE_LF_MARK.to_string() }),
                         NEW_LINE_CR => {}
-                        TAB_CHAR => str_vec.push(format!("{}{}", Cfg::get().general.view.tab_characters_as_symbols, " ".repeat(width - 1))),
+                        TAB_CHAR => str_vec.push(format!("{}{}", Cfg::get().general.view.tab_characters_as_symbols, get_space(width - 1))),
                         FULL_SPACE => str_vec.push(Cfg::get().general.view.full_width_space_characters_as_symbols.to_string()),
                         _ => str_vec.push(cell.c.to_string()),
                     }
                 } else {
                     match cell.c {
                         NEW_LINE_LF | NEW_LINE_CR => {}
-                        TAB_CHAR => str_vec.push(" ".repeat(width)),
+                        TAB_CHAR => str_vec.push(get_space(width)),
                         FULL_SPACE => str_vec.push(Cfg::get().general.view.full_width_space_characters_as_symbols.to_string()),
                         _ => str_vec.push(cell.c.to_string()),
                     }
@@ -131,7 +178,7 @@ impl Editor {
                 str_vec.push(Colors::get_rownum_not_curt_fg_bg());
             }
             if self.get_rnw() > 0 {
-                str_vec.push(" ".repeat(self.get_rnw() - (i + 1).to_string().len()));
+                str_vec.push(get_space(self.get_rnw() - (i + 1).to_string().len()));
             }
             str_vec.push((i + 1).to_string());
 
@@ -153,20 +200,20 @@ impl Editor {
         Log::debug_key("Editor.clear_all");
 
         for i in self.view.y..=self.view.y + self.view.height {
-            str_vec.push(format!("{}{}", MoveTo(0, i as u16), Clear(ClearType::CurrentLine)));
+            str_vec.push(format!("{}{}", MoveTo(self.view.x as u16, i as u16), get_space(self.view.width)));
         }
-        str_vec.push(format!("{}", MoveTo(0, self.get_curt_row_posi() as u16)));
+        str_vec.push(format!("{}", MoveTo(self.view.x as u16, self.get_curt_row_posi() as u16)));
     }
 
     pub fn clear_all_diff(&self, str_vec: &mut Vec<String>, change_row_vec: &[usize], win: &Window) {
         Log::debug_key("Editor.clear_all_diff");
         for i in change_row_vec {
-            str_vec.push(format!("{}{}", MoveTo(win.area_h.0 as u16, (*i - win.offset.y + win.area_v.0) as u16), " ".repeat(win.width())));
+            str_vec.push(format!("{}{}", MoveTo(win.area_h.0 as u16, (*i - win.offset.y + win.area_v.0) as u16), get_space(win.width())));
         }
         // Clear the previously displayed part when the number of lines becomes shorter than the height of the screen
         if self.buf.len_rows() <= self.get_disp_row_including_extra() && self.buf_len_rows_org > self.buf.len_rows() {
             for i in self.buf.len_rows() - 1..=self.buf_len_rows_org - 1 {
-                str_vec.push(format!("{}{}", MoveTo(win.area_h.0 as u16, (i + win.area_v.0) as u16), " ".repeat(win.width())));
+                str_vec.push(format!("{}{}", MoveTo(win.area_h.0 as u16, (i + win.area_v.0) as u16), get_space(win.width())));
             }
         }
     }
@@ -183,7 +230,7 @@ impl Editor {
             Log::debug("start_y", &start_y);
             Log::debug("end_y", &end_y);
             for i in start_y..=end_y {
-                str_vec.push(format!("{}{}", MoveTo(win.area_h_all.0 as u16, (i + win.area_v.0) as u16), " ".repeat(win.width_all())));
+                str_vec.push(format!("{}{}", MoveTo(win.area_h_all.0 as u16, (i + win.area_v.0) as u16), get_space(win.width_all())));
             }
             str_vec.push(format!("{}", MoveTo(win.area_h.0 as u16, (start_y + win.area_v.0) as u16)));
         }

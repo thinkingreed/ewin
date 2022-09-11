@@ -83,12 +83,13 @@ impl fmt::Display for GrepResult {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Search {
     pub str: String,
     pub idx: usize,
     pub ranges: Vec<SearchRange>,
     pub fullpath: String,
+    pub filenm: String,
     pub dir: String,
     pub row_num: usize,
 }
@@ -115,7 +116,7 @@ impl Search {
 }
 impl Default for Search {
     fn default() -> Self {
-        Search { str: String::new(), idx: USIZE_UNDEFINED, ranges: vec![], fullpath: String::new(), dir: String::new(), row_num: USIZE_UNDEFINED }
+        Search { str: String::new(), idx: USIZE_UNDEFINED, ranges: vec![], filenm: String::new(), fullpath: String::new(), dir: String::new(), row_num: USIZE_UNDEFINED }
     }
 }
 
@@ -136,7 +137,7 @@ pub struct KeyMacroState {
     pub is_record: bool,
 }
 
-#[derive(Debug, Default, Ord, PartialOrd, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Hash, Ord, PartialOrd, Clone, Copy, PartialEq, Eq)]
 /// 検索範囲
 pub struct SearchRange {
     pub y: usize,
@@ -158,16 +159,17 @@ pub struct SyntaxState {
 
 #[derive(Debug, Default, PartialEq, Hash, Eq, Clone)]
 pub struct GrepInfo {
-    pub search_str: String,
-    pub search_filenm: String,
-    pub search_dir: String,
+    // pub search_str: String,
+    // pub search_filenm: String,
+    // pub search_dir: String,
+    pub search: Search,
     pub is_empty: bool,
     pub is_cancel: bool,
 }
 
 impl GrepInfo {
     pub fn clear(&mut self) {
-        self.search_str = String::new();
+        self.search.str = String::new();
     }
 }
 

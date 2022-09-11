@@ -1,7 +1,7 @@
 use super::parts::input_area::*;
 use crate::ewin_key::model::*;
 use ewin_cfg::log::*;
-use ewin_const::models::evt::*;
+use ewin_const::models::event::*;
 use ewin_key::cur::*;
 use ewin_key::key::cmd::*;
 

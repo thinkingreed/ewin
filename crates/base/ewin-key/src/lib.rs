@@ -6,8 +6,8 @@ pub mod global {
     };
     use ewin_const::models::term::*;
     use once_cell::sync::OnceCell;
+    use parking_lot::Mutex;
     use std::collections::HashMap;
-    use tokio::sync::Mutex;
 
     pub static CMD_MAP: OnceCell<HashMap<(Keys, Place), Cmd>> = OnceCell::new();
     pub static CMD_TYPE_MAP: OnceCell<HashMap<CmdType, Keys>> = OnceCell::new();
@@ -27,6 +27,7 @@ pub mod key_traits {
 }
 
 pub mod cur;
+pub mod grep_cancel;
 pub mod history;
 pub mod model;
 pub mod sel_range;

@@ -6,6 +6,7 @@ use ewin_const::{
     models::{dialog::*, file::*, model::*, term::*, types::*},
     term::*,
 };
+use ewin_utils::files::file::FileOpenType;
 use std::{cmp::Ordering, collections::BTreeSet};
 
 impl Cmd {
@@ -121,8 +122,8 @@ impl Cmd {
             "close_file" => CmdType::CloseFileCurt(CloseFileType::Normal),
             "open_new_file" => CmdType::OpenNewFile,
             "close_all_file" => CmdType::CloseAllFile,
-            "save_file" => CmdType::SaveFile(SaveFileType::Normal),
-            "save_as" => CmdType::SaveFile(SaveFileType::NewFile),
+            "save_file" | "save_as" => CmdType::SaveFile(SaveFileType::Normal),
+            // "save_as" => CmdType::SaveFile(SaveFileType::NewFile),
             "all_save_finish" => CmdType::SaveAllFinish,
             "switch_file_left" => CmdType::SwitchFile(Direction::Left),
             "switch_file_right" => CmdType::SwitchFile(Direction::Right),
@@ -169,6 +170,7 @@ impl Cmd {
              */
             "scale" => CmdType::SwitchDispScale,
             "row_no" => CmdType::SwitchDispRowNo,
+            "sidebar" => CmdType::SwitchDispSideBar,
             // prom
             "find_prompt" => CmdType::FindProm,
             "replace_prompt" => CmdType::ReplaceProm,
@@ -194,7 +196,7 @@ impl Cmd {
     pub fn to_cmd(cmd_type: CmdType) -> Cmd {
         return match cmd_type {
             // edit
-            CmdType::InsertStr(_) | CmdType::Cut | CmdType::InsertRow | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::InsertBox(_) | CmdType::DelBox(_) | CmdType::ReplaceExec(_, _, _) | CmdType::Format(_) | CmdType::Convert(_) => Cmd { cmd_type, place_vec: vec![Place::Editor, Place::Prom], config: CmdConfig { is_edit: true, is_record: true, is_recalc_scrl: true } },
+            CmdType::InsertStr(_) | CmdType::Cut | CmdType::InsertRow | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::InsertBox(_) | CmdType::DelBox(_) | CmdType::ReplaceExec(_, _, _) | CmdType::ReplaceTryExec(_, _) | CmdType::Format(_) | CmdType::Convert(_) => Cmd { cmd_type, place_vec: vec![Place::Editor, Place::Prom], config: CmdConfig { is_edit: true, is_record: true, is_recalc_scrl: true } },
             // key macro
             CmdType::RecordKeyStartEnd => Cmd { cmd_type, place_vec: vec![Place::Editor], ..Cmd::default() },
             CmdType::ExecRecordKey => Cmd { cmd_type, place_vec: vec![Place::Editor], config: CmdConfig { is_edit: true, is_recalc_scrl: true, ..CmdConfig::default() } },
@@ -213,25 +215,20 @@ impl Cmd {
             /*
              * Tabs
              */
-            CmdType::OpenNewFile | CmdType::CloseFileCurt(_) | CmdType::CloseFileTgt(_) | CmdType::CloseAllFile | CmdType::CloseOtherThanThisTab(_) | CmdType::SaveFile(_) | CmdType::SwitchFile(_) | CmdType::SwapFile(_, _) | CmdType::ChangeFile(_) | CmdType::Help | CmdType::SaveAllFinish | CmdType::ClearTabState(_) => Cmd { cmd_type, place_vec: vec![Place::Tabs], ..Cmd::default() },
-            CmdType::ReOpenFile => Cmd { cmd_type, ..Cmd::default() },
+            CmdType::OpenNewFile | CmdType::OpenTgtFile(_) | CmdType::OpenGrepTgtFile(_) | CmdType::CloseFileCurt(_) | CmdType::CloseFileTgt(_) | CmdType::CloseAllFile | CmdType::CloseOtherThanThisTab(_) | CmdType::SwitchFile(_) | CmdType::SwapFile(_, _) | CmdType::ChangeFile(_) | CmdType::Help | CmdType::SaveAllFinish | CmdType::ClearTabState(_) | CmdType::ReOpenFile(_) => Cmd { cmd_type, place_vec: vec![Place::Tabs], ..Cmd::default() },
             // menu
             CmdType::HelpInitDisplaySwitch => Cmd { cmd_type, ..Cmd::default() },
             CmdType::OpenMenuFile | CmdType::OpenMenuConvert | CmdType::OpenMenuEdit | CmdType::OpenMenuSearch | CmdType::OpenMenuMacro => Cmd { cmd_type, ..Cmd::default() },
             /*
              * Editor
              */
-            CmdType::Search(_, _) | CmdType::InputComple | CmdType::CancelEditorState => Cmd { cmd_type, place_vec: vec![Place::Editor], ..Cmd::default() },
+            CmdType::Search(_, _) | CmdType::InputComple | CmdType::CancelEditorState | CmdType::SaveFile(_) | CmdType::MoveRow(_) => Cmd { cmd_type, place_vec: vec![Place::Editor], ..Cmd::default() },
             CmdType::WindowSplit(_) => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, place_vec: vec![Place::Editor] },
 
             // ContextMenu
             CmdType::CtxMenu(_, _) => Cmd { cmd_type, place_vec: vec![Place::Editor, Place::FileBar], ..Cmd::default() },
-            /*
-             * Display
-             */
-            CmdType::SwitchDispScale | CmdType::SwitchDispRowNo => Cmd { cmd_type, place_vec: vec![Place::Editor], config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() } },
             // Prom
-            CmdType::FindProm | CmdType::ReplaceProm | CmdType::MoveRowProm | CmdType::GrepProm | CmdType::GrepingProm(_) | CmdType::GrepResultProm | CmdType::EncodingProm | CmdType::openFileProm(_) | CmdType::WatchFileResult => Cmd { cmd_type, place_vec: vec![Place::Tabs], ..Cmd::default() },
+            CmdType::FindProm | CmdType::SaveForceProm | CmdType::SaveNewFileProm | CmdType::ReplaceProm | CmdType::MoveRowProm | CmdType::GrepProm | CmdType::GrepingProm(_) | CmdType::GrepResultProm | CmdType::EncodingProm | CmdType::openFileProm(_) | CmdType::WatchFileResultProm => Cmd { cmd_type, place_vec: vec![Place::Tabs], ..Cmd::default() },
             // CmdType::SaveAsFile => Cmd { cmd_type, place_vec: vec![Place::MenuBar], ..Cmd::default() },
             CmdType::FindNext | CmdType::FindBack => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, place_vec: vec![Place::Editor, Place::Prom] },
             CmdType::FindCaseSensitive | CmdType::FindRegex => Cmd { cmd_type, place_vec: vec![Place::Prom], ..Cmd::default() },
@@ -239,10 +236,21 @@ impl Cmd {
             CmdType::Confirm => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, place_vec: vec![Place::MenuBar, Place::Prom, Place::CtxMenu] },
             CmdType::CancelProm => Cmd { cmd_type, place_vec: vec![Place::Prom], ..Cmd::default() },
             CmdType::NextContent | CmdType::BackContent => Cmd { cmd_type, place_vec: vec![Place::Prom], ..Cmd::default() },
-            // MenuBar
+            /*
+             * MenuBar
+             */
             CmdType::MenuBarMenulist(_, _) => Cmd { cmd_type, ..Cmd::default() },
-            // Dialog
+            // Display
+            CmdType::SwitchDispScale | CmdType::SwitchDispRowNo => Cmd { cmd_type, place_vec: vec![Place::Editor], config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() } },
+            CmdType::SwitchDispSideBar => Cmd { cmd_type, place_vec: vec![Place::SideBar], ..Cmd::default() },
+            /*
+             * Dialog
+             */
             CmdType::DialogShow(_) => Cmd { cmd_type, place_vec: vec![Place::Dialog], ..Cmd::default() },
+            /*
+             * SideBar
+             */
+            CmdType::ChangeFileSideBar(_) => Cmd { cmd_type, place_vec: vec![Place::SideBar], ..Cmd::default() },
             // Other
             CmdType::Resize(_, _) => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, ..Cmd::default() },
             CmdType::Null => Cmd { cmd_type, ..Cmd::default() },
@@ -324,13 +332,11 @@ pub enum CmdType {
     BackContent,
     FindCaseSensitive,
     FindRegex,
-    ReOpenFile,
     Unsupported,
     // Editor
     BoxSelectModeStart,
     BoxSelectMode,
     InsertRow,
-    SaveFile(SaveFileType),
     Format(FileType),
     Convert(ConvType),
     RecordKeyStartEnd,
@@ -345,41 +351,55 @@ pub enum CmdType {
     OpenMenuMacro,
     CancelEditorState,
     InputComple,
-    SwitchDispScale,
-    SwitchDispRowNo,
     Search(SearchType, String),
+    MoveRow(usize),
+    ReplaceTryExec(String, String),
+    ReplaceExec(String, String, BTreeSet<usize>),
+
     // Window
     WindowSplit(WindowSplitType),
+
     // File
     CloseFileCurt(CloseFileType),
     CloseFileTgt(usize),
     ChangeFile(usize),
     OpenNewFile,
+    OpenTgtFile(String),
+    OpenGrepTgtFile(Search),
     CloseAllFile,
     CloseOtherThanThisTab(usize),
     SwitchFile(Direction),
     SwapFile(usize, usize),
     SaveAllFinish,
+    ReOpenFile(FileOpenType),
+    SaveFile(SaveFileType),
+
     // Tabs
     ClearTabState(bool),
 
     // Prom
     FindProm,
     ReplaceProm,
-    ReplaceExec(String, String, BTreeSet<usize>),
     MoveRowProm,
+    SaveNewFileProm,
+    SaveForceProm,
     GrepProm,
     GrepingProm(GrepInfo),
     GrepResultProm,
     EncodingProm,
     openFileProm(OpenFileType),
-    WatchFileResult,
+    WatchFileResultProm,
     // MenuBar
     MenuBarMenulist(usize, usize),
+    SwitchDispScale,
+    SwitchDispRowNo,
+    SwitchDispSideBar,
     // CtxMenu
     CtxMenu(usize, usize),
     // Dialog
     DialogShow(DialogContType),
+    // SideBar
+    ChangeFileSideBar(String),
 
     Test,
     #[default]

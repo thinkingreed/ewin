@@ -1,5 +1,6 @@
 use crate::{conts::cont::*, dialog::*};
 use ewin_cfg::log::*;
+use ewin_const::models::view::*;
 use ewin_utils::str_edit::*;
 use std::cmp::max;
 
@@ -55,8 +56,8 @@ impl DialogContKVS {
 
         for (key, vec) in kvs_vec {
             for (j, value) in vec.iter().enumerate() {
-                let key = if j == 0 { key.clone() } else { " ".repeat(key_max_width) };
-                rtn_vec.push(format!("{}{}{}{}", " ".repeat(margin_width), key, value, " ".repeat(margin_width)));
+                let key = if j == 0 { key.clone() } else { get_space(key_max_width) };
+                rtn_vec.push(format!("{}{}{}{}", get_space(margin_width), key, value, get_space(margin_width)));
             }
         }
         return rtn_vec;

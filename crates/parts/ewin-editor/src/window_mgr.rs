@@ -1,7 +1,11 @@
 use crate::{model::*, window::*};
 use crossterm::cursor::MoveTo;
-use ewin_cfg::{colors::Colors, log::Log};
-use ewin_const::{def::*, models::model::*, term::*};
+use ewin_cfg::{colors::*, log::*};
+use ewin_const::{
+    def::*,
+    models::{model::*, view::*},
+    term::*,
+};
 use ewin_state::term::*;
 
 impl WindowMgr {
@@ -71,13 +75,13 @@ impl Editor {
     pub fn draw_window_split_line(&mut self, str_vec: &mut Vec<String>) {
         Log::debug_key("draw_window_split_line");
         if self.win_mgr.split_line_v > 0 {
-            for i in self.view.y..self.view.y + self.view.height {
+            for i in self.view.y..self.view.y + self.view.height - 1 {
                 #[allow(clippy::repeat_once)]
-                str_vec.push(format!("{}{}{}", MoveTo(self.win_mgr.split_line_v as u16, i as u16), Colors::get_window_split_line_bg(), " ".repeat(WINDOW_SPLIT_LINE_WIDTH)));
+                str_vec.push(format!("{}{}{}", MoveTo(self.win_mgr.split_line_v as u16, i as u16), Colors::get_window_split_line_bg(), get_space(WINDOW_SPLIT_LINE_WIDTH)));
             }
         }
         if self.win_mgr.split_line_h > 0 {
-            str_vec.push(format!("{}{}{}", MoveTo(0, self.win_mgr.split_line_h as u16), Colors::get_window_split_line_bg(), " ".repeat(get_term_size().0)));
+            str_vec.push(format!("{}{}{}", MoveTo(0, self.win_mgr.split_line_h as u16), Colors::get_window_split_line_bg(), get_space(get_term_size().0)));
         }
     }
 }

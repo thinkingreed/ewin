@@ -4,10 +4,63 @@ use crate::{
     model::*,
     prom_trait::main_trait::*,
 };
-use ewin_cfg::{colors::*, lang::lang_cfg::*};
-use ewin_const::def::*;
+use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
+use ewin_const::{
+    def::*,
+    models::{draw::*, event::*, model::*},
+};
+use ewin_job::job::*;
+use ewin_key::{global::*, model::*};
+use ewin_state::term::*;
+use ewin_utils::files::file::*;
 
 impl PromWatchFile {
+    pub fn watch_file(&mut self) -> ActType {
+        Log::debug_key("EvtAct::grep_result");
+
+        match &self.base.cmd.cmd_type {
+            CmdType::InsertStr(ref s) => match s.to_uppercase().as_str() {
+                CHAR_R => {
+                    Job::send_cmd(CmdType::ReOpenFile(FileOpenType::Reopen));
+                    return ActType::None;
+                }
+                CHAR_L => {
+                    State::get().curt_mut_state().file.watch_mode = WatchMode::NotEditedWillReloadedAuto;
+
+                    Job::send_cmd(CmdType::ReOpenFile(FileOpenType::Reopen));
+                    return ActType::None;
+                }
+                CHAR_N => {
+                    State::get().curt_mut_state().file.watch_mode = WatchMode::NotMonitor;
+                    WATCH_INFO.get().unwrap().try_lock().map(|mut watch_info| watch_info.mode = WatchMode::NotMonitor).unwrap();
+
+                    State::get().curt_mut_state().clear();
+                    return ActType::Draw(DrawParts::TabsAll);
+                }
+                _ => return ActType::Cancel,
+            },
+            _ => return ActType::Cancel,
+        }
+    }
+
+    pub fn check_watch_file() -> bool {
+        // Check if the file has been updated after opening
+        let file = State::get().curt_state().file.clone();
+        if State::get().curt_state().is_nomal() {
+            if file.watch_mode == WatchMode::NotEditedWillReloadedAuto && !State::get().curt_mut_state().editor.is_changed {
+                Job::send_cmd(CmdType::ReOpenFile(FileOpenType::Reopen));
+                return true;
+            } else if let Some(latest_mod_time) = File::get_modified_time(&file.fullpath) {
+                if latest_mod_time > file.mod_time {
+                    Log::debug("latest_modified_time > h_file.modified_time ", &(latest_mod_time > file.mod_time));
+                    Job::send_cmd(CmdType::WatchFileResultProm);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     pub fn new() -> Self {
         let mut prom = PromWatchFile { ..PromWatchFile::default() };
 
@@ -24,6 +77,13 @@ impl PromWatchFile {
         prom.base.cont_vec.push(Box::new(PromContKeyDesc { desc_vecs: vec![vec![not]], ..PromContKeyDesc::default() }));
 
         return prom;
+    }
+
+    pub fn init() -> ActType {
+        Log::debug_key("Tab::prom_watch_result");
+        State::get().curt_mut_state().prom = PromState::WatchFile;
+        Prom::get().init(Box::new(PromWatchFile::new()));
+        return ActType::Draw(DrawParts::TabsAll);
     }
 }
 

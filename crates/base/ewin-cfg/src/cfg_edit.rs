@@ -1,4 +1,4 @@
-use crate::{global::*, model::default::*};
+use crate::{global::*, model::general::default::*};
 use std::sync::MutexGuard;
 
 impl CfgEdit {

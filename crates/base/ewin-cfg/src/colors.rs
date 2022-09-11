@@ -1,4 +1,4 @@
-use crate::model::default::*;
+use crate::model::general::default::*;
 use colors_transform::{Color as transform_Color, Rgb as transform_Rgb};
 use crossterm::style::{Color as CrosstermColor, SetBackgroundColor, SetForegroundColor};
 use serde::{Deserialize, Serialize};
@@ -80,10 +80,10 @@ impl Colors {
     // Scrollbar
     //
     pub fn get_scrollbar_v_bg() -> String {
-        Colors::bg(Cfg::get().colors.editor.scrollbar.bg_vertical)
+        Colors::bg(Cfg::get().colors.system.scrollbar.bg_vertical)
     }
     pub fn get_scrollbar_h_bg() -> String {
-        Colors::bg(Cfg::get().colors.editor.scrollbar.bg_horizontal)
+        Colors::bg(Cfg::get().colors.system.scrollbar.bg_horizontal)
     }
     //
     // Sytem.btn
@@ -109,25 +109,25 @@ impl Colors {
     //
     // MenuBar
     //
-    pub fn get_mbar_passive_fg() -> String {
+    pub fn get_menubar_passive_fg() -> String {
         Colors::fg(Cfg::get().colors.menubar.fg_passive)
     }
-    pub fn get_mbar_passive_bg() -> String {
+    pub fn get_menubar_passive_bg() -> String {
         Colors::bg(Cfg::get().colors.menubar.bg_passive)
     }
-    pub fn get_mbar_passive_fg_bg() -> String {
-        format!("{}{}", Colors::get_mbar_passive_bg(), Colors::get_mbar_passive_fg())
+    pub fn get_menubar_passive_fg_bg() -> String {
+        format!("{}{}", Colors::get_menubar_passive_bg(), Colors::get_menubar_passive_fg())
     }
-    pub fn get_mbar_bg_active() -> String {
+    pub fn get_menubar_bg_active() -> String {
         Colors::bg(Cfg::get().colors.menubar.bg_active)
     }
-    pub fn get_mbar_fg_active() -> String {
+    pub fn get_menubar_fg_active() -> String {
         Colors::fg(Cfg::get().colors.menubar.fg_active)
     }
-    pub fn get_mbar_active_fg_bg() -> String {
-        format!("{}{}", Colors::get_mbar_bg_active(), Colors::get_mbar_fg_active())
+    pub fn get_menubar_active_fg_bg() -> String {
+        format!("{}{}", Colors::get_menubar_bg_active(), Colors::get_menubar_fg_active())
     }
-    pub fn get_mbar_default_bg() -> String {
+    pub fn get_menubar_default_bg() -> String {
         Colors::bg(Cfg::get().colors.menubar.bg_default)
     }
     //
@@ -157,23 +157,23 @@ impl Colors {
     //
     // StatusBar
     //
-    pub fn get_sbar_bg() -> String {
-        Colors::bg(Cfg::get().colors.editor.bg)
+    pub fn get_statusbar_bg() -> String {
+        Colors::bg(Cfg::get().colors.statusbar.bg)
     }
-    pub fn get_sbar_fg() -> String {
+    pub fn get_statusbar_fg() -> String {
         Colors::fg(Cfg::get().colors.statusbar.fg)
     }
-    pub fn get_sbar_fg_bg() -> String {
-        format!("{}{}", Colors::get_sbar_fg(), Colors::get_sbar_bg())
+    pub fn get_statusbar_fg_bg() -> String {
+        format!("{}{}", Colors::get_statusbar_fg(), Colors::get_statusbar_bg())
     }
-    pub fn get_sbar_inversion_fg() -> String {
+    pub fn get_statusbar_inversion_fg() -> String {
         Colors::fg(Cfg::get().colors.editor.bg)
     }
-    pub fn get_sbar_inversion_bg() -> String {
+    pub fn get_statusbar_inversion_bg() -> String {
         Colors::bg(Cfg::get().colors.statusbar.fg)
     }
-    pub fn get_sbar_inversion_fg_bg() -> String {
-        format!("{}{}", Colors::get_sbar_inversion_fg(), Colors::get_sbar_inversion_bg())
+    pub fn get_statusbar_inversion_fg_bg() -> String {
+        format!("{}{}", Colors::get_statusbar_inversion_fg(), Colors::get_statusbar_inversion_bg())
     }
     //
     // MsgBar
@@ -201,6 +201,9 @@ impl Colors {
     }
     pub fn get_msg_err_fg() -> String {
         Colors::fg(Cfg::get().colors.msg.err_fg)
+    }
+    pub fn get_msg_bg() -> String {
+        Colors::bg(Cfg::get().colors.msg.bg)
     }
     //
     // CtxMenu
@@ -305,6 +308,25 @@ impl Colors {
     }
     pub fn get_file_executable_inversion_fg_bg() -> String {
         format!("{}{}", Colors::get_file_executable_inversion_fg(), Colors::get_file_executable_inversion_bg())
+    }
+
+    //
+    // SideBar
+    //
+    fn get_sidebar_fg() -> String {
+        Colors::fg(Cfg::get().colors.sidebar.fg)
+    }
+    pub fn get_sidebar_bg() -> String {
+        Colors::bg(Cfg::get().colors.sidebar.bg)
+    }
+    pub fn get_sidebar_bg_header() -> String {
+        Colors::bg(Cfg::get().colors.sidebar.bg_header)
+    }
+    pub fn get_sidebar_bg_open_file() -> String {
+        Colors::bg(Cfg::get().colors.sidebar.bg_open_file)
+    }
+    pub fn get_sidebar_fg_bg() -> String {
+        format!("{}{}", Colors::get_sidebar_fg(), Colors::get_sidebar_bg())
     }
 
     pub fn hex2rgb(hex: &str) -> Color {

@@ -31,8 +31,9 @@ impl Editor {
             } else {
                 self.win_mgr.curt().offset.y = if self.win_mgr.curt().offset.y == 0 { 0 } else { self.win_mgr.curt().offset.y - 1 };
             }
-        } else if !self.is_move_cur_posi_scrolling_enable() && self.win_mgr.curt().scrl_v.is_enable && (matches!(self.cmd.cmd_type, CmdType::MouseDownLeft(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftUp(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftDown(_, _))) {
-            self.win_mgr.curt().offset.y = min(self.win_mgr.curt().scrl_v.row_posi * self.win_mgr.curt().scrl_v.move_len, self.get_disp_row_including_extra() - self.get_curt_row_len());
+            // } else if !self.is_move_cur_posi_scrolling_enable() && self.win_mgr.curt().scrl_v.is_enable && (matches!(self.cmd.cmd_type, CmdType::MouseDownLeft(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftUp(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftDown(_, _))) {
+        } else if self.win_mgr.curt().scrl_v.is_enable && (matches!(self.cmd.cmd_type, CmdType::MouseDownLeft(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftUp(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftDown(_, _))) {
+            self.win_mgr.curt().offset.y = min(self.win_mgr.curt().scrl_v.view.y * self.win_mgr.curt().scrl_v.move_len, self.get_disp_row_including_extra() - self.get_curt_row_len());
             // When cursor is off the screen
         } else if !self.is_cur_y_in_screen() && !matches!(self.cmd.cmd_type, CmdType::MouseDragLeftUp(_, _)) && !matches!(self.cmd.cmd_type, CmdType::MouseDragLeftDown(_, _)) && !matches!(self.cmd.cmd_type, CmdType::MouseDragLeftLeft(_, _)) && !matches!(self.cmd.cmd_type, CmdType::MouseDragLeftRight(_, _)) {
             self.set_offset_move_row();
@@ -40,7 +41,7 @@ impl Editor {
             match &self.cmd.cmd_type {
                 // When multi rows are deleted
                 CmdType::CursorFileHome => self.win_mgr.curt().offset.y = 0,
-                CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::FindNext | CmdType::FindBack | CmdType::ReOpenFile if self.win_mgr.curt().offset.y > self.win_mgr.curt().cur.y => {
+                CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::FindNext | CmdType::FindBack | CmdType::ReOpenFile(_) if self.win_mgr.curt().offset.y > self.win_mgr.curt().cur.y => {
                     self.win_mgr.curt().offset.y = if self.get_curt_row_len() >= self.get_disp_row_including_extra() - 1 {
                         0
                     } else if self.win_mgr.curt().cur.y < Editor::OFFSET_Y_MARGIN + self.win_mgr.curt().offset.y && self.win_mgr.curt().cur.y >= Editor::OFFSET_Y_MARGIN {
@@ -56,7 +57,7 @@ impl Editor {
                         self.win_mgr.curt().offset.y = min(self.get_disp_row_including_extra() - self.get_curt_row_len(), self.win_mgr.curt().cur.y + 1 + Editor::SCROLL_UP_DOWN_MARGIN - self.get_curt_row_len());
                     }
                 }
-                CmdType::MoveRowProm => self.set_offset_move_row(),
+                CmdType::MoveRow(_) => self.set_offset_move_row(),
                 CmdType::MouseDragLeftLeft(y, _) | CmdType::MouseDragLeftRight(y, _) => {
                     if self.win_mgr.curt().sel.is_selected() {
                         if *y >= self.get_curt_row_posi() + self.get_curt_row_len() && self.get_disp_row_including_extra() - self.win_mgr.curt().offset.y > self.get_curt_row_len() {
@@ -152,7 +153,7 @@ impl Editor {
             return;
         } else {
             match &self.cmd.cmd_type {
-                CmdType::ReplaceExec(_, _, _) | CmdType::CursorFileEnd | CmdType::CursorRowHome | CmdType::CursorRowEnd | CmdType::CursorRowHomeSelect | CmdType::CursorRowEndSelect | CmdType::InsertStr(_) | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::FindNext | CmdType::FindBack | CmdType::ReOpenFile | CmdType::Null => {
+                CmdType::ReplaceExec(_, _, _) | CmdType::CursorFileEnd | CmdType::CursorRowHome | CmdType::CursorRowEnd | CmdType::CursorRowHomeSelect | CmdType::CursorRowEndSelect | CmdType::InsertStr(_) | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo | CmdType::FindNext | CmdType::FindBack | CmdType::ReOpenFile(_) | CmdType::Null => {
                     self.win_mgr.curt().offset.x = get_x_offset(&self.buf.char_vec_range(self.win_mgr.curt().cur.y, ..self.win_mgr.curt().cur.x), self.get_curt_col_len() - X_MARGIN);
                 }
                 CmdType::CursorRight | CmdType::CursorRightSelect | CmdType::MouseDragLeftRight(_, _) if self.win_mgr.curt().sel.mode != SelMode::BoxSelect => {
@@ -194,7 +195,7 @@ impl Editor {
 #[cfg(test)]
 mod tests {
 
-    use ewin_cfg::model::default::CfgLog;
+    use ewin_cfg::model::general::default::*;
     use ewin_key::key::cmd::Cmd;
 
     use super::*;

@@ -1,9 +1,8 @@
 use crate::model::*;
 use ewin_cfg::log::*;
-use ewin_const::models::file::*;
 use ewin_key::{key::cmd::*, model::*};
 use ewin_state::term::*;
-use ewin_utils::str_edit::*;
+use ewin_utils::{files::nl::*, str_edit::*};
 use std::{cmp::min, collections::BTreeSet};
 impl Editor {
     pub fn set_change_info_edit(&mut self, evt_proc: &EvtProc) {

@@ -13,7 +13,7 @@ publish = false
 path = "src/lib.rs"
 
 [dependencies]
-crossterm  = {version ="0.24.0", features = ["event-stream"]} 
+crossterm  = {version ="0.25.0", features = ["event-stream"]} 
 tokio = { version = "1.4.0", features = ["macros", "rt-multi-thread"] }
 tokio-util = { version = "0.7.0", features = ["codec"] }
 once_cell = "1.5.2"
@@ -27,7 +27,7 @@ futures = "0.3"
 futures-util = "0.3.12"
 clap = { version = "3.1.6", features = ["derive", "env"]}
 chrono= "0.4.19"
-regex = "1.5.5"
+regex = "1.6.0"
 grep = "0.2.8"
 grep-matcher = "0.1.5"
 grep-regex = "0.1.9"
@@ -37,7 +37,7 @@ globset = "0.4.8"
 crossbeam= "0.8.1"
 dyn-clone = "1.0.5"
 downcast = "0.11.0"
-
+parking_lot = "0.12.1"
 
 ewin-cfg = {version = "0.0.2", path = "../base/ewin-cfg" }
 ewin-const = {version = "0.0.2", path = "../base/ewin-const" }
@@ -50,8 +50,13 @@ ewin-plugin = {version = "0.0.2", path = "../ewin-plugin" }
 ewin-tabs = {version = "0.0.2", path = "../ewin-tabs" }
 ewin-editor = {version = "0.0.2", path = "../parts/ewin-editor" }
 ewin-prom = {version = "0.0.2", path = "../parts/ewin-prom" }
-ewin-menulist = {version = "0.0.2", path = "../parts/ewin-menulist" }
+ewin-menu_bar = {version = "0.0.2", path = "../parts/ewin-menu_bar" }
 ewin-dialog = {version = "0.0.2", path = "../parts/ewin-dialog" }
 ewin-ctx_menu = {version = "0.0.2", path = "../parts/ewin-ctx_menu" }
 ewin-file_bar = {version = "0.0.2", path = "../parts/ewin-file_bar" }
 ewin-help = {version = "0.0.2", path = "../parts/ewin-help" }
+ewin-status_bar = {version = "0.0.2", path = "../parts/ewin-status_bar" }
+ewin-msg_bar = {version = "0.0.2", path = "../parts/ewin-msg_bar" }
+ewin-side_bar = {version = "0.0.2", path = "../parts/ewin-side_bar" }
+
+

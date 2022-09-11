@@ -1,5 +1,15 @@
+# If theme is set, theme color has the highest priority
+[theme] # option
+# highlight_theme_path = "tmTheme.tmTheme"
+# highlight_theme_background_enable = true
+disable_highlight_ext = ["txt", "log"]
+
+# Only files below this value will be highlighted(positive number:MByte)
+disable_syntax_highlight_file_size = 3
+# "black" or "white"
+default_color_theme = "white"
+
 [editor]
-#background = "#f4f5f7"
 background = "#fafafa"
 foreground = "#000000"
 
@@ -24,13 +34,9 @@ foreground = "#c0c0c0"
 foreground = "#565656"
 background = "#282828"
 
-[editor.scrollbar]
-horizontal_background = "#dedede"
-vertical_background = "#dedede"
-
 [editor.scale]
 foreground = "#C4C4C4"
-background = "#dedede"
+background = "#f0f0f0"
 
 [editor.window.split_line]
 background = "#bebebe"
@@ -43,22 +49,27 @@ background = "#c0c0c0"
 foreground = "#000000"
 background = "#c0c0c0"
 
+[system.scrollbar]
+horizontal_background = "#dedede"
+vertical_background = "#dedede"
+
 [menubar]
 active_foreground = "#000000"
 active_background = "#a0a0a0"
 passive_foreground = "#000000"
-passive_background = "#dedede"
-default_background = "#dedede"
+passive_background = "#f0f0f0"
+default_background = "#f0f0f0"
 
 [filebar]
 active_foreground = "#ffffff"
 active_background = "#333333"
 passive_foreground = "#ffffff"
 passive_background = "#c0c0c0"
-default_background = "#dedede"
+default_background = "#f0f0f0"
 
 [statusbar]
 foreground = "#c0c0c0"
+background = "#f0f0f0"
 
 [ctx_menu]
 non_select_background = "#c0c0c0"
@@ -68,7 +79,7 @@ select_foreground = "#ffffff"
 
 [dialog]
 default_foreground = "#000000"
-default_background = "#dedede"
+default_background = "#f0f0f0"
 header_foreground = "#ffffff"
 header_background = "#787878"
 select_background = "#6495ed"
@@ -78,8 +89,16 @@ normal_foreground = "#000000"
 highlight_foreground = "#00c800"
 warning_foreground = "#aa6400"
 err_foreground = "#ff0000"
+background = "#f0f0f0"
 
 [file]
 normal_foreground = "#c0c0c0"
 directory_foreground = "#1e90ff"
 executable_foreground = "#00c800"
+
+[sidebar]
+background = "#fafafa"
+foreground = "#000000"
+header_background = "#f0f0f0"
+open_file_background = "#e6e6ff"
+

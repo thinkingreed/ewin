@@ -2,7 +2,7 @@ use crate::{model::*, prom_trait::cont_trait::*};
 use crossterm::cursor::MoveTo;
 use ewin_cfg::{colors::*, log::*};
 use ewin_key::key::cmd::*;
-use ewin_menulist::parts::pulldown::*;
+use ewin_view::parts::pulldown::*;
 
 impl PromContTrait for PromContPulldown {
     fn as_base(&self) -> &PromptContBase {

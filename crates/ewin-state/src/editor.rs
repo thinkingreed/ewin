@@ -1,4 +1,4 @@
-use ewin_cfg::model::default::*;
+use ewin_cfg::model::general::default::*;
 use ewin_const::models::model::*;
 use ewin_key::model::*;
 

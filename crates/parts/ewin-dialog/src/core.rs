@@ -1,13 +1,13 @@
 use crate::{btn_grourp::*, dialog::*, global::*};
 use ewin_cfg::log::*;
 use ewin_const::{
-    models::{dialog::*, draw::*, evt::*},
+    models::{dialog::*, draw::*, event::*},
     term::*,
 };
 use ewin_utils::str_edit::*;
 use ewin_view::view::*;
+use parking_lot::MutexGuard;
 use std::ops::Range;
-use tokio::sync::MutexGuard;
 
 impl Dialog {
     pub const HEADER_HEIGHT: usize = 1;
@@ -27,15 +27,15 @@ impl Dialog {
 
     #[track_caller]
     pub fn get() -> MutexGuard<'static, Dialog> {
-        return DIALOG.get().unwrap().try_lock().unwrap();
+        return DIALOG.get().unwrap().lock();
     }
 
     pub fn init(dialog_cont_type: DialogContType) -> ActType {
-        if let Ok(mut dialog) = DIALOG.get().unwrap().try_lock() {
+        if let Some(mut dialog) = DIALOG.get().unwrap().try_lock() {
             *dialog = Dialog::to_dialog(dialog_cont_type);
             dialog.set_size();
         };
-        return ActType::Draw(DParts::All);
+        return ActType::Draw(DrawParts::TabsAll);
     }
 
     pub fn set_size(&mut self) {

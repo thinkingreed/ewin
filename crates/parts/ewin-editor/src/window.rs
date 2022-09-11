@@ -1,14 +1,15 @@
 use crate::model::*;
 use crossterm::cursor::MoveTo;
 use ewin_cfg::log::*;
+use ewin_const::models::view::*;
 use ewin_key::{cur::*, sel_range::*};
-use ewin_view::scrollbar_v::*;
+use ewin_view::{model::*, scrollbar_v::*};
 
 impl Window {
     pub fn clear_draw(&self, str_vec: &mut Vec<String>) {
         Log::debug_key("Window.clear_all_win");
         for i in self.area_v.0..=self.area_v.1 {
-            str_vec.push(format!("{}{}", MoveTo(self.area_h_all.0 as u16, i as u16), " ".repeat(self.width_all())));
+            str_vec.push(format!("{}{}", MoveTo(self.area_h_all.0 as u16, i as u16), get_space(self.width_all())));
         }
         str_vec.push(format!("{}", MoveTo(self.area_h.0 as u16, self.area_v.0 as u16)));
     }

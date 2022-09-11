@@ -5,11 +5,39 @@ use crate::{
     prom_trait::main_trait::*,
 };
 use chrono::{prelude::DateTime, Local};
-use ewin_cfg::{colors::*, lang::lang_cfg::*};
-use ewin_const::def::*;
+use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
+use ewin_const::{
+    def::*,
+    models::{draw::*, event::*, file::*},
+};
+use ewin_job::job::*;
+use ewin_key::model::*;
+use ewin_state::term::*;
+use ewin_utils::files::file::*;
 use std::time::SystemTime;
 
 impl PromSaveForced {
+    pub fn save_forced(&mut self) -> ActType {
+        Log::debug_key("EvtAct.save_forced");
+
+        match &self.base.cmd.cmd_type {
+            CmdType::InsertStr(ref s) => match s.to_uppercase().as_str() {
+                CHAR_Y => {
+                    Job::send_cmd(CmdType::SaveFile(SaveFileType::Forced));
+                    State::get().curt_mut_state().clear();
+                    return ActType::None;
+                }
+                CHAR_R => {
+                    Job::send_cmd(CmdType::ReOpenFile(FileOpenType::Reopen));
+                    State::get().curt_mut_state().clear();
+                    return ActType::None;
+                }
+                _ => return ActType::Cancel,
+            },
+            _ => return ActType::Cancel,
+        }
+    }
+
     pub fn new(open_modified_time: &SystemTime, last_modified_time: SystemTime) -> Self {
         let mut prom = PromSaveForced { ..PromSaveForced::default() };
 
@@ -28,6 +56,14 @@ impl PromSaveForced {
         prom.base.cont_vec.push(Box::new(PromContKeyDesc { desc_vecs: vec![vec![forced, reopen, cancel]], ..PromContKeyDesc::default() }));
 
         return prom;
+    }
+
+    pub fn init() -> ActType {
+        Log::debug_key("Tab::prom_save_forced");
+        let last_modified_time = File::get_modified_time(&State::get().curt_state().file.fullpath).unwrap();
+        State::get().curt_mut_state().prom = PromState::SaveForced;
+        Prom::get().init(Box::new(PromSaveForced::new(&State::get().curt_state().file.mod_time, last_modified_time)));
+        return ActType::Draw(DrawParts::TabsAll);
     }
 }
 

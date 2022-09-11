@@ -5,12 +5,12 @@ use crate::{
 use ewin_cfg::log::*;
 use ewin_const::{
     def::*,
-    models::{draw::*, evt::*, file::*, model::*},
+    models::{draw::*, event::*, model::*, view::*},
 };
 use ewin_key::key::cmd::*;
 use ewin_key::sel_range::*;
 use ewin_state::term::*;
-use ewin_utils::{char_edit::*, files::file::*, str_edit::*};
+use ewin_utils::{char_edit::*, files::nl::*, str_edit::*};
 use std::cmp::min;
 
 impl Editor {
@@ -44,7 +44,7 @@ impl Editor {
         // for Paste
         let mut clipboard = get_clipboard().unwrap_or_else(|_| "".to_string());
 
-        change_nl(&mut clipboard, &State::get().curt_state().file.nl);
+        NL::change_nl(&mut clipboard, &State::get().curt_state().file.nl);
 
         if self.box_insert.mode == BoxInsertMode::Normal {
             Log::debug_key("11111111111111111111111111111");
@@ -90,11 +90,11 @@ impl Editor {
                 } else {
                     // If there are not characters
                     let (cur_x, width) = get_row_cur_x_disp_x(&self.buf.char_vec_row(sy + i)[..], 0, false);
-                    let insert_str = format!("{}{}", " ".repeat(s_disp_x - width), &sel_str);
+                    let insert_str = format!("{}{}", get_space(s_disp_x - width), &sel_str);
                     self.buf.insert(sy + i, cur_x, &insert_str);
                     box_sel_undo_vec.push((SelRange { sy: sy + i, sx: cur_x, ex: cur_x + insert_str.chars().count(), s_disp_x: width, e_disp_x: width + get_str_width(&insert_str), ..SelRange::default() }, sel_str.to_string()));
                     box_sel_redo_vec.push((SelRange { sy: sy + i, sx: cur_x + s_disp_x - width, s_disp_x, ex: sx + insert_str.chars().count(), ..SelRange::default() }, sel_str.to_string()));
-                    ex = " ".repeat(s_disp_x - width).chars().count() + sel_str.chars().count();
+                    ex = get_space(s_disp_x - width).chars().count() + sel_str.chars().count();
                 }
             } else {
                 //// Not exist row, Create new row
@@ -111,12 +111,12 @@ impl Editor {
                 box_sel_undo_vec.push((SelRange { sy: sy + i - 1, sx: end_idx, ex: end_idx + nl_code.chars().count(), s_disp_x: width, e_disp_x: width + get_str_width(nl_code), ..SelRange::default() }, "".to_string()));
 
                 // add new row
-                let new_row_str = &format!("{}{}", " ".repeat(s_disp_x), &sel_str);
+                let new_row_str = &format!("{}{}", get_space(s_disp_x), &sel_str);
                 self.buf.insert_end(new_row_str);
                 box_sel_undo_vec.push((SelRange { sy: sy + i, sx: 0, ex: new_row_str.chars().count(), s_disp_x: 0, e_disp_x: get_str_width(new_row_str), ..SelRange::default() }, sel_str.to_string()));
                 box_sel_redo_vec.push((SelRange { sy: sy + i, sx: s_disp_x, s_disp_x, ex: sx + sel_str.chars().count(), ..SelRange::default() }, sel_str.to_string()));
 
-                ex = " ".repeat(s_disp_x).chars().count() + sel_str.chars().count();
+                ex = get_space(s_disp_x).chars().count() + sel_str.chars().count();
             }
 
             if i == proc.box_sel_vec.len() - 1 {
@@ -245,7 +245,7 @@ impl Editor {
         self.search.clear();
         self.input_comple.mode = InputCompleMode::None;
         self.input_comple.clear();
-        return ActType::Draw(DParts::All);
+        return ActType::Draw(DrawParts::TabsAll);
     }
 }
 

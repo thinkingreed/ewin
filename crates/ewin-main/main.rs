@@ -5,16 +5,17 @@ use ewin_cfg::{
     global::*,
     lang::lang_cfg::*,
     log::*,
-    model::{default::*, modal::*},
+    model::{general::default::*, modal::*},
 };
 use ewin_job::{global::*, job::*};
 use ewin_key::{
     global::*,
     key::{keybind::*, keys::*},
 };
+use ewin_prom::each::watch_file::*;
 use ewin_utils::util::*;
 
-use ewin_term::{evt_act::*, term::*};
+use ewin_term::term::*;
 use ewin_view::view::*;
 use futures::{future::FutureExt, StreamExt};
 use std::{
@@ -94,19 +95,19 @@ async fn main() {
         match job.cont {
             JobCont::Key(job_evt) => {
                 let keys = Keys::evt_to_keys(&job_evt.evt);
-                if EvtAct::match_key(keys, &mut out, &mut term) {
+                if term.match_key(keys, &mut out) {
                     break;
                 }
                 term.keys_org = keys;
             }
-            JobCont::Grep(job_grep) => term.tabs.draw_grep_result(&mut out, job_grep),
+            JobCont::Grep(job_grep) => term.tabs.curt().editor.draw_grep_result(&mut out, job_grep),
             JobCont::Watch(job_watch) => {
-                if term.tabs.draw_watch_file(&mut out) {
+                if PromWatchFile::check_watch_file() {
                     WATCH_INFO.get().unwrap().try_lock().map(|mut watch_info| watch_info.history_set.remove(&(job_watch.fullpath_str, job_watch.unixtime_str))).unwrap();
                 }
             }
             JobCont::Cmd(job_cmd) => {
-                if EvtAct::specify_cmd(&mut term, &mut out, job_cmd.cmd_type, job_cmd.place, job_cmd.act_type_opt) {
+                if term.specify_cmd(&mut out, job_cmd.cmd_type, job_cmd.place, job_cmd.act_type_opt) {
                     break;
                 }
             }

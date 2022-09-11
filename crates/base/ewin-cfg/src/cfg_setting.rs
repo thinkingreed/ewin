@@ -1,12 +1,12 @@
 use crate::{
-    colors::Colors,
-    log::Log,
+    colors::*,
+    log::*,
     model::{
-        default::{Cfg, CfgColors, TabType},
-        user::{CfgUser, CfgUserColors},
+        color::{default::*, user::*},
+        general::{default::*, user::*},
     },
 };
-use ewin_const::def::*;
+use ewin_const::{def::*, models::view::*};
 use std::env;
 
 impl Cfg {
@@ -62,14 +62,7 @@ impl Cfg {
         if let Some(u) = cfg_user.general.editor.format.indent_size {
             self.general.editor.format.indent_size = u;
         }
-        /* general.editor.scrollbar.vertical */
-        if let Some(u) = cfg_user.general.editor.scrollbar.vertical.width {
-            self.general.editor.scrollbar.vertical.width = u;
-        }
-        /* general.editor.scrollbar.horizontal */
-        if let Some(u) = cfg_user.general.editor.scrollbar.horizontal.height {
-            self.general.editor.scrollbar.horizontal.height = u;
-        }
+
         /* general.editor.cursor */
         if let Some(b) = cfg_user.general.editor.cursor.move_position_by_scrolling_enable {
             self.general.editor.cursor.move_position_by_scrolling_enable = b;
@@ -117,6 +110,14 @@ impl Cfg {
         if let Some(b) = cfg_user.general.editor.scale.is_enable {
             self.general.editor.scale.is_enable = b;
         }
+        /* general.editor.scrollbar.vertical */
+        if let Some(u) = cfg_user.general.editor.scrollbar.vertical.width {
+            self.general.editor.scrollbar.vertical.width = u;
+        }
+        /* general.editor.scrollbar.horizontal */
+        if let Some(u) = cfg_user.general.editor.scrollbar.horizontal.height {
+            self.general.editor.scrollbar.horizontal.height = u;
+        }
         /*
          * general.prompt
          */
@@ -159,30 +160,26 @@ impl Cfg {
         } else {
             self.general.view.full_width_space_characters_as_symbols = "⬜".to_string();
         }
+
         /*
-         * general.colors
+         * general.sidebar
          */
-        /* theme */
-        // highlight_theme_path
-        if let Some(s) = cfg_user.general.colors.theme.highlight_theme_path {
-            self.general.colors.theme.highlight_theme_path = Some(s);
+        // width
+        if let Some(u) = cfg_user.general.sidebar.width {
+            self.general.sidebar.width = u;
         }
-        // highlight_theme_background_enable
-        if let Some(b) = cfg_user.general.colors.theme.highlight_theme_background_enable {
-            self.general.colors.theme.highlight_theme_background_enable = Some(b);
+        /* general.sidebar.scrollbar.vertical */
+        if let Some(u) = cfg_user.general.sidebar.scrollbar.vertical.width {
+            self.general.sidebar.scrollbar.vertical.width = u;
         }
-        // disable_highlight_ext
-        if let Some(v) = cfg_user.general.colors.theme.disable_highlight_ext {
-            self.general.colors.theme.disable_highlight_ext = v;
+        /* general.sidebar.scrollbar.horizontal */
+        if let Some(u) = cfg_user.general.sidebar.scrollbar.horizontal.height {
+            self.general.sidebar.scrollbar.horizontal.height = u;
         }
-        // disable_syntax_highlight_file_size
-        if let Some(u) = cfg_user.general.colors.theme.disable_syntax_highlight_file_size {
-            self.general.colors.theme.disable_syntax_highlight_file_size = u;
-        }
-        // default_color_theme
-        if let Some(s) = cfg_user.general.colors.theme.default_color_theme {
-            self.general.colors.theme.default_color_theme = s;
-        }
+      // treefile.indent
+      if let Some(u) = cfg_user.general.sidebar.treefile.indent {
+        self.general.sidebar.treefile.indent = u;
+    }
 
         /*
          * system
@@ -198,17 +195,17 @@ impl Cfg {
         self.general.editor.tab.tab_type = TabType::from_str(&self.general.editor.tab.input_type);
         self.general.editor.tab.tab = match self.general.editor.tab.tab_type {
             TabType::Tab => TAB_CHAR.to_string(),
-            TabType::HalfWidthBlank => " ".repeat(self.general.editor.tab.size),
+            TabType::HalfWidthBlank => get_space(self.general.editor.tab.size),
         };
 
         self.general.editor.format.tab_type = TabType::from_str(&self.general.editor.format.indent_type);
         self.general.editor.format.indent = match self.general.editor.format.tab_type {
             TabType::Tab => TAB_CHAR.to_string(),
-            TabType::HalfWidthBlank => " ".repeat(self.general.editor.format.indent_size),
+            TabType::HalfWidthBlank => get_space(self.general.editor.format.indent_size),
         };
         self.general.editor.format.indent = match self.general.editor.format.tab_type {
             TabType::Tab => TAB_CHAR.to_string(),
-            TabType::HalfWidthBlank => " ".repeat(self.general.editor.format.indent_size),
+            TabType::HalfWidthBlank => get_space(self.general.editor.format.indent_size),
         };
     }
     pub fn convert_color_setting(&mut self) {
@@ -218,9 +215,9 @@ impl Cfg {
         self.colors.system.btn.fg = Colors::hex2rgb(&self.colors.system.btn.foreground);
         self.colors.system.state.bg = Colors::hex2rgb(&self.colors.system.state.background);
         self.colors.system.state.fg = Colors::hex2rgb(&self.colors.system.state.foreground);
+        self.colors.system.scrollbar.bg_vertical = Colors::hex2rgb(&self.colors.system.scrollbar.vertical_background);
+        self.colors.system.scrollbar.bg_horizontal = Colors::hex2rgb(&self.colors.system.scrollbar.horizontal_background);
 
-        // self.colors.headerbar.fg = Colors::hex2rgb(&self.colors.headerbar.foreground);
-        // self.colors.headerbar.bg = Colors::hex2rgb(&self.colors.headerbar.background);
         self.colors.menubar.fg_active = Colors::hex2rgb(&self.colors.menubar.active_foreground);
         self.colors.menubar.bg_active = Colors::hex2rgb(&self.colors.menubar.active_background);
         self.colors.menubar.fg_passive = Colors::hex2rgb(&self.colors.menubar.passive_foreground);
@@ -246,24 +243,26 @@ impl Cfg {
         self.colors.editor.search.bg = Colors::hex2rgb(&self.colors.editor.search.background);
         self.colors.editor.search.fg = Colors::hex2rgb(&self.colors.editor.search.foreground);
         self.colors.editor.control_char.fg = Colors::hex2rgb(&self.colors.editor.control_char.foreground);
-
         self.colors.editor.column_char_width_gap_space.fg = Colors::hex2rgb(&self.colors.editor.column_char_width_gap_space.foreground);
         self.colors.editor.column_char_width_gap_space.bg = Colors::hex2rgb(&self.colors.editor.column_char_width_gap_space.background);
-
-        self.colors.editor.scrollbar.bg_vertical = Colors::hex2rgb(&self.colors.editor.scrollbar.vertical_background);
-        self.colors.editor.scrollbar.bg_horizontal = Colors::hex2rgb(&self.colors.editor.scrollbar.horizontal_background);
 
         self.colors.editor.scale.bg = Colors::hex2rgb(&self.colors.editor.scale.background);
         self.colors.editor.scale.fg = Colors::hex2rgb(&self.colors.editor.scale.foreground);
 
         self.colors.editor.window.split_line.bg = Colors::hex2rgb(&self.colors.editor.window.split_line.background);
 
+        // msg
         self.colors.msg.normal_fg = Colors::hex2rgb(&self.colors.msg.normal_foreground);
         self.colors.msg.highlight_fg = Colors::hex2rgb(&self.colors.msg.highlight_foreground);
         self.colors.msg.warning_fg = Colors::hex2rgb(&self.colors.msg.warning_foreground);
         self.colors.msg.err_fg = Colors::hex2rgb(&self.colors.msg.err_foreground);
-        self.colors.statusbar.fg = Colors::hex2rgb(&self.colors.statusbar.foreground);
+        self.colors.msg.bg = Colors::hex2rgb(&self.colors.msg.background);
 
+        // statusbar
+        self.colors.statusbar.fg = Colors::hex2rgb(&self.colors.statusbar.foreground);
+        self.colors.statusbar.bg = Colors::hex2rgb(&self.colors.statusbar.background);
+
+        // ctx_menu
         self.colors.ctx_menu.fg_sel = Colors::hex2rgb(&self.colors.ctx_menu.select_foreground);
         self.colors.ctx_menu.fg_non_sel = Colors::hex2rgb(&self.colors.ctx_menu.non_select_foreground);
         self.colors.ctx_menu.bg_sel = Colors::hex2rgb(&self.colors.ctx_menu.select_background);
@@ -275,9 +274,16 @@ impl Cfg {
         self.colors.dialog.bg_header = Colors::hex2rgb(&self.colors.dialog.header_background);
         self.colors.dialog.bg_sel = Colors::hex2rgb(&self.colors.dialog.select_background);
 
+        // file
         self.colors.file.normal_fg = Colors::hex2rgb(&self.colors.file.normal_foreground);
         self.colors.file.directory_fg = Colors::hex2rgb(&self.colors.file.directory_foreground);
         self.colors.file.executable_fg = Colors::hex2rgb(&self.colors.file.executable_foreground);
+
+        // sidebar
+        self.colors.sidebar.fg = Colors::hex2rgb(&self.colors.sidebar.foreground);
+        self.colors.sidebar.bg = Colors::hex2rgb(&self.colors.sidebar.background);
+        self.colors.sidebar.bg_header = Colors::hex2rgb(&self.colors.sidebar.header_background);
+        self.colors.sidebar.bg_open_file = Colors::hex2rgb(&self.colors.sidebar.open_file_background);
     }
 }
 
@@ -301,10 +307,43 @@ impl CfgColors {
         if let Some(s) = cfg_user_colors.system.state.background {
             self.system.state.background = s;
         }
+        /* Scrollbar */
+        // horizontal_background
+        if let Some(s) = cfg_user_colors.system.scrollbar.horizontal_background {
+            self.system.scrollbar.horizontal_background = s;
+        }
+        // vertical_background
+        if let Some(s) = cfg_user_colors.system.scrollbar.vertical_background {
+            self.system.scrollbar.vertical_background = s;
+        }
+
         // foreground
         if let Some(s) = cfg_user_colors.system.state.foreground {
             self.system.state.foreground = s;
         }
+
+        /* theme */
+        // highlight_theme_path
+        if let Some(s) = cfg_user_colors.theme.highlight_theme_path {
+            self.theme.highlight_theme_path = Some(s);
+        }
+        // highlight_theme_background_enable
+        if let Some(b) = cfg_user_colors.theme.highlight_theme_background_enable {
+            self.theme.highlight_theme_background_enable = Some(b);
+        }
+        // disable_highlight_ext
+        if let Some(v) = cfg_user_colors.theme.disable_highlight_ext {
+            self.theme.disable_highlight_ext = v;
+        }
+        // disable_syntax_highlight_file_size
+        if let Some(u) = cfg_user_colors.theme.disable_syntax_highlight_file_size {
+            self.theme.disable_syntax_highlight_file_size = u;
+        }
+        // default_color_theme
+        if let Some(s) = cfg_user_colors.theme.default_color_theme {
+            self.theme.default_color_theme = s;
+        }
+
         /*
          * MenuBar
          */
@@ -410,15 +449,6 @@ impl CfgColors {
         if let Some(s) = cfg_user_colors.editor.column_char_width_gap_space.foreground {
             self.editor.column_char_width_gap_space.foreground = s;
         }
-        /* Scrollbar */
-        // horizontal_background
-        if let Some(s) = cfg_user_colors.editor.scrollbar.horizontal_background {
-            self.editor.scrollbar.horizontal_background = s;
-        }
-        // vertical_background
-        if let Some(s) = cfg_user_colors.editor.scrollbar.vertical_background {
-            self.editor.scrollbar.vertical_background = s;
-        }
         /* Scale */
         // background
         if let Some(s) = cfg_user_colors.editor.scale.background {
@@ -444,6 +474,10 @@ impl CfgColors {
         // foreground
         if let Some(s) = cfg_user_colors.statusbar.foreground {
             self.statusbar.foreground = s;
+        }
+        // background
+        if let Some(s) = cfg_user_colors.statusbar.background {
+            self.statusbar.background = s;
         }
         /*
          * Ctx_menu
@@ -483,6 +517,10 @@ impl CfgColors {
         if let Some(s) = cfg_user_colors.msg.err_foreground {
             self.msg.err_foreground = s;
         }
+        // background
+        if let Some(s) = cfg_user_colors.msg.background {
+            self.msg.background = s;
+        }
         /*
          * file
          */
@@ -520,6 +558,25 @@ impl CfgColors {
         // select_background
         if let Some(s) = cfg_user_colors.dialog.select_background {
             self.dialog.select_background = s;
+        }
+        /*
+         * SideBar
+         */
+        // foreground
+        if let Some(s) = cfg_user_colors.sdiebar.foreground {
+            self.sidebar.foreground = s;
+        }
+        // background
+        if let Some(s) = cfg_user_colors.sdiebar.background {
+            self.sidebar.background = s;
+        }
+        // header_background
+        if let Some(s) = cfg_user_colors.sdiebar.header_background {
+            self.sidebar.header_background = s;
+        }
+        // open_file_background
+        if let Some(s) = cfg_user_colors.sdiebar.open_file_background {
+            self.sidebar.open_file_background = s;
         }
     }
 }

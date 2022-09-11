@@ -2,14 +2,15 @@ use crate::model::*;
 use ewin_cfg::{
     lang::lang_cfg::*,
     log::*,
-    model::{default::*, modal::*},
+    model::{general::default::*, modal::*},
 };
 use ewin_const::{
     def::*,
-    models::{draw::*, evt::*, file::*},
+    models::{draw::*, event::*},
 };
 use ewin_key::key::cmd::*;
 use ewin_state::term::State;
+use ewin_utils::files::nl::*;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -18,18 +19,18 @@ impl Editor {
         Log::debug_key("Editor.format");
 
         if !self.win_mgr.curt().sel.is_selected() {
-            return ActType::Draw(DParts::MsgBar(Lang::get().no_sel_range.to_string()));
+            return ActType::Draw(DrawParts::MsgBar(Lang::get().no_sel_range.to_string()));
         } else if let Err(err) = self.exec_format(fmt_type) {
             let err_str = format!("{}{}", fmt_type, Lang::get().parsing_failed);
             Log::error(&err_str, &err);
-            return ActType::Draw(DParts::MsgBar(err_str));
+            return ActType::Draw(DrawParts::MsgBar(err_str));
         } else {
             for vec in self.draw_cache.iter_mut() {
                 for draw in vec {
                     draw.clear();
                 }
             }
-            return ActType::Draw(DParts::All);
+            return ActType::Draw(DrawParts::TabsAll);
         }
     }
 
