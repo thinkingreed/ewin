@@ -23,7 +23,7 @@ impl FileBar {
                     Log::debug("xxx", &x);
 
                     let (x, _) = (*x as usize, *y as usize);
-                    fbar.state.clear();
+                    State::get().filebar.clear();
                     Log::debug("fbar.all_filenm_space_w", &fbar.all_filenm_space_w);
 
                     if fbar.all_filenm_space_w >= x {
@@ -75,7 +75,7 @@ impl FileBar {
                     let (x, _) = (*x as usize, *y as usize);
                     // Log::debug("term.hbar.all_filenm_space_w", &fbar.all_filenm_space_w);
                     if fbar.all_filenm_space_w >= x {
-                        fbar.state.is_dragging = true;
+                        State::get().filebar.is_dragging = true;
                         let mut dst_idx = USIZE_UNDEFINED;
                         let file_vec = fbar.file_vec.clone();
                         for (idx, h_file) in file_vec.iter().enumerate() {
@@ -104,10 +104,6 @@ impl FileBar {
                         }
                     }
                     return ActType::Cancel;
-                }
-                CmdType::MouseUpLeft(_, _) => {
-                    fbar.state.is_dragging = false;
-                    return ActType::Draw(DrawParts::FileBar);
                 }
                 CmdType::MouseDragLeftDown(_, _) | CmdType::MouseDragLeftUp(_, _) => return ActType::Cancel,
                 CmdType::CtxMenu(y, x) => return fbar.init_ctx_menu(*y, *x),

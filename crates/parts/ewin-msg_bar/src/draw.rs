@@ -19,11 +19,11 @@ impl MsgBar {
         }
     }
 
-    pub fn draw_only<T: std::io::Write>(&self, out: &mut T) {
+    pub fn draw_only<T: std::io::Write>(&self, out: &mut T, is_forced: bool) {
         Log::debug_key("MsgBar.draw_only");
 
         let mut v: Vec<String> = vec![];
-        self.draw(&mut v, true);
+        self.draw(&mut v, is_forced);
         let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();
     }

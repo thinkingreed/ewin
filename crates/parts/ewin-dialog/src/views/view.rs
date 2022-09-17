@@ -32,4 +32,5 @@ impl ViewEvtTrait for Dialog {
     fn view(&self) -> View {
         return self.view;
     }
+    fn exec_mouse_up_left(&mut self) {}
 }

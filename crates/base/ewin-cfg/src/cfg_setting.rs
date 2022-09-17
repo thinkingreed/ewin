@@ -176,10 +176,10 @@ impl Cfg {
         if let Some(u) = cfg_user.general.sidebar.scrollbar.horizontal.height {
             self.general.sidebar.scrollbar.horizontal.height = u;
         }
-      // treefile.indent
-      if let Some(u) = cfg_user.general.sidebar.treefile.indent {
-        self.general.sidebar.treefile.indent = u;
-    }
+        // treefile.indent
+        if let Some(u) = cfg_user.general.sidebar.treefile.indent {
+            self.general.sidebar.treefile.indent = u;
+        }
 
         /*
          * system

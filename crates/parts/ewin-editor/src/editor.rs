@@ -12,7 +12,7 @@ use ewin_const::{
 
 use ewin_key::{cur::*, sel_range::*};
 use ewin_key::{key::cmd::*, model::*};
-use ewin_state::{editor::*, term::*};
+use ewin_state::{tabs::editor::*, term::*};
 use ewin_utils::{char_edit::*, files::nl::*, global::*, util::*};
 use std::{cmp::min, collections::BTreeSet, io::stdout, ops::Range};
 
@@ -79,7 +79,7 @@ impl Editor {
         self.buf_len_rows_org = self.buf.len_rows();
         self.win_mgr.curt().scrl_v.view.y_org = self.win_mgr.curt().scrl_v.view.y;
         self.win_mgr.row_max_width_org = self.win_mgr.row_max_width;
-        self.win_mgr.curt().scrl_h.clm_posi_org = self.win_mgr.curt().scrl_h.clm_posi;
+        self.win_mgr.curt().scrl_h.view_org = self.win_mgr.curt().scrl_h.view;
         self.win_mgr.curt().scrl_h.is_show_org = self.win_mgr.curt().scrl_h.is_show;
         self.win_mgr.split_type_org = self.win_mgr.split_type;
 
@@ -279,6 +279,9 @@ impl Editor {
         return self.win_mgr.curt_ref();
     }
 
+    pub fn get_curt_col_posi(&self) -> usize {
+        return self.win_mgr.curt_ref().area_h.0;
+    }
     pub fn get_curt_col_len(&self) -> usize {
         return self.win_mgr.curt_ref().width();
     }

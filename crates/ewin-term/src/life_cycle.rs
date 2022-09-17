@@ -83,15 +83,14 @@ impl Term {
         let _ = MENU_BAR.set(Mutex::new(MenuBar::default()));
         let _ = SIDE_BAR.set(Mutex::new(SideBar::default()));
 
+        SideBar::get().init(&File::get_absolute_path(&args.filenm), false);
+        CtxMenu::get().init();
+
         let act_typ = self.tabs.open_file(&args.filenm, FileOpenType::Nomal, Tab::new(), None);
         if let ActType::ExitMsg(msg) = act_typ {
             Term::exit_show_msg(&msg)
         };
 
-        self.set_size_init();
-
-        CtxMenu::get().init();
         MenuBar::get().init();
-        SideBar::get().init(&File::get_absolute_path(&args.filenm), false);
     }
 }

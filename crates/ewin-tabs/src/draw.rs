@@ -35,12 +35,9 @@ impl Tabs {
         let (cur_cont, mut opt_vec) = StatusBar::get_editor_conts(&self.curt().editor);
         StatusBar::get().draw(&mut str_vec, cur_cont, &mut opt_vec);
         if self.curt().editor.draw_range == E_DrawRange::MoveCur {
-            MsgBar::get().draw(&mut str_vec, false);
             self.draw_flush(out, &mut str_vec);
             return;
         }
-
-        MsgBar::get().draw(&mut str_vec, false);
 
         if &DrawParts::TabsAll == draw_parts || matches!(draw_parts, DrawParts::ScrollUpDown(_)) {
             FileBar::draw(&mut str_vec);

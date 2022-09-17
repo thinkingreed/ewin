@@ -43,7 +43,6 @@ pub struct CfgUserGeneral {
     pub view: CfgUserGeneralView,
     #[serde(default)]
     pub sidebar: CfgUserSideBar,
- 
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

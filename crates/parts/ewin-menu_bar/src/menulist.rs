@@ -151,17 +151,18 @@ impl MenubarMenuList {
 
         let mut add_str = String::new();
 
-        let state = State::get().curt_state().editor;
+        let state_editor = State::get().curt_state().editor;
+        let state_sidebar = State::get().sidebar;
         if Lang::get().scale == menu_str {
-            add_str.push_str(if state.scale.is_enable { "*" } else { " " });
+            add_str.push_str(if state_editor.scale.is_enable { "*" } else { " " });
         } else if Lang::get().row_no == menu_str {
-            add_str.push_str(if state.row_no.is_enable { "*" } else { " " });
+            add_str.push_str(if state_editor.row_no.is_enable { "*" } else { " " });
         } else if Lang::get().left_and_right_split == menu_str {
-            add_str.push_str(if state.window_split_type == WindowSplitType::Vertical { "*" } else { " " });
+            add_str.push_str(if state_editor.window_split_type == WindowSplitType::Vertical { "*" } else { " " });
         } else if Lang::get().top_and_bottom_split == menu_str {
-            add_str.push_str(if state.window_split_type == WindowSplitType::Horizontal { "*" } else { " " });
+            add_str.push_str(if state_editor.window_split_type == WindowSplitType::Horizontal { "*" } else { " " });
         } else if Lang::get().sidebar == menu_str {
-            add_str.push_str(if State::get().term.is_sidebar_show { "*" } else { " " });
+            add_str.push_str(if state_sidebar.is_show { "*" } else { " " });
         } else {
             add_str.push(' ');
         }

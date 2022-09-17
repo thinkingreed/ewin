@@ -39,7 +39,9 @@ impl Cmd {
                         Ordering::Less => CmdType::MouseDragLeftUp(*y as usize, *x as usize),
                         Ordering::Greater => CmdType::MouseDragLeftDown(*y as usize, *x as usize),
                         Ordering::Equal => {
-                            if x > x_org || x == &(get_term_size().0 as u16) {
+                            if x == x_org {
+                                CmdType::MouseDownLeft(*y as usize, *x as usize)
+                            } else if x > x_org || x == &(get_term_size().0 as u16) {
                                 CmdType::MouseDragLeftRight(*y as usize, *x as usize)
                             } else {
                                 CmdType::MouseDragLeftLeft(*y as usize, *x as usize)

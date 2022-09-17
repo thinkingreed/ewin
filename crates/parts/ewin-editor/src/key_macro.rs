@@ -2,7 +2,7 @@ use crate::model::*;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
 use ewin_const::models::{draw::*, event::*, term::*};
 use ewin_job::job::*;
-use ewin_state::{editor::*, term::*};
+use ewin_state::{tabs::editor::*, term::*};
 
 impl Editor {
     pub fn record_key_macro_start(&mut self) -> ActType {

@@ -32,7 +32,7 @@ indent_type = "half_width_blank"
 indent_size = 2
 
 [general.editor.cursor]
-move_position_by_scrolling_enable = true
+move_position_by_scrolling_enable = false
 
 [general.editor.column_char_width_gap_space]
 character = " "

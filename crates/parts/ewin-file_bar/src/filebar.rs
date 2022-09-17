@@ -177,7 +177,6 @@ pub struct FileBar {
     pub left_arrow_area: (usize, usize),
     pub file_vec: Vec<FilebarFile>,
     pub history: History,
-    pub state: FileBarState,
 }
 
 impl Default for FileBar {
@@ -195,18 +194,6 @@ impl Default for FileBar {
             view: View { y: 1, height: FILEBAR_HEIGHT, ..View::default() },
             file_vec: vec![],
             history: History::default(),
-            state: FileBarState::default(),
         }
-    }
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct FileBarState {
-    pub is_dragging: bool,
-}
-
-impl FileBarState {
-    pub fn clear(&mut self) {
-        self.is_dragging = false;
     }
 }

@@ -5,10 +5,6 @@ use crate::menubar::*;
 
 impl KeyTrait for MenuBar {
     fn is_allow_key(&mut self, keys: Keys) -> bool {
-        Log::debug_key("MenuBar.is_allow_key");
-
-        Log::debug("self.menulist.is_show", &self.menulist.is_show);
-
         let rtn = match keys {
             Keys::Raw(Key::Left) | Keys::Raw(Key::Right) | Keys::Raw(Key::Up) | Keys::Raw(Key::Down) if self.menulist.is_show => true,
             Keys::MouseMove(y, _) if y == (self.view.y as u16) || self.menulist.is_show => true,

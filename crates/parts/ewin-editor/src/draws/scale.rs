@@ -65,22 +65,26 @@ impl Editor {
             format!("{}{}", div_str, &fixed_str.chars().collect::<Vec<char>>()[div_str_len..].iter().collect::<String>()).chars().collect::<Vec<char>>()[rest..].iter().collect::<String>()
         };
 
-        let diff = range_len - break_str.chars().count();
-        let delim_10 = diff / 10;
-        let delim_10_rest = diff % 10;
-        let delim_10_rest_time = if delim_10_rest > 0 { 1 } else { 0 };
+        if range_len > break_str.chars().count() {
+            let diff = range_len - break_str.chars().count();
+            let delim_10 = diff / 10;
+            let delim_10_rest = diff % 10;
+            let delim_10_rest_time = if delim_10_rest > 0 { 1 } else { 0 };
 
-        let last_idx = div + delim_10 + delim_10_rest_time;
+            let last_idx = div + delim_10 + delim_10_rest_time;
 
-        for i in div + 1..=last_idx {
-            let i_str = if is_unexpected_length { "".to_string() } else { i.to_string() };
-            let rest_str = &fixed_str.chars().collect::<Vec<char>>()[i_str.chars().count()..].iter().collect::<String>();
-            let mut join_str = format!("{}{}", &i_str, &rest_str);
-            if i == last_idx {
-                let r = range_len - break_str.chars().count();
-                join_str = join_str.chars().collect::<Vec<char>>()[..r].iter().collect::<String>();
+            for i in div + 1..=last_idx {
+                let i_str = if is_unexpected_length { "".to_string() } else { i.to_string() };
+                let rest_str = &fixed_str.chars().collect::<Vec<char>>()[i_str.chars().count()..].iter().collect::<String>();
+                let mut join_str = format!("{}{}", &i_str, &rest_str);
+                if i == last_idx {
+                    let r = range_len - break_str.chars().count();
+                    join_str = join_str.chars().collect::<Vec<char>>()[..r].iter().collect::<String>();
+                }
+                break_str.push_str(&join_str);
             }
-            break_str.push_str(&join_str);
+        } else {
+            break_str = break_str.chars().collect::<Vec<char>>()[..range_len].iter().collect::<String>();
         }
         return break_str;
     }

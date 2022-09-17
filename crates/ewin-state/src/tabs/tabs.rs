@@ -1,10 +1,10 @@
-use crate::{editor::*, global::*, term::*};
+use crate::term::*;
 use ewin_cfg::model::general::default::*;
 use ewin_const::models::model::*;
 use ewin_key::model::*;
 use ewin_utils::files::file::*;
 
-use super::{all::*, tab::*};
+use super::{all::*, editor::*, tab::*};
 
 impl State {
     pub fn add_tab(&mut self, file: File) {
@@ -36,7 +36,7 @@ pub struct TabsState {
 impl Default for TabState {
     fn default() -> Self {
         TabState {
-            editor: TabsEditorState {
+            editor: EditorState {
                 is_read_only: false,
                 is_changed: false,
                 // is_changed_org: false,

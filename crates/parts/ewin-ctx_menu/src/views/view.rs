@@ -11,4 +11,5 @@ impl ViewEvtTrait for CtxMenu {
         // implement View
         return View::default();
     }
+    fn exec_mouse_up_left(&mut self) {}
 }

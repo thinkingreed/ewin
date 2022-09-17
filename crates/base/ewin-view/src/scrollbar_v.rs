@@ -1,43 +1,43 @@
-use ewin_cfg::{log::Log, model::general::default::*};
-use ewin_key::key::cmd::CmdType;
+use ewin_cfg::{log::*, model::general::default::*};
+use ewin_key::key::cmd::*;
 
 use std::cmp::{max, min};
 
 use crate::{model::*, view::*};
 
 impl ScrollbarV {
-    pub fn ctrl_scrollbar_v(&mut self, y: usize, cmd_type: &CmdType, scrl_v_bar_x: usize, view_y: usize, view_hight: usize) {
-        if self.is_show && view_y <= y && y <= view_y + view_hight {
+    pub fn ctrl_scrollbar_v(&mut self, y: usize, cmd_type: &CmdType, scrl_v_bar_x: usize, view_y: usize, view_height: usize) {
+        Log::debug_key("ScrollbarV.ctrl_scrollbar_v");
+
+        Log::debug("self.is_show", &self.is_show);
+        Log::debug("self", &self);
+        Log::debug("cmd_type", &cmd_type);
+
+        Log::debug("view_y <= y && y <= view_y + view_hight", &(view_y <= y && y <= view_y + view_height));
+        Log::debug("scrl_v_bar_x", &(scrl_v_bar_x));
+
+        if self.is_show && view_y <= y && y <= view_y + view_height {
             match cmd_type {
                 CmdType::MouseDownLeft(y, x) if scrl_v_bar_x <= *x => {
-                    self.set_scrlbar_v_posi(*y, cmd_type, view_y, view_hight);
+                    self.is_enable = true;
+                    // Except on scrl_v
+                    if !(view_y + self.view.y <= *y && *y < view_y + self.view.y + self.bar_len) {
+                        self.view.y = if y + self.bar_len > view_y + view_height - 1 { view_y + view_height - 1 - self.bar_len } else { y - view_y };
+                    }
                 }
                 CmdType::MouseDragLeftDown(y, _) | CmdType::MouseDragLeftUp(y, _) | CmdType::MouseDragLeftLeft(y, _) | CmdType::MouseDragLeftRight(y, _) if self.is_enable => {
                     if matches!(cmd_type, CmdType::MouseDragLeftDown(_, _)) || matches!(cmd_type, CmdType::MouseDragLeftUp(_, _)) {
-                        self.set_scrlbar_v_posi(*y, cmd_type, view_y, view_hight);
+                        if matches!(cmd_type, CmdType::MouseDragLeftDown(_, _)) && view_height >= self.view.y + self.bar_len {
+                            Log::debug_key("1111111111111111111111111111111");
+                            self.view.y = if self.view.y + self.bar_len >= view_height { self.view.y } else { self.view.y + 1 };
+                        } else if (matches!(cmd_type, CmdType::MouseDragLeftUp(_, _))) && view_y <= *y && *y < view_y + view_height {
+                            Log::debug_key("2222222222222222222222222222222");
+                            self.view.y = if self.view.y == 0 { self.view.y } else { self.view.y - 1 };
+                        }
                     }
                 }
                 _ => self.is_enable = false,
             };
-        }
-    }
-    pub fn set_scrlbar_v_posi(&mut self, y: usize, cmd_type: &CmdType, view_y: usize, view_height: usize) {
-        // MouseDownLeft
-        if matches!(cmd_type, CmdType::MouseDownLeft(_, _)) {
-            self.is_enable = true;
-            // Except on scrl_v
-            if !(view_y + self.view.y <= y && y < view_y + self.view.y + self.bar_len) {
-                self.view.y = if y + self.bar_len > view_y + view_height - 1 { view_y + view_height - 1 - self.bar_len } else { y - view_y };
-            } else {
-                return;
-            }
-            // MouseDragLeftDown・MouseDragLeftUp
-        } else if self.is_enable {
-            if matches!(cmd_type, CmdType::MouseDragLeftDown(_, _)) && view_height >= self.view.y + self.bar_len {
-                self.view.y = if self.view.y + self.bar_len >= view_height { self.view.y } else { self.view.y + 1 };
-            } else if (matches!(cmd_type, CmdType::MouseDragLeftUp(_, _))) && view_y <= y && y < view_y + view_height {
-                self.view.y = if self.view.y == 0 { self.view.y } else { self.view.y - 1 };
-            }
         }
     }
 

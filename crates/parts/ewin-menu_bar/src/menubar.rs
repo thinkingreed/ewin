@@ -116,6 +116,11 @@ impl MenuBar {
     }
 
     pub fn init(&mut self) {
+        Log::debug_key("MenuBar.init");
+
+        self.set_posi(get_term_size().0);
+        self.set_menunm();
+
         self.is_left_arrow_disp = false;
         self.is_right_arrow_disp = false;
         self.left_arrow_area = (USIZE_UNDEFINED, USIZE_UNDEFINED);

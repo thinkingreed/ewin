@@ -5,6 +5,7 @@ use crossterm::cursor::MoveTo;
 use ewin_cfg::{colors::*, log::*};
 use ewin_const::models::view::*;
 use ewin_utils::str_edit::*;
+use ewin_view::view::*;
 
 impl SideBarContTrait for TreeFileView {
     fn draw(&self, str_vec: &mut Vec<String>) {
@@ -17,37 +18,27 @@ impl SideBarContTrait for TreeFileView {
         str_vec.push(Colors::get_sidebar_fg_bg());
         str_vec.push(format!("{}", MoveTo(self.base.view.x as u16, (self.view_tree.y) as u16)));
 
-        Log::debug(" self.view_tree", &self.view_tree);
+        let tgt_vec = if self.base.offset.y + self.view_tree.height > self.vec_show.len() { self.vec_show[self.base.offset.y..].to_vec() } else { self.vec_show[self.base.offset.y..self.base.offset.y + self.view_tree.height].to_vec() };
 
-        for (idx, tree_idx) in (self.view_tree.y..self.view_tree.y + self.view_tree.height).zip(self.base.offset.y..self.base.offset.y + self.view_tree.height) {
-            Log::debug(" idx", &idx);
-            Log::debug(" tree_idx", &idx);
+        Log::debug("show tgt_vec", &tgt_vec);
 
-            if tree_idx > self.vec.len() - 1 {
-                break;
-            }
+        for (idx, tree_file) in (self.view_tree.y..self.view_tree.y + self.view_tree.height).zip(tgt_vec.iter()) {
+            str_vec.push(format!("{}", MoveTo(self.base.view.x as u16, idx as u16)));
 
-            let tree_file = &self.vec[tree_idx];
-
-            if tree_file.is_show {
-                Log::debug_d("tree_file", &tree_file);
-                str_vec.push(format!("{}", MoveTo(self.base.view.x as u16, idx as u16)));
-
-                let icon = if tree_file.is_dir {
-                    if tree_file.dir.is_open {
-                        "-📂"
-                    } else {
-                        "+📁"
-                    }
+            let icon = if tree_file.is_dir {
+                if tree_file.dir.is_open {
+                    "-📂"
                 } else {
-                    " 📄"
-                };
-                str_vec.push(if tree_file.is_tgt_file { Colors::get_sidebar_bg_open_file() } else { Colors::get_sidebar_bg() });
-                let filenm = format!("{}{}{}", get_space(tree_file.level), icon, tree_file.dispnm);
-                let dispnm = adjust_str_len(&filenm, self.base.view.width, false, true);
+                    "+📁"
+                }
+            } else {
+                " 📄"
+            };
+            str_vec.push(if tree_file.is_tgt_file { Colors::get_sidebar_bg_open_file() } else { Colors::get_sidebar_bg() });
+            let filenm = format!("{}{}{}", get_space(tree_file.level), icon, tree_file.dispnm);
+            let dispnm = adjust_str_len(&filenm, self.base.view.width, false, true);
 
-                str_vec.push(dispnm);
-            }
+            str_vec.push(dispnm);
         }
 
         // sidebar split line
@@ -57,19 +48,15 @@ impl SideBarContTrait for TreeFileView {
         }
     }
 
-    fn draw_scrlbar_v(&self, str_vec: &mut Vec<String>) {
-        Log::debug_key("TreeFileView.draw_scrlbar_v");
-        if self.scrl_v.is_show {
-            for i in self.view_tree.y..self.view_tree.y + self.view_tree.height {
-                Log::debug_key("111111111111111111111111111111111111");
-                str_vec.push(MoveTo(self.scrl_v.view.x as u16, i as u16).to_string());
-                Log::debug_key("222222222222222222222222222222222222");
-                str_vec.push(if self.view_tree.y + self.scrl_v.view.y <= i && i < self.view_tree.y + self.scrl_v.view.y + self.scrl_v.bar_len { Colors::get_scrollbar_v_bg() } else { Colors::get_default_bg() });
-                Log::debug_key("3333333333333333333333333333333333333");
-                str_vec.push(" ".to_string().repeat(self.scrl_v.bar_width));
-            }
-        }
-        str_vec.push(Colors::get_default_bg());
+    fn resize(&mut self) {
+        self.resize();
+    }
+
+    fn get_cont_vec_len(&self) -> usize {
+        self.vec_show.len()
+    }
+    fn get_cont_view(&self) -> View {
+        self.view_tree
     }
 
     fn as_base(&self) -> &SideBarContBase {

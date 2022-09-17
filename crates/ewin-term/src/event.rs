@@ -8,6 +8,7 @@ use ewin_const::{
 };
 use ewin_ctx_menu::ctx_menu::*;
 use ewin_dialog::dialog::*;
+use ewin_editor::model::Editor;
 use ewin_file_bar::filebar::*;
 use ewin_key::{
     global::*,
@@ -18,7 +19,7 @@ use ewin_menu_bar::menubar::*;
 use ewin_msg_bar::msgbar::*;
 use ewin_prom::model::*;
 use ewin_side_bar::sidebar::*;
-use ewin_state::term::*;
+use ewin_state::{sidebar::*, term::*};
 use ewin_status_bar::statusbar::*;
 use ewin_view::{menulists::core::*, view::*, view_traits::view_trait::*};
 use std::io::{stdout, Write};
@@ -47,6 +48,7 @@ impl Term {
         View::hide_cur();
         // msg
         MsgBar::get().clear_mag();
+        Log::debug("self.place", &self.place);
 
         return match self.place {
             Place::Tabs => self.tabs.ctrl_tabs(&self.cmd.cmd_type),
@@ -114,8 +116,10 @@ impl Term {
                 self.cmd = Cmd::to_cmd(CmdType::Null);
                 return ActType::None;
             }
-            Keys::MouseUpLeft(_, _) if FileBar::get().state.is_dragging => {}
             Keys::MouseUpLeft(_, _) => {
+                self.tabs.curt().editor.exec_mouse_up_left();
+                SideBar::get().exec_mouse_up_left();
+                FileBar::get().exec_mouse_up_left();
                 self.cmd = Cmd::to_cmd(CmdType::Null);
                 return ActType::None;
             }
@@ -129,7 +133,7 @@ impl Term {
                     self.set_bg_color();
                     State::get().term.is_displayable = true;
                     self.clear_state();
-                    self.set_size_init();
+                    // self.set_size_init();
                     return ActType::Draw(DrawParts::All);
                 } else {
                     State::get().term.is_displayable = false;

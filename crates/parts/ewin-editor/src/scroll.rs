@@ -98,6 +98,7 @@ impl Editor {
             return self.buf.len_rows() + Editor::DISP_ROWS_MARGIN;
         }
     }
+
     pub fn set_offset_move_row(&mut self) {
         Log::debug_key("set_offset_move_row");
 
@@ -133,15 +134,15 @@ impl Editor {
         let vec = &self.buf.char_vec_row(self.win_mgr.curt().cur.y);
 
         //// Calc offset_x
-        // Up・Down・Home ...
-        if 0 == self.win_mgr.curt().cur.x {
+        if self.win_mgr.curt().scrl_h.is_enable && (matches!(self.cmd.cmd_type, CmdType::MouseDownLeft(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftLeft(_, _)) || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftRight(_, _))) {
+            self.win_mgr.curt().offset.x = self.win_mgr.curt().scrl_h.view.x * self.win_mgr.curt().scrl_h.move_char_x;
+        } else if 0 == self.win_mgr.curt().cur.x {
             self.win_mgr.curt().offset.x = 0;
             self.win_mgr.curt().offset.disp_x = 0;
             return;
         } else if self.win_mgr.curt().sel.mode == SelMode::BoxSelect && self.win_mgr.curt().cur_org.y != self.win_mgr.curt().cur.y {
             self.win_mgr.curt().offset.x = get_until_disp_x(vec, self.win_mgr.curt().offset.disp_x, false).0;
             return;
-
             // If the line is changed
         } else if self.win_mgr.curt().cur_org.y != self.win_mgr.curt().cur.y {
             if !self.is_cur_disp_x_in_screen() {
@@ -177,7 +178,6 @@ impl Editor {
                 _ => {}
             }
         }
-
         if self.win_mgr.curt().offset.x != self.win_mgr.curt().offset.x_org {
             self.set_offset_disp_x();
         }

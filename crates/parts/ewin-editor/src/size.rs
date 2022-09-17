@@ -24,6 +24,7 @@ impl Editor {
         self.view.y = row_posi;
 
         let side_bar_width = SideBar::get().get_width_all();
+        Log::debug("side_bar_width", &side_bar_width);
         self.view.x = side_bar_width;
         Log::debug(" self.view.y", &self.view.y);
 

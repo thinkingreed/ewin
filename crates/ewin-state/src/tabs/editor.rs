@@ -2,7 +2,7 @@ use ewin_cfg::model::general::default::*;
 use ewin_const::models::model::*;
 use ewin_key::model::*;
 
-impl TabsEditorState {
+impl EditorState {
     pub fn toggle_state(&mut self, state: TabsEditerStateType) {
         match state {
             TabsEditerStateType::Scale => self.scale.is_enable = !self.scale.is_enable,
@@ -13,7 +13,7 @@ impl TabsEditorState {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct TabsEditorState {
+pub struct EditorState {
     pub is_read_only: bool,
     pub is_changed: bool,
     // pub is_changed_org: bool,

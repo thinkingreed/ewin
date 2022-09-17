@@ -3,6 +3,7 @@ pub mod view;
 
 pub mod char_style;
 pub mod model;
+pub mod scrollbar_h;
 pub mod scrollbar_v;
 pub mod view_traits {
     pub mod view_trait;

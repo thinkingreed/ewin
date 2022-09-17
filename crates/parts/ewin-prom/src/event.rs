@@ -93,8 +93,6 @@ impl Prom {
     }
 
     pub fn judge_when_prompt() -> bool {
-        Log::debug_key("judge_when_prompt");
-
         let is_nomal_or_grep_result = State::get().curt_state().is_nomal_or_grep_result();
         // if !is_nomal_or_grep_result || (State::get().curt_state().prom == PromState::GrepResult && keys == Cmd::cmd_to_keys(CmdType::Confirm)) {
         if !is_nomal_or_grep_result {

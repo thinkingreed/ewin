@@ -7,11 +7,14 @@ pub mod global {
     pub static TABS: OnceCell<Mutex<State>> = OnceCell::new();
 }
 
-pub mod editor;
 pub mod term;
 pub mod tabs {
     pub mod all;
     pub mod tab;
+
+    pub mod editor;
     pub mod tabs;
 }
 pub mod core;
+pub mod filebar;
+pub mod sidebar;

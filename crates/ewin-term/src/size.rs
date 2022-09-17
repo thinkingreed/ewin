@@ -17,14 +17,6 @@ impl Term {
         return ActType::Draw(DrawParts::TabsAll);
     }
 
-    pub fn set_size_init(&mut self) {
-        let (cols, rows) = get_term_size();
-        Log::debug("rows, cols", &format!("{},{}", &rows, &cols));
-
-        MenuBar::get().set_posi(cols);
-        MenuBar::get().set_menunm();
-    }
-
     pub fn set_size(&mut self) -> bool {
         Log::debug_s("set_size");
         let (cols, rows) = get_term_size();

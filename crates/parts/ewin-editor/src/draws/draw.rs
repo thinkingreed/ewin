@@ -199,7 +199,7 @@ impl Editor {
     pub fn clear_all(&self, str_vec: &mut Vec<String>) {
         Log::debug_key("Editor.clear_all");
 
-        for i in self.view.y..=self.view.y + self.view.height {
+        for i in self.view.y..self.view.y + self.view.height - 1 {
             str_vec.push(format!("{}{}", MoveTo(self.view.x as u16, i as u16), get_space(self.view.width)));
         }
         str_vec.push(format!("{}", MoveTo(self.view.x as u16, self.get_curt_row_posi() as u16)));

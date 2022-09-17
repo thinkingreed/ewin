@@ -9,13 +9,18 @@ pub mod global {
 
 pub mod core;
 pub mod draw;
-pub mod event;
 pub mod sidebar;
+
+pub mod event {
+    pub mod event;
+    pub mod scrollbar {
+        pub mod vertical;
+    }
+}
 
 pub mod tree_file_view {
     pub mod cont_trait;
     pub mod event;
-    pub mod mouse;
     pub mod tree;
     pub mod tree_file;
 }

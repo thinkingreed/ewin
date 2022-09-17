@@ -14,6 +14,9 @@ impl View {
     pub fn is_x_range(&self, x: usize) -> bool {
         return self.x <= x && x <= self.x + self.width;
     }
+    pub fn is_y_range(&self, y: usize) -> bool {
+        return self.y <= y && y <= self.y + self.height;
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

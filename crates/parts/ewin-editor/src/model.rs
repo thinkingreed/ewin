@@ -97,26 +97,6 @@ impl fmt::Display for EditorDraw {
 }
 pub struct FormatXml {}
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ScrollbarH {
-    pub is_show: bool,
-    pub is_show_org: bool,
-    pub is_enable: bool,
-    pub view: View,
-    pub clm_posi: usize,
-    pub clm_posi_org: usize,
-    pub bar_len: usize,
-    pub bar_height: usize,
-    pub move_char_x: usize,
-    pub scrl_range: usize,
-}
-
-impl Default for ScrollbarH {
-    fn default() -> Self {
-        ScrollbarH { is_show: false, is_show_org: false, is_enable: false, view: View::default(), clm_posi: 0, clm_posi_org: 0, bar_len: 0, bar_height: 0, move_char_x: 0, scrl_range: 0 }
-    }
-}
-
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ChangeInfo {
     pub change_type: EditerChangeType,

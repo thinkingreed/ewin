@@ -30,7 +30,7 @@ impl Editor {
             if self.win_mgr.curt().offset.y_org == self.win_mgr.curt().offset.y && self.win_mgr.curt().scrl_v.view.y_org == self.win_mgr.curt().scrl_v.view.y {
                 E_DrawRange::Not
             } else {
-                E_DrawRange::WinOnlyAll
+                E_DrawRange::All
             }
         } else if self.win_mgr.curt().offset.y_org != self.win_mgr.curt().offset.y {
             if (self.win_mgr.curt().offset.y_org as isize - self.win_mgr.curt().offset.y as isize).unsigned_abs() > self.get_curt_row_len() {
@@ -95,7 +95,7 @@ impl Editor {
                 }
 
                 CmdType::MouseDragLeftLeft(_, _) | CmdType::MouseDragLeftRight(_, _) | CmdType::MouseDragLeftDown(_, _) | CmdType::MouseDragLeftUp(_, _) if self.win_mgr.curt().scrl_h.is_enable => {
-                    if matches!(self.cmd.cmd_type, CmdType::MouseDragLeftLeft(_, _)) && self.win_mgr.curt().scrl_h.clm_posi_org == 0 || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftRight(_, _)) && self.win_mgr.curt().scrl_h.clm_posi_org + self.win_mgr.curt().scrl_h.bar_len == self.get_curt_col_len() {
+                    if matches!(self.cmd.cmd_type, CmdType::MouseDragLeftLeft(_, _)) && self.win_mgr.curt().scrl_h.view_org.x == 0 || matches!(self.cmd.cmd_type, CmdType::MouseDragLeftRight(_, _)) && self.win_mgr.curt().scrl_h.view_org.x + self.win_mgr.curt().scrl_h.bar_len == self.get_curt_col_len() {
                         E_DrawRange::Not
                     } else {
                         E_DrawRange::WinOnlyAll

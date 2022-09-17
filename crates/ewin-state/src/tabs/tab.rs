@@ -1,7 +1,9 @@
-use crate::{editor::*, term::*};
+use crate::term::*;
 use ewin_cfg::log::Log;
 use ewin_key::model::*;
 use ewin_utils::files::file::*;
+
+use super::editor::EditorState;
 
 impl State {
     #[track_caller]
@@ -38,7 +40,7 @@ impl TabState {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TabState {
-    pub editor: TabsEditorState,
+    pub editor: EditorState,
     pub file: File,
     pub prom: PromState,
     pub grep: GrepInfo,

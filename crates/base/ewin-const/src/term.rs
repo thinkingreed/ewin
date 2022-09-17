@@ -4,12 +4,12 @@ use std::sync::Mutex;
 use crate::{def::*, global::*};
 
 pub fn get_term_size() -> (usize, usize) {
-    let term_size = if let Some(___term_size) = TERM_SIZE.get() {
-        if let Ok(_term_size) = ___term_size.try_lock() {
-            (_term_size.cols, _term_size.rows)
-        } else {
-            (TERM_MINIMUM_WIDTH as u16, TERM_MINIMUM_HEIGHT as u16)
-        }
+    let term_size = if let Some(Ok(_term_size)) = TERM_SIZE.get().map(|term| term.try_lock()) {
+        //     if let Some(Ok(tx_job)) = TX_JOB.get().map(|tx| tx.try_lock()) {
+
+        // let term_size = if let Some(Ok(_term_size)) = TERM_SIZE.get().try_lock() {
+        //  if let Ok(_term_size) = ___term_size.try_lock() {
+        (_term_size.cols, _term_size.rows)
     } else {
         let size = size().unwrap_or((TERM_MINIMUM_WIDTH as u16, TERM_MINIMUM_HEIGHT as u16));
         let _ = TERM_SIZE.set(Mutex::new(TermSize { cols: size.0, rows: size.1 }));

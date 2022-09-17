@@ -3,6 +3,7 @@ use ewin_const::models::{draw::*, event::*};
 use ewin_ctx_menu::ctx_menu::*;
 use ewin_dialog::dialog::*;
 use ewin_file_bar::filebar::*;
+use ewin_key::key::cmd::*;
 use ewin_menu_bar::menubar::*;
 use ewin_msg_bar::msgbar::*;
 use ewin_prom::model::*;
@@ -33,8 +34,11 @@ impl Term {
 
             match &draw_parts {
                 DrawParts::None => {}
-                DrawParts::MsgBar(_) => MsgBar::get().draw_only(out),
-                DrawParts::TabsAllMsgBar(_) => self.tabs.draw(out, &DrawParts::TabsAll),
+                DrawParts::MsgBar(_) => MsgBar::get().draw_only(out, true),
+                DrawParts::TabsAllMsgBar(_) => {
+                    self.tabs.draw(out, &DrawParts::TabsAll);
+                    MsgBar::get().draw_only(out, true);
+                }
                 DrawParts::MenuBar => MenuBar::get().draw_only(out),
                 DrawParts::FileBar => FileBar::draw_only(out),
                 DrawParts::Prompt => Prom::get().draw_only(out),
@@ -50,7 +54,6 @@ impl Term {
                 }
                 DrawParts::SideBar => SideBar::get().draw_only(out),
                 DrawParts::All | DrawParts::ScrollUpDown(_) => {
-                    // View::clear_all();
                     self.set_size();
 
                     MenuBar::get().draw_only(out);
@@ -59,7 +62,8 @@ impl Term {
                     }
                     self.tabs.draw(out, &DrawParts::TabsAll);
                     SideBar::get().draw_only(out);
-                    MsgBar::get().draw_only(out);
+                    // let is_forced = self.cmd.cmd_type == CmdType::MouseScrollDown || self.cmd.cmd_type == CmdType::MouseScrollUp;
+                    MsgBar::get().draw_only(out, true);
                 }
 
                 DrawParts::TabsAbsolute(range) => {
@@ -91,7 +95,7 @@ impl Term {
 
                     // MsgBar
                     if range.contains(&MsgBar::get().view.height) {
-                        MsgBar::get().draw_only(out);
+                        MsgBar::get().draw_only(out, true);
                     };
                     // StatusBar
                     if range.contains(&StatusBar::get().view.y) {

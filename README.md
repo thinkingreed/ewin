@@ -4,6 +4,8 @@
 
 **_No need to remember commands_**
 
+# Please refrain from using it as it is currently under development.
+
 It provides basic features as a minimal text editor:
 
 - Open/Save text files
@@ -26,6 +28,8 @@ It provides basic features as a minimal text editor:
 - Symbol display of specific characters (tab, Full-width space, ..)
 - Window split
 - File property reference
+- SideBar
+  FileTreeView
 
 [![Rust](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml/badge.svg)](https://github.com/thinkingreed/ewin/actions/workflows/ci.yaml)
 [![crate-name at crates.io](https://img.shields.io/crates/v/ewin.svg)](https://crates.io/crates/ewin)

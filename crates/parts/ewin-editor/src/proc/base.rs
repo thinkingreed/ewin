@@ -4,7 +4,7 @@ use ewin_const::models::{draw::*, event::*, file::SaveFileType, types::*};
 use ewin_ctx_menu::view_traits::view_trait::*;
 use ewin_job::job::*;
 use ewin_key::key::cmd::*;
-use ewin_state::{editor::*, term::*};
+use ewin_state::{tabs::editor::*, term::*};
 
 impl Editor {
     pub fn proc(&mut self) -> ActType {
@@ -118,7 +118,7 @@ impl Editor {
             CmdType::CursorUpSelect | CmdType::CursorDownSelect | CmdType::CursorLeftSelect | CmdType::CursorRightSelect | CmdType::CursorRowHomeSelect | CmdType::CursorRowEndSelect => self.shift_move_com(),
             CmdType::AllSelect => self.all_select(),
             // mouse
-            CmdType::MouseDownLeft(_, _) | CmdType::MouseUpLeft(_, _) | CmdType::MouseDragLeftDown(_, _) | CmdType::MouseDragLeftUp(_, _) | CmdType::MouseDragLeftLeft(_, _) | CmdType::MouseDragLeftRight(_, _) | CmdType::MouseDownLeftBox(_, _) | CmdType::MouseDragLeftBox(_, _) => self.ctrl_mouse(),
+            CmdType::MouseDownLeft(_, _) | CmdType::MouseDragLeftDown(_, _) | CmdType::MouseDragLeftUp(_, _) | CmdType::MouseDragLeftLeft(_, _) | CmdType::MouseDragLeftRight(_, _) | CmdType::MouseDownLeftBox(_, _) | CmdType::MouseDragLeftBox(_, _) => self.ctrl_mouse(),
             CmdType::MouseModeSwitch => self.ctrl_mouse_capture(),
             // Mode
             CmdType::BoxSelectMode => self.box_select_mode(),
