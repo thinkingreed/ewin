@@ -8,7 +8,7 @@ impl Editor {
     pub fn record_key_macro_start(&mut self) -> ActType {
         Log::debug_key("macro_record_start");
 
-        if State::get().curt_state().editor.key_macro.is_record {
+        if State::get().curt_ref_state().editor.key_macro.is_record {
             State::get().curt_mut_state().editor.toggle_state(TabsEditerStateType::KeyMacroRecord);
             return ActType::Draw(DrawParts::Editor(E_DrawRange::All));
         } else {

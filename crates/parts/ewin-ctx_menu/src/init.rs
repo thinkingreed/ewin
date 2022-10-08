@@ -76,6 +76,7 @@ impl CtxMenu {
             if is_exist_child_mark_flg {
                 parent_max_len += exist_child_mark.len();
             }
+
             parent_max_len_map.insert(*term_place, parent_max_len);
             child_max_len_map.insert(*term_place, child_max_len_vec);
 
@@ -94,15 +95,14 @@ impl CtxMenu {
                     }
                     // child_cont.height = child_cont.menu_vec.len();
                     // +4 is extra
-                    child_cont.width = child_max_len_vec[idx] + 4;
+                    child_cont.view.width = child_max_len_vec[idx] + 4;
                 } else {
-                    let exist_child_mark_space = if is_exist_child_mark_flg { "" } else { "  " };
-                    parent_menu.disp_name = format!("  {}{}{}", perent_str, get_space(space), exist_child_mark_space);
+                    parent_menu.disp_name = format!("  {}{}", perent_str, get_space(space));
                 }
             }
             //  self.ctx_menu_place_map.get_mut(term_place).unwrap().height = self.ctx_menu_place_map[term_place].menu_vec.len();
             // +1 is Extra
-            self.place_menulist_map.get_mut(term_place).unwrap().width = parent_max_len_map[term_place] + 1;
+            self.place_menulist_map.get_mut(term_place).unwrap().view.width = parent_max_len_map[term_place] + 2;
         }
     }
 }

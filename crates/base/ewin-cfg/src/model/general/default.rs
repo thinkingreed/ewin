@@ -35,6 +35,7 @@ impl CfgSyntax<'_> {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CfgGeneral {
     pub lang: String,
+    pub color_scheme: CfgColorScheme,
     pub log: CfgLog,
     pub editor: CfgEditor,
     pub font: CfgFont,
@@ -44,6 +45,13 @@ pub struct CfgGeneral {
     pub mouse: CfgGeneralMouse,
     pub view: CfgGeneralView,
     pub sidebar: CfgSideBar,
+    pub activitybar: CfgActivityBar,
+    pub tooltip: CfgToolTip,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgColorScheme {
+    pub default_color_theme: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -212,13 +220,36 @@ pub struct CfgGeneralView {
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct CfgSideBar {
     pub width: usize,
-    pub treefile: CfgSideBarTreeFile,
+    pub explorer: CfgSideBarExplorer,
     pub scrollbar: CfgScrl,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct CfgSideBarTreeFile {
+pub struct CfgActivityBar {
+    pub width: usize,
+    pub content: String,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgToolTip {
+    pub hover_delay: usize,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgSideBarExplorer {
+    pub tree: CfgSideBarExplorerTree,
+    pub quick_access: CfgSideBarExplorerQuickAccess,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgSideBarExplorerTree {
     pub indent: usize,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgSideBarExplorerQuickAccess {
+    pub width: usize,
+    pub content: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -1,21 +1,22 @@
-use std::fmt::Write;
-
 use crate::statusbar::*;
 use crossterm::{
     cursor::MoveTo,
     terminal::{Clear, ClearType},
 };
 use ewin_cfg::{colors::*, log::*};
-use ewin_const::{models::view::get_space, term::*};
+use ewin_const::{models::view::*, term::*};
 use ewin_state::term::*;
 use ewin_utils::str_edit::*;
+use std::fmt::Write;
 
 impl StatusBar {
-    pub fn draw(&mut self, str_vec: &mut Vec<String>, cur_cont: StatusBarCont, opt_vec: &mut [StatusBarCont]) {
+    pub fn draw(&mut self, str_vec: &mut Vec<String>) {
         Log::info_key("StatusBar.draw");
 
+        let (cur_cont, mut opt_vec) = StatusBar::get_editor_conts();
+
         let cols = get_term_size().0;
-        let file = &State::get().curt_state().file.clone();
+        let file = &State::get().curt_ref_state().file.clone();
 
         let mut normal_vec = vec![];
         let enc_nl = StatusBarCont::new(format!("{}({})", file.enc, file.nl));
@@ -49,10 +50,10 @@ impl StatusBar {
         str_vec.push(Colors::get_default_fg_bg());
     }
 
-    pub fn draw_only<T: std::io::Write>(&mut self, out: &mut T, cur_cont: StatusBarCont, opt_vec: &mut [StatusBarCont]) {
+    pub fn draw_only<T: std::io::Write>(&mut self, out: &mut T) {
         Log::debug_key("StatusBar.draw_only");
         let mut v: Vec<String> = vec![];
-        self.draw(&mut v, cur_cont, opt_vec);
+        self.draw(&mut v);
         let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();
     }

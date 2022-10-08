@@ -1,7 +1,6 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SideBarState {
     pub is_show: bool,
-
     pub resize: SideBarResizeState,
 }
 

@@ -2,7 +2,7 @@ use crate::{
     cont::parts::{info::*, input_area::*, key_desc::*, search_opt::*},
     ewin_key::key::cmd::*,
     model::*,
-    prom_trait::main_trait::*,
+    traits::main_trait::*,
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*, model::general::default::*};
 use ewin_const::models::{draw::*, event::*, types::*};
@@ -17,13 +17,9 @@ impl PromSearch {
 
         match self.base.cmd.cmd_type {
             CmdType::InsertStr(_) | CmdType::Cut | CmdType::DelNextChar | CmdType::DelPrevChar | CmdType::Undo | CmdType::Redo => {
-                Job::send_cmd(CmdType::Search(SearchType::Incremental, search_str));
-                return ActType::None;
+                return Job::send_cmd(CmdType::Search(SearchType::Incremental, search_str));
             }
-            CmdType::FindNext | CmdType::FindBack => {
-                Job::send_cmd(CmdType::Search(SearchType::Confirm, search_str));
-                return ActType::None;
-            }
+            CmdType::FindNext | CmdType::FindBack => return Job::send_cmd(CmdType::Search(SearchType::Confirm, search_str)),
             _ => return ActType::Cancel,
         }
     }

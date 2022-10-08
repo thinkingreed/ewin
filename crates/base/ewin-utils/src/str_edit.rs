@@ -81,7 +81,7 @@ pub fn split_tgt_str_width(target: &str, split_char: &[char], max_width: usize) 
     return rtn_vec;
 }
 
-pub fn get_strs_max_width(vec: &mut Vec<String>) -> usize {
+pub fn get_strs_max_width(vec: &Vec<String>) -> usize {
     let mut max_width = 0;
     for s in vec {
         let len = get_str_width(s);

@@ -2,7 +2,7 @@ use crate::{
     cont::parts::{file_list::*, info::*, input_area::*, key_desc::*},
     ewin_key::key::cmd::*,
     model::*,
-    prom_trait::main_trait::*,
+    traits::main_trait::*,
 };
 use directories::BaseDirs;
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
@@ -130,13 +130,11 @@ impl PromOpenFile {
         for (idx, state) in State::get().tabs.vec.iter_mut().enumerate() {
             if full_path == state.file.fullpath {
                 state.clear();
-                Job::send_cmd(CmdType::ChangeFile(idx));
-                return ActType::None;
+                return Job::send_cmd(CmdType::ChangeFile(idx));
             }
         }
         State::get().curt_mut_state().clear();
-        Job::send_cmd(CmdType::OpenTgtFile(full_path));
-        return ActType::None;
+        return Job::send_cmd(CmdType::OpenTgtFile(full_path));
     }
 
     pub fn file_confirm(&mut self, op_file: &OpenFile) -> ActType {

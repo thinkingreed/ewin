@@ -4,6 +4,7 @@ impl View {
     pub fn is_range(&self, y: usize, x: usize) -> bool {
         return self.y <= y && y < self.y + self.height && self.x <= x && x < self.x + self.width;
     }
+
     pub fn is_range_around(&self, y: usize, x: usize) -> bool {
         let sy = if y == 0 { 0 } else { self.y - 1 };
         let ey = if get_term_size().1 == y { y } else { self.y + 1 };
@@ -17,9 +18,20 @@ impl View {
     pub fn is_y_range(&self, y: usize) -> bool {
         return self.y <= y && y <= self.y + self.height;
     }
+    pub fn x_width(&self) -> usize {
+        return self.x + self.width;
+    }
+
+    pub fn x_width_middle(&self) -> usize {
+        return self.x + (self.width / 2);
+    }
+
+    pub fn y_height(&self) -> usize {
+        return self.y + self.height;
+    }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct View {
     pub x: usize,
     pub y: usize,
@@ -27,10 +39,11 @@ pub struct View {
     pub width: usize,
     pub height: usize,
     pub is_on_mouse: bool,
+    pub tooltip_vec: Vec<String>,
 }
 
 impl Default for View {
     fn default() -> Self {
-        View { x: USIZE_UNDEFINED, y: USIZE_UNDEFINED, y_org: 0, width: 0, height: 0, is_on_mouse: false }
+        View { x: USIZE_UNDEFINED, y: USIZE_UNDEFINED, y_org: 0, width: 0, height: 0, is_on_mouse: false, tooltip_vec: vec![] }
     }
 }

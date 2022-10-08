@@ -11,6 +11,7 @@ pub enum Place {
     CtxMenu,
     Dialog,
     SideBar,
+    ActivityBar,
 }
 
 #[derive(Debug, Clone, Default, Copy, PartialEq, Eq, Hash)]

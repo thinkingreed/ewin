@@ -37,11 +37,11 @@ impl CtxMenu {
                         if child_cont_org.is_none() && child_cont.is_none() || ctx_menu.menulist.parent_sel_y == ctx_menu.menulist.parent_sel_y_org && ctx_menu.menulist.child_sel_y != USIZE_UNDEFINED {
                             return ActType::Draw(DrawParts::CtxMenu);
                         } else {
-                            return ActType::Draw(DrawParts::TabsAbsolute(ctx_menu.menulist.get_disp_range_y()));
+                            return ActType::Draw(DrawParts::Absolute(ctx_menu.menulist.get_disp_range_y()));
                         }
                     } else if ctx_menu.menulist.is_mouse_area_around(*y, *x) {
                         ctx_menu.menulist.clear_select_menu();
-                        return ActType::Draw(DrawParts::TabsAbsolute(ctx_menu.menulist.get_disp_range_y()));
+                        return ActType::Draw(DrawParts::Absolute(ctx_menu.menulist.get_disp_range_y()));
                     } else {
                         return ActType::Cancel;
                     }
@@ -57,7 +57,7 @@ impl CtxMenu {
                     if !ctx_menu.menulist.is_menu_change() {
                         return ActType::Cancel;
                     }
-                    return ActType::Draw(DrawParts::TabsAbsolute(ctx_menu.menulist.get_disp_range_y()));
+                    return ActType::Draw(DrawParts::Absolute(ctx_menu.menulist.get_disp_range_y()));
                 }
                 CmdType::Confirm => return ctx_menu.select_ctx_menu(),
 
@@ -122,8 +122,8 @@ impl CtxMenu {
                         s if s == &Lang::get().close_other_than_this_tab => Job::send_cmd(CmdType::CloseOtherThanThisTab(file_bar.tgt_idx)),
                         s if s == &Lang::get().close => Job::send_cmd(CmdType::CloseFileTgt(file_bar.tgt_idx)),
                         s if s == &Lang::get().file_property => Job::send_cmd(CmdType::DialogShow(DialogContType::FileProp(file_bar.tgt_idx))),
-                        _ => {}
-                    }
+                        _ => return ActType::None,
+                    };
                 }
             }
             CtxMenuPlace::Editor(_) => Job::send_cmd_str(name),

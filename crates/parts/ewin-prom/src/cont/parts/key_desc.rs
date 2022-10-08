@@ -1,4 +1,4 @@
-use crate::{model::*, prom_trait::cont_trait::*};
+use crate::{model::*, traits::cont_trait::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::Lang, log::*};
 use ewin_key::key::cmd::{Cmd, CmdType};
 use std::fmt::Write as _;

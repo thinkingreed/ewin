@@ -1,7 +1,7 @@
-use ewin_cfg::{colors::*, lang::lang_cfg::Lang, log::*, model::general::default::*};
-use ewin_const::models::{model::WindowSplitType, view::*};
+use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*, model::general::default::*};
+use ewin_const::models::{model::*, view::*};
 use ewin_job::job::*;
-use ewin_state::term::State;
+use ewin_state::term::*;
 use ewin_utils::str_edit::*;
 use ewin_view::menulists::{core::*, menulist::*};
 use indexmap::IndexMap;
@@ -98,6 +98,9 @@ impl MenubarMenuList {
             if child_cont.cont_vec.len() - 1 == idx {
                 if is_exist_grandchild {
                     child_max_len += exist_child_mark.len();
+                } else {
+                    // +1 is extra
+                    child_max_len += 1;
                 }
                 child_max_len_map.insert(parent_menu_str.clone(), child_max_len);
             }
@@ -133,15 +136,15 @@ impl MenubarMenuList {
                         }
                     }
                     // +3 is extra
-                    grandchild_cont.width = grandchild_max_len + 3;
-                    Log::debug("grandchild_cont.width", &grandchild_cont.width);
+                    grandchild_cont.view.width = grandchild_max_len + 3;
+                    Log::debug("grandchild_cont.width", &grandchild_cont.view.width);
                     child_menu.disp_name = format!("{}{}{}", child_str_edit, get_space(space - exist_child_mark.len()), exist_child_mark);
                 } else {
                     child_menu.disp_name = format!("{}{}", child_str_edit, get_space(space),);
                 }
             }
         }
-        child_cont.width = child_max_len_map[parent_menu_str];
+        child_cont.view.width = child_max_len_map[parent_menu_str];
 
         Log::debug("child_cont", &child_cont);
     }
@@ -151,18 +154,21 @@ impl MenubarMenuList {
 
         let mut add_str = String::new();
 
-        let state_editor = State::get().curt_state().editor;
-        let state_sidebar = State::get().sidebar;
+        let state_editor = State::get().curt_ref_state().editor;
         if Lang::get().scale == menu_str {
-            add_str.push_str(if state_editor.scale.is_enable { "*" } else { " " });
+            add_str.push_str(&MenubarMenuList::get_setting_str(state_editor.scale.is_enable));
         } else if Lang::get().row_no == menu_str {
-            add_str.push_str(if state_editor.row_no.is_enable { "*" } else { " " });
+            add_str.push_str(&MenubarMenuList::get_setting_str(state_editor.row_no.is_enable));
         } else if Lang::get().left_and_right_split == menu_str {
-            add_str.push_str(if state_editor.window_split_type == WindowSplitType::Vertical { "*" } else { " " });
+            add_str.push_str(&MenubarMenuList::get_setting_str(state_editor.window_split_type == WindowSplitType::Vertical));
         } else if Lang::get().top_and_bottom_split == menu_str {
-            add_str.push_str(if state_editor.window_split_type == WindowSplitType::Horizontal { "*" } else { " " });
+            add_str.push_str(&MenubarMenuList::get_setting_str(state_editor.window_split_type == WindowSplitType::Horizontal));
         } else if Lang::get().sidebar == menu_str {
-            add_str.push_str(if state_sidebar.is_show { "*" } else { " " });
+            let state_sidebar = State::get().sidebar;
+            add_str.push_str(&MenubarMenuList::get_setting_str(state_sidebar.is_show));
+        } else if Lang::get().activitybar == menu_str {
+            let state_activitybar = State::get().activitybar;
+            add_str.push_str(&MenubarMenuList::get_setting_str(state_activitybar.is_show));
         } else {
             add_str.push(' ');
         }
@@ -171,20 +177,16 @@ impl MenubarMenuList {
         Log::debug("add_str", &add_str);
         return add_str;
     }
+
+    pub fn get_setting_str(is_check: bool) -> String {
+        return if is_check { "*".to_string() } else { " ".to_string() };
+    }
 }
 
 impl MenuListTrait for MenubarMenuList {
     fn clear(&mut self) {
         self.is_show = false;
         self.curt.clear();
-        for (_, parent_cont) in self.menu_map.iter_mut() {
-            parent_cont.clear();
-            for (_, child_cont_option) in parent_cont.cont_vec.iter_mut() {
-                if let Some(child_cont) = child_cont_option {
-                    child_cont.clear();
-                }
-            }
-        }
     }
     fn draw(&mut self, str_vec: &mut Vec<String>) {
         Log::debug_key("MenubarMenuList.draw");

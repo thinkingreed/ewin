@@ -33,6 +33,7 @@ impl MenuListTrait for CtxMenu {
     fn clear(&mut self) {
         self.is_show = false;
         self.menulist.clear();
+        /*
         for (_, parent_cont) in self.place_menulist_map.iter_mut() {
             parent_cont.clear();
             for (_, child_cont_option) in parent_cont.cont_vec.iter_mut() {
@@ -41,6 +42,7 @@ impl MenuListTrait for CtxMenu {
                 }
             }
         }
+         */
     }
     fn draw(&mut self, str_vec: &mut Vec<String>) {
         Log::debug_key("CtxMenu.draw");

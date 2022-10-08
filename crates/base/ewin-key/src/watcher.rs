@@ -1,6 +1,6 @@
 use crossbeam_channel::unbounded;
 use ewin_cfg::log::Log;
-use notify::{event::*, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{event::*, Config, RecommendedWatcher, RecursiveMode, Watcher};
 use std::{
     collections::VecDeque,
     path::Path,
@@ -40,7 +40,7 @@ impl FileWatcher {
         let state = Arc::new(Mutex::new(WatcherState::default()));
         let state_clone = state.clone();
 
-        let inner = Watcher::new(tx_event).unwrap();
+        let inner = Watcher::new(tx_event, Config::default()).unwrap();
         thread::spawn(move || loop {
             while let Ok(Ok(event)) = rx_event.recv() {
                 let mut state = state_clone.lock().unwrap();

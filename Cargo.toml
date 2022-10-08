@@ -19,21 +19,35 @@ members = [
   "crates/parts/ewin-help",
   "crates/parts/ewin-status_bar",
   "crates/parts/ewin-msg_bar",
-  "crates/parts/ewin-side_bar"
+  "crates/parts/ewin-side_bar",
+  "crates/parts/ewin-activity_bar",
+  "crates/parts/ewin-tooltip"
 ]
 
-[package]
-name = "ewin"
+[workspace.package]
 version = "0.0.2"
-rust-version = "1.56.0"
-description = "Simple editor for Window(GUI) users.No need to remember commands."
 authors = ["thinkingreed"]
+description = "Simple editor for Window(GUI) users.No need to remember commands."
+rust-version = "1.56.0"
 edition = "2021"
 readme = "README.md"
 repository = "https://github.com/thinkingreed/ewin"
 license = "MIT"
 keywords = ["text", "editor", "terminal", "cli", "tui"]
 categories = ["text-editors", "command-line-utilities", ]
+
+[package]
+name = "ewin"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+readme.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 build = "build.rs"
 
@@ -54,34 +68,92 @@ assets = [
     ["README.md", "usr/share/doc/ewin/README", "644"],
 ]
 
-[dependencies]
+[workspace.dependencies]
 crossterm  = {version ="0.25.0", features = ["event-stream"]} 
-tokio = { version = "1.4.0", features = [ "macros", "rt-multi-thread"] }
-tokio-util = { version = "0.7.3", features = ["codec"] }
-futures = "0.3"
-futures-util = "0.3.12"
-clap = { version = "3.2.16", features = ["derive", "env"]}
-notify="5.0.0-pre.13"
-# grep
-regex = "1.6.0"
+once_cell = "1.5.2"
+parking_lot = "0.12.1"
+anyhow = "1.0.57"
+downcast = "0.11.0"
+directories = "4.0.1"
+dyn-clone = "1.0.5"
+tokio = { version = "1.21.2", features = ["time", "process", "macros", "rt-multi-thread"] }
+tokio-util = { version = "0.7.4", features = ["codec"] }
+chrono= "0.4.19"
+indexmap = "1.8.1"
 grep = "0.2.8"
 grep-matcher = "0.1.5"
 grep-regex = "0.1.9"
 grep-searcher = "0.1.8"
 ignore = "0.4.18"
 globset = "0.4.8"
-crossbeam= "0.8.1"
-parking_lot = "0.12.1"
+regex = "1.6.0"
+ropey="1.2.0"
+serde = { version = "1.0.123", features = ["derive"] }
+serde_json = "1.0"
+syntect = "5.0.0"
+unicode-width = "0.1.8"
+unicode-jp= "0.4.0"
+byteorder = "1.4.3"
+num-format = "0.4.0"
+encoding_rs = "0.8.31"
+faccess = "0.2.4"
+number_prefix = "0.4.0"
+clap = { version = "3.2.16", features = ["derive", "env"]}
+futures = "0.3"
+futures-util = "0.3.12"
+toml = "0.5.9"
+clipboard = "0.5.0"
+colors-transform = "0.2.11"
+crossbeam-channel = "0.5.2"
+json5 = "0.4.1"
+notify="5.0.0"
+subprocess = "0.2.8"
+whoami = "1.2.0"
+futures-timer = "3.0.2"
 
-ewin-key = {version = "0.0.2", path = "crates/base/ewin-key" }
 ewin-cfg = {version = "0.0.2", path = "crates/base/ewin-cfg" }
 ewin-const = {version = "0.0.2", path = "crates/base/ewin-const" }
+ewin-key = {version = "0.0.2", path = "crates/base/ewin-key" }
+ewin-view = {version = "0.0.2", path = "crates/base/ewin-view" }
 ewin-job = {version = "0.0.2", path = "crates/base/ewin-job" }
 ewin-utils = {version = "0.0.2", path = "crates/base/ewin-utils" }
-ewin-view = {version = "0.0.2", path = "crates/base/ewin-view" }
+ewin-state = {version = "0.0.2", path = "crates/ewin-state" }
 ewin-term = {version = "0.0.2", path = "crates/ewin-term" }
+ewin-plugin = {version = "0.0.2", path = "crates/ewin-plugin" }
 ewin-tabs = {version = "0.0.2", path = "crates/ewin-tabs" }
+ewin-editor = {version = "0.0.2", path = "crates/parts/ewin-editor" }
 ewin-prom = {version = "0.0.2", path = "crates/parts/ewin-prom" }
+ewin-menu_bar = {version = "0.0.2", path = "crates/parts/ewin-menu_bar" }
+ewin-dialog = {version = "0.0.2", path = "crates/parts/ewin-dialog" }
+ewin-ctx_menu = {version = "0.0.2", path = "crates/parts/ewin-ctx_menu" }
+ewin-file_bar = {version = "0.0.2", path = "crates/parts/ewin-file_bar" }
+ewin-help = {version = "0.0.2", path = "crates/parts/ewin-help" }
+ewin-status_bar = {version = "0.0.2", path = "crates/parts/ewin-status_bar" }
+ewin-msg_bar = {version = "0.0.2", path = "crates/parts/ewin-msg_bar" }
+ewin-side_bar = {version = "0.0.2", path = "crates/parts/ewin-side_bar" }
+ewin-activity_bar = {version = "0.0.2", path = "crates/parts/ewin-activity_bar" }
+ewin-tooltip = {version = "0.0.2", path = "crates/parts/ewin-tooltip" }
+
+[dependencies]
+crossterm.workspace = true
+parking_lot.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+futures.workspace = true
+futures-util.workspace = true
+futures-timer.workspace = true
+clap.workspace = true
+
+ewin-cfg.workspace = true
+ewin-key.workspace = true
+ewin-const.workspace = true
+ewin-job.workspace = true
+ewin-utils.workspace = true
+ewin-view.workspace = true
+ewin-term.workspace = true
+ewin-tabs.workspace = true
+ewin-prom.workspace = true
+ewin-tooltip.workspace = true
 
 [dev-dependencies]
 cargo-husky = "1.5.0"

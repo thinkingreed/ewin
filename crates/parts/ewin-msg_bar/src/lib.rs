@@ -11,3 +11,6 @@ pub mod core;
 pub mod draw;
 
 pub mod msgbar;
+pub mod views {
+    pub mod view;
+}

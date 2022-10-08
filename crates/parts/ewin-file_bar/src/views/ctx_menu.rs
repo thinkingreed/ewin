@@ -1,7 +1,7 @@
 use crate::filebar::*;
 use ewin_cfg::log::Log;
 use ewin_const::{def::*, models::term::*};
-use ewin_ctx_menu::{ctx_menu::*, view_traits::view_trait::*};
+use ewin_ctx_menu::{ctx_menu::*, traits::traits::*};
 
 impl ViewCtxMenuTrait for FileBar {
     fn is_tgt_ctx_menu(&mut self, y: usize, x: usize) -> bool {

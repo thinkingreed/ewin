@@ -11,7 +11,7 @@ impl Prom {
     pub fn ctrl_prom(&mut self, cmd: &Cmd) -> ActType {
         Log::debug_key("ctrl_prom");
 
-        if !State::get().curt_state().is_nomal() {
+        if !State::get().curt_ref_state().is_nomal() {
             self.set_cmd(cmd);
 
             // Cancel
@@ -28,7 +28,7 @@ impl Prom {
             }
 
             // let prom = self.curt().prom.curt;
-            let prom_state = State::get().curt_state().prom;
+            let prom_state = State::get().curt_ref_state().prom;
             return match prom_state {
                 PromState::Search => self.curt.downcast_mut::<PromSearch>().unwrap().search(),
                 PromState::SaveConfirm => self.curt.downcast_mut::<PromSaveConfirm>().unwrap().save_confirm(),
@@ -59,19 +59,16 @@ impl Prom {
                     return ActType::None;
                 } else if State::get().tabs_all().is_all_save {
                     State::get().tabs_mut_all().is_all_save = false;
-                    Job::send_cmd(CmdType::ClearTabState(true));
                     State::get().curt_mut_state().clear();
-                    return ActType::None;
-                } else if State::get().curt_state().prom == PromState::Greping {
+                    return Job::send_cmd(CmdType::ClearTabState(true));
+                } else if State::get().curt_ref_state().prom == PromState::Greping {
                     GREP_CANCEL_VEC.get().unwrap().try_lock().map(|mut vec| *vec.last_mut().unwrap() = GrepCancelType::Canceling).unwrap();
-                } else if State::get().curt_state().prom == PromState::GrepResult {
-                } else if State::get().curt_state().prom == PromState::Search {
-                    Job::send_cmd(CmdType::ClearTabState(true));
+                } else if State::get().curt_ref_state().prom == PromState::GrepResult {
+                } else if State::get().curt_ref_state().prom == PromState::Search {
                     State::get().curt_mut_state().clear();
-                    return ActType::None;
+                    return Job::send_cmd(CmdType::ClearTabState(true));
                 } else {
-                    Job::send_cmd(CmdType::ClearTabState(true));
-                    return ActType::None;
+                    return Job::send_cmd(CmdType::ClearTabState(true));
                 }
                 return ActType::Draw(DrawParts::TabsAll);
             }
@@ -80,7 +77,7 @@ impl Prom {
     }
 
     pub fn is_prom_pulldown() -> bool {
-        if !State::get().curt_state().is_nomal() {
+        if !State::get().curt_ref_state().is_nomal() {
             for cont in Prom::get().curt.as_base().cont_vec.iter() {
                 if let Ok(pulldown_cont) = cont.downcast_ref::<PromContPulldown>() {
                     if pulldown_cont.pulldown.is_show {
@@ -93,7 +90,7 @@ impl Prom {
     }
 
     pub fn judge_when_prompt() -> bool {
-        let is_nomal_or_grep_result = State::get().curt_state().is_nomal_or_grep_result();
+        let is_nomal_or_grep_result = State::get().curt_ref_state().is_nomal_or_grep_result();
         // if !is_nomal_or_grep_result || (State::get().curt_state().prom == PromState::GrepResult && keys == Cmd::cmd_to_keys(CmdType::Confirm)) {
         if !is_nomal_or_grep_result {
             return true;

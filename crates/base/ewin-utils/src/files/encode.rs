@@ -49,6 +49,36 @@ impl Encode {
             Encode::UTF8
         }
     }
+    /*
+    fn encode(&mut self, file: &mut File, text: &mut TextBuffer) -> io::Result<(Vec<u8>, bool)> {
+        let mut u8_vec: Vec<u8> = vec![];
+        let mut had_errors = false;
+
+        match file.enc {
+            Encode::UTF16LE | Encode::UTF16BE => {
+                let u16_vec: Vec<u16> = text.to_string().encode_utf16().collect();
+
+                for u16 in u16_vec {
+                    if file.bom == Some(Encode::UTF16LE) {
+                        u8_vec.write_u16::<LittleEndian>(u16)?;
+                    } else {
+                        u8_vec.write_u16::<BigEndian>(u16)?;
+                    }
+                }
+            }
+            Encode::UTF8 => u8_vec = Vec::from(text.to_string().as_bytes()),
+            _ => {
+                let str = text.to_string();
+
+                let (cow, _, _had_errors) = Encode::into_encoding(file.enc).encode(&str);
+
+                had_errors = _had_errors;
+                u8_vec = Vec::from(&*cow);
+            }
+        }
+        Ok((u8_vec, had_errors))
+    }
+     */
 }
 
 #[derive(Debug, Clone, Hash, Copy, PartialEq, Eq)]

@@ -2,7 +2,7 @@ use crate::{
     cont::parts::{info::*, input_area::*, key_desc::*},
     ewin_key::key::cmd::*,
     model::*,
-    prom_trait::main_trait::*,
+    traits::main_trait::*,
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
 use ewin_const::models::{draw::*, event::*};
@@ -39,8 +39,7 @@ impl PromMoveRow {
                     return ActType::Draw(DrawParts::MsgBar(Lang::get().number_within_current_number_of_rows.to_string()));
                 }
                 State::get().curt_mut_state().clear();
-                Job::send_cmd(CmdType::MoveRow(row_idx));
-                return ActType::None;
+                return Job::send_cmd(CmdType::MoveRow(row_idx));
             }
             _ => {}
         }

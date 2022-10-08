@@ -1,4 +1,3 @@
-use ewin_cfg::log::*;
 use ewin_key::{key::keys::*, key_traits::key_trait::*};
 
 use crate::menubar::*;

@@ -1,7 +1,7 @@
 use crate::{
     cont::parts::{info::*, key_desc::*},
     model::*,
-    prom_trait::main_trait::*,
+    traits::main_trait::*,
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*};
 use ewin_const::models::{draw::*, event::*, file::*};
@@ -29,7 +29,7 @@ impl PromGrepResult {
 
     pub fn init() -> ActType {
         State::get().curt_mut_state().prom = PromState::GrepResult;
-        let grep = State::get().curt_state().grep.clone();
+        let grep = State::get().curt_ref_state().grep.clone();
         Prom::get().init(Box::new(PromGrepResult::new(grep.is_empty, grep.is_cancel)));
         return ActType::Draw(DrawParts::TabsAll);
     }

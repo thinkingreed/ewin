@@ -1,31 +1,25 @@
 [package]
 name = "ewin-ctx_menu"
-version = "0.0.2"
-rust-version = "1.56.0"
-description = "Simple editor for Window(GUI) users.No need to remember commands."
-authors = ["thinkingreed"]
-edition = "2021"
-repository = "https://github.com/thinkingreed/ewin"
-license = "MIT"
 publish = false
-
-[lib]
-path = "src/lib.rs"
+authors.workspace = true
+version.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [dependencies]
-once_cell = "1.5.2"
-directories= "4.0.1"
-serde = { version = "1.0.137", features = ["derive"] }
-serde_json = "1.0"
-dyn-clone = "1.0.5"
-downcast = "0.11.0"
-parking_lot = "0.12.1"
+once_cell.workspace = true
+directories.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+dyn-clone.workspace = true
+downcast.workspace = true
+parking_lot.workspace = true
 
-
-ewin-cfg = {version = "0.0.2", path = "../../base/ewin-cfg" }
-ewin-const = {version = "0.0.2", path = "../../base/ewin-const" }
-ewin-view = {version = "0.0.2", path = "../../base/ewin-view" }
-ewin-key = {version = "0.0.2", path = "../../base/ewin-key" }
-ewin-job = {version = "0.0.2", path = "../../base/ewin-job" }
-ewin-utils = {version = "0.0.2", path = "../../base/ewin-utils" }
-ewin-plugin = {version = "0.0.2", path = "../../ewin-plugin" }
+ewin-cfg.workspace = true
+ewin-const.workspace = true
+ewin-view.workspace = true
+ewin-key.workspace = true
+ewin-job.workspace = true
+ewin-utils.workspace = true
+ewin-plugin.workspace = true

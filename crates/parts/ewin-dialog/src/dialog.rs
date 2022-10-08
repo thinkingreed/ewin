@@ -1,4 +1,4 @@
-use crate::{btn_grourp::*, conts::parts::kvs::file_prop::*, dialog_traits::dialog_trait::*};
+use crate::{btn_grourp::*, conts::parts::kvs::file_prop::*, traits::traits::*};
 use ewin_const::def::*;
 use ewin_view::view::*;
 

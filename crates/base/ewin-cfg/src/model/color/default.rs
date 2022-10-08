@@ -15,6 +15,8 @@ pub struct CfgColors {
     pub file: CfgColorFile,
     pub dialog: CfgColorDialog,
     pub sidebar: CfgColorSideBar,
+    pub activitybar: CfgColorActivityBar,
+    pub tooltip: CfgColorToolTip,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -52,34 +54,29 @@ pub struct CfgColorTheme {
     pub theme_bg_enable: bool,
     pub disable_highlight_ext: Vec<String>,
     pub disable_syntax_highlight_file_size: usize,
-    pub default_color_theme: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ThemeSystemColorType {
+#[derive(Debug, Clone, Default, Copy, PartialEq, Eq)]
+pub enum ColorSchemeThemeType {
     Black,
+    #[default]
     White,
 }
-impl ThemeSystemColorType {
-    pub fn from_str_color_type(s: &str) -> ThemeSystemColorType {
+impl ColorSchemeThemeType {
+    pub fn from_str_color_type(s: &str) -> ColorSchemeThemeType {
         match s {
-            "black" => return ThemeSystemColorType::Black,
-            "white" => return ThemeSystemColorType::White,
-            _ => return ThemeSystemColorType::default(),
+            "black" => return ColorSchemeThemeType::Black,
+            "white" => return ColorSchemeThemeType::White,
+            _ => return ColorSchemeThemeType::default(),
         }
     }
 }
-impl Default for ThemeSystemColorType {
-    fn default() -> Self {
-        Self::White
-    }
-}
 
-impl fmt::Display for ThemeSystemColorType {
+impl fmt::Display for ColorSchemeThemeType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            ThemeSystemColorType::White => write!(f, "white"),
-            ThemeSystemColorType::Black => write!(f, "black"),
+            ColorSchemeThemeType::White => write!(f, "white"),
+            ColorSchemeThemeType::Black => write!(f, "black"),
         }
     }
 }
@@ -293,6 +290,28 @@ pub struct CfgColorSideBar {
     pub bg_header: Color,
     #[serde(skip_deserializing, skip_serializing)]
     pub bg_open_file: Color,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(rename = "ActivityBar")]
+pub struct CfgColorActivityBar {
+    pub default_background: String,
+    pub select_background: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub bg_default: Color,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub bg_select: Color,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(rename = "ToolTip")]
+pub struct CfgColorToolTip {
+    pub background: String,
+    pub foreground: String,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub bg: Color,
+    #[serde(skip_deserializing, skip_serializing)]
+    pub fg: Color,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]

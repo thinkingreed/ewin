@@ -1,5 +1,6 @@
 use ewin_cfg::{lang::lang_cfg::*, log::*};
 use ewin_const::def::*;
+use ewin_editor::editor_gr::EditorGr;
 use ewin_editor::model::*;
 use ewin_key::model::*;
 use ewin_key::sel_range::*;
@@ -8,11 +9,13 @@ use ewin_view::view::*;
 use std::ops::Range;
 
 impl StatusBar {
-    pub fn get_opt_vec(editor: &Editor) -> Vec<StatusBarCont> {
+    pub fn get_opt_vec() -> Vec<StatusBarCont> {
         Log::info_key("StatusBar::get_opt_vec");
 
+        let editor = &EditorGr::get().curt_ref().clone();
+
         let mut opt_vec = vec![];
-        let read_only = StatusBarCont::new(if State::get().curt_state().editor.is_read_only { Lang::get().unable_to_edit.to_string() } else { "".to_string() });
+        let read_only = StatusBarCont::new(if State::get().curt_ref_state().editor.is_read_only { Lang::get().unable_to_edit.to_string() } else { "".to_string() });
         opt_vec.push(read_only);
 
         let select_mode = StatusBarCont::new(match editor.win_mgr.curt_ref().sel.mode {
@@ -27,7 +30,7 @@ impl StatusBar {
         });
         opt_vec.push(box_sel_mode);
 
-        let mouse_disable = StatusBarCont::new(match State::get().curt_state().editor.mouse {
+        let mouse_disable = StatusBarCont::new(match State::get().curt_ref_state().editor.mouse {
             Mouse::Enable => "".to_string(),
             Mouse::Disable => Lang::get().mouse_disable.to_string(),
         });
@@ -46,17 +49,20 @@ impl StatusBar {
         return opt_vec;
     }
 
-    pub fn get_editor_conts(editor: &Editor) -> (StatusBarCont, Vec<StatusBarCont>) {
-        let cur_cont = StatusBar::get_cur_cont(editor);
-        let opt_vec = StatusBar::get_opt_vec(editor);
+    pub fn get_editor_conts() -> (StatusBarCont, Vec<StatusBarCont>) {
+        let cur_cont = StatusBar::get_cur_cont();
+        let opt_vec = StatusBar::get_opt_vec();
         return (cur_cont, opt_vec);
     }
 
-    pub fn get_cur_cont(editor: &Editor) -> StatusBarCont {
-        return StatusBarCont::new(StatusBar::get_cur_str(editor));
+    pub fn get_cur_cont() -> StatusBarCont {
+        return StatusBarCont::new(StatusBar::get_cur_str());
     }
 
-    pub fn get_cur_str(editor: &Editor) -> String {
+    pub fn get_cur_str() -> String {
+        // let editor = EditorGr::get().curt_ref();
+        let editor_gr = EditorGr::get();
+        let editor = editor_gr.curt_ref();
         let cur = editor.win_mgr.curt_ref().cur;
         let len_lines = editor.buf.len_rows();
         let len_line_chars = editor.buf.len_row_chars(editor.win_mgr.curt_ref().cur.y);

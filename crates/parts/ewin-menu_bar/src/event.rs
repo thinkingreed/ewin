@@ -23,7 +23,7 @@ impl MenuBar {
                             if menubar.sel_idx == i && menubar.menulist.is_show {
                                 let range = menubar.menulist.curt.get_disp_range_y();
                                 menubar.clear_menulist_other_than_on_monuse();
-                                return ActType::Draw(DrawParts::TabsAbsolute(range));
+                                return ActType::Draw(DrawParts::Absolute(range));
                             } else {
                                 menubar.sel_idx = i;
                                 menubar.init_menubar(*y);
@@ -38,6 +38,8 @@ impl MenuBar {
                     return ActType::Draw(DrawParts::TabsAll);
                 }
                 CmdType::MouseMove(y, x) => {
+                    Log::debug("menubar.menulist.curt.cont.view", &menubar.menulist.curt.cont.view);
+
                     if *y == menubar.view.y {
                         Log::debug("menubar.menu_vec", &menubar.menu_vec);
                         let (is_on_mouse, i) = menubar.is_menubar_displayed_area(*y, *x);
@@ -52,7 +54,7 @@ impl MenuBar {
                                 menubar.init_menubar(*y);
                                 let range = menubar.menulist.curt.get_disp_range_y();
                                 menubar.menulist.curt.clear_select_menu();
-                                return ActType::Draw(DrawParts::TabsAbsolute(Range { start: menubar.view.y, end: range.end }));
+                                return ActType::Draw(DrawParts::Absolute(Range { start: menubar.view.y, end: range.end }));
                             }
 
                             if menubar.is_menu_changed() {
@@ -61,6 +63,12 @@ impl MenuBar {
                         }
                         return ActType::Cancel;
                     } else if menubar.menulist.curt.is_mouse_within_area(*y, *x) {
+                        Log::debug_s("menubar.menulist.curt.is_mouse_within_area");
+                        Log::debug("yyy", &y);
+                        Log::debug("xxx", &x);
+
+                        Log::debug("menubar.menulist.curt.cont.view", &menubar.menulist.curt.cont.view);
+
                         let child_cont_org = &menubar.menulist.curt.cont.cont_vec.get(menubar.menulist.curt.parent_sel_y).and_then(|cont| cont.1.clone());
                         menubar.menulist.curt.ctrl_mouse_move(*y, *x);
 
@@ -73,11 +81,11 @@ impl MenuBar {
                         if child_cont_org.is_none() && child_cont.is_none() || menubar.menulist.curt.parent_sel_y == menubar.menulist.curt.parent_sel_y_org && menubar.menulist.curt.child_sel_y != USIZE_UNDEFINED {
                             return ActType::Draw(DrawParts::MenuBarMenuList);
                         } else {
-                            return ActType::Draw(DrawParts::TabsAbsolute(menubar.menulist.curt.get_disp_range_y()));
+                            return ActType::Draw(DrawParts::Absolute(menubar.menulist.curt.get_disp_range_y()));
                         }
                     } else if menubar.menulist.curt.is_mouse_area_around(*y, *x) {
                         menubar.menulist.curt.clear_select_menu();
-                        return ActType::Draw(DrawParts::TabsAbsolute(menubar.menulist.curt.get_disp_range_y()));
+                        return ActType::Draw(DrawParts::Absolute(menubar.menulist.curt.get_disp_range_y()));
                     } else {
                         return ActType::Cancel;
                     }
@@ -92,7 +100,7 @@ impl MenuBar {
                     };
                     menubar.menulist.curt.cur_move(direction);
 
-                    return ActType::Draw(DrawParts::TabsAbsolute(menubar.menulist.curt.get_disp_range_y()));
+                    return ActType::Draw(DrawParts::Absolute(menubar.menulist.curt.get_disp_range_y()));
                 }
                 CmdType::MenuBarMenulist(_, _) => {
                     // TODO
@@ -164,7 +172,7 @@ impl MenuBar {
             MenubarMenuList::set_disp_name(&menu.menunm, &mut self.menulist.menu_map[&menu.menunm]);
         }
         self.menulist.is_show = true;
-        if self.menulist.curt.cont.x_area.0 != menu.area.start {
+        if self.menulist.curt.cont.view.x != menu.area.start {
             self.menulist.curt.cont = self.menulist.menu_map[&menu.menunm].clone();
 
             Log::debug("self.widget.curt.cont", &self.menulist.curt.cont);

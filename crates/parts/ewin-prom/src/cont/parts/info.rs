@@ -1,4 +1,4 @@
-use crate::{model::*, prom_trait::cont_trait::*};
+use crate::{model::*, traits::cont_trait::*};
 
 impl PromContTrait for PromContInfo {
     fn as_base(&self) -> &PromptContBase {

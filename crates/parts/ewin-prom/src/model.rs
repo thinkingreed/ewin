@@ -1,7 +1,5 @@
-use super::{
-    each::search::*,
-    prom_trait::{cont_trait::*, main_trait::*},
-};
+use super::each::search::*;
+use crate::traits::{cont_trait::*, main_trait::*};
 use ewin_key::key::cmd::*;
 use ewin_view::view::*;
 use std::ops::Range;

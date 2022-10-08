@@ -1,5 +1,5 @@
 extern crate ropey;
-use super::encode::*;
+use super::{encode::*, file::*};
 use encoding_rs::Encoding;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
 use std::io::{BufReader, Read};
@@ -49,5 +49,17 @@ impl Bom {
             _ => None,
         };
         return bom;
+    }
+    pub fn add_bom(vec: &mut Vec<u8>, file: &File) -> Vec<u8> {
+        let mut bom_vec: Vec<u8> = vec![];
+        match file.bom {
+            Some(Encode::UTF16LE) => bom_vec = vec![0xFF, 0xFE],
+            Some(Encode::UTF16BE) => bom_vec = vec![0xFE, 0xFF],
+            Some(Encode::UTF8) => bom_vec = vec![0xEF, 0xBB, 0xBF],
+            Some(_) => {}
+            None => {}
+        };
+        bom_vec.append(vec);
+        bom_vec
     }
 }

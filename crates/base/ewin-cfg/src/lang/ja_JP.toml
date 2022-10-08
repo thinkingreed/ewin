@@ -96,10 +96,15 @@ row_no = "行番号"
 scale = "目盛り"
 appearance = "外観"
 sidebar = "サイドバー"
+activitybar = "アクティビティバー"
 # Window
 window = "window"
 left_and_right_split = "左右分割"
 top_and_bottom_split = "上下分割"
+# ActivityBar
+explorer = "エクスプローラー"
+management = "管理"
+
 # other
 other = "その他"
 about_app = "ewinについて"

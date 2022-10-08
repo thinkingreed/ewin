@@ -22,7 +22,6 @@ impl MsgBar {
         };
         let cut_str = cut_str(&self.msg.str, self.view.width, false, true);
         let msg_str = format!("{msg:^width$}", msg = cut_str, width = self.view.width - (get_str_width(&self.msg.str) - self.msg.str.chars().count()));
-        Log::debug("msg_strmsg_strmsg_strmsg_strmsg_strmsg_str", &msg_str);
         return format!("{}{}{}{}{}", MoveTo(0, self.view.y as u16), Clear(ClearType::CurrentLine), fg_color, Colors::get_msg_bg(), msg_str);
     }
 

@@ -1,4 +1,4 @@
-use crate::{model::*, prom_trait::cont_trait::*};
+use crate::{model::*, traits::cont_trait::*};
 use ewin_cfg::{colors::*, global::*, lang::lang_cfg::*, log::*, model::general::default::*};
 use ewin_const::models::{draw::*, event::*};
 use ewin_key::key::{cmd::*, keys::*};

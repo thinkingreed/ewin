@@ -57,8 +57,8 @@ vertical_background = "#212121"
 active_foreground = "#ffffff"
 active_background = "#5f5f5f"
 passive_foreground = "#ffffff"
-passive_background = "#212121"
-default_background = "#212121"
+passive_background = "#191919"
+default_background = "#191919"
 
 [filebar]
 active_foreground = "#000000"
@@ -83,6 +83,7 @@ default_foreground = "#ffffff"
 default_background = "#212121"
 header_foreground = "#000000"
 header_background = "#878787"
+select_background = "#6495ed"
 
 [msg]
 normal_foreground = "#ffffff"
@@ -100,3 +101,12 @@ executable_foreground = "#00c800"
 background = "#000000"
 foreground = "#ffffff"
 header_background = "#212121"
+open_file_background = "#191900"
+
+[activitybar]
+default_background = "#0f0f0f"
+select_background = "#212121"
+
+[tooltip]
+background = "#212121"
+foreground = "#696969"

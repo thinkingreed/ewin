@@ -1,9 +1,8 @@
 use super::{
     cont::parts::{choice::*, file_list::PromContFileList, info::*, input_area::*, key_desc::*, pulldown::*, search_opt::*},
     model::*,
-    prom_trait::cont_trait::*,
 };
-use crate::util::*;
+use crate::{traits::cont_trait::*, util::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
 use ewin_const::models::{draw::*, event::*};
 use ewin_key::key::cmd::{Cmd, *};

@@ -11,10 +11,10 @@ impl Editor {
     pub fn convert(&mut self, conv_type: ConvType) -> ActType {
         Log::debug_key("Editor.convert");
 
-        if !self.win_mgr.curt().sel.is_selected() {
+        if !self.win_mgr.curt_mut().sel.is_selected() {
             return ActType::Draw(DrawParts::TabsAllMsgBar(Lang::get().no_sel_range.to_string()));
         }
-        let sel = self.win_mgr.curt().sel.get_range();
+        let sel = self.win_mgr.curt_mut().sel.get_range();
         Log::debug("sel", &sel);
 
         let tgt_str = self.buf.slice(sel);

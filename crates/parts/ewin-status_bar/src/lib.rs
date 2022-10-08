@@ -8,6 +8,7 @@ pub mod global {
 }
 pub mod views {
     pub mod view;
+    pub mod view_evt;
 }
 pub mod core;
 pub mod draw;

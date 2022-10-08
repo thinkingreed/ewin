@@ -1,5 +1,5 @@
 use crossterm::event::{Event::*, KeyEvent, KeyModifiers, MouseButton as M_Btn, MouseEvent as M_Event, MouseEventKind as M_Kind, *};
-use ewin_cfg::log::*;
+
 use std::{fmt, str::FromStr};
 
 use super::cmd::*;
@@ -7,7 +7,6 @@ use crate::global::*;
 
 impl Keys {
     pub fn evt_to_keys(evt: &Event) -> Keys {
-        Log::debug("evt", &evt);
         return match evt {
             Event::Key(KeyEvent { code: c, modifiers: m, .. }) => {
                 let inner = match c {

@@ -1,5 +1,6 @@
 use super::path_comp::*;
-use crate::{each::open_file::*, model::*, prom_trait::cont_trait::*};
+use crate::traits::cont_trait::*;
+use crate::{each::open_file::*, model::*};
 use crossterm::{cursor::MoveTo, terminal::ClearType::*, terminal::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::Lang, log::*};
 use ewin_const::def::*;

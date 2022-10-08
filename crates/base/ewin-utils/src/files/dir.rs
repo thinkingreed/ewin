@@ -3,6 +3,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use directories::{BaseDirs, UserDirs};
+
 impl Dir {
     pub fn visit_dir<P: AsRef<Path>>(path: &P, paths: &mut Vec<PathBuf>, visit_dir_type: &VisitDirType) {
         Dir::visit_dir_exec(path, paths, visit_dir_type);
@@ -42,6 +44,26 @@ impl Dir {
                 }
             }
         }
+    }
+
+    pub fn get_home_dir() -> String {
+        return if let Some(base_dirs) = BaseDirs::new() { base_dirs.home_dir().to_string_lossy().to_string() } else { "".to_string() };
+    }
+
+    pub fn get_config_dir() -> String {
+        return if let Some(base_dirs) = BaseDirs::new() { base_dirs.config_dir().to_string_lossy().to_string() } else { "".to_string() };
+    }
+
+    pub fn get_desktop_dir() -> String {
+        return if let Some(user_dirs) = UserDirs::new() {
+            if let Some(path) = user_dirs.desktop_dir() {
+                path.to_string_lossy().to_string()
+            } else {
+                "".to_string()
+            }
+        } else {
+            "".to_string()
+        };
     }
 }
 

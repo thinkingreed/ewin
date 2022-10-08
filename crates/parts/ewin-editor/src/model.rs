@@ -1,13 +1,14 @@
 use crate::input_comple::core::*;
-use crate::window_mgr::*;
-use ewin_cfg::{lang::lang_cfg::Lang, model::general::default::*};
+use crate::window::window_mgr::*;
+use ewin_cfg::{lang::lang_cfg::*, model::general::default::*};
 use ewin_const::def::*;
-use ewin_const::models::draw::*;
 use ewin_key::key::cmd::*;
+use ewin_key::key::keys::*;
 use ewin_key::model::*;
 use ewin_key::sel_range::*;
 use ewin_state::term::*;
-use ewin_view::{model::Cell, view::*};
+use ewin_view::model::Cell;
+use ewin_view::view::View;
 use ropey::Rope;
 use std::{
     collections::{BTreeSet, HashMap},
@@ -15,15 +16,15 @@ use std::{
 };
 use syntect::highlighting::Style;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Editor {
     pub buf: TextBuffer,
     pub win_mgr: WindowMgr,
-    pub draw_range: E_DrawRange,
     // row_number_width
     pub rnw: usize,
     pub rnw_org: usize,
     pub cmd: Cmd,
+    pub keys: Keys,
     /// overall size
     pub view: View,
 
@@ -39,20 +40,19 @@ pub struct Editor {
     pub box_insert: BoxInsert,
     pub change_info: ChangeInfo,
     pub input_comple: InputComple,
-    pub draw_cache: Vec<Vec<EditorDraw>>,
+    // pub draw_cache: EditorDraw,
 }
 
-impl Editor {
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
+impl Default for Editor {
+    fn default() -> Self {
         Editor {
             buf: TextBuffer::default(),
             win_mgr: WindowMgr::default(),
-            draw_range: E_DrawRange::default(),
-            view: View { y: MENUBAR_HEIGHT + FILEBAR_HEIGHT + if CfgEdit::get().general.editor.scale.is_enable { 1 } else { 0 }, height: TERM_MINIMUM_HEIGHT - FILEBAR_HEIGHT - STATUSBAR_ROW_NUM, ..View::default() },
+            view: View { y: MENUBAR_HEIGHT + FILEBAR_HEIGHT + if CfgEdit::get().general.editor.scale.is_enable { 1 } else { 0 }, height: TERM_MINIMUM_HEIGHT - FILEBAR_HEIGHT - STATUSBAR_HEIGHT, ..View::default() },
             rnw: 0,
             rnw_org: 0,
             cmd: Cmd::default(),
+            keys: Keys::Null,
             search: Search::default(),
             search_org: Search::default(),
             history: History::default(),
@@ -64,11 +64,14 @@ impl Editor {
             buf_len_rows_org: 0,
             change_info: ChangeInfo::default(),
             input_comple: InputComple::default(),
-            draw_cache: vec![],
+            // draw_cache: EditorDraw::default(),
         }
     }
+}
+impl Editor {
+    #[allow(clippy::new_without_default)]
     pub fn get_row_posi(&self) -> usize {
-        return MENUBAR_HEIGHT + FILEBAR_HEIGHT + if State::get().curt_state().editor.scale.is_enable { 1 } else { 0 };
+        return MENUBAR_HEIGHT + FILEBAR_HEIGHT + if State::get().curt_ref_state().editor.scale.is_enable { 1 } else { 0 };
     }
 }
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -77,7 +80,7 @@ pub struct TextBuffer {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct EditorDraw {
+pub struct EditorDrawCache {
     pub sy: usize,
     pub ey: usize,
     // Caching the drawing string because ropey takes a long time to access char
@@ -90,11 +93,19 @@ pub struct EditorDraw {
     pub change_row_vec: Vec<usize>,
 }
 
-impl fmt::Display for EditorDraw {
+impl fmt::Display for EditorDrawCache {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Draw y_s:{}, y_e:{}, ", self.sy, self.ey)
     }
 }
+
+impl EditorDrawCache {
+    pub fn clear(&mut self) {
+        self.cells_all.clear();
+        self.style_vecs.clear();
+    }
+}
+
 pub struct FormatXml {}
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

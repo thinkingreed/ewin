@@ -9,7 +9,7 @@ use crate::{
     cont::parts::{input_area::*, key_desc::*, pulldown::*},
     ewin_key::key::cmd::*,
     model::*,
-    prom_trait::main_trait::*,
+    traits::main_trait::*,
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*, model::general::default::*};
 use ewin_const::models::{draw::*, event::*, file::*};
@@ -79,9 +79,8 @@ impl PromSaveNewFile {
                     let ext = filenm_path.extension().unwrap_or_else(|| OsStr::new("txt")).to_string_lossy().to_string();
                     State::get().curt_mut_state().file.ext = ext;
 
-                    Job::send_cmd(CmdType::SaveFile(SaveFileType::NewFile));
+                    return Job::send_cmd(CmdType::SaveFile(SaveFileType::NewFile));
                 }
-                return ActType::None;
             }
             _ => return ActType::Cancel,
         }

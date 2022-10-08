@@ -1,0 +1,21 @@
+[package]
+name = "ewin-tooltip"
+publish = false
+authors.workspace = true
+version.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+once_cell.workspace = true
+parking_lot.workspace = true
+crossterm.workspace = true
+
+ewin-cfg.workspace = true
+ewin-const.workspace = true
+ewin-view.workspace = true
+ewin-utils.workspace = true
+ewin-key.workspace = true
+ewin-state.workspace = true
+ewin-job.workspace = true

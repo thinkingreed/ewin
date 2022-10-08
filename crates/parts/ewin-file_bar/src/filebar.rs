@@ -1,148 +1,139 @@
 use crate::filebar_file::*;
 use ewin_cfg::log::*;
-use ewin_const::{def::*, term::*};
+use ewin_const::def::*;
 use ewin_key::model::*;
-use ewin_side_bar::sidebar::*;
 use ewin_state::term::*;
 use ewin_utils::str_edit::*;
 use ewin_view::view::*;
 
 impl FileBar {
     const ALLOW_BTN_WITH: usize = 2;
-    const MENU_BTN_WITH: usize = 3;
+    pub const MENU_BTN_WITH: usize = 3;
     const FILENM_LEN_LIMMIT: usize = 30;
     // Front and back margins of the file
     const FILENM_MARGIN: usize = 3;
 
-    pub fn set_posi() {
-        if let Some(mut fbar) = FileBar::get_result() {
-            let side_bar_width = SideBar::get().get_width_all();
-            let cols = get_term_size().0;
-            fbar.view.x = side_bar_width;
-            fbar.view.width = cols - side_bar_width;
-            fbar.all_filenm_space_w = fbar.view.x + fbar.view.width - FileBar::MENU_BTN_WITH;
-        }
-    }
-
-    pub fn set_filenm() {
-        Log::debug_key("FileBar::set_filenm");
+    pub fn set_filenm(&mut self) {
+        Log::debug_key("FileBar.set_filenm");
+        Log::debug("self.view.width", &self.view.width);
         let mut tmp_all_vec: Vec<(usize, String)> = vec![];
-        /*
-        if FileBar::get().file_vec.is_empty() {
+
+        if self.file_vec.is_empty() {
             return;
         }
-         */
-        if let Some(mut fbar) = FileBar::get_result() {
-            let disp_base_idx = if fbar.disp_base_idx == USIZE_UNDEFINED { 0 } else { fbar.disp_base_idx };
 
-            fbar.init();
+        let disp_base_idx = if self.disp_base_idx == USIZE_UNDEFINED { 0 } else { self.disp_base_idx };
 
-            let mut max_len = FileBar::FILENM_LEN_LIMMIT;
-            let left_allow_len = if fbar.file_vec.len() == 1 { 0 } else { FileBar::ALLOW_BTN_WITH };
+        self.init();
 
-            let rest_len = fbar.view.width - FileBar::MENU_BTN_WITH - 1 - left_allow_len - FileBar::FILENM_MARGIN;
-            Log::debug("rest_len", &rest_len);
-            if max_len > rest_len {
-                max_len = rest_len;
-            }
+        let mut max_len = FileBar::FILENM_LEN_LIMMIT;
+        let left_allow_len = if self.file_vec.len() == 1 { 0 } else { FileBar::ALLOW_BTN_WITH };
 
-            // Temperatures stored in Vec for ascending / descending sorting
-            for (idx, f_file) in fbar.file_vec.iter_mut().enumerate() {
-                // cut str
-                let state = &State::get().tabs.vec[idx];
-                f_file.filenm_disp = if get_str_width(&state.file.name) > max_len { cut_str(&state.file.name, max_len, true, true) } else { state.file.name.clone() };
+        let rest_len = self.view.width - FileBar::MENU_BTN_WITH - 1 - left_allow_len - FileBar::FILENM_MARGIN;
+        Log::debug("rest_len", &rest_len);
+        if max_len > rest_len {
+            max_len = rest_len;
+        }
 
-                let filenm_disp = f_file.filenm_disp.clone();
-                f_file.filenm_disp = if state.editor.is_changed { format!("* {} x", filenm_disp) } else { format!(" {} x", filenm_disp) };
-                tmp_all_vec.push((idx, f_file.filenm_disp.clone()));
-            }
+        // Temperatures stored in Vec for ascending / descending sorting
+        for (idx, f_file) in self.file_vec.iter_mut().enumerate() {
+            // cut str
+            let state = &State::get().tabs.vec[idx];
+            f_file.filenm_disp = if get_str_width(&state.file.name) > max_len { cut_str(&state.file.name, max_len, true, true) } else { state.file.name.clone() };
 
-            let mut is_vec_reverse = false;
-            if fbar.disp_base_idx == USIZE_UNDEFINED {
-                // If the reference position (left end) is undecided, calculate from the right end
-                tmp_all_vec.reverse();
-                is_vec_reverse = true;
+            let filenm_disp = f_file.filenm_disp.clone();
+            f_file.filenm_disp = if state.editor.is_changed { format!("* {} x", filenm_disp) } else { format!(" {} x", filenm_disp) };
+            tmp_all_vec.push((idx, f_file.filenm_disp.clone()));
+        }
 
-                // Judgment whether to display left arrow
-                let mut width = 0;
-                for (_, disp_str) in tmp_all_vec.iter() {
-                    let disp_str_w = get_str_width(disp_str);
-                    if fbar.all_filenm_space_w >= width + disp_str_w {
-                        width += disp_str_w;
-                    } else {
-                        fbar.is_left_arrow_disp = true;
-                        break;
-                    }
-                }
-            } else if fbar.disp_base_idx > 0 {
-                fbar.is_left_arrow_disp = true;
-            }
+        let mut is_vec_reverse = false;
+        if self.disp_base_idx == USIZE_UNDEFINED {
+            // If the reference position (left end) is undecided, calculate from the right end
+            tmp_all_vec.reverse();
+            is_vec_reverse = true;
 
-            let mut disp_vec: Vec<(usize, String)> = vec![];
+            // Judgment whether to display left arrow
             let mut width = 0;
-            // Judgment of tab to display
-            let left_arrow_w = if fbar.is_left_arrow_disp { FileBar::ALLOW_BTN_WITH } else { 0 };
-            let mut idx_old = 0;
-            let file_len = fbar.file_vec.len();
-            for (idx, _) in tmp_all_vec[disp_base_idx..].iter() {
-                let h_file = fbar.file_vec.get(*idx).unwrap().clone();
-                let right_arrow_w = if fbar.disp_base_idx != USIZE_UNDEFINED && *idx != file_len - 1 { FileBar::ALLOW_BTN_WITH } else { 0 };
-
-                if fbar.all_filenm_space_w - left_arrow_w - right_arrow_w >= width + get_str_width(&h_file.filenm_disp) {
-                    fbar.file_vec.get_mut(*idx).unwrap().is_disp = true;
-
-                    width += get_str_width(&h_file.filenm_disp);
-                    disp_vec.push((*idx, h_file.filenm_disp.clone()));
+            for (_, disp_str) in tmp_all_vec.iter() {
+                let disp_str_w = get_str_width(disp_str);
+                if self.all_filenm_space_w >= width + disp_str_w {
+                    width += disp_str_w;
                 } else {
-                    if fbar.disp_base_idx == USIZE_UNDEFINED {
-                        fbar.disp_base_idx = idx_old;
-                    }
+                    self.is_left_arrow_disp = true;
                     break;
                 }
-                idx_old = *idx;
             }
-
-            if is_vec_reverse {
-                // Returns Reverse to calculate the range of each tab
-                disp_vec.reverse();
-            }
-
-            if disp_vec.last().unwrap().0 != fbar.file_vec.len() - 1 {
-                fbar.is_right_arrow_disp = true;
-            }
-
-            let mut width = 0;
-            for (_, disp_str) in &disp_vec {
-                width += get_str_width(disp_str);
-            }
-            fbar.all_filenm_rest = fbar.all_filenm_space_w - width;
-
-            // Width calc on tab area
-            let mut width = if fbar.is_left_arrow_disp { fbar.view.x + 2 } else { fbar.view.x };
-            for (idx, filenm) in disp_vec.iter() {
-                let s_w = width;
-
-                width += get_str_width(filenm);
-                let e_w = width - 1;
-
-                fbar.file_vec[*idx].filenm_area = (s_w, e_w);
-                fbar.file_vec[*idx].close_area = (e_w - 1, e_w);
-            }
-
-            // Width calc on left_arrow
-            if fbar.is_left_arrow_disp {
-                fbar.all_filenm_rest -= FileBar::ALLOW_BTN_WITH;
-                fbar.left_arrow_area = (0, 1);
-            }
-            // Width calc on right_arrow
-            if fbar.is_right_arrow_disp {
-                fbar.all_filenm_rest -= FileBar::ALLOW_BTN_WITH;
-                fbar.right_arrow_area = (fbar.all_filenm_space_w - 2, fbar.all_filenm_space_w - 1);
-                fbar.all_filenm_rest_area = (fbar.all_filenm_space_w - fbar.all_filenm_rest - FileBar::ALLOW_BTN_WITH, fbar.right_arrow_area.0 - 1);
-            } else {
-                fbar.all_filenm_rest_area = (fbar.all_filenm_space_w - fbar.all_filenm_rest, fbar.all_filenm_space_w - 1);
-            }
+        } else if self.disp_base_idx > 0 {
+            self.is_left_arrow_disp = true;
         }
+
+        let mut disp_vec: Vec<(usize, String)> = vec![];
+        let mut width = 0;
+        // Judgment of tab to display
+        let left_arrow_w = if self.is_left_arrow_disp { FileBar::ALLOW_BTN_WITH } else { 0 };
+        let mut idx_old = 0;
+        let file_len = self.file_vec.len();
+        for (idx, _) in tmp_all_vec[disp_base_idx..].iter() {
+            let h_file = self.file_vec.get(*idx).unwrap().clone();
+            let right_arrow_w = if self.disp_base_idx != USIZE_UNDEFINED && *idx != file_len - 1 { FileBar::ALLOW_BTN_WITH } else { 0 };
+
+            if self.all_filenm_space_w - left_arrow_w - right_arrow_w >= width + get_str_width(&h_file.filenm_disp) {
+                self.file_vec.get_mut(*idx).unwrap().is_disp = true;
+
+                width += get_str_width(&h_file.filenm_disp);
+                disp_vec.push((*idx, h_file.filenm_disp.clone()));
+            } else {
+                if self.disp_base_idx == USIZE_UNDEFINED {
+                    self.disp_base_idx = idx_old;
+                }
+                break;
+            }
+            idx_old = *idx;
+        }
+
+        if is_vec_reverse {
+            // Returns Reverse to calculate the range of each tab
+            disp_vec.reverse();
+        }
+
+        if disp_vec.last().unwrap().0 != self.file_vec.len() - 1 {
+            self.is_right_arrow_disp = true;
+        }
+
+        let mut width = 0;
+        for (_, disp_str) in &disp_vec {
+            width += get_str_width(disp_str);
+        }
+        self.all_filenm_rest = self.all_filenm_space_w - width;
+
+        // Width calc on tab area
+        let mut width = if self.is_left_arrow_disp { self.view.x + 2 } else { self.view.x };
+        for (idx, filenm) in disp_vec.iter() {
+            let s_w = width;
+
+            width += get_str_width(filenm);
+            let e_w = width - 1;
+
+            self.file_vec[*idx].filenm_area = (s_w, e_w);
+            self.file_vec[*idx].close_area = (e_w - 1, e_w);
+        }
+
+        // Width calc on left_arrow
+        if self.is_left_arrow_disp {
+            self.all_filenm_rest -= FileBar::ALLOW_BTN_WITH;
+            self.left_arrow_area = (0, 1);
+        }
+        // Width calc on right_arrow
+        if self.is_right_arrow_disp {
+            self.all_filenm_rest -= FileBar::ALLOW_BTN_WITH;
+            self.right_arrow_area = (self.all_filenm_space_w - 2, self.all_filenm_space_w - 1);
+            self.all_filenm_rest_area = (self.all_filenm_space_w - self.all_filenm_rest - FileBar::ALLOW_BTN_WITH, self.right_arrow_area.0 - 1);
+        } else {
+            self.all_filenm_rest_area = (self.all_filenm_space_w - self.all_filenm_rest, self.all_filenm_space_w - 1);
+        }
+
+        Log::debug("self.all_filenm_rest", &self.all_filenm_rest);
+        Log::debug("self.all_filenm_space_w", &self.all_filenm_space_w);
     }
 
     pub fn init(&mut self) {

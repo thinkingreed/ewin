@@ -1,4 +1,4 @@
-use crate::{conts::cont::*, dialog_traits::dialog_trait::*};
+use crate::{conts::cont::*, traits::traits::*};
 use chrono::Local;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
 use ewin_key::key::cmd::*;

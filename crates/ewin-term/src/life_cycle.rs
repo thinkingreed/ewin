@@ -6,6 +6,7 @@ use crossterm::{
     style::ResetColor,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use ewin_activity_bar::{activitybar::*, global::*};
 use ewin_cfg::{
     log::*,
     model::{general::default::*, modal::*},
@@ -13,19 +14,19 @@ use ewin_cfg::{
 use ewin_const::models::{env::*, event::*};
 use ewin_ctx_menu::{ctx_menu::*, global::*};
 use ewin_dialog::{dialog::*, global::*};
+use ewin_editor::{editor_gr::*, global::*};
 use ewin_file_bar::{filebar::*, global::*};
 use ewin_help::{global::*, help::*};
 use ewin_key::{global::*, model::*};
 use ewin_menu_bar::{global::*, menubar::*};
 use ewin_msg_bar::{global::*, msgbar::*};
+use ewin_plugin::plugin::*;
 use ewin_prom::{global::*, model::*};
 use ewin_side_bar::{global::*, sidebar::*};
-use ewin_status_bar::{global::*, statusbar::*};
-use ewin_tabs::tab::*;
-use ewin_utils::{files::file::*, global::*, os::*};
-
-use ewin_plugin::plugin::*;
 use ewin_state::{global::*, term::*};
+use ewin_status_bar::{global::*, statusbar::*};
+use ewin_tooltip::{global::*, tooltip::*};
+use ewin_utils::{files::file::*, global::*, os::*};
 use parking_lot::Mutex;
 use std::{io::stdout, process::exit};
 
@@ -73,6 +74,7 @@ impl Term {
         let _ = GREP_CANCEL_VEC.set(Mutex::new(vec![GrepCancelType::None]));
         let _ = WATCH_INFO.set(Mutex::new(WatchInfo::default()));
         let _ = TABS.set(Mutex::new(State::default()));
+        let _ = EDITOR_GR.set(Mutex::new(EditorGr::default()));
         let _ = PROM.set(Mutex::new(Prom::default()));
         let _ = DIALOG.set(Mutex::new(Dialog::default()));
         let _ = CTX_MENU.set(Mutex::new(CtxMenu::default()));
@@ -82,11 +84,14 @@ impl Term {
         let _ = HELP.set(Mutex::new(Help::default()));
         let _ = MENU_BAR.set(Mutex::new(MenuBar::default()));
         let _ = SIDE_BAR.set(Mutex::new(SideBar::default()));
+        let _ = ACTIVITY_BAR.set(Mutex::new(ActivityBar::default()));
+        let _ = TOOLTIP.set(Mutex::new(ToolTip::default()));
 
+        ActivityBar::get().init();
         SideBar::get().init(&File::get_absolute_path(&args.filenm), false);
         CtxMenu::get().init();
 
-        let act_typ = self.tabs.open_file(&args.filenm, FileOpenType::Nomal, Tab::new(), None);
+        let act_typ = self.tabs.open_file(&args.filenm, FileOpenType::Nomal, None);
         if let ActType::ExitMsg(msg) = act_typ {
             Term::exit_show_msg(&msg)
         };

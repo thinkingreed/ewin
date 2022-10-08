@@ -27,9 +27,12 @@ pub struct CfgUserSyntax<'a> {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CfgUserGeneral {
     pub lang: Option<String>,
+    #[serde(default)]
+    pub color_scheme: CfgUserColorScheme,
     pub log: CfgUserLog,
     pub editor: CfgUserEditor,
     pub font: CfgUserFont,
+    #[serde(default)]
     pub prompt: CfgUserPrompt,
     #[serde(default)]
     pub context_menu: CfgUserCtxMenu,
@@ -43,8 +46,16 @@ pub struct CfgUserGeneral {
     pub view: CfgUserGeneralView,
     #[serde(default)]
     pub sidebar: CfgUserSideBar,
+    #[serde(default)]
+    pub activitybar: CfgUserActivityBar,
+    #[serde(default)]
+    pub tooltip: CfgUserToolTip,
 }
 
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgUserColorScheme {
+    pub default_color_theme: Option<String>,
+}
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CfgUserLog {
     pub level: Option<String>,
@@ -189,14 +200,37 @@ pub struct CfgUserGeneralView {
 pub struct CfgUserSideBar {
     pub width: Option<usize>,
     #[serde(default)]
-    pub treefile: CfgUserSideBarTreeFile,
+    pub explorer: CfgUserSideBarExplorer,
     #[serde(default)]
     pub scrollbar: CfgUserScrl,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct CfgUserSideBarTreeFile {
+pub struct CfgUserActivityBar {
+    pub width: Option<usize>,
+    pub content: Option<String>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgUserToolTip {
+    pub hover_delay: Option<usize>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgUserSideBarExplorer {
+    pub tree: CfgUserSideBarExplorerTree,
+    pub quick_access: CfgUserSideBarExplorerQuickAccess,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgUserSideBarExplorerTree {
     pub indent: Option<usize>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct CfgUserSideBarExplorerQuickAccess {
+    pub width: Option<usize>,
+    pub content: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

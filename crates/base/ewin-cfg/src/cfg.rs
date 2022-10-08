@@ -30,7 +30,7 @@ impl Cfg {
 
         let mut cfg_syntax = CfgSyntax::default();
 
-        if let Ok((theme, err_string)) = ThemeLoader::new(cfg.colors.theme.default_color_theme.clone(), &cfg.colors.theme.highlight_theme_path, &cfg_syntax.syntax.theme_set.themes).load() {
+        if let Ok((theme, err_string)) = ThemeLoader::new(cfg.general.color_scheme.default_color_theme.clone(), &cfg.colors.theme.highlight_theme_path, &cfg_syntax.syntax.theme_set.themes).load() {
             Log::debug("err_string", &err_string);
 
             if !err_string.is_empty() {
@@ -47,12 +47,12 @@ impl Cfg {
                 }
             }
         }
-        let default_color_theme = &cfg.colors.theme.default_color_theme;
+        let default_color_theme = &cfg.general.color_scheme.default_color_theme;
         Log::debug("theme.default_color_theme", &default_color_theme);
 
-        let default_theme_str = match ThemeSystemColorType::from_str_color_type(&default_color_theme.to_lowercase()) {
-            ThemeSystemColorType::Black => include_str!("../../../../setting/theme/default_black.toml"),
-            ThemeSystemColorType::White => include_str!("../../../../setting/theme/default_white.toml"),
+        let default_theme_str = match ColorSchemeThemeType::from_str_color_type(&default_color_theme.to_lowercase()) {
+            ColorSchemeThemeType::Black => include_str!("../../../../setting/theme/default_black.toml"),
+            ColorSchemeThemeType::White => include_str!("../../../../setting/theme/default_white.toml"),
         };
         Log::debug("default_theme_str", &default_theme_str);
 

@@ -1,9 +1,7 @@
-use ewin_cfg::{lang::lang_cfg::*, log::*};
-use ewin_const::{def::*, models::model::*};
-use ewin_state::term::*;
+use ewin_const::def::*;
 use ewin_utils::str_edit::*;
 
-use crate::scrollbar_v::*;
+use crate::{scrollbar::vertical::*, view::View};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MenuList {
@@ -60,28 +58,20 @@ impl Default for MenuList {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 // Fixed display information
 pub struct MenuListCont {
-    pub height: usize,
-    pub width: usize,
-    pub y_area: (usize, usize),
-    pub x_area: (usize, usize),
+    pub view: View,
     pub cont_vec: Vec<(MenuListMenu, Option<MenuListCont>)>,
 }
 
+/*
 impl MenuListCont {
     pub fn clear(&mut self) {
-        self.y_area = (USIZE_UNDEFINED, USIZE_UNDEFINED);
-        self.x_area = (USIZE_UNDEFINED, USIZE_UNDEFINED);
+        //  self.view = View::default();
     }
 }
-
-impl Default for MenuListCont {
-    fn default() -> Self {
-        MenuListCont { height: USIZE_UNDEFINED, width: USIZE_UNDEFINED, y_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), x_area: (USIZE_UNDEFINED, USIZE_UNDEFINED), cont_vec: vec![] }
-    }
-}
+ */
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MenuListMenu {

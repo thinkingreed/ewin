@@ -18,3 +18,5 @@ pub mod tabs {
 pub mod core;
 pub mod filebar;
 pub mod sidebar;
+
+pub mod activitybar;

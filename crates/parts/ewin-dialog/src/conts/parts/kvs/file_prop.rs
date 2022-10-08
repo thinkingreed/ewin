@@ -1,4 +1,5 @@
-use crate::{conts::cont::*, dialog_traits::dialog_trait::*};
+use crate::conts::cont::*;
+use crate::traits::traits::*;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
 use ewin_const::def::*;
 use ewin_state::term::*;

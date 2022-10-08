@@ -4,7 +4,7 @@ use ewin_const::{
     def::*,
     models::{draw::*, event::*},
 };
-use ewin_ctx_menu::view_traits::view_trait::*;
+use ewin_ctx_menu::traits::traits::*;
 use ewin_job::job::*;
 use ewin_key::key::{cmd::*, keys::*};
 use ewin_state::term::*;
@@ -34,18 +34,15 @@ impl FileBar {
                             Log::debug("h_file.close_area", &h_file.close_area);
 
                             if h_file.close_area.0 <= x && x <= h_file.close_area.1 {
-                                Job::send_cmd(CmdType::CloseFileTgt(idx));
-                                return ActType::None;
+                                return Job::send_cmd(CmdType::CloseFileTgt(idx));
                             }
                             if h_file.filenm_area.0 <= x && x <= h_file.filenm_area.1 {
-                                Job::send_cmd(CmdType::ChangeFile(idx));
-                                return ActType::None;
+                                return Job::send_cmd(CmdType::ChangeFile(idx));
                             }
                         }
                         // Double-click outside the file range
                         if fbar.all_filenm_rest_area.0 <= x && x <= fbar.all_filenm_rest_area.1 && fbar.history.count_multi_click(&keys) == 2 {
-                            Job::send_cmd(CmdType::OpenNewFile);
-                            return ActType::None;
+                            return Job::send_cmd(CmdType::OpenNewFile);
                         }
                     }
                     if fbar.is_on_left_arraw(x) {
@@ -99,8 +96,7 @@ impl FileBar {
                             }
                         }
                         if dst_idx != USIZE_UNDEFINED {
-                            Job::send_cmd(CmdType::SwapFile(State::get().tabs.idx, dst_idx));
-                            return ActType::None;
+                            return Job::send_cmd(CmdType::SwapFile(State::get().tabs.idx, dst_idx));
                         }
                     }
                     return ActType::Cancel;

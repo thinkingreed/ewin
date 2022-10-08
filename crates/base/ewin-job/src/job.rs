@@ -1,18 +1,22 @@
+use std::sync::mpsc::Sender;
+
 use crate::global::*;
 use crossterm::event::{Event, KeyCode::Null};
 use ewin_cfg::{global::*, log::Log};
 use ewin_const::models::{event::*, term::*};
 use ewin_key::key::{cmd::*, keybind::*};
-use std::sync::mpsc::Sender;
 
 impl Job {
     pub fn send_grep(tx_job: &Sender<Job>, grep_str: String, is_end: bool) {
         let _ = tx_job.send(Job { cont: JobCont::Grep(JobGrep { grep_str, is_end }) });
     }
-    pub fn send_cmd(cmd_type: CmdType) {
+
+    pub fn send_cmd(cmd_type: CmdType) -> ActType {
         let cmd = Cmd::to_cmd(cmd_type.clone());
         Job::send_cmd_act_type(cmd_type, *cmd.place_vec.first().unwrap(), None);
+        return ActType::None;
     }
+
     pub fn send_cmd_str(cmd_str: &str) {
         let cmd = Cmd::to_cmd(Cmd::str_to_cmd_type(cmd_str));
         Job::send_cmd_act_type(cmd.cmd_type, *cmd.place_vec.first().unwrap(), None);
@@ -53,6 +57,7 @@ pub struct Job {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum JobCont {
+    Delay,
     Key(JobKey),
     Grep(JobGrep),
     Watch(JobWatch),

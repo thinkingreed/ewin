@@ -1,12 +1,16 @@
 use crate::help::*;
-use ewin_view::{view::*, view_traits::view_trait::*};
+use ewin_const::term::*;
+use ewin_view::{traits::view::*, view::*};
 
-impl ViewEvtTrait for Help {
-    fn is_tgt_mouse_move(&mut self, _: usize, _: usize) -> bool {
-        return false;
+impl ViewTrait for Help {
+    fn view(&self) -> &View {
+        &self.view
     }
-    fn view(&self) -> View {
-        return self.view;
+
+    fn set_size(&mut self) {
+        let (cols, rows) = get_term_size();
+        self.view.width = cols;
+        self.view.height = if self.is_show { Help::DISP_ROW_NUM } else { 0 };
+        self.view.y = if self.is_show { rows - self.view.height } else { 0 };
     }
-    fn exec_mouse_up_left(&mut self) {}
 }

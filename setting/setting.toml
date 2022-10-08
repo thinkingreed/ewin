@@ -2,6 +2,10 @@
 # "en_US" or "ja_JP"
 lang = "ja_JP"  # option default "en_US"
 
+[general.color_scheme]
+# "black" or "white"　
+default_color_theme = "black"
+
 [general.log]
 # "info" or "debug" or "error"
 level = "debug"
@@ -91,7 +95,7 @@ content = """
   {"display": [
       {"row_no": []},
       {"scale": []},
-      {"appearance": ["sidebar"]}
+      {"appearance": ["sidebar", "activitybar"]}
   ]},
   {"window": [
       {"left_and_right_split": []},
@@ -135,10 +139,9 @@ content = """
 [general.mouse]
 mouse_enable = true
 
-
 [general.sidebar] # option
 # 0 is invalid
-width = 25
+width = 33
 
 [general.sidebar.scrollbar.vertical]
 # 0 is hide
@@ -148,8 +151,46 @@ width = 1
 # 0 is hide
 height = 1
 
-[general.sidebar.treefile] # option
+[general.sidebar.explorer.tree] # option
 indent = 1
+[general.sidebar.explorer.quick_access] # option
+# 2 is minimum
+width = 8
+# content reserved word,the following paths apply
+# 「home」Linux:/home/user, Windows:C:\Users\user, macOS:/Users/user
+# 「config」Linux:/home/user/.config, Windows:C:/Users/user/Desktop, macOS:/Users/user/Library/Preferences
+# 「desktop」Linux:/home/user/Desktop, Windows:C:/Users/user/Desktop, macOS:/Users/user/Desktop
+
+content = """
+{"linux": [
+  {"home": { "icon": "🏠"}},
+  {"config": {"icon": "🛠️"}},
+  {"rust": {"icon": "📁", "path":"/home/thinkingreed/rust"}}
+],
+"windows": [
+  {"desktop": { "icon": "💻" }},
+  {"home": { "icon": "🏠"}}
+],
+"macos": [
+  {"home": { "icon": "🏠"}}
+]}
+"""
+
+[general.activitybar] # option
+# 0 is invalid, 2 is minimum
+width = 4
+content = """
+[
+  {"explorer": { "icon": "📑" }},
+  {"search": { "icon": "🔍" }},
+  {"management": {"icon": "⚙️"}}
+]
+"""
+
+[general.tooltip] # option
+# Wait time until tooltip display(ms)
+hover_delay = 1000
 
 [system.os.windows]
 change_output_encoding_utf8 = false
+

@@ -7,6 +7,7 @@ pub mod global {
 }
 
 pub mod def;
+pub mod icon;
 pub mod term;
 
 pub mod models {

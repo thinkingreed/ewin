@@ -1,8 +1,9 @@
-use crate::{global::*, sidebar::*, tree_file_view::tree::*};
-use ewin_cfg::{log::Log, model::general::default::*};
+use crate::{explorer::explorer::*, global::*, sidebar::*};
+use ewin_cfg::{log::*, model::general::default::*};
 use ewin_const::def::*;
-use ewin_key::key::cmd::*;
-use ewin_state::term::State;
+use ewin_key::key::cmd::CmdType;
+use ewin_state::term::*;
+use ewin_view::{scrollbar::scrl_h_trait::*, traits::view::*};
 use parking_lot::MutexGuard;
 
 impl SideBar {
@@ -25,25 +26,31 @@ impl SideBar {
     }
 
     pub fn init(&mut self, tgt_file: &str, is_force_show: bool) {
-        if CfgEdit::get().general.sidebar.width > 0 || is_force_show {
-            self.set_init_width();
-            State::get().sidebar.is_show = true;
-            self.cont = TreeFileView::create_cont(tgt_file);
+        Log::debug_key("SideBar.init");
 
-            self.judge_show_scrollbar();
-            self.scrl_v.calc_scrlbar_v(&CmdType::Null, self.cont.as_base().offset, self.cont.get_cont_view().height, self.cont.get_cont_vec_len(), true)
+        if CfgEdit::get().general.sidebar.width > 0 || is_force_show {
+            State::get().sidebar.is_show = true;
+
+            self.set_init_width();
+            self.cont = Explorer::create_cont(tgt_file);
+            self.set_size();
+            self.cont.downcast_mut::<Explorer>().unwrap().open_file(tgt_file);
+
+            Log::debug("self.cont.as_mut_base().view", &self.cont.as_mut_base().view);
+
+            self.init_scrlbar_h();
+            self.calc_scrlbar();
         } else {
             State::get().sidebar.is_show = false;
         }
     }
 
-    pub fn judge_show_scrollbar(&mut self) {
-        if self.cont.get_cont_vec_len() > self.cont.get_cont_view().height {
-            self.scrl_v.is_show = true;
-            self.scrl_v.bar_width = Cfg::get().general.sidebar.scrollbar.vertical.width;
-            self.cont.get_cont_view().width -= self.scrl_v.bar_width;
-            self.scrl_v.view.x = self.cont.get_cont_view().width - Cfg::get().general.sidebar.scrollbar.vertical.width;
-            self.scrl_v.calc_scrlbar_v(&CmdType::Null, self.cont.as_base().offset, self.cont.get_cont_view().height, self.cont.get_cont_vec_len(), true)
+    pub fn calc_scrlbar(&mut self) {
+        if self.cont.as_base().scrl_h.is_show {
+            self.cont.calc_scrlbar_h();
+        }
+        if self.cont.as_base().scrl_v.is_show {
+            self.cont.calc_scrlbar_v();
         }
     }
 }

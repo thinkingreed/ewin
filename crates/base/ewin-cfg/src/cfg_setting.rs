@@ -7,7 +7,7 @@ use crate::{
     },
 };
 use ewin_const::{def::*, models::view::*};
-use std::env;
+use std::{cmp::max, env};
 
 impl Cfg {
     /// Set user setting to internal setting
@@ -21,7 +21,15 @@ impl Cfg {
             //  _ => "en_US".to_string(),
             _ => "ja_JP".to_string(),
         };
-
+        /*
+         * general.color_scheme
+         */
+        // default_color_theme
+        self.general.color_scheme.default_color_theme = match &cfg_user.general.color_scheme.default_color_theme {
+            Some(s) if s == "white" => "white".to_string(),
+            Some(s) if s == "black" => "black".to_string(),
+            _ => "white".to_string(),
+        };
         /* general.log */
         match &cfg_user.general.log.level {
             Some(s) if s == "debug" => self.general.log.level = "debug".to_string(),
@@ -168,17 +176,44 @@ impl Cfg {
         if let Some(u) = cfg_user.general.sidebar.width {
             self.general.sidebar.width = u;
         }
-        /* general.sidebar.scrollbar.vertical */
+        // scrollbar.vertical
         if let Some(u) = cfg_user.general.sidebar.scrollbar.vertical.width {
             self.general.sidebar.scrollbar.vertical.width = u;
         }
-        /* general.sidebar.scrollbar.horizontal */
+        // scrollbar.horizontal
         if let Some(u) = cfg_user.general.sidebar.scrollbar.horizontal.height {
             self.general.sidebar.scrollbar.horizontal.height = u;
         }
-        // treefile.indent
-        if let Some(u) = cfg_user.general.sidebar.treefile.indent {
-            self.general.sidebar.treefile.indent = u;
+        // explorer.tree.indent
+        if let Some(u) = cfg_user.general.sidebar.explorer.tree.indent {
+            self.general.sidebar.explorer.tree.indent = u;
+        }
+        // explorer.quick_access.width
+        if let Some(u) = cfg_user.general.sidebar.explorer.quick_access.width {
+            self.general.sidebar.explorer.quick_access.width = u;
+        }
+        // explorer.quick_access.content
+        if let Some(s) = cfg_user.general.sidebar.explorer.quick_access.content {
+            self.general.sidebar.explorer.quick_access.content = s;
+        }
+        /*
+         * general.activitybar
+         */
+        // width
+        if let Some(u) = cfg_user.general.activitybar.width {
+            // minimum is 2
+            self.general.activitybar.width = max(u, 2);
+        }
+        // content
+        if let Some(s) = cfg_user.general.activitybar.content {
+            self.general.activitybar.content = s;
+        }
+        /*
+         * general.tooltip
+         */
+        // width
+        if let Some(u) = cfg_user.general.tooltip.hover_delay {
+            self.general.tooltip.hover_delay = u;
         }
 
         /*
@@ -284,6 +319,14 @@ impl Cfg {
         self.colors.sidebar.bg = Colors::hex2rgb(&self.colors.sidebar.background);
         self.colors.sidebar.bg_header = Colors::hex2rgb(&self.colors.sidebar.header_background);
         self.colors.sidebar.bg_open_file = Colors::hex2rgb(&self.colors.sidebar.open_file_background);
+
+        // activitybar
+        self.colors.activitybar.bg_default = Colors::hex2rgb(&self.colors.activitybar.default_background);
+        self.colors.activitybar.bg_select = Colors::hex2rgb(&self.colors.activitybar.select_background);
+
+        // tooltip
+        self.colors.tooltip.bg = Colors::hex2rgb(&self.colors.tooltip.background);
+        self.colors.tooltip.fg = Colors::hex2rgb(&self.colors.tooltip.foreground);
     }
 }
 
@@ -338,10 +381,6 @@ impl CfgColors {
         // disable_syntax_highlight_file_size
         if let Some(u) = cfg_user_colors.theme.disable_syntax_highlight_file_size {
             self.theme.disable_syntax_highlight_file_size = u;
-        }
-        // default_color_theme
-        if let Some(s) = cfg_user_colors.theme.default_color_theme {
-            self.theme.default_color_theme = s;
         }
 
         /*
@@ -577,6 +616,29 @@ impl CfgColors {
         // open_file_background
         if let Some(s) = cfg_user_colors.sdiebar.open_file_background {
             self.sidebar.open_file_background = s;
+        }
+
+        /*
+         * ActivityBar
+         */
+        // default_background
+        if let Some(s) = cfg_user_colors.activitybar.background_default {
+            self.activitybar.default_background = s;
+        }
+        // select_background
+        if let Some(s) = cfg_user_colors.activitybar.background_select {
+            self.activitybar.select_background = s;
+        }
+        /*
+         * ToolTip
+         */
+        // background
+        if let Some(s) = cfg_user_colors.tooltip.background {
+            self.tooltip.background = s;
+        }
+        // foreground
+        if let Some(s) = cfg_user_colors.tooltip.foreground {
+            self.tooltip.foreground = s;
         }
     }
 }

@@ -9,26 +9,24 @@ pub mod global {
 
 pub mod core;
 pub mod draw;
+pub mod event;
 pub mod sidebar;
+pub mod explorer {
 
-pub mod event {
     pub mod event;
-    pub mod scrollbar {
-        pub mod vertical;
-    }
+    pub mod explorer;
+    pub mod file;
+    pub mod quick_access;
+    pub mod traits;
 }
-
-pub mod tree_file_view {
-    pub mod cont_trait;
-    pub mod event;
-    pub mod tree;
-    pub mod tree_file;
+pub mod traits {
+    pub mod traits;
 }
-pub mod side_bar_trait {
-    pub mod side_bar_trait;
+pub mod scrollbar {
+    pub mod horizontal;
+    pub mod scrl_h_trait;
 }
-
 pub mod views {
-
     pub mod view;
+    pub mod view_evt;
 }

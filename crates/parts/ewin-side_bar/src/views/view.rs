@@ -1,17 +1,23 @@
 use crate::sidebar::*;
-use ewin_state::{sidebar::*, term::*};
-use ewin_view::{view::*, view_traits::view_trait::*};
+use ewin_activity_bar::activitybar::*;
+use ewin_cfg::{log::Log, model::general::default::*};
+use ewin_const::{def::*, term::*};
+use ewin_view::{traits::view::*, view::*};
 
-impl ViewEvtTrait for SideBar {
-    fn is_tgt_mouse_move(&mut self, _: usize, _: usize) -> bool {
-        return true;
-    }
-    fn view(&self) -> View {
-        return self.cont.as_base().view;
+impl ViewTrait for SideBar {
+    fn view(&self) -> &View {
+        &self.cont.as_base().view
     }
 
-    fn exec_mouse_up_left(&mut self) {
-        self.scrl_v.is_enable = false;
-        State::get().sidebar.resize = SideBarResizeState::None;
+    fn set_size(&mut self) {
+        self.cont.as_mut_base().view = View { y: MENUBAR_HEIGHT, x: ActivityBar::get().get_width(), width: CfgEdit::get().general.sidebar.width, height: get_term_size().1 - MENUBAR_HEIGHT - MSGBAR_HEIGHT - STATUSBAR_HEIGHT, ..View::default() };
+
+        self.cont.set_size();
+
+        self.cont.set_size_scrlbar_v();
+
+        self.set_size_scrlbar_h();
+
+        self.calc_scrlbar();
     }
 }

@@ -2,7 +2,7 @@ use crate::{
     cont::parts::{info::*, key_desc::*},
     ewin_key::key::cmd::*,
     model::*,
-    prom_trait::main_trait::*,
+    traits::main_trait::*,
 };
 use chrono::{prelude::DateTime, Local};
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
@@ -23,14 +23,12 @@ impl PromSaveForced {
         match &self.base.cmd.cmd_type {
             CmdType::InsertStr(ref s) => match s.to_uppercase().as_str() {
                 CHAR_Y => {
-                    Job::send_cmd(CmdType::SaveFile(SaveFileType::Forced));
                     State::get().curt_mut_state().clear();
-                    return ActType::None;
+                    return Job::send_cmd(CmdType::SaveFile(SaveFileType::Forced));
                 }
                 CHAR_R => {
-                    Job::send_cmd(CmdType::ReOpenFile(FileOpenType::Reopen));
                     State::get().curt_mut_state().clear();
-                    return ActType::None;
+                    return Job::send_cmd(CmdType::ReOpenFile(FileOpenType::Reopen));
                 }
                 _ => return ActType::Cancel,
             },
@@ -60,9 +58,9 @@ impl PromSaveForced {
 
     pub fn init() -> ActType {
         Log::debug_key("Tab::prom_save_forced");
-        let last_modified_time = File::get_modified_time(&State::get().curt_state().file.fullpath).unwrap();
+        let last_modified_time = File::get_modified_time(&State::get().curt_ref_state().file.fullpath).unwrap();
         State::get().curt_mut_state().prom = PromState::SaveForced;
-        Prom::get().init(Box::new(PromSaveForced::new(&State::get().curt_state().file.mod_time, last_modified_time)));
+        Prom::get().init(Box::new(PromSaveForced::new(&State::get().curt_ref_state().file.mod_time, last_modified_time)));
         return ActType::Draw(DrawParts::TabsAll);
     }
 }

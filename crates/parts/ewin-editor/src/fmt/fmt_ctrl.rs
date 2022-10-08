@@ -18,19 +18,16 @@ impl Editor {
     pub fn format(&mut self, fmt_type: FileType) -> ActType {
         Log::debug_key("Editor.format");
 
-        if !self.win_mgr.curt().sel.is_selected() {
+        if !self.win_mgr.curt_mut().sel.is_selected() {
             return ActType::Draw(DrawParts::MsgBar(Lang::get().no_sel_range.to_string()));
         } else if let Err(err) = self.exec_format(fmt_type) {
             let err_str = format!("{}{}", fmt_type, Lang::get().parsing_failed);
             Log::error(&err_str, &err);
             return ActType::Draw(DrawParts::MsgBar(err_str));
         } else {
-            for vec in self.draw_cache.iter_mut() {
-                for draw in vec {
-                    draw.clear();
-                }
-            }
-            return ActType::Draw(DrawParts::TabsAll);
+            // self.draw_cache.clear();
+
+            return ActType::Draw(DrawParts::TabsAllCacheClear);
         }
     }
 
@@ -39,7 +36,7 @@ impl Editor {
 
         let format_str = match fmt_type {
             FileType::JSON => {
-                let value: Value = serde_json::from_str(&self.buf.slice_string(self.win_mgr.curt().sel.get_range()))?;
+                let value: Value = serde_json::from_str(&self.buf.slice_string(self.win_mgr.curt_mut().sel.get_range()))?;
                 let buf = Vec::new();
                 let indent = &Cfg::get().general.editor.format.indent;
                 let formatter = serde_json::ser::PrettyFormatter::with_indent(indent.as_bytes());
@@ -47,14 +44,14 @@ impl Editor {
                 value.serialize(&mut ser).unwrap();
                 let mut format_str = String::from_utf8(ser.into_inner()).unwrap();
                 // New line code conversion
-                if State::get().curt_state().file.nl == NEW_LINE_CRLF_STR {
+                if State::get().curt_ref_state().file.nl == NEW_LINE_CRLF_STR {
                     format_str = format_str.replace(NEW_LINE_LF, NEW_LINE_CRLF)
                 }
                 format_str
             }
             FileType::XML | FileType::HTML => {
-                let slice = self.buf.slice(self.win_mgr.curt().sel.get_range());
-                let nl = NL::get_nl(&State::get().curt_state().file.nl.to_string());
+                let slice = self.buf.slice(self.win_mgr.curt_mut().sel.get_range());
+                let nl = NL::get_nl(&State::get().curt_ref_state().file.nl.to_string());
                 FormatXml::format_xml_html(slice, fmt_type, nl)
             }
             _ => todo!(),

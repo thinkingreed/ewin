@@ -29,12 +29,12 @@ impl Dialog {
                 Log::debug("btn", &btn);
                 if btn.cfg.is_close {
                     dialog.clear();
-                    return ActType::Draw(DrawParts::TabsAbsolute(dialog.get_draw_range_y()));
+                    return ActType::Draw(DrawParts::Absolute(dialog.get_draw_range_y()));
                 }
             }
             if dialog.is_close_btn_range(y, x) {
                 dialog.clear();
-                return ActType::Draw(DrawParts::TabsAbsolute(dialog.get_draw_range_y()));
+                return ActType::Draw(DrawParts::Absolute(dialog.get_draw_range_y()));
             }
 
             if dialog.is_header_range(y, x) {
@@ -95,7 +95,7 @@ impl Dialog {
             dialog.base_y = y;
             dialog.base_x = x;
 
-            return ActType::Draw(DrawParts::TabsAbsolute(dialog.get_draw_range_y()));
+            return ActType::Draw(DrawParts::Absolute(dialog.get_draw_range_y()));
         }
         return ActType::None;
     }

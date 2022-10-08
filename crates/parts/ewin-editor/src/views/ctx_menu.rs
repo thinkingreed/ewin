@@ -1,11 +1,11 @@
 use crate::model::*;
 use ewin_cfg::log::*;
 use ewin_const::models::term::*;
-use ewin_ctx_menu::{ctx_menu::*, view_traits::view_trait::*};
+use ewin_ctx_menu::{ctx_menu::*, traits::traits::*};
 
 impl ViewCtxMenuTrait for Editor {
     fn get_term_place(&mut self) -> CtxMenuPlace {
-        return if self.win_mgr.curt().sel.is_selected() { CtxMenuPlace::Editor(CtxMenuPlaceEditorCond::EditorRangeSelected) } else { CtxMenuPlace::Editor(CtxMenuPlaceEditorCond::EditorRangeNonSelected) };
+        return if self.win_mgr.curt_mut().sel.is_selected() { CtxMenuPlace::Editor(CtxMenuPlaceEditorCond::EditorRangeSelected) } else { CtxMenuPlace::Editor(CtxMenuPlaceEditorCond::EditorRangeNonSelected) };
     }
 
     fn is_tgt_ctx_menu(&mut self, y: usize, x: usize) -> bool {

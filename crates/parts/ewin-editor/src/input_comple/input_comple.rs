@@ -13,7 +13,7 @@ impl Editor {
         Log::debug_key("Editor.init_input_comple");
 
         let search_str = self.get_until_delim_str().0;
-        if self.win_mgr.curt().cur.x != 0 && search_str.is_empty() {
+        if self.win_mgr.curt_mut().cur.x != 0 && search_str.is_empty() {
             return ActType::Draw(DrawParts::MsgBar(Lang::get().no_input_comple_candidates.to_string()));
         }
         self.input_comple.search_set = self.input_comple.search(&search_str);
@@ -44,7 +44,7 @@ impl Editor {
             self.input_comple.set_disp_name(&search_str);
             let height = min(self.input_comple.menulist.cont.cont_vec.len(), InputComple::MAX_HEIGHT);
 
-            self.input_comple.menulist.init_menu(self.win_mgr.curt().cur.y + self.get_curt_row_posi() - self.win_mgr.curt().offset.y, self.win_mgr.curt().cur.disp_x + self.get_rnw_and_margin() - 1, height);
+            self.input_comple.menulist.init_menu(self.win_mgr.curt_mut().cur.y + self.get_curt_row_posi() - self.win_mgr.curt_mut().offset.y, self.win_mgr.curt_mut().cur.disp_x + self.get_rnw_and_margin() - 1, height);
             // self.input_comple.widget.set_parent_disp_area(self.cur.y + self.row_posi - self.offset_y, self.cur.disp_x + self.get_rnw_and_margin() - 1, height);
             // self.input_comple.widget.set_init_menu();
         }
@@ -66,7 +66,7 @@ impl Editor {
                     return evt_act;
                 }
                 let x = x - self.get_rnw_and_margin();
-                let y = y - self.get_curt_row_posi() + self.win_mgr.curt().offset.y;
+                let y = y - self.get_curt_row_posi() + self.win_mgr.curt_mut().offset.y;
                 self.set_cur_target_by_disp_x(y, x);
 
                 self.clear_input_comple();
@@ -124,7 +124,7 @@ impl Editor {
 
     pub fn replace_input_comple(&mut self, replace_str: String) {
         let (search_str, str_sx) = self.get_until_delim_str();
-        let s_idx = self.buf.row_to_char(self.win_mgr.curt().cur.y) + str_sx;
+        let s_idx = self.buf.row_to_char(self.win_mgr.curt_mut().cur.y) + str_sx;
 
         self.edit_proc_cmd_type(CmdType::ReplaceExec(search_str, replace_str, BTreeSet::from([s_idx])));
     }

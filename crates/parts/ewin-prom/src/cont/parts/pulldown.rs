@@ -1,4 +1,4 @@
-use crate::{model::*, prom_trait::cont_trait::*};
+use crate::{model::*, traits::cont_trait::*};
 use crossterm::cursor::MoveTo;
 use ewin_cfg::{colors::*, log::*};
 use ewin_key::key::cmd::*;

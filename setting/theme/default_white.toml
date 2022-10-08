@@ -6,8 +6,6 @@ disable_highlight_ext = ["txt", "log"]
 
 # Only files below this value will be highlighted(positive number:MByte)
 disable_syntax_highlight_file_size = 3
-# "black" or "white"
-default_color_theme = "white"
 
 [editor]
 background = "#fafafa"
@@ -57,8 +55,8 @@ vertical_background = "#dedede"
 active_foreground = "#000000"
 active_background = "#a0a0a0"
 passive_foreground = "#000000"
-passive_background = "#f0f0f0"
-default_background = "#f0f0f0"
+passive_background = "#e6e6e6"
+default_background = "#e6e6e6"
 
 [filebar]
 active_foreground = "#ffffff"
@@ -101,4 +99,12 @@ background = "#fafafa"
 foreground = "#000000"
 header_background = "#f0f0f0"
 open_file_background = "#e6e6ff"
+
+[activitybar]
+default_background = "#f0f0f0"
+select_background = "#dedede"
+
+[tooltip]
+background = "#dedede"
+foreground = "#969696"
 

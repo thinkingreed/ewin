@@ -121,6 +121,7 @@ pub struct Lang {
     pub scale: String,
     pub appearance: String,
     pub sidebar: String,
+    pub activitybar: String,
     // Window
     pub window: String,
     pub left_and_right_split: String,
@@ -188,6 +189,10 @@ pub struct Lang {
     pub specify_file_and_exec_macro: String,
     // input comple
     pub no_input_comple_candidates: String,
+    // ActivityBar
+    pub explorer: String,
+    pub management: String,
+
     // other
     pub unsupported_operation: String,
     pub increase_height_width_terminal: String,

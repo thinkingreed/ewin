@@ -9,12 +9,13 @@ pub mod global {
 
 extern crate ewin_key;
 
-pub mod dialog_traits {
-    pub mod dialog_trait;
+pub mod traits {
+    pub mod traits;
 }
 
 pub mod views {
     pub mod view;
+    pub mod view_evt;
 }
 
 pub mod conts {

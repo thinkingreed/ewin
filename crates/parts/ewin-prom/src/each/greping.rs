@@ -2,7 +2,7 @@ use crate::{
     cont::parts::{info::*, key_desc::*},
     ewin_key::key::cmd::*,
     model::*,
-    prom_trait::main_trait::*,
+    traits::main_trait::*,
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*};
 use ewin_const::models::{draw::*, event::*};

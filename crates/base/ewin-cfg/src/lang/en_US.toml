@@ -98,10 +98,15 @@ row_no = "row number"
 scale = "scale"
 appearance = "appearance"
 sidebar = "sidebar"
+activitybar = "activitybar"
 # Window
 window = "window"
 left_and_right_split = "left and right split"
 top_and_bottom_split = "top and bottom split"
+# ActivityBar
+explorer = "explorer"
+management = "management"
+
 # Other
 other = "other"
 about_app = "about ewin"

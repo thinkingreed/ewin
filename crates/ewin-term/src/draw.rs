@@ -1,15 +1,18 @@
+use ewin_activity_bar::activitybar::*;
 use ewin_cfg::{colors::*, log::*, model::general::default::*};
 use ewin_const::models::{draw::*, event::*};
 use ewin_ctx_menu::ctx_menu::*;
 use ewin_dialog::dialog::*;
+use ewin_editor::{editor_gr::*, model::*};
 use ewin_file_bar::filebar::*;
-use ewin_key::key::cmd::*;
+use ewin_help::help::*;
 use ewin_menu_bar::menubar::*;
 use ewin_msg_bar::msgbar::*;
 use ewin_prom::model::*;
 use ewin_side_bar::sidebar::*;
 use ewin_state::term::*;
 use ewin_status_bar::statusbar::*;
+use ewin_tooltip::tooltip::*;
 use ewin_view::{menulists::core::*, view::*};
 use std::io::{stdout, Write};
 
@@ -19,7 +22,7 @@ impl Term {
     pub fn draw<T: Write>(&mut self, out: &mut T, act_type: &ActType) {
         Log::debug("Term::draw.evt_act_type", &act_type);
 
-        self.set_size();
+        // self.set_size();
 
         if let ActType::Draw(draw_parts) = act_type {
             match &draw_parts {
@@ -43,16 +46,18 @@ impl Term {
                 DrawParts::FileBar => FileBar::draw_only(out),
                 DrawParts::Prompt => Prom::get().draw_only(out),
                 DrawParts::MenuBarMenuList => MenuBar::get().menulist.draw_only(out),
-                DrawParts::InputComple => self.tabs.curt().editor.input_comple.draw_only(out),
+                DrawParts::InputComple => EditorGr::get().curt_mut().input_comple.draw_only(out),
                 DrawParts::CtxMenu => CtxMenu::get().draw_only(out),
                 DrawParts::Dialog => Dialog::draw_only(out),
-                DrawParts::TabsAll => self.tabs.draw(out, draw_parts),
-                DrawParts::Editor(_) => self.tabs.draw(out, draw_parts),
-                DrawParts::StatusBar => {
-                    let (cur_cont, mut opt_vec) = StatusBar::get_editor_conts(&self.tabs.curt().editor);
-                    StatusBar::get().draw_only(out, cur_cont, &mut opt_vec);
+                DrawParts::TabsAll | DrawParts::TabsAllCacheClear => {
+                    self.tabs.draw(out, draw_parts);
+                    StatusBar::get().draw_only(out);
                 }
+                DrawParts::Editor(_) => self.tabs.draw(out, draw_parts),
+                DrawParts::StatusBar => StatusBar::get().draw_only(out),
                 DrawParts::SideBar => SideBar::get().draw_only(out),
+                DrawParts::ActivityBar => ActivityBar::get().draw_only(out),
+                DrawParts::ToolTip => ToolTip::get().draw_only(out),
                 DrawParts::All | DrawParts::ScrollUpDown(_) => {
                     self.set_size();
 
@@ -62,14 +67,26 @@ impl Term {
                     }
                     self.tabs.draw(out, &DrawParts::TabsAll);
                     SideBar::get().draw_only(out);
-                    // let is_forced = self.cmd.cmd_type == CmdType::MouseScrollDown || self.cmd.cmd_type == CmdType::MouseScrollUp;
                     MsgBar::get().draw_only(out, true);
+                    StatusBar::get().draw_only(out);
+                    ActivityBar::get().draw_only(out);
+                    Help::get().draw_only(out);
+                    ToolTip::get().draw_only(out);
                 }
 
-                DrawParts::TabsAbsolute(range) => {
+                DrawParts::Absolute(range) => {
+                    Log::debug("Absolute range", &range);
+                    Log::debug("SideBar::get().cont.as_base().view.y", &SideBar::get().cont.as_base().view.y);
+
+                    // ActivityBar
+                    if range.contains(&ActivityBar::get().view.y) {
+                        ActivityBar::get().draw_only(out);
+                    };
                     // SideBar
-                    if range.contains(&SideBar::get().cont.as_base().view.y) {
-                        SideBar::get().draw_only(out);
+                    if let Some(sidebar) = SideBar::get_result() {
+                        if range.contains(&sidebar.cont.as_base().view.y) || sidebar.cont.as_base().view.is_y_range(range.start) {
+                            sidebar.draw_only(out);
+                        };
                     };
                     // Menubar
                     if range.contains(&MenuBar::get().view.y) {
@@ -81,14 +98,13 @@ impl Term {
                     };
 
                     // Editor
-                    if self.tabs.curt().editor.is_disp_range_absolute(range) {
-                        let win_list = self.tabs.curt().editor.win_mgr.win_list.clone();
+                    if EditorGr::get().curt_ref().is_disp_range_absolute(range) {
+                        let win_list = EditorGr::get().curt_ref().win_mgr.win_list.clone();
                         for vec in win_list.iter() {
                             for win in vec {
-                                let sy = if range.start < win.area_v.0 { 0 } else { range.start - win.area_v.0 + win.offset.y };
-                                let ey = if range.end > win.area_v.0 + win.height() { win.offset.y + win.height() - 1 } else { range.end - win.area_v.0 + win.offset.y };
-                                self.tabs.curt().editor.draw_range = E_DrawRange::TargetRange(sy, ey);
-                                self.tabs.curt().editor.draw_only(out);
+                                let sy = if range.start < win.view.y { 0 } else { range.start - win.view.y + win.offset.y };
+                                let ey = if range.end > win.view.y + win.height() { win.offset.y + win.height() - 1 } else { range.end - win.view.y + win.offset.y };
+                                Editor::draw_only(out, &mut self.tabs.curt().draw_cache_vecs, &DrawParts::Editor(E_DrawRange::TargetRange(sy, ey)));
                             }
                         }
                     }
@@ -99,8 +115,7 @@ impl Term {
                     };
                     // StatusBar
                     if range.contains(&StatusBar::get().view.y) {
-                        let (cur_cont, mut opt_vec) = StatusBar::get_editor_conts(&self.tabs.curt().editor);
-                        StatusBar::get().draw_only(out, cur_cont, &mut opt_vec);
+                        StatusBar::get().draw_only(out);
                     };
                     // Menubar menulist
                     let sy = MenuBar::get().menulist.curt.disp_sy;
@@ -109,10 +124,10 @@ impl Term {
                         MenuBar::get().menulist.draw_only(out);
                     };
                     // InputComple
-                    let sy = self.tabs.curt().editor.input_comple.menulist.disp_sy;
-                    let ey = self.tabs.curt().editor.input_comple.menulist.disp_ey;
+                    let sy = EditorGr::get().curt_ref().input_comple.menulist.disp_sy;
+                    let ey = EditorGr::get().curt_ref().input_comple.menulist.disp_ey;
                     if range.contains(&sy) || range.contains(&ey) {
-                        self.tabs.curt().editor.input_comple.draw_only(out);
+                        EditorGr::get().curt_mut().input_comple.draw_only(out);
                     };
                     // CtxMenu
                     let ctx_menu_range = CtxMenu::get().menulist.get_disp_range_y();
@@ -141,7 +156,7 @@ impl Term {
 
     pub fn set_bg_color(&mut self) {
         let color_string = if CfgSyntax::get().syntax.theme.settings.background.is_some() {
-            if self.tabs.curt().editor.is_enable_syntax_highlight && Cfg::get().colors.theme.theme_bg_enable {
+            if EditorGr::get().curt_ref().is_enable_syntax_highlight && Cfg::get().colors.theme.theme_bg_enable {
                 Colors::bg(Color::from(CfgSyntax::get().syntax.theme.settings.background.unwrap()))
             } else {
                 Colors::bg(Cfg::get().colors.editor.bg)

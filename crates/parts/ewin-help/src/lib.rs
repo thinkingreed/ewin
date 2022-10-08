@@ -10,4 +10,5 @@ pub mod core;
 pub mod views {
     pub mod view;
 }
+pub mod draw;
 pub mod help;

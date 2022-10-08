@@ -82,8 +82,8 @@ impl Colors {
     pub fn get_scrollbar_v_bg() -> String {
         Colors::bg(Cfg::get().colors.system.scrollbar.bg_vertical)
     }
-    pub fn get_scrollbar_h_bg() -> String {
-        Colors::bg(Cfg::get().colors.system.scrollbar.bg_horizontal)
+    pub fn get_scrollbar_h_fg() -> String {
+        Colors::fg(Cfg::get().colors.system.scrollbar.bg_horizontal)
     }
     //
     // Sytem.btn
@@ -328,7 +328,32 @@ impl Colors {
     pub fn get_sidebar_fg_bg() -> String {
         format!("{}{}", Colors::get_sidebar_fg(), Colors::get_sidebar_bg())
     }
+    //
+    // ActivityBar
+    //
+    pub fn get_activitybar_bg_default() -> String {
+        Colors::bg(Cfg::get().colors.activitybar.bg_default)
+    }
+    pub fn get_activitybar_bg_select() -> String {
+        Colors::bg(Cfg::get().colors.activitybar.bg_select)
+    }
+    //
+    // ToolTip
+    //
 
+    fn get_tooltip_fg() -> String {
+        Colors::fg(Cfg::get().colors.tooltip.fg)
+    }
+    fn get_tooltip_bg() -> String {
+        Colors::bg(Cfg::get().colors.tooltip.bg)
+    }
+    pub fn get_tooltip_fg_bg() -> String {
+        format!("{}{}", Colors::get_tooltip_fg(), Colors::get_tooltip_bg())
+    }
+
+    //
+    // Core
+    //
     pub fn hex2rgb(hex: &str) -> Color {
         let rgb2 = transform_Rgb::from_hex_str(hex).unwrap();
         let t = rgb2.as_tuple();

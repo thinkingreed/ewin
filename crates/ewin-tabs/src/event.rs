@@ -1,9 +1,10 @@
-use crate::{tab::Tab, tabs::*};
+use crate::tabs::*;
 use ewin_cfg::{lang::lang_cfg::Lang, log::*};
 use ewin_const::{
     def::*,
     models::{draw::*, event::*, file::*},
 };
+use ewin_editor::{editor_gr::*, model::*};
 use ewin_help::help::*;
 use ewin_job::job::*;
 use ewin_key::{global::*, key::cmd::*, model::*};
@@ -44,12 +45,11 @@ impl Tabs {
 
             CmdType::GrepingProm(ref grep_info) => {
                 Log::debug("grep_info", &grep_info);
-                self.add_tab(&mut Tab::new(), File { name: format!(r#"{} "{}""#, &Lang::get().grep, &grep_info.search.str), ..File::default() }, FileOpenType::Nomal);
+                self.add_tab(Editor::default(), File { name: format!(r#"{} "{}""#, &Lang::get().grep, &grep_info.search.str), ..File::default() }, FileOpenType::Nomal);
                 GREP_CANCEL_VEC.get().unwrap().try_lock().unwrap().push(GrepCancelType::Greping);
                 State::get().curt_mut_state().grep = grep_info.clone();
                 Grep::exe_grep(grep_info.clone());
 
-                Log::debug("self.curt().editor.win_mgr.curt()", &self.curt().editor.win_mgr.curt());
                 return self.curt().prom_show_com(cmd_type);
             }
             /*
@@ -62,8 +62,8 @@ impl Tabs {
                 self.set_size();
                 if Help::get().is_show {
                     // Cursor moves out of help display area
+                    EditorGr::get().curt_mut().adjust_cur_posi();
 
-                    self.curt().editor.adjust_cur_posi();
                     /*
                     if term.tabs.curt().editor.win_mgr.curt().cur.y - tab.editor.win_mgr.curt().offset.y > tab.editor.get_curt_row_len() - 1 {
                         term.tabs.curt()..editor.win_mgr.curt().cur.y = tab.editor.win_mgr.curt().offset.y + tab.editor.get_curt_row_len() - 1;
@@ -72,7 +72,7 @@ impl Tabs {
                     }
                      */
                 }
-                return ActType::Draw(DrawParts::TabsAll);
+                return ActType::Draw(DrawParts::All);
             }
             // switch_tab
             CmdType::SwitchFile(direction) => return self.switch_file(direction),
@@ -81,7 +81,10 @@ impl Tabs {
              */
             // Clear
             CmdType::ClearTabState(is_clear_editor_state) => return self.curt().clear_curt_tab(is_clear_editor_state),
-
+            CmdType::WindowSplitTabs => {
+                self.curt().resize_draw_vec();
+                return ActType::Draw(DrawParts::TabsAll);
+            }
             _ => return ActType::None,
         };
         return ActType::None;
@@ -99,11 +102,9 @@ impl Tabs {
                 // TODO TEST
                 // TODO TEST
                 // TODO TEST
-                Job::send_cmd(CmdType::CloseOtherThanThisTab(USIZE_UNDEFINED));
-                return ActType::None;
+                return Job::send_cmd(CmdType::CloseOtherThanThisTab(USIZE_UNDEFINED));
             } else if State::get().tabs.all.close_other_than_this_tab_idx != USIZE_UNDEFINED {
-                Job::send_cmd(CmdType::CloseOtherThanThisTab(State::get().tabs.all.close_other_than_this_tab_idx));
-                return ActType::None;
+                return Job::send_cmd(CmdType::CloseOtherThanThisTab(State::get().tabs.all.close_other_than_this_tab_idx));
             } else {
                 return ActType::Draw(DrawParts::TabsAll);
             }

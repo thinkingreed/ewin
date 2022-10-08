@@ -1,4 +1,4 @@
-use crate::{cont::parts::info::*, cont::parts::key_desc::*, ewin_key::key::cmd::*, model::*, prom_trait::main_trait::*};
+use crate::{cont::parts::info::*, cont::parts::key_desc::*, ewin_key::key::cmd::*, model::*, traits::main_trait::*};
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
 use ewin_const::{
     def::*,
@@ -15,12 +15,10 @@ impl PromSaveConfirm {
         match &self.base.cmd.cmd_type {
             CmdType::InsertStr(ref string) => match string.to_uppercase().as_str() {
                 CHAR_Y => {
-                    Job::send_cmd(CmdType::SaveFile(SaveFileType::Confirm));
-                    return ActType::None;
+                    return Job::send_cmd(CmdType::SaveFile(SaveFileType::Confirm));
                 }
                 CHAR_N => {
-                    Job::send_cmd(CmdType::CloseFileCurt(CloseFileType::Forced));
-                    return ActType::None;
+                    return Job::send_cmd(CmdType::CloseFileCurt(CloseFileType::Forced));
                 }
                 _ => return ActType::Cancel,
             },
@@ -44,8 +42,8 @@ impl PromSaveConfirm {
 
     pub fn init() -> ActType {
         Log::debug_key("Tab::prom_save_confirm");
-        if State::get().curt_state().editor.is_changed {
-            if !State::get().curt_state().is_nomal() {
+        if State::get().curt_ref_state().editor.is_changed {
+            if !State::get().curt_ref_state().is_nomal() {
                 State::get().curt_mut_state().clear();
             }
             Prom::get().init(Box::new(PromSaveConfirm::new()));

@@ -2,7 +2,7 @@ use crate::{
     cont::parts::{info::*, input_area::*, key_desc::*, search_opt::*},
     ewin_key::key::cmd::*,
     model::*,
-    prom_trait::main_trait::*,
+    traits::main_trait::*,
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*, model::general::default::*};
 use ewin_const::models::{draw::*, event::*};
@@ -26,8 +26,7 @@ impl PromReplace {
                 if search_str.is_empty() {
                     return ActType::Draw(DrawParts::MsgBar(Lang::get().not_set_search_str.to_string()));
                 } else {
-                    Job::send_cmd(CmdType::ReplaceTryExec(search_str, replace_str));
-                    return ActType::None;
+                    return Job::send_cmd(CmdType::ReplaceTryExec(search_str, replace_str));
                 }
             }
             _ => return ActType::Cancel,

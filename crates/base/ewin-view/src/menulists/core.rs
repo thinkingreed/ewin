@@ -93,81 +93,43 @@ impl MenuList {
         self.set_child_disp_area();
     }
 
-    pub fn set_child_disp_area(&mut self) {
-        Log::debug("self.contttttttttttttt", &self.cont.clone());
-
-        if let Some((_, Some(child_cont))) = self.cont.cont_vec.get_mut(self.parent_sel_y) {
-            let (cols, rows) = get_term_size();
-            //  child_cont.height = min(child_cont.cont_vec.len(), self.max_vertical_range);
-            child_cont.height = child_cont.cont_vec.len(); // min(child_cont.cont_vec.len(), self.max_vertical_range);
-                                                           // rows
-            let (sy, ey) = if self.cont.y_area.0 + self.parent_sel_y + child_cont.height > rows {
-                // let base_y = if child_cont.height > self.max_vertical_range { self.highest_posi } else { self.highest_posi + self.max_vertical_range - child_cont.height };
-                let base_y = rows - child_cont.height;
-                (base_y, base_y + child_cont.height)
-            } else {
-                let child_base_y = self.cont.y_area.0 + self.parent_sel_y;
-                (child_base_y, child_base_y + child_cont.height - 1)
-            };
-            // cols
-
-            let (sx, ex) = if self.cont.x_area.1 + 1 + child_cont.width + 1 > cols {
-                if child_cont.width > self.cont.x_area.0 {
-                    // Adjust ex to fit in range
-                    (0, self.cont.x_area.0 - 1)
-                } else {
-                    (self.cont.x_area.0 - child_cont.width, self.cont.x_area.0 - 1)
-                }
-            } else {
-                Log::debug("child_cont", &child_cont.clone());
-                (self.cont.x_area.1, self.cont.x_area.1 + child_cont.width)
-            };
-
-            child_cont.y_area = (min(sy, ey), max(sy, ey));
-            child_cont.x_area = (min(sx, ex), max(sx, ex));
-
-            Log::debug("child_cont.x_area", &child_cont.x_area);
-
-            self.disp_sy_org = self.disp_sy;
-            self.disp_ey_org = self.disp_ey;
-            self.disp_sy = min(self.disp_sy, sy);
-            self.disp_ey = max(self.disp_ey, ey);
-        }
-    }
     pub fn set_parent_disp_area(&mut self, y: usize, x: usize, height: usize) {
         Log::debug_key("Window.set_parent_disp_area");
-        Log::debug("self.curt_cont.height", &self.cont.height);
-        Log::debug("self.curt_cont.width", &self.cont.width);
+        Log::debug("self.curt_cont.height", &self.cont.view.height);
+        Log::debug("self.curt_cont.width", &self.cont.view.width);
 
         let (cols, rows) = get_term_size();
         // rows
-        self.cont.height = height;
-        let (sy, ey) = if y + MenuList::EXTRA_FROM_CUR_Y + self.cont.height > rows {
+        self.cont.view.height = height;
+        let (sy, ey) = if y + MenuList::EXTRA_FROM_CUR_Y + self.cont.view.height > rows {
             let base_y = match self.config.menulist_type {
-                MenuListType::MenuList => get_term_size().1 - self.cont.height,
-                MenuListType::Pulldown => y - self.cont.height,
+                MenuListType::MenuList => get_term_size().1 - self.cont.view.height,
+                MenuListType::Pulldown => y - self.cont.view.height,
             };
-            (base_y, base_y + self.cont.height)
+            (base_y, base_y + self.cont.view.height)
         } else {
             let base_y = y + MenuList::EXTRA_FROM_CUR_Y;
-            (base_y, base_y + self.cont.height - 1)
+            (base_y, base_y + self.cont.view.height - 1)
         };
 
         // cols
         let (sx, ex) = match self.config.disp_type {
             MenuListDispType::Dynamic => {
-                if x + MenuList::EXTRA_FROM_CUR_X + self.cont.width > cols {
+                if x + MenuList::EXTRA_FROM_CUR_X + self.cont.view.width > cols {
                     let base_x = x + MenuList::EXTRA_FROM_CUR_Y;
-                    (base_x - self.cont.width + 1, base_x)
+                    (base_x - self.cont.view.width + 1, base_x)
                 } else {
                     let base_x = x + MenuList::EXTRA_FROM_CUR_X;
-                    (base_x, base_x + self.cont.width)
+                    (base_x, base_x + self.cont.view.width)
                 }
             }
-            MenuListDispType::Fixed => (x, x + self.cont.width),
+            MenuListDispType::Fixed => (x, x + self.cont.view.width),
         };
-        self.cont.y_area = (sy, ey);
-        self.cont.x_area = (sx, ex);
+        self.cont.view.y = sy;
+
+        self.cont.view.x = sx;
+        self.cont.view.width = ex - sx;
+        Log::debug("self.cont.view", &self.cont.view);
 
         self.disp_sy_org = self.disp_sy;
         self.disp_ey_org = self.disp_ey;
@@ -176,25 +138,70 @@ impl MenuList {
         Log::debug("set_parent_disp_area window.self ", &self);
     }
 
+    pub fn set_child_disp_area(&mut self) {
+        Log::debug("self.contttttttttttttt", &self.cont.clone());
+
+        if let Some((_, Some(child_cont))) = self.cont.cont_vec.get_mut(self.parent_sel_y) {
+            let (cols, rows) = get_term_size();
+            //  child_cont.height = min(child_cont.cont_vec.len(), self.max_vertical_range);
+            child_cont.view.height = child_cont.cont_vec.len(); // min(child_cont.cont_vec.len(), self.max_vertical_range);
+                                                                // rows
+            let (sy, ey) = if self.cont.view.y + self.parent_sel_y + child_cont.view.height > rows {
+                // let base_y = if child_cont.height > self.max_vertical_range { self.highest_posi } else { self.highest_posi + self.max_vertical_range - child_cont.height };
+                let base_y = rows - child_cont.view.height;
+                (base_y, base_y + child_cont.view.height)
+            } else {
+                let child_base_y = self.cont.view.y + self.parent_sel_y;
+                (child_base_y, child_base_y + child_cont.view.height - 1)
+            };
+            // cols
+
+            let (sx, ex) = if self.cont.view.x_width() + 1 + child_cont.view.width + 1 > cols {
+                if child_cont.view.width > self.cont.view.x {
+                    // Adjust ex to fit in range
+                    (0, self.cont.view.x - 1)
+                } else {
+                    (self.cont.view.x - child_cont.view.width, self.cont.view.x - 1)
+                }
+            } else {
+                Log::debug("child_cont", &child_cont.clone());
+                (self.cont.view.x_width(), self.cont.view.x_width() + child_cont.view.width)
+            };
+
+            // child_cont.y_area = (min(sy, ey), max(sy, ey));
+            child_cont.view.y = min(sy, ey);
+
+            // child_cont.x_area = (min(sx, ex), max(sx, ex));
+            child_cont.view.x = min(sx, ex);
+            child_cont.view.width = max(sx, ex) - child_cont.view.x;
+            Log::debug("child_cont.view", &child_cont.view);
+
+            self.disp_sy_org = self.disp_sy;
+            self.disp_ey_org = self.disp_ey;
+            self.disp_sy = min(self.disp_sy, sy);
+            self.disp_ey = max(self.disp_ey, ey);
+        }
+    }
+
     pub fn ctrl_mouse_move(&mut self, y: usize, x: usize) {
         Log::debug_key("ctrl_mouse_move");
         Log::debug("yyy", &y);
-        Log::debug("self.cont.y_area.0", &self.cont.y_area.0);
+        Log::debug("self.cont.y_area.0", &self.cont.view.y);
         Log::debug("self.offset_y", &self.offset_y);
-        if self.cont.y_area.0 <= y && y <= self.cont.y_area.1 && self.cont.x_area.0 <= x && x <= self.cont.x_area.1 {
+        if self.cont.view.y <= y && y < self.cont.view.y_height() && self.cont.view.x <= x && x <= self.cont.view.x_width() {
             Log::debug_key("set self.parent_sel_y ");
             self.parent_sel_y_org = self.parent_sel_y;
             //     self.parent_sel_y = y - self.cont.y_area.0 + self.offset_y;
-            self.parent_sel_y = y - self.cont.y_area.0 + self.offset_y;
+            self.parent_sel_y = y - self.cont.view.y + self.offset_y;
         }
         Log::debug("self.parent_sel_y", &self.parent_sel_y);
 
         self.set_child_disp_area();
 
         if let Some((_, Some(child_cont))) = self.cont.cont_vec.get(self.parent_sel_y) {
-            if child_cont.y_area.0 <= y && y <= child_cont.y_area.1 && child_cont.x_area.0 <= x && x <= child_cont.x_area.1 {
+            if child_cont.view.y <= y && y < child_cont.view.y_height() && child_cont.view.x <= x && x <= child_cont.view.x_width() {
                 self.child_sel_y_org = self.child_sel_y;
-                self.child_sel_y = y - child_cont.y_area.0;
+                self.child_sel_y = y - child_cont.view.y;
             } else {
                 self.child_sel_y = USIZE_UNDEFINED;
             }
@@ -205,15 +212,12 @@ impl MenuList {
     }
 
     pub fn is_mouse_within_area(&self, y: usize, x: usize) -> bool {
-        Log::debug_key("MenuList.is_mouse_within_area");
-        Log::debug("self.cont.y_area", &self.cont.y_area);
-        Log::debug("self.cont.x_area", &self.cont.x_area);
-        if self.cont.y_area.0 <= y && y <= self.cont.y_area.1 && self.cont.x_area.0 <= x && x <= self.cont.x_area.1 {
+        if self.cont.view.y <= y && y < self.cont.view.y_height() && self.cont.view.x <= x && x <= self.cont.view.x_width() {
             return true;
         };
         if self.parent_sel_y != USIZE_UNDEFINED {
             if let Some(ref child_cont) = self.cont.cont_vec[self.parent_sel_y].1 {
-                if child_cont.y_area.0 <= y && y <= child_cont.y_area.1 && child_cont.x_area.0 <= x && x <= child_cont.x_area.1 {
+                if child_cont.view.y <= y && y < child_cont.view.y_height() && child_cont.view.x <= x && x <= child_cont.view.x_width() {
                     return true;
                 };
             }
@@ -224,15 +228,13 @@ impl MenuList {
         Log::debug_key("Window.is_mouse_within_range");
         Log::debug("y", &y);
         Log::debug("x", &x);
-        Log::debug("self.curt_cont.y_area", &self.cont.y_area);
-        Log::debug("self.curt_cont.x_area", &self.cont.x_area);
 
-        if self.cont.y_area.0 - 1 == y || y == self.cont.y_area.1 + 1 || (self.cont.x_area.0 != 0 && self.cont.x_area.0 - 1 == x) || x == self.cont.x_area.1 + 1 {
+        if self.cont.view.y - 1 == y || y == self.cont.view.y_height() || (self.cont.view.x != 0 && self.cont.view.x - 1 == x) || x == self.cont.view.x_width() + 1 {
             return true;
         };
         if self.parent_sel_y != USIZE_UNDEFINED {
             if let Some(ref child_cont) = self.cont.cont_vec[self.parent_sel_y].1 {
-                if child_cont.y_area.0 - 1 == y && y == child_cont.y_area.1 + 1 || child_cont.x_area.0 - 1 == x || x == child_cont.x_area.1 + 1 {
+                if child_cont.view.y - 1 == y && y == child_cont.view.y_height() || child_cont.view.x - 1 == x || x == child_cont.view.x_width() + 1 {
                     return true;
                 };
             }
@@ -252,31 +254,31 @@ impl MenuList {
         Log::debug("self.curt_cont.menu_vec.len()", &self.cont.cont_vec.len());
         Log::debug(" self.parent_sel_y", &self.parent_sel_y);
         Log::debug("self.offset_y", &self.offset_y);
-        for (parent_idx, (parent_menu, child_cont_option)) in (0..self.cont.height).zip(self.cont.cont_vec[self.offset_y..].iter()) {
+        for (parent_idx, (parent_menu, child_cont_option)) in (0..self.cont.view.height).zip(self.cont.cont_vec[self.offset_y..].iter()) {
             let color = if parent_idx == self.parent_sel_y - self.offset_y { sel_color } else { not_sel_color };
             let name = format!("{}{}", color, parent_menu.disp_name,);
 
             // Parent menu
-            str_vec.push(format!("{}{}", MoveTo((self.cont.x_area.0) as u16, (self.cont.y_area.0 + parent_idx) as u16), name));
+            str_vec.push(format!("{}{}", MoveTo((self.cont.view.x) as u16, (self.cont.view.y + parent_idx) as u16), name));
 
             // Parent scrl_v
             // for Inputcomple ..
             if self.scrl_v.is_show {
-                let color = if self.scrl_v.view.y <= parent_idx && parent_idx < self.scrl_v.view.y + self.scrl_v.bar_len { Colors::get_scrollbar_v_bg() } else { Colors::get_default_bg() };
-                str_vec.push(format!("{}{}{}", color, MoveTo((self.cont.x_area.1) as u16 + 1, (self.cont.y_area.0 + parent_idx) as u16), "  ",));
+                let color = if self.scrl_v.view.y <= parent_idx && parent_idx < self.scrl_v.view.y + self.scrl_v.view.height { Colors::get_scrollbar_v_bg() } else { Colors::get_default_bg() };
+                str_vec.push(format!("{}{}{}", color, MoveTo((self.cont.view.x_width()) as u16 + 1, (self.cont.view.y + parent_idx) as u16), "  ",));
             };
 
             if parent_idx == self.parent_sel_y {
                 if let Some(cont) = child_cont_option {
-                    for (child_idx, (child_menu, _)) in (0..cont.height).zip(cont.cont_vec.iter()) {
-                        let c_name = cut_str(&child_menu.disp_name, cont.x_area.1 + 1 - cont.x_area.0, false, false);
+                    for (child_idx, (child_menu, _)) in (0..cont.view.height).zip(cont.cont_vec.iter()) {
+                        let c_name = cut_str(&child_menu.disp_name, cont.view.x_width() + 1 - cont.view.x, false, false);
 
                         Log::debug("child_idx", &child_idx);
                         Log::debug("self.child_sel_y", &self.child_sel_y);
 
                         let color = if child_idx == self.child_sel_y { sel_color } else { not_sel_color };
                         let name = format!("{}{}", color, c_name,);
-                        str_vec.push(format!("{}{}", MoveTo(cont.x_area.0 as u16, (cont.y_area.0 + child_idx) as u16), name));
+                        str_vec.push(format!("{}{}", MoveTo(cont.view.x as u16, (cont.view.y + child_idx) as u16), name));
                     }
                 }
             }
@@ -295,15 +297,15 @@ impl MenuList {
     pub fn calc_scrlbar_v(&mut self) {
         Log::debug_key("calc_scrlbar_v");
         if self.scrl_v.is_show {
-            if self.scrl_v.bar_len == 0 {
-                self.scrl_v.calc_com_scrlbar_v(false, self.cont.height, self.cont.cont_vec.len());
+            if self.scrl_v.view.height == 0 {
+                self.scrl_v.calc_com_scrlbar_v(self.cont.view.height, self.cont.cont_vec.len());
             }
 
-            self.scrl_v.view.y = if self.offset_y + self.cont.height == self.cont.cont_vec.len() {
-                self.cont.height - self.scrl_v.bar_len
+            self.scrl_v.view.y = if self.offset_y + self.cont.view.height == self.cont.cont_vec.len() {
+                self.cont.view.height - self.scrl_v.view.height
             } else {
                 let mut row_posi = (self.offset_y as f64 / self.scrl_v.move_len as f64).ceil() as usize;
-                if row_posi + self.scrl_v.bar_len == self.cont.height && self.offset_y + self.cont.height < self.cont.cont_vec.len() {
+                if row_posi + self.scrl_v.view.height == self.cont.view.height && self.offset_y + self.cont.view.height < self.cont.cont_vec.len() {
                     row_posi -= 1;
                 }
                 row_posi
@@ -356,7 +358,7 @@ impl MenuList {
             parent_menu.disp_name = format!(" {}{} ", perent_str, get_space(space),);
         }
         // +1 is Extra
-        self.cont.width = parent_max_len + 1;
+        self.cont.view.width = parent_max_len + 1;
     }
 }
 

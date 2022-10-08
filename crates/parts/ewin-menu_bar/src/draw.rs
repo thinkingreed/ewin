@@ -45,7 +45,6 @@ impl MenuBar {
     }
 
     pub fn draw_only<T: Write>(&self, out: &mut T) {
-        Log::debug_key("MenuBar::draw_only");
         let mut v: Vec<String> = vec![];
         self.draw(&mut v);
         let _ = out.write(v.concat().as_bytes());

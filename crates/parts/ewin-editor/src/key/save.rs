@@ -14,14 +14,13 @@ impl Editor {
         Log::debug_key("save");
         Log::debug("save_type", &save_type);
 
-        let fullpath = State::get().curt_state().file.fullpath.clone();
+        let fullpath = State::get().curt_ref_state().file.fullpath.clone();
         let path = Path::new(&fullpath);
         let curt_idx = State::get().tabs.idx;
 
         match save_type {
             SaveFileType::Normal | SaveFileType::Forced | SaveFileType::Confirm if !path.exists() => {
-                Job::send_cmd(CmdType::SaveNewFileProm);
-                return ActType::None;
+                return Job::send_cmd(CmdType::SaveNewFileProm);
             }
             _ => {}
         };
@@ -29,19 +28,18 @@ impl Editor {
         match save_type {
             SaveFileType::Normal | SaveFileType::Confirm => {
                 // Check if the file has been updated after opening
-                let fullpath = State::get().curt_state().file.fullpath.clone();
+                let fullpath = State::get().curt_ref_state().file.fullpath.clone();
                 if let Some(latest_modified_time) = File::get_modified_time(&fullpath) {
-                    if latest_modified_time > State::get().curt_state().file.mod_time {
+                    if latest_modified_time > State::get().curt_ref_state().file.mod_time {
                         Log::debug("latest_modified_time > h_file.modified_time ", &(latest_modified_time > State::get().tabs.vec.get_mut(curt_idx).unwrap().file.mod_time));
-                        Job::send_cmd(CmdType::SaveForceProm);
-                        return ActType::None;
+                        return Job::send_cmd(CmdType::SaveForceProm);
                     }
                 }
             }
             SaveFileType::NewFile | SaveFileType::Forced => {}
         }
 
-        let file = State::get().curt_state().file.clone();
+        let file = State::get().curt_ref_state().file.clone();
         Log::info_s(&format!("Save {}, file info {:?}", &file.name, &file));
         let result = self.buf.write_to(&mut State::get().tabs.vec.get_mut(curt_idx).unwrap().file);
         match result {
@@ -70,13 +68,12 @@ impl Editor {
 
                     match save_type {
                         SaveFileType::Confirm => {
-                            Job::send_cmd(CmdType::CloseFileCurt(CloseFileType::Forced));
                             State::get().curt_mut_state().editor.is_changed = false;
-                            return ActType::None;
+                            return Job::send_cmd(CmdType::CloseFileCurt(CloseFileType::Forced));
                         }
-                        SaveFileType::Normal if !State::get().curt_state().editor.is_changed => return ActType::None,
+                        SaveFileType::Normal if !State::get().curt_ref_state().editor.is_changed => return ActType::None,
                         _ => {
-                            if State::get().curt_state().editor.is_changed {
+                            if State::get().curt_ref_state().editor.is_changed {
                                 State::get().curt_mut_state().editor.is_changed = false;
                             }
                             return ActType::Draw(DrawParts::TabsAll);

@@ -11,8 +11,8 @@ impl State {
         return self.tabs.vec.get_mut(self.tabs.idx).unwrap();
     }
     #[track_caller]
-    pub fn curt_state(&mut self) -> &TabState {
-        return self.tabs.vec.get_mut(self.tabs.idx).unwrap();
+    pub fn curt_ref_state(&mut self) -> &TabState {
+        return self.tabs.vec.get(self.tabs.idx).unwrap();
     }
     #[track_caller]
     pub fn tgt_state(&mut self, idx: usize) -> &TabState {

@@ -2,7 +2,7 @@ use crate::{
     cont::parts::{info::*, key_desc::*},
     ewin_key::key::cmd::*,
     model::*,
-    prom_trait::main_trait::*,
+    traits::main_trait::*,
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
 use ewin_const::{
@@ -21,14 +21,11 @@ impl PromWatchFile {
         match &self.base.cmd.cmd_type {
             CmdType::InsertStr(ref s) => match s.to_uppercase().as_str() {
                 CHAR_R => {
-                    Job::send_cmd(CmdType::ReOpenFile(FileOpenType::Reopen));
-                    return ActType::None;
+                    return Job::send_cmd(CmdType::ReOpenFile(FileOpenType::Reopen));
                 }
                 CHAR_L => {
                     State::get().curt_mut_state().file.watch_mode = WatchMode::NotEditedWillReloadedAuto;
-
-                    Job::send_cmd(CmdType::ReOpenFile(FileOpenType::Reopen));
-                    return ActType::None;
+                    return Job::send_cmd(CmdType::ReOpenFile(FileOpenType::Reopen));
                 }
                 CHAR_N => {
                     State::get().curt_mut_state().file.watch_mode = WatchMode::NotMonitor;
@@ -45,8 +42,8 @@ impl PromWatchFile {
 
     pub fn check_watch_file() -> bool {
         // Check if the file has been updated after opening
-        let file = State::get().curt_state().file.clone();
-        if State::get().curt_state().is_nomal() {
+        let file = State::get().curt_ref_state().file.clone();
+        if State::get().curt_ref_state().is_nomal() {
             if file.watch_mode == WatchMode::NotEditedWillReloadedAuto && !State::get().curt_mut_state().editor.is_changed {
                 Job::send_cmd(CmdType::ReOpenFile(FileOpenType::Reopen));
                 return true;

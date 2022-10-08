@@ -66,13 +66,6 @@ impl Cmd {
                 Keys::Raw(Key::Tab) => CmdType::InsertStr(TAB_CHAR.to_string()),
                 _ => CmdType::Unsupported,
             },
-            /*
-            KeyWhen::Prom => match &keys {
-                Keys::Raw(Key::Tab) => CmdType::NextContent,
-                Keys::Raw(Key::BackTab) => CmdType::BackContent,
-                _ => CmdType::Unsupported,
-            },
-            */
             _ => CmdType::Unsupported,
         };
         return Cmd::to_cmd(cmd_type);
@@ -173,6 +166,7 @@ impl Cmd {
             "scale" => CmdType::SwitchDispScale,
             "row_no" => CmdType::SwitchDispRowNo,
             "sidebar" => CmdType::SwitchDispSideBar,
+            "activitybar" => CmdType::SwitchDispActivityBar,
             // prom
             "find_prompt" => CmdType::FindProm,
             "replace_prompt" => CmdType::ReplaceProm,
@@ -225,7 +219,10 @@ impl Cmd {
              * Editor
              */
             CmdType::Search(_, _) | CmdType::InputComple | CmdType::CancelEditorState | CmdType::SaveFile(_) | CmdType::MoveRow(_) => Cmd { cmd_type, place_vec: vec![Place::Editor], ..Cmd::default() },
+
+            // WindowSplit
             CmdType::WindowSplit(_) => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, place_vec: vec![Place::Editor] },
+            CmdType::WindowSplitTabs => Cmd { cmd_type, config: CmdConfig { ..CmdConfig::default() }, place_vec: vec![Place::Tabs] },
 
             // ContextMenu
             CmdType::CtxMenu(_, _) => Cmd { cmd_type, place_vec: vec![Place::Editor, Place::FileBar], ..Cmd::default() },
@@ -245,6 +242,7 @@ impl Cmd {
             // Display
             CmdType::SwitchDispScale | CmdType::SwitchDispRowNo => Cmd { cmd_type, place_vec: vec![Place::Editor], config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() } },
             CmdType::SwitchDispSideBar => Cmd { cmd_type, place_vec: vec![Place::SideBar], ..Cmd::default() },
+            CmdType::SwitchDispActivityBar => Cmd { cmd_type, place_vec: vec![Place::ActivityBar], ..Cmd::default() },
             /*
              * Dialog
              */
@@ -252,7 +250,12 @@ impl Cmd {
             /*
              * SideBar
              */
-            CmdType::ChangeFileSideBar(_) => Cmd { cmd_type, place_vec: vec![Place::SideBar], ..Cmd::default() },
+            CmdType::ChangeFileSideBar(_) | CmdType::ShowSideBar | CmdType::HideSideBar => Cmd { cmd_type, place_vec: vec![Place::SideBar], ..Cmd::default() },
+
+            /*
+             * All
+             */
+            CmdType::ToolTip(_, _) => Cmd { cmd_type, place_vec: vec![], ..Cmd::default() },
             // Other
             CmdType::Resize(_, _) => Cmd { cmd_type, config: CmdConfig { is_recalc_scrl: true, ..CmdConfig::default() }, ..Cmd::default() },
             CmdType::Null => Cmd { cmd_type, ..Cmd::default() },
@@ -360,7 +363,7 @@ pub enum CmdType {
 
     // Window
     WindowSplit(WindowSplitType),
-
+    WindowSplitTabs,
     // File
     CloseFileCurt(CloseFileType),
     CloseFileTgt(usize),
@@ -396,12 +399,18 @@ pub enum CmdType {
     SwitchDispScale,
     SwitchDispRowNo,
     SwitchDispSideBar,
+    SwitchDispActivityBar,
     // CtxMenu
     CtxMenu(usize, usize),
     // Dialog
     DialogShow(DialogContType),
     // SideBar
     ChangeFileSideBar(String),
+    ShowSideBar,
+    HideSideBar,
+    // ActivityBar
+    // All
+    ToolTip(usize, usize),
 
     Test,
     #[default]

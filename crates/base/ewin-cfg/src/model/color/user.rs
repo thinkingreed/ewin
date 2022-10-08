@@ -25,6 +25,10 @@ pub struct CfgUserColors {
     pub dialog: CfgUserColorDialog,
     #[serde(default)]
     pub sdiebar: CfgUserColorSideBar,
+    #[serde(default)]
+    pub activitybar: CfgUserColorActivityBar,
+    #[serde(default)]
+    pub tooltip: CfgUserColorToolTip,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -54,7 +58,6 @@ pub struct CfgUserColorTheme {
     pub theme_bg_enable: bool,
     pub disable_highlight_ext: Option<Vec<String>>,
     pub disable_syntax_highlight_file_size: Option<usize>,
-    pub default_color_theme: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -199,4 +202,18 @@ pub struct CfgUserColorSideBar {
     pub background: Option<String>,
     pub header_background: Option<String>,
     pub open_file_background: Option<String>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(rename = "ActivityBar")]
+pub struct CfgUserColorActivityBar {
+    pub background_default: Option<String>,
+    pub background_select: Option<String>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(rename = "ToolTip")]
+pub struct CfgUserColorToolTip {
+    pub background: Option<String>,
+    pub foreground: Option<String>,
 }

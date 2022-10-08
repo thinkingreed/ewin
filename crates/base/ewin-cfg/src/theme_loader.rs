@@ -52,11 +52,10 @@ impl ThemeLoader {
     }
 
     fn load_defaults(&mut self) -> Result<()> {
-        self.highlight_theme = match ThemeSystemColorType::from_str_color_type(&self.theme_default_type.to_lowercase()) {
-            ThemeSystemColorType::Black => Some(self.highlight_themes["base16-eighties.dark"].clone()),
-            ThemeSystemColorType::White => Some(self.highlight_themes["InspiredGitHub"].clone()),
+        self.highlight_theme = match ColorSchemeThemeType::from_str_color_type(&self.theme_default_type.to_lowercase()) {
+            ColorSchemeThemeType::Black => Some(self.highlight_themes["base16-eighties.dark"].clone()),
+            ColorSchemeThemeType::White => Some(self.highlight_themes["InspiredGitHub"].clone()),
         };
-        // self.highlight_theme = Some(self.highlight_themes["base16-eighties.dark"].clone());
         Ok(())
     }
 }

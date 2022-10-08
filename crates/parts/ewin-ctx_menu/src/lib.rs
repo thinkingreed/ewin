@@ -10,8 +10,8 @@ pub mod global {
 pub mod views {
     pub mod view;
 }
-pub mod view_traits {
-    pub mod view_trait;
+pub mod traits {
+    pub mod traits;
 }
 pub mod keys {
     pub mod key;

@@ -9,6 +9,7 @@ pub mod global {
 pub mod views {
     pub mod ctx_menu;
     pub mod view;
+    pub mod view_evt;
 }
 pub mod draw;
 pub mod event;

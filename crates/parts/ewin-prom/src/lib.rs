@@ -10,18 +10,17 @@ pub mod global {
     pub static PROM: OnceCell<Mutex<Prom>> = OnceCell::new();
 }
 pub mod core;
+pub mod draw;
 pub mod event;
 pub mod model;
 pub mod prom;
 pub mod prom_base;
 pub mod util;
-pub mod prom_trait {
+pub mod traits {
     pub mod cont_trait;
     pub mod main_trait;
 }
-pub mod views {
-    pub mod view;
-}
+pub mod views {}
 
 pub mod each {
     pub mod enc_nl;

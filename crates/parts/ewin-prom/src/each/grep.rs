@@ -2,7 +2,7 @@ use crate::{
     cont::parts::{info::*, input_area::*, key_desc::*, search_opt::*},
     ewin_key::key::cmd::*,
     model::*,
-    prom_trait::main_trait::*,
+    traits::main_trait::*,
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*, model::general::default::*};
 use ewin_const::models::{draw::*, event::*};
@@ -41,9 +41,8 @@ impl PromGrep {
                         search_dir = format!("{}/{}", current_dir, search_dir);
                     }
                     State::get().curt_mut_state().clear();
-                    Job::send_cmd(CmdType::GrepingProm(GrepInfo { search: Search { str: search_str, filenm: search_filenm, dir: search_dir, ..Search::default() }, ..GrepInfo::default() }));
+                    return Job::send_cmd(CmdType::GrepingProm(GrepInfo { search: Search { str: search_str, filenm: search_filenm, dir: search_dir, ..Search::default() }, ..GrepInfo::default() }));
                 }
-                return ActType::None;
             }
             _ => return ActType::Cancel,
         }
@@ -180,6 +179,7 @@ impl<'a> Sink for SearchSink<'a> {
             return Ok(false);
         }
         let job = Job { cont: JobCont::Grep(JobGrep { grep_str: format!("{}:{}:{}", self.path.to_str().unwrap(), mat.line_number().unwrap_or(0), from_utf8(mat.bytes()).unwrap_or(""),), ..JobGrep::default() }) };
+
         if let Err(err) = self.tx.send(job) {
             Log::error("grep matched error", &err);
         }

@@ -1,25 +1,18 @@
 [package]
 name = "ewin-plugin"
-version = "0.0.2"
-rust-version = "1.56.0"
-description = """Simple editor for Window(GUI) users.
-                 No need to remember commands."""
-authors = ["thinkingreed"]
-edition = "2021"
-repository = "https://github.com/thinkingreed/ewin"
-license = "MIT"
 publish = false
-
-[lib]
-path = "src/lib.rs"
+authors.workspace = true
+version.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [dependencies]
 v8= "0.48.0"
-# rusty_v8= "0.28.0"
 
-ewin-const = {version = "0.0.2", path = "../base/ewin-const" }
-ewin-cfg = {version = "0.0.2", path = "../base/ewin-cfg" }
-ewin-key = {version = "0.0.2", path = "../base/ewin-key" }
-ewin-view = {version = "0.0.2", path = "../base/ewin-view" }
-ewin-job = {version = "0.0.2", path = "../base/ewin-job" }
-ewin-utils = {version = "0.0.2", path = "../base/ewin-utils" }
+ewin-cfg.workspace = true
+ewin-const.workspace = true
+ewin-key.workspace = true
+ewin-view.workspace = true
+ewin-job.workspace = true
+ewin-utils.workspace = true

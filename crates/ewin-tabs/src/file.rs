@@ -1,10 +1,11 @@
-use crate::{ewin_editor::model::*, tab::*, tabs::*};
+use crate::{ewin_editor::model::*, tab::tab::*, tabs::*};
 use ewin_cfg::{lang::lang_cfg::*, log::*};
 
 use ewin_const::{
     def::*,
     models::{draw::*, event::*, file::*},
 };
+use ewin_editor::editor_gr::*;
 use ewin_job::job::*;
 use ewin_key::key::cmd::*;
 use ewin_state::term::*;
@@ -12,9 +13,9 @@ use ewin_utils::files::file::*;
 use std::path::Path;
 
 impl Tabs {
-    pub fn open_file(&mut self, filenm: &str, file_open_type: FileOpenType, tab: Tab, file_org_opt: Option<&File>) -> ActType {
+    pub fn open_file(&mut self, filenm: &str, file_open_type: FileOpenType, file_org_opt: Option<&File>) -> ActType {
         Log::info("File open start", &filenm);
-        let mut tab = tab;
+        let mut editor = Editor::default();
 
         let absolute_path = if filenm.is_empty() { "".to_string() } else { File::get_absolute_path(filenm) };
         let path = Path::new(&absolute_path);
@@ -45,7 +46,7 @@ impl Tabs {
                 match result {
                     Ok((text_buf, _bom_exsist)) => {
                         file.bom = _bom_exsist;
-                        tab.editor.buf = text_buf;
+                        editor.buf = text_buf;
                         if !is_writable {
                             is_read_only = true;
                         }
@@ -64,14 +65,14 @@ impl Tabs {
 
             match file_open_type {
                 FileOpenType::Nomal => {
-                    self.add_tab(&mut tab, file, file_open_type);
-                    self.curt().editor.set_cur_default();
+                    self.add_tab(editor, file, file_open_type);
+                    EditorGr::get().curt_mut().set_cur_default();
                 }
                 FileOpenType::Reopen | FileOpenType::ReopenEncode(_) => {
-                    self.reopen_tab(tab.clone(), file, file_open_type);
-                    self.curt().editor.cmd = Cmd::to_cmd(CmdType::ReOpenFile(file_open_type));
+                    self.reopen_tab(editor, file, file_open_type);
+                    EditorGr::get().curt_mut().cmd = Cmd::to_cmd(CmdType::ReOpenFile(file_open_type));
                     State::get().curt_mut_state().editor.is_changed = false;
-                    self.curt().editor.adjust_cur_posi();
+                    EditorGr::get().curt_mut().adjust_cur_posi();
                 }
             };
 
@@ -80,12 +81,14 @@ impl Tabs {
             }
 
             if !filenm.is_empty() {
-                self.curt().editor.enable_syntax_highlight();
+                EditorGr::get().curt_mut().enable_syntax_highlight();
             }
 
             // for input complement
-            for i in 0..tab.editor.buf.len_rows() {
-                self.curt().editor.input_comple.analysis_new(i, &tab.editor.buf.char_vec_row(i));
+            let len_rows = EditorGr::get().curt_ref().buf.len_rows();
+            for i in 0..len_rows {
+                let row = &EditorGr::get().curt_ref().buf.char_vec_row(i);
+                EditorGr::get().curt_mut().input_comple.analysis_new(i, row);
             }
 
             Log::info_s("File open end");
@@ -96,10 +99,9 @@ impl Tabs {
     pub fn reopen_curt_file(&mut self, file_open_type: FileOpenType) -> ActType {
         self.curt().clear_curt_tab(true);
         self.set_size();
-        let file = State::get().curt_state().file.clone();
+        let file = State::get().curt_ref_state().file.clone();
 
-        let tab = self.curt().clone();
-        self.open_file(&file.fullpath, file_open_type, tab, Some(&file));
+        self.open_file(&file.fullpath, file_open_type, Some(&file));
 
         return ActType::Draw(DrawParts::TabsAll);
     }
@@ -123,11 +125,9 @@ impl Tabs {
                 // TODO TEST
                 // TODO TEST
                 // TODO TEST
-                Job::send_cmd(CmdType::CloseOtherThanThisTab(USIZE_UNDEFINED));
-                return ActType::None;
+                return Job::send_cmd(CmdType::CloseOtherThanThisTab(USIZE_UNDEFINED));
             } else if State::get().tabs.all.close_other_than_this_tab_idx != USIZE_UNDEFINED {
-                Job::send_cmd(CmdType::CloseOtherThanThisTab(State::get().tabs.all.close_other_than_this_tab_idx));
-                return ActType::None;
+                return Job::send_cmd(CmdType::CloseOtherThanThisTab(State::get().tabs.all.close_other_than_this_tab_idx));
             }
             return ActType::Draw(DrawParts::TabsAll);
         }

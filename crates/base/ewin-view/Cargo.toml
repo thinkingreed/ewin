@@ -1,28 +1,21 @@
 [package]
 name = "ewin-view"
-version = "0.0.2"
-rust-version = "1.56.0"
-description = """Simple editor for Window(GUI) users.
-                 No need to remember commands."""
-authors = ["thinkingreed"]
-edition = "2021"
-repository = "https://github.com/thinkingreed/ewin"
-license = "MIT"
 publish = false
-
-[lib]
-path = "src/lib.rs"
+authors.workspace = true
+version.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [dependencies]
-crossterm  = {version ="0.25.0", features = ["event-stream"]} 
-syntect = "5.0.0"
-dyn-clone = "1.0.5"
-downcast = "0.11.0"
-indexmap="1.8.1"
+crossterm.workspace = true
+dyn-clone.workspace = true
+downcast.workspace = true
+indexmap.workspace = true
+syntect.workspace = true
 
-
-ewin-const = {version = "0.0.2", path = "../ewin-const" }
-ewin-cfg = {version = "0.0.2", path = "../ewin-cfg" }
-ewin-utils = {version = "0.0.2", path = "../ewin-utils" }
-ewin-key = {version = "0.0.2", path = "../ewin-key" }
-ewin-state = {version = "0.0.2", path = "../../ewin-state" }
+ewin-const.workspace = true
+ewin-cfg.workspace = true
+ewin-utils.workspace = true
+ewin-key.workspace = true
+ewin-state.workspace = true

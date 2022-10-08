@@ -32,7 +32,7 @@ impl Editor {
             // Search in advance for drawing
             if !self.search.ranges.is_empty() {
                 self.search_str(true, true);
-                self.calc_editor_scrlbar();
+                self.calc_scrlbar();
             }
             for s in &self.search.ranges {
                 self.change_info.restayle_row_set.insert(s.y);
@@ -115,15 +115,15 @@ impl Editor {
     }
 
     pub fn get_search_str_index(&mut self, is_asc: bool) -> usize {
-        let cur_x = self.win_mgr.curt().cur.x;
+        let cur_x = self.win_mgr.curt_mut().cur.x;
 
         if is_asc {
             for (i, range) in self.search.ranges.iter().enumerate() {
                 // When the cursor position is the target in the first search
-                if self.search.idx == USIZE_UNDEFINED && (self.win_mgr.curt().cur.y < range.y || (self.win_mgr.curt().cur.y == range.y && cur_x <= range.sx)) {
+                if self.search.idx == USIZE_UNDEFINED && (self.win_mgr.curt_mut().cur.y < range.y || (self.win_mgr.curt_mut().cur.y == range.y && cur_x <= range.sx)) {
                     return i;
                 }
-                if self.win_mgr.curt().cur.y < range.y || (self.win_mgr.curt().cur.y == range.y && cur_x < range.sx) {
+                if self.win_mgr.curt_mut().cur.y < range.y || (self.win_mgr.curt_mut().cur.y == range.y && cur_x < range.sx) {
                     return i;
                 }
             }
@@ -136,7 +136,7 @@ impl Editor {
             ranges.reverse();
             for (i, range) in ranges.iter().enumerate() {
                 // Log::ep("iii ", &i);
-                if self.win_mgr.curt().cur.y > range.y || (self.win_mgr.curt().cur.y == range.y && cur_x > range.sx) {
+                if self.win_mgr.curt_mut().cur.y > range.y || (self.win_mgr.curt_mut().cur.y == range.y && cur_x > range.sx) {
                     return max_index - i;
                 }
             }
@@ -169,7 +169,7 @@ impl Editor {
         let y = self.buf.char_to_row(end_char_idx);
         let x = end_char_idx - self.buf.row_to_char(y);
         self.set_cur_target_by_x(y, x, false);
-        proc.cur_e = self.win_mgr.curt().cur;
+        proc.cur_e = self.win_mgr.curt_mut().cur;
     }
 
     pub fn get_idx_set(&mut self, search_str: &str, replace_str: &str, org_set: &BTreeSet<usize>) -> BTreeSet<usize> {
@@ -194,7 +194,7 @@ impl Editor {
         Log::debug("self.search.str", &self.search.str);
         Log::debug("self.search_org.str", &self.search_org.str);
 
-        let sel_str = self.buf.slice_string(self.win_mgr.curt().sel);
+        let sel_str = self.buf.slice_string(self.win_mgr.curt_mut().sel);
         if self.search.ranges.is_empty() || (!sel_str.is_empty() && self.search.str != sel_str) {
             if sel_str.is_empty() {
                 return ActType::Draw(DrawParts::MsgBar(Lang::get().not_set_search_str.to_string()));

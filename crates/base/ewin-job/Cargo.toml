@@ -1,24 +1,19 @@
 [package]
 name = "ewin-job"
-version = "0.0.2"
-rust-version = "1.56.0"
-description = """Simple editor for Window(GUI) users.
-                 No need to remember commands."""
-authors = ["thinkingreed"]
-edition = "2021"
-repository = "https://github.com/thinkingreed/ewin"
-license = "MIT"
 publish = false
-
-[lib]
-path = "src/lib.rs"
+authors.workspace = true
+version.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [dependencies]
-once_cell = "1.5.2"
-tokio = { version = "1.4.0", features = ["process", "macros", "rt-multi-thread"] }
-tokio-util = { version = "0.7.1", features = ["codec"] }
-crossterm  = {version ="0.25.0", features = ["event-stream"]} 
+once_cell.workspace = true
+crossterm.workspace = true
+parking_lot.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
 
-ewin-const = {version = "0.0.2", path = "../ewin-const" }
-ewin-cfg = {version = "0.0.2", path = "../ewin-cfg" }
-ewin-key = {version = "0.0.2", path = "../ewin-key" }
+ewin-cfg.workspace = true
+ewin-const.workspace = true
+ewin-key.workspace = true

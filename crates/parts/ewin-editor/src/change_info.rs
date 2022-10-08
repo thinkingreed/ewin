@@ -3,6 +3,7 @@ use ewin_cfg::log::*;
 use ewin_key::{key::cmd::*, model::*};
 use ewin_state::term::*;
 use ewin_utils::{files::nl::*, str_edit::*};
+use ewin_view::scrollbar::scrl_h_trait::*;
 use std::{cmp::min, collections::BTreeSet};
 impl Editor {
     pub fn set_change_info_edit(&mut self, evt_proc: &EvtProc) {
@@ -37,7 +38,7 @@ impl Editor {
                 }
                 // Not Insert box
                 CmdType::InsertStr(_) if proc.box_sel_vec.is_empty() => {
-                    let strings: Vec<&str> = proc.str.split(&NL::get_nl(&State::get().curt_state().file.nl)).collect();
+                    let strings: Vec<&str> = proc.str.split(&NL::get_nl(&State::get().curt_ref_state().file.nl)).collect();
                     if !strings.is_empty() {
                         for i in 0..strings.len() - 1 {
                             self.new_change_tgt(BTreeSet::from([proc.cur_s.y + i]));
@@ -63,9 +64,7 @@ impl Editor {
                 _ => {}
             }
         };
-        self.calc_editor_row_max();
-        // self.calc_editor_scrlbar_h();
-        // self.calc_editor_scrlbar_v();
+        self.calc_row_max();
 
         Log::debug("self.change_info.restayle_row_set after", &self.change_info.restayle_row_set);
     }
@@ -77,7 +76,7 @@ impl Editor {
         self.change_info.new_row.extend(&idxs);
 
         for idx in idxs {
-            self.win_mgr.row_width_chars_vec.insert(idx, (0, 0));
+            self.win_mgr.scrl_h_info.row_width_chars_vec.insert(idx, (0, 0));
             self.input_comple.analysis_new(idx, &self.buf.char_vec_row(idx));
         }
     }
@@ -88,7 +87,7 @@ impl Editor {
 
         self.change_info.del_row_set.extend(&idxs);
         for (i, idx) in idxs.iter().enumerate() {
-            self.win_mgr.row_width_chars_vec.remove(idx - i);
+            self.win_mgr.scrl_h_info.row_width_chars_vec.remove(idx - i);
         }
     }
 
@@ -100,6 +99,5 @@ impl Editor {
             self.input_comple.analysis_mod(*idx, &self.buf.char_vec_row(*idx));
         }
         self.set_row_width_chars_vec(idxs);
-        // self.calc_editor_scrlbar_v();
     }
 }

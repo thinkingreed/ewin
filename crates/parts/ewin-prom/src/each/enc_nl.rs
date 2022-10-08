@@ -1,7 +1,7 @@
 use crate::{
     cont::parts::{choice::*, info::*, key_desc::*},
     model::*,
-    prom_trait::main_trait::*,
+    traits::main_trait::*,
 };
 use ewin_cfg::{colors::*, lang::lang_cfg::*, log::*};
 use ewin_const::{
@@ -54,15 +54,14 @@ impl PromEncNl {
                 if method_of_apply.name == Lang::get().file_reload {
                     // TODO What to do if the file is being edited
 
-                    let result = File::read_file(&State::get().curt_state().file.name);
+                    let result = File::read_file(&State::get().curt_ref_state().file.name);
                     match result {
                         Ok((vec, _, _, _)) => {
                             let (_, _, had_errors) = File::read_bytes(&vec, encode);
                             if had_errors {
                                 return ActType::Draw(DrawParts::MsgBar(Lang::get().cannot_convert_encoding.to_string()));
                             } else {
-                                Job::send_cmd(CmdType::ReOpenFile(FileOpenType::ReopenEncode(encode)));
-                                return ActType::None;
+                                return Job::send_cmd(CmdType::ReOpenFile(FileOpenType::ReopenEncode(encode)));
                             }
                         }
                         Err(err) => return ActType::Draw(DrawParts::MsgBar(File::get_io_err_str(err))),
@@ -211,7 +210,7 @@ impl PromEncNl {
         Log::debug_key("Tab::prom_enc_nl");
         State::get().curt_mut_state().prom = PromState::EncNl;
         Prom::get().init(Box::new(PromEncNl::new()));
-        Prom::get().curt.downcast_mut::<PromEncNl>().unwrap().set_default_choice_enc_nl(&State::get().curt_state().file);
+        Prom::get().curt.downcast_mut::<PromEncNl>().unwrap().set_default_choice_enc_nl(&State::get().curt_ref_state().file);
         return ActType::Draw(DrawParts::TabsAll);
     }
 }

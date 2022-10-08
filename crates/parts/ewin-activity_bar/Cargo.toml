@@ -1,0 +1,30 @@
+[package]
+name = "ewin-activity_bar"
+publish = false
+authors.workspace = true
+version.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+
+[dependencies]
+once_cell.workspace = true
+crossterm.workspace = true
+parking_lot.workspace = true
+dyn-clone.workspace = true
+downcast.workspace = true
+unicode-width.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+indexmap.workspace = true
+
+ewin-cfg.workspace = true
+ewin-const.workspace = true
+ewin-view.workspace = true
+ewin-utils.workspace = true
+ewin-key.workspace = true
+ewin-state.workspace = true
+ewin-job.workspace = true
+ewin-help.workspace = true
+ewin-tooltip.workspace = true

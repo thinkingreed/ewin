@@ -16,11 +16,14 @@ pub enum DrawParts {
     FileBar,
     CtxMenu,
     Dialog,
-    TabsAbsolute(Range<usize>),
+    Absolute(Range<usize>),
     TabsAll,
+    TabsAllCacheClear,
     TabsAllMsgBar(String),
     ScrollUpDown(ScrollUpDownType),
     SideBar,
+    ActivityBar,
+    ToolTip,
     None,
 }
 

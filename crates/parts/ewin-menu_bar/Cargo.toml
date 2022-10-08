@@ -1,29 +1,24 @@
 [package]
 name = "ewin-menu_bar"
-version = "0.0.2"
-rust-version = "1.56.0"
-description = "Simple editor for Window(GUI) users.No need to remember commands."
-authors = ["thinkingreed"]
-edition = "2021"
-repository = "https://github.com/thinkingreed/ewin"
-license = "MIT"
 publish = false
-
-[lib]
-path = "src/lib.rs"
+authors.workspace = true
+version.workspace = true
+rust-version.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [dependencies]
-crossterm  = {version ="0.25.0", features = ["event-stream"]} 
-indexmap="1.8.1"
-serde_json = { version = "1.0.81"}
-once_cell = "1.5.2"
-parking_lot = "0.12.1"
+crossterm.workspace = true
+indexmap.workspace = true
+once_cell.workspace = true
+serde_json.workspace = true
+parking_lot.workspace = true
 
-ewin-cfg = {version = "0.0.2", path = "../../base/ewin-cfg" }
-ewin-const = {version = "0.0.2", path = "../../base/ewin-const" }
-ewin-key = {version = "0.0.2", path = "../../base/ewin-key" }
-ewin-view = {version = "0.0.2", path = "../../base/ewin-view" }
-ewin-utils = {version = "0.0.2", path = "../../base/ewin-utils" }
-ewin-job = {version = "0.0.2", path = "../../base/ewin-job" }
-ewin-state = {version = "0.0.2", path = "../../ewin-state" }
-ewin-dialog = {version = "0.0.2", path = "../../parts/ewin-dialog" }
+ewin-cfg.workspace = true
+ewin-const.workspace = true
+ewin-key.workspace = true
+ewin-view.workspace = true
+ewin-utils.workspace = true
+ewin-job.workspace = true
+ewin-state.workspace = true
+ewin-dialog.workspace = true

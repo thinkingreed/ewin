@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use crate::{model::*, window::*};
+use crate::{editor_gr::*, model::*, window::window::*};
 use crossterm::{cursor::*, terminal::*};
 use ewin_cfg::{colors::*, log::*, model::general::default::*};
 use ewin_const::{
@@ -10,92 +10,82 @@ use ewin_const::{
 use ewin_key::model::*;
 use ewin_state::term::*;
 use ewin_utils::char_edit::*;
+use ewin_view::menulists::core::*;
 
 impl Editor {
-    pub fn draw(&mut self, str_vec: &mut Vec<String>) {
+    pub fn draw(str_vec: &mut Vec<String>, draw_cache_vecs: &mut [Vec<EditorDrawCache>], draw_parts: &DrawParts) {
+        Log::debug_key("Editor::draw");
+
+        Log::debug("draw_parts", &draw_parts);
+
+        if matches!(draw_parts, DrawParts::TabsAllCacheClear) {
+            for vecs in draw_cache_vecs.iter_mut() {
+                for draw_cache in vecs.iter_mut() {
+                    *draw_cache = EditorDrawCache::default();
+                }
+            }
+        }
+        let draw_range = if (matches!(draw_parts, DrawParts::TabsAll) || matches!(draw_parts, DrawParts::TabsAllCacheClear) || matches!(draw_parts, DrawParts::TabsAllMsgBar(_))) {
+            E_DrawRange::All
+        } else if let DrawParts::Editor(e_draw_range) = draw_parts {
+            *e_draw_range
+        } else {
+            E_DrawRange::All
+        };
+
         // Editor
-        match self.draw_range {
+        match draw_range {
             E_DrawRange::Not => {}
             _ => {
-                if self.get_curt_row_len() > 0 {
-                    let curt_win = self.get_curt_ref_win().clone();
-                    if self.draw_range == E_DrawRange::MoveCur {
-                        self.draw_move_cur(str_vec, &curt_win);
+                let curt_row_len = EditorGr::get().curt_ref().get_curt_row_len();
+                if curt_row_len > 0 {
+                    let curt_win = EditorGr::get().curt_ref().get_curt_ref_win().clone();
+                    if draw_range == E_DrawRange::MoveCur {
+                        let split_line_v = EditorGr::get().curt_ref().win_mgr.split_line_v;
+                        EditorGr::get().curt_ref().draw_move_cur(str_vec, &curt_win, split_line_v);
                         return;
                     }
 
-                    let vec = self.win_mgr.win_list.clone();
+                    let vec = EditorGr::get().curt_ref().win_mgr.win_list.clone();
                     for (v_idx, vec_v) in vec.iter().enumerate() {
                         for (h_idx, win) in vec_v.iter().enumerate() {
-                            if self.draw_range == E_DrawRange::WinOnlyAll && &curt_win != win {
+                            if draw_range == E_DrawRange::WinOnlyAll && &curt_win != win {
                                 continue;
                             }
-                            self.draw_cache(win);
-                            self.draw_main(str_vec, &self.draw_cache[v_idx][h_idx], win);
-                            self.draw_cache[v_idx][h_idx].cells_from = std::mem::take(&mut self.draw_cache[v_idx][h_idx].cells_to);
-                            self.draw_scale(str_vec, win);
-                            self.draw_scrlbar_v(str_vec, win);
-                            self.draw_scrlbar_h(str_vec, win);
+                            Editor::draw_cache(&mut draw_cache_vecs[v_idx][h_idx], EditorGr::get().curt_ref(), win, draw_range);
+                            EditorGr::get().curt_ref().draw_main(str_vec, &draw_cache_vecs[v_idx][h_idx], win, draw_range);
+                            draw_cache_vecs[v_idx][h_idx].cells_from = std::mem::take(&mut draw_cache_vecs[v_idx][h_idx].cells_to);
+
+                            win.draw_scale(str_vec, EditorGr::get().curt_ref().win_mgr.split_line_v);
+                            win.scrl_v.draw(str_vec, &win.view, Colors::get_default_bg());
+                            win.scrl_h.draw(str_vec, &win.view);
                         }
                     }
                 }
-                self.draw_window_split_line(str_vec);
-
-                self.change_info.clear();
+                EditorGr::get().curt_ref().draw_window_split_line(str_vec);
+                EditorGr::get().curt_mut().change_info.clear();
 
                 str_vec.push(Colors::get_default_fg_bg());
             }
         };
     }
 
-    pub fn draw_only<T: Write>(&mut self, out: &mut T) {
+    pub fn draw_only<T: Write>(out: &mut T, draw_cache_vecs: &mut Vec<Vec<EditorDrawCache>>, draw_parts: &DrawParts) {
         Log::debug_key("MsgBar.draw_only");
 
         let mut v: Vec<String> = vec![];
-        self.draw(&mut v);
+        Editor::draw(&mut v, draw_cache_vecs, draw_parts);
         let _ = out.write(v.concat().as_bytes());
         out.flush().unwrap();
     }
-
-    #[allow(clippy::nonminimal_bool)]
-    pub fn clear_init(&self, str_vec: &mut Vec<String>, draw: &EditorDraw, win: &Window) -> ActType {
-        Log::debug_key("clear_init");
-
-        let curt_win = self.get_curt_ref_win();
-        Log::debug("editor.draw_range ", &self.draw_range);
-
-        match self.draw_range {
-            E_DrawRange::Not | E_DrawRange::MoveCur => return ActType::Cancel,
-            //  E_DrawRange::Init | E_DrawRange::All if win.h_idx == 0 && win.v_idx == 0 && editor.win_mgr.split_type == WindowSplitType::None => editor.clear_all(str_vec),
-            E_DrawRange::All => {
-                if win.h_idx == 0 && win.v_idx == 0 {
-                    self.clear_all(str_vec);
-                }
-            }
-            E_DrawRange::WinOnlyAll => {
-                if curt_win == win {
-                    win.clear_draw(str_vec);
-                }
-            }
-            E_DrawRange::TargetRange(sy, ey) => {
-                if curt_win == win || !Editor::is_disp_state_normal() {
-                    self.clear_target(str_vec, sy, ey, win);
-                }
-            }
-            E_DrawRange::After(_) | E_DrawRange::Targetpoint => self.clear_all_diff(str_vec, &draw.change_row_vec, win),
-            E_DrawRange::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (curt_win.area_v.1 - Editor::SCROLL_UP_DOWN_MARGIN) as u16), Clear(ClearType::FromCursorDown))),
-            E_DrawRange::ScrollUp(_, _) => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, curt_win.area_v.0 as u16), Clear(ClearType::CurrentLine))),
-        };
-        return ActType::Next;
-    }
-
-    pub fn draw_main(&self, str_vec: &mut Vec<String>, draw: &EditorDraw, win: &Window) {
+    pub fn draw_main(&self, str_vec: &mut Vec<String>, draw: &EditorDrawCache, win: &Window, draw_range: E_DrawRange) {
         Log::info_key("Editor.draw");
-        Log::debug("self.draw_range", &self.draw_range);
         Log::debug("win", &win);
 
+        Log::debug("win.sel", &win.sel);
+
         // Clear init
-        let act_type = self.clear_init(str_vec, draw, win);
+        let act_type = self.clear_init(str_vec, draw, win, draw_range);
         if act_type != ActType::Next {
             return;
         }
@@ -107,7 +97,7 @@ impl Editor {
         }
 
         for i in draw.change_row_vec.iter() {
-            str_vec.push(format!("{}", MoveTo((win.area_h.0 - self.get_rnw_and_margin()) as u16, (*i - win.offset.y + win.area_v.0) as u16)));
+            str_vec.push(format!("{}", MoveTo((win.view.x - self.get_rnw_and_margin()) as u16, (*i - win.offset.y + win.view.y) as u16)));
             self.set_row_num(*i, str_vec, win);
             let row_cell = &draw.cells_to[i];
 
@@ -119,7 +109,7 @@ impl Editor {
                     break;
                 }
                 x_width += width;
-                if State::get().curt_state().editor.mouse == Mouse::Enable {
+                if State::get().curt_ref_state().editor.mouse == Mouse::Enable {
                     match cell.c {
                         NEW_LINE_LF => str_vec.push(if c_org == NEW_LINE_CR { NEW_LINE_CRLF_MARK.to_string() } else { NEW_LINE_LF_MARK.to_string() }),
                         NEW_LINE_CR => {}
@@ -147,10 +137,41 @@ impl Editor {
         }
     }
 
+    #[allow(clippy::nonminimal_bool)]
+    pub fn clear_init(&self, str_vec: &mut Vec<String>, draw: &EditorDrawCache, win: &Window, draw_range: E_DrawRange) -> ActType {
+        Log::debug_key("clear_init");
+
+        str_vec.push(Colors::get_default_fg_bg());
+        let curt_win = self.get_curt_ref_win();
+
+        match draw_range {
+            E_DrawRange::Not | E_DrawRange::MoveCur => return ActType::Cancel,
+            E_DrawRange::All => {
+                if win.h_idx == 0 && win.v_idx == 0 {
+                    self.clear_all(str_vec);
+                }
+            }
+            E_DrawRange::WinOnlyAll => {
+                if curt_win == win {
+                    win.clear_draw(str_vec);
+                }
+            }
+            E_DrawRange::TargetRange(sy, ey) => {
+                if curt_win == win || !Editor::is_disp_state_normal() {
+                    self.clear_target(str_vec, sy, ey, win);
+                }
+            }
+            E_DrawRange::After(_) | E_DrawRange::Targetpoint => self.clear_all_diff(str_vec, &draw.change_row_vec, win),
+            E_DrawRange::ScrollDown(_, _) => str_vec.push(format!("{}{}{}", ScrollUp(1), MoveTo(0, (curt_win.view.y_height() - Editor::SCROLL_UP_DOWN_MARGIN) as u16), Clear(ClearType::FromCursorDown))),
+            E_DrawRange::ScrollUp(_, _) => str_vec.push(format!("{}{}{}", ScrollDown(1), MoveTo(0, curt_win.view.y as u16), Clear(ClearType::CurrentLine))),
+        };
+        return ActType::Next;
+    }
+
     pub fn draw_pre_row_num(&self, str_vec: &mut Vec<String>, win: &Window) {
         Log::debug_key("draw_row_num");
         // If you need to edit the previous row_num
-        if State::get().curt_state().editor.row_no.is_enable {
+        if State::get().curt_ref_state().editor.row_no.is_enable {
             // Correspondence of line number of previous cursor position
             if win.cur_org.y < self.buf.len_rows() && self.is_y_in_screen(win.cur_org.y) && win.cur.y != win.cur_org.y {
                 self.mod_pre_row_num(str_vec, win.cur_org.y, win);
@@ -163,15 +184,15 @@ impl Editor {
 
     fn mod_pre_row_num(&self, str_vec: &mut Vec<String>, y: usize, win: &Window) {
         Log::debug_key("move_render_row_num");
-        Log::debug("win.area_all_h.0", &win.area_h_all.0);
+        Log::debug("win.area_all_h.0", &win.view_all.x);
         Log::debug("yyy", &y);
         Log::debug("win.offset.y", &win.offset.y);
-        str_vec.push(format!("{}", MoveTo(win.area_h_all.0 as u16, (win.area_v.0 + y - win.offset.y) as u16)));
+        str_vec.push(format!("{}", MoveTo(win.view_all.x as u16, (win.view.y + y - win.offset.y) as u16)));
         self.set_row_num(y, str_vec, win);
     }
 
     fn set_row_num(&self, i: usize, str_vec: &mut Vec<String>, win: &Window) {
-        if State::get().curt_state().editor.row_no.is_enable {
+        if State::get().curt_ref_state().editor.row_no.is_enable {
             if i == win.cur.y {
                 str_vec.push(Colors::get_rownum_curt_fg_bg());
             } else {
@@ -188,12 +209,13 @@ impl Editor {
         }
     }
 
-    pub fn draw_move_cur(&self, str_vec: &mut Vec<String>, win: &Window) {
-        self.draw_scrlbar_h(str_vec, win);
-        self.draw_scrlbar_v(str_vec, win);
+    pub fn draw_move_cur(&self, str_vec: &mut Vec<String>, win: &Window, split_line_v: usize) {
+        win.scrl_h.draw(str_vec, &win.view);
+        win.scrl_v.draw(str_vec, &win.view, Colors::get_default_bg());
+
         let curt_win = self.get_curt_ref_win().clone();
         self.draw_pre_row_num(str_vec, &curt_win);
-        self.draw_scale(str_vec, win);
+        win.draw_scale(str_vec, split_line_v);
     }
 
     pub fn clear_all(&self, str_vec: &mut Vec<String>) {
@@ -208,12 +230,12 @@ impl Editor {
     pub fn clear_all_diff(&self, str_vec: &mut Vec<String>, change_row_vec: &[usize], win: &Window) {
         Log::debug_key("Editor.clear_all_diff");
         for i in change_row_vec {
-            str_vec.push(format!("{}{}", MoveTo(win.area_h.0 as u16, (*i - win.offset.y + win.area_v.0) as u16), get_space(win.width())));
+            str_vec.push(format!("{}{}", MoveTo(win.view.x as u16, (*i - win.offset.y + win.view.y) as u16), get_space(win.width())));
         }
         // Clear the previously displayed part when the number of lines becomes shorter than the height of the screen
         if self.buf.len_rows() <= self.get_disp_row_including_extra() && self.buf_len_rows_org > self.buf.len_rows() {
             for i in self.buf.len_rows() - 1..=self.buf_len_rows_org - 1 {
-                str_vec.push(format!("{}{}", MoveTo(win.area_h.0 as u16, (i + win.area_v.0) as u16), get_space(win.width())));
+                str_vec.push(format!("{}{}", MoveTo(win.view.x as u16, (i + win.view.y) as u16), get_space(win.width())));
             }
         }
     }
@@ -224,15 +246,19 @@ impl Editor {
         Log::debug("ey", &ey);
         Log::debug("win", &win);
         // for e_cmd::AllSelect
-        if win.offset.y <= sy || ey <= win.offset.y + win.area_v.1 {
+        if win.offset.y <= sy || ey <= win.offset.y + win.view.y_height() {
             let start_y = if sy >= win.offset.y { sy - win.offset.y } else { win.offset.y };
-            let end_y = if ey <= win.offset.y + win.area_v.1 { ey - win.offset.y } else { win.offset.y + win.area_v.1 };
+            let end_y = if ey <= win.offset.y + win.view.y_height() { ey - win.offset.y } else { win.offset.y + win.view.y_height() };
             Log::debug("start_y", &start_y);
             Log::debug("end_y", &end_y);
             for i in start_y..=end_y {
-                str_vec.push(format!("{}{}", MoveTo(win.area_h_all.0 as u16, (i + win.area_v.0) as u16), get_space(win.width_all())));
+                str_vec.push(format!("{}{}", MoveTo(win.view_all.x as u16, (i + win.view.y) as u16), get_space(win.width_all())));
             }
-            str_vec.push(format!("{}", MoveTo(win.area_h.0 as u16, (start_y + win.area_v.0) as u16)));
+            str_vec.push(format!("{}", MoveTo(win.view.x as u16, (start_y + win.view.y) as u16)));
         }
+    }
+
+    pub fn draw_input_comple(&mut self, str_vec: &mut Vec<String>) {
+        self.input_comple.draw(str_vec);
     }
 }

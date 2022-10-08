@@ -3,16 +3,21 @@ pub mod view;
 
 pub mod char_style;
 pub mod model;
-pub mod scrollbar_h;
-pub mod scrollbar_v;
-pub mod view_traits {
-    pub mod view_trait;
+
+pub mod scrollbar {
+    pub mod horizontal;
+    pub mod scrl_h_trait;
+    pub mod vertical;
+}
+pub mod traits {
+    pub mod view;
+    pub mod view_evt;
 }
 pub mod menulists {
     pub mod core;
     pub mod menulist;
 }
-pub mod terminal;
+pub mod term;
 
 pub mod parts {
     pub mod pulldown;

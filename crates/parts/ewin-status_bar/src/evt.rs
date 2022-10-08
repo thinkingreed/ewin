@@ -12,11 +12,9 @@ impl StatusBar {
             CmdType::MouseDownLeft(y, x) => {
                 let (x, _) = (*x as usize, *y as usize);
                 if self.cur_area.0 <= x && x <= self.cur_area.1 {
-                    Job::send_cmd(CmdType::MoveRowProm);
-                    return ActType::None;
+                    return Job::send_cmd(CmdType::MoveRowProm);
                 } else if self.enc_nl_area.0 <= x && x <= self.enc_nl_area.1 {
-                    Job::send_cmd(CmdType::EncodingProm);
-                    return ActType::None;
+                    return Job::send_cmd(CmdType::EncodingProm);
                 }
                 return ActType::Cancel;
             }

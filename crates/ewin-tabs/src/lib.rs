@@ -8,5 +8,9 @@ pub mod draw;
 pub mod event;
 pub mod file;
 pub mod size;
-pub mod tab;
 pub mod tabs;
+
+pub mod tab {
+    pub mod grep;
+    pub mod tab;
+}

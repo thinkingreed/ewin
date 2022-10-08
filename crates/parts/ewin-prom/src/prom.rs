@@ -1,10 +1,11 @@
-use super::{model::*, prom_trait::main_trait::*};
-use crossterm::{cursor::*, terminal::ClearType::*, terminal::*};
+use crate::{model::*, traits::main_trait::*};
+use ewin_activity_bar::activitybar::*;
 use ewin_cfg::log::*;
+use ewin_const::term::*;
 use ewin_key::key::cmd::*;
+use ewin_side_bar::sidebar::*;
 use ewin_state::term::*;
 use ewin_view::view::*;
-use std::{io::Write, u16};
 
 impl Prom {
     pub fn init(&mut self, plugin: Box<dyn PromTrait>) {
@@ -17,53 +18,23 @@ impl Prom {
     }
 
     pub fn set_size(&mut self) {
-        self.view.height = self.curt.as_mut_base().get_disp_all_row_num(self.row_bottom_posi);
+        if !State::get().curt_ref_state().is_nomal() {
+            self.view.height = self.curt.as_mut_base().get_disp_all_row_num(self.row_bottom_posi);
 
-        Log::debug(" self.view.height ", &self.view.height);
-        Log::debug("self.row_bottom_posi", &self.row_bottom_posi);
-        self.view.y = self.row_bottom_posi - self.view.height;
-        self.curt.as_mut_base().set_cont_item_disp_posi(self.view.y);
-    }
+            let (cols, _) = get_term_size();
 
-    pub fn draw(&mut self, str_vec: &mut Vec<String>) {
-        Log::info_key("Prompt.draw");
-        Log::debug("self.curt.as_base().curt_cont_idx", &self.curt.as_base().curt_cont_idx);
+            let tabs_cols = cols - ActivityBar::get().get_width() - SideBar::get().get_width_all();
 
-        if !State::get().curt_state().is_nomal() {
-            for (i, cont) in self.curt.as_base().cont_vec.iter().enumerate() {
-                Log::debug("iiiii", &i);
-                Log::debug("cont.as_base().row_posi_range", &cont.as_base().row_posi_range);
-                for i in cont.as_base().row_posi_range.start..=cont.as_base().row_posi_range.end {
-                    str_vec.push(format!("{}{}", MoveTo(0, (i) as u16), Clear(CurrentLine),));
-                }
-                str_vec.push(MoveTo(0, cont.as_base().row_posi_range.start as u16).to_string());
-
-                let is_curt = i == self.curt.as_base().curt_cont_idx;
-                cont.draw(str_vec, is_curt);
-            }
+            self.view.width = tabs_cols;
+            self.view.y = self.row_bottom_posi - self.view.height;
+            self.view.x = ActivityBar::get().get_width() + SideBar::get().get_width_all();
+            self.curt.as_mut_base().set_cont_item_disp_posi(self.view.y);
         }
     }
 
     pub fn clear(&mut self) {
         Log::debug_key("Prompt.clear");
         self.view = View::default();
-    }
-
-    pub fn draw_only<T: Write>(&mut self, out: &mut T) {
-        Log::debug_key("Prompt.draw_only");
-        let mut v: Vec<String> = vec![];
-        self.draw(&mut v);
-        self.draw_cur(&mut v);
-        let _ = out.write(v.concat().as_bytes());
-        out.flush().unwrap();
-    }
-
-    pub fn draw_cur(&mut self, str_vec: &mut Vec<String>) -> bool {
-        if let Some((y, x)) = self.curt.as_mut_base().get_cur_posi() {
-            str_vec.push(MoveTo(x as u16, y as u16).to_string());
-            return true;
-        }
-        return false;
     }
 
     pub fn set_cmd(&mut self, cmd: &Cmd) {

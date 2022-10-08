@@ -1,7 +1,7 @@
 use crate::model::*;
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 use ewin_cfg::log::*;
-use ewin_utils::files::{encode::*, file::*};
+use ewin_utils::files::{bom::*, encode::*, file::*};
 use ropey::RopeBuilder;
 use std::{fs::OpenOptions, io::*, option::Option, *};
 
@@ -28,7 +28,7 @@ impl TextBuffer {
         let (mut u8_vec, enc_errors) = self.encode(file)?;
         Log::debug("enc_errors", &enc_errors);
         if !enc_errors {
-            let vec = self.add_bom(&mut u8_vec, file);
+            let vec = Bom::add_bom(&mut u8_vec, file);
             BufWriter::new(fs::File::create(&file.fullpath)?).write_all(&vec[..])?;
         }
 
@@ -38,19 +38,6 @@ impl TextBuffer {
         let mut file = OpenOptions::new().write(true).truncate(true).open("clip.txt")?;
         file.write_all(copy_str.as_bytes())?;
         Ok(())
-    }
-
-    fn add_bom(&mut self, vec: &mut Vec<u8>, file: &File) -> Vec<u8> {
-        let mut bom_vec: Vec<u8> = vec![];
-        match file.bom {
-            Some(Encode::UTF16LE) => bom_vec = vec![0xFF, 0xFE],
-            Some(Encode::UTF16BE) => bom_vec = vec![0xFE, 0xFF],
-            Some(Encode::UTF8) => bom_vec = vec![0xEF, 0xBB, 0xBF],
-            Some(_) => {}
-            None => {}
-        };
-        bom_vec.append(vec);
-        bom_vec
     }
 
     fn encode(&mut self, file: &mut File) -> io::Result<(Vec<u8>, bool)> {

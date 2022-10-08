@@ -1,5 +1,11 @@
 use crate::term::*;
-use crossterm::{cursor::MoveTo, execute};
+use crossterm::{
+    cursor::{Hide, MoveTo},
+    execute,
+    style::ResetColor,
+    terminal::{Clear, ClearType},
+};
+use ewin_activity_bar::activitybar::*;
 use ewin_cfg::{lang::lang_cfg::*, log::*};
 use ewin_const::{
     def::*,
@@ -8,7 +14,7 @@ use ewin_const::{
 };
 use ewin_ctx_menu::ctx_menu::*;
 use ewin_dialog::dialog::*;
-use ewin_editor::model::Editor;
+use ewin_editor::editor_gr::*;
 use ewin_file_bar::filebar::*;
 use ewin_key::{
     global::*,
@@ -19,9 +25,10 @@ use ewin_menu_bar::menubar::*;
 use ewin_msg_bar::msgbar::*;
 use ewin_prom::model::*;
 use ewin_side_bar::sidebar::*;
-use ewin_state::{sidebar::*, term::*};
+use ewin_state::term::*;
 use ewin_status_bar::statusbar::*;
-use ewin_view::{menulists::core::*, view::*, view_traits::view_trait::*};
+use ewin_tooltip::tooltip::*;
+use ewin_view::{menulists::core::*, traits::view_evt::*, view::*};
 use std::io::{stdout, Write};
 
 impl Term {
@@ -32,12 +39,22 @@ impl Term {
             return rtn;
         }
         self.set_place(keys);
+
         // Support check for pressed keys
         let act_type = self.set_keys(&keys);
         if let Some(rtn) = self.check_next_process(out, act_type) {
             return rtn;
         }
-        let act_type = self.exec_cmd();
+        let mut act_type = self.exec_cmd();
+
+        // ToolTip
+        if let Some(mut tooltip) = ToolTip::get_result() {
+            Log::debug("tooltip", &tooltip);
+            if !tooltip.is_show && tooltip.tgt_view_org_opt.is_some() {
+                act_type = ActType::Draw(DrawParts::All);
+                tooltip.tgt_view_org_opt = None;
+            }
+        }
         if let Some(rtn) = self.check_next_process(out, act_type) {
             return rtn;
         }
@@ -56,17 +73,18 @@ impl Term {
             Place::CtxMenu => CtxMenu::ctrl_ctx_menu(&self.cmd.cmd_type),
             Place::MenuBar => MenuBar::ctrl_menubar(&self.cmd.cmd_type),
             Place::FileBar => FileBar::ctrl_filebar(&self.cmd.cmd_type, self.keys),
-            Place::Editor => self.tabs.curt().editor.ctrl_editor(self.cmd.clone()),
+            Place::Editor => EditorGr::get().curt_mut().ctrl_editor(self.cmd.clone(), self.keys),
             Place::StatusBar => StatusBar::get().ctrl_statusbar(&self.cmd.cmd_type),
             Place::Prom => Prom::get().ctrl_prom(&self.cmd),
             Place::SideBar => SideBar::ctrl_sidebar(&self.cmd.cmd_type),
+            Place::ActivityBar => ActivityBar::ctrl_activitybar(&self.cmd.cmd_type),
         };
     }
-    pub fn specify_cmd<T: Write>(&mut self, out: &mut T, cmd_type: CmdType, when: Place, act_type_opt: Option<ActType>) -> bool {
+    pub fn specify_cmd<T: Write>(&mut self, out: &mut T, cmd_type: CmdType, place: Place, act_type_opt: Option<ActType>) -> bool {
         Log::debug_key("EvtAct::specify_cmd");
         Log::debug("cmd_type", &cmd_type);
         self.cmd = Cmd::to_cmd(cmd_type);
-        self.place = when;
+        self.place = place;
 
         let act_type_org = self.exec_cmd();
         let act_type = if let Some(specify_act_type) = act_type_opt { specify_act_type } else { act_type_org };
@@ -107,17 +125,21 @@ impl Term {
                 MenuBar::get().on_mouse_idx = USIZE_UNDEFINED;
                 MenuBar::get().draw_only(&mut stdout());
             }
-            Keys::MouseMove(_, _) if MenuBar::get().menulist.is_show || self.tabs.curt().editor.is_input_imple_mode(true) => {}
+            Keys::MouseMove(_, _) if MenuBar::get().menulist.is_show || EditorGr::get().curt_ref().is_input_imple_mode(true) => {}
             Keys::MouseMove(_, _) if Prom::is_prom_pulldown() => {}
             Keys::MouseMove(_, _) if CtxMenu::get().is_show => {}
+            Keys::MouseMove(_, _) if ToolTip::get().is_show => {}
             Keys::MouseMove(y, x) if Dialog::get().is_tgt_mouse_move(y as usize, x as usize) => {}
             Keys::MouseMove(y, x) => {
                 self.set_place_mouse_move(y, x);
+                if self.place == Place::Editor {
+                    EditorGr::get().curt_mut().set_tgt_window(keys);
+                }
                 self.cmd = Cmd::to_cmd(CmdType::Null);
                 return ActType::None;
             }
             Keys::MouseUpLeft(_, _) => {
-                self.tabs.curt().editor.exec_mouse_up_left();
+                EditorGr::get().curt_mut().exec_mouse_up_left();
                 SideBar::get().exec_mouse_up_left();
                 FileBar::get().exec_mouse_up_left();
                 self.cmd = Cmd::to_cmd(CmdType::Null);
@@ -133,11 +155,11 @@ impl Term {
                     self.set_bg_color();
                     State::get().term.is_displayable = true;
                     self.clear_state();
-                    // self.set_size_init();
+                    self.set_size();
                     return ActType::Draw(DrawParts::All);
                 } else {
                     State::get().term.is_displayable = false;
-                    let _ = execute!(stdout(), MoveTo(0, 0));
+                    let _ = execute!(stdout(), ResetColor, Clear(ClearType::All), MoveTo(0, 0), Hide);
                     println!("{}", &Lang::get().increase_height_width_terminal);
                     return ActType::None;
                 }
@@ -146,6 +168,15 @@ impl Term {
         };
         if !State::get().term.is_displayable {
             return ActType::None;
+        }
+
+        // tooltip display judgment
+        let evt_act = ToolTip::get().is_tgt_range(keys);
+
+        Log::debug("ToolTip::get().is_tgt_range_act", &evt_act);
+
+        if evt_act != ActType::Next {
+            return evt_act;
         }
 
         // Judg whether keys are CloseFile
@@ -160,12 +191,11 @@ impl Term {
     pub fn set_keys(&mut self, keys: &Keys) -> ActType {
         Log::debug_key("Term.set_keys");
         Log::debug("keys", &keys);
-        Log::debug("keywhen", &self.place);
         self.keys = *keys;
         self.cmd = Cmd::keys_to_cmd(keys, Some(&self.keys_org), self.place);
         Log::debug("self.cmd before adjust", &self.cmd);
 
-        if keys == &Cmd::cmd_to_keys(CmdType::Confirm) && self.place == Place::Editor && State::get().curt_state().prom == PromState::GrepResult {
+        if keys == &Cmd::cmd_to_keys(CmdType::Confirm) && self.place == Place::Editor && State::get().curt_ref_state().prom == PromState::GrepResult {
             self.cmd = Cmd::to_cmd(CmdType::Confirm);
         }
         Log::debug("self.cmd after adjust", &self.cmd);

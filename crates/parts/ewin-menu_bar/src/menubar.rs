@@ -1,4 +1,3 @@
-use crate::global::*;
 use crate::menulist::*;
 use ewin_cfg::{global::*, lang::lang_cfg::*, log::*};
 use ewin_const::def::*;

@@ -1,4 +1,4 @@
-use crate::{filebar::*, sidebar::*, tabs::tabs::*};
+use crate::{activitybar::*, filebar::*, sidebar::*, tabs::tabs::*};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct State {
@@ -6,11 +6,12 @@ pub struct State {
     pub term: TermState,
     pub sidebar: SideBarState,
     pub filebar: FileBarState,
+    pub activitybar: ActivityBarState,
 }
 
 impl Default for State {
     fn default() -> Self {
-        return State { term: TermState::default(), tabs: TabsState::default(), sidebar: SideBarState::default(), filebar: FileBarState::default() };
+        return State { term: TermState::default(), tabs: TabsState::default(), sidebar: SideBarState::default(), filebar: FileBarState::default(), activitybar: ActivityBarState::default() };
     }
 }
 
